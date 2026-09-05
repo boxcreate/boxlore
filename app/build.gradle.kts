@@ -209,6 +209,7 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.robolectric)
     testImplementation("androidx.test:core:1.6.1")
+    testImplementation("androidx.work:work-testing:${libs.versions.work.get()}")
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

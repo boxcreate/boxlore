@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.core.playback.service
 
 import android.app.Notification
-import androidx.media3.common.util.Util
+import android.content.Intent
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadService
@@ -24,7 +24,20 @@ open class MediaDownloadService :
         return DownloadRepository.getDownloadManager(this)
     }
 
-    override fun getScheduler(): Scheduler? = if (Util.SDK_INT >= 21) PlatformScheduler(this, JOB_ID) else null
+    override fun getScheduler(): Scheduler? =
+        if (android.os.Build.VERSION.SDK_INT in 21..30) PlatformScheduler(this, JOB_ID) else null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = try {
+        super.onStartCommand(intent, flags, startId)
+    } catch (e: Exception) {
+        android.util.Log.w(
+            "MediaDownloadService",
+            "Failed to start MediaDownloadService as foreground service: ${e.message}",
+            e,
+        )
+        stopSelf()
+        START_NOT_STICKY
+    }
 
     override fun getForegroundNotification(downloads: List<Download>, notMetRequirements: Int,): Notification {
         // Find active download

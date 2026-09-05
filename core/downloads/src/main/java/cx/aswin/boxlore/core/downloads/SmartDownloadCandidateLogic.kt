@@ -71,6 +71,7 @@ internal object SmartDownloadCandidateLogic {
 
         return inProgressCandidates.mapNotNull { history ->
             val parentPod = subsMap[history.podcastId] ?: return@mapNotNull null
+            if (parentPod.autoDownloadEnabled) return@mapNotNull null
             val score = scoreInProgressCandidate(history.lastPlayedAt, nowMs)
 
             val inProgressEpisode = Episode(
@@ -152,7 +153,8 @@ internal object SmartDownloadCandidateLogic {
         podScoresMap: Map<String, Double>,
         nowMs: Long,
     ): List<MixtapeCandidate> {
-        val unplayedDropsCandidates = subs.mapNotNull { pod ->
+        val eligibleSubs = subs.filter { !it.autoDownloadEnabled }
+        val unplayedDropsCandidates = eligibleSubs.mapNotNull { pod ->
             resolveUnplayedDropCandidate(pod, resolvedSerial, historyByEpisode)
         }
 
@@ -229,17 +231,23 @@ internal object SmartDownloadCandidateLogic {
         podScoresMap: Map<String, Double>,
         nowMs: Long,
     ): List<MixtapeCandidate> {
-        val subsMap = subs.associateBy { it.podcastId }
-        val subIds = subs.map { it.podcastId }.toSet()
+        val eligibleSubs = subs.filter { !it.autoDownloadEnabled }
+        val subsMap = eligibleSubs.associateBy { it.podcastId }
+        val subIds = eligibleSubs.map { it.podcastId }.toSet()
 
         val inProgress = buildInProgressMixtapeCandidates(subsMap, allHistory, subIds, nowMs)
-        val unplayed = buildUnplayedDropsMixtapeCandidates(subs, resolvedSerial, historyByEpisode, podScoresMap, nowMs)
+        val unplayed = buildUnplayedDropsMixtapeCandidates(eligibleSubs, resolvedSerial, historyByEpisode, podScoresMap, nowMs)
 
         return deduplicateAndOrderMixtapeCandidates(inProgress, unplayed)
     }
 
     internal fun estimateDownloadSize(download: DownloadedEpisodeEntity): Long = if (download.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
-        download.sizeBytes
+        if (download.sizeBytes > 0L) {
+            download.sizeBytes
+        } else {
+            val durSec = download.durationMs / 1000L
+            if (durSec > 0) durSec * ESTIMATED_BYTES_PER_SECOND else DEFAULT_EPISODE_SIZE_BYTES
+        }
     } else if (download.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING) {
         val durSec = download.durationMs / 1000L
         if (durSec > 0) durSec * ESTIMATED_BYTES_PER_SECOND else DEFAULT_EPISODE_SIZE_BYTES

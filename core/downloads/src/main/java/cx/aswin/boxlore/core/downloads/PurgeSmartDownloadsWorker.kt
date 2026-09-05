@@ -21,7 +21,7 @@ open class PurgeSmartDownloadsWorker(appContext: Context, params: WorkerParamete
             for (download in existingDownloads) {
                 if (download.isSmartDownloaded) {
                     Log.d("PurgeWorker", "Purging smart-downloaded episode: '${download.episodeTitle}' (ID: ${download.episodeId})")
-                    downloadRepository.removeDownload(download.episodeId)
+                    downloadRepository.removeDownload(download.episodeId, isForeground = false).join()
                     count++
                 }
             }
