@@ -116,7 +116,8 @@ class LockedChangelogFlowTest(unittest.TestCase):
             971,
             uc.parse_pr_readme_copy(SAMPLE_PR_BODY, "user-impact-critical"),
         )
-        self.assertIn("<!-- readme-copy:start pr=971 -->", with_readme)
+        self.assertIn("<!-- readme-copy:start pr=971", with_readme)
+        self.assertIn("readme-copy:end pr=971 -->", with_readme)
         parsed = uc._extract_unreleased_sections(with_readme)
         self.assertNotIn("Missing episodes from a show", " ".join(parsed.get("Fixed", [])))
         self.assertTrue(any("PodcastRepository" in b for b in parsed["Added"]))

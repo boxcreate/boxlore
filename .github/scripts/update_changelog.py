@@ -121,8 +121,8 @@ PR_CHANGELOG_COPY_END = "<!-- release-copy:changelog:end -->"
 PR_README_COPY_START = "<!-- release-copy:readme:start -->"
 PR_README_COPY_END = "<!-- release-copy:readme:end -->"
 README_COPY_BLOCK_RE = re.compile(
-    r"<!--\s*readme-copy:start\s+pr=(\d+)\s*-->\s*(.*?)\s*"
-    r"<!--\s*readme-copy:end\s+pr=\1\s*-->",
+    r"<!--\s*readme-copy:start\s+pr=(\d+)\s*(?:-->)?\s*(.*?)\s*"
+    r"(?:<!--\s*)?readme-copy:end\s+pr=\1\s*-->",
     re.DOTALL | re.IGNORECASE,
 )
 PLACEHOLDER_BULLET_RE = re.compile(
@@ -941,7 +941,7 @@ def _strip_readme_copy_blocks(text: str) -> str:
 
 
 def _render_readme_copy_block(pr_number: int, groups: list[dict[str, list[str]]]) -> str:
-    lines = [f"<!-- readme-copy:start pr={pr_number} -->"]
+    lines = [f"<!-- readme-copy:start pr={pr_number}"]
     for group in groups:
         heading = str(group.get("heading") or "").strip()
         bullets = [str(item).strip() for item in group.get("bullets") or [] if str(item).strip()]
@@ -951,7 +951,7 @@ def _render_readme_copy_block(pr_number: int, groups: list[dict[str, list[str]]]
             lines.append(f"### {heading}")
         for bullet in bullets:
             lines.append(f"- {bullet}")
-    lines.append(f"<!-- readme-copy:end pr={pr_number} -->")
+    lines.append(f"readme-copy:end pr={pr_number} -->")
     return "\n".join(lines)
 
 
