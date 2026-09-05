@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent WorkManager 10-minute execution ceiling aborts during smart downloads by transitioning to sequential downloads with an 8.5-minute time budget. ([#1033](https://github.com/boxcreate/boxlore/pull/1033)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Preserved notification and auto-download toggles on Podcast Info pull-to-refresh and routed subscribed shows to direct publisher feed refresh. ([#1016](https://github.com/boxcreate/boxlore/issues/1016)) ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Fixed latent `notificationsEnabled` and `autoDownloadEnabled` mapping in RSS repository entity conversion. ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Prevent SecurityException crashes caused by system PendingIntent UID quota exhaustion in FCM notifications and Media3 playback session setup (#1025). ([#1034](https://github.com/boxcreate/boxlore/pull/1034)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019
 ### Critical
@@ -47,6 +48,11 @@ readme-copy:end pr=1030 -->
 - Fixed storage cleanup so deleting or replacing downloaded episodes properly reclaims device disk space.
 - Improved background auto-download reliability so new episodes are ready for offline listening as soon as notifications arrive.
 readme-copy:end pr=1033 -->
+
+<!-- readme-copy:start pr=1034
+### High
+- Resolved an issue where receiving many episode notifications over time could cause audio playback to fail to start.
+readme-copy:end pr=1034 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added
