@@ -61,6 +61,59 @@ class PlaybackHistorySeedPolicyTest {
         )
     }
 
+    @Test
+    fun `blank snapshot and source podcastName falls back to telemetry`() {
+        val history =
+            PlaybackHistorySeedPolicy.build(
+                snapshot =
+                snapshot(episodeTitle = "Test Episode").copy(
+                    podcastName = "",
+                ),
+                sources =
+                listOf(
+                    PlaybackHistorySeedSource(podcastName = "  ", podcastId = " "),
+                ),
+                podcast = null,
+                telemetry =
+                PlaybackHistorySeedSource(
+                    podcastName = "Telemetry Show",
+                    podcastId = "telemetry-pod",
+                ),
+                nowMs = 123L,
+            )
+
+        assertEquals("Telemetry Show", history?.podcastName)
+        assertEquals("telemetry-pod", history?.podcastId)
+    }
+
+    @Test
+    fun `blank snapshot podcastName falls back to podcast entity`() {
+        val history =
+            PlaybackHistorySeedPolicy.build(
+                snapshot =
+                snapshot(episodeTitle = "Test Episode").copy(
+                    podcastName = "   ",
+                ),
+                sources =
+                listOf(
+                    PlaybackHistorySeedSource(
+                        podcastName = "   ",
+                        podcastImageUrl = " ",
+                    ),
+                ),
+                podcast =
+                PlaybackHistorySeedSource(
+                    podcastName = "Entity Show",
+                    podcastImageUrl = "https://example.com/pod.png",
+                ),
+                telemetry = null,
+                nowMs = 123L,
+            )
+
+        assertEquals("Entity Show", history?.podcastName)
+        assertEquals("https://example.com/pod.png", history?.podcastImageUrl)
+    }
+
     private fun snapshot(episodeTitle: String?, durationMs: Long = 1_000L,) = PlaybackProgressSnapshot(
         sequence = 1L,
         episodeId = "episode",

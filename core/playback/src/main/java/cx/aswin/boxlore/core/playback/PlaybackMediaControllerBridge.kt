@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val UNKNOWN_PODCAST = "Unknown Podcast"
+
 /**
  * Media3 [Player.Listener] implementation extracted from PlaybackRepository.initializeMediaController.
  */
@@ -306,6 +308,11 @@ internal class PlaybackMediaControllerBridge(
                         }
                         pendingCastTransition = null
                         val resolvedPodcastId = findPodcastIdForEpisode(episodeId) ?: ""
+                        val resolvedPodcastTitle =
+                            metadata.albumTitle?.toString()?.takeIf(String::isNotBlank)
+                                ?: metadata.artist?.toString()?.takeIf(String::isNotBlank)
+                                ?: metadata.subtitle?.toString()?.takeIf(String::isNotBlank)
+                                ?: UNKNOWN_PODCAST
                         Episode(
                             id = episodeId,
                             title = title,
@@ -313,10 +320,10 @@ internal class PlaybackMediaControllerBridge(
                             audioUrl = mediaItem.localConfiguration?.uri?.toString() ?: "",
                             imageUrl = metadata.artworkUri?.toString(),
                             podcastImageUrl = metadata.artworkUri?.toString(),
-                            podcastTitle = metadata.subtitle?.toString() ?: metadata.artist?.toString() ?: "Unknown Podcast",
+                            podcastTitle = resolvedPodcastTitle,
                             podcastId = resolvedPodcastId,
                             podcastGenre = metadata.genre?.toString() ?: "Podcast",
-                            podcastArtist = metadata.artist?.toString() ?: "",
+                            podcastArtist = metadata.artist?.toString()?.takeIf(String::isNotBlank) ?: resolvedPodcastTitle,
                             duration = 0,
                             publishedDate = 0L,
                         )
@@ -428,11 +435,11 @@ internal class PlaybackMediaControllerBridge(
                             )
                         }
 
-                    if (dbPodcast != null && dbPodcast.title != "Unknown Podcast") {
+                    if (dbPodcast != null && dbPodcast.title != UNKNOWN_PODCAST) {
                         dbPodcast
                     } else if (existingPod != null &&
                         existingPod.id == newEpisode.podcastId &&
-                        existingPod.title != "Unknown Podcast"
+                        existingPod.title != UNKNOWN_PODCAST
                     ) {
                         // Preserve the fully-populated existing podcast object
                         existingPod
@@ -440,8 +447,8 @@ internal class PlaybackMediaControllerBridge(
                         cx.aswin.boxlore.core.model.Podcast(
                             id = newEpisode.podcastId!!,
                             title =
-                                newEpisode.podcastTitle?.takeIf { !it.isNullOrBlank() && it != "Unknown Podcast" }
-                                    ?: "Unknown Podcast",
+                                newEpisode.podcastTitle?.takeIf { !it.isNullOrBlank() && it != UNKNOWN_PODCAST }
+                                    ?: UNKNOWN_PODCAST,
                             artist = newEpisode.podcastArtist?.takeIf { it.isNotEmpty() } ?: existingPod?.artist ?: "",
                             imageUrl =
                                 newEpisode.podcastImageUrl?.takeIf {

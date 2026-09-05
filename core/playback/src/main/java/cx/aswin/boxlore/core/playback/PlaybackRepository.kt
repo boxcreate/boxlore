@@ -16,6 +16,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.service.BoxLorePlaybackService
+import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
@@ -420,56 +421,32 @@ class PlaybackRepository internal constructor(
         if (hasMedia && playerStateFlow.value.currentEpisode == null) {
             // MediaController has media but we don't have metadata - restore from DB
             repositoryScope.launch {
-                val lastSession = listeningHistoryDao.getLastPlayedSessionAny()
-                if (lastSession != null) {
-                    var episode =
-                        Episode(
-                            id = lastSession.episodeId,
-                            title = lastSession.episodeTitle,
-                            description = lastSession.episodeDescription ?: "",
-                            audioUrl = lastSession.episodeAudioUrl ?: "",
-                            imageUrl = lastSession.episodeImageUrl,
-                            duration = (lastSession.durationMs / 1000).toInt(),
-                            publishedDate = 0L,
-                            enclosureType = lastSession.enclosureType,
-                        )
-                    val podcast =
-                        Podcast(
-                            id = lastSession.podcastId,
-                            title = lastSession.podcastName,
-                            artist = "",
-                            imageUrl = lastSession.podcastImageUrl ?: "",
-                            description = null,
-                            genre = "Podcast",
-                        )
-                    // Enrich with P2.0 data from queue if available
-                    val currentQueue = playerStateFlow.value.queue
-                    val queueEp = currentQueue.find { it.id == episode.id }
-                    if (queueEp != null) {
-                        episode =
-                            episode.copy(
-                                chaptersUrl = queueEp.chaptersUrl,
-                                transcriptUrl = queueEp.transcriptUrl,
-                                persons = queueEp.persons,
-                                transcripts = queueEp.transcripts,
-                            )
-                    }
-                    playerStateFlow.value =
-                        PlayerState(
-                            currentEpisode = episode,
-                            currentPodcast = podcast,
-                            isPlaying = isPlaying,
-                            isLoading = isLoading,
-                            position = currentPosition.takeIf { it > 0L } ?: lastSession.progressMs,
-                            bufferedPosition = bufferedPosition,
-                            duration = if (duration > 0) duration else lastSession.durationMs,
-                            playbackSpeed = controller.playbackParameters.speed,
-                            queue = playerStateFlow.value.queue, // Preserve queue
-                            isLiked = lastSession.isLiked,
-                            playbackRoute = playerStateFlow.value.playbackRoute,
-                        )
-                    if (isPlaying) startProgressTicker()
-                }
+                val currentItem = controller.currentMediaItem
+                val targetEpisodeId = currentItem?.mediaId?.stripEpisodePrefix()
+                val restored =
+                    PlaybackSessionRestoreHelper.resolveRestoredSession(
+                        targetEpisodeId = targetEpisodeId,
+                        currentItem = currentItem,
+                        listeningHistoryDao = listeningHistoryDao,
+                        podcastRepository = podcastRepository,
+                        savedQueue = playerStateFlow.value.queue,
+                    ) ?: return@launch
+
+                playerStateFlow.value =
+                    PlayerState(
+                        currentEpisode = restored.episode,
+                        currentPodcast = restored.podcast,
+                        isPlaying = isPlaying,
+                        isLoading = isLoading,
+                        position = currentPosition.takeIf { it > 0L } ?: restored.lastSession.progressMs,
+                        bufferedPosition = bufferedPosition,
+                        duration = if (duration > 0) duration else restored.lastSession.durationMs,
+                        playbackSpeed = controller.playbackParameters.speed,
+                        queue = playerStateFlow.value.queue, // Preserve queue
+                        isLiked = restored.lastSession.isLiked,
+                        playbackRoute = playerStateFlow.value.playbackRoute,
+                    )
+                if (isPlaying) startProgressTicker()
             }
         } else {
             // Just sync playback state
@@ -564,7 +541,10 @@ class PlaybackRepository internal constructor(
                     episodeDescription = episode.description,
                 ),
             )
-        listeningHistoryDao.insertIfAbsent(history)
+        val inserted = listeningHistoryDao.insertIfAbsent(history)
+        if (inserted == -1L) {
+            listeningHistoryDao.updateLastPlayedAt(history.episodeId, history.lastPlayedAt)
+        }
         listeningHistoryDao.enrichMetadataIfMissing(
             episodeId = history.episodeId,
             podcastId = history.podcastId,
@@ -660,62 +640,27 @@ class PlaybackRepository internal constructor(
             return false
         }
 
-        val lastSession = listeningHistoryDao.getLastPlayedSessionAny() ?: return false
-
-        // Construct Episode WITH podcast metadata (critical for onMediaItemTransition)
-        var episode =
-            Episode(
-                id = lastSession.episodeId,
-                title = lastSession.episodeTitle,
-                description = "",
-                audioUrl = lastSession.episodeAudioUrl ?: return false,
-                imageUrl = lastSession.episodeImageUrl,
-                podcastImageUrl = lastSession.podcastImageUrl,
-                podcastTitle = lastSession.podcastName,
-                podcastId = lastSession.podcastId,
-                podcastGenre = "Podcast",
-                podcastArtist = "",
-                duration = (lastSession.durationMs / 1000).toInt(),
-                publishedDate = 0L,
-                enclosureType = lastSession.enclosureType,
-            )
-
-        val podcast =
-            Podcast(
-                id = lastSession.podcastId,
-                title = lastSession.podcastName,
-                artist = "",
-                imageUrl = lastSession.podcastImageUrl ?: "",
-                description = null,
-                genre = "Podcast",
-            )
-
-        // Restore Queue from DB (queue items now include P2.0 fields)
+        val controller = mediaHandle.controller
+        val controllerItem = controller?.currentMediaItem
+        val targetEpisodeId = controllerItem?.mediaId?.stripEpisodePrefix()
         val savedQueue = queueRepository.getQueueSnapshot()
 
-        // Enrich restored episode with P2.0 data from queue if available
-        val queueEpisode = savedQueue.find { it.id == episode.id }
-        if (queueEpisode != null) {
-            episode =
-                episode.copy(
-                    chaptersUrl = queueEpisode.chaptersUrl,
-                    transcriptUrl = queueEpisode.transcriptUrl,
-                    persons = queueEpisode.persons,
-                    transcripts = queueEpisode.transcripts,
-                    seasonNumber = queueEpisode.seasonNumber,
-                    episodeNumber = queueEpisode.episodeNumber,
-                    episodeType = queueEpisode.episodeType,
-                )
-        }
+        val restored =
+            PlaybackSessionRestoreHelper.resolveRestoredSession(
+                targetEpisodeId = targetEpisodeId,
+                currentItem = controllerItem,
+                listeningHistoryDao = listeningHistoryDao,
+                podcastRepository = podcastRepository,
+                savedQueue = savedQueue,
+            ) ?: return false
 
         // If saved queue is empty but we have an episode, make a single-item queue
-        val restoredQueue = if (savedQueue.isEmpty()) listOf(episode) else savedQueue
+        val restoredQueue = if (savedQueue.isEmpty()) listOf(restored.episode) else savedQueue
 
         // Prefer live MediaController truth when the playback service is still running
         // (e.g. user swiped the app from recents while audio continued). Forcing
         // isPlaying=false here races with syncStateFromMediaController() and leaves
         // the UI paused while ExoPlayer keeps playing.
-        val controller = mediaHandle.controller
         val controllerPlaying = controller?.isPlaying == true
         val controllerPosition = controller?.currentPosition?.takeIf { it > 0 }
         val controllerDuration = controller?.duration?.takeIf { it > 0 }
@@ -723,12 +668,12 @@ class PlaybackRepository internal constructor(
         playerStateFlow.value =
             PlaybackControlSync.withSyncedPlaybackSpeed(
                 playerStateFlow.value.copy(
-                    currentEpisode = episode,
-                    currentPodcast = podcast,
+                    currentEpisode = restored.episode,
+                    currentPodcast = restored.podcast,
                     isPlaying = controllerPlaying,
-                    position = controllerPosition ?: lastSession.progressMs,
-                    duration = controllerDuration ?: lastSession.durationMs,
-                    isLiked = lastSession.isLiked,
+                    position = controllerPosition ?: restored.lastSession.progressMs,
+                    duration = controllerDuration ?: restored.lastSession.durationMs,
+                    isLiked = restored.lastSession.isLiked,
                     queue = restoredQueue,
                 ),
                 controllerSpeed = controller?.playbackParameters?.speed,

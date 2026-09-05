@@ -16,4 +16,11 @@ internal object PlaybackProgressPersistencePolicy {
     fun resolvePositionMs(incomingPositionMs: Long): Long = incomingPositionMs.coerceAtLeast(0L)
 
     fun resolveDurationMs(existingDurationMs: Long, incomingDurationMs: Long,): Long = incomingDurationMs.takeIf { it > 0L } ?: existingDurationMs
+
+    fun shouldUpdateLastPlayedAt(
+        hasBeenPlayingFor10s: Boolean,
+        allowZeroPosition: Boolean,
+        isCompleted: Boolean,
+        activePlaybackEnded: Boolean = false,
+    ): Boolean = hasBeenPlayingFor10s || allowZeroPosition || isCompleted || activePlaybackEnded
 }

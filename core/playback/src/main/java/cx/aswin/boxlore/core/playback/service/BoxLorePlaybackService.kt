@@ -490,10 +490,22 @@ open class BoxLorePlaybackService :
                             serviceScope.launch {
                                 progressCoordinator.startPlaybackTicker(player)
                             }
+                        if (episodeId != null) {
+                            serviceScope.launch {
+                                database.listeningHistoryDao().updateLastPlayedAt(
+                                    episodeId = episodeId,
+                                    lastPlayedAt = System.currentTimeMillis(),
+                                )
+                            }
+                        }
                     } else {
                         introOutroController.stopOutroMonitor()
+                        val wasActive = progressCoordinator.activePlaybackStartTimeMs > 0
                         val progressSnapshot =
-                            progressCoordinator.captureProgressSnapshot(player)
+                            progressCoordinator.captureProgressSnapshot(
+                                player = player,
+                                activePlaybackEnded = wasActive,
+                            )
                         val shouldEndSession =
                             !player.playWhenReady ||
                                 player.playbackState == Player.STATE_ENDED ||
@@ -803,7 +815,6 @@ open class BoxLorePlaybackService :
     ) {
         val dao = database.listeningHistoryDao()
         val existing = dao.getHistoryItem(episodeId)
-        if (existing?.isCompleted == true && existing.progressMs == 0L) return
         val resolvedDurationMs =
             existing?.let { durationMs.takeIf { it > 0L } ?: it.durationMs }
                 ?: durationMs.coerceAtLeast(0L)
@@ -899,22 +910,44 @@ open class BoxLorePlaybackService :
     }
 
     private suspend fun loadHistorySeedSources(episodeId: String): List<PlaybackHistorySeedSource> {
+        val sources = mutableListOf<PlaybackHistorySeedSource>()
+
         runCatching { queueRepository.getQueueItemByEpisodeId(episodeId) }
             .getOrNull()
-            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+            ?.let { sources += it.toPlaybackHistorySeedSource() }
+
+        runCatching { database.downloadedEpisodeDao().getDownload(episodeId) }
+            .getOrNull()
+            ?.let { sources += it.toPlaybackHistorySeedSource() }
+
         runCatching { database.localEpisodeCatalogDao().getEpisode(episodeId) }
             .getOrNull()
-            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+            ?.let {
+                val podcast = runCatching { database.podcastDao().getPodcast(it.podcastId) }.getOrNull()
+                sources += it.toPlaybackHistorySeedSource(podcastName = podcast?.title, podcastImageUrl = podcast?.imageUrl)
+            }
+
         runCatching { database.rssEpisodeDao().getEpisode(episodeId) }
             .getOrNull()
-            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
+            ?.let {
+                val podcast = runCatching { database.podcastDao().getPodcast(it.podcastId) }.getOrNull()
+                sources += it.toPlaybackHistorySeedSource(podcastName = podcast?.title, podcastImageUrl = podcast?.imageUrl)
+            }
+
         runCatching { database.episodeSupplementDao().getEpisode(episodeId) }
             .getOrNull()
-            ?.let { return listOf(it.toPlaybackHistorySeedSource()) }
-        return runCatching { database.downloadedEpisodeDao().getDownload(episodeId) }
-            .getOrNull()
-            ?.let { listOf(it.toPlaybackHistorySeedSource()) }
-            .orEmpty()
+            ?.let {
+                val podcast = runCatching { database.podcastDao().getPodcast(it.podcastId) }.getOrNull()
+                sources += it.toPlaybackHistorySeedSource(podcastName = podcast?.title, podcastImageUrl = podcast?.imageUrl)
+            }
+
+        if (sources.none { !it.podcastName.isNullOrBlank() }) {
+            runCatching { podcastRepository.getEpisode(episodeId) }
+                .getOrNull()
+                ?.let { sources += it.toPlaybackHistorySeedSource() }
+        }
+
+        return sources
     }
 
     private fun telemetryHistorySeedSource(snapshot: PlaybackProgressSnapshot): PlaybackHistorySeedSource? {
@@ -1042,7 +1075,7 @@ open class BoxLorePlaybackService :
         serviceScope.launch {
             awaitTerminalPersistence()
             if (plan.persistBeforeStop && player != null) {
-                progressCoordinator.saveProgressOnce(player)
+                progressCoordinator.saveProgressOnce(player, activePlaybackEnded = true)
             }
             val latestPlayer = mediaSession?.player ?: playbackPlayer
             val latestPlan =
