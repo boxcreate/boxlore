@@ -16,53 +16,98 @@ object WidgetActionIntents {
         context: Context,
         appWidgetId: Int,
         control: WidgetControl,
-    ): PendingIntent {
+    ): PendingIntent? {
         val intent =
             Intent(context, WidgetControlReceiver::class.java).apply {
                 action = ACTION_WIDGET_CONTROL
                 putExtra(EXTRA_APP_WIDGET_ID, appWidgetId)
                 putExtra(EXTRA_CONTROL, control.name)
             }
-        return PendingIntent.getBroadcast(
-            context,
-            requestCode(appWidgetId, control),
-            intent,
-            pendingIntentFlags(),
-        )
+        return try {
+            PendingIntent.getBroadcast(
+                context,
+                requestCode(appWidgetId, control),
+                intent,
+                pendingIntentFlags(),
+            )
+        } catch (e: SecurityException) {
+            android.util.Log.w("WidgetActionIntents", "Failed to create broadcast PendingIntent", e)
+            null
+        }
     }
 
-    fun openApp(context: Context): PendingIntent {
+    fun openApp(context: Context): PendingIntent? {
         val launch =
             context.packageManager.getLaunchIntentForPackage(context.packageName)
                 ?: Intent(Intent.ACTION_VIEW, Uri.parse("boxlore://home"))
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        return PendingIntent.getActivity(
-            context,
-            OPEN_APP_REQUEST_CODE,
-            launch,
-            pendingIntentFlags(),
-        )
+        return try {
+            PendingIntent.getActivity(
+                context,
+                OPEN_APP_REQUEST_CODE,
+                launch,
+                pendingIntentFlags(),
+            )
+        } catch (e: SecurityException) {
+            android.util.Log.w("WidgetActionIntents", "Failed to create openApp PendingIntent", e)
+            null
+        }
     }
 
     fun openDeepLink(
         context: Context,
         uri: String,
         requestCode: Int,
-    ): PendingIntent {
+    ): PendingIntent? {
         val intent =
             Intent(Intent.ACTION_VIEW, Uri.parse(uri)).apply {
                 setPackage(context.packageName)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
-        return PendingIntent.getActivity(
-            context,
-            requestCode,
-            intent,
-            pendingIntentFlags(),
-        )
+        return try {
+            PendingIntent.getActivity(
+                context,
+                requestCode,
+                intent,
+                pendingIntentFlags(),
+            )
+        } catch (e: SecurityException) {
+            android.util.Log.w("WidgetActionIntents", "Failed to create openDeepLink PendingIntent", e)
+            null
+        }
     }
 
-    fun parseControl(intent: Intent): WidgetControl? = intent.getStringExtra(EXTRA_CONTROL)?.let { runCatching { WidgetControl.valueOf(it) }.getOrNull() }
+    fun cancelAll(context: Context, appWidgetId: Int) {
+        val flags =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_NO_CREATE
+            }
+        for (control in WidgetControl.entries) {
+            try {
+                val intent =
+                    Intent(context, WidgetControlReceiver::class.java).apply {
+                        action = ACTION_WIDGET_CONTROL
+                        putExtra(EXTRA_APP_WIDGET_ID, appWidgetId)
+                        putExtra(EXTRA_CONTROL, control.name)
+                    }
+                val pending =
+                    PendingIntent.getBroadcast(
+                        context,
+                        requestCode(appWidgetId, control),
+                        intent,
+                        flags,
+                    )
+                pending?.cancel()
+            } catch (e: Exception) {
+                // Ignore cancel failure
+            }
+        }
+    }
+
+    fun parseControl(intent: Intent): WidgetControl? =
+        intent.getStringExtra(EXTRA_CONTROL)?.let { runCatching { WidgetControl.valueOf(it) }.getOrNull() }
 
     private fun requestCode(
         appWidgetId: Int,

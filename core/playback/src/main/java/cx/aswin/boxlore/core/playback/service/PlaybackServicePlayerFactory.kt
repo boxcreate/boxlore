@@ -33,12 +33,21 @@ import kotlinx.coroutines.CoroutineScope
  * for [BoxLorePlaybackService.onCreate].
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-internal class PlaybackServicePlayerFactory(private val context: Context, private val serviceScope: CoroutineScope,) {
+internal open class PlaybackServicePlayerFactory(private val context: Context, private val serviceScope: CoroutineScope,) {
     data class SeekButtons(val seekBack: CommandButton, val seekForward: CommandButton,)
 
     data class CustomActions(val like: CommandButton, val addToQueue: CommandButton, val markComplete: CommandButton,)
 
     data class BuiltSession(val mediaSession: MediaLibrarySession, val seekButtons: SeekButtons, val customActions: CustomActions,)
+
+    data class SessionConfig(
+        val seekForwardMs: () -> Long,
+        val seekBackMs: () -> Long,
+        val onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
+        val onSkipNext: () -> Unit,
+        val callback: AutoBrowseLibraryCallback,
+        val seekButtons: SeekButtons,
+    )
 
     fun createExoPlayer(): ExoPlayer {
         val audioAttributes =
@@ -150,7 +159,7 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
             .build()
     }
 
-    fun buildSeekButtons(seekBackwardMs: Long, seekForwardMs: Long,): SeekButtons {
+    open fun buildSeekButtons(seekBackwardMs: Long, seekForwardMs: Long,): SeekButtons {
         val seekBack =
             CommandButton
                 .Builder()
@@ -176,7 +185,7 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
         return SeekButtons(seekBack = seekBack, seekForward = seekForward)
     }
 
-    fun buildCustomActions(): CustomActions {
+    open fun buildCustomActions(): CustomActions {
         val like =
             CommandButton
                 .Builder()
@@ -204,72 +213,84 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
         return CustomActions(like = like, addToQueue = addToQueue, markComplete = markComplete)
     }
 
-    fun createPlayerSessionActivityIntent(): PendingIntent {
-        val intent = Intent()
-        intent.component = ComponentName(context.packageName, "cx.aswin.boxlore.MainActivity")
-        intent.putExtra("EXTRA_OPEN_PLAYER", true)
-        return PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-    }
+    fun createPlayerSessionActivityIntent(
+        activityIntentCreator: (Context, Int, Intent, Int) -> PendingIntent? = { ctx, code, intent, flags ->
+            PendingIntent.getActivity(ctx, code, intent, flags)
+        },
+    ): PendingIntent? =
+        try {
+            val intent = Intent()
+            intent.component = ComponentName(context.packageName, "cx.aswin.boxlore.MainActivity")
+            intent.putExtra("EXTRA_OPEN_PLAYER", true)
+            activityIntentCreator(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        } catch (e: SecurityException) {
+            android.util.Log.w(
+                "PlaybackServicePlayerFactory",
+                "Failed to create player session activity PendingIntent due to UID limit",
+                e,
+            )
+            null
+        }
 
-    fun buildMediaLibrarySession(
+    open fun buildMediaLibrarySession(
         service: androidx.media3.session.MediaLibraryService,
         forwardingPlayer: Player,
         callback: AutoBrowseLibraryCallback,
-        pendingIntent: PendingIntent,
+        pendingIntent: PendingIntent?,
         seekButtons: SeekButtons,
         customActions: CustomActions,
+        sessionId: String? = null,
     ): MediaLibrarySession {
         val coilBitmapLoader = CoilBitmapLoader(context, serviceScope)
         val cacheBitmapLoader = CacheBitmapLoader(coilBitmapLoader)
-        return MediaLibrarySession
-            .Builder(service, forwardingPlayer, callback)
-            .setSessionActivity(pendingIntent)
-            .setCustomLayout(listOf(seekButtons.seekBack, seekButtons.seekForward, customActions.markComplete))
-            .setCommandButtonsForMediaItems(
-                listOf(customActions.like, customActions.addToQueue, customActions.markComplete),
-            ).setBitmapLoader(cacheBitmapLoader)
-            .build()
+        val builder =
+            MediaLibrarySession
+                .Builder(service, forwardingPlayer, callback)
+                .setCustomLayout(listOf(seekButtons.seekBack, seekButtons.seekForward, customActions.markComplete))
+                .setCommandButtonsForMediaItems(
+                    listOf(customActions.like, customActions.addToQueue, customActions.markComplete),
+                ).setBitmapLoader(cacheBitmapLoader)
+        if (sessionId != null) {
+            builder.setId(sessionId)
+        }
+        if (pendingIntent != null) {
+            builder.setSessionActivity(pendingIntent)
+        }
+        return builder.build()
     }
 
-    fun assembleSession(
+    open fun assembleSession(
         service: androidx.media3.session.MediaLibraryService,
         player: Player,
-        seekForwardMs: () -> Long,
-        seekBackMs: () -> Long,
-        onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
-        onSkipNext: () -> Unit,
-        callback: AutoBrowseLibraryCallback,
-        seekBackwardMs: Long,
-        seekForwardMsValue: Long,
+        config: SessionConfig,
     ): BuiltSession {
         val forwardingPlayer =
             createForwardingPlayer(
                 player = player,
-                seekForwardMs = seekForwardMs,
-                seekBackMs = seekBackMs,
-                onSeekByConfiguredIncrement = onSeekByConfiguredIncrement,
-                onSkipNext = onSkipNext,
+                seekForwardMs = config.seekForwardMs,
+                seekBackMs = config.seekBackMs,
+                onSeekByConfiguredIncrement = config.onSeekByConfiguredIncrement,
+                onSkipNext = config.onSkipNext,
             )
-        val seekButtons = buildSeekButtons(seekBackwardMs, seekForwardMsValue)
         val customActions = buildCustomActions()
         val pendingIntent = createPlayerSessionActivityIntent()
         val mediaSession =
             buildMediaLibrarySession(
                 service = service,
                 forwardingPlayer = forwardingPlayer,
-                callback = callback,
+                callback = config.callback,
                 pendingIntent = pendingIntent,
-                seekButtons = seekButtons,
+                seekButtons = config.seekButtons,
                 customActions = customActions,
             )
         return BuiltSession(
             mediaSession = mediaSession,
-            seekButtons = seekButtons,
+            seekButtons = config.seekButtons,
             customActions = customActions,
         )
     }

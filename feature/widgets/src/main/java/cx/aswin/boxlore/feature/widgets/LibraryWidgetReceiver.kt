@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import cx.aswin.boxlore.feature.widgets.actions.WidgetActionIntents
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +29,18 @@ abstract class BaseLibraryWidgetReceiver : AppWidgetProvider() {
                 snapshot = snapshot,
                 kind = kind,
             )
+        }
+    }
+
+    override fun onDeleted(
+        context: Context,
+        appWidgetIds: IntArray,
+    ) {
+        super.onDeleted(context, appWidgetIds)
+        val appContext = context.applicationContext
+        for (id in appWidgetIds) {
+            WidgetActionIntents.cancelAll(appContext, id)
+            LibraryWidgetRenderer.cancelAll(appContext, id)
         }
     }
 

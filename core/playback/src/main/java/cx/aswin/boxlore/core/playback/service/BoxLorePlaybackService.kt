@@ -51,15 +51,15 @@ open class BoxLorePlaybackService :
     override var mediaSession: MediaLibrarySession? = null
         protected set
     private var localExoPlayer: ExoPlayer? = null
-    private var playbackPlayer: Player? = null
+    internal var playbackPlayer: Player? = null
     private var pausedIdleTeardownJob: Job? = null
     private val manualCompletionPersistenceJobs = mutableSetOf<Job>()
     override lateinit var seekBackAction: androidx.media3.session.CommandButton
         protected set
     override lateinit var seekForwardAction: androidx.media3.session.CommandButton
         protected set
-    private lateinit var likeAction: androidx.media3.session.CommandButton
-    private lateinit var addToQueueAction: androidx.media3.session.CommandButton
+    internal lateinit var likeAction: androidx.media3.session.CommandButton
+    internal lateinit var addToQueueAction: androidx.media3.session.CommandButton
     override lateinit var markCompleteAction: androidx.media3.session.CommandButton
         protected set
 
@@ -165,7 +165,7 @@ open class BoxLorePlaybackService :
             markCompletionTelemetryDispatched = {
                 introOutroControllerRef!!.markCompletionTelemetryDispatched()
             },
-            playerProvider = { mediaSession?.player },
+            playerProvider = { mediaSession?.player ?: playbackPlayer },
             removeCompletedDownload = { episodeId ->
                 downloadDeps.downloadRepository.removeDownload(episodeId)
             },
@@ -206,7 +206,10 @@ open class BoxLorePlaybackService :
         )
     }
 
-    private val playerFactory by lazy { PlaybackServicePlayerFactory(this, serviceScope) }
+    internal var customPlayerFactory: PlaybackServicePlayerFactory? = null
+
+    internal fun getPlayerFactory(): PlaybackServicePlayerFactory =
+        customPlayerFactory ?: PlaybackServicePlayerFactory(this, serviceScope)
 
     private val autoCollagePrewarmer by lazy {
         AutoCollagePrewarmer(
@@ -229,8 +232,8 @@ open class BoxLorePlaybackService :
     override fun onCreate() {
         super.onCreate()
 
-        val localPlayer = playerFactory.createExoPlayer()
-        val player = playerFactory.createCastPlayer(localPlayer)
+        val localPlayer = getPlayerFactory().createExoPlayer()
+        val player = getPlayerFactory().createCastPlayer(localPlayer)
         localExoPlayer = localPlayer
         playbackPlayer = player
         serviceScope.launch {
@@ -516,29 +519,52 @@ open class BoxLorePlaybackService :
             },
         )
 
-        val built =
-            playerFactory.assembleSession(
-                service = this,
-                player = player,
-                seekForwardMs = { cachedSeekForwardMs },
-                seekBackMs = { cachedSeekBackwardMs },
-                onSeekByConfiguredIncrement = ::seekByConfiguredIncrement,
-                onSkipNext = ::handleSkipNext,
-                callback = AutoBrowseLibraryCallback(this),
-                seekBackwardMs = cachedSeekBackwardMs,
-                seekForwardMsValue = cachedSeekForwardMs,
+        initMediaSession(player)
+    }
+
+    internal fun initMediaSession(player: Player) {
+        val buttons = getPlayerFactory().buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
+        try {
+            val config =
+                PlaybackServicePlayerFactory.SessionConfig(
+                    seekForwardMs = { cachedSeekForwardMs },
+                    seekBackMs = { cachedSeekBackwardMs },
+                    onSeekByConfiguredIncrement = ::seekByConfiguredIncrement,
+                    onSkipNext = ::handleSkipNext,
+                    callback = AutoBrowseLibraryCallback(this),
+                    seekButtons = buttons,
+                )
+            val built =
+                getPlayerFactory().assembleSession(
+                    service = this,
+                    player = player,
+                    config = config,
+                )
+            seekBackAction = built.seekButtons.seekBack
+            seekForwardAction = built.seekButtons.seekForward
+            likeAction = built.customActions.like
+            addToQueueAction = built.customActions.addToQueue
+            markCompleteAction = built.customActions.markComplete
+            mediaSession = built.mediaSession
+            serviceScope.launch { autoCollagePrewarmer.prewarm() }
+        } catch (e: SecurityException) {
+            android.util.Log.e(
+                "BoxLorePlaybackService",
+                "Failed to assemble MediaLibrarySession due to system PendingIntent UID limit",
+                e,
             )
-        seekBackAction = built.seekButtons.seekBack
-        seekForwardAction = built.seekButtons.seekForward
-        likeAction = built.customActions.like
-        addToQueueAction = built.customActions.addToQueue
-        markCompleteAction = built.customActions.markComplete
-        mediaSession = built.mediaSession
-        serviceScope.launch { autoCollagePrewarmer.prewarm() }
+            val customActions = getPlayerFactory().buildCustomActions()
+            seekBackAction = buttons.seekBack
+            seekForwardAction = buttons.seekForward
+            likeAction = customActions.like
+            addToQueueAction = customActions.addToQueue
+            markCompleteAction = customActions.markComplete
+            mediaSession = null
+        }
     }
 
     private fun rebuildSeekCommandButtons() {
-        val buttons = playerFactory.buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
+        val buttons = getPlayerFactory().buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
         seekBackAction = buttons.seekBack
         seekForwardAction = buttons.seekForward
     }
@@ -967,25 +993,33 @@ open class BoxLorePlaybackService :
         playWhenReady = player.playWhenReady,
     )
 
+    internal fun releasePlayers() {
+        if (mediaSession != null) {
+            mediaSession?.run {
+                player.release()
+                release()
+                mediaSession = null
+            }
+        } else {
+            playbackPlayer?.release()
+        }
+        playbackPlayer = null
+        localExoPlayer = null
+    }
+
     override fun onDestroy() {
         pausedIdleTeardownJob?.cancel()
         pausedIdleTeardownJob = null
         telemetrySession.end(forceCompleted = false)
         introOutroController.reset(null, 0L)
         clearEndOfEpisodeSleep()
-        mediaSession?.run {
-            player.release()
-            release()
-            mediaSession = null
-        }
-        playbackPlayer = null
-        localExoPlayer = null
+        releasePlayers()
         serviceScope.cancel()
         super.onDestroy()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player
+        val player = mediaSession?.player ?: playbackPlayer
         val plan =
             PlaybackTaskRemovalPolicy.plan(
                 hasPlayer = player != null,
@@ -1010,7 +1044,7 @@ open class BoxLorePlaybackService :
             if (plan.persistBeforeStop && player != null) {
                 progressCoordinator.saveProgressOnce(player)
             }
-            val latestPlayer = mediaSession?.player
+            val latestPlayer = mediaSession?.player ?: playbackPlayer
             val latestPlan =
                 PlaybackTaskRemovalPolicy.plan(
                     hasPlayer = latestPlayer != null,

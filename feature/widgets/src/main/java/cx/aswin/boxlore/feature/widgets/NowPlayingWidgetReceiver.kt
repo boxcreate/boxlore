@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import cx.aswin.boxlore.feature.widgets.actions.WidgetActionIntents
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -53,6 +54,17 @@ abstract class BaseNowPlayingWidgetReceiver : AppWidgetProvider() {
                 options = newOptions,
                 variant = variant,
             )
+        }
+    }
+
+    override fun onDeleted(
+        context: Context,
+        appWidgetIds: IntArray,
+    ) {
+        super.onDeleted(context, appWidgetIds)
+        val appContext = context.applicationContext
+        for (id in appWidgetIds) {
+            WidgetActionIntents.cancelAll(appContext, id)
         }
     }
 

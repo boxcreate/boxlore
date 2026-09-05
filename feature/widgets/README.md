@@ -21,6 +21,7 @@ Does **not** construct `PlaybackRepository` or talk to Media3 / Room directly �
 - `NowPlayingWidgetReceiver`, `NowPlayingBarWidgetReceiver`, `PlaybackControlsWidgetReceiver`, `PlaybackNextControlsWidgetReceiver` — picker-visible playback providers.
 - `SubscriptionsWidgetReceiver`, `NewEpisodesWidgetReceiver` — picker-visible library list providers.
 - `WidgetControlReceiver` — one explicit, non-exported action endpoint shared by playback providers.
+- `WidgetActionIntents` — builds broadcast, open-app, and deep-link PendingIntents with `SecurityException` guards; `cancelAll(context, appWidgetId)` cancels active control PendingIntents on widget deletion (`onDeleted` in `BaseNowPlayingWidgetReceiver` and `BaseLibraryWidgetReceiver`), alongside `LibraryWidgetRenderer.cancelAll(context, appWidgetId)` for library widgets, to prevent `system_server` UID quota exhaustion.
 - `NowPlayingWidgetDependencies` + `configureNowPlayingWidget(...)` / `WidgetPlaybackSource`.
 - `LibraryWidgetDependencies` + `configureLibraryWidgets(...)` / `WidgetLibrarySource`.
 - `NowPlayingWidgetSnapshotStore` — SharedPreferences file `boxlore_now_playing_widget`.
@@ -81,7 +82,7 @@ The playback widget families are an independent RemoteViews implementation of th
 
 ## Testing notes
 
-Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, and widget chrome (App theme vs System).
+Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, widget chrome (App theme vs System), and PendingIntent generation/cancellation via `WidgetActionIntentsTest`.
 
 ```bash
 ./gradlew :feature:widgets:testDebugUnitTest
