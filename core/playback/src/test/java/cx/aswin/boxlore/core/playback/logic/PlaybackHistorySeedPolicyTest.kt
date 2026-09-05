@@ -71,7 +71,7 @@ class PlaybackHistorySeedPolicyTest {
                 ),
                 sources =
                 listOf(
-                    PlaybackHistorySeedSource(podcastName = "  "),
+                    PlaybackHistorySeedSource(podcastName = "  ", podcastId = " "),
                 ),
                 podcast = null,
                 telemetry =
@@ -94,7 +94,13 @@ class PlaybackHistorySeedPolicyTest {
                 snapshot(episodeTitle = "Test Episode").copy(
                     podcastName = "   ",
                 ),
-                sources = emptyList(),
+                sources =
+                listOf(
+                    PlaybackHistorySeedSource(
+                        podcastName = "   ",
+                        podcastImageUrl = " ",
+                    ),
+                ),
                 podcast =
                 PlaybackHistorySeedSource(
                     podcastName = "Entity Show",

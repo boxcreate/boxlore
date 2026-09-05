@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val UNKNOWN_PODCAST = "Unknown Podcast"
+
 /**
  * Media3 [Player.Listener] implementation extracted from PlaybackRepository.initializeMediaController.
  */
@@ -310,7 +312,7 @@ internal class PlaybackMediaControllerBridge(
                             metadata.albumTitle?.toString()?.takeIf(String::isNotBlank)
                                 ?: metadata.artist?.toString()?.takeIf(String::isNotBlank)
                                 ?: metadata.subtitle?.toString()?.takeIf(String::isNotBlank)
-                                ?: "Unknown Podcast"
+                                ?: UNKNOWN_PODCAST
                         Episode(
                             id = episodeId,
                             title = title,
@@ -433,11 +435,11 @@ internal class PlaybackMediaControllerBridge(
                             )
                         }
 
-                    if (dbPodcast != null && dbPodcast.title != "Unknown Podcast") {
+                    if (dbPodcast != null && dbPodcast.title != UNKNOWN_PODCAST) {
                         dbPodcast
                     } else if (existingPod != null &&
                         existingPod.id == newEpisode.podcastId &&
-                        existingPod.title != "Unknown Podcast"
+                        existingPod.title != UNKNOWN_PODCAST
                     ) {
                         // Preserve the fully-populated existing podcast object
                         existingPod
@@ -445,8 +447,8 @@ internal class PlaybackMediaControllerBridge(
                         cx.aswin.boxlore.core.model.Podcast(
                             id = newEpisode.podcastId!!,
                             title =
-                                newEpisode.podcastTitle?.takeIf { !it.isNullOrBlank() && it != "Unknown Podcast" }
-                                    ?: "Unknown Podcast",
+                                newEpisode.podcastTitle?.takeIf { !it.isNullOrBlank() && it != UNKNOWN_PODCAST }
+                                    ?: UNKNOWN_PODCAST,
                             artist = newEpisode.podcastArtist?.takeIf { it.isNotEmpty() } ?: existingPod?.artist ?: "",
                             imageUrl =
                                 newEpisode.podcastImageUrl?.takeIf {
