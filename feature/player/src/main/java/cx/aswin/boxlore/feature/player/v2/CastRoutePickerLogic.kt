@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.player.v2
 
 import android.content.Context
+import androidx.compose.ui.graphics.Color
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastMediaControlIntent
@@ -58,3 +59,14 @@ internal fun isCastConnectionComplete(
     isSelected: Boolean,
     hasActiveCastSession: Boolean,
 ): Boolean = pendingRouteId == routeId && isSelected && hasActiveCastSession
+
+internal fun resolveCastButtonTint(
+    enabled: Boolean,
+    isCasting: Boolean,
+    tint: Color,
+    activeTint: Color,
+): Color = when {
+    !enabled -> tint.copy(alpha = 0.38f)
+    isCasting -> activeTint
+    else -> tint
+}
