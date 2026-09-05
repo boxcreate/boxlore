@@ -523,18 +523,22 @@ open class BoxLorePlaybackService :
     }
 
     internal fun initMediaSession(player: Player) {
+        val buttons = getPlayerFactory().buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
         try {
-            val built =
-                getPlayerFactory().assembleSession(
-                    service = this,
-                    player = player,
+            val config =
+                PlaybackServicePlayerFactory.SessionConfig(
                     seekForwardMs = { cachedSeekForwardMs },
                     seekBackMs = { cachedSeekBackwardMs },
                     onSeekByConfiguredIncrement = ::seekByConfiguredIncrement,
                     onSkipNext = ::handleSkipNext,
                     callback = AutoBrowseLibraryCallback(this),
-                    seekBackwardMs = cachedSeekBackwardMs,
-                    seekForwardMsValue = cachedSeekForwardMs,
+                    seekButtons = buttons,
+                )
+            val built =
+                getPlayerFactory().assembleSession(
+                    service = this,
+                    player = player,
+                    config = config,
                 )
             seekBackAction = built.seekButtons.seekBack
             seekForwardAction = built.seekButtons.seekForward
@@ -549,7 +553,6 @@ open class BoxLorePlaybackService :
                 "Failed to assemble MediaLibrarySession due to system PendingIntent UID limit",
                 e,
             )
-            val buttons = getPlayerFactory().buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
             val customActions = getPlayerFactory().buildCustomActions()
             seekBackAction = buttons.seekBack
             seekForwardAction = buttons.seekForward

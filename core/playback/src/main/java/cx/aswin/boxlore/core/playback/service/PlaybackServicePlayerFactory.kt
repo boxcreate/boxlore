@@ -40,6 +40,15 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
 
     data class BuiltSession(val mediaSession: MediaLibrarySession, val seekButtons: SeekButtons, val customActions: CustomActions,)
 
+    data class SessionConfig(
+        val seekForwardMs: () -> Long,
+        val seekBackMs: () -> Long,
+        val onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
+        val onSkipNext: () -> Unit,
+        val callback: AutoBrowseLibraryCallback,
+        val seekButtons: SeekButtons,
+    )
+
     fun createExoPlayer(): ExoPlayer {
         val audioAttributes =
             AudioAttributes
@@ -258,37 +267,30 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
     open fun assembleSession(
         service: androidx.media3.session.MediaLibraryService,
         player: Player,
-        seekForwardMs: () -> Long,
-        seekBackMs: () -> Long,
-        onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
-        onSkipNext: () -> Unit,
-        callback: AutoBrowseLibraryCallback,
-        seekBackwardMs: Long,
-        seekForwardMsValue: Long,
+        config: SessionConfig,
     ): BuiltSession {
         val forwardingPlayer =
             createForwardingPlayer(
                 player = player,
-                seekForwardMs = seekForwardMs,
-                seekBackMs = seekBackMs,
-                onSeekByConfiguredIncrement = onSeekByConfiguredIncrement,
-                onSkipNext = onSkipNext,
+                seekForwardMs = config.seekForwardMs,
+                seekBackMs = config.seekBackMs,
+                onSeekByConfiguredIncrement = config.onSeekByConfiguredIncrement,
+                onSkipNext = config.onSkipNext,
             )
-        val seekButtons = buildSeekButtons(seekBackwardMs, seekForwardMsValue)
         val customActions = buildCustomActions()
         val pendingIntent = createPlayerSessionActivityIntent()
         val mediaSession =
             buildMediaLibrarySession(
                 service = service,
                 forwardingPlayer = forwardingPlayer,
-                callback = callback,
+                callback = config.callback,
                 pendingIntent = pendingIntent,
-                seekButtons = seekButtons,
+                seekButtons = config.seekButtons,
                 customActions = customActions,
             )
         return BuiltSession(
             mediaSession = mediaSession,
-            seekButtons = seekButtons,
+            seekButtons = config.seekButtons,
             customActions = customActions,
         )
     }

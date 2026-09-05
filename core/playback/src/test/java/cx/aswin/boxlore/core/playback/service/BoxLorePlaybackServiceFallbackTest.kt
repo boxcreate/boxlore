@@ -8,7 +8,6 @@ import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.test.core.app.ApplicationProvider
-import cx.aswin.boxlore.core.playback.service.auto.AutoBrowseLibraryCallback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertNotNull
@@ -61,13 +60,7 @@ class BoxLorePlaybackServiceFallbackTest {
                 override fun assembleSession(
                     service: MediaLibraryService,
                     player: Player,
-                    seekForwardMs: () -> Long,
-                    seekBackMs: () -> Long,
-                    onSeekByConfiguredIncrement: (Player, Long, String) -> Unit,
-                    onSkipNext: () -> Unit,
-                    callback: AutoBrowseLibraryCallback,
-                    seekBackwardMs: Long,
-                    seekForwardMsValue: Long,
+                    config: SessionConfig,
                 ): BuiltSession = throw SecurityException("Too many PendingIntent created for uid")
 
                 override fun buildSeekButtons(seekBackwardMs: Long, seekForwardMs: Long): SeekButtons =
