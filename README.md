@@ -82,6 +82,10 @@ The app uses your listening activity—such as what you play, skip, and like—t
 <li>Resolved an issue where receiving many episode notifications over time could cause audio playback to fail to start. <a href="https://github.com/boxcreate/boxlore/pull/1034"><img src="https://img.shields.io/badge/PR-1034-6750A4?style=flat-square" alt="PR #1034" height="18"/></a></li>
 <li>Pulling down to refresh on a podcast's page now checks for newly released episodes without resetting your notification or download settings. <a href="https://github.com/boxcreate/boxlore/pull/1022"><img src="https://img.shields.io/badge/PR-1022-6750A4?style=flat-square" alt="PR #1022" height="18"/></a></li>
 </ul>
+<b>• Medium:</b>
+<ul align="left">
+<li>Fixed the Cast icon in the full-screen player so it adapts to light and dark themes and matches the Share button. <a href="https://github.com/boxcreate/boxlore/pull/1039"><img src="https://img.shields.io/badge/PR-1039-6750A4?style=flat-square" alt="PR #1039" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 

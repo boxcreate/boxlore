@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed latent `notificationsEnabled` and `autoDownloadEnabled` mapping in RSS repository entity conversion. ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Prevent SecurityException crashes caused by system PendingIntent UID quota exhaustion in FCM notifications and Media3 playback session setup (#1025). ([#1034](https://github.com/boxcreate/boxlore/pull/1034)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Preserved show name metadata during Android Auto playback and resolved session restore reversions when replaying completed episodes (#1035). ([#1036](https://github.com/boxcreate/boxlore/pull/1036)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Adapted the Cast button in the expanded player sheet to respect dark and light themes and match the Share button theming (#1037). ([#1039](https://github.com/boxcreate/boxlore/pull/1039)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019
 ### Critical
@@ -59,6 +60,11 @@ readme-copy:end pr=1034 -->
 ### High
 - Fixed an issue where episodes played from Android Auto showed missing show names and could cause playback to resume an older session on restart.
 readme-copy:end pr=1036 -->
+
+<!-- readme-copy:start pr=1039
+### Medium
+- Fixed the Cast icon in the full-screen player so it adapts to light and dark themes and matches the Share button.
+readme-copy:end pr=1039 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added
