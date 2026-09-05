@@ -13,11 +13,9 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import cx.aswin.boxlore.BoxLoreApplication
-import cx.aswin.boxlore.MainActivity
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
-import cx.aswin.boxlore.navigation.PushTargetRouteAllowlist
 import cx.aswin.boxlore.ui.announcement.shouldSuppressWhatsNewOnPlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,97 +51,145 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         super.onMessageReceived(message)
 
         val data = message.data
-        if (data.isNotEmpty()) {
-            val type = data["type"] ?: "push"
-            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackNotificationReceived(
-                notificationType = type,
-                podcastId = FcmPayloadParser.podcastId(data),
-                episodeId = FcmPayloadParser.episodeId(data),
+        if (data.isEmpty()) return
+
+        val type = data["type"] ?: "push"
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackNotificationReceived(
+            notificationType = type,
+            podcastId = FcmPayloadParser.podcastId(data),
+            episodeId = FcmPayloadParser.episodeId(data),
+        )
+        if (type == "new_episode") {
+            handleNewEpisodeMessage(data)
+            return
+        }
+
+        val parsed = FcmPayloadParser.parse(data)
+
+        if (parsed.type == "in-app" || parsed.type == "both") {
+            saveInAppAnnouncement(
+                parsed.title,
+                parsed.body,
+                parsed.route,
+                parsed.imageUrl,
+                parsed.actionLabel,
+                parsed.showActionInApp,
+                parsed.category,
             )
-            if (type == "new_episode") {
-                handleNewEpisodeMessage(data)
-                return
-            }
+        }
 
-            val parsed = FcmPayloadParser.parse(data)
-
-            if (parsed.type == "in-app" || parsed.type == "both") {
-                saveInAppAnnouncement(
-                    parsed.title,
-                    parsed.body,
-                    parsed.route,
-                    parsed.imageUrl,
-                    parsed.actionLabel,
-                    parsed.showActionInApp,
-                    parsed.category,
-                )
-            }
-
-            if (parsed.type == "push" || parsed.type == "both") {
-                if (applicationContext.shouldSuppressWhatsNewOnPlay(parsed.category)) {
-                    android.util.Log.d(
-                        "BoxLoreFcmService",
-                        "Skipping Whats New push on Play Store install (category=${parsed.category})",
-                    )
-                } else {
-                    // Prefer outer `type` (defaults to "push") over parser's "both" default.
-                    showPushNotification(parsed.copy(type = type))
-                }
-            }
+        if (parsed.type == "push" || parsed.type == "both") {
+            handlePushAnnouncement(parsed, type)
         }
     }
 
+    private fun handlePushAnnouncement(parsed: ParsedFcmNotification, type: String) {
+        if (applicationContext.shouldSuppressWhatsNewOnPlay(parsed.category)) {
+            android.util.Log.d(
+                "BoxLoreFcmService",
+                "Skipping Whats New push on Play Store install (category=${parsed.category})",
+            )
+            return
+        }
+        try {
+            showPushNotification(parsed.copy(type = type))
+        } catch (e: Exception) {
+            android.util.Log.e("BoxLoreFcmService", "Failed to show push notification", e)
+        }
+    }
+
+    private data class NewEpisodeDetails(
+        val episodeId: String?,
+        val podcastTitle: String,
+        val episodeTitle: String,
+        val imageUrl: String?,
+        val durationMinutes: Int,
+        val route: String,
+    )
+
+    private fun resolveNewEpisodeDetails(
+        podcastId: String,
+        data: Map<String, String>,
+        local: cx.aswin.boxlore.core.model.Episode?,
+    ): NewEpisodeDetails {
+        val episodeId =
+            NewEpisodeFcmLogic.usableEpisodeId(local?.id)
+                ?: NewEpisodeFcmLogic.usableEpisodeId(FcmPayloadParser.episodeId(data))
+        val podcastTitle =
+            data["podcastTitle"]?.takeIf { it.isNotBlank() }
+                ?: data["podcast_title"]?.takeIf { it.isNotBlank() }
+                ?: local?.podcastTitle?.takeIf { it.isNotBlank() }
+                ?: "New Release"
+        val episodeTitle =
+            local?.title?.takeIf { it.isNotBlank() }
+                ?: data["episodeTitle"]?.takeIf { it.isNotBlank() }
+                ?: data["episode_title"]?.takeIf { it.isNotBlank() }
+                ?: "New Episode"
+        val imageUrl = local?.imageUrl ?: data["image"] ?: data["imageUrl"]
+        val duration =
+            NewEpisodeFcmLogic.durationMinutes(local?.duration, data["duration"])
+        val route = NewEpisodeFcmLogic.route(podcastId, episodeId, podcastTitle)
+        return NewEpisodeDetails(
+            episodeId = episodeId,
+            podcastTitle = podcastTitle,
+            episodeTitle = episodeTitle,
+            imageUrl = imageUrl,
+            durationMinutes = duration,
+            route = route,
+        )
+    }
+
     private fun handleNewEpisodeMessage(data: Map<String, String>) {
-        val podcastId = data["podcastId"] ?: return
+        val podcastId = FcmPayloadParser.podcastId(data) ?: return
         CoroutineScope(Dispatchers.IO).launch {
             val deps = SharedAppDependenciesHolder.instance
             val local =
                 if (deps != null) {
-                    NewEpisodePushHydration.resolveLocalEpisode(
-                        podcastId = podcastId,
-                        payloadFeedUrl = FcmPayloadParser.feedUrl(data),
-                        payloadEnclosureUrl = FcmPayloadParser.enclosureUrl(data),
-                        payloadGuid = FcmPayloadParser.guid(data),
-                        sources =
-                        NewEpisodePushHydration.Sources(
-                            subscriptionRepository = deps.subscriptionRepository,
-                            episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
-                            localEpisodeCatalog = deps.podcastRepository.localEpisodeCatalog,
-                            loadPiBaseline =
-                            NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
-                                deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)
-                            },
-                        ),
-                    )
+                    runCatching {
+                        NewEpisodePushHydration.resolveLocalEpisode(
+                            podcastId = podcastId,
+                            payloadFeedUrl = FcmPayloadParser.feedUrl(data),
+                            payloadEnclosureUrl = FcmPayloadParser.enclosureUrl(data),
+                            payloadGuid = FcmPayloadParser.guid(data),
+                            sources =
+                            NewEpisodePushHydration.Sources(
+                                subscriptionRepository = deps.subscriptionRepository,
+                                episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
+                                localEpisodeCatalog = deps.podcastRepository.localEpisodeCatalog,
+                                loadPiBaseline =
+                                NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
+                                    deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)
+                                },
+                            ),
+                        )
+                    }.getOrNull()
                 } else {
                     null
                 }
-            val episodeId =
-                NewEpisodeFcmLogic.usableEpisodeId(local?.id)
-                    ?: NewEpisodeFcmLogic.usableEpisodeId(data["episodeId"])
-            val podcastTitle =
-                data["podcastTitle"]?.takeIf { it.isNotBlank() }
-                    ?: local?.podcastTitle?.takeIf { it.isNotBlank() }
-                    ?: "New Release"
-            val episodeTitle =
-                local?.title?.takeIf { it.isNotBlank() }
-                    ?: data["episodeTitle"]?.takeIf { it.isNotBlank() }
-                    ?: "New Episode"
-            val imageUrl = local?.imageUrl ?: data["image"] ?: data["imageUrl"]
-            val duration =
-                NewEpisodeFcmLogic.durationMinutes(local?.duration, data["duration"])
-            val route = NewEpisodeFcmLogic.route(podcastId, episodeId, podcastTitle)
-            showNewEpisodeNotification(
-                podcastId = podcastId,
-                episodeId = episodeId,
-                podcastTitle = podcastTitle,
-                episodeTitle = episodeTitle,
-                imageUrl = imageUrl,
-                durationMinutes = duration,
-                route = route,
-            )
-            if (episodeId != null) {
-                triggerAutoDownload(podcastId, episodeId)
+            val details = resolveNewEpisodeDetails(podcastId, data, local)
+            if (details.episodeId != null) {
+                try {
+                    triggerAutoDownload(podcastId, details.episodeId)
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.e("BoxLoreFcmService", "Failed to trigger auto download", e)
+                }
+            }
+            try {
+                showNewEpisodeNotification(
+                    podcastId = podcastId,
+                    episodeId = details.episodeId,
+                    podcastTitle = details.podcastTitle,
+                    episodeTitle = details.episodeTitle,
+                    imageUrl = details.imageUrl,
+                    durationMinutes = details.durationMinutes,
+                    route = details.route,
+                )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("BoxLoreFcmService", "Failed to show new episode notification", e)
             }
         }
     }
@@ -180,24 +226,35 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        val slot = NewEpisodeFcmLogic.episodeSlot(podcastId)
+        val notificationId = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + slot
+        val requestCode = NewEpisodeFcmLogic.EPISODE_REQUEST_CODE_BASE + slot
+
         val intent =
-            Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
-                setPackage(packageName)
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                putExtra("from_push", true)
-                putExtra("notification_type", "new_episode")
-                putExtra("podcast_id", podcastId)
-                episodeId?.let { putExtra("episode_id", it) }
-                putExtra("target_route", route)
-            }
+            NewEpisodeFcmLogic.createNormalizedPushIntent(
+                context = this,
+                targetRoute = route,
+                notificationType = "new_episode",
+                podcastId = podcastId,
+                episodeId = episodeId,
+            )
 
         val pendingIntent =
-            PendingIntent.getActivity(
-                this,
-                podcastId.hashCode(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+            try {
+                PendingIntent.getActivity(
+                    this,
+                    requestCode,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            } catch (e: SecurityException) {
+                android.util.Log.w(
+                    "BoxLoreFcmService",
+                    "Failed to create PendingIntent for episode notification due to UID quota exhaustion",
+                    e,
+                )
+                null
+            }
 
         val bodyText =
             if (durationMinutes > 0) {
@@ -214,8 +271,11 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                 .setContentTitle("New Episode • $podcastTitle")
                 .setContentText(bodyText)
                 .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
                 .setSound(soundUri)
+
+        if (pendingIntent != null) {
+            notificationBuilder.setContentIntent(pendingIntent)
+        }
 
         if (!imageUrl.isNullOrBlank()) {
             try {
@@ -239,7 +299,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             }
         }
 
-        notificationManager.notify(podcastId.hashCode(), notificationBuilder.build())
+        notificationManager.notify(notificationId, notificationBuilder.build())
     }
 
     private suspend fun triggerAutoDownload(podcastId: String, episodeId: String) {
@@ -332,6 +392,12 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        val announcementKey = notification.podcastId ?: notification.route ?: notification.title
+        val slot = NewEpisodeFcmLogic.announcementSlot(announcementKey)
+        val notificationId = NewEpisodeFcmLogic.ANNOUNCEMENT_NOTIFICATION_ID_BASE + slot
+        val contentRequestCode = NewEpisodeFcmLogic.ANNOUNCEMENT_REQUEST_CODE_BASE + slot
+        val actionRequestCode = NewEpisodeFcmLogic.ANNOUNCEMENT_ACTION_REQUEST_CODE_BASE + slot
+
         val intent =
             createPushIntent(
                 notification.route,
@@ -340,12 +406,21 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                 notification.episodeId,
             )
         val pendingIntent =
-            PendingIntent.getActivity(
-                this,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+            try {
+                PendingIntent.getActivity(
+                    this,
+                    contentRequestCode,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            } catch (e: SecurityException) {
+                android.util.Log.w(
+                    "BoxLoreFcmService",
+                    "Failed to create PendingIntent for push announcement due to UID quota exhaustion",
+                    e,
+                )
+                null
+            }
 
         val notificationBuilder =
             NotificationCompat
@@ -355,7 +430,10 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                 .setContentTitle(notification.title)
                 .setContentText(notification.body)
                 .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
+
+        if (pendingIntent != null) {
+            notificationBuilder.setContentIntent(pendingIntent)
+        }
 
         if (config.soundUri != null) {
             notificationBuilder.setSound(config.soundUri)
@@ -371,21 +449,32 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                     notification.episodeId,
                 )
             val actionPendingIntent =
-                PendingIntent.getActivity(
-                    this,
-                    route.hashCode(),
-                    actionIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                try {
+                    PendingIntent.getActivity(
+                        this,
+                        actionRequestCode,
+                        actionIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    )
+                } catch (e: SecurityException) {
+                    android.util.Log.w(
+                        "BoxLoreFcmService",
+                        "Failed to create action PendingIntent for push announcement due to UID quota exhaustion",
+                        e,
+                    )
+                    null
+                }
+            if (actionPendingIntent != null) {
+                notificationBuilder.addAction(
+                    cx.aswin.boxlore.R.drawable.ic_notification_custom,
+                    notification.actionLabel,
+                    actionPendingIntent,
                 )
-            notificationBuilder.addAction(
-                cx.aswin.boxlore.R.drawable.ic_notification_custom,
-                notification.actionLabel,
-                actionPendingIntent,
-            )
+            }
         }
 
         loadPushImage(notificationBuilder, notification.imageUrl)
-        notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
+        notificationManager.notify(notificationId, notificationBuilder.build())
     }
 
     private data class PushChannelConfig(val id: String, val name: String, val soundUri: Uri?, val importance: Int,)
@@ -419,31 +508,14 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         notificationType: String = "push",
         podcastId: String? = null,
         episodeId: String? = null,
-    ): Intent {
-        val isUriRoute = route != null && PushTargetRouteAllowlist.isAppOrWebUri(route)
-        return if (isUriRoute) {
-            Intent(Intent.ACTION_VIEW, Uri.parse(route)).apply {
-                setClass(this@BoxLoreFcmService, MainActivity::class.java)
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra("from_push", true)
-                putExtra("notification_type", notificationType)
-                podcastId?.let { putExtra("podcast_id", it) }
-                episodeId?.let { putExtra("episode_id", it) }
-                putExtra("target_route", route)
-            }
-        } else {
-            Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra("from_push", true)
-                putExtra("notification_type", notificationType)
-                podcastId?.let { putExtra("podcast_id", it) }
-                episodeId?.let { putExtra("episode_id", it) }
-                if (route != null && PushTargetRouteAllowlist.isAllowed(route)) {
-                    putExtra("target_route", route)
-                }
-            }
-        }
-    }
+    ): Intent =
+        NewEpisodeFcmLogic.createNormalizedPushIntent(
+            context = this,
+            targetRoute = route,
+            notificationType = notificationType,
+            podcastId = podcastId,
+            episodeId = episodeId,
+        )
 
     private fun loadPushImage(builder: NotificationCompat.Builder, imageUrl: String?,) {
         if (imageUrl.isNullOrBlank()) return

@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
@@ -84,10 +85,13 @@ object LibraryWidgetRenderer {
             LibraryWidgetRemoteViewsService.adapterIntent(context, appWidgetId, kind),
         )
         views.setEmptyView(R.id.widget_list_view, R.id.widget_empty_container)
-        views.setPendingIntentTemplate(
-            R.id.widget_list_view,
-            collectionClickTemplate(context, appWidgetId),
-        )
+        val template = collectionClickTemplate(context, appWidgetId)
+        if (template != null) {
+            views.setPendingIntentTemplate(
+                R.id.widget_list_view,
+                template,
+            )
+        }
 
         if (count == 0) {
             bindEmpty(
@@ -162,7 +166,7 @@ object LibraryWidgetRenderer {
     private fun collectionClickTemplate(
         context: Context,
         appWidgetId: Int,
-    ): PendingIntent {
+    ): PendingIntent? {
         val intent =
             Intent(Intent.ACTION_VIEW).apply {
                 setPackage(context.packageName)
@@ -175,12 +179,21 @@ object LibraryWidgetRenderer {
                 } else {
                     0
                 }
-        return PendingIntent.getActivity(
-            context,
-            requestCode(appWidgetId, TEMPLATE_REQUEST),
-            intent,
-            flags,
-        )
+        return try {
+            PendingIntent.getActivity(
+                context,
+                requestCode(appWidgetId, TEMPLATE_REQUEST),
+                intent,
+                flags,
+            )
+        } catch (e: SecurityException) {
+            android.util.Log.w(
+                "LibraryWidgetRenderer",
+                "Failed to create collectionClickTemplate PendingIntent",
+                e,
+            )
+            null
+        }
     }
 
     private fun bindEmpty(
@@ -242,6 +255,62 @@ object LibraryWidgetRenderer {
             WidgetPalette.onSurface,
             chrome,
         )
+    }
+
+    fun cancelAll(context: Context, appWidgetId: Int) {
+        val flags =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_NO_CREATE
+            }
+        try {
+            val templateIntent =
+                Intent(Intent.ACTION_VIEW).apply {
+                    setPackage(context.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+            PendingIntent.getActivity(
+                context,
+                requestCode(appWidgetId, TEMPLATE_REQUEST),
+                templateIntent,
+                flags,
+            )?.cancel()
+        } catch (e: Exception) {
+            // Ignore cancel failure
+        }
+
+        val uris = listOf(SUBSCRIPTIONS_TAB_URI, NEW_EPISODES_TAB_URI)
+        val slots = listOf(HEADER_REQUEST, ROOT_REQUEST, FOOTER_REQUEST, EMPTY_REQUEST)
+        for (uri in uris) {
+            for (slot in slots) {
+                cancelTabIntent(context, appWidgetId, uri, slot, flags)
+            }
+        }
+    }
+
+    private fun cancelTabIntent(
+        context: Context,
+        appWidgetId: Int,
+        uri: String,
+        slot: Int,
+        flags: Int,
+    ) {
+        try {
+            val intent =
+                Intent(Intent.ACTION_VIEW, Uri.parse(uri)).apply {
+                    setPackage(context.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+            PendingIntent.getActivity(
+                context,
+                requestCode(appWidgetId, slot),
+                intent,
+                flags,
+            )?.cancel()
+        } catch (e: Exception) {
+            // Ignore cancel failure
+        }
     }
 
     private fun requestCode(

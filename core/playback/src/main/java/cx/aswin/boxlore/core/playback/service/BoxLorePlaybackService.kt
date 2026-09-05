@@ -165,7 +165,7 @@ open class BoxLorePlaybackService :
             markCompletionTelemetryDispatched = {
                 introOutroControllerRef!!.markCompletionTelemetryDispatched()
             },
-            playerProvider = { mediaSession?.player },
+            playerProvider = { mediaSession?.player ?: playbackPlayer },
             removeCompletedDownload = { episodeId ->
                 downloadDeps.downloadRepository.removeDownload(episodeId)
             },
@@ -516,25 +516,45 @@ open class BoxLorePlaybackService :
             },
         )
 
-        val built =
-            playerFactory.assembleSession(
-                service = this,
-                player = player,
-                seekForwardMs = { cachedSeekForwardMs },
-                seekBackMs = { cachedSeekBackwardMs },
-                onSeekByConfiguredIncrement = ::seekByConfiguredIncrement,
-                onSkipNext = ::handleSkipNext,
-                callback = AutoBrowseLibraryCallback(this),
-                seekBackwardMs = cachedSeekBackwardMs,
-                seekForwardMsValue = cachedSeekForwardMs,
+        initMediaSession(player)
+    }
+
+    private fun initMediaSession(player: Player) {
+        try {
+            val built =
+                playerFactory.assembleSession(
+                    service = this,
+                    player = player,
+                    seekForwardMs = { cachedSeekForwardMs },
+                    seekBackMs = { cachedSeekBackwardMs },
+                    onSeekByConfiguredIncrement = ::seekByConfiguredIncrement,
+                    onSkipNext = ::handleSkipNext,
+                    callback = AutoBrowseLibraryCallback(this),
+                    seekBackwardMs = cachedSeekBackwardMs,
+                    seekForwardMsValue = cachedSeekForwardMs,
+                )
+            seekBackAction = built.seekButtons.seekBack
+            seekForwardAction = built.seekButtons.seekForward
+            likeAction = built.customActions.like
+            addToQueueAction = built.customActions.addToQueue
+            markCompleteAction = built.customActions.markComplete
+            mediaSession = built.mediaSession
+            serviceScope.launch { autoCollagePrewarmer.prewarm() }
+        } catch (e: SecurityException) {
+            android.util.Log.e(
+                "BoxLorePlaybackService",
+                "Failed to assemble MediaLibrarySession due to system PendingIntent UID limit",
+                e,
             )
-        seekBackAction = built.seekButtons.seekBack
-        seekForwardAction = built.seekButtons.seekForward
-        likeAction = built.customActions.like
-        addToQueueAction = built.customActions.addToQueue
-        markCompleteAction = built.customActions.markComplete
-        mediaSession = built.mediaSession
-        serviceScope.launch { autoCollagePrewarmer.prewarm() }
+            val buttons = playerFactory.buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
+            val customActions = playerFactory.buildCustomActions()
+            seekBackAction = buttons.seekBack
+            seekForwardAction = buttons.seekForward
+            likeAction = customActions.like
+            addToQueueAction = customActions.addToQueue
+            markCompleteAction = customActions.markComplete
+            mediaSession = null
+        }
     }
 
     private fun rebuildSeekCommandButtons() {
@@ -973,10 +993,15 @@ open class BoxLorePlaybackService :
         telemetrySession.end(forceCompleted = false)
         introOutroController.reset(null, 0L)
         clearEndOfEpisodeSleep()
-        mediaSession?.run {
-            player.release()
-            release()
-            mediaSession = null
+        if (mediaSession != null) {
+            mediaSession?.run {
+                player.release()
+                release()
+                mediaSession = null
+            }
+        } else {
+            playbackPlayer?.release()
+            localExoPlayer?.release()
         }
         playbackPlayer = null
         localExoPlayer = null
@@ -985,7 +1010,7 @@ open class BoxLorePlaybackService :
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player
+        val player = mediaSession?.player ?: playbackPlayer
         val plan =
             PlaybackTaskRemovalPolicy.plan(
                 hasPlayer = player != null,
@@ -1010,7 +1035,7 @@ open class BoxLorePlaybackService :
             if (plan.persistBeforeStop && player != null) {
                 progressCoordinator.saveProgressOnce(player)
             }
-            val latestPlayer = mediaSession?.player
+            val latestPlayer = mediaSession?.player ?: playbackPlayer
             val latestPlan =
                 PlaybackTaskRemovalPolicy.plan(
                     hasPlayer = latestPlayer != null,

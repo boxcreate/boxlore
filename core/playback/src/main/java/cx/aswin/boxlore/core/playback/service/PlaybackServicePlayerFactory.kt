@@ -204,36 +204,47 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
         return CustomActions(like = like, addToQueue = addToQueue, markComplete = markComplete)
     }
 
-    fun createPlayerSessionActivityIntent(): PendingIntent {
-        val intent = Intent()
-        intent.component = ComponentName(context.packageName, "cx.aswin.boxlore.MainActivity")
-        intent.putExtra("EXTRA_OPEN_PLAYER", true)
-        return PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-    }
+    fun createPlayerSessionActivityIntent(): PendingIntent? =
+        try {
+            val intent = Intent()
+            intent.component = ComponentName(context.packageName, "cx.aswin.boxlore.MainActivity")
+            intent.putExtra("EXTRA_OPEN_PLAYER", true)
+            PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        } catch (e: SecurityException) {
+            android.util.Log.w(
+                "PlaybackServicePlayerFactory",
+                "Failed to create player session activity PendingIntent due to UID limit",
+                e,
+            )
+            null
+        }
 
     fun buildMediaLibrarySession(
         service: androidx.media3.session.MediaLibraryService,
         forwardingPlayer: Player,
         callback: AutoBrowseLibraryCallback,
-        pendingIntent: PendingIntent,
+        pendingIntent: PendingIntent?,
         seekButtons: SeekButtons,
         customActions: CustomActions,
     ): MediaLibrarySession {
         val coilBitmapLoader = CoilBitmapLoader(context, serviceScope)
         val cacheBitmapLoader = CacheBitmapLoader(coilBitmapLoader)
-        return MediaLibrarySession
-            .Builder(service, forwardingPlayer, callback)
-            .setSessionActivity(pendingIntent)
-            .setCustomLayout(listOf(seekButtons.seekBack, seekButtons.seekForward, customActions.markComplete))
-            .setCommandButtonsForMediaItems(
-                listOf(customActions.like, customActions.addToQueue, customActions.markComplete),
-            ).setBitmapLoader(cacheBitmapLoader)
-            .build()
+        val builder =
+            MediaLibrarySession
+                .Builder(service, forwardingPlayer, callback)
+                .setCustomLayout(listOf(seekButtons.seekBack, seekButtons.seekForward, customActions.markComplete))
+                .setCommandButtonsForMediaItems(
+                    listOf(customActions.like, customActions.addToQueue, customActions.markComplete),
+                ).setBitmapLoader(cacheBitmapLoader)
+        if (pendingIntent != null) {
+            builder.setSessionActivity(pendingIntent)
+        }
+        return builder.build()
     }
 
     fun assembleSession(
