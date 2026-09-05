@@ -261,6 +261,72 @@ class SmartDownloadCandidateLogicTest {
         assertEquals(listOf("ep-normal"), candidates.map { it.episodeId })
     }
 
+    @Test
+    fun `in-progress mixtape candidates excludes podcasts with autoDownloadEnabled`() {
+        val autoDownloadPod =
+            podcastEntity(
+                "auto-pod",
+                autoDownloadEnabled = true,
+            )
+        val normalPod =
+            podcastEntity(
+                "normal-pod",
+                autoDownloadEnabled = false,
+            )
+        val historyList =
+            listOf(
+                history("ep-progress-auto", "auto-pod", progressMs = 30_000, lastPlayedAt = nowMs - 1_000),
+                history("ep-progress-normal", "normal-pod", progressMs = 40_000, lastPlayedAt = nowMs - 2_000),
+            )
+
+        val candidates =
+            SmartDownloadCandidateLogic.buildInProgressMixtapeCandidates(
+                subsMap = mapOf("auto-pod" to autoDownloadPod, "normal-pod" to normalPod),
+                allHistory = historyList,
+                subIds = setOf("auto-pod", "normal-pod"),
+                nowMs = nowMs,
+            )
+
+        assertEquals(listOf("ep-progress-normal"), candidates.map { it.episodeId })
+    }
+
+    @Test
+    fun `generate mixtape candidates excludes autoDownloadEnabled podcasts from both candidate paths`() {
+        val autoDownloadPod =
+            podcastEntity(
+                "auto-pod",
+                latestEpisode = episode("drop-auto", "auto-pod", publishedDate = nowSeconds),
+                autoDownloadEnabled = true,
+            )
+        val normalPod =
+            podcastEntity(
+                "normal-pod",
+                latestEpisode = episode("drop-normal", "normal-pod", publishedDate = nowSeconds),
+                autoDownloadEnabled = false,
+            )
+        val historyList =
+            listOf(
+                history("resume-auto", "auto-pod", progressMs = 30_000, lastPlayedAt = nowMs - 1_000),
+                history("resume-normal", "normal-pod", progressMs = 40_000, lastPlayedAt = nowMs - 2_000),
+            )
+
+        val candidates =
+            SmartDownloadCandidateLogic.generateMixtapeCandidates(
+                subs = listOf(autoDownloadPod, normalPod),
+                allHistory = historyList,
+                historyByEpisode = historyList.associateBy { it.episodeId },
+                resolvedSerial = emptyMap(),
+                podScoresMap = emptyMap(),
+                nowMs = nowMs,
+            )
+
+        val candidateIds = candidates.map { it.episodeId }
+        assertFalse(candidateIds.contains("resume-auto"))
+        assertFalse(candidateIds.contains("drop-auto"))
+        assertTrue(candidateIds.contains("resume-normal"))
+        assertTrue(candidateIds.contains("drop-normal"))
+    }
+
     private fun podcastEntity(
         id: String,
         subscribedAt: Long = nowMs - 7L * 24 * 60 * 60 * 1000,

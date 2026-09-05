@@ -28,6 +28,14 @@ import cx.aswin.boxlore.core.ranking.RankingSurface
 import java.io.File
 import kotlinx.coroutines.flow.first
 
+internal data class SmartDownloadBudget(
+    val maxCount: Int,
+    val storageBudgetMb: Long,
+    val startingDownloadedBytes: Long = 0L,
+    val startingCount: Int = 0,
+    val maxTimeBudgetMs: Long = SmartDownloadManager.MAX_TIME_BUDGET_MS,
+)
+
 class SmartDownloadManager(
     private val context: Context,
     private val database: BoxLoreDatabase,
@@ -288,7 +296,7 @@ class SmartDownloadManager(
                         context,
                         "Recycling/deleting old smart-downloaded episode: '${download.episodeTitle}' (ID: ${download.episodeId})",
                     )
-                    downloadRepository.removeDownload(download.episodeId, isForeground = false)
+                    downloadRepository.removeDownload(download.episodeId, isForeground = false).join()
                     currentDownloadedBytes -= estSize
                     cleanedCount++
                 }
@@ -298,22 +306,21 @@ class SmartDownloadManager(
     }
 
     @Suppress("CyclomaticComplexMethod")
-    private suspend fun triggerDownloads(
+    @androidx.annotation.VisibleForTesting
+    internal suspend fun triggerDownloads(
         combinedEpisodes: List<Episode>,
         existingDownloads: List<DownloadedEpisodeEntity>,
         subs: List<PodcastEntity>,
-        maxCount: Int,
-        storageBudgetMb: Long,
-        startingDownloadedBytes: Long,
-        startingCount: Int,
+        budget: SmartDownloadBudget,
+        currentTimeMillis: () -> Long = { System.currentTimeMillis() },
     ) {
-        var countDownloaded = startingCount
-        var currentDownloadedBytes = startingDownloadedBytes
-        val startTime = System.currentTimeMillis()
+        var countDownloaded = budget.startingCount
+        var currentDownloadedBytes = budget.startingDownloadedBytes
+        val startTime = currentTimeMillis()
 
         for (episode in combinedEpisodes) {
-            val elapsedTime = System.currentTimeMillis() - startTime
-            val remainingBudgetMs = MAX_TIME_BUDGET_MS - elapsedTime
+            val elapsedTime = currentTimeMillis() - startTime
+            val remainingBudgetMs = budget.maxTimeBudgetMs - elapsedTime
             if (remainingBudgetMs <= 0) {
                 Log.d("SmartDownloadManager", "Hit cumulative time budget limit (8.5 mins). Halting downloads.")
                 writeLogToFile(context, "Hit cumulative time budget limit (8.5 mins). Halting downloads.")
@@ -326,24 +333,24 @@ class SmartDownloadManager(
                 continue
             }
 
-            if (countDownloaded >= maxCount) {
-                Log.d("SmartDownloadManager", "Hit max count limit ($maxCount episodes). Halting downloads.")
-                writeLogToFile(context, "Hit max count limit ($maxCount episodes). Halting downloads.")
+            if (countDownloaded >= budget.maxCount) {
+                Log.d("SmartDownloadManager", "Hit max count limit (${budget.maxCount} episodes). Halting downloads.")
+                writeLogToFile(context, "Hit max count limit (${budget.maxCount} episodes). Halting downloads.")
                 break
             }
 
             val estimatedSize = SmartDownloadCandidateLogic.estimateEpisodeSize(episode)
 
-            if (storageBudgetMb > 0 && currentDownloadedBytes + estimatedSize > storageBudgetMb * 1024 * 1024L) {
+            if (budget.storageBudgetMb > 0 && currentDownloadedBytes + estimatedSize > budget.storageBudgetMb * 1024 * 1024L) {
                 val estMb = estimatedSize / (1024 * 1024)
                 val currMb = currentDownloadedBytes / (1024 * 1024)
                 Log.d(
                     "SmartDownloadManager",
-                    "Hit storage budget limit ($storageBudgetMb MB). Adding '${episode.title}' (Est: $estMb MB) would exceed budget (Current: $currMb MB). Halting downloads.",
+                    "Hit storage budget limit (${budget.storageBudgetMb} MB). Adding '${episode.title}' (Est: $estMb MB) would exceed budget (Current: $currMb MB). Halting downloads.",
                 )
                 writeLogToFile(
                     context,
-                    "Adding '${episode.title}' (Est: $estMb MB) would exceed storage budget ($storageBudgetMb MB). Halting downloads.",
+                    "Adding '${episode.title}' (Est: $estMb MB) would exceed storage budget (${budget.storageBudgetMb} MB). Halting downloads.",
                 )
                 break
             }
@@ -387,7 +394,7 @@ class SmartDownloadManager(
                     countDownloaded++
                     currentDownloadedBytes += estimatedSize
                 } else {
-                    downloadRepository.removeDownload(episode.id, isForeground = false)
+                    downloadRepository.removeDownload(episode.id, isForeground = false).join()
                 }
             }
         }
@@ -557,7 +564,17 @@ class SmartDownloadManager(
                 "Starting download loop. Current active/queued smart downloads count: $countDownloaded / $maxCount. Current size tally: ${currentDownloadedBytes / (1024 * 1024)} MB / $storageBudgetMb MB limit.",
             )
 
-            triggerDownloads(combinedEpisodes, existingDownloads, subs, maxCount, storageBudgetMb, currentDownloadedBytes, countDownloaded)
+            triggerDownloads(
+                combinedEpisodes = combinedEpisodes,
+                existingDownloads = existingDownloads,
+                subs = subs,
+                budget = SmartDownloadBudget(
+                    maxCount = maxCount,
+                    storageBudgetMb = storageBudgetMb,
+                    startingDownloadedBytes = currentDownloadedBytes,
+                    startingCount = countDownloaded,
+                ),
+            )
 
             val finalCompletedCount =
                 database.downloadedEpisodeDao().getAllDownloadsSync().count {

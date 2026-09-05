@@ -35,6 +35,7 @@ class DownloadRepositoryTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        DownloadRepository.resetForTesting()
         database =
             Room
                 .inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java)
@@ -55,8 +56,36 @@ class DownloadRepositoryTest {
 
     @After
     fun tearDown() {
+        DownloadRepository.resetForTesting()
         database.close()
         DownloadServiceLauncherHolder.instance = null
+    }
+
+    private suspend fun <T> pollUntilNotNull(
+        timeoutMs: Long = 2_000L,
+        intervalMs: Long = 20L,
+        block: suspend () -> T?,
+    ): T? {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            val result = block()
+            if (result != null) return result
+            kotlinx.coroutines.delay(intervalMs)
+        }
+        return block()
+    }
+
+    private suspend fun pollUntil(
+        timeoutMs: Long = 2_000L,
+        intervalMs: Long = 20L,
+        condition: suspend () -> Boolean,
+    ): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (condition()) return true
+            kotlinx.coroutines.delay(intervalMs)
+        }
+        return condition()
     }
 
     @Test
@@ -106,6 +135,60 @@ class DownloadRepositoryTest {
         }
 
     @Test
+    fun `reconcileDownloadStatus deletes stale download in STATE_STOPPED`() = runBlocking {
+        val now = System.currentTimeMillis()
+        dao.insert(
+            downloadEntity(
+                episodeId = "ep-stopped",
+                status = DownloadedEpisodeEntity.STATUS_DOWNLOADING,
+                downloadedAt = now - 35 * 60 * 1000L,
+            )
+        )
+        val request = androidx.media3.exoplayer.offline.DownloadRequest.Builder("ep-stopped", android.net.Uri.parse("https://example.com/audio.mp3")).build()
+        val download = androidx.media3.exoplayer.offline.Download(
+            request,
+            androidx.media3.exoplayer.offline.Download.STATE_STOPPED,
+            now - 35 * 60 * 1000L,
+            now - 35 * 60 * 1000L,
+            1000L,
+            0,
+            0,
+        )
+        (DownloadRepository.getDownloadManager(context).downloadIndex as? androidx.media3.exoplayer.offline.WritableDownloadIndex)?.putDownload(download)
+
+        val result = repository.reconcileDownloadStatus("ep-stopped")
+        assertNull(result)
+        assertNull(dao.getDownload("ep-stopped"))
+    }
+
+    @Test
+    fun `reconcileDownloadStatus preserves actively progressing download even if downloadedAt is old`() = runBlocking {
+        val now = System.currentTimeMillis()
+        dao.insert(
+            downloadEntity(
+                episodeId = "ep-active-progress",
+                status = DownloadedEpisodeEntity.STATUS_DOWNLOADING,
+                downloadedAt = now - 40 * 60 * 1000L,
+            )
+        )
+        val request = androidx.media3.exoplayer.offline.DownloadRequest.Builder("ep-active-progress", android.net.Uri.parse("https://example.com/audio.mp3")).build()
+        val download = androidx.media3.exoplayer.offline.Download(
+            request,
+            androidx.media3.exoplayer.offline.Download.STATE_DOWNLOADING,
+            now - 40 * 60 * 1000L,
+            now - 10 * 1000L,
+            1000L,
+            0,
+            0,
+        )
+        (DownloadRepository.getDownloadManager(context).downloadIndex as? androidx.media3.exoplayer.offline.WritableDownloadIndex)?.putDownload(download)
+
+        val result = repository.reconcileDownloadStatus("ep-active-progress")
+        assertNotNull(result)
+        assertNotNull(dao.getDownload("ep-active-progress"))
+    }
+
+    @Test
     fun `addDownload with background flag enqueues directly without crashing`() {
         val episode =
             Episode(
@@ -129,8 +212,7 @@ class DownloadRepositoryTest {
             )
 
         repository.addDownload(episode, podcast, isSmartDownloaded = false, isForeground = false)
-        Thread.sleep(200)
-        val inserted = runBlocking { dao.getDownload("ep-bg") }
+        val inserted = runBlocking { pollUntilNotNull { dao.getDownload("ep-bg") } }
         assertNotNull(inserted)
         assertEquals(DownloadedEpisodeEntity.STATUS_DOWNLOADING, inserted!!.status)
         assertFalse(inserted.isSmartDownloaded)
@@ -170,8 +252,7 @@ class DownloadRepositoryTest {
             )
 
         repository.addDownload(episode, podcast, isSmartDownloaded = true, isForeground = false)
-        Thread.sleep(200)
-        val updated = runBlocking { dao.getDownload("ep-manual") }
+        val updated = runBlocking { pollUntilNotNull { dao.getDownload("ep-manual") } }
         assertNotNull(updated)
         assertFalse(updated!!.isSmartDownloaded)
     }
@@ -210,8 +291,7 @@ class DownloadRepositoryTest {
             )
 
         repository.addDownload(episode, podcast, isSmartDownloaded = true, isForeground = false)
-        Thread.sleep(200)
-        val updated = runBlocking { dao.getDownload("ep-already-completed") }
+        val updated = runBlocking { pollUntilNotNull { dao.getDownload("ep-already-completed") } }
         assertNotNull(updated)
         assertEquals(DownloadedEpisodeEntity.STATUS_COMPLETED, updated!!.status)
         assertFalse(updated.isSmartDownloaded)
@@ -228,8 +308,9 @@ class DownloadRepositoryTest {
             )
         }
 
-        repository.removeDownload("ep-del")
-        Thread.sleep(200)
+        runBlocking { repository.removeDownload("ep-del").join() }
+        val isDeleted = runBlocking { pollUntil { dao.getDownload("ep-del") == null } }
+        assertTrue(isDeleted)
         val deleted = runBlocking { dao.getDownload("ep-del") }
         assertNull(deleted)
     }
@@ -245,8 +326,9 @@ class DownloadRepositoryTest {
             )
         }
 
-        repository.removeDownload("ep-del-bg", isForeground = false)
-        Thread.sleep(200)
+        runBlocking { repository.removeDownload("ep-del-bg", isForeground = false).join() }
+        val isDeleted = runBlocking { pollUntil { dao.getDownload("ep-del-bg") == null } }
+        assertTrue(isDeleted)
         val deleted = runBlocking { dao.getDownload("ep-del-bg") }
         assertNull(deleted)
     }

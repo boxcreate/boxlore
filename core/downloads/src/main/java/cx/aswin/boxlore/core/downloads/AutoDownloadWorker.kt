@@ -233,7 +233,7 @@ open class AutoDownloadWorker(appContext: Context, params: WorkerParameters) : C
                     "BoxLore_BackgroundTrace",
                     "[Worker] Quota exceeded ($maxAllowed). Deleting oldest download '${oldDownload.episodeTitle}' (${oldDownload.episodeId})"
                 )
-                downloadRepository.removeDownload(oldDownload.episodeId, isForeground = false)
+                downloadRepository.removeDownload(oldDownload.episodeId, isForeground = false).join()
             }
         }
     }

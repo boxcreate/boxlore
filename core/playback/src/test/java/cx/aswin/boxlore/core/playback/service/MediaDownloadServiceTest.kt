@@ -50,10 +50,25 @@ class MediaDownloadServiceTest {
     }
 
     @Test
-    fun `onStartCommand catches exception and returns START_NOT_STICKY`() {
+    @Config(sdk = [31])
+    fun `getScheduler returns null on API 31 boundary`() {
+        val service = TestMediaDownloadService()
+        assertNull(service.exposedScheduler())
+    }
+
+    @Test
+    @Config(sdk = [30])
+    fun `getScheduler returns PlatformScheduler on API 30 boundary`() {
+        val service = TestMediaDownloadService()
+        org.junit.Assert.assertNotNull(service.exposedScheduler())
+    }
+
+    @Test
+    fun `onStartCommand catches exception returns START_NOT_STICKY and calls stopSelf`() {
         val service = TestMediaDownloadService()
         val result = service.onStartCommand(Intent(), 0, 1)
         assertEquals(Service.START_NOT_STICKY, result)
+        org.junit.Assert.assertTrue(org.robolectric.Shadows.shadowOf(service).isStoppedBySelf)
     }
 
     @Test

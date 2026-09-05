@@ -71,6 +71,7 @@ internal object SmartDownloadCandidateLogic {
 
         return inProgressCandidates.mapNotNull { history ->
             val parentPod = subsMap[history.podcastId] ?: return@mapNotNull null
+            if (parentPod.autoDownloadEnabled) return@mapNotNull null
             val score = scoreInProgressCandidate(history.lastPlayedAt, nowMs)
 
             val inProgressEpisode = Episode(
@@ -230,11 +231,12 @@ internal object SmartDownloadCandidateLogic {
         podScoresMap: Map<String, Double>,
         nowMs: Long,
     ): List<MixtapeCandidate> {
-        val subsMap = subs.associateBy { it.podcastId }
-        val subIds = subs.map { it.podcastId }.toSet()
+        val eligibleSubs = subs.filter { !it.autoDownloadEnabled }
+        val subsMap = eligibleSubs.associateBy { it.podcastId }
+        val subIds = eligibleSubs.map { it.podcastId }.toSet()
 
         val inProgress = buildInProgressMixtapeCandidates(subsMap, allHistory, subIds, nowMs)
-        val unplayed = buildUnplayedDropsMixtapeCandidates(subs, resolvedSerial, historyByEpisode, podScoresMap, nowMs)
+        val unplayed = buildUnplayedDropsMixtapeCandidates(eligibleSubs, resolvedSerial, historyByEpisode, podScoresMap, nowMs)
 
         return deduplicateAndOrderMixtapeCandidates(inProgress, unplayed)
     }

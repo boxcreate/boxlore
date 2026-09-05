@@ -9,7 +9,6 @@ import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.work.await
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -252,36 +251,18 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
             val userPrefs = userPreferences()
             val wifiOnly = userPrefs.autoDownloadWifiOnlyStream.first()
-            val requiredNetwork = if (wifiOnly) androidx.work.NetworkType.UNMETERED else androidx.work.NetworkType.CONNECTED
 
             android.util.Log.i(
                 "BoxLore_BackgroundTrace",
-                "[FCM] Preparing AutoDownloadWorker. wifiOnly=$wifiOnly -> networkConstraint=$requiredNetwork",
+                "[FCM] Preparing AutoDownloadWorker. wifiOnly=$wifiOnly",
             )
 
-            val inputData =
-                androidx.work.Data
-                    .Builder()
-                    .putString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_PODCAST_ID, podcastId)
-                    .putString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_EPISODE_ID, episodeId)
-                    .build()
-
-            val workRequest =
-                androidx.work
-                    .OneTimeWorkRequestBuilder<cx.aswin.boxlore.core.downloads.AutoDownloadWorker>()
-                    .setInputData(inputData)
-                    .setConstraints(
-                        androidx.work.Constraints
-                            .Builder()
-                            .setRequiredNetworkType(requiredNetwork)
-                            .build(),
-                    ).build()
-
-            val operation =
-                androidx.work.WorkManager
-                    .getInstance(applicationContext)
-                    .enqueue(workRequest)
-            operation.result.await()
+            NewEpisodeFcmLogic.enqueueAutoDownload(
+                workManager = androidx.work.WorkManager.getInstance(applicationContext),
+                podcastId = podcastId,
+                episodeId = episodeId,
+                wifiOnly = wifiOnly,
+            )
             android.util.Log.i(
                 "BoxLore_BackgroundTrace",
                 "[FCM] Successfully enqueued AutoDownloadWorker into WorkManager for podcast $podcastId",

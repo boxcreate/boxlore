@@ -92,4 +92,38 @@ class NewEpisodeFcmLogicTest {
             ),
         )
     }
+
+    @Test
+    fun buildAutoDownloadWorkRequestConfiguresAutoDownloadWorkerWithWifiOnly() {
+        val request = NewEpisodeFcmLogic.buildAutoDownloadWorkRequest("pod-123", "ep-456", wifiOnly = true)
+        assertEquals(androidx.work.NetworkType.UNMETERED, request.workSpec.constraints.requiredNetworkType)
+        assertEquals("pod-123", request.workSpec.input.getString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_PODCAST_ID))
+        assertEquals("ep-456", request.workSpec.input.getString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_EPISODE_ID))
+        assertEquals(cx.aswin.boxlore.core.downloads.AutoDownloadWorker::class.java.name, request.workSpec.workerClassName)
+    }
+
+    @Test
+    fun buildAutoDownloadWorkRequestConfiguresAutoDownloadWorkerWithConnectedWhenNotWifiOnly() {
+        val request = NewEpisodeFcmLogic.buildAutoDownloadWorkRequest("pod-123", "ep-456", wifiOnly = false)
+        assertEquals(androidx.work.NetworkType.CONNECTED, request.workSpec.constraints.requiredNetworkType)
+        assertEquals("pod-123", request.workSpec.input.getString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_PODCAST_ID))
+        assertEquals("ep-456", request.workSpec.input.getString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_EPISODE_ID))
+        assertEquals(cx.aswin.boxlore.core.downloads.AutoDownloadWorker::class.java.name, request.workSpec.workerClassName)
+    }
+
+    @Test
+    fun enqueueAutoDownloadEnqueuesAndAwaitsOnlyAutoDownloadWorker() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(context)
+        val workManager = androidx.work.WorkManager.getInstance(context)
+
+        kotlinx.coroutines.runBlocking {
+            NewEpisodeFcmLogic.enqueueAutoDownload(workManager, "pod-test", "ep-test", wifiOnly = true)
+        }
+
+        val workInfos = workManager.getWorkInfosByTag(cx.aswin.boxlore.core.downloads.AutoDownloadWorker::class.java.name).get()
+        assertEquals(1, workInfos.size)
+        val workInfo = workInfos.single()
+        assertEquals(androidx.work.WorkInfo.State.ENQUEUED, workInfo.state)
+    }
 }
