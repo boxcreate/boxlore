@@ -61,6 +61,8 @@ internal fun PlayerTopBar(
             BoxLoreCastRouteButton(
                 enabled = canCast || isCasting,
                 isCasting = isCasting,
+                tint = colorScheme.onSurface,
+                activeTint = colorScheme.primary,
                 modifier =
                 Modifier
                     .size(42.dp)

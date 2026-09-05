@@ -25,7 +25,6 @@ import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -43,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.media3.cast.Cast
@@ -59,16 +59,32 @@ internal fun BoxLoreCastRouteButton(
     enabled: Boolean,
     isCasting: Boolean,
     modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    activeTint: Color = MaterialTheme.colorScheme.primary,
 ) {
     var showRoutePicker by rememberSaveable { mutableStateOf(false) }
-    IconButton(
-        onClick = { showRoutePicker = true },
-        enabled = enabled,
-        modifier = modifier,
+    val effectiveTint =
+        resolveCastButtonTint(
+            enabled = enabled,
+            isCasting = isCasting,
+            tint = tint,
+            activeTint = activeTint,
+        )
+    Box(
+        modifier =
+        modifier
+            .clickable(
+                enabled = enabled,
+                role = Role.Button,
+                onClick = { showRoutePicker = true },
+            ),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = if (isCasting) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
             contentDescription = if (isCasting) "Change Cast device" else "Cast",
+            tint = effectiveTint,
+            modifier = Modifier.size(20.dp),
         )
     }
     if (showRoutePicker) {

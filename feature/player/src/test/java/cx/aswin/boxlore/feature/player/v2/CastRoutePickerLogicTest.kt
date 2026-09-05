@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.player.v2
 
+import androidx.compose.ui.graphics.Color
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -178,6 +179,62 @@ class CastRoutePickerLogicTest {
             shouldShowVideoModeButtons(
                 isVideo = true,
                 heroMode = CastHeroDisplayMode.ARTWORK,
+            ),
+        )
+    }
+
+    @Test
+    fun castButtonTintFollowsThemeColorsAndActiveState() {
+        val darkSurfaceTint = Color(0xFFE6DFCF)
+        val lightSurfaceTint = Color(0xFF1E1B16)
+        val primaryAccent = Color(0xFFFF9E80)
+
+        assertEquals(
+            darkSurfaceTint,
+            resolveCastButtonTint(
+                enabled = true,
+                isCasting = false,
+                tint = darkSurfaceTint,
+                activeTint = primaryAccent,
+            ),
+        )
+
+        assertEquals(
+            lightSurfaceTint,
+            resolveCastButtonTint(
+                enabled = true,
+                isCasting = false,
+                tint = lightSurfaceTint,
+                activeTint = primaryAccent,
+            ),
+        )
+
+        assertEquals(
+            primaryAccent,
+            resolveCastButtonTint(
+                enabled = true,
+                isCasting = true,
+                tint = darkSurfaceTint,
+                activeTint = primaryAccent,
+            ),
+        )
+        assertEquals(
+            primaryAccent,
+            resolveCastButtonTint(
+                enabled = true,
+                isCasting = true,
+                tint = lightSurfaceTint,
+                activeTint = primaryAccent,
+            ),
+        )
+
+        assertEquals(
+            darkSurfaceTint.copy(alpha = 0.38f),
+            resolveCastButtonTint(
+                enabled = false,
+                isCasting = false,
+                tint = darkSurfaceTint,
+                activeTint = primaryAccent,
             ),
         )
     }
