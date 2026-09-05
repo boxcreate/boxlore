@@ -79,12 +79,8 @@ open class AutoCollageProvider : ContentProvider() {
             null,
             key,
             ContentProvider.PipeDataWriter<String> { output, _, _, _, pipeKey ->
-                pipeKey?.let { registeredKey ->
-                    getOrFetchRemoteArtwork(context, registeredKey)?.inputStream()?.use { input ->
-                        ParcelFileDescriptor.AutoCloseOutputStream(output).use { pipe ->
-                            input.copyTo(pipe)
-                        }
-                    }
+                AutoArtworkPipeLogic.pipeArtwork(output, pipeKey) { registeredKey ->
+                    getOrFetchRemoteArtwork(context, registeredKey)?.inputStream()
                 }
             },
         )
