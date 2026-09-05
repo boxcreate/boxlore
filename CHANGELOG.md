@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed same-show continuation in `SmartQueueEngine` by restoring forward chronological queries in `LocalEpisodeCatalogDao` and `RssEpisodeDao` (#1017). ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Preserved `preferredSort` and `contextSourceId` across `QueueManager` and `PlaybackQueueCoordinator` for accurate refill sequencing. ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Fixed an `IllegalArgumentException` crash when navigating to an episode with a missing, empty, or special-character description from Home feed recommendations by marking `episodeDescription` nullable with a default null value in `NavGraphPodcastEpisodeDestinations` (#1023). ([#1030](https://github.com/boxcreate/boxlore/pull/1030)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Prevent background `ForegroundServiceStartNotAllowedException` and `RemoteServiceException` crashes on Android 14+ by routing background auto-downloads and smart downloads directly through `DownloadManager` without launching `MediaDownloadService` (#1024). ([#1033](https://github.com/boxcreate/boxlore/pull/1033)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Eliminate silent disk storage leaks in `SimpleCache` by ensuring background download removals directly evict media cache files even when background service starts are blocked. ([#1033](https://github.com/boxcreate/boxlore/pull/1033)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Fix notification auto-downloads failing or getting stuck in downloading state by awaiting completion under WorkManager wake locks and reconciling stale orphaned download records. ([#1033](https://github.com/boxcreate/boxlore/pull/1033)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Prevent WorkManager 10-minute execution ceiling aborts during smart downloads by transitioning to sequential downloads with an 8.5-minute time budget. ([#1033](https://github.com/boxcreate/boxlore/pull/1033)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Preserved notification and auto-download toggles on Podcast Info pull-to-refresh and routed subscribed shows to direct publisher feed refresh. ([#1016](https://github.com/boxcreate/boxlore/issues/1016)) ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Fixed latent `notificationsEnabled` and `autoDownloadEnabled` mapping in RSS repository entity conversion. ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
@@ -36,6 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Critical
 - Fixed an issue where tapping recommended episodes from the Home screen could cause boxlore to unexpectedly close.
 <!-- readme-copy:end pr=1030 -->
+
+<!-- readme-copy:start pr=1033 -->
+### Critical
+- Fixed an issue on Android 14 and newer where background auto-downloads could crash or fail to start when new episode notifications arrived.
+- Fixed storage cleanup so deleting or replacing downloaded episodes properly reclaims device disk space.
+- Improved background auto-download reliability so new episodes are ready for offline listening as soon as notifications arrive.
+<!-- readme-copy:end pr=1033 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added

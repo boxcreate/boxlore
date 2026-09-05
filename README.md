@@ -69,6 +69,9 @@ The app uses your listening activity—such as what you play, skip, and like—t
 <!-- release-upcoming:start -->
 <b>🚨 Critical:</b>
 <ul align="left">
+<li>Fixed an issue on Android 14 and newer where background auto-downloads could crash or fail to start when new episode notifications arrived. <a href="https://github.com/boxcreate/boxlore/pull/1033"><img src="https://img.shields.io/badge/PR-1033-6750A4?style=flat-square" alt="PR #1033" height="18"/></a></li>
+<li>Fixed storage cleanup so deleting or replacing downloaded episodes properly reclaims device disk space. <a href="https://github.com/boxcreate/boxlore/pull/1033"><img src="https://img.shields.io/badge/PR-1033-6750A4?style=flat-square" alt="PR #1033" height="18"/></a></li>
+<li>Improved background auto-download reliability so new episodes are ready for offline listening as soon as notifications arrive. <a href="https://github.com/boxcreate/boxlore/pull/1033"><img src="https://img.shields.io/badge/PR-1033-6750A4?style=flat-square" alt="PR #1033" height="18"/></a></li>
 <li>Fixed an issue where tapping recommended episodes from the Home screen could cause boxlore to unexpectedly close. <a href="https://github.com/boxcreate/boxlore/pull/1030"><img src="https://img.shields.io/badge/PR-1030-6750A4?style=flat-square" alt="PR #1030" height="18"/></a></li>
 <li>Fixed an issue where the queue would skip upcoming episodes of the show you were listening to. <a href="https://github.com/boxcreate/boxlore/pull/1019"><img src="https://img.shields.io/badge/PR-1019-6750A4?style=flat-square" alt="PR #1019" height="18"/></a></li>
 <li>Added a convenient queue banner to preview and add upcoming episodes of a show when played from recommendations. <a href="https://github.com/boxcreate/boxlore/pull/1019"><img src="https://img.shields.io/badge/PR-1019-6750A4?style=flat-square" alt="PR #1019" height="18"/></a></li>
