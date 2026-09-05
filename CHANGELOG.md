@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserved notification and auto-download toggles on Podcast Info pull-to-refresh and routed subscribed shows to direct publisher feed refresh. ([#1016](https://github.com/boxcreate/boxlore/issues/1016)) ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Fixed latent `notificationsEnabled` and `autoDownloadEnabled` mapping in RSS repository entity conversion. ([#1022](https://github.com/boxcreate/boxlore/pull/1022)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Prevent SecurityException crashes caused by system PendingIntent UID quota exhaustion in FCM notifications and Media3 playback session setup (#1025). ([#1034](https://github.com/boxcreate/boxlore/pull/1034)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Preserved show name metadata during Android Auto playback and resolved session restore reversions when replaying completed episodes (#1035). ([#1036](https://github.com/boxcreate/boxlore/pull/1036)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019
 ### Critical
@@ -53,6 +54,11 @@ readme-copy:end pr=1033 -->
 ### High
 - Resolved an issue where receiving many episode notifications over time could cause audio playback to fail to start.
 readme-copy:end pr=1034 -->
+
+<!-- readme-copy:start pr=1036
+### High
+- Fixed an issue where episodes played from Android Auto showed missing show names and could cause playback to resume an older session on restart.
+readme-copy:end pr=1036 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added
