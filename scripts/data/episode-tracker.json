@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-05T19:15:49.071Z",
+  "lastRun": "2026-09-05T21:30:24.704Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1788549517762
     },
     "385117": {
-      "lastRssKey": "50a5083a-a95d-11f1-a953-bf54674ce6fd",
-      "lastEpisodeTitle": "3PM ET 09/05/2026 Newscast",
+      "lastRssKey": "13fe024a-a96e-11f1-814f-e7a8689b7ff2",
+      "lastEpisodeTitle": "5PM ET 09/05/2026 Newscast",
       "lastEpisodeId": "59989849757",
-      "lastCheckedAt": 1788635754038
+      "lastCheckedAt": 1788643833055
     },
     "386911": {
       "lastRssKey": "fe6bbddc-a887-11f1-9153-5fae2fe654bd",
@@ -195,10 +195,10 @@
       "lastCheckedAt": 1786559318597
     },
     "593004": {
-      "lastRssKey": "b6fcdc88-a3eb-11f1-8e0d-27ae5df7fad6",
-      "lastEpisodeTitle": "ICE's Biggest Fan Just Got Deported",
+      "lastRssKey": "68c292ec-a968-11f1-8252-bbe01947e52f",
+      "lastEpisodeTitle": "You CAN'T SAY THAT About The President",
       "lastEpisodeId": "59396147606",
-      "lastCheckedAt": 1788039088805
+      "lastCheckedAt": 1788643853208
     },
     "724143": {
       "lastRssKey": "58d02f08-a8a9-11f1-bfcb-7b2ace4cca33",
@@ -296,6 +296,11 @@
       "lastEpisodeId": "59961446115",
       "lastCheckedAt": 1788577619109
     },
+    "1021803": {
+      "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
+      "lastEpisodeTitle": "Finding Your Life Path, Solved",
+      "lastCheckedAt": 1788643859907
+    },
     "1047718": {
       "lastRssKey": "6a9910168f0812bd8e2f4f72",
       "lastEpisodeTitle": "Arsenal take on Chelsea and deadline-day chaos: Football Weekly Extra",
@@ -353,6 +358,12 @@
       "lastRssKey": "cmti3e7bm0pd9010kaot2fdqf",
       "lastEpisodeTitle": "霸軒廣播電台#157 你小時候有被媽媽關起來過嗎？",
       "lastCheckedAt": 1788340765459
+    },
+    "1365758": {
+      "lastRssKey": "5e716144-a74a-11f1-9b49-9bef3cb4a30a",
+      "lastEpisodeTitle": "Essentials: Use Sleep to Enhance Learning, Memory & Emotional State | Dr. Gina Poe",
+      "lastEpisodeId": "59970276449",
+      "lastCheckedAt": 1788643866373
     },
     "1388001": {
       "lastRssKey": "5ae3a01f-05fd-45f0-abfd-382eb369200b",
