@@ -93,4 +93,59 @@ class PlaybackProgressPersistencePolicyTest {
             ),
         )
     }
+
+    @Test
+    fun `shouldUpdateLastPlayedAt refreshes timestamp on 10s playback, zero-start, or completed replay`() {
+        // Active playback for >=10s
+        assertEquals(
+            true,
+            PlaybackProgressPersistencePolicy.shouldUpdateLastPlayedAt(
+                hasBeenPlayingFor10s = true,
+                allowZeroPosition = false,
+                isCompleted = false,
+            ),
+        )
+
+        // Explicit zero start / restart
+        assertEquals(
+            true,
+            PlaybackProgressPersistencePolicy.shouldUpdateLastPlayedAt(
+                hasBeenPlayingFor10s = false,
+                allowZeroPosition = true,
+                isCompleted = false,
+            ),
+        )
+
+        // Replaying an already-completed episode
+        assertEquals(
+            true,
+            PlaybackProgressPersistencePolicy.shouldUpdateLastPlayedAt(
+                hasBeenPlayingFor10s = false,
+                allowZeroPosition = false,
+                isCompleted = true,
+            ),
+        )
+
+        // Active playback ended (e.g. pause or task removal after short play)
+        assertEquals(
+            true,
+            PlaybackProgressPersistencePolicy.shouldUpdateLastPlayedAt(
+                hasBeenPlayingFor10s = false,
+                allowZeroPosition = false,
+                isCompleted = false,
+                activePlaybackEnded = true,
+            ),
+        )
+
+        // Routine periodic tick under 10s on uncompleted episode without active playback ended
+        assertEquals(
+            false,
+            PlaybackProgressPersistencePolicy.shouldUpdateLastPlayedAt(
+                hasBeenPlayingFor10s = false,
+                allowZeroPosition = false,
+                isCompleted = false,
+                activePlaybackEnded = false,
+            ),
+        )
+    }
 }

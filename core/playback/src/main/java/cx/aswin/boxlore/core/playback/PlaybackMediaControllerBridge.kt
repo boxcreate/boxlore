@@ -306,6 +306,11 @@ internal class PlaybackMediaControllerBridge(
                         }
                         pendingCastTransition = null
                         val resolvedPodcastId = findPodcastIdForEpisode(episodeId) ?: ""
+                        val resolvedPodcastTitle =
+                            metadata.albumTitle?.toString()?.takeIf(String::isNotBlank)
+                                ?: metadata.artist?.toString()?.takeIf(String::isNotBlank)
+                                ?: metadata.subtitle?.toString()?.takeIf(String::isNotBlank)
+                                ?: "Unknown Podcast"
                         Episode(
                             id = episodeId,
                             title = title,
@@ -313,10 +318,10 @@ internal class PlaybackMediaControllerBridge(
                             audioUrl = mediaItem.localConfiguration?.uri?.toString() ?: "",
                             imageUrl = metadata.artworkUri?.toString(),
                             podcastImageUrl = metadata.artworkUri?.toString(),
-                            podcastTitle = metadata.subtitle?.toString() ?: metadata.artist?.toString() ?: "Unknown Podcast",
+                            podcastTitle = resolvedPodcastTitle,
                             podcastId = resolvedPodcastId,
                             podcastGenre = metadata.genre?.toString() ?: "Podcast",
-                            podcastArtist = metadata.artist?.toString() ?: "",
+                            podcastArtist = metadata.artist?.toString()?.takeIf(String::isNotBlank) ?: resolvedPodcastTitle,
                             duration = 0,
                             publishedDate = 0L,
                         )

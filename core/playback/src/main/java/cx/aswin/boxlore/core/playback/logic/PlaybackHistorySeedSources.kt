@@ -18,31 +18,58 @@ internal fun QueueItem.toPlaybackHistorySeedSource() = PlaybackHistorySeedSource
     episodeDescription = description,
 )
 
-internal fun LocalEpisodeEntity.toPlaybackHistorySeedSource() = PlaybackHistorySeedSource(
+internal fun LocalEpisodeEntity.toPlaybackHistorySeedSource(
+    podcastName: String? = null,
+    podcastImageUrl: String? = null,
+) = PlaybackHistorySeedSource(
     podcastId = podcastId,
     episodeTitle = title,
-    episodeImageUrl = imageUrl,
+    episodeImageUrl = imageUrl ?: podcastImageUrl,
+    podcastImageUrl = podcastImageUrl,
     episodeAudioUrl = audioUrl,
+    podcastName = podcastName,
     durationMs = duration.toLong() * 1_000L,
     enclosureType = enclosureType,
     episodeDescription = description,
 )
 
-internal fun RssEpisodeEntity.toPlaybackHistorySeedSource() = PlaybackHistorySeedSource(
+internal fun RssEpisodeEntity.toPlaybackHistorySeedSource(
+    podcastName: String? = null,
+    podcastImageUrl: String? = null,
+) = PlaybackHistorySeedSource(
     podcastId = podcastId,
     episodeTitle = title,
-    episodeImageUrl = imageUrl,
+    episodeImageUrl = imageUrl ?: podcastImageUrl,
+    podcastImageUrl = podcastImageUrl,
     episodeAudioUrl = audioUrl,
+    podcastName = podcastName,
     durationMs = duration.toLong() * 1_000L,
     enclosureType = enclosureType,
     episodeDescription = description,
 )
 
-internal fun EpisodeSupplementItemEntity.toPlaybackHistorySeedSource() = PlaybackHistorySeedSource(
+internal fun EpisodeSupplementItemEntity.toPlaybackHistorySeedSource(
+    podcastName: String? = null,
+    podcastImageUrl: String? = null,
+) = PlaybackHistorySeedSource(
     podcastId = podcastId,
     episodeTitle = title,
-    episodeImageUrl = imageUrl,
+    episodeImageUrl = imageUrl ?: podcastImageUrl,
+    podcastImageUrl = podcastImageUrl,
     episodeAudioUrl = audioUrl,
+    podcastName = podcastName,
+    durationMs = duration.toLong() * 1_000L,
+    enclosureType = enclosureType,
+    episodeDescription = description,
+)
+
+internal fun cx.aswin.boxlore.core.model.Episode.toPlaybackHistorySeedSource() = PlaybackHistorySeedSource(
+    podcastId = podcastId,
+    episodeTitle = title,
+    episodeImageUrl = imageUrl ?: podcastImageUrl,
+    podcastImageUrl = podcastImageUrl,
+    episodeAudioUrl = audioUrl,
+    podcastName = podcastTitle ?: podcastArtist,
     durationMs = duration.toLong() * 1_000L,
     enclosureType = enclosureType,
     episodeDescription = description,
@@ -54,6 +81,7 @@ internal fun DownloadedEpisodeEntity.toPlaybackHistorySeedSource() = PlaybackHis
     episodeImageUrl = episodeImageUrl,
     podcastImageUrl = podcastImageUrl,
     podcastName = podcastName,
+    episodeAudioUrl = localFilePath.takeIf { it.isNotBlank() && it != "CACHED" },
     durationMs = durationMs,
     episodeDescription = episodeDescription,
 )

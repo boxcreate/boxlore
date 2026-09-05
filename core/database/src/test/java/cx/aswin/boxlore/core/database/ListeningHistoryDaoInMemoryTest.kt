@@ -309,4 +309,45 @@ class ListeningHistoryDaoInMemoryTest {
         assertEquals(3, dao.getRecentHistoryList(3).size)
         assertEquals("ep-5", dao.getRecentHistoryList(3).first().episodeId)
     }
+
+    @Test
+    fun reopenProgressResetsCompletionAndUpdatesTimestamp() = runTest {
+        dao.upsert(history("ep-1", progressMs = 900, durationMs = 1_000))
+        dao.completeFromPlayback(
+            episodeId = "ep-1",
+            durationMs = 1_000,
+            lastPlayedAt = 50,
+            isManualCompletion = false,
+        )
+
+        val updatedRows =
+            dao.reopenProgress(
+                episodeId = "ep-1",
+                progressMs = 300,
+                durationMs = 1_000,
+                lastPlayedAt = 120,
+            )
+
+        val stored = dao.getHistoryItem("ep-1")!!
+        assertEquals(1, updatedRows)
+        assertEquals(300L, stored.progressMs)
+        assertEquals(1_000L, stored.durationMs)
+        assertEquals(120L, stored.lastPlayedAt)
+        assertEquals(false, stored.isCompleted)
+        assertEquals(false, stored.isManualCompletion)
+        assertEquals(false, stored.isBulkCompletion)
+        assertEquals(true, stored.isDirty)
+    }
+
+    @Test
+    fun updateLastPlayedAtRefreshesTimestampAndMarksDirty() = runTest {
+        dao.upsert(history("ep-1", progressMs = 100, durationMs = 1_000, lastPlayedAt = 50L))
+
+        dao.updateLastPlayedAt("ep-1", lastPlayedAt = 200L)
+
+        val stored = dao.getHistoryItem("ep-1")!!
+        assertEquals(200L, stored.lastPlayedAt)
+        assertEquals(100L, stored.progressMs)
+        assertEquals(true, stored.isDirty)
+    }
 }

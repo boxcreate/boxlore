@@ -16,9 +16,29 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         val uri = item.localConfiguration?.uri ?: item.requestMetadata.mediaUri
 
         if (uri != null) {
+            val existingArtist = item.mediaMetadata.artist?.toString()?.takeIf(String::isNotBlank)
+            val existingAlbum = item.mediaMetadata.albumTitle?.toString()?.takeIf(String::isNotBlank)
+            val resolvedPodcast = existingAlbum ?: existingArtist
+            val metadataBuilder = item.mediaMetadata.buildUpon()
+            if (resolvedPodcast == null) {
+                val podcastName =
+                    host.database.listeningHistoryDao().getHistoryItem(episodeId)?.podcastName?.takeIf(String::isNotBlank)
+                        ?: host.queueRepository.getQueueItemByEpisodeId(episodeId)?.podcastTitle?.takeIf(String::isNotBlank)
+                        ?: host.database.downloadedEpisodeDao().getDownload(episodeId)?.podcastName?.takeIf(String::isNotBlank)
+                        ?: runCatching { host.podcastRepository.getEpisode(episodeId) }.getOrNull()?.let {
+                            it.podcastTitle?.takeIf(String::isNotBlank) ?: it.podcastArtist?.takeIf(String::isNotBlank)
+                        }
+                if (podcastName != null) {
+                    metadataBuilder
+                        .setArtist(podcastName)
+                        .setAlbumTitle(podcastName)
+                        .setSubtitle(podcastName)
+                }
+            }
             return item
                 .buildUpon()
                 .setUri(uri)
+                .setMediaMetadata(metadataBuilder.build())
                 .setCustomCacheKey(
                     PlaybackMediaIdPolicy.customCacheKey(episodeId, uri.toString()),
                 ).build()
@@ -41,8 +61,36 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
             )
         val resolvedAudioUrl = source.playbackUri
         if (resolvedAudioUrl != null) {
-            val histArtworkUriStr = historyItem?.episodeImageUrl ?: historyItem?.podcastImageUrl
-            android.util.Log.d("BoxCastPlayer", "resolveMediaItem: resolved from history: '$histArtworkUriStr'")
+            val fallbackEpisode =
+                if (historyItem?.podcastName.isNullOrBlank() && queueItem?.podcastTitle.isNullOrBlank() && download?.podcastName.isNullOrBlank()) {
+                    runCatching { host.podcastRepository.getEpisode(episodeId) }.getOrNull()
+                } else {
+                    null
+                }
+            val podcastName =
+                historyItem?.podcastName?.takeIf(String::isNotBlank)
+                    ?: queueItem?.podcastTitle?.takeIf(String::isNotBlank)
+                    ?: download?.podcastName?.takeIf(String::isNotBlank)
+                    ?: fallbackEpisode?.podcastTitle?.takeIf(String::isNotBlank)
+                    ?: fallbackEpisode?.podcastArtist?.takeIf(String::isNotBlank)
+
+            val episodeTitle =
+                historyItem?.episodeTitle?.takeIf(String::isNotBlank)
+                    ?: queueItem?.title?.takeIf(String::isNotBlank)
+                    ?: download?.episodeTitle?.takeIf(String::isNotBlank)
+                    ?: fallbackEpisode?.title
+
+            val artworkUriStr =
+                historyItem?.episodeImageUrl?.takeIf(String::isNotBlank)
+                    ?: historyItem?.podcastImageUrl?.takeIf(String::isNotBlank)
+                    ?: queueItem?.imageUrl?.takeIf(String::isNotBlank)
+                    ?: queueItem?.podcastImageUrl?.takeIf(String::isNotBlank)
+                    ?: download?.episodeImageUrl?.takeIf(String::isNotBlank)
+                    ?: download?.podcastImageUrl?.takeIf(String::isNotBlank)
+                    ?: fallbackEpisode?.imageUrl
+                    ?: fallbackEpisode?.podcastImageUrl
+
+            android.util.Log.d("BoxCastPlayer", "resolveMediaItem: resolved: '$artworkUriStr', pod: '$podcastName'")
             return MediaItem
                 .Builder()
                 .setMediaId(item.mediaId)
@@ -53,12 +101,14 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                 ).setMediaMetadata(
                     item.mediaMetadata
                         .buildUpon()
-                        .setTitle(historyItem?.episodeTitle ?: queueItem?.title)
-                        .setArtist(historyItem?.podcastName ?: queueItem?.podcastTitle)
+                        .setTitle(episodeTitle)
+                        .setArtist(podcastName.orEmpty())
+                        .setSubtitle(podcastName)
+                        .setAlbumTitle(podcastName)
                         .setArtworkUri(
                             AutoArtworkRepository.remoteUri(
                                 host.asContext(),
-                                histArtworkUriStr ?: queueItem?.imageUrl ?: queueItem?.podcastImageUrl,
+                                artworkUriStr,
                             ),
                         ).setExtras(
                             CastMediaMetadata.extrasWithRemoteUri(
@@ -89,6 +139,9 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         // Try API
         val episode = host.podcastRepository.getEpisode(episodeId)
         if (episode != null) {
+            val podcastName =
+                episode.podcastTitle?.takeIf(String::isNotBlank)
+                    ?: episode.podcastArtist?.takeIf(String::isNotBlank)
             android.util.Log.d("BoxCastPlayer", "resolveMediaItem: resolved from API: '${episode.imageUrl}'")
             return MediaItem
                 .Builder()
@@ -101,7 +154,9 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                     item.mediaMetadata
                         .buildUpon()
                         .setTitle(episode.title)
-                        .setArtist(episode.podcastArtist ?: "")
+                        .setArtist(podcastName.orEmpty())
+                        .setSubtitle(podcastName)
+                        .setAlbumTitle(podcastName)
                         .setArtworkUri(
                             AutoArtworkRepository.remoteUri(
                                 host.asContext(),

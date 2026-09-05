@@ -142,6 +142,29 @@ interface ListeningHistoryDao {
     @Query(
         """
         UPDATE listening_history
+        SET progressMs = :progressMs,
+            durationMs = :durationMs,
+            isCompleted = 0,
+            isManualCompletion = 0,
+            isBulkCompletion = 0,
+            lastPlayedAt = :lastPlayedAt,
+            isDirty = 1
+        WHERE episodeId = :episodeId
+        """,
+    )
+    suspend fun reopenProgress(
+        episodeId: String,
+        progressMs: Long,
+        durationMs: Long,
+        lastPlayedAt: Long,
+    ): Int
+
+    @Query("UPDATE listening_history SET lastPlayedAt = :lastPlayedAt, isDirty = 1 WHERE episodeId = :episodeId")
+    suspend fun updateLastPlayedAt(episodeId: String, lastPlayedAt: Long,)
+
+    @Query(
+        """
+        UPDATE listening_history
         SET progressMs = 0,
             durationMs = :durationMs,
             isCompleted = 1,
