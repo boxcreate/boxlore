@@ -258,12 +258,19 @@ object LibraryWidgetRenderer {
     }
 
     fun cancelAll(context: Context, appWidgetId: Int) {
-        val flags =
+        val tabFlags =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
             } else {
                 PendingIntent.FLAG_NO_CREATE
             }
+        val templateFlags =
+            PendingIntent.FLAG_NO_CREATE or
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.FLAG_MUTABLE
+                } else {
+                    0
+                }
         try {
             val templateIntent =
                 Intent(Intent.ACTION_VIEW).apply {
@@ -274,7 +281,7 @@ object LibraryWidgetRenderer {
                 context,
                 requestCode(appWidgetId, TEMPLATE_REQUEST),
                 templateIntent,
-                flags,
+                templateFlags,
             )?.cancel()
         } catch (e: Exception) {
             // Ignore cancel failure
@@ -284,7 +291,7 @@ object LibraryWidgetRenderer {
         val slots = listOf(HEADER_REQUEST, ROOT_REQUEST, FOOTER_REQUEST, EMPTY_REQUEST)
         for (uri in uris) {
             for (slot in slots) {
-                cancelTabIntent(context, appWidgetId, uri, slot, flags)
+                cancelTabIntent(context, appWidgetId, uri, slot, tabFlags)
             }
         }
     }

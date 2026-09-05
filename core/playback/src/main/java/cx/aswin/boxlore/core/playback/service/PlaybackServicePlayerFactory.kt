@@ -204,12 +204,16 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
         return CustomActions(like = like, addToQueue = addToQueue, markComplete = markComplete)
     }
 
-    fun createPlayerSessionActivityIntent(): PendingIntent? =
+    fun createPlayerSessionActivityIntent(
+        activityIntentCreator: (Context, Int, Intent, Int) -> PendingIntent? = { ctx, code, intent, flags ->
+            PendingIntent.getActivity(ctx, code, intent, flags)
+        },
+    ): PendingIntent? =
         try {
             val intent = Intent()
             intent.component = ComponentName(context.packageName, "cx.aswin.boxlore.MainActivity")
             intent.putExtra("EXTRA_OPEN_PLAYER", true)
-            PendingIntent.getActivity(
+            activityIntentCreator(
                 context,
                 0,
                 intent,

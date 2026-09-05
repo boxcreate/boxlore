@@ -1001,7 +1001,6 @@ open class BoxLorePlaybackService :
             }
         } else {
             playbackPlayer?.release()
-            localExoPlayer?.release()
         }
         playbackPlayer = null
         localExoPlayer = null
