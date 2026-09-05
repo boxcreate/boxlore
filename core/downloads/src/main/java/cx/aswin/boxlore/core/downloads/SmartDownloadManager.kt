@@ -271,16 +271,6 @@ class SmartDownloadManager(
         return chosenTrends
     }
 
-    private fun checkIsAlreadyDownloadedOrDownloading(episode: Episode, existingDownloads: List<DownloadedEpisodeEntity>,): Boolean {
-        val isAlreadyDownloaded =
-            existingDownloads.any {
-                it.episodeId == episode.id &&
-                    it.status == DownloadedEpisodeEntity.STATUS_COMPLETED
-            }
-        val isDownloading = existingDownloads.any { it.episodeId == episode.id && it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING }
-        return isAlreadyDownloaded || isDownloading
-    }
-
     private suspend fun recycleOldDownloads(
         candidateEpisodeIds: Set<String>,
         existingDownloads: List<DownloadedEpisodeEntity>,
@@ -298,7 +288,7 @@ class SmartDownloadManager(
                         context,
                         "Recycling/deleting old smart-downloaded episode: '${download.episodeTitle}' (ID: ${download.episodeId})",
                     )
-                    downloadRepository.removeDownload(download.episodeId)
+                    downloadRepository.removeDownload(download.episodeId, isForeground = false)
                     currentDownloadedBytes -= estSize
                     cleanedCount++
                 }
@@ -319,9 +309,19 @@ class SmartDownloadManager(
     ) {
         var countDownloaded = startingCount
         var currentDownloadedBytes = startingDownloadedBytes
+        val startTime = System.currentTimeMillis()
 
         for (episode in combinedEpisodes) {
-            if (checkIsAlreadyDownloadedOrDownloading(episode, existingDownloads)) {
+            val elapsedTime = System.currentTimeMillis() - startTime
+            val remainingBudgetMs = MAX_TIME_BUDGET_MS - elapsedTime
+            if (remainingBudgetMs <= 0) {
+                Log.d("SmartDownloadManager", "Hit cumulative time budget limit (8.5 mins). Halting downloads.")
+                writeLogToFile(context, "Hit cumulative time budget limit (8.5 mins). Halting downloads.")
+                break
+            }
+
+            val currentInDb = database.downloadedEpisodeDao().getDownload(episode.id)
+            if (isEpisodeActiveOrDone(currentInDb, episode, existingDownloads)) {
                 Log.d("SmartDownloadManager", "Episode ${episode.title} already downloaded or downloading. Skipping.")
                 continue
             }
@@ -369,9 +369,27 @@ class SmartDownloadManager(
                 context,
                 "Triggered download for episode: '${episode.title}' (Show: '${parentPod.title}', Est: ${estimatedSize / (1024 * 1024)} MB)",
             )
-            downloadRepository.addDownload(episode, parentPod, isSmartDownloaded = true)
-            countDownloaded++
-            currentDownloadedBytes += estimatedSize
+
+            val episodeTimeout = minOf(remainingBudgetMs, PER_EPISODE_TIMEOUT_MS)
+            downloadRepository.addDownload(episode, parentPod, isSmartDownloaded = true, isForeground = false)
+            val success = downloadRepository.awaitDownloadCompletion(episode.id, timeoutMs = episodeTimeout)
+            if (success) {
+                countDownloaded++
+                currentDownloadedBytes += estimatedSize
+            } else {
+                Log.w("SmartDownloadManager", "Download failed or timed out for episode: ${episode.id}")
+                writeLogToFile(
+                    context,
+                    "Download failed or timed out for episode: '${episode.title}' (${episode.id})",
+                )
+                val completedInDb = database.downloadedEpisodeDao().getDownload(episode.id)?.status == DownloadedEpisodeEntity.STATUS_COMPLETED
+                if (completedInDb) {
+                    countDownloaded++
+                    currentDownloadedBytes += estimatedSize
+                } else {
+                    downloadRepository.removeDownload(episode.id, isForeground = false)
+                }
+            }
         }
     }
 
@@ -514,6 +532,7 @@ class SmartDownloadManager(
                 "Combined download candidates list size: ${combinedEpisodes.size}. Target episode IDs: $candidateEpisodeIds",
             )
 
+            downloadRepository.reconcileStaleDownloads()
             val existingDownloads = database.downloadedEpisodeDao().getAllDownloadsSync()
             val (currentDownloadedBytes, cleanedCount) = recycleOldDownloads(candidateEpisodeIds, existingDownloads)
 
@@ -540,12 +559,19 @@ class SmartDownloadManager(
 
             triggerDownloads(combinedEpisodes, existingDownloads, subs, maxCount, storageBudgetMb, currentDownloadedBytes, countDownloaded)
 
+            val finalCompletedCount =
+                database.downloadedEpisodeDao().getAllDownloadsSync().count {
+                    it.status == DownloadedEpisodeEntity.STATUS_COMPLETED &&
+                        it.isSmartDownloaded &&
+                        it.episodeId in candidateEpisodeIds
+                }
+
             userPrefs.setSmartDownloadsLastSyncTime(System.currentTimeMillis())
             Log.d("SmartDownloadManager", "Smart downloads sync completed successfully.")
             writeLogToFile(context, "Sync completed successfully.")
             emitSmartDownloadSyncTelemetry(
                 requestedCount = combinedEpisodes.size,
-                completedCount = completedCount,
+                completedCount = finalCompletedCount,
                 cleanedCount = cleanedCount,
                 isManual = isManual,
                 isForeground = isForeground,
@@ -582,6 +608,9 @@ class SmartDownloadManager(
     }
 
     companion object {
+        const val MAX_TIME_BUDGET_MS = 510_000L // 8.5 minutes cumulative time budget
+        const val PER_EPISODE_TIMEOUT_MS = 150_000L // 2.5 minutes per-episode timeout
+
         fun schedulePeriodicSync(context: Context, wifiOnly: Boolean, chargingOnly: Boolean,) {
             try {
                 val constraints =
@@ -682,4 +711,31 @@ class SmartDownloadManager(
             }
         }
     }
+}
+
+private fun isEpisodeActiveOrDone(
+    currentInDb: DownloadedEpisodeEntity?,
+    episode: Episode,
+    existingDownloads: List<DownloadedEpisodeEntity>,
+): Boolean {
+    if (currentInDb != null) {
+        val status = currentInDb.status
+        if (status == DownloadedEpisodeEntity.STATUS_COMPLETED ||
+            status == DownloadedEpisodeEntity.STATUS_DOWNLOADING ||
+            status == DownloadedEpisodeEntity.STATUS_QUEUED
+        ) {
+            return true
+        }
+    }
+    val isAlreadyDownloaded =
+        existingDownloads.any {
+            it.episodeId == episode.id &&
+                it.status == DownloadedEpisodeEntity.STATUS_COMPLETED
+        }
+    val isDownloading =
+        existingDownloads.any {
+            it.episodeId == episode.id &&
+                (it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING || it.status == DownloadedEpisodeEntity.STATUS_QUEUED)
+        }
+    return isAlreadyDownloaded || isDownloading
 }

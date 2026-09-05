@@ -20,12 +20,16 @@ import cx.aswin.boxlore.core.ranking.RankingAction
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
 import java.io.File
 import java.util.concurrent.Executors
+import kotlin.coroutines.resume
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 
 class DownloadRepository(
     private val context: Context,
@@ -63,11 +67,30 @@ class DownloadRepository(
                             if (existing != null) {
                                 val updated =
                                     existing.copy(
-                                        sizeBytes = download.contentLength,
+                                        sizeBytes = if (download.contentLength > 0) download.contentLength else existing.sizeBytes,
                                         localFilePath = "CACHED", // Marker that it is in Media3 Cache
                                         status = DownloadedEpisodeEntity.STATUS_COMPLETED,
                                     )
                                 database.downloadedEpisodeDao().insert(updated)
+                            } else {
+                                val fallback = DownloadedEpisodeEntity(
+                                    episodeId = episodeId,
+                                    podcastId = podcastId,
+                                    episodeTitle = dataParts.getOrNull(2) ?: "Downloaded Episode",
+                                    episodeDescription = null,
+                                    episodeImageUrl = null,
+                                    podcastName = dataParts.getOrNull(1) ?: "Podcast",
+                                    podcastImageUrl = null,
+                                    durationMs = 0L,
+                                    publishedDate = 0L,
+                                    localFilePath = "CACHED",
+                                    downloadId = 0L,
+                                    downloadedAt = System.currentTimeMillis(),
+                                    sizeBytes = if (download.contentLength > 0) download.contentLength else 0L,
+                                    status = DownloadedEpisodeEntity.STATUS_COMPLETED,
+                                    isSmartDownloaded = false,
+                                )
+                                database.downloadedEpisodeDao().insert(fallback)
                             }
                         }
                     } else if (state == androidx.media3.exoplayer.offline.Download.STATE_FAILED) {
@@ -96,48 +119,12 @@ class DownloadRepository(
         )
     }
 
-    private fun downloadArtworkLocally(context: Context, imageUrl: String?, subDir: String, fileName: String,): String? {
-        if (imageUrl.isNullOrBlank()) return null
-        try {
-            val cleanUrlStr = if (imageUrl.startsWith("//")) "https:$imageUrl" else imageUrl
-            val url =
-                java.net.URI
-                    .create(cleanUrlStr)
-                    .toURL()
-            val dir = File(context.filesDir, subDir)
-            if (!dir.exists()) {
-                dir.mkdirs()
-            }
-            val file = File(dir, fileName)
-            url.openStream().use { input ->
-                file.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            return file.absolutePath
-        } catch (e: Exception) {
-            android.util.Log.e("DownloadRepo", "Failed to download artwork: $imageUrl", e)
-            return null
-        }
-    }
-
-    private fun deleteLocalFileIfValid(path: String?) {
-        if (path.isNullOrBlank()) return
-        val prefix = "file://"
-        if (path.startsWith("/") || path.startsWith(prefix)) {
-            val cleanPath = path.removePrefix(prefix)
-            try {
-                val file = File(cleanPath)
-                if (file.exists()) {
-                    file.delete()
-                }
-            } catch (e: Exception) {
-                android.util.Log.w("DownloadRepo", "Failed to delete file: $cleanPath", e)
-            }
-        }
-    }
-
-    fun addDownload(episode: Episode, podcast: Podcast, isSmartDownloaded: Boolean = false,) {
+    fun addDownload(
+        episode: Episode,
+        podcast: Podcast,
+        isSmartDownloaded: Boolean = false,
+        isForeground: Boolean = true,
+    ) {
         val source = if (isSmartDownloaded) "smart" else "manual"
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDownloadRequested(
             episode.id,
@@ -154,93 +141,16 @@ class DownloadRepository(
                     "${podcast.id}|${podcast.title}|${episode.title}".toByteArray(),
                 ).build()
 
-        try {
-            DownloadService.sendAddDownload(
-                context,
-                mediaDownloadServiceClass(),
-                downloadRequest,
-                true,
-            )
-        } catch (e: Exception) {
-            android.util.Log.w("DownloadRepo", "Background service start blocked by OS. Adding directly to DownloadManager instance.", e)
-            try {
-                getDownloadManager(context).addDownload(downloadRequest)
-            } catch (inner: Exception) {
-                android.util.Log.e("DownloadRepo", "Failed to add download directly to DownloadManager", inner)
-            }
-        }
+        dispatchAddDownload(context, mediaDownloadServiceClass(), downloadRequest, isForeground)
 
         android.util.Log.d("DownloadRepo", "Optimistically adding download: ${episode.id}")
         // Optimistically insert into DB as "Downloading"
         CoroutineScope(Dispatchers.IO).launch {
-            val entity =
-                try {
-                    android.util.Log.d("DownloadRepo", "Inserting optimistic download entity for ${episode.id}")
-
-                    val episodeArtSource =
-                        DownloadArtworkUrls.remoteUrl(episode.imageUrl)
-                            ?: DownloadArtworkUrls.remoteUrl(podcast.imageUrl)
-                    val podcastArtSource =
-                        DownloadArtworkUrls.remoteUrl(podcast.imageUrl)
-                            ?: episodeArtSource
-                    val localEpisodeImg =
-                        downloadArtworkLocally(
-                            context,
-                            episodeArtSource,
-                            "downloaded_artworks",
-                            "episode_${episode.id}.png",
-                        ) ?: episodeArtSource
-                    val localPodcastImg =
-                        downloadArtworkLocally(
-                            context,
-                            podcastArtSource,
-                            "downloaded_artworks",
-                            "podcast_${podcast.id}.png",
-                        ) ?: podcastArtSource
-
-                    DownloadedEpisodeEntity(
-                        episodeId = episode.id,
-                        podcastId = podcast.id,
-                        episodeTitle = episode.title,
-                        episodeDescription = episode.description,
-                        episodeImageUrl = localEpisodeImg,
-                        podcastName = podcast.title,
-                        podcastImageUrl = localPodcastImg,
-                        durationMs = episode.duration * 1000L,
-                        publishedDate = episode.publishedDate,
-                        localFilePath = "", // Filled when done
-                        downloadId = 0,
-                        downloadedAt = System.currentTimeMillis(),
-                        sizeBytes = 0,
-                        status = DownloadedEpisodeEntity.STATUS_DOWNLOADING,
-                        isSmartDownloaded = isSmartDownloaded,
-                    )
-                } catch (error: Exception) {
-                    android.util.Log.e("DownloadRepo", "Failed to prepare download ${episode.id}", error)
-                    return@launch
-                }
-            try {
-                database.downloadedEpisodeDao().insert(entity)
-            } catch (e: Exception) {
-                android.util.Log.e("DownloadRepo", "Optimistic insert failed for ${episode.id}", e)
-                return@launch
-            }
-            if (!isSmartDownloaded) {
-                rankingFeedbackRepository.recordAction(
-                    target =
-                    FeedbackTarget(
-                        episodeId = episode.id,
-                        podcastId = podcast.id,
-                        genre = episode.podcastGenre ?: podcast.genre,
-                    ),
-                    action = RankingAction.MANUAL_DOWNLOAD,
-                )
-            }
-            android.util.Log.d("DownloadRepo", "Optimistic insert successful for ${episode.id}")
+            insertOptimisticDownload(context, database, rankingFeedbackRepository, episode, podcast, isSmartDownloaded)
         }
     }
 
-    fun removeDownload(episodeId: String) {
+    fun removeDownload(episodeId: String, isForeground: Boolean = true) {
         // Capture artwork paths BEFORE triggering removal to avoid a race with
         // the DownloadManager listener (which deletes the DB row on STATE_REMOVING).
         CoroutineScope(Dispatchers.IO).launch {
@@ -258,16 +168,32 @@ class DownloadRepository(
                 android.util.Log.e("DownloadRepo", "Failed to read artwork paths for $episodeId", e)
             }
 
-            // Now send the remove request
+            // Only notify the service if in foreground to avoid BackgroundServiceStartNotAllowedException
+            if (isForeground) {
+                try {
+                    DownloadService.sendRemoveDownload(
+                        context,
+                        mediaDownloadServiceClass(),
+                        episodeId,
+                        false,
+                    )
+                } catch (e: Exception) {
+                    android.util.Log.w("DownloadRepo", "sendRemoveDownload failed for $episodeId", e)
+                }
+            }
+
+            // Always execute direct removeDownload on DownloadManager to prevent SimpleCache leaks
             try {
-                DownloadService.sendRemoveDownload(
-                    context,
-                    mediaDownloadServiceClass(),
-                    episodeId,
-                    false,
-                )
+                getDownloadManager(context).removeDownload(episodeId)
             } catch (e: Exception) {
-                android.util.Log.w("DownloadRepo", "sendRemoveDownload failed for $episodeId", e)
+                android.util.Log.e("DownloadRepo", "Direct removeDownload on DownloadManager failed for $episodeId", e)
+            }
+
+            // Direct cache removal fallback on SimpleCache to ensure no disk leaks even if unindexed
+            try {
+                getDownloadCache(context).removeResource(episodeId)
+            } catch (e: Exception) {
+                android.util.Log.w("DownloadRepo", "Direct SimpleCache removal fallback for $episodeId failed or unneeded", e)
             }
 
             // Clean up artwork files
@@ -290,6 +216,165 @@ class DownloadRepository(
             }
 
             database.downloadedEpisodeDao().delete(episodeId)
+        }
+    }
+
+    suspend fun awaitDownloadCompletion(episodeId: String, timeoutMs: Long = 150_000L): Boolean {
+        val initialExisting = database.downloadedEpisodeDao().getDownload(episodeId)
+        if (initialExisting?.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
+            return true
+        }
+
+        val initialMedia3 = getMedia3DownloadCompletionStatus(downloadManager, episodeId) { length ->
+            markCompletedInDb(episodeId, length)
+        }
+        if (initialMedia3 != null) {
+            return initialMedia3
+        }
+
+        return withTimeoutOrNull(timeoutMs) {
+            suspendCancellableCoroutine { cont ->
+                val observer = DownloadCompletionObserver(episodeId, cont) { length ->
+                    markCompletedInDb(episodeId, length)
+                }
+                downloadManager.addListener(observer)
+                cont.invokeOnCancellation {
+                    downloadManager.removeListener(observer)
+                }
+
+                checkObserverAsyncDb(database, episodeId, observer)
+                checkObserverAsyncMedia3(downloadManager, episodeId, observer)
+            }
+        } ?: false
+    }
+
+    private suspend fun markCompletedInDb(episodeId: String, contentLength: Long) {
+        try {
+            val existing = database.downloadedEpisodeDao().getDownload(episodeId)
+            if (existing != null) {
+                if (existing.status != DownloadedEpisodeEntity.STATUS_COMPLETED) {
+                    val updated = existing.copy(
+                        sizeBytes = if (contentLength > 0) contentLength else existing.sizeBytes,
+                        localFilePath = "CACHED",
+                        status = DownloadedEpisodeEntity.STATUS_COMPLETED,
+                    )
+                    database.downloadedEpisodeDao().insert(updated)
+                }
+            } else {
+                val media3Download = try {
+                    downloadManager.downloadIndex.getDownload(episodeId)
+                } catch (e: Exception) {
+                    null
+                }
+                val dataParts = media3Download?.request?.data?.let { String(it, Charsets.UTF_8).split("|") }
+                val podcastId = dataParts?.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "unknown"
+                val podcastTitle = dataParts?.getOrNull(1) ?: "Podcast"
+                val episodeTitle = dataParts?.getOrNull(2) ?: "Downloaded Episode"
+
+                val fallback = DownloadedEpisodeEntity(
+                    episodeId = episodeId,
+                    podcastId = podcastId,
+                    episodeTitle = episodeTitle,
+                    episodeDescription = null,
+                    episodeImageUrl = null,
+                    podcastName = podcastTitle,
+                    podcastImageUrl = null,
+                    durationMs = 0L,
+                    publishedDate = 0L,
+                    localFilePath = "CACHED",
+                    downloadId = 0L,
+                    downloadedAt = System.currentTimeMillis(),
+                    sizeBytes = if (contentLength > 0) contentLength else 0L,
+                    status = DownloadedEpisodeEntity.STATUS_COMPLETED,
+                    isSmartDownloaded = false,
+                )
+                database.downloadedEpisodeDao().insert(fallback)
+            }
+        } catch (e: Exception) {
+            Log.e("DownloadRepo", "Failed to mark download $episodeId as completed in DB", e)
+        }
+    }
+
+    suspend fun reconcileDownloadStatus(episodeId: String): DownloadedEpisodeEntity? {
+        val existing = database.downloadedEpisodeDao().getDownload(episodeId) ?: return null
+        if (existing.status != DownloadedEpisodeEntity.STATUS_DOWNLOADING &&
+            existing.status != DownloadedEpisodeEntity.STATUS_QUEUED
+        ) {
+            return existing
+        }
+
+        val media3Download = try {
+            downloadManager.downloadIndex.getDownload(episodeId)
+        } catch (e: Exception) {
+            Log.w("DownloadRepo", "Failed to query downloadIndex for $episodeId", e)
+            null
+        }
+
+        if (media3Download == null) {
+            Log.w(
+                "DownloadRepo",
+                "Reconciling orphaned download: $episodeId not found in Media3 index. Deleting stale Room row.",
+            )
+            database.downloadedEpisodeDao().delete(episodeId)
+            return null
+        }
+
+        return when (media3Download.state) {
+            androidx.media3.exoplayer.offline.Download.STATE_COMPLETED -> {
+                Log.i("DownloadRepo", "Reconciling download $episodeId: Media3 reported COMPLETED. Updating Room.")
+                val updated = existing.copy(
+                    sizeBytes = if (media3Download.contentLength > 0) media3Download.contentLength else existing.sizeBytes,
+                    localFilePath = "CACHED",
+                    status = DownloadedEpisodeEntity.STATUS_COMPLETED,
+                )
+                database.downloadedEpisodeDao().insert(updated)
+                updated
+            }
+            androidx.media3.exoplayer.offline.Download.STATE_FAILED,
+            androidx.media3.exoplayer.offline.Download.STATE_REMOVING -> {
+                Log.w("DownloadRepo", "Reconciling download $episodeId: Media3 reported state ${media3Download.state}. Deleting Room row.")
+                database.downloadedEpisodeDao().delete(episodeId)
+                null
+            }
+            androidx.media3.exoplayer.offline.Download.STATE_DOWNLOADING,
+            androidx.media3.exoplayer.offline.Download.STATE_QUEUED,
+            androidx.media3.exoplayer.offline.Download.STATE_RESTARTING -> {
+                val ageMs = System.currentTimeMillis() - existing.downloadedAt
+                if (ageMs > STALE_DOWNLOADING_THRESHOLD_MS) {
+                    Log.w(
+                        "DownloadRepo",
+                        "Reconciling download $episodeId: Stuck in state ${media3Download.state} for ${ageMs / 1000}s. Removing stale download.",
+                    )
+                    try {
+                        downloadManager.removeDownload(episodeId)
+                    } catch (e: Exception) {
+                        Log.e("DownloadRepo", "Failed to remove stale download $episodeId from DownloadManager", e)
+                    }
+                    database.downloadedEpisodeDao().delete(episodeId)
+                    null
+                } else {
+                    existing
+                }
+            }
+            else -> {
+                existing
+            }
+        }
+    }
+
+    suspend fun reconcileStaleDownloads() {
+        val downloading = try {
+            database.downloadedEpisodeDao().getAllDownloadsSync()
+                .filter {
+                    it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING ||
+                        it.status == DownloadedEpisodeEntity.STATUS_QUEUED
+                }
+        } catch (e: Exception) {
+            Log.e("DownloadRepo", "Failed to get downloads for reconciliation", e)
+            emptyList()
+        }
+        for (entity in downloading) {
+            reconcileDownloadStatus(entity.episodeId)
         }
     }
 
@@ -359,6 +444,7 @@ class DownloadRepository(
         private var streamDatabaseProvider: DatabaseProvider? = null
 
         private const val STREAM_CACHE_MAX_BYTES = 250L * 1024 * 1024 // 250 MB
+        const val STALE_DOWNLOADING_THRESHOLD_MS = 30 * 60 * 1000L // 30 minutes
 
         fun mediaDownloadServiceClass(): Class<out DownloadService> = cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
             .require()
@@ -516,6 +602,329 @@ class DownloadRepository(
                     "Failed to re-key Media3 download index from $oldEpisodeId to $newEpisodeId",
                     it,
                 )
+            }
+        }
+    }
+}
+
+private fun dispatchAddDownload(
+    context: Context,
+    serviceClass: Class<out DownloadService>,
+    downloadRequest: DownloadRequest,
+    isForeground: Boolean,
+) {
+    if (isForeground) {
+        try {
+            DownloadService.sendAddDownload(
+                context,
+                serviceClass,
+                downloadRequest,
+                true,
+            )
+        } catch (e: Exception) {
+            android.util.Log.w(
+                "DownloadRepo",
+                "Background service start blocked by OS. Adding directly to DownloadManager instance.",
+                e,
+            )
+            enqueueDirectlyToManager(context, downloadRequest)
+        }
+    } else {
+        enqueueDirectlyToManager(context, downloadRequest)
+    }
+}
+
+private fun enqueueDirectlyToManager(context: Context, downloadRequest: DownloadRequest) {
+    try {
+        val manager = DownloadRepository.getDownloadManager(context)
+        manager.resumeDownloads()
+        manager.addDownload(downloadRequest)
+    } catch (e: Exception) {
+        android.util.Log.e("DownloadRepo", "Failed to add download directly to DownloadManager", e)
+    }
+}
+
+private fun downloadArtworkLocally(
+    context: Context,
+    imageUrl: String?,
+    subDir: String,
+    fileName: String,
+): String? {
+    if (imageUrl.isNullOrBlank()) return null
+    try {
+        val cleanUrlStr = if (imageUrl.startsWith("//")) "https:$imageUrl" else imageUrl
+        val url =
+            java.net.URI
+                .create(cleanUrlStr)
+                .toURL()
+        val dir = File(context.filesDir, subDir)
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        val file = File(dir, fileName)
+        url.openStream().use { input ->
+            file.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        return file.absolutePath
+    } catch (e: Exception) {
+        android.util.Log.e("DownloadRepo", "Failed to download artwork: $imageUrl", e)
+        return null
+    }
+}
+
+private fun deleteLocalFileIfValid(path: String?) {
+    if (path.isNullOrBlank()) return
+    val prefix = "file://"
+    if (path.startsWith("/") || path.startsWith(prefix)) {
+        val cleanPath = path.removePrefix(prefix)
+        try {
+            val file = File(cleanPath)
+            if (file.exists()) {
+                file.delete()
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("DownloadRepo", "Failed to delete file: $cleanPath", e)
+        }
+    }
+}
+
+private fun resolveArtworkUrl(primary: String?, fallback: String?): String? =
+    DownloadArtworkUrls.remoteUrl(primary) ?: DownloadArtworkUrls.remoteUrl(fallback)
+
+private suspend fun handleAlreadyCompletedOptimistic(
+    database: BoxLoreDatabase,
+    rankingFeedbackRepository: RankingFeedbackRepository,
+    existing: DownloadedEpisodeEntity,
+    episode: Episode,
+    podcast: Podcast,
+    effectiveIsSmartDownloaded: Boolean,
+) {
+    if (existing.isSmartDownloaded && !effectiveIsSmartDownloaded) {
+        database.downloadedEpisodeDao().insert(existing.copy(isSmartDownloaded = false))
+    }
+    if (!effectiveIsSmartDownloaded) {
+        recordDownloadRankingFeedback(rankingFeedbackRepository, episode, podcast)
+    }
+}
+
+private fun buildImmediateOptimisticEntity(
+    episode: Episode,
+    podcast: Podcast,
+    existing: DownloadedEpisodeEntity?,
+    effectiveIsSmartDownloaded: Boolean,
+    episodeArtSource: String?,
+    podcastArtSource: String?,
+): DownloadedEpisodeEntity = DownloadedEpisodeEntity(
+    episodeId = episode.id,
+    podcastId = podcast.id,
+    episodeTitle = episode.title,
+    episodeDescription = episode.description,
+    episodeImageUrl = existing?.episodeImageUrl ?: episodeArtSource,
+    podcastName = podcast.title,
+    podcastImageUrl = existing?.podcastImageUrl ?: podcastArtSource,
+    durationMs = episode.duration * 1000L,
+    publishedDate = episode.publishedDate,
+    localFilePath = existing?.localFilePath ?: "",
+    downloadId = existing?.downloadId ?: 0,
+    downloadedAt = existing?.downloadedAt ?: System.currentTimeMillis(),
+    sizeBytes = existing?.sizeBytes ?: 0,
+    status = DownloadedEpisodeEntity.STATUS_DOWNLOADING,
+    isSmartDownloaded = effectiveIsSmartDownloaded,
+)
+
+private suspend fun fetchAndPersistArtwork(
+    context: Context,
+    database: BoxLoreDatabase,
+    episodeId: String,
+    podcastId: String,
+    episodeArtSource: String?,
+    podcastArtSource: String?,
+) {
+    val localEp = downloadArtworkLocally(context, episodeArtSource, "downloaded_artworks", "episode_$episodeId.png")
+    val localPod = downloadArtworkLocally(context, podcastArtSource, "downloaded_artworks", "podcast_$podcastId.png")
+    if (localEp == null && localPod == null) return
+
+    try {
+        val current = database.downloadedEpisodeDao().getDownload(episodeId) ?: return
+        database.downloadedEpisodeDao().insert(
+            current.copy(
+                episodeImageUrl = localEp ?: current.episodeImageUrl,
+                podcastImageUrl = localPod ?: current.podcastImageUrl,
+            ),
+        )
+    } catch (e: Exception) {
+        android.util.Log.e("DownloadRepo", "Failed to update artwork paths for $episodeId", e)
+    }
+}
+
+private suspend fun insertOptimisticDownload(
+    context: Context,
+    database: BoxLoreDatabase,
+    rankingFeedbackRepository: RankingFeedbackRepository,
+    episode: Episode,
+    podcast: Podcast,
+    isSmartDownloaded: Boolean,
+) {
+    val existing = try {
+        database.downloadedEpisodeDao().getDownload(episode.id)
+    } catch (e: Exception) {
+        null
+    }
+    val effectiveIsSmart = isSmartDownloaded && (existing == null || existing.isSmartDownloaded)
+
+    if (existing?.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
+        handleAlreadyCompletedOptimistic(database, rankingFeedbackRepository, existing, episode, podcast, effectiveIsSmart)
+        return
+    }
+
+    val epArt = resolveArtworkUrl(episode.imageUrl, podcast.imageUrl)
+    val podArt = resolveArtworkUrl(podcast.imageUrl, episode.imageUrl)
+    val entity = buildImmediateOptimisticEntity(episode, podcast, existing, effectiveIsSmart, epArt, podArt)
+
+    try {
+        database.downloadedEpisodeDao().insert(entity)
+    } catch (e: Exception) {
+        android.util.Log.e("DownloadRepo", "Optimistic insert failed for ${episode.id}", e)
+    }
+
+    if (!effectiveIsSmart) {
+        recordDownloadRankingFeedback(rankingFeedbackRepository, episode, podcast)
+    }
+
+    fetchAndPersistArtwork(context, database, episode.id, podcast.id, epArt, podArt)
+}
+
+private suspend fun recordDownloadRankingFeedback(
+    rankingFeedbackRepository: RankingFeedbackRepository,
+    episode: Episode,
+    podcast: Podcast,
+) {
+    rankingFeedbackRepository.recordAction(
+        target = FeedbackTarget(
+            episodeId = episode.id,
+            podcastId = podcast.id,
+            genre = episode.podcastGenre ?: podcast.genre,
+        ),
+        action = RankingAction.MANUAL_DOWNLOAD,
+    )
+}
+
+private suspend fun getMedia3DownloadCompletionStatus(
+    downloadManager: DownloadManager,
+    episodeId: String,
+    onCompleted: suspend (Long) -> Unit,
+): Boolean? {
+    val download = try {
+        downloadManager.downloadIndex.getDownload(episodeId)
+    } catch (e: Exception) {
+        null
+    } ?: return null
+
+    return when (download.state) {
+        androidx.media3.exoplayer.offline.Download.STATE_COMPLETED -> {
+            onCompleted(download.contentLength)
+            true
+        }
+        androidx.media3.exoplayer.offline.Download.STATE_FAILED,
+        androidx.media3.exoplayer.offline.Download.STATE_REMOVING -> false
+        else -> null
+    }
+}
+
+private class DownloadCompletionObserver(
+    private val episodeId: String,
+    private val cont: CancellableContinuation<Boolean>,
+    private val onCompleted: suspend (Long) -> Unit,
+) : DownloadManager.Listener {
+    private val resumed = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    fun safeResume(success: Boolean) {
+        if (resumed.compareAndSet(false, true)) {
+            if (cont.isActive) {
+                cont.resume(success)
+            }
+        }
+    }
+
+    fun handleCompletion(contentLength: Long) {
+        if (resumed.compareAndSet(false, true)) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    onCompleted(contentLength)
+                } catch (e: Exception) {
+                    android.util.Log.e("DownloadRepo", "Error marking download completed in DB", e)
+                } finally {
+                    if (cont.isActive) {
+                        cont.resume(true)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onDownloadChanged(
+        manager: DownloadManager,
+        download: androidx.media3.exoplayer.offline.Download,
+        finalException: Exception?,
+    ) {
+        if (download.request.id == episodeId) {
+            when (download.state) {
+                androidx.media3.exoplayer.offline.Download.STATE_COMPLETED -> {
+                    handleCompletion(download.contentLength)
+                }
+                androidx.media3.exoplayer.offline.Download.STATE_FAILED,
+                androidx.media3.exoplayer.offline.Download.STATE_REMOVING -> {
+                    safeResume(false)
+                }
+            }
+        }
+    }
+
+    override fun onDownloadRemoved(
+        manager: DownloadManager,
+        download: androidx.media3.exoplayer.offline.Download,
+    ) {
+        if (download.request.id == episodeId) {
+            safeResume(false)
+        }
+    }
+}
+
+private fun checkObserverAsyncDb(
+    database: BoxLoreDatabase,
+    episodeId: String,
+    observer: DownloadCompletionObserver,
+) {
+    CoroutineScope(Dispatchers.IO).launch {
+        val recheckExisting = database.downloadedEpisodeDao().getDownload(episodeId)
+        if (recheckExisting?.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
+            observer.safeResume(true)
+        }
+    }
+}
+
+private fun checkObserverAsyncMedia3(
+    downloadManager: DownloadManager,
+    episodeId: String,
+    observer: DownloadCompletionObserver,
+) {
+    CoroutineScope(Dispatchers.IO).launch {
+        val recheckMedia3 = try {
+            downloadManager.downloadIndex.getDownload(episodeId)
+        } catch (e: Exception) {
+            null
+        }
+        if (recheckMedia3 != null) {
+            when (recheckMedia3.state) {
+                androidx.media3.exoplayer.offline.Download.STATE_COMPLETED -> {
+                    observer.handleCompletion(recheckMedia3.contentLength)
+                }
+                androidx.media3.exoplayer.offline.Download.STATE_FAILED,
+                androidx.media3.exoplayer.offline.Download.STATE_REMOVING -> {
+                    observer.safeResume(false)
+                }
             }
         }
     }

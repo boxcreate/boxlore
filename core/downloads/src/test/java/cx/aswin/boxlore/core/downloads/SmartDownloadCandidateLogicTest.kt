@@ -234,11 +234,39 @@ class SmartDownloadCandidateLogicTest {
         publishedDate = publishedDate,
     )
 
+    @Test
+    fun `unplayed drops mixtape candidates excludes podcasts with autoDownloadEnabled`() {
+        val autoDownloadPod =
+            podcastEntity(
+                "auto-pod",
+                latestEpisode = episode("ep-auto", "auto-pod", publishedDate = nowSeconds),
+                autoDownloadEnabled = true,
+            )
+        val normalPod =
+            podcastEntity(
+                "normal-pod",
+                latestEpisode = episode("ep-normal", "normal-pod", publishedDate = nowSeconds),
+                autoDownloadEnabled = false,
+            )
+
+        val candidates =
+            SmartDownloadCandidateLogic.buildUnplayedDropsMixtapeCandidates(
+                subs = listOf(autoDownloadPod, normalPod),
+                resolvedSerial = emptyMap(),
+                historyByEpisode = emptyMap(),
+                podScoresMap = emptyMap(),
+                nowMs = nowMs,
+            )
+
+        assertEquals(listOf("ep-normal"), candidates.map { it.episodeId })
+    }
+
     private fun podcastEntity(
         id: String,
         subscribedAt: Long = nowMs - 7L * 24 * 60 * 60 * 1000,
         preferredSort: String? = null,
         latestEpisode: Episode? = null,
+        autoDownloadEnabled: Boolean = false,
     ) = PodcastEntity(
         podcastId = id,
         title = "Podcast $id",
@@ -250,6 +278,7 @@ class SmartDownloadCandidateLogicTest {
         genre = "Comedy",
         preferredSort = preferredSort,
         latestEpisode = latestEpisode,
+        autoDownloadEnabled = autoDownloadEnabled,
     )
 
     private fun history(

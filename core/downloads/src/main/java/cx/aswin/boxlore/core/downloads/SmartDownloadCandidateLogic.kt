@@ -152,7 +152,8 @@ internal object SmartDownloadCandidateLogic {
         podScoresMap: Map<String, Double>,
         nowMs: Long,
     ): List<MixtapeCandidate> {
-        val unplayedDropsCandidates = subs.mapNotNull { pod ->
+        val eligibleSubs = subs.filter { !it.autoDownloadEnabled }
+        val unplayedDropsCandidates = eligibleSubs.mapNotNull { pod ->
             resolveUnplayedDropCandidate(pod, resolvedSerial, historyByEpisode)
         }
 
@@ -239,7 +240,12 @@ internal object SmartDownloadCandidateLogic {
     }
 
     internal fun estimateDownloadSize(download: DownloadedEpisodeEntity): Long = if (download.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
-        download.sizeBytes
+        if (download.sizeBytes > 0L) {
+            download.sizeBytes
+        } else {
+            val durSec = download.durationMs / 1000L
+            if (durSec > 0) durSec * ESTIMATED_BYTES_PER_SECOND else DEFAULT_EPISODE_SIZE_BYTES
+        }
     } else if (download.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING) {
         val durSec = download.durationMs / 1000L
         if (durSec > 0) durSec * ESTIMATED_BYTES_PER_SECOND else DEFAULT_EPISODE_SIZE_BYTES
