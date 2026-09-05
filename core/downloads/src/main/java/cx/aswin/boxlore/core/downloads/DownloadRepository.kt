@@ -429,6 +429,7 @@ open class DownloadRepository(
 
         private const val STREAM_CACHE_MAX_BYTES = 250L * 1024 * 1024 // 250 MB
         const val STALE_DOWNLOADING_THRESHOLD_MS = 30 * 60 * 1000L // 30 minutes
+        private const val RELEASE_FAILED_MESSAGE = "Release failed"
 
         @androidx.annotation.VisibleForTesting
         @Synchronized
@@ -436,17 +437,17 @@ open class DownloadRepository(
             try {
                 downloadManager?.release()
             } catch (ignored: Exception) {
-                Log.d("DownloadRepo", "Release failed", ignored)
+                Log.d("DownloadRepo", RELEASE_FAILED_MESSAGE, ignored)
             }
             try {
                 cache?.release()
             } catch (ignored: Exception) {
-                Log.d("DownloadRepo", "Release failed", ignored)
+                Log.d("DownloadRepo", RELEASE_FAILED_MESSAGE, ignored)
             }
             try {
                 streamCache?.release()
             } catch (ignored: Exception) {
-                Log.d("DownloadRepo", "Release failed", ignored)
+                Log.d("DownloadRepo", RELEASE_FAILED_MESSAGE, ignored)
             }
             downloadManager = null
             cache = null
