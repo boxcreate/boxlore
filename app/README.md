@@ -95,7 +95,7 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 
 ## Testing notes
 
-- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids, feedUrl/guid/enclosure), new-episode route/id helpers, opted-in feed hydration before notify, library backup analytics error codes, import-dialog system-bar edge-to-edge (`ImportDialogSystemBarsTest`), push-target route allowlisting, cold-start destination precedence (`StartDestinationResolverTest`), launch-landing Back decisions (`LaunchSubscriptionsBackDecisionTest`), and episode navigation route building and argument decoding (`EpisodeNavRouteRegressionTest`).
+- Unit tests live under `app/src/test`, including app container smoke coverage, worker factory mapping, FCM payload parsing (type + snake/camel ids, feedUrl/guid/enclosure), new-episode route/id and auto-download WorkManager enqueueing helpers (`NewEpisodeFcmLogicTest`), opted-in feed hydration before notify, library backup analytics error codes, import-dialog system-bar edge-to-edge (`ImportDialogSystemBarsTest`), push-target route allowlisting, cold-start destination precedence (`StartDestinationResolverTest`), launch-landing Back decisions (`LaunchSubscriptionsBackDecisionTest`), and episode navigation route building and argument decoding (`EpisodeNavRouteRegressionTest`).
 - Navigation and feature UI behavior are covered mainly in feature module tests and Maestro smoke flows.
 
 ```bash

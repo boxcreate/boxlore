@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package cx.aswin.boxlore.core.downloads
 
 import android.content.Context
@@ -167,6 +169,12 @@ open class DownloadRepository(
                 getDownloadManager(context).downloadIndex.getDownload(episodeId)?.request?.customCacheKey
             } catch (_: Exception) {
                 null
+            } ?: try {
+                database.localEpisodeCatalogDao().getEpisode(episodeId)?.audioUrl?.let {
+                    EpisodeMediaCacheKey.of(episodeId, it)
+                }
+            } catch (_: Exception) {
+                null
             }
 
             notifyServiceRemoveDownload(context, episodeId, isForeground)
@@ -180,72 +188,6 @@ open class DownloadRepository(
             )
 
             database.downloadedEpisodeDao().delete(episodeId)
-        }
-    }
-
-    private fun notifyServiceRemoveDownload(
-        context: Context,
-        episodeId: String,
-        isForeground: Boolean,
-    ) {
-        if (isForeground) {
-            try {
-                DownloadService.sendRemoveDownload(
-                    context,
-                    mediaDownloadServiceClass(),
-                    episodeId,
-                    false,
-                )
-            } catch (e: Exception) {
-                Log.w("DownloadRepo", "sendRemoveDownload failed for $episodeId", e)
-            }
-        }
-    }
-
-    private fun evictFromCaches(
-        context: Context,
-        episodeId: String,
-        customCacheKey: String?,
-    ) {
-        try {
-            getDownloadManager(context).removeDownload(episodeId)
-        } catch (e: Exception) {
-            Log.e("DownloadRepo", "Direct removeDownload on DownloadManager failed for $episodeId", e)
-        }
-
-        try {
-            val cacheKey = customCacheKey?.takeIf { it.isNotBlank() } ?: episodeId
-            getDownloadCache(context).removeResource(cacheKey)
-            if (cacheKey != episodeId) {
-                try {
-                    getDownloadCache(context).removeResource(episodeId)
-                } catch (_: Exception) {}
-            }
-        } catch (e: Exception) {
-            Log.w("DownloadRepo", "Direct SimpleCache removal fallback for $episodeId failed or unneeded", e)
-        }
-    }
-
-    private suspend fun cleanupArtwork(
-        database: BoxLoreDatabase,
-        episodeId: String,
-        podcastId: String?,
-        episodeImgPath: String?,
-        podcastImgPath: String?,
-    ) {
-        try {
-            deleteLocalFileIfValid(episodeImgPath)
-            if (podcastId != null && podcastImgPath != null) {
-                val othersCount =
-                    database
-                        .downloadedEpisodeDao()
-                        .countOthersByPodcastId(podcastId, episodeId)
-                if (othersCount == 0) {
-                    deleteLocalFileIfValid(podcastImgPath)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("DownloadRepo", "Failed to clean up artwork files for $episodeId", e)
         }
     }
 
@@ -289,49 +231,41 @@ open class DownloadRepository(
     }
 
     private suspend fun markCompletedInDb(episodeId: String, contentLength: Long) {
-        try {
-            val existing = database.downloadedEpisodeDao().getDownload(episodeId)
-            if (existing != null) {
-                if (existing.status != DownloadedEpisodeEntity.STATUS_COMPLETED) {
-                    val updated = existing.copy(
-                        sizeBytes = if (contentLength > 0) contentLength else existing.sizeBytes,
-                        localFilePath = "CACHED",
-                        status = DownloadedEpisodeEntity.STATUS_COMPLETED,
-                    )
-                    database.downloadedEpisodeDao().insert(updated)
-                }
-            } else {
-                val media3Download = try {
-                    downloadManager.downloadIndex.getDownload(episodeId)
-                } catch (e: Exception) {
-                    null
-                }
-                val dataParts = media3Download?.request?.data?.let { String(it, Charsets.UTF_8).split("|") }
-                val podcastId = dataParts?.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "unknown"
-                val podcastTitle = dataParts?.getOrNull(1) ?: "Podcast"
-                val episodeTitle = dataParts?.getOrNull(2) ?: "Downloaded Episode"
-
-                val fallback = DownloadedEpisodeEntity(
-                    episodeId = episodeId,
-                    podcastId = podcastId,
-                    episodeTitle = episodeTitle,
-                    episodeDescription = null,
-                    episodeImageUrl = null,
-                    podcastName = podcastTitle,
-                    podcastImageUrl = null,
-                    durationMs = 0L,
-                    publishedDate = 0L,
+        val existing = database.downloadedEpisodeDao().getDownload(episodeId)
+        if (existing != null) {
+            if (existing.status != DownloadedEpisodeEntity.STATUS_COMPLETED) {
+                val updated = existing.copy(
+                    sizeBytes = if (contentLength > 0) contentLength else existing.sizeBytes,
                     localFilePath = "CACHED",
-                    downloadId = 0L,
-                    downloadedAt = System.currentTimeMillis(),
-                    sizeBytes = if (contentLength > 0) contentLength else 0L,
                     status = DownloadedEpisodeEntity.STATUS_COMPLETED,
-                    isSmartDownloaded = false,
                 )
-                database.downloadedEpisodeDao().insert(fallback)
+                database.downloadedEpisodeDao().insert(updated)
             }
-        } catch (e: Exception) {
-            Log.e("DownloadRepo", "Failed to mark download $episodeId as completed in DB", e)
+        } else {
+            val media3Download = runCatching { downloadManager.downloadIndex.getDownload(episodeId) }.getOrNull()
+            val dataParts = media3Download?.request?.data?.let { String(it, Charsets.UTF_8).split("|") }
+            val fallback = DownloadedEpisodeEntity(
+                episodeId = episodeId,
+                podcastId = dataParts?.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "unknown",
+                episodeTitle = dataParts?.getOrNull(2) ?: "Downloaded Episode",
+                episodeDescription = null,
+                episodeImageUrl = null,
+                podcastName = dataParts?.getOrNull(1) ?: "Podcast",
+                podcastImageUrl = null,
+                durationMs = 0L,
+                publishedDate = 0L,
+                localFilePath = "CACHED",
+                downloadId = 0L,
+                downloadedAt = System.currentTimeMillis(),
+                sizeBytes = if (contentLength > 0) contentLength else 0L,
+                status = DownloadedEpisodeEntity.STATUS_COMPLETED,
+                isSmartDownloaded = false,
+            )
+            database.downloadedEpisodeDao().insert(fallback)
+        }
+        val verified = database.downloadedEpisodeDao().getDownload(episodeId)
+        check(verified?.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
+            "Failed to persist completed download row in Room for $episodeId"
         }
     }
 
@@ -389,10 +323,7 @@ open class DownloadRepository(
         existing: DownloadedEpisodeEntity,
         episodeId: String,
     ): DownloadedEpisodeEntity? {
-        val lastActivityTimeMs = if (
-            media3Download.state == Download.STATE_DOWNLOADING &&
-            media3Download.updateTimeMs > 0
-        ) {
+        val lastActivityTimeMs = if (media3Download.updateTimeMs > 0) {
             media3Download.updateTimeMs
         } else {
             existing.downloadedAt
@@ -716,6 +647,84 @@ private fun enqueueDirectlyToManager(context: Context, downloadRequest: Download
     }
 }
 
+private fun notifyServiceRemoveDownload(
+    context: Context,
+    episodeId: String,
+    isForeground: Boolean,
+) {
+    if (isForeground) {
+        try {
+            DownloadService.sendRemoveDownload(
+                context,
+                DownloadRepository.mediaDownloadServiceClass(),
+                episodeId,
+                false,
+            )
+        } catch (e: Exception) {
+            Log.w("DownloadRepo", "sendRemoveDownload failed for $episodeId", e)
+        }
+    }
+}
+
+private fun evictFromCaches(
+    context: Context,
+    episodeId: String,
+    customCacheKey: String?,
+) {
+    try {
+        DownloadRepository.getDownloadManager(context).removeDownload(episodeId)
+    } catch (e: Exception) {
+        Log.e("DownloadRepo", "Direct removeDownload on DownloadManager failed for $episodeId", e)
+    }
+
+    try {
+        val cache = DownloadRepository.getDownloadCache(context)
+        val cacheKey = customCacheKey?.takeIf { it.isNotBlank() } ?: episodeId
+        cache.removeResource(cacheKey)
+        if (cacheKey != episodeId) {
+            try {
+                cache.removeResource(episodeId)
+            } catch (_: Exception) {}
+        }
+        if (episodeId.startsWith("briefing_")) {
+            evictMatchingBriefingResources(cache, episodeId)
+        }
+    } catch (e: Exception) {
+        Log.w("DownloadRepo", "Direct SimpleCache removal fallback for $episodeId failed or unneeded", e)
+    }
+}
+
+private fun evictMatchingBriefingResources(cache: Cache, episodeId: String) {
+    try {
+        cache.keys
+            .filter { it.startsWith("${episodeId}_") }
+            .forEach { versionedKey -> runCatching { cache.removeResource(versionedKey) } }
+    } catch (_: Exception) {}
+}
+
+private suspend fun cleanupArtwork(
+    database: BoxLoreDatabase,
+    episodeId: String,
+    podcastId: String?,
+    episodeImgPath: String?,
+    podcastImgPath: String?,
+) {
+    try {
+        deleteLocalFileIfValid(episodeImgPath)
+        if (podcastId != null && podcastImgPath != null) {
+            val othersCount =
+                database
+                    .downloadedEpisodeDao()
+                    .countOthersByPodcastId(podcastId, episodeId)
+            if (othersCount == 0) {
+                deleteLocalFileIfValid(podcastImgPath)
+            }
+        }
+    } catch (e: Exception) {
+        Log.e("DownloadRepo", "Failed to clean up artwork files for $episodeId", e)
+    }
+}
+
 private fun downloadArtworkLocally(
     context: Context,
     imageUrl: String?,
@@ -883,7 +892,8 @@ private suspend fun recordDownloadRankingFeedback(
     )
 }
 
-private suspend fun getMedia3DownloadCompletionStatus(
+@androidx.annotation.VisibleForTesting
+internal suspend fun getMedia3DownloadCompletionStatus(
     downloadManager: DownloadManager,
     episodeId: String,
     onCompleted: suspend (Long) -> Unit,
@@ -896,8 +906,13 @@ private suspend fun getMedia3DownloadCompletionStatus(
 
     return when (download.state) {
         androidx.media3.exoplayer.offline.Download.STATE_COMPLETED -> {
-            onCompleted(download.contentLength)
-            true
+            try {
+                onCompleted(download.contentLength)
+                true
+            } catch (e: Exception) {
+                android.util.Log.e("DownloadRepo", "Failed to persist Room row for completed download $episodeId", e)
+                false
+            }
         }
         androidx.media3.exoplayer.offline.Download.STATE_FAILED,
         androidx.media3.exoplayer.offline.Download.STATE_REMOVING -> false
@@ -905,7 +920,8 @@ private suspend fun getMedia3DownloadCompletionStatus(
     }
 }
 
-private class DownloadCompletionObserver(
+@androidx.annotation.VisibleForTesting
+internal class DownloadCompletionObserver(
     private val episodeId: String,
     private val cont: CancellableContinuation<Boolean>,
     private val onCompleted: suspend (Long) -> Unit,

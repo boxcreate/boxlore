@@ -189,6 +189,33 @@ class DownloadRepositoryTest {
     }
 
     @Test
+    fun `reconcileDownloadStatus preserves recently stopped download even if downloadedAt is old`() = runBlocking {
+        val now = System.currentTimeMillis()
+        dao.insert(
+            downloadEntity(
+                episodeId = "ep-recently-stopped",
+                status = DownloadedEpisodeEntity.STATUS_DOWNLOADING,
+                downloadedAt = now - 40 * 60 * 1000L,
+            ),
+        )
+        val request = androidx.media3.exoplayer.offline.DownloadRequest.Builder("ep-recently-stopped", android.net.Uri.parse("https://example.com/audio.mp3")).build()
+        val download = androidx.media3.exoplayer.offline.Download(
+            request,
+            androidx.media3.exoplayer.offline.Download.STATE_STOPPED,
+            now - 40 * 60 * 1000L,
+            now - 5 * 60 * 1000L,
+            1000L,
+            0,
+            0,
+        )
+        (DownloadRepository.getDownloadManager(context).downloadIndex as? androidx.media3.exoplayer.offline.WritableDownloadIndex)?.putDownload(download)
+
+        val result = repository.reconcileDownloadStatus("ep-recently-stopped")
+        assertNotNull(result)
+        assertNotNull(dao.getDownload("ep-recently-stopped"))
+    }
+
+    @Test
     fun `addDownload with background flag enqueues directly without crashing`() {
         val episode =
             Episode(
@@ -360,6 +387,63 @@ class DownloadRepositoryTest {
             val completed = repository.awaitDownloadCompletion("ep-stalled", timeoutMs = 200L)
             assertFalse(completed)
         }
+
+    @Test
+    fun `removeDownload evicts versioned briefing cache keys from SimpleCache`() = runBlocking {
+        val cache = DownloadRepository.getDownloadCache(context)
+        val briefingId = "briefing_us_2026-09-05"
+        val customKey = "${briefingId}_abc123"
+
+        val span = cache.startReadWrite(customKey, 0, 100)
+        val newFile = cache.startFile(customKey, 0, 100)
+        newFile.writeText("test briefing payload")
+        cache.commitFile(newFile, 100)
+        cache.releaseHoleSpan(span)
+        assertTrue(cache.keys.contains(customKey))
+
+        dao.insert(downloadEntity(episodeId = briefingId))
+
+        repository.removeDownload(briefingId).join()
+
+        assertFalse(cache.keys.contains(customKey))
+        assertFalse(cache.keys.contains(briefingId))
+        assertNull(dao.getDownload(briefingId))
+    }
+
+    @Test
+    fun `getMedia3DownloadCompletionStatus returns false when onCompleted throws exception`() = runBlocking {
+        val request = androidx.media3.exoplayer.offline.DownloadRequest.Builder("ep-status-fail", android.net.Uri.parse("https://example.com/audio.mp3")).build()
+        val download = androidx.media3.exoplayer.offline.Download(
+            request,
+            androidx.media3.exoplayer.offline.Download.STATE_COMPLETED,
+            System.currentTimeMillis(),
+            System.currentTimeMillis(),
+            1000L,
+            0,
+            0,
+        )
+        (DownloadRepository.getDownloadManager(context).downloadIndex as? androidx.media3.exoplayer.offline.WritableDownloadIndex)?.putDownload(download)
+
+        val result = getMedia3DownloadCompletionStatus(
+            downloadManager = DownloadRepository.getDownloadManager(context),
+            episodeId = "ep-status-fail",
+            onCompleted = { throw RuntimeException("DB failure") },
+        )
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun `DownloadCompletionObserver resumes false when onCompleted throws exception`() = runBlocking {
+        val completed = kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { cont ->
+            val obs = DownloadCompletionObserver(
+                episodeId = "ep-throw",
+                cont = cont,
+                onCompleted = { throw RuntimeException("DB failure") },
+            )
+            obs.handleCompletion(1000L)
+        }
+        assertFalse(completed)
+    }
 
     private fun downloadEntity(
         episodeId: String,

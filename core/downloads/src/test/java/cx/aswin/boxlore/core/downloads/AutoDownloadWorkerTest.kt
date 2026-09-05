@@ -367,7 +367,6 @@ class AutoDownloadWorkerTest {
                 ).build()
 
         val result = runBlocking { worker.doWork() }
-        Thread.sleep(200)
         val oldDownload = runBlocking { database.downloadedEpisodeDao().getDownload("ep-old") }
         val newerDownload = runBlocking { database.downloadedEpisodeDao().getDownload("ep-newer") }
         database.close()
