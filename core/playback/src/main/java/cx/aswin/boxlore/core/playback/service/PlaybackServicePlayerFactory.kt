@@ -33,7 +33,7 @@ import kotlinx.coroutines.CoroutineScope
  * for [BoxLorePlaybackService.onCreate].
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-internal class PlaybackServicePlayerFactory(private val context: Context, private val serviceScope: CoroutineScope,) {
+internal open class PlaybackServicePlayerFactory(private val context: Context, private val serviceScope: CoroutineScope,) {
     data class SeekButtons(val seekBack: CommandButton, val seekForward: CommandButton,)
 
     data class CustomActions(val like: CommandButton, val addToQueue: CommandButton, val markComplete: CommandButton,)
@@ -150,7 +150,7 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
             .build()
     }
 
-    fun buildSeekButtons(seekBackwardMs: Long, seekForwardMs: Long,): SeekButtons {
+    open fun buildSeekButtons(seekBackwardMs: Long, seekForwardMs: Long,): SeekButtons {
         val seekBack =
             CommandButton
                 .Builder()
@@ -176,7 +176,7 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
         return SeekButtons(seekBack = seekBack, seekForward = seekForward)
     }
 
-    fun buildCustomActions(): CustomActions {
+    open fun buildCustomActions(): CustomActions {
         val like =
             CommandButton
                 .Builder()
@@ -228,13 +228,14 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
             null
         }
 
-    fun buildMediaLibrarySession(
+    open fun buildMediaLibrarySession(
         service: androidx.media3.session.MediaLibraryService,
         forwardingPlayer: Player,
         callback: AutoBrowseLibraryCallback,
         pendingIntent: PendingIntent?,
         seekButtons: SeekButtons,
         customActions: CustomActions,
+        sessionId: String? = null,
     ): MediaLibrarySession {
         val coilBitmapLoader = CoilBitmapLoader(context, serviceScope)
         val cacheBitmapLoader = CacheBitmapLoader(coilBitmapLoader)
@@ -245,13 +246,16 @@ internal class PlaybackServicePlayerFactory(private val context: Context, privat
                 .setCommandButtonsForMediaItems(
                     listOf(customActions.like, customActions.addToQueue, customActions.markComplete),
                 ).setBitmapLoader(cacheBitmapLoader)
+        if (sessionId != null) {
+            builder.setId(sessionId)
+        }
         if (pendingIntent != null) {
             builder.setSessionActivity(pendingIntent)
         }
         return builder.build()
     }
 
-    fun assembleSession(
+    open fun assembleSession(
         service: androidx.media3.session.MediaLibraryService,
         player: Player,
         seekForwardMs: () -> Long,

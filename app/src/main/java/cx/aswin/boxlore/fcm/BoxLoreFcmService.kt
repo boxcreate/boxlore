@@ -145,7 +145,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             val deps = SharedAppDependenciesHolder.instance
             val local =
                 if (deps != null) {
-                    runCatching {
+                    try {
                         NewEpisodePushHydration.resolveLocalEpisode(
                             podcastId = podcastId,
                             payloadFeedUrl = FcmPayloadParser.feedUrl(data),
@@ -162,35 +162,33 @@ class BoxLoreFcmService : FirebaseMessagingService() {
                                 },
                             ),
                         )
-                    }.getOrNull()
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        null
+                    }
                 } else {
                     null
                 }
             val details = resolveNewEpisodeDetails(podcastId, data, local)
-            if (details.episodeId != null) {
-                try {
-                    triggerAutoDownload(podcastId, details.episodeId)
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    android.util.Log.e("BoxLoreFcmService", "Failed to trigger auto download", e)
-                }
-            }
-            try {
-                showNewEpisodeNotification(
-                    podcastId = podcastId,
-                    episodeId = details.episodeId,
-                    podcastTitle = details.podcastTitle,
-                    episodeTitle = details.episodeTitle,
-                    imageUrl = details.imageUrl,
-                    durationMinutes = details.durationMinutes,
-                    route = details.route,
-                )
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                android.util.Log.e("BoxLoreFcmService", "Failed to show new episode notification", e)
-            }
+            NewEpisodeFcmLogic.executeEpisodeDelivery(
+                triggerAutoDownload = {
+                    if (details.episodeId != null) {
+                        triggerAutoDownload(podcastId, details.episodeId)
+                    }
+                },
+                showNotification = {
+                    showNewEpisodeNotification(
+                        podcastId = podcastId,
+                        episodeId = details.episodeId,
+                        podcastTitle = details.podcastTitle,
+                        episodeTitle = details.episodeTitle,
+                        imageUrl = details.imageUrl,
+                        durationMinutes = details.durationMinutes,
+                        route = details.route,
+                    )
+                },
+            )
         }
     }
 

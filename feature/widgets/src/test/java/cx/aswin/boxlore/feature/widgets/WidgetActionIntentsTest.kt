@@ -69,8 +69,43 @@ class WidgetActionIntentsTest {
     }
 
     @Test
-    fun libraryWidgetCancelAllRunsCleanly() {
+    fun libraryWidgetCancelAllCancelsCollectionTemplateAndRunsCleanly() {
         val appWidgetId = 202
+        val template = LibraryWidgetRenderer.collectionClickTemplate(context, appWidgetId)
+        assertNotNull(template)
+
+        val templateFlags =
+            android.app.PendingIntent.FLAG_NO_CREATE or
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    android.app.PendingIntent.FLAG_MUTABLE
+                } else {
+                    0
+                }
+
+        val templateIntent =
+            android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                setPackage(context.packageName)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+
+        val existingBefore =
+            android.app.PendingIntent.getActivity(
+                context,
+                LibraryWidgetRenderer.requestCode(appWidgetId, LibraryWidgetRenderer.TEMPLATE_REQUEST),
+                templateIntent,
+                templateFlags,
+            )
+        assertNotNull(existingBefore)
+
         LibraryWidgetRenderer.cancelAll(context, appWidgetId)
+
+        val existingAfter =
+            android.app.PendingIntent.getActivity(
+                context,
+                LibraryWidgetRenderer.requestCode(appWidgetId, LibraryWidgetRenderer.TEMPLATE_REQUEST),
+                templateIntent,
+                templateFlags,
+            )
+        assertNull(existingAfter)
     }
 }

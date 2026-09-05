@@ -163,7 +163,7 @@ object LibraryWidgetRenderer {
         views.setViewVisibility(R.id.widget_empty_container, View.GONE)
     }
 
-    private fun collectionClickTemplate(
+    internal fun collectionClickTemplate(
         context: Context,
         appWidgetId: Int,
     ): PendingIntent? {
@@ -320,16 +320,16 @@ object LibraryWidgetRenderer {
         }
     }
 
-    private fun requestCode(
+    internal fun requestCode(
         appWidgetId: Int,
         slot: Int,
     ): Int = (appWidgetId * 31 + slot) and 0x7fffffff
 
-    private const val HEADER_REQUEST = 10
-    private const val ROOT_REQUEST = 11
-    private const val EMPTY_REQUEST = 12
-    private const val FOOTER_REQUEST = 13
-    private const val TEMPLATE_REQUEST = 14
+    internal const val HEADER_REQUEST = 10
+    internal const val ROOT_REQUEST = 11
+    internal const val EMPTY_REQUEST = 12
+    internal const val FOOTER_REQUEST = 13
+    internal const val TEMPLATE_REQUEST = 14
     private const val SUBSCRIPTIONS_TAB_URI = "boxlore://library/subscriptions?tab=0"
     private const val NEW_EPISODES_TAB_URI = "boxlore://library/subscriptions?tab=1"
 }

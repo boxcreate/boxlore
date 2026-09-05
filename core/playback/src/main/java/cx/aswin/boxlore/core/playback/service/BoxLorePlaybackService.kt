@@ -51,15 +51,15 @@ open class BoxLorePlaybackService :
     override var mediaSession: MediaLibrarySession? = null
         protected set
     private var localExoPlayer: ExoPlayer? = null
-    private var playbackPlayer: Player? = null
+    internal var playbackPlayer: Player? = null
     private var pausedIdleTeardownJob: Job? = null
     private val manualCompletionPersistenceJobs = mutableSetOf<Job>()
     override lateinit var seekBackAction: androidx.media3.session.CommandButton
         protected set
     override lateinit var seekForwardAction: androidx.media3.session.CommandButton
         protected set
-    private lateinit var likeAction: androidx.media3.session.CommandButton
-    private lateinit var addToQueueAction: androidx.media3.session.CommandButton
+    internal lateinit var likeAction: androidx.media3.session.CommandButton
+    internal lateinit var addToQueueAction: androidx.media3.session.CommandButton
     override lateinit var markCompleteAction: androidx.media3.session.CommandButton
         protected set
 
@@ -206,7 +206,10 @@ open class BoxLorePlaybackService :
         )
     }
 
-    private val playerFactory by lazy { PlaybackServicePlayerFactory(this, serviceScope) }
+    internal var customPlayerFactory: PlaybackServicePlayerFactory? = null
+
+    internal fun getPlayerFactory(): PlaybackServicePlayerFactory =
+        customPlayerFactory ?: PlaybackServicePlayerFactory(this, serviceScope)
 
     private val autoCollagePrewarmer by lazy {
         AutoCollagePrewarmer(
@@ -229,8 +232,8 @@ open class BoxLorePlaybackService :
     override fun onCreate() {
         super.onCreate()
 
-        val localPlayer = playerFactory.createExoPlayer()
-        val player = playerFactory.createCastPlayer(localPlayer)
+        val localPlayer = getPlayerFactory().createExoPlayer()
+        val player = getPlayerFactory().createCastPlayer(localPlayer)
         localExoPlayer = localPlayer
         playbackPlayer = player
         serviceScope.launch {
@@ -519,10 +522,10 @@ open class BoxLorePlaybackService :
         initMediaSession(player)
     }
 
-    private fun initMediaSession(player: Player) {
+    internal fun initMediaSession(player: Player) {
         try {
             val built =
-                playerFactory.assembleSession(
+                getPlayerFactory().assembleSession(
                     service = this,
                     player = player,
                     seekForwardMs = { cachedSeekForwardMs },
@@ -546,8 +549,8 @@ open class BoxLorePlaybackService :
                 "Failed to assemble MediaLibrarySession due to system PendingIntent UID limit",
                 e,
             )
-            val buttons = playerFactory.buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
-            val customActions = playerFactory.buildCustomActions()
+            val buttons = getPlayerFactory().buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
+            val customActions = getPlayerFactory().buildCustomActions()
             seekBackAction = buttons.seekBack
             seekForwardAction = buttons.seekForward
             likeAction = customActions.like
@@ -558,7 +561,7 @@ open class BoxLorePlaybackService :
     }
 
     private fun rebuildSeekCommandButtons() {
-        val buttons = playerFactory.buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
+        val buttons = getPlayerFactory().buildSeekButtons(cachedSeekBackwardMs, cachedSeekForwardMs)
         seekBackAction = buttons.seekBack
         seekForwardAction = buttons.seekForward
     }
@@ -987,12 +990,7 @@ open class BoxLorePlaybackService :
         playWhenReady = player.playWhenReady,
     )
 
-    override fun onDestroy() {
-        pausedIdleTeardownJob?.cancel()
-        pausedIdleTeardownJob = null
-        telemetrySession.end(forceCompleted = false)
-        introOutroController.reset(null, 0L)
-        clearEndOfEpisodeSleep()
+    internal fun releasePlayers() {
         if (mediaSession != null) {
             mediaSession?.run {
                 player.release()
@@ -1004,6 +1002,15 @@ open class BoxLorePlaybackService :
         }
         playbackPlayer = null
         localExoPlayer = null
+    }
+
+    override fun onDestroy() {
+        pausedIdleTeardownJob?.cancel()
+        pausedIdleTeardownJob = null
+        telemetrySession.end(forceCompleted = false)
+        introOutroController.reset(null, 0L)
+        clearEndOfEpisodeSleep()
+        releasePlayers()
         serviceScope.cancel()
         super.onDestroy()
     }

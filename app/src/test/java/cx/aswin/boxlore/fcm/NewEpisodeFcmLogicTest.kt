@@ -308,32 +308,26 @@ class NewEpisodeFcmLogicTest {
         // Simulate decoupled flow where notification display or PendingIntent throws SecurityException
         var autoDownloadEnqueued = false
         var notificationAttempted = false
-        var notificationFailedWithSecurityException = false
 
         val podcastId = "pod-failure-test"
         val episodeId = "ep-failure-test"
 
-        // 1. Auto-download execution
-        try {
-            kotlinx.coroutines.runBlocking {
-                NewEpisodeFcmLogic.enqueueAutoDownload(workManager, podcastId, episodeId, wifiOnly = false)
-            }
-            autoDownloadEnqueued = true
-        } catch (e: Exception) {
-            autoDownloadEnqueued = false
-        }
-
-        // 2. Notification simulation throwing SecurityException
-        try {
-            notificationAttempted = true
-            throw SecurityException("Too many PendingIntent created for uid")
-        } catch (e: SecurityException) {
-            notificationFailedWithSecurityException = true
+        // Execute through production delivery orchestration
+        kotlinx.coroutines.runBlocking {
+            NewEpisodeFcmLogic.executeEpisodeDelivery(
+                triggerAutoDownload = {
+                    NewEpisodeFcmLogic.enqueueAutoDownload(workManager, podcastId, episodeId, wifiOnly = false)
+                    autoDownloadEnqueued = true
+                },
+                showNotification = {
+                    notificationAttempted = true
+                    throw SecurityException("Too many PendingIntent created for uid")
+                },
+            )
         }
 
         assertTrue("Auto download must succeed even if notification throws SecurityException", autoDownloadEnqueued)
         assertTrue("Notification must have been attempted", notificationAttempted)
-        assertTrue("SecurityException must be caught without crashing", notificationFailedWithSecurityException)
 
         val workInfos = workManager.getWorkInfosByTag(cx.aswin.boxlore.core.downloads.AutoDownloadWorker::class.java.name).get()
         val match = workInfos.find { it.tags.contains(cx.aswin.boxlore.core.downloads.AutoDownloadWorker::class.java.name) }

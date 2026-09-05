@@ -125,4 +125,24 @@ internal object NewEpisodeFcmLogic {
         val operation = workManager.enqueue(workRequest)
         operation.await()
     }
+
+    suspend fun executeEpisodeDelivery(
+        triggerAutoDownload: suspend () -> Unit,
+        showNotification: () -> Unit,
+    ) {
+        try {
+            triggerAutoDownload()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("NewEpisodeFcmLogic", "Failed to trigger auto download", e)
+        }
+        try {
+            showNotification()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("NewEpisodeFcmLogic", "Failed to show new episode notification", e)
+        }
+    }
 }
