@@ -71,6 +71,67 @@ class PodcastGenreSuggestionsTest {
     }
 
     @Test
+    fun `sci-fi and scifi keywords match Fiction`() {
+        val scifiResult = filterGenreSuggestions("sci-fi")
+        assertFalse(scifiResult.isEmpty())
+        assertEquals("Fiction", scifiResult.first().name)
+        assertEquals("book", scifiResult.first().iconKey)
+
+        val spaceResult = filterGenreSuggestions("sci fi")
+        assertFalse(spaceResult.isEmpty())
+        assertEquals("Fiction", spaceResult.first().name)
+
+        val wordResult = filterGenreSuggestions("scifi")
+        assertFalse(wordResult.isEmpty())
+        assertEquals("Fiction", wordResult.first().name)
+    }
+
+    @Test
+    fun `tv and film query matches TV & Film via normalization`() {
+        val result = filterGenreSuggestions("tv and film")
+        assertFalse(result.isEmpty())
+        assertEquals("TV & Film", result.first().name)
+        assertEquals("movie", result.first().iconKey)
+    }
+
+    @Test
+    fun `hyphenated true-crime query matches True Crime`() {
+        val result = filterGenreSuggestions("true-crime")
+        assertFalse(result.isEmpty())
+        assertEquals("True Crime", result.first().name)
+        assertEquals("crime", result.first().iconKey)
+    }
+
+    @Test
+    fun `society and culture query matches Society & Culture`() {
+        val result = filterGenreSuggestions("society and culture")
+        assertFalse(result.isEmpty())
+        assertEquals("Society & Culture", result.first().name)
+    }
+
+    @Test
+    fun `kids and family query matches Kids & Family`() {
+        val result = filterGenreSuggestions("kids and family")
+        assertFalse(result.isEmpty())
+        assertEquals("Kids & Family", result.first().name)
+    }
+
+    @Test
+    fun `religion and spirituality query matches Religion & Spirituality`() {
+        val result = filterGenreSuggestions("religion and spirituality")
+        assertFalse(result.isEmpty())
+        assertEquals("Religion & Spirituality", result.first().name)
+    }
+
+    @Test
+    fun `subscription genre catalog tags Religion, Family, Govt exist in ALL_GENRE_SUGGESTIONS`() {
+        val names = ALL_GENRE_SUGGESTIONS.map { it.name }
+        assertTrue(names.contains("Religion"), "ALL_GENRE_SUGGESTIONS must include Religion")
+        assertTrue(names.contains("Family"), "ALL_GENRE_SUGGESTIONS must include Family")
+        assertTrue(names.contains("Govt"), "ALL_GENRE_SUGGESTIONS must include Govt")
+    }
+
+    @Test
     fun `unknown query returns empty list`() {
         val result = filterGenreSuggestions("xyz123nonexistent")
         assertTrue(result.isEmpty())

@@ -58,13 +58,16 @@ val ALL_GENRE_SUGGESTIONS: List<GenreSuggestion> = listOf(
         name = "Technology",
         iconKey = "tech",
         icon = Icons.Rounded.Computer,
-        keywords = listOf("tech", "computers", "software", "coding", "ai", "hardware", "internet", "gadgets", "programming"),
+        keywords = listOf(
+            "tech", "computers", "software", "coding", "ai", "hardware", "internet",
+            "gadgets", "programming", "developer", "technology and science", "technology & science",
+        ),
     ),
     GenreSuggestion(
         name = "Tech",
         iconKey = "tech",
         icon = Icons.Rounded.Computer,
-        keywords = listOf("technology", "computers", "software", "coding", "ai", "hardware"),
+        keywords = listOf("technology", "computers", "software", "coding", "ai", "hardware", "programming"),
     ),
     GenreSuggestion(
         name = "Business",
@@ -82,7 +85,7 @@ val ALL_GENRE_SUGGESTIONS: List<GenreSuggestion> = listOf(
         name = "True Crime",
         iconKey = "crime",
         icon = Icons.Rounded.Fingerprint,
-        keywords = listOf("crime", "murder", "investigation", "mystery", "forensics", "detective", "serial"),
+        keywords = listOf("crime", "murder", "investigation", "mystery", "forensics", "detective", "serial", "true-crime", "truecrime"),
     ),
     GenreSuggestion(
         name = "Sports",
@@ -94,7 +97,10 @@ val ALL_GENRE_SUGGESTIONS: List<GenreSuggestion> = listOf(
         name = "Health",
         iconKey = "health",
         icon = Icons.Rounded.Favorite,
-        keywords = listOf("fitness", "wellness", "mental health", "medical", "nutrition", "workout", "medicine"),
+        keywords = listOf(
+            "fitness", "wellness", "mental health", "medical", "nutrition",
+            "workout", "medicine", "health and fitness", "health & fitness",
+        ),
     ),
     GenreSuggestion(
         name = "History",
@@ -112,7 +118,10 @@ val ALL_GENRE_SUGGESTIONS: List<GenreSuggestion> = listOf(
         name = "Society & Culture",
         iconKey = "chat",
         icon = Icons.Rounded.Forum,
-        keywords = listOf("society", "culture", "talk", "chat", "lifestyle", "philosophy", "people", "relationships"),
+        keywords = listOf(
+            "society", "culture", "talk", "chat", "lifestyle", "philosophy",
+            "people", "relationships", "society and culture", "society & culture",
+        ),
     ),
     GenreSuggestion(
         name = "Society",
@@ -136,13 +145,19 @@ val ALL_GENRE_SUGGESTIONS: List<GenreSuggestion> = listOf(
         name = "TV & Film",
         iconKey = "movie",
         icon = Icons.Rounded.Movie,
-        keywords = listOf("movie", "movies", "film", "films", "cinema", "tv", "television", "hollywood", "shows", "series"),
+        keywords = listOf(
+            "movie", "movies", "film", "films", "cinema", "tv", "television",
+            "hollywood", "shows", "series", "tv and film", "tv & film",
+        ),
     ),
     GenreSuggestion(
         name = "Fiction",
         iconKey = "book",
         icon = Icons.Rounded.AutoStories,
-        keywords = listOf("stories", "story", "audio drama", "books", "literature", "novels", "audiobook", "scifi"),
+        keywords = listOf(
+            "stories", "story", "audio drama", "books", "literature", "novels",
+            "audiobook", "scifi", "sci-fi", "sci fi", "science fiction", "drama",
+        ),
     ),
     GenreSuggestion(
         name = "Music",
@@ -154,13 +169,28 @@ val ALL_GENRE_SUGGESTIONS: List<GenreSuggestion> = listOf(
         name = "Religion & Spirituality",
         iconKey = "star",
         icon = Icons.Rounded.Star,
-        keywords = listOf("religion", "spiritual", "faith", "god", "meditation", "buddhism", "christianity", "prayer", "zen"),
+        keywords = listOf(
+            "religion", "spiritual", "faith", "god", "meditation", "buddhism",
+            "christianity", "prayer", "zen", "religion and spirituality", "religion & spirituality",
+        ),
+    ),
+    GenreSuggestion(
+        name = "Religion",
+        iconKey = "star",
+        icon = Icons.Rounded.Star,
+        keywords = listOf("religion & spirituality", "faith", "god", "church", "spiritual", "prayer", "zen"),
     ),
     GenreSuggestion(
         name = "Kids & Family",
         iconKey = "family",
         icon = Icons.Rounded.Face,
-        keywords = listOf("family", "kids", "children", "parenting", "bedtime", "childhood"),
+        keywords = listOf("family", "kids", "children", "parenting", "bedtime", "childhood", "kids and family", "kids & family"),
+    ),
+    GenreSuggestion(
+        name = "Family",
+        iconKey = "family",
+        icon = Icons.Rounded.Face,
+        keywords = listOf("kids & family", "kids", "children", "parenting", "bedtime"),
     ),
     GenreSuggestion(
         name = "Leisure",
@@ -172,7 +202,13 @@ val ALL_GENRE_SUGGESTIONS: List<GenreSuggestion> = listOf(
         name = "Government",
         iconKey = "government",
         icon = Icons.Rounded.Gavel,
-        keywords = listOf("gov", "politics", "law", "policy", "court", "elections", "democracy"),
+        keywords = listOf("gov", "govt", "politics", "law", "policy", "court", "elections", "democracy"),
+    ),
+    GenreSuggestion(
+        name = "Govt",
+        iconKey = "government",
+        icon = Icons.Rounded.Gavel,
+        keywords = listOf("government", "politics", "law", "policy", "court", "democracy"),
     ),
 
     // Popular tags from GenreIcons
@@ -238,9 +274,55 @@ val ALL_GENRE_SUGGESTIONS: List<GenreSuggestion> = listOf(
     ),
 )
 
+private fun normalizeSearchToken(token: String): String = token
+    .lowercase()
+    .replace("&", "and")
+    .replace("-", " ")
+    .replace(Regex("\\s+"), " ")
+    .trim()
+
+private fun matchesNameExact(nameLower: String, nameNorm: String, query: String, queryNorm: String): Boolean =
+    nameLower == query || nameNorm == queryNorm
+
+private fun matchesNamePrefix(nameLower: String, nameNorm: String, query: String, queryNorm: String): Boolean =
+    nameLower.startsWith(query) || nameNorm.startsWith(queryNorm)
+
+private fun matchesNameSubstring(nameLower: String, nameNorm: String, query: String, queryNorm: String): Boolean =
+    nameLower.contains(query) || nameNorm.contains(queryNorm)
+
+private fun matchesKeywordExact(keywords: List<String>, query: String, queryNorm: String): Boolean =
+    keywords.any { it.equals(query, ignoreCase = true) || normalizeSearchToken(it) == queryNorm }
+
+private fun matchesKeywordPrefix(keywords: List<String>, query: String, queryNorm: String): Boolean =
+    keywords.any { it.startsWith(query, ignoreCase = true) || normalizeSearchToken(it).startsWith(queryNorm) }
+
+private fun matchesKeywordSubstring(keywords: List<String>, query: String, queryNorm: String): Boolean =
+    keywords.any { it.contains(query, ignoreCase = true) || normalizeSearchToken(it).contains(queryNorm) }
+
+private fun scoreSuggestion(
+    suggestion: GenreSuggestion,
+    trimmed: String,
+    normalizedQuery: String,
+): Int? {
+    val nameLower = suggestion.name.lowercase()
+    val nameNorm = normalizeSearchToken(suggestion.name)
+
+    return when {
+        matchesNameExact(nameLower, nameNorm, trimmed, normalizedQuery) -> 0
+        matchesNamePrefix(nameLower, nameNorm, trimmed, normalizedQuery) -> 1
+        matchesKeywordExact(suggestion.keywords, trimmed, normalizedQuery) -> 2
+        matchesNameSubstring(nameLower, nameNorm, trimmed, normalizedQuery) -> 3
+        matchesKeywordPrefix(suggestion.keywords, trimmed, normalizedQuery) -> 4
+        matchesKeywordSubstring(suggestion.keywords, trimmed, normalizedQuery) -> 5
+        suggestion.iconKey.contains(trimmed) -> 6
+        else -> null
+    }
+}
+
 /**
  * Filters and ranks genre suggestions according to the user's typed search query.
  * Exact name matches rank first, followed by prefix matches, keyword matches, and substrings.
+ * Handles variations in punctuation, hyphenation, and '&' vs 'and'.
  * When [query] is blank, returns the full catalog in standard order.
  */
 fun filterGenreSuggestions(
@@ -249,20 +331,11 @@ fun filterGenreSuggestions(
 ): List<GenreSuggestion> {
     val trimmed = query.trim().lowercase()
     if (trimmed.isEmpty()) return allSuggestions
+    val normalizedQuery = normalizeSearchToken(query)
 
     return allSuggestions
         .mapNotNull { suggestion ->
-            val nameLower = suggestion.name.lowercase()
-            val score = when {
-                nameLower == trimmed -> 0
-                nameLower.startsWith(trimmed) -> 1
-                suggestion.keywords.any { it.equals(trimmed, ignoreCase = true) } -> 2
-                nameLower.contains(trimmed) -> 3
-                suggestion.keywords.any { it.startsWith(trimmed, ignoreCase = true) } -> 4
-                suggestion.keywords.any { it.contains(trimmed, ignoreCase = true) } -> 5
-                suggestion.iconKey.contains(trimmed) -> 6
-                else -> null
-            }
+            val score = scoreSuggestion(suggestion, trimmed, normalizedQuery)
             if (score != null) suggestion to score else null
         }
         .sortedBy { it.second }

@@ -138,4 +138,22 @@ class PodcastGenresTest {
         val blankCustomPod = nullCustomPod.copy(customGenre = "   ")
         assertEquals("News", blankCustomPod.recommendationGenre)
     }
+
+    @Test
+    fun canonicalizeHandlesExpandedAliases() {
+        assertEquals("Fiction", PodcastGenres.canonicalize("sci-fi"))
+        assertEquals("Fiction", PodcastGenres.canonicalize("scifi"))
+        assertEquals("Fiction", PodcastGenres.canonicalize("sci fi"))
+        assertEquals("Fiction", PodcastGenres.canonicalize("science fiction"))
+        assertEquals("Fiction", PodcastGenres.canonicalize("drama"))
+        assertEquals("True Crime", PodcastGenres.canonicalize("true-crime"))
+        assertEquals("Technology", PodcastGenres.canonicalize("developer"))
+        assertEquals("Technology", PodcastGenres.canonicalize("programming"))
+        assertEquals("Religion & Spirituality", PodcastGenres.canonicalize("Religion"))
+        assertEquals("Kids & Family", PodcastGenres.canonicalize("Family"))
+        assertEquals("Government", PodcastGenres.canonicalize("Govt"))
+        assertEquals("Government", PodcastGenres.canonicalize("law"))
+        assertEquals("Health", PodcastGenres.canonicalize("mental health"))
+        assertEquals("Sports", PodcastGenres.canonicalize("soccer"))
+    }
 }

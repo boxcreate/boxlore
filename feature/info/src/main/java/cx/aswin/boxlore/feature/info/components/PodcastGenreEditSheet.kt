@@ -36,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,17 +93,7 @@ internal fun PodcastGenreEditSheet(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = "Change tag / genre",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = GoogleSansWeight.bold,
-            )
-
-            Text(
-                text = "Personalize the tag and icon for this podcast in your library and filter chips.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            GenreEditHeader()
 
             GenreEditPreviewCard(
                 catalogGenre = catalogGenre,
@@ -111,31 +102,11 @@ internal fun PodcastGenreEditSheet(
                 effectiveIcon = effectiveIcon,
             )
 
-            OutlinedTextField(
-                value = genreText,
+            GenreEditTextField(
+                genreText = genreText,
+                catalogGenre = catalogGenre,
                 onValueChange = { genreText = it },
-                label = { Text("Tag or genre name") },
-                placeholder = { Text(catalogGenre.ifEmpty { "e.g. Deep Dives, Favorites" }) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words,
-                    imeAction = ImeAction.Done,
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = { focusManager.clearFocus() },
-                ),
-                trailingIcon = {
-                    if (genreText.isNotEmpty()) {
-                        IconButton(onClick = { genreText = "" }) {
-                            Icon(
-                                imageVector = Icons.Rounded.Clear,
-                                contentDescription = "Clear tag input",
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                onDone = { focusManager.clearFocus() },
             )
 
             GenreEditSuggestionsRow(
@@ -143,6 +114,7 @@ internal fun PodcastGenreEditSheet(
                 onSelectSuggestion = { suggestion ->
                     genreText = suggestion.name
                     selectedIconKey = suggestion.iconKey
+                    focusManager.clearFocus()
                 },
             )
 
@@ -150,7 +122,10 @@ internal fun PodcastGenreEditSheet(
 
             GenreEditIconPicker(
                 selectedIconKey = selectedIconKey,
-                onSelectIcon = { selectedIconKey = it },
+                onSelectIcon = {
+                    focusManager.clearFocus()
+                    selectedIconKey = it
+                },
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -159,10 +134,12 @@ internal fun PodcastGenreEditSheet(
                 canReset = hasCustomizations || genreText.isNotBlank() || selectedIconKey != null,
                 canSave = isDirty || (genreText.isNotBlank() && !hasCustomizations),
                 onReset = {
+                    focusManager.clearFocus()
                     onSave(null, null)
                     onDismissRequest()
                 },
                 onSave = {
+                    focusManager.clearFocus()
                     val finalGenre = genreText.trim().takeIf { it.isNotEmpty() }
                     onSave(finalGenre, selectedIconKey)
                     onDismissRequest()
@@ -170,6 +147,56 @@ internal fun PodcastGenreEditSheet(
             )
         }
     }
+}
+
+@Composable
+private fun GenreEditHeader() {
+    Text(
+        text = "Change tag / genre",
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = GoogleSansWeight.bold,
+    )
+
+    Text(
+        text = "Personalize the tag and icon for this podcast in your library and filter chips.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun GenreEditTextField(
+    genreText: String,
+    catalogGenre: String,
+    onValueChange: (String) -> Unit,
+    onDone: () -> Unit,
+) {
+    OutlinedTextField(
+        value = genreText,
+        onValueChange = onValueChange,
+        label = { Text("Tag or genre name") },
+        placeholder = { Text(catalogGenre.ifEmpty { "e.g. Deep Dives, Favorites" }) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Words,
+            imeAction = ImeAction.Done,
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = { onDone() },
+        ),
+        trailingIcon = {
+            if (genreText.isNotEmpty()) {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(
+                        imageVector = Icons.Rounded.Clear,
+                        contentDescription = "Clear tag input",
+                    )
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+    )
 }
 
 @Composable
@@ -245,6 +272,11 @@ private fun GenreEditSuggestionsRow(
 
     if (suggestions.isEmpty()) return
 
+    val scrollState = rememberScrollState()
+    LaunchedEffect(genreText) {
+        scrollState.scrollTo(0)
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = if (genreText.isBlank()) "Standard genres & tags" else "Matching suggestions (${suggestions.size})",
@@ -256,7 +288,7 @@ private fun GenreEditSuggestionsRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+                .horizontalScroll(scrollState),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             suggestions.forEach { suggestion ->
