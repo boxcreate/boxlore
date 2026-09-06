@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.core.network
 
 import android.util.Log
-import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -86,7 +85,7 @@ object NetworkModule {
     fun createBoxLoreApi(baseUrl: String, client: OkHttpClient): BoxLoreApi = Retrofit.Builder()
         .baseUrl(baseUrl)
         .client(client)
-        .addConverterFactory(json.asConverterFactory(contentType))
+        .addConverterFactory(StreamingJsonConverterFactory.create(contentType, json))
         .build()
         .create(BoxLoreApi::class.java)
 }

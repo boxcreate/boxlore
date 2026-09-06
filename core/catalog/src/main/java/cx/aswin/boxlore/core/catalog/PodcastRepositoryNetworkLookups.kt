@@ -77,9 +77,9 @@ internal suspend fun PodcastRepository.getAllRssEpisodes(feedId: String): List<E
 
 internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): List<Episode> = try {
     val resolvedId = resolvePodcastIndexFeedId(feedId)
-    // Use paginated endpoint with high limit to get "all" (max 1000 per proxy)
+    // Use paginated endpoint with safe limit
     // This avoids the parsing issue with EpisodesResponse vs EpisodesPaginatedResponse
-    val response = api.getEpisodesPaginated(publicKey, resolvedId, limit = 1000).execute()
+    val response = api.getEpisodesPaginated(publicKey, resolvedId, limit = MAX_SAFE_PAGE_LIMIT).execute()
     val piItems =
         if (response.isSuccessful && response.body() != null) {
             response.body()!!.items.mapNotNull { mapToEpisode(it) }

@@ -298,19 +298,20 @@ class PodcastRepository(
          */
         mergeSupplements: Boolean = true,
     ): EpisodePage = withContext(Dispatchers.IO) {
+        val safeLimit = clampPageLimit(limit)
         if (feedId.startsWith("rss:")) {
-            return@withContext getRssEpisodesPaginated(feedId, limit, offset, sort)
+            return@withContext getRssEpisodesPaginated(feedId, safeLimit, offset, sort)
         }
         if (isLocalCatalogReady(feedId)) {
-            return@withContext getLocalCatalogPage(feedId, limit, offset, sort)
+            return@withContext getLocalCatalogPage(feedId, safeLimit, offset, sort)
         }
-        getNetworkEpisodesPaginated(feedId, limit, offset, sort, mergeSupplements)
+        getNetworkEpisodesPaginated(feedId, safeLimit, offset, sort, mergeSupplements)
     }
 
     /** Drop cached PI episode pages for [feedId] so the next read hits the network. */
     fun invalidateEpisodesCache(feedId: String) {
         val prefix = "$feedId|"
-        episodesCache.keys.removeAll { it.startsWith(prefix) }
+        episodesCache.invalidateIf { it.startsWith(prefix) }
     }
 
     /**
@@ -320,7 +321,8 @@ class PodcastRepository(
      */
     suspend fun loadPiEpisodesForBaseline(feedId: String, limit: Int,): List<Episode> = withContext(Dispatchers.IO) {
         val resolvedId = resolvePodcastIndexFeedId(feedId)
-        val response = api.getEpisodesPaginated(publicKey, resolvedId, limit, 0, "oldest").execute()
+        val safeLimit = clampPageLimit(limit)
+        val response = api.getEpisodesPaginated(publicKey, resolvedId, safeLimit, 0, "oldest").execute()
         check(response.isSuccessful && response.body() != null) {
             "PI baseline HTTP ${response.code()}"
         }
@@ -351,10 +353,9 @@ class PodcastRepository(
         val resolvedId = resolvePodcastIndexFeedId(feedId)
         val cacheKey = "$resolvedId|$limit|$offset|$sort"
         val cached = episodesCache[cacheKey]
-        val now = System.currentTimeMillis()
-        if (cached != null && now - cached.second < 300_000L) { // 5-minute cache
+        if (cached != null) {
             android.util.Log.d("PodcastRepository", "Cache HIT for getEpisodesPaginated: $cacheKey")
-            return maybeMergeSupplements(resolvedId, cached.first, offset, sort, mergeSupplements)
+            return maybeMergeSupplements(resolvedId, cached, offset, sort, mergeSupplements)
         }
         android.util.Log.d("PodcastRepository", "Cache MISS for getEpisodesPaginated: $cacheKey. Fetching from network.")
         return try {
@@ -367,7 +368,7 @@ class PodcastRepository(
                         hasMore = response.body()!!.hasMore,
                         sourceCount = piItems.size,
                     )
-                episodesCache[cacheKey] = Pair(page, now)
+                episodesCache[cacheKey] = page
                 maybeMergeSupplements(resolvedId, page, offset, sort, mergeSupplements)
             } else {
                 maybeMergeSupplements(
@@ -599,11 +600,10 @@ class PodcastRepository(
                 append(podcastIndexHistory.joinToString(",") { "${it.episodeId}:${it.progressMs}" })
             }
 
-        val now = System.currentTimeMillis()
         val cached = recommendationsCache[cacheKey]
-        if (cached != null && now - cached.second < 900_000L) { // 15-minute cache
+        if (cached != null) {
             android.util.Log.d("PodcastRepository", "Cache HIT for getPersonalizedRecommendations: key=$cacheKey")
-            return@withContext cached.first
+            return@withContext cached
         }
         android.util.Log.d("PodcastRepository", "Recommendation cache miss; fetching candidates")
 
@@ -631,7 +631,7 @@ class PodcastRepository(
                     subscribedPodcastIds = podcastIndexSubscriptionIds,
                     subscribedGenres = subscribedGenres,
                 )
-            recommendationsCache[cacheKey] = Pair(results, now)
+            recommendationsCache[cacheKey] = results
             results
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -648,11 +648,10 @@ class PodcastRepository(
         country: String? = null,
     ): BecauseYouLikeData = withContext(Dispatchers.IO) {
         val cacheKey = "byl|$podcastTitle|$excludePodcastId|$country"
-        val now = System.currentTimeMillis()
         val cached = becauseYouLikeCache[cacheKey]
-        if (cached != null && now - cached.second < 900_000L) { // 15-minute client-side memory cache
+        if (cached != null) {
             android.util.Log.d("PodcastRepository", "Cache HIT for getBecauseYouLikeRecommendations: key=$cacheKey")
-            return@withContext cached.first
+            return@withContext cached
         }
 
         try {
@@ -669,7 +668,7 @@ class PodcastRepository(
                 val mappedPodcasts = body.podcasts.map { mapToPodcast(it) }
                 val mappedEpisodes = body.episodes.mapNotNull { mapToEpisode(it) }
                 val data = BecauseYouLikeData(podcasts = mappedPodcasts, episodes = mappedEpisodes)
-                becauseYouLikeCache[cacheKey] = Pair(data, now)
+                becauseYouLikeCache[cacheKey] = data
                 data
             } else {
                 BecauseYouLikeData()
@@ -972,8 +971,8 @@ class PodcastRepository(
         // Catalog caches are endpoint-versioned so an otherwise-valid v1/v2 response cannot
         // suppress the v3 fetch and then invalidate grouped v3 section responses.
 
-        private val episodesCache = java.util.concurrent.ConcurrentHashMap<String, Pair<EpisodePage, Long>>()
-        private val recommendationsCache = java.util.concurrent.ConcurrentHashMap<String, Pair<List<Episode>, Long>>()
-        private val becauseYouLikeCache = java.util.concurrent.ConcurrentHashMap<String, Pair<BecauseYouLikeData, Long>>()
+        private val episodesCache = TimedLruCache<String, EpisodePage>(maxEntries = 30, ttlMillis = DEFAULT_EPISODE_CACHE_TTL_MS)
+        private val recommendationsCache = TimedLruCache<String, List<Episode>>(maxEntries = 20, ttlMillis = DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS)
+        private val becauseYouLikeCache = TimedLruCache<String, BecauseYouLikeData>(maxEntries = 20, ttlMillis = DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS)
     }
 }

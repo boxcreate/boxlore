@@ -197,6 +197,24 @@ class PodcastRepositoryCatalogTest {
         assertEquals(listOf("75075"), grouped.alsoFound.map { it.id })
     }
 
+    @Test
+    fun `getEpisodesPaginated clamps runaway limit to MAX_SAFE_PAGE_LIMIT`() = runTest(testDispatcher) {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"status":"true","items":[],"count":0,"total":0,"hasMore":false}"""),
+        )
+
+        repository.getEpisodesPaginated("90001", limit = 1000)
+
+        val recorded = server.takeRequest()
+        assertTrue(
+            recorded.path?.contains("limit=100") == true,
+            "Expected request path to have limit=100, but got: ${recorded.path}",
+        )
+    }
+
     private fun fixtureBody(resourcePath: String): MockResponse {
         val json =
             requireNotNull(javaClass.classLoader?.getResource(resourcePath)) {

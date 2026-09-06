@@ -444,7 +444,8 @@ class PodcastInfoViewModel(
     companion object {
         private const val TAG = "PodcastInfoViewModel"
         private const val PAGE_SIZE = 20
-        private const val MAX_SELECTION_EPISODES = 1_000
+        private const val OLDEST_PAGE_SIZE = 50
+        private const val MAX_SELECTION_EPISODES = 100
         private const val SEARCH_DEBOUNCE_MS = 500L
     }
 
@@ -564,7 +565,7 @@ class PodcastInfoViewModel(
                         localPodcast?.preferredSort,
                         initialType,
                     )
-                val limit = if (initialSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
+                val limit = if (initialSort == EpisodeSort.OLDEST) OLDEST_PAGE_SIZE else PAGE_SIZE
                 val sortParam = if (initialSort == EpisodeSort.OLDEST) "oldest" else "newest"
 
                 if (currentPodcast?.isRss == true) {
@@ -826,7 +827,7 @@ class PodcastInfoViewModel(
 
         viewModelScope.launch {
             try {
-                val limit = if (currentState.currentSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
+                val limit = if (currentState.currentSort == EpisodeSort.OLDEST) OLDEST_PAGE_SIZE else PAGE_SIZE
                 val sortParam = if (currentState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
                 val page = repository.getEpisodesPaginated(currentPodcastId, limit, currentOffset, sortParam)
                 currentOffset += page.sourceCount
@@ -1007,7 +1008,7 @@ class PodcastInfoViewModel(
             (_uiState.value as? PodcastInfoUiState.Success)
                 ?.takeIf { it.podcast.id == targetPodcastId }
                 ?: latestState
-        val limit = if (activeInitialState.currentSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
+        val limit = if (activeInitialState.currentSort == EpisodeSort.OLDEST) OLDEST_PAGE_SIZE else PAGE_SIZE
         val sortParam =
             if (activeInitialState.currentSort == EpisodeSort.OLDEST) "oldest" else "newest"
         val podcast = repository.getPodcastDetails(targetPodcastId) ?: activeInitialState.podcast
@@ -1157,7 +1158,7 @@ class PodcastInfoViewModel(
             }
 
             try {
-                val limit = if (newSort == EpisodeSort.OLDEST) 200 else PAGE_SIZE
+                val limit = if (newSort == EpisodeSort.OLDEST) OLDEST_PAGE_SIZE else PAGE_SIZE
                 val sortParam = if (newSort == EpisodeSort.OLDEST) "oldest" else "newest"
                 val page = repository.getEpisodesPaginated(currentPodcastId, limit, 0, sortParam)
                 currentOffset = page.sourceCount
@@ -1394,7 +1395,7 @@ class PodcastInfoViewModel(
         val page =
             repository.getEpisodesPaginated(
                 feedId = targetPodcastId,
-                limit = if (oldest) 200 else PAGE_SIZE,
+                limit = if (oldest) OLDEST_PAGE_SIZE else PAGE_SIZE,
                 offset = 0,
                 sort = if (oldest) "oldest" else "newest",
             )
