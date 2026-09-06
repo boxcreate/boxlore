@@ -40,10 +40,9 @@ class SubscriptionRepository(
                 null
             }
         val activeEntity = linkedRss?.takeIf { it.isSubscribed } ?: existing
-        val isCurrentlySubscribed = activeEntity?.isSubscribed == true
 
-        if (isCurrentlySubscribed) {
-            unsubscribeInternal(podcast, checkNotNull(activeEntity), existing)
+        if (activeEntity != null && activeEntity.isSubscribed) {
+            unsubscribeInternal(podcast, activeEntity, existing)
         } else {
             // Subscribe (Upsert to ensure we have data for offline/Jump Back In)
             val entity =
