@@ -126,7 +126,6 @@ internal fun PodcastInfoHeroSection(
             sortedPersons = sortedPersons,
             trailerEpisode = trailerEpisode,
             frequencyData = frequencyData,
-            isSubscribed = state.isSubscribed,
             onEditGenre = onEditGenre,
             onPlayTrailer = onPlayEpisode,
         )

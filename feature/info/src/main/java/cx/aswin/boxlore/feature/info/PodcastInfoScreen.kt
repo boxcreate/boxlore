@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
 import android.Manifest
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -337,6 +338,14 @@ fun PodcastInfoScreen(
                     selectionEpisodePool = emptyList()
                     isLoadingFullSelection = false
                 }
+                val subscribeToEditGenreMessage = stringResource(R.string.subscribe_to_edit_genre)
+                val handleEditGenreClick = {
+                    if (state.isSubscribed) {
+                        showPodcastGenreEdit = true
+                    } else {
+                        Toast.makeText(context, subscribeToEditGenreMessage, Toast.LENGTH_SHORT).show()
+                    }
+                }
                 val selectionLimitMessage = stringResource(R.string.episode_selection_limit)
                 val selectFullRange: (EpisodeSelectionRange) -> Unit = { range ->
                     selectionRequestGeneration += 1
@@ -459,7 +468,7 @@ fun PodcastInfoScreen(
                                 onDescExpandedChange = { isDescExpanded = it },
                                 onPlayEpisode = { viewModel.onPlayClick(it) },
                                 onPodcastClick = onPodcastClick,
-                                onEditGenre = { showPodcastGenreEdit = true },
+                                onEditGenre = handleEditGenreClick,
                             )
                         }
 
@@ -645,7 +654,7 @@ fun PodcastInfoScreen(
                         isSubscribed = state.isSubscribed,
                         isPinnedToHome = isPinnedToHome,
                         onToggleHomePin = viewModel::toggleHomePin,
-                        onEditGenre = { showPodcastGenreEdit = true },
+                        onEditGenre = handleEditGenreClick,
                     ),
                     missingEpisodesChip =
                     MissingEpisodesChip(

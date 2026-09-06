@@ -359,13 +359,12 @@ internal fun UpdateFrequencyChip(frequencyData: Pair<String, ImageVector>) {
 internal fun GenreChip(
     genre: String,
     icon: ImageVector? = null,
-    isSubscribed: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
     Surface(
         shape = ExpressiveShapes.Pill,
         color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = if (isSubscribed && onClick != null) {
+        modifier = if (onClick != null) {
             Modifier.expressiveClickable(onClick = onClick)
         } else {
             Modifier
@@ -484,7 +483,6 @@ internal fun PodcastInfoMetadataChipsRow(
     sortedPersons: List<Person>,
     trailerEpisode: Episode?,
     frequencyData: Pair<String, ImageVector>?,
-    isSubscribed: Boolean = false,
     onEditGenre: (() -> Unit)? = null,
     onPlayTrailer: (Episode) -> Unit,
 ) {
@@ -496,7 +494,7 @@ internal fun PodcastInfoMetadataChipsRow(
         contentPadding = PaddingValues(horizontal = 0.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        podcastIdentityChips(podcast, frequencyData, isSubscribed, onEditGenre)
+        podcastIdentityChips(podcast, frequencyData, onEditGenre)
 
         items(sortedPersons) { person ->
             CompactPersonChip(person = person, onClick = { openPersonLink(context, person) })
@@ -525,7 +523,6 @@ private fun openPersonLink(
 private fun LazyListScope.podcastIdentityChips(
     podcast: Podcast,
     frequencyData: Pair<String, ImageVector>?,
-    isSubscribed: Boolean = false,
     onEditGenre: (() -> Unit)? = null,
 ) {
     if (podcast.isRss) {
@@ -542,7 +539,6 @@ private fun LazyListScope.podcastIdentityChips(
             GenreChip(
                 genre = effective,
                 icon = icon,
-                isSubscribed = isSubscribed,
                 onClick = onEditGenre,
             )
         }
