@@ -2,11 +2,11 @@ package cx.aswin.boxlore.core.playback
 
 import android.content.ComponentName
 import android.content.Context
+import androidx.core.content.ContextCompat
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import com.google.common.util.concurrent.MoreExecutors
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class PlaybackSession(
     val podcastId: String,
@@ -175,24 +176,26 @@ class PlaybackRepository internal constructor(
         if (PlaybackUiVisibility.isForeground.value == isForeground) return
         PlaybackUiVisibility.setForeground(isForeground)
         if (isForeground) {
-            val controllerNow = mediaHandle.controller
-            if (controllerNow != null) {
-                playerStateFlow.value =
-                    PlaybackControllerStatePolicy.mergeProgress(
-                        previous = playerStateFlow.value,
-                        snapshot = controllerNow.progressSnapshot(),
+            runOnMainThread {
+                val controllerNow = mediaHandle.controller
+                if (controllerNow != null) {
+                    playerStateFlow.value =
+                        PlaybackControllerStatePolicy.mergeProgress(
+                            previous = playerStateFlow.value,
+                            snapshot = controllerNow.progressSnapshot(),
+                        )
+                }
+                refreshRestoredProgressIfPlayerEmpty()
+                if (
+                    controllerNow != null &&
+                    PlaybackPowerPolicy.shouldRunUiPositionTicker(
+                        isUiForeground = true,
+                        isPlaying = controllerNow.isPlaying,
+                        isLoading = controllerNow.isLoading,
                     )
-            }
-            refreshRestoredProgressIfPlayerEmpty()
-            if (
-                controllerNow != null &&
-                PlaybackPowerPolicy.shouldRunUiPositionTicker(
-                    isUiForeground = true,
-                    isPlaying = controllerNow.isPlaying,
-                    isLoading = controllerNow.isLoading,
-                )
-            ) {
-                startProgressTicker()
+                ) {
+                    startProgressTicker()
+                }
             }
         } else {
             stopProgressTicker()
@@ -401,7 +404,7 @@ class PlaybackRepository internal constructor(
 
             // Sync state from MediaController (handles app coming back from background)
             syncStateFromMediaController()
-        }, MoreExecutors.directExecutor())
+        }, ContextCompat.getMainExecutor(context))
     }
 
     /**
@@ -409,58 +412,60 @@ class PlaybackRepository internal constructor(
      * Called when MediaController connects (including when app comes back from background).
      */
     private fun syncStateFromMediaController() {
-        val controller = mediaHandle.controller ?: return
+        runOnMainThread {
+            val controller = mediaHandle.controller ?: return@runOnMainThread
 
-        val isPlaying = controller.isPlaying
-        val isLoading = controller.playbackState == androidx.media3.common.Player.STATE_BUFFERING
-        val currentPosition = controller.currentPosition.coerceAtLeast(0)
-        val bufferedPosition = controller.bufferedPosition.coerceAtLeast(0)
-        val duration = controller.duration.coerceAtLeast(0)
-        val hasMedia = controller.mediaItemCount > 0
+            val isPlaying = controller.isPlaying
+            val isLoading = controller.playbackState == androidx.media3.common.Player.STATE_BUFFERING
+            val currentPosition = controller.currentPosition.coerceAtLeast(0)
+            val bufferedPosition = controller.bufferedPosition.coerceAtLeast(0)
+            val duration = controller.duration.coerceAtLeast(0)
+            val hasMedia = controller.mediaItemCount > 0
 
-        if (hasMedia && playerStateFlow.value.currentEpisode == null) {
-            // MediaController has media but we don't have metadata - restore from DB
-            repositoryScope.launch {
-                val currentItem = controller.currentMediaItem
-                val targetEpisodeId = currentItem?.mediaId?.stripEpisodePrefix()
-                val restored =
-                    PlaybackSessionRestoreHelper.resolveRestoredSession(
-                        targetEpisodeId = targetEpisodeId,
-                        currentItem = currentItem,
-                        listeningHistoryDao = listeningHistoryDao,
-                        podcastRepository = podcastRepository,
-                        savedQueue = playerStateFlow.value.queue,
-                    ) ?: return@launch
+            if (hasMedia && playerStateFlow.value.currentEpisode == null) {
+                // MediaController has media but we don't have metadata - restore from DB
+                repositoryScope.launch {
+                    val currentItem = controller.currentMediaItem
+                    val targetEpisodeId = currentItem?.mediaId?.stripEpisodePrefix()
+                    val restored =
+                        PlaybackSessionRestoreHelper.resolveRestoredSession(
+                            targetEpisodeId = targetEpisodeId,
+                            currentItem = currentItem,
+                            listeningHistoryDao = listeningHistoryDao,
+                            podcastRepository = podcastRepository,
+                            savedQueue = playerStateFlow.value.queue,
+                        ) ?: return@launch
 
+                    playerStateFlow.value =
+                        PlayerState(
+                            currentEpisode = restored.episode,
+                            currentPodcast = restored.podcast,
+                            isPlaying = isPlaying,
+                            isLoading = isLoading,
+                            position = currentPosition.takeIf { it > 0L } ?: restored.lastSession.progressMs,
+                            bufferedPosition = bufferedPosition,
+                            duration = if (duration > 0) duration else restored.lastSession.durationMs,
+                            playbackSpeed = controller.playbackParameters.speed,
+                            queue = playerStateFlow.value.queue, // Preserve queue
+                            isLiked = restored.lastSession.isLiked,
+                            playbackRoute = playerStateFlow.value.playbackRoute,
+                        )
+                    if (isPlaying) startProgressTicker()
+                }
+            } else {
+                // Just sync playback state
                 playerStateFlow.value =
-                    PlayerState(
-                        currentEpisode = restored.episode,
-                        currentPodcast = restored.podcast,
-                        isPlaying = isPlaying,
-                        isLoading = isLoading,
-                        position = currentPosition.takeIf { it > 0L } ?: restored.lastSession.progressMs,
-                        bufferedPosition = bufferedPosition,
-                        duration = if (duration > 0) duration else restored.lastSession.durationMs,
-                        playbackSpeed = controller.playbackParameters.speed,
-                        queue = playerStateFlow.value.queue, // Preserve queue
-                        isLiked = restored.lastSession.isLiked,
-                        playbackRoute = playerStateFlow.value.playbackRoute,
-                    )
+                    PlaybackControllerStatePolicy
+                        .mergeProgress(
+                            previous = playerStateFlow.value,
+                            snapshot = controller.progressSnapshot(),
+                        ).copy(
+                            isPlaying = isPlaying,
+                            isLoading = isLoading,
+                            playbackSpeed = controller.playbackParameters.speed,
+                        )
                 if (isPlaying) startProgressTicker()
             }
-        } else {
-            // Just sync playback state
-            playerStateFlow.value =
-                PlaybackControllerStatePolicy
-                    .mergeProgress(
-                        previous = playerStateFlow.value,
-                        snapshot = controller.progressSnapshot(),
-                    ).copy(
-                        isPlaying = isPlaying,
-                        isLoading = isLoading,
-                        playbackSpeed = controller.playbackParameters.speed,
-                    )
-            if (isPlaying) startProgressTicker()
         }
     }
 
@@ -490,25 +495,27 @@ class PlaybackRepository internal constructor(
     }
 
     private fun refreshRestoredProgressIfPlayerEmpty() {
-        val controller = mediaHandle.controller
-        if (controller?.isConnected == true && controller.mediaItemCount > 0) return
-        val episodeId = playerStateFlow.value.currentEpisode?.id ?: return
+        runOnMainThread {
+            val controller = mediaHandle.controller
+            if (controller?.isConnected == true && controller.mediaItemCount > 0) return@runOnMainThread
+            val episodeId = playerStateFlow.value.currentEpisode?.id ?: return@runOnMainThread
 
-        repositoryScope.launch {
-            val persisted = listeningHistoryDao.getHistoryItem(episodeId) ?: return@launch
-            val latestController = mediaHandle.controller
-            if (latestController?.isConnected == true && latestController.mediaItemCount > 0) {
-                return@launch
+            repositoryScope.launch {
+                val persisted = listeningHistoryDao.getHistoryItem(episodeId) ?: return@launch
+                val latestController = mediaHandle.controller
+                if (latestController?.isConnected == true && latestController.mediaItemCount > 0) {
+                    return@launch
+                }
+                val current = playerStateFlow.value
+                if (current.currentEpisode?.id != episodeId) return@launch
+                playerStateFlow.value =
+                    current.copy(
+                        position = persisted.progressMs.coerceAtLeast(0L),
+                        duration = persisted.durationMs.takeIf { it > 0L } ?: current.duration,
+                        isCompleted = persisted.isCompleted,
+                        isLiked = persisted.isLiked,
+                    )
             }
-            val current = playerStateFlow.value
-            if (current.currentEpisode?.id != episodeId) return@launch
-            playerStateFlow.value =
-                current.copy(
-                    position = persisted.progressMs.coerceAtLeast(0L),
-                    duration = persisted.durationMs.takeIf { it > 0L } ?: current.duration,
-                    isCompleted = persisted.isCompleted,
-                    isLiked = persisted.isLiked,
-                )
         }
     }
 
@@ -634,83 +641,88 @@ class PlaybackRepository internal constructor(
     /**
      * Restore the last played session on app startup (does NOT auto-play)
      */
-    suspend fun restoreLastSession(): Boolean {
-        // Don't restore if player was explicitly dismissed
-        if (prefs.getBoolean(KEY_PLAYER_DISMISSED, false)) {
-            return false
+    suspend fun restoreLastSession(): Boolean =
+        withContext(PlaybackThreadPolicy.mainDispatcher) {
+            // Don't restore if player was explicitly dismissed
+            if (prefs.getBoolean(KEY_PLAYER_DISMISSED, false)) {
+                return@withContext false
+            }
+
+            val controller = mediaHandle.controller
+            val controllerItem = controller?.currentMediaItem
+            val targetEpisodeId = controllerItem?.mediaId?.stripEpisodePrefix()
+            val savedQueue = queueRepository.getQueueSnapshot()
+
+            val restored =
+                PlaybackSessionRestoreHelper.resolveRestoredSession(
+                    targetEpisodeId = targetEpisodeId,
+                    currentItem = controllerItem,
+                    listeningHistoryDao = listeningHistoryDao,
+                    podcastRepository = podcastRepository,
+                    savedQueue = savedQueue,
+                ) ?: return@withContext false
+
+            // If saved queue is empty but we have an episode, make a single-item queue
+            val restoredQueue = if (savedQueue.isEmpty()) listOf(restored.episode) else savedQueue
+
+            // Prefer live MediaController truth when the playback service is still running
+            // (e.g. user swiped the app from recents while audio continued). Forcing
+            // isPlaying=false here races with syncStateFromMediaController() and leaves
+            // the UI paused while ExoPlayer keeps playing.
+            val controllerPlaying = controller?.isPlaying == true
+            val controllerPosition = controller?.currentPosition?.takeIf { it > 0 }
+            val controllerDuration = controller?.duration?.takeIf { it > 0 }
+
+            playerStateFlow.value =
+                PlaybackControlSync.withSyncedPlaybackSpeed(
+                    playerStateFlow.value.copy(
+                        currentEpisode = restored.episode,
+                        currentPodcast = restored.podcast,
+                        isPlaying = controllerPlaying,
+                        position = controllerPosition ?: restored.lastSession.progressMs,
+                        duration = controllerDuration ?: restored.lastSession.durationMs,
+                        isLiked = restored.lastSession.isLiked,
+                        queue = restoredQueue,
+                    ),
+                    controllerSpeed = controller?.playbackParameters?.speed,
+                )
+
+            // Re-sync after metadata restore in case the controller connected first and
+            // onIsPlayingChanged won't fire again (already playing when the listener attached).
+            if (controller != null) {
+                syncStateFromMediaController()
+            }
+
+            true
         }
-
-        val controller = mediaHandle.controller
-        val controllerItem = controller?.currentMediaItem
-        val targetEpisodeId = controllerItem?.mediaId?.stripEpisodePrefix()
-        val savedQueue = queueRepository.getQueueSnapshot()
-
-        val restored =
-            PlaybackSessionRestoreHelper.resolveRestoredSession(
-                targetEpisodeId = targetEpisodeId,
-                currentItem = controllerItem,
-                listeningHistoryDao = listeningHistoryDao,
-                podcastRepository = podcastRepository,
-                savedQueue = savedQueue,
-            ) ?: return false
-
-        // If saved queue is empty but we have an episode, make a single-item queue
-        val restoredQueue = if (savedQueue.isEmpty()) listOf(restored.episode) else savedQueue
-
-        // Prefer live MediaController truth when the playback service is still running
-        // (e.g. user swiped the app from recents while audio continued). Forcing
-        // isPlaying=false here races with syncStateFromMediaController() and leaves
-        // the UI paused while ExoPlayer keeps playing.
-        val controllerPlaying = controller?.isPlaying == true
-        val controllerPosition = controller?.currentPosition?.takeIf { it > 0 }
-        val controllerDuration = controller?.duration?.takeIf { it > 0 }
-
-        playerStateFlow.value =
-            PlaybackControlSync.withSyncedPlaybackSpeed(
-                playerStateFlow.value.copy(
-                    currentEpisode = restored.episode,
-                    currentPodcast = restored.podcast,
-                    isPlaying = controllerPlaying,
-                    position = controllerPosition ?: restored.lastSession.progressMs,
-                    duration = controllerDuration ?: restored.lastSession.durationMs,
-                    isLiked = restored.lastSession.isLiked,
-                    queue = restoredQueue,
-                ),
-                controllerSpeed = controller?.playbackParameters?.speed,
-            )
-
-        // Re-sync after metadata restore in case the controller connected first and
-        // onIsPlayingChanged won't fire again (already playing when the listener attached).
-        if (controller != null) {
-            syncStateFromMediaController()
-        }
-
-        return true
-    }
 
     /**
      * Clear the current session (for swipe-to-dismiss)
      */
     fun clearSession() {
-        val previous = playerStateFlow.value
-        val controllerSpeed = mediaHandle.controller?.playbackParameters?.speed
-        mediaHandle.controller?.stop()
-        mediaHandle.controller?.clearMediaItems()
-        stopProgressTicker()
-        sleepController.cancelTimer()
-        // Keep speed / seek sizes so the next episode's UI matches ExoPlayer + prefs.
-        playerStateFlow.value =
-            PlaybackControlSync.clearedStatePreservingControls(previous, controllerSpeed)
-        // Mark as dismissed so we don't restore on next app launch
-        prefs.edit().putBoolean(KEY_PLAYER_DISMISSED, true).apply()
+        runOnMainThread {
+            val previous = playerStateFlow.value
+            val controllerSpeed = mediaHandle.controller?.playbackParameters?.speed
+            mediaHandle.controller?.stop()
+            mediaHandle.controller?.clearMediaItems()
+            stopProgressTicker()
+            sleepController.cancelTimer()
+            // Keep speed / seek sizes so the next episode's UI matches ExoPlayer + prefs.
+            playerStateFlow.value =
+                PlaybackControlSync.clearedStatePreservingControls(previous, controllerSpeed)
+            // Mark as dismissed so we don't restore on next app launch
+            prefs.edit().putBoolean(KEY_PLAYER_DISMISSED, true).apply()
+        }
     }
 
     fun seekTo(positionMs: Long, play: Boolean = false,) {
-        mediaHandle.controller?.seekTo(positionMs)
-        playerStateFlow.value = playerStateFlow.value.copy(position = positionMs)
+        runOnMainThread {
+            mediaHandle.controller?.seekTo(positionMs)
+            playerStateFlow.value = playerStateFlow.value.copy(position = positionMs)
 
-        if (play) {
-            mediaHandle.controller?.play()
+            if (play) {
+                mediaHandle.controller?.play()
+            }
         }
     }
 }
