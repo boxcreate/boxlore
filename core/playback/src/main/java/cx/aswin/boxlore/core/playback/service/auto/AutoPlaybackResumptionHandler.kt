@@ -64,6 +64,7 @@ internal class AutoPlaybackResumptionHandler(
         val player = mediaSession.player
         val liveItemCount = player.mediaItemCount
         if (liveItemCount > 0) {
+            prefs.edit().putBoolean(KEY_PLAYER_DISMISSED, false).apply()
             return resolveLivePlayerResumption(player, liveItemCount)
         }
 
@@ -150,8 +151,9 @@ internal class AutoPlaybackResumptionHandler(
     }
 
     private suspend fun resolvePlaylistForTarget(targetEpisodeId: String): Pair<List<MediaItem>, Int> {
+        val cleanTargetId = targetEpisodeId.stripEpisodePrefix()
         val savedQueue = queueRepository.getQueueSnapshot()
-        val targetEpisode = mediaResolver.resolveDomainEpisode(targetEpisodeId)
+        val targetEpisode = mediaResolver.resolveDomainEpisode(cleanTargetId)
 
         val aligned = if (targetEpisode != null) {
             AutoPlaybackResumptionPolicy.alignQueue(
@@ -160,7 +162,7 @@ internal class AutoPlaybackResumptionHandler(
                 idSelector = { it.id },
             )
         } else {
-            val existingIndex = savedQueue.indexOfFirst { it.id == targetEpisodeId }
+            val existingIndex = savedQueue.indexOfFirst { it.id.stripEpisodePrefix() == cleanTargetId }
             if (existingIndex >= 0) {
                 AlignedQueue(items = savedQueue, startIndex = existingIndex)
             } else {
@@ -183,7 +185,7 @@ internal class AutoPlaybackResumptionHandler(
             }
         } else {
             val singleItem = mediaResolver.resolveMediaItem(
-                MediaItem.Builder().setMediaId(targetEpisodeId).build(),
+                MediaItem.Builder().setMediaId(cleanTargetId).build(),
             )
             if (singleItem.localConfiguration?.uri != null) {
                 listOf(singleItem)
@@ -192,16 +194,16 @@ internal class AutoPlaybackResumptionHandler(
             }
         }
 
-        if (resolvedMediaItems.isEmpty()) {
-            android.util.Log.w(TAG, "Failed to resolve media items for target $targetEpisodeId")
+        val startIndex = aligned.startIndex.coerceIn(0, (resolvedMediaItems.size - 1).coerceAtLeast(0))
+        if (resolvedMediaItems.isEmpty() || resolvedMediaItems.getOrNull(startIndex)?.localConfiguration?.uri == null) {
+            android.util.Log.w(TAG, "Failed to resolve media items with playable URI for target $cleanTargetId")
             throw UnsupportedOperationException("No playable items resolved for resumption")
         }
 
-        if (aligned.items.isNotEmpty() && savedQueue.none { it.id == targetEpisodeId }) {
+        if (aligned.items.isNotEmpty() && savedQueue.none { it.id.stripEpisodePrefix() == cleanTargetId }) {
             queueRepository.replaceQueue(aligned.items)
         }
 
-        val startIndex = aligned.startIndex.coerceIn(0, resolvedMediaItems.size - 1)
         return Pair(resolvedMediaItems, startIndex)
     }
 }

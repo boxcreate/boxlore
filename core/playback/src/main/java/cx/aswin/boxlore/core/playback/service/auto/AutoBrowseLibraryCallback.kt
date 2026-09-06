@@ -456,7 +456,17 @@ internal class AutoBrowseLibraryCallback(
                     mediaId.startsWith(AutoBrowseContract.EPISODE_PREFIX) ||
                         mediaId.startsWith(AutoBrowseContract.QUEUE_PREFIX) ||
                         mediaId.startsWith(AutoBrowseContract.LEARN_PREFIX) -> {
-                        mediaResolver.resolveMediaItem(MediaItem.Builder().setMediaId(mediaId).build())
+                        val resolved = mediaResolver.resolveMediaItem(
+                            MediaItem.Builder().setMediaId(mediaId).build(),
+                        )
+                        if (resolved.localConfiguration?.uri != null || !resolved.mediaMetadata.title.isNullOrBlank()) {
+                            resolved
+                        } else {
+                            AutoMediaItemFactory.browsable(
+                                id = mediaId,
+                                title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_app_name),
+                            )
+                        }
                     }
                     mediaId.startsWith(AutoBrowseContract.SUBSCRIPTION_PREFIX) -> {
                         val podcastId = mediaId.removePrefix(AutoBrowseContract.SUBSCRIPTION_PREFIX)

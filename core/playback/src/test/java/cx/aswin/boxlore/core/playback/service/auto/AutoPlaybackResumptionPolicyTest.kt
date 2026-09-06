@@ -65,6 +65,38 @@ class AutoPlaybackResumptionPolicyTest {
         assertTrue(decision.shouldResume)
     }
 
+    @Test
+    fun `evaluate returns LivePlayer decision with shouldResume true even when liveEpisodeId is null`() {
+        val decision = AutoPlaybackResumptionPolicy.evaluate(
+            hasLivePlayerItems = true,
+            isPlayerDismissed = false,
+            candidate = null,
+            liveEpisodeId = null,
+            livePositionMs = 12_000L,
+        )
+
+        assertEquals(AutoResumptionCase.LivePlayer, decision.case)
+        assertNull(decision.targetEpisodeId)
+        assertEquals(12_000L, decision.startPositionMs)
+        assertTrue(decision.shouldResume)
+    }
+
+    @Test
+    fun `evaluate returns LivePlayer decision with shouldResume true even when liveEpisodeId is blank`() {
+        val decision = AutoPlaybackResumptionPolicy.evaluate(
+            hasLivePlayerItems = true,
+            isPlayerDismissed = true,
+            candidate = null,
+            liveEpisodeId = "   ",
+            livePositionMs = 0L,
+        )
+
+        assertEquals(AutoResumptionCase.LivePlayer, decision.case)
+        assertNull(decision.targetEpisodeId)
+        assertEquals(0L, decision.startPositionMs)
+        assertTrue(decision.shouldResume)
+    }
+
     // --- ActiveMiniPlayer tests ---
 
     @Test
@@ -373,6 +405,28 @@ class AutoPlaybackResumptionPolicyTest {
     fun `alignQueueIds with blank target returns queue unchanged at index 0`() {
         val queue = listOf("ep-a", "ep-b")
         val aligned = AutoPlaybackResumptionPolicy.alignQueueIds("", queue)
+
+        assertEquals(queue, aligned.items)
+        assertEquals(0, aligned.startIndex)
+    }
+
+    @Test
+    fun `alignQueueIds with whitespace-only target returns queue unchanged at index 0`() {
+        val queue = listOf("ep-a", "ep-b")
+        val aligned = AutoPlaybackResumptionPolicy.alignQueueIds("   ", queue)
+
+        assertEquals(queue, aligned.items)
+        assertEquals(0, aligned.startIndex)
+    }
+
+    @Test
+    fun `alignQueue with blank target item does not prepend blank item`() {
+        val queue = listOf("ep-a", "ep-b")
+        val aligned = AutoPlaybackResumptionPolicy.alignQueue(
+            targetItem = "",
+            queue = queue,
+            idSelector = { it },
+        )
 
         assertEquals(queue, aligned.items)
         assertEquals(0, aligned.startIndex)

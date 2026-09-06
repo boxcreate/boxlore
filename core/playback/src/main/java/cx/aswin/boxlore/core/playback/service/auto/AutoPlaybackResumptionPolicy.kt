@@ -109,9 +109,9 @@ object AutoPlaybackResumptionPolicy {
             candidate = candidate,
         )
         val targetEpisodeId = when (case) {
-            AutoResumptionCase.LivePlayer -> liveEpisodeId ?: candidate?.episodeId
+            AutoResumptionCase.LivePlayer -> liveEpisodeId?.takeIf { it.isNotBlank() } ?: candidate?.episodeId?.takeIf { it.isNotBlank() }
             AutoResumptionCase.ActiveMiniPlayer,
-            AutoResumptionCase.InactiveMiniPlayerWithIncomplete -> candidate?.episodeId
+            AutoResumptionCase.InactiveMiniPlayerWithIncomplete -> candidate?.episodeId?.takeIf { it.isNotBlank() }
             AutoResumptionCase.NoResumption -> null
         }
         val startPositionMs = resolveStartPositionMs(
@@ -119,7 +119,8 @@ object AutoPlaybackResumptionPolicy {
             candidate = candidate,
             livePositionMs = livePositionMs,
         )
-        val shouldResume = case != AutoResumptionCase.NoResumption && !targetEpisodeId.isNullOrBlank()
+        val shouldResume = case == AutoResumptionCase.LivePlayer ||
+            (case != AutoResumptionCase.NoResumption && !targetEpisodeId.isNullOrBlank())
         return AutoResumptionDecision(
             case = case,
             targetEpisodeId = if (shouldResume) targetEpisodeId else null,
