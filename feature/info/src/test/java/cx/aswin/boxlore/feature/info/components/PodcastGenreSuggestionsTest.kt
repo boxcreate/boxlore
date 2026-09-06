@@ -218,4 +218,12 @@ class PodcastGenreSuggestionsTest {
         val combined = buildGenreSuggestionsWithFolders(emptyList())
         assertEquals(ALL_GENRE_SUGGESTIONS.size, combined.size)
     }
+
+    @Test
+    fun `buildGenreSuggestionsWithFolders resolves smart icon for recognized keyword in folder name`() {
+        val folders = listOf("Morning Tech News")
+        val combined = buildGenreSuggestionsWithFolders(folders)
+        val techFolder = combined.first { it.name == "Morning Tech News" }
+        assertEquals("tech", techFolder.iconKey)
+    }
 }

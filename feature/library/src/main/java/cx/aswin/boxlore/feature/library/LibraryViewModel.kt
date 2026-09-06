@@ -366,6 +366,9 @@ class LibraryViewModel(
 
     fun onScreenResume() {
         SharedAppDependenciesHolder.instance?.subscriptionForegroundSync?.requestRefresh()
+        viewModelScope.launch {
+            folderRepository?.syncLinkedGenres()
+        }
         if (sessionStartTime == 0L) {
             sessionStartTime = System.currentTimeMillis()
             hasTrackedExit = false

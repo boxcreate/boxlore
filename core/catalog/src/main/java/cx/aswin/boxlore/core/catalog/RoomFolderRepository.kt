@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.catalog
 import cx.aswin.boxlore.core.database.FolderDao
 import cx.aswin.boxlore.core.database.FolderEntity
 import cx.aswin.boxlore.core.database.PodcastDao
+import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.PodcastFolderCrossRef
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.SubscriptionFolder
@@ -17,8 +18,15 @@ class RoomFolderRepository(
 ) : FolderRepository {
 
     override val folders: Flow<List<SubscriptionFolder>> =
-        combine(folderDao.getAllFolders(), folderDao.getAllCrossRefs()) { folderEntities, crossRefs ->
-            val refsByFolder = crossRefs.groupBy { it.folderId }
+        combine(
+            folderDao.getAllFolders(),
+            folderDao.getAllCrossRefs(),
+            podcastDao.getSubscribedPodcasts(),
+        ) { folderEntities, crossRefs, subscribedPods ->
+            val subscribedIds = subscribedPods.map { it.podcastId }.toSet()
+            val refsByFolder = crossRefs
+                .filter { it.podcastId in subscribedIds }
+                .groupBy { it.folderId }
             folderEntities.map { entity ->
                 val pIds = refsByFolder[entity.folderId]?.map { it.podcastId } ?: emptyList()
                 SubscriptionFolder(
@@ -39,7 +47,10 @@ class RoomFolderRepository(
 
     override suspend fun getFolders(): List<SubscriptionFolder> {
         val entities = folderDao.getAllFoldersList()
-        val crossRefs = folderDao.getAllCrossRefsList().groupBy { it.folderId }
+        val subscribedIds = podcastDao.getSubscribedPodcastsList().map { it.podcastId }.toSet()
+        val crossRefs = folderDao.getAllCrossRefsList()
+            .filter { it.podcastId in subscribedIds }
+            .groupBy { it.folderId }
         return entities.map { entity ->
             val pIds = crossRefs[entity.folderId]?.map { it.podcastId } ?: emptyList()
             SubscriptionFolder(
@@ -57,7 +68,8 @@ class RoomFolderRepository(
 
     override suspend fun getFolder(folderId: String): SubscriptionFolder? {
         val entity = folderDao.getFolder(folderId) ?: return null
-        val pIds = folderDao.getPodcastIdsForFolderList(folderId)
+        val subscribedIds = podcastDao.getSubscribedPodcastsList().map { it.podcastId }.toSet()
+        val pIds = folderDao.getPodcastIdsForFolderList(folderId).filter { it in subscribedIds }
         return SubscriptionFolder(
             id = entity.folderId,
             name = entity.name,
@@ -87,11 +99,9 @@ class RoomFolderRepository(
 
         val initialPodcastIds = podcastIds.toMutableList()
         if (trimmedGenre != null) {
-            val matchingSubscribed = podcastDao.getSubscribedPodcastsList().filter { pod ->
-                val eff = pod.customGenre?.trim() ?: pod.genre?.trim() ?: ""
-                eff.equals(trimmedGenre, ignoreCase = true) ||
-                    eff.split(",").any { it.trim().equals(trimmedGenre, ignoreCase = true) }
-            }.map { it.podcastId }
+            val matchingSubscribed = podcastDao.getSubscribedPodcastsList()
+                .filter { pod -> matchesGenre(pod, trimmedGenre) }
+                .map { it.podcastId }
             for (matchingId in matchingSubscribed) {
                 if (matchingId !in initialPodcastIds) {
                     initialPodcastIds.add(matchingId)
@@ -142,11 +152,9 @@ class RoomFolderRepository(
 
         if (trimmedGenre != null) {
             val existingIds = folderDao.getPodcastIdsForFolderList(folder.id).toMutableSet()
-            val matchingSubscribed = podcastDao.getSubscribedPodcastsList().filter { pod ->
-                val eff = pod.customGenre?.trim() ?: pod.genre?.trim() ?: ""
-                eff.equals(trimmedGenre, ignoreCase = true) ||
-                    eff.split(",").any { it.trim().equals(trimmedGenre, ignoreCase = true) }
-            }.map { it.podcastId }
+            val matchingSubscribed = podcastDao.getSubscribedPodcastsList()
+                .filter { pod -> matchesGenre(pod, trimmedGenre) }
+                .map { it.podcastId }
             val added = matchingSubscribed.filter { existingIds.add(it) }
             if (added.isNotEmpty()) {
                 folderDao.setPodcastsForFolder(folder.id, existingIds.toList())
@@ -175,18 +183,22 @@ class RoomFolderRepository(
         if (folders.isEmpty()) return
 
         val subscribed = podcastDao.getSubscribedPodcastsList()
+        val subscribedIds = subscribed.map { it.podcastId }.toSet()
         for (folder in folders) {
             val targetGenre = folder.linkedGenre!!.trim()
-            val matching = subscribed.filter { pod ->
-                val eff = pod.customGenre?.trim() ?: pod.genre?.trim() ?: ""
-                eff.equals(targetGenre, ignoreCase = true) ||
-                    eff.split(",").any { it.trim().equals(targetGenre, ignoreCase = true) }
-            }.map { it.podcastId }
-            val currentIds = folderDao.getPodcastIdsForFolderList(folder.folderId).toSet()
-            val newIds = (currentIds + matching).toList()
-            if (newIds.size != currentIds.size) {
+            val matching = subscribed.filter { pod -> matchesGenre(pod, targetGenre) }.map { it.podcastId }
+            val currentValidIds = folderDao.getPodcastIdsForFolderList(folder.folderId).filter { it in subscribedIds }.toSet()
+            val newIds = (currentValidIds + matching).toList()
+            if (newIds.size != currentValidIds.size || currentValidIds.size != folderDao.getPodcastIdsForFolderList(folder.folderId).size) {
                 folderDao.setPodcastsForFolder(folder.folderId, newIds)
             }
+        }
+    }
+
+    private fun matchesGenre(pod: PodcastEntity, targetGenre: String): Boolean {
+        val candidates = listOfNotNull(pod.customGenre, pod.genre)
+        return candidates.any { genreField ->
+            genreField.split(",").any { it.trim().equals(targetGenre, ignoreCase = true) }
         }
     }
 }

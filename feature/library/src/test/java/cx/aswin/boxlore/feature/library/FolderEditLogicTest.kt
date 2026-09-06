@@ -206,4 +206,57 @@ class FolderEditLogicTest {
         // When autoSync is enabled and both empty -> null
         assertNull(resolveLinkedGenre(autoSync = true, linkedGenreText = "", folderNameText = ""))
     }
+
+    @Test
+    fun quickFillChipIcon_autoSwitchesUnlessManuallySelected() {
+        var isIconManuallySelected = false
+        var selectedIconKey: String? = null
+
+        fun onSelectSuggestedGenre(genre: String) {
+            if (!isIconManuallySelected) {
+                val matchedIcon = GenreIcons.findIcon(genre) ?: GenreIcons.defaultGenreIcon(genre)
+                val item = GenreIcons.all.firstOrNull { it.icon == matchedIcon }
+                selectedIconKey = item?.key
+            }
+        }
+
+        // Tap News chip -> icon becomes news
+        onSelectSuggestedGenre("News")
+        assertEquals("news", selectedIconKey)
+
+        // Switch to Comedy chip -> icon updates to comedy
+        onSelectSuggestedGenre("Comedy")
+        assertEquals("comedy", selectedIconKey)
+
+        // User manually chooses star icon
+        selectedIconKey = "star"
+        isIconManuallySelected = true
+
+        // Switch to Tech chip -> icon remains star
+        onSelectSuggestedGenre("Technology")
+        assertEquals("star", selectedIconKey)
+    }
+
+    @Test
+    fun linkedGenre_doesNotFreezeWhenToggledBeforeTypingCompletes() {
+        var autoSyncGenre = false
+        val linkedGenreText = ""
+        var nameText = "T"
+
+        // User toggles autoSync ON early while typing
+        autoSyncGenre = true
+
+        // User finishes typing "Technology"
+        nameText = "Technology"
+
+        // Resolve effective linked genre
+        val effectiveLinkedGenre = if (autoSyncGenre) {
+            linkedGenreText.trim().ifEmpty { nameText.trim() }.takeIf { it.isNotEmpty() }
+        } else {
+            null
+        }
+
+        // Must dynamically evaluate to "Technology", NOT "T"
+        assertEquals("Technology", effectiveLinkedGenre)
+    }
 }

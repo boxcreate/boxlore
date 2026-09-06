@@ -110,6 +110,7 @@ fun SubscriptionsScreen(
         val subscriptionsTabStyle by viewModel.subscriptionsTabStyle.collectAsStateWithLifecycle()
         var showSortMenu by remember { mutableStateOf(false) }
         var showFolderEditSheet by remember { mutableStateOf(false) }
+        var editingFolder by remember { mutableStateOf<cx.aswin.boxlore.core.model.SubscriptionFolder?>(null) }
 
         val isFloatingTabs = subscriptionsTabStyle == SubscriptionsTabStyle.FLOATING
 
@@ -445,19 +446,42 @@ fun SubscriptionsScreen(
                 )
             }
 
-            if (showFolderEditSheet) {
+            if (showFolderEditSheet || editingFolder != null) {
                 FolderEditSheet(
-                    initialFolder = null,
+                    initialFolder = editingFolder,
                     suggestedGenres = suggestedGenres,
-                    onDismissRequest = { showFolderEditSheet = false },
-                    onSave = { name, icon, displaySize, linkedGenre ->
-                        viewModel.createFolder(
-                            name = name,
-                            icon = icon,
-                            displaySize = displaySize,
-                            linkedGenre = linkedGenre,
-                        )
+                    onDismissRequest = {
                         showFolderEditSheet = false
+                        editingFolder = null
+                    },
+                    onSave = { name, icon, displaySize, linkedGenre ->
+                        val target = editingFolder
+                        if (target != null) {
+                            viewModel.updateFolder(
+                                target.copy(
+                                    name = name,
+                                    icon = icon,
+                                    displaySize = displaySize,
+                                    linkedGenre = linkedGenre,
+                                ),
+                            )
+                        } else {
+                            viewModel.createFolder(
+                                name = name,
+                                icon = icon,
+                                displaySize = displaySize,
+                                linkedGenre = linkedGenre,
+                            )
+                        }
+                        showFolderEditSheet = false
+                        editingFolder = null
+                    },
+                    onDelete = editingFolder?.let { folder ->
+                        {
+                            viewModel.deleteFolder(folder.id)
+                            showFolderEditSheet = false
+                            editingFolder = null
+                        }
                     },
                 )
             }

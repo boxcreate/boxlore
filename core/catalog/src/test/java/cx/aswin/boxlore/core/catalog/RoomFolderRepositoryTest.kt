@@ -175,8 +175,49 @@ class RoomFolderRepositoryTest {
     fun folderNamesFlowEmitsDistinctSortedNames() = runTest {
         repository.createFolder(name = "Zeta")
         repository.createFolder(name = "Alpha")
+        repository.createFolder(name = "   ")
 
         val names = repository.folderNames.first()
         assertEquals(listOf("Alpha", "Zeta"), names)
+    }
+
+    @Test
+    fun unsubscribedPodcastsAreExcludedFromFoldersFlowAndCount() = runTest {
+        insertSubscribedPodcast("p1", "Show 1", genre = "Tech")
+        val folder = repository.createFolder(
+            name = "Tech Zone",
+            podcastIds = listOf("p1"),
+        )
+
+        val before = repository.folders.first()
+        assertEquals(1, before.first().podcastCount)
+        assertEquals(listOf("p1"), before.first().podcastIds)
+
+        // Simulate unsubscribe: isSubscribed set to false
+        val podcast = podcastDao.getPodcast("p1")!!
+        podcastDao.upsert(podcast.copy(isSubscribed = false))
+
+        val afterFlow = repository.folders.first()
+        assertEquals(0, afterFlow.first().podcastCount)
+        assertTrue(afterFlow.first().podcastIds.isEmpty())
+
+        val afterGet = repository.getFolder(folder.id)
+        assertEquals(0, afterGet?.podcastCount)
+        assertTrue(afterGet?.podcastIds?.isEmpty() == true)
+    }
+
+    @Test
+    fun autoSyncMatchesBothCatalogGenreAndCustomGenreTags() = runTest {
+        insertSubscribedPodcast("p-cat", "Tech Catalog", genre = "Technology", customGenre = "Favorites")
+        insertSubscribedPodcast("p-custom", "Tech Custom", genre = "Society", customGenre = "Technology")
+
+        val folder = repository.createFolder(
+            name = "All Tech",
+            linkedGenre = "Technology",
+        )
+
+        assertEquals(2, folder.podcastCount)
+        assertTrue(folder.podcastIds.contains("p-cat"))
+        assertTrue(folder.podcastIds.contains("p-custom"))
     }
 }

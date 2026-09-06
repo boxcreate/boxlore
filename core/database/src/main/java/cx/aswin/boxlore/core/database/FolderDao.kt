@@ -44,7 +44,7 @@ interface FolderDao {
     @Query("SELECT * FROM podcast_folder_cross_ref")
     suspend fun getAllCrossRefsList(): List<PodcastFolderCrossRef>
 
-    @Query("SELECT DISTINCT name FROM folders ORDER BY name ASC")
+    @Query("SELECT DISTINCT name FROM folders WHERE trim(name) != '' ORDER BY name ASC")
     fun getAllFolderNames(): Flow<List<String>>
 
     @Transaction

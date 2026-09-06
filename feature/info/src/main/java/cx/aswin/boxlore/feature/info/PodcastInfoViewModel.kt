@@ -62,6 +62,7 @@ class PodcastInfoViewModel(
     private val queueManager = deps.queueManager
     private val localCatalog = deps.localCatalog
     private val subscriptionForegroundSync = deps.subscriptionForegroundSync
+    private val folderRepository = deps.folderRepository
     private val entryPoint = routeArgs.entryPoint
     private val genreFilter = routeArgs.genreFilter
     private val scrollDepth = routeArgs.scrollDepth
@@ -71,7 +72,7 @@ class PodcastInfoViewModel(
     private val _uiState = MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Loading)
 
     val folderNames: StateFlow<List<String>> =
-        deps.folderRepository?.folderNames
+        folderRepository?.folderNames
             ?.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
@@ -1326,6 +1327,7 @@ class PodcastInfoViewModel(
                         )
                 }
             }
+            folderRepository?.syncLinkedGenres()
         }
     }
 

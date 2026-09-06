@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.icon.GenreIconItem
@@ -146,76 +147,98 @@ internal fun FolderEditLivePreview(
                     color = MaterialTheme.colorScheme.outline,
                     fontWeight = GoogleSansWeight.bold,
                 )
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                ) {
-                    Text(
-                        text = when (displaySize) {
-                            FolderDisplaySize.COMPACT -> "Compact 1×1"
-                            FolderDisplaySize.FEATURED -> "Featured 2×2"
-                            FolderDisplaySize.SHELF -> "Shelf 3×1"
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        fontWeight = GoogleSansWeight.bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                    )
-                }
+                FolderEditLivePreviewBadge(displaySize = displaySize)
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(44.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = GenreIcons.folderIconOrFallback(iconKey),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
+            FolderEditLivePreviewBody(
+                name = name,
+                iconKey = iconKey,
+                linkedGenre = linkedGenre,
+            )
+        }
+    }
+}
 
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+@Composable
+private fun FolderEditLivePreviewBadge(displaySize: FolderDisplaySize) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Text(
+            text = when (displaySize) {
+                FolderDisplaySize.COMPACT -> "Compact 1×1"
+                FolderDisplaySize.FEATURED -> "Featured 2×2"
+                FolderDisplaySize.SHELF -> "Shelf 3×1"
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            fontWeight = GoogleSansWeight.bold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        )
+    }
+}
+
+@Composable
+private fun FolderEditLivePreviewBody(
+    name: String,
+    iconKey: String?,
+    linkedGenre: String?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(44.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = GenreIcons.folderIconOrFallback(iconKey),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = name.trim().ifEmpty { "Folder name" },
+                style = MaterialTheme.typography.titleMedium,
+                color = if (name.trim().isEmpty()) {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                fontWeight = GoogleSansWeight.bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!linkedGenre.isNullOrBlank()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(
-                        text = name.trim().ifEmpty { "Folder name" },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (name.trim().isEmpty()) {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                        fontWeight = GoogleSansWeight.bold,
+                    Icon(
+                        imageVector = Icons.Rounded.Sync,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(12.dp),
                     )
-                    if (!linkedGenre.isNullOrBlank()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Sync,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Text(
-                                text = "Auto-syncs with $linkedGenre",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Auto-syncs with $linkedGenre",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -401,6 +424,8 @@ internal fun FolderAutoSyncToggle(
     autoSync: Boolean,
     onAutoSyncChange: (Boolean) -> Unit,
     linkedGenre: String,
+    suggestedGenres: List<String> = emptyList(),
+    onSelectLinkedGenre: ((String) -> Unit)? = null,
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
@@ -408,40 +433,72 @@ internal fun FolderAutoSyncToggle(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = "Auto-sync with genre",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = if (autoSync && linkedGenre.isNotBlank()) {
-                        "Subscribed shows tagged '$linkedGenre' join automatically"
-                    } else {
-                        "Automatically add matching subscribed shows to this folder"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = "Auto-sync with genre",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = GoogleSansWeight.bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = if (autoSync && linkedGenre.isNotBlank()) {
+                            "Subscribed shows tagged '$linkedGenre' join automatically"
+                        } else {
+                            "Automatically add matching subscribed shows to this folder"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                Switch(
+                    checked = autoSync,
+                    onCheckedChange = onAutoSyncChange,
                 )
             }
 
-            Switch(
-                checked = autoSync,
-                onCheckedChange = onAutoSyncChange,
-            )
+            if (autoSync && suggestedGenres.isNotEmpty() && onSelectLinkedGenre != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Link to genre",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        suggestedGenres.forEach { genre ->
+                            val isSelected = linkedGenre.equals(genre, ignoreCase = true)
+                            val icon = GenreIcons.iconOrFallback(null, genre)
+                            PillFilterChip(
+                                label = genre,
+                                icon = icon,
+                                selected = isSelected,
+                                onClick = { onSelectLinkedGenre(genre) },
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

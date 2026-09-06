@@ -600,15 +600,19 @@ fun buildGenreSuggestionsWithFolders(
         .distinctBy { it.lowercase() }
         .map { name ->
             val iconItem = GenreIcons.findIcon(name)
-            val iconKey = if (iconItem != null) {
-                GenreIcons.all.firstOrNull { it.icon == iconItem }?.key ?: "folder"
+            val matchedItem = if (iconItem != null) {
+                GenreIcons.all.firstOrNull { it.icon == iconItem }
             } else {
-                "folder"
+                val fallbackVector = GenreIcons.defaultGenreIcon(name)
+                GenreIcons.all.firstOrNull { it.icon == fallbackVector }
             }
+            val isGeneric = matchedItem == null || matchedItem.key == "category"
+            val iconKey = if (isGeneric) "folder" else matchedItem.key
+            val iconVector = if (isGeneric) GenreIcons.defaultFolderIcon() else matchedItem.icon
             GenreSuggestion(
                 name = name,
                 iconKey = iconKey,
-                icon = iconItem ?: GenreIcons.defaultFolderIcon(),
+                icon = iconVector,
                 keywords = listOf("folder", "tag", name.lowercase()),
             )
         }

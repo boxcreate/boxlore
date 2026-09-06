@@ -42,7 +42,9 @@ internal data class FolderEditFormActions(
     val onSelectIcon: (String?) -> Unit,
     val onSelectDisplaySize: (FolderDisplaySize) -> Unit,
     val onAutoSyncChange: (Boolean) -> Unit,
+    val onSelectLinkedGenre: (String) -> Unit,
     val onSelectSuggestedGenre: (String) -> Unit,
+    val onDone: () -> Unit,
     val onSave: () -> Unit,
     val onClose: () -> Unit,
     val onDelete: (() -> Unit)?,
@@ -59,6 +61,9 @@ fun FolderEditSheet(
 ) {
     var nameText by remember(initialFolder) { mutableStateOf(initialFolder?.name ?: "") }
     var selectedIconKey by remember(initialFolder) { mutableStateOf(initialFolder?.icon) }
+    var isIconManuallySelected by remember(initialFolder) {
+        mutableStateOf(initialFolder?.icon != null)
+    }
     var selectedDisplaySize by remember(initialFolder) {
         mutableStateOf(initialFolder?.displaySize ?: FolderDisplaySize.COMPACT)
     }
@@ -95,27 +100,26 @@ fun FolderEditSheet(
         onNameChange = { nameText = it },
         onSelectIcon = {
             selectedIconKey = it
+            isIconManuallySelected = true
             focusManager.clearFocus()
         },
         onSelectDisplaySize = { selectedDisplaySize = it },
         onAutoSyncChange = { enabled ->
             autoSyncGenre = enabled
-            if (enabled && linkedGenreText.isEmpty()) {
-                linkedGenreText = nameText.trim()
-            }
+        },
+        onSelectLinkedGenre = { genre ->
+            linkedGenreText = if (linkedGenreText.equals(genre, ignoreCase = true)) "" else genre
         },
         onSelectSuggestedGenre = { genre ->
             nameText = genre
-            linkedGenreText = genre
-            if (selectedIconKey == null) {
-                val matchedIcon = GenreIcons.findIcon(genre)
-                if (matchedIcon != null) {
-                    val item = GenreIcons.all.firstOrNull { it.icon == matchedIcon }
-                    selectedIconKey = item?.key
-                }
+            if (!isIconManuallySelected) {
+                val matchedIcon = GenreIcons.findIcon(genre) ?: GenreIcons.defaultGenreIcon(genre)
+                val item = GenreIcons.all.firstOrNull { it.icon == matchedIcon }
+                selectedIconKey = item?.key
             }
             focusManager.clearFocus()
         },
+        onDone = { focusManager.clearFocus() },
         onSave = {
             focusManager.clearFocus()
             val finalName = nameText.trim()
@@ -179,7 +183,7 @@ internal fun FolderEditSheetContent(
             nameText = state.nameText,
             onNameChange = actions.onNameChange,
             iconKey = state.selectedIconKey,
-            onDone = actions.onClose,
+            onDone = actions.onDone,
         )
 
         if (state.suggestedGenres.isNotEmpty()) {
@@ -198,6 +202,8 @@ internal fun FolderEditSheetContent(
             autoSync = state.autoSyncGenre,
             onAutoSyncChange = actions.onAutoSyncChange,
             linkedGenre = state.effectiveLinkedGenre ?: state.nameText.trim(),
+            suggestedGenres = state.suggestedGenres,
+            onSelectLinkedGenre = actions.onSelectLinkedGenre,
         )
 
         FolderIconPickerSection(
