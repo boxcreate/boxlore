@@ -41,30 +41,36 @@ object PodcastInfoEnrichLogic {
         val (skipBeginning, skipEnding) = resolveSkips(currentPodcast ?: apiPodcast, localPodcast, apiPodcast)
         return apiPodcast.copy(
             fallbackImageUrl = resolveEnrichedFallbackImage(currentPodcast, localPodcast, apiPodcast, pageEpisodes),
-            subscribedAt = resolveEnrichedSubscribedAt(currentPodcast, localPodcast),
-            notificationsEnabled = resolveEnrichedToggle(
-                effectiveSubscribed,
-                currentPodcast?.notificationsEnabled,
-                localPodcast?.notificationsEnabled,
-            ),
-            autoDownloadEnabled = resolveEnrichedToggle(
-                effectiveSubscribed,
-                currentPodcast?.autoDownloadEnabled,
-                localPodcast?.autoDownloadEnabled,
-            ),
+            subscribedAt = currentPodcast?.subscribedAt?.takeIf { it > 0L } ?: localPodcast?.subscribedAt ?: 0L,
+            notificationsEnabled = effectiveSubscribed && (localPodcast?.notificationsEnabled == true || currentPodcast?.notificationsEnabled == true),
+            autoDownloadEnabled = effectiveSubscribed && (localPodcast?.autoDownloadEnabled == true || currentPodcast?.autoDownloadEnabled == true),
             skipBeginningOverrideMs = skipBeginning,
             skipEndingOverrideMs = skipEnding,
             preferredSort = resolvePreferredSort(currentPodcast ?: apiPodcast, localPodcast, apiPodcast),
             feedUrl = resolveFeedUrl(apiPodcast, currentPodcast, localPodcast),
             latestEpisode = resolveEnrichedLatestEpisode(localPodcast, currentPodcast, apiPodcast, pageEpisodes, sortParam),
+            customGenre = resolveEnrichedCustomField(
+                effectiveSubscribed,
+                currentPodcast?.customGenre,
+                localPodcast?.customGenre,
+            ),
+            customGenreIcon = resolveEnrichedCustomField(
+                effectiveSubscribed,
+                currentPodcast?.customGenreIcon,
+                localPodcast?.customGenreIcon,
+            ),
         )
     }
 
-    private fun resolveEnrichedToggle(
+    private fun resolveEnrichedCustomField(
         effectiveSubscribed: Boolean,
-        current: Boolean?,
-        local: Boolean?,
-    ): Boolean = effectiveSubscribed && (local == true || current == true)
+        current: String?,
+        local: String?,
+    ): String? = if (effectiveSubscribed) {
+        current?.takeIf { it.isNotBlank() } ?: local
+    } else {
+        null
+    }
 
     private fun resolveEnrichedFallbackImage(
         current: Podcast?,
@@ -75,11 +81,6 @@ object PodcastInfoEnrichLogic {
         ?: current?.fallbackImageUrl?.takeIf { it.isNotBlank() }
         ?: local?.fallbackImageUrl?.takeIf { it.isNotBlank() }
         ?: pageEpisodes.firstOrNull()?.imageUrl
-
-    private fun resolveEnrichedSubscribedAt(
-        current: Podcast?,
-        local: Podcast?,
-    ): Long = current?.subscribedAt?.takeIf { it > 0L } ?: local?.subscribedAt ?: 0L
 
     private fun resolveEnrichedLatestEpisode(
         local: Podcast?,
@@ -127,6 +128,20 @@ object PodcastInfoEnrichLogic {
             preferredSort = resolvePreferredSort(latestPodcast, localPodcast, refreshedPodcast),
             feedUrl = resolveFeedUrl(refreshedPodcast, latestPodcast, localPodcast),
             latestEpisode = resolveLatestEpisode(refreshedPodcast, latestPodcast, localPodcast),
+            customGenre = if (effectiveSubscribed) {
+                latestPodcast.customGenre?.takeIf { it.isNotBlank() }
+                    ?: localPodcast?.customGenre
+                    ?: refreshedPodcast.customGenre
+            } else {
+                null
+            },
+            customGenreIcon = if (effectiveSubscribed) {
+                latestPodcast.customGenreIcon?.takeIf { it.isNotBlank() }
+                    ?: localPodcast?.customGenreIcon
+                    ?: refreshedPodcast.customGenreIcon
+            } else {
+                null
+            },
         )
     }
 

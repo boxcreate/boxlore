@@ -17,6 +17,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - `PodcastGenres` and `RankingAggregateTelemetry`.
 - Cross-promotion model types.
 - `Podcast.isLatestEpisodeNew`: shared NEW badge. Room `rssHasNewEpisodes` is true for true-RSS freshness **and** for Podcast Index direct-feed tip promotions (`updateLatestEpisode(..., markAsNew = true)`). Opening the show clears the flag. Otherwise the 48h window / last-seen id rules apply.
+- `Podcast.effectiveGenre`: resolves user `customGenre` override when non-blank, falling back to default catalog `genre`. Companion `customGenreIcon` stores the icon identifier for custom tags.
 
 ## Internal structure
 

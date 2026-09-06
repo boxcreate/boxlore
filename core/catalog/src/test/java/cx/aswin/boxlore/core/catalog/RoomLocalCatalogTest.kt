@@ -71,6 +71,21 @@ class RoomLocalCatalogTest {
     }
 
     @Test
+    fun getLocalPodcastMapsCustomGenreAndIcon() = runTest {
+        podcastDao.upsert(
+            entity("pod-custom", title = "Custom Show").copy(
+                customGenre = "My Tag",
+                customGenreIcon = "headphones",
+            ),
+        )
+
+        val podcast = catalog.getLocalPodcast("pod-custom")!!
+        assertEquals("My Tag", podcast.customGenre)
+        assertEquals("headphones", podcast.customGenreIcon)
+        assertEquals("My Tag", podcast.effectiveGenre)
+    }
+
+    @Test
     fun getLocalPodcastReturnsNullWhenMissing() = runTest {
         assertNull(catalog.getLocalPodcast("nobody"))
     }

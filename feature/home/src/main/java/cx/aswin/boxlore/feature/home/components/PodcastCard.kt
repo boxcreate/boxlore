@@ -42,7 +42,7 @@ fun PodcastCard(
             else -> 3
         },
         imageChrome = {
-            if (showGenreChip && podcast.genre.isNotEmpty()) {
+            if (showGenreChip && podcast.effectiveGenre.isNotEmpty()) {
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
@@ -52,7 +52,7 @@ fun PodcastCard(
                         .align(Alignment.TopStart),
                 ) {
                     Text(
-                        text = podcast.genre.uppercase(),
+                        text = podcast.effectiveGenre.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         fontWeight = GoogleSansWeight.bold,

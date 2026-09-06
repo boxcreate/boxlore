@@ -42,8 +42,9 @@ src/main/java/cx/aswin/boxlore/feature/library/
     HistoryTopBar.kt              — collapsible top app bar + overflow menu
   subscriptions/
     SubscriptionTabs.kt           — Shows|New Episodes switcher; Explore-style genre pills with icons
+    SubscriptionsFilterRow.kt     — horizontal filter chips row with dynamic custom genre & icon resolution
     SubscriptionsTabSelectorFab.kt — Floating segmented FAB pill indicator for Shows/New Episodes
-    SubscriptionGenreCatalog.kt   — genre label/icon map mirrored from Explore
+    SubscriptionGenreCatalog.kt   — genre label/icon map mirrored from Explore and resolved against custom podcast genre overrides
     SubscriptionTabContents.kt    — Shows grid/list + New Episodes catch-up list (Play All FAB); calvin reorderable on unfiltered Shows (ordered ids, current Podcast objects)
     SubscriptionRows.kt           — grid cards (title fallback on broken art), list/latest rows, date headers
     SubscriptionListRowParts.kt   — list artwork, title column, pin badge

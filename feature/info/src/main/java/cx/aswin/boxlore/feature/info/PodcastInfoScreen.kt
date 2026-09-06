@@ -14,14 +14,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,25 +28,14 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowDownward
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -66,26 +51,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
@@ -98,8 +75,12 @@ import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarActions
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarState
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
-import cx.aswin.boxlore.feature.info.components.MarkAllEpisodesDialog
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
+import cx.aswin.boxlore.feature.info.components.MissingEpisodesConfirmDialog
+import cx.aswin.boxlore.feature.info.components.PodcastGenreEditSheet
+import cx.aswin.boxlore.feature.info.components.PodcastInfoBackgroundHeader
+import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPill
+import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
 import cx.aswin.boxlore.feature.info.components.PodcastInfoSearchOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlayActions
@@ -148,6 +129,7 @@ fun PodcastInfoScreen(
     var showMarkAllPlayedDialog by remember { mutableStateOf(false) }
     var showMarkAllUnplayedDialog by remember { mutableStateOf(false) }
     var showPodcastPlaybackSettings by remember { mutableStateOf(false) }
+    var showPodcastGenreEdit by remember { mutableStateOf(false) }
     var showMissingEpisodesConfirm by remember { mutableStateOf(false) }
     var selectedEpisodeIds by remember(podcastId) { mutableStateOf(emptyList<String>()) }
     var selectionAnchorEpisodeId by remember(podcastId) { mutableStateOf<String?>(null) }
@@ -314,43 +296,12 @@ fun PodcastInfoScreen(
 
             is PodcastInfoUiState.Success -> {
                 // Blurred Background Header
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(collapsedHeaderHeight + 240.dp)
-                        .graphicsLayer {
-                            translationY = -scrollOffset * 0.5f
-                            alpha = 1f - scrollFraction
-                        },
-                ) {
-                    OptimizedImage(
-                        url = state.podcast.imageUrl.takeIf { it.isNotEmpty() } ?: state.podcast.fallbackImageUrl,
-                        proxyWidth = 200,
-                        contentDescription = null,
-                        modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .alpha(0.5f)
-                            .blur(50.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded),
-                        contentScale = ContentScale.Crop,
-                    )
-                    // Gradient overlay to blend into the background
-                    Box(
-                        modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(
-                                androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    colors =
-                                    listOf(
-                                        Color.Transparent,
-                                        MaterialTheme.colorScheme.background,
-                                    ),
-                                ),
-                            ),
-                    )
-                }
+                PodcastInfoBackgroundHeader(
+                    imageUrl = state.podcast.imageUrl.takeIf { it.isNotEmpty() } ?: state.podcast.fallbackImageUrl,
+                    collapsedHeaderHeight = collapsedHeaderHeight,
+                    scrollOffset = scrollOffset,
+                    scrollFraction = scrollFraction,
+                )
 
                 // Content
                 val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
@@ -508,7 +459,7 @@ fun PodcastInfoScreen(
                                 onDescExpandedChange = { isDescExpanded = it },
                                 onPlayEpisode = { viewModel.onPlayClick(it) },
                                 onPodcastClick = onPodcastClick,
-                                context = context,
+                                onEditGenre = { showPodcastGenreEdit = true },
                             )
                         }
 
@@ -694,6 +645,7 @@ fun PodcastInfoScreen(
                         isSubscribed = state.isSubscribed,
                         isPinnedToHome = isPinnedToHome,
                         onToggleHomePin = viewModel::toggleHomePin,
+                        onEditGenre = { showPodcastGenreEdit = true },
                     ),
                     missingEpisodesChip =
                     MissingEpisodesChip(
@@ -791,42 +743,20 @@ fun PodcastInfoScreen(
                 }
 
                 if (showMissingEpisodesConfirm) {
-                    AlertDialog(
+                    MissingEpisodesConfirmDialog(
                         onDismissRequest = { showMissingEpisodesConfirm = false },
-                        title = { Text("Get every episode") },
-                        text = {
-                            Text(
-                                buildAnnotatedString {
-                                    append(
-                                        "If you prefer to stay unsubscribed but still want the latest " +
-                                            "episodes, let boxlore use this show’s publisher feed to fill " +
-                                            "any gaps. You only need to allow this once—future visits " +
-                                            "refresh automatically.\n\n",
-                                    )
-                                    append("Full feeds can be large, so boxlore asks first.\n\n")
-                                    withStyle(SpanStyle(fontWeight = GoogleSansWeight.bold)) {
-                                        append(
-                                            "Subscribe and boxlore will automatically keep the latest " +
-                                                "episodes up to date.",
-                                        )
-                                    }
-                                },
-                            )
-                        },
-                        confirmButton = {
-                            Button(
-                                onClick = {
-                                    showMissingEpisodesConfirm = false
-                                    viewModel.loadMissingEpisodes()
-                                },
-                            ) {
-                                Text("Auto-fetch from publisher")
-                            }
-                        },
-                        dismissButton = {
-                            OutlinedButton(onClick = { showMissingEpisodesConfirm = false }) {
-                                Text("Not now")
-                            }
+                        onConfirm = { viewModel.loadMissingEpisodes() },
+                    )
+                }
+
+                if (showPodcastGenreEdit && state.isSubscribed) {
+                    PodcastGenreEditSheet(
+                        catalogGenre = state.podcast.genre,
+                        customGenre = state.podcast.customGenre,
+                        customGenreIcon = state.podcast.customGenreIcon,
+                        onDismissRequest = { showPodcastGenreEdit = false },
+                        onSave = { newGenre, newIcon ->
+                            viewModel.updateCustomGenre(newGenre, newIcon)
                         },
                     )
                 }
@@ -960,54 +890,15 @@ fun PodcastInfoScreen(
                             animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
                         ) + fadeOut(),
                     ) {
-                        Surface(
+                        PodcastInfoJumpPill(
+                            isOngoing = isTargetOngoing,
+                            episodeTitle = targetJumpEpisode?.title ?: "",
                             onClick = {
                                 coroutineScope.launch {
                                     listState.animateScrollToItem(targetJumpIndex + 2)
                                 }
                             },
-                            shape = RoundedCornerShape(24.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            shadowElevation = 6.dp,
-                            modifier =
-                            Modifier
-                                .padding(horizontal = 24.dp)
-                                .widthIn(max = 320.dp)
-                                .height(48.dp),
-                        ) {
-                            Row(
-                                modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                            ) {
-                                Icon(
-                                    imageVector = if (isTargetOngoing) Icons.Rounded.PlayArrow else Icons.Rounded.ArrowDownward,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (isTargetOngoing) "Resume: " else "Jump to: ",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.medium),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                                )
-                                Text(
-                                    text = targetJumpEpisode?.title ?: "",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    maxLines = 1,
-                                    modifier =
-                                    Modifier
-                                        .weight(1f, fill = false)
-                                        .basicMarquee(iterations = Int.MAX_VALUE),
-                                )
-                            }
-                        }
+                        )
                     }
                 }
 
@@ -1052,34 +943,13 @@ fun PodcastInfoScreen(
         }
 
         // --- Beautiful M3 Confirmation Dialogs ---
-        if (showMarkAllPlayedDialog) {
-            val currentState = uiState
-            if (currentState is PodcastInfoUiState.Success) {
-                MarkAllEpisodesDialog(
-                    podcastTitle = currentState.podcast.title,
-                    markAsPlayed = true,
-                    onDismiss = { showMarkAllPlayedDialog = false },
-                    onConfirm = {
-                        showMarkAllPlayedDialog = false
-                        viewModel.markAllAsCompleted()
-                    },
-                )
-            }
-        }
-
-        if (showMarkAllUnplayedDialog) {
-            val currentState = uiState
-            if (currentState is PodcastInfoUiState.Success) {
-                MarkAllEpisodesDialog(
-                    podcastTitle = currentState.podcast.title,
-                    markAsPlayed = false,
-                    onDismiss = { showMarkAllUnplayedDialog = false },
-                    onConfirm = {
-                        showMarkAllUnplayedDialog = false
-                        viewModel.markAllAsUncompleted()
-                    },
-                )
-            }
-        }
+        PodcastInfoMarkDialogs(
+            uiState = uiState,
+            showMarkAllPlayedDialog = showMarkAllPlayedDialog,
+            showMarkAllUnplayedDialog = showMarkAllUnplayedDialog,
+            onDismissPlayed = { showMarkAllPlayedDialog = false },
+            onDismissUnplayed = { showMarkAllUnplayedDialog = false },
+            viewModel = viewModel,
+        )
     }
 }

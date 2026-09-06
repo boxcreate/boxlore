@@ -250,4 +250,9 @@ object BoxLoreDatabaseMigrations {
                   ELSE 'id:' || episodeId
                 END
     """
+
+    fun migrate32To33(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE podcasts ADD COLUMN customGenre TEXT")
+        db.execSQL("ALTER TABLE podcasts ADD COLUMN customGenreIcon TEXT")
+    }
 }

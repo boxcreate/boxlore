@@ -526,7 +526,7 @@ internal fun EpisodeRowArtwork(
 }
 
 internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> = podcasts.flatMap { pod ->
-    pod.genre.split(",")
+    pod.effectiveGenre.split(",")
         .map { it.trim() }
         .filter { it.isNotEmpty() && !it.equals("podcast", ignoreCase = true) }
         .map { genre ->
@@ -536,9 +536,9 @@ internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> = podc
 
 internal fun filterPodcastsByGenre(podcasts: List<Podcast>, selectedGenre: String): List<Podcast> {
     if (selectedGenre == "All") return podcasts
-    val resolved = resolveSubscriptionGenreItem(selectedGenre)
+    val resolved = resolveSubscriptionGenreItem(selectedGenre, podcasts)
     return podcasts.filter { pod ->
-        pod.genre.split(",")
+        pod.effectiveGenre.split(",")
             .map { it.trim() }
             .any {
                 it.equals(selectedGenre, ignoreCase = true) ||

@@ -112,6 +112,51 @@ class RssPodcastRepositoryTest {
         }
     }
 
+    @Test
+    fun toPodcastPreservesCustomGenreAndIconWhenSubscribed() {
+        val entity =
+            PodcastEntity(
+                podcastId = "rss:test-custom-genre",
+                title = "Test Show",
+                author = "Author",
+                imageUrl = "https://example.com/art.jpg",
+                description = "Desc",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                customGenre = "Tech Deep Dives",
+                customGenreIcon = "code",
+            )
+        with(repository) {
+            val podcast = entity.toPodcast()
+            assertEquals("Tech Deep Dives", podcast.customGenre)
+            assertEquals("code", podcast.customGenreIcon)
+            assertEquals("Tech Deep Dives", podcast.effectiveGenre)
+        }
+    }
+
+    @Test
+    fun toPodcastClearsCustomGenreAndIconWhenUnsubscribed() {
+        val entity =
+            PodcastEntity(
+                podcastId = "rss:test-unsubscribed-custom-genre",
+                title = "Test Show",
+                author = "Author",
+                imageUrl = "https://example.com/art.jpg",
+                description = "Desc",
+                isSubscribed = false,
+                subscribedAt = 0L,
+                genre = "Technology",
+                customGenre = "Tech Deep Dives",
+                customGenreIcon = "code",
+            )
+        with(repository) {
+            val podcast = entity.toPodcast()
+            org.junit.jupiter.api.Assertions.assertNull(podcast.customGenre)
+            org.junit.jupiter.api.Assertions.assertNull(podcast.customGenreIcon)
+            assertEquals("Technology", podcast.effectiveGenre)
+        }
+    }
+
     private fun rssEpisode(episodeId: String, podcastId: String, publishedDate: Long,) = RssEpisodeEntity(
         episodeId = episodeId,
         podcastId = podcastId,

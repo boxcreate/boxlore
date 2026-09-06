@@ -450,4 +450,129 @@ class SubscriptionRepositoryTest {
             podcastDao.getPodcast("pod-blank")!!.feedUrl,
         )
     }
+
+    @Test
+    fun updateCustomGenreSetsFieldsWhenSubscribed() = runTest {
+        val pod = podcast(id = "sub-1")
+        repository.subscribe(pod)
+        repository.updateCustomGenre("sub-1", "Custom Tech", "code")
+
+        val entity = podcastDao.getPodcast("sub-1")!!
+        assertEquals("Custom Tech", entity.customGenre)
+        assertEquals("code", entity.customGenreIcon)
+    }
+
+    @Test
+    fun updateCustomGenreIgnoredWhenNotSubscribed() = runTest {
+        podcastDao.upsert(
+            PodcastEntity(
+                podcastId = "unsub-1",
+                title = "Show",
+                author = "Author",
+                imageUrl = "https://example.com/art.jpg",
+                description = "desc",
+                isSubscribed = false,
+            ),
+        )
+        repository.updateCustomGenre("unsub-1", "Custom Tech", "code")
+        val entity = podcastDao.getPodcast("unsub-1")!!
+        assertNull(entity.customGenre)
+        assertNull(entity.customGenreIcon)
+    }
+
+    @Test
+    fun toggleSubscriptionClearsCustomGenreOnUnsubscribe() = runTest {
+        val pod = podcast(id = "sub-2")
+        repository.subscribe(pod)
+        repository.updateCustomGenre("sub-2", "Custom Tech", "fire")
+
+        val beforeUnsub = podcastDao.getPodcast("sub-2")!!
+        assertEquals("Custom Tech", beforeUnsub.customGenre)
+        assertEquals("fire", beforeUnsub.customGenreIcon)
+
+        // Toggle to unsubscribe
+        repository.toggleSubscription(pod)
+        val afterUnsub = podcastDao.getPodcast("sub-2")!!
+        assertFalse(afterUnsub.isSubscribed)
+        assertNull(afterUnsub.customGenre)
+        assertNull(afterUnsub.customGenreIcon)
+    }
+
+    @Test
+    fun updateCustomGenreUpdatesLinkedRssPodcastWhenTargetIsLinked() = runTest {
+        podcastDao.upsert(
+            PodcastEntity(
+                podcastId = "pi-920",
+                title = "PI Show",
+                author = "Author",
+                imageUrl = "https://example.com/art.jpg",
+                description = "desc",
+                isSubscribed = false,
+                sourceType = PodcastEntity.SOURCE_PODCAST_INDEX,
+            ),
+        )
+        podcastDao.upsert(
+            PodcastEntity(
+                podcastId = "rss:-1001",
+                title = "RSS Show",
+                author = "Author",
+                imageUrl = "https://example.com/art.jpg",
+                description = "desc",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                sourceType = PodcastEntity.SOURCE_RSS,
+                linkedPodcastIndexId = "pi-920",
+            ),
+        )
+
+        repository.updateCustomGenre("pi-920", "Deep Dives", "bulb")
+
+        val rssEntity = podcastDao.getPodcast("rss:-1001")!!
+        assertEquals("Deep Dives", rssEntity.customGenre)
+        assertEquals("bulb", rssEntity.customGenreIcon)
+    }
+
+    @Test
+    fun toggleSubscriptionClearsCustomGenreOnUnsubscribeWhenTargetIsLinked() = runTest {
+        podcastDao.upsert(
+            PodcastEntity(
+                podcastId = "pi-921",
+                title = "PI Show",
+                author = "Author",
+                imageUrl = "https://example.com/art.jpg",
+                description = "desc",
+                isSubscribed = false,
+                sourceType = PodcastEntity.SOURCE_PODCAST_INDEX,
+                customGenre = "Old Tag",
+                customGenreIcon = "star",
+            ),
+        )
+        podcastDao.upsert(
+            PodcastEntity(
+                podcastId = "rss:-1002",
+                title = "RSS Show",
+                author = "Author",
+                imageUrl = "https://example.com/art.jpg",
+                description = "desc",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                sourceType = PodcastEntity.SOURCE_RSS,
+                linkedPodcastIndexId = "pi-921",
+                customGenre = "Active Tag",
+                customGenreIcon = "fire",
+            ),
+        )
+
+        val pod = podcast(id = "pi-921")
+        repository.toggleSubscription(pod)
+
+        val rssEntity = podcastDao.getPodcast("rss:-1002")!!
+        assertFalse(rssEntity.isSubscribed)
+        assertNull(rssEntity.customGenre)
+        assertNull(rssEntity.customGenreIcon)
+
+        val piEntity = podcastDao.getPodcast("pi-921")!!
+        assertNull(piEntity.customGenre)
+        assertNull(piEntity.customGenreIcon)
+    }
 }

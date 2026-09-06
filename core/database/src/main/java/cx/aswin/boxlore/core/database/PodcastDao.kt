@@ -51,7 +51,15 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE podcastId IN (:ids)")
     suspend fun getPodcastsByIds(ids: List<String>): List<PodcastEntity>
 
-    @Query("UPDATE podcasts SET isSubscribed = :isSubscribed WHERE podcastId = :id")
+    @Query(
+        """
+        UPDATE podcasts
+        SET isSubscribed = :isSubscribed,
+            customGenre = CASE WHEN :isSubscribed = 0 THEN NULL ELSE customGenre END,
+            customGenreIcon = CASE WHEN :isSubscribed = 0 THEN NULL ELSE customGenreIcon END
+        WHERE podcastId = :id
+        """,
+    )
     suspend fun setSubscribed(id: String, isSubscribed: Boolean)
 
     @Query(
@@ -60,7 +68,9 @@ interface PodcastDao {
         SET isSubscribed = 0,
             subscribedAt = 0,
             notificationsEnabled = 0,
-            autoDownloadEnabled = 0
+            autoDownloadEnabled = 0,
+            customGenre = NULL,
+            customGenreIcon = NULL
         WHERE podcastId = :id
         """,
     )
@@ -112,4 +122,10 @@ interface PodcastDao {
     /** Publisher HTTPS URL for PI shows opted into Missing episodes? (library restore). */
     @Query("UPDATE podcasts SET feedUrl = :feedUrl WHERE podcastId = :id")
     suspend fun setFeedUrl(id: String, feedUrl: String,)
+
+    @Query("UPDATE podcasts SET customGenre = :customGenre, customGenreIcon = :customGenreIcon WHERE podcastId = :id")
+    suspend fun updateCustomGenre(id: String, customGenre: String?, customGenreIcon: String?)
+
+    @Query("UPDATE podcasts SET customGenre = NULL, customGenreIcon = NULL WHERE podcastId = :id")
+    suspend fun clearCustomGenre(id: String)
 }

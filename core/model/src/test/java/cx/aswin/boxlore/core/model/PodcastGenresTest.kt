@@ -45,4 +45,34 @@ class PodcastGenresTest {
             assertEquals(genre, PodcastGenres.canonicalize(genre.lowercase()))
         }
     }
+
+    @Test
+    fun podcastEffectiveGenreFallsBackToGenreWhenCustomGenreNullOrBlank() {
+        val defaultPod = Podcast(
+            id = "1",
+            title = "Test",
+            artist = "Host",
+            imageUrl = "",
+            genre = "Technology",
+        )
+        assertEquals("Technology", defaultPod.effectiveGenre)
+
+        val blankCustomPod = defaultPod.copy(customGenre = "   ")
+        assertEquals("Technology", blankCustomPod.effectiveGenre)
+    }
+
+    @Test
+    fun podcastEffectiveGenreUsesCustomGenreWhenPresent() {
+        val customPod = Podcast(
+            id = "1",
+            title = "Test",
+            artist = "Host",
+            imageUrl = "",
+            genre = "Technology",
+            customGenre = "Tech Deep Dives",
+            customGenreIcon = "code",
+        )
+        assertEquals("Tech Deep Dives", customPod.effectiveGenre)
+        assertEquals("code", customPod.customGenreIcon)
+    }
 }

@@ -67,6 +67,8 @@ class RoomLocalCatalog(private val database: BoxLoreDatabase,) : LocalCatalogPor
                     rssHasNewEpisodes = existing.rssHasNewEpisodes,
                     linkedPodcastIndexId = existing.linkedPodcastIndexId
                         ?: podcast.linkedPodcastIndexId,
+                    customGenre = podcast.customGenre ?: existing.customGenre,
+                    customGenreIcon = podcast.customGenreIcon ?: existing.customGenreIcon,
                 ),
             )
         }

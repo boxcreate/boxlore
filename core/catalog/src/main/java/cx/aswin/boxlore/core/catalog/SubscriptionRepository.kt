@@ -29,42 +29,7 @@ class SubscriptionRepository(
     val subscribedPodcasts: Flow<List<Podcast>> =
         podcastDao
             .getSubscribedPodcasts()
-            .map { list ->
-                list.map { entity ->
-                    Podcast(
-                        id = entity.podcastId,
-                        title = entity.title,
-                        artist = entity.author,
-                        imageUrl = entity.imageUrl,
-                        fallbackImageUrl = entity.latestEpisode?.imageUrl ?: "",
-                        description = entity.description,
-                        genre = entity.genre ?: "Podcast", // Use stored genre
-                        type = entity.type,
-                        latestEpisode = entity.latestEpisode,
-                        subscribedAt = entity.subscribedAt,
-                        podcastGuid = entity.podcastGuid,
-                        fundingUrl = entity.fundingUrl,
-                        fundingMessage = entity.fundingMessage,
-                        medium = entity.medium,
-                        hasValue = entity.hasValue,
-                        updateFrequency = entity.updateFrequency,
-                        location = entity.location,
-                        license = entity.license,
-                        isLocked = entity.isLocked,
-                        preferredSort = entity.preferredSort,
-                        notificationsEnabled = entity.notificationsEnabled,
-                        autoDownloadEnabled = entity.autoDownloadEnabled,
-                        skipBeginningOverrideMs = entity.skipBeginningOverrideMs,
-                        skipEndingOverrideMs = entity.skipEndingOverrideMs,
-                        sourceType = entity.sourceType,
-                        feedUrl = entity.feedUrl,
-                        rssRefreshCapability = entity.rssRefreshCapability,
-                        rssCatalogStale = entity.rssCatalogStale,
-                        rssHasNewEpisodes = entity.rssHasNewEpisodes,
-                        linkedPodcastIndexId = entity.linkedPodcastIndexId,
-                    )
-                }
-            }
+            .map { list -> list.map { it.toPodcast() } }
 
     suspend fun toggleSubscription(podcast: Podcast) {
         val existing = podcastDao.getPodcast(podcast.id)
@@ -78,33 +43,7 @@ class SubscriptionRepository(
         val isCurrentlySubscribed = activeEntity?.isSubscribed == true
 
         if (isCurrentlySubscribed) {
-            // Unsubscribe
-            val target = checkNotNull(activeEntity)
-            val updated =
-                target.copy(
-                    isSubscribed = false,
-                    subscribedAt = 0L,
-                    notificationsEnabled = false,
-                    autoDownloadEnabled = false,
-                )
-            podcastDao.upsert(updated)
-            if (target.isRss) podcastDao.deleteRssEpisodes(target.podcastId)
-            if (!podcast.isRss) {
-                updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
-                localEpisodeCatalog?.setUnsubscribedTtl(
-                    podcast.id,
-                    System.currentTimeMillis() + LocalEpisodeCatalogRepository.UNSUBSCRIBE_TTL_MS,
-                )
-            }
-            RankingFeedbackRepository.getIfInitialized()?.recordAction(
-                target =
-                FeedbackTarget(
-                    episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
-                    podcastId = podcast.id,
-                    genre = podcast.genre,
-                ),
-                action = RankingAction.UNSUBSCRIBE,
-            )
+            unsubscribeInternal(podcast, checkNotNull(activeEntity), existing)
         } else {
             // Subscribe (Upsert to ensure we have data for offline/Jump Back In)
             val entity =
@@ -164,6 +103,39 @@ class SubscriptionRepository(
                 action = RankingAction.SUBSCRIBE,
             )
         }
+    }
+
+    private suspend fun unsubscribeInternal(podcast: Podcast, target: PodcastEntity, existing: PodcastEntity?) {
+        val updated =
+            target.copy(
+                isSubscribed = false,
+                subscribedAt = 0L,
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+                customGenre = null,
+                customGenreIcon = null,
+            )
+        podcastDao.upsert(updated)
+        if (existing != null && existing.podcastId != target.podcastId) {
+            podcastDao.clearCustomGenre(existing.podcastId)
+        }
+        if (target.isRss) podcastDao.deleteRssEpisodes(target.podcastId)
+        if (!podcast.isRss) {
+            updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
+            localEpisodeCatalog?.setUnsubscribedTtl(
+                podcast.id,
+                System.currentTimeMillis() + LocalEpisodeCatalogRepository.UNSUBSCRIBE_TTL_MS,
+            )
+        }
+        RankingFeedbackRepository.getIfInitialized()?.recordAction(
+            target =
+            FeedbackTarget(
+                episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
+                podcastId = podcast.id,
+                genre = podcast.genre,
+            ),
+            action = RankingAction.UNSUBSCRIBE,
+        )
     }
 
     suspend fun isSubscribed(podcastId: String): Boolean {
@@ -434,6 +406,17 @@ class SubscriptionRepository(
             skipBeginningMs,
             skipEndingMs,
         )
+    }
+
+    suspend fun updateCustomGenre(podcastId: String, customGenre: String?, customGenreIcon: String?) {
+        val existing = podcastDao.getPodcast(podcastId)
+        val linkedRss = podcastDao.getRssPodcastLinkedTo(podcastId)
+        val target = linkedRss?.takeIf { it.isSubscribed }
+            ?: existing?.takeIf { it.isSubscribed }
+            ?: return
+        val trimmedGenre = customGenre?.trim()?.takeIf { it.isNotEmpty() }
+        val trimmedIcon = customGenreIcon?.trim()?.takeIf { it.isNotEmpty() }
+        podcastDao.updateCustomGenre(target.podcastId, trimmedGenre, trimmedIcon)
     }
 
     /**

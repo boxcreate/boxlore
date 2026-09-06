@@ -6,7 +6,6 @@ import cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot
 import cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
 import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
 import cx.aswin.boxlore.core.catalog.logic.mergeShowSearchResults
-import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Briefing
@@ -21,45 +20,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
-
-/**
- * Canonical [PodcastEntity] → [Podcast] mapper shared across the data layer (and by feature
- * modules such as `feature/info`) so every caller maps the same fields the same way.
- * [RssPodcastRepository] maintains an internal variant to respect module boundaries
- * without creating a reverse dependency on `:core:catalog`.
- */
-fun PodcastEntity.toPodcast(): Podcast = Podcast(
-    id = podcastId,
-    title = title,
-    artist = author,
-    imageUrl = imageUrl,
-    type = type,
-    description = description,
-    genre = genre ?: "Podcast",
-    fallbackImageUrl = latestEpisode?.imageUrl,
-    latestEpisode = latestEpisode,
-    subscribedAt = subscribedAt,
-    fundingUrl = fundingUrl,
-    fundingMessage = fundingMessage,
-    podcastGuid = podcastGuid,
-    medium = medium,
-    hasValue = hasValue,
-    updateFrequency = updateFrequency,
-    location = location,
-    license = license,
-    isLocked = isLocked,
-    preferredSort = preferredSort,
-    notificationsEnabled = notificationsEnabled,
-    autoDownloadEnabled = autoDownloadEnabled,
-    skipBeginningOverrideMs = skipBeginningOverrideMs,
-    skipEndingOverrideMs = skipEndingOverrideMs,
-    sourceType = sourceType,
-    feedUrl = feedUrl,
-    rssRefreshCapability = rssRefreshCapability,
-    rssCatalogStale = rssCatalogStale,
-    rssHasNewEpisodes = rssHasNewEpisodes,
-    linkedPodcastIndexId = linkedPodcastIndexId,
-)
 
 /**
  * Repository for podcast data via Boxlore API (Cloudflare Worker → Podcast Index).

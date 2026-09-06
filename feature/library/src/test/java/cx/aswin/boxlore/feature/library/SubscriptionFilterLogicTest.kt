@@ -25,6 +25,8 @@ class SubscriptionFilterLogicTest {
         title: String = id,
         genre: String = "",
         publishedSeconds: Long = 0L,
+        customGenre: String? = null,
+        customGenreIcon: String? = null,
     ): Podcast {
         val episode = if (publishedSeconds > 0L) {
             Episode(
@@ -49,6 +51,8 @@ class SubscriptionFilterLogicTest {
             feedUrl = "https://example.com/feed",
             genre = genre,
             latestEpisode = episode,
+            customGenre = customGenre,
+            customGenreIcon = customGenreIcon,
         )
     }
 
@@ -62,6 +66,17 @@ class SubscriptionFilterLogicTest {
             )
         )
         assertEquals(listOf("Comedy", "News", "Technology"), genres)
+    }
+
+    @Test
+    fun extractDistinctGenres_usesCustomGenreWhenPresent() {
+        val genres = extractDistinctGenres(
+            listOf(
+                podcast("1", genre = "News", customGenre = "Deep Dives"),
+                podcast("2", genre = "Technology", customGenre = "news"),
+            )
+        )
+        assertEquals(listOf("Deep Dives", "News"), genres)
     }
 
     @Test
@@ -89,10 +104,39 @@ class SubscriptionFilterLogicTest {
     }
 
     @Test
+    fun filterPodcastsByGenre_matchesCustomGenreOverride() {
+        val podcasts = listOf(
+            podcast("1", genre = "News", customGenre = "Deep Dives"),
+            podcast("2", genre = "Comedy", customGenre = "Tech"),
+        )
+        assertEquals(listOf("1"), filterPodcastsByGenre(podcasts, "Deep Dives").map { it.id })
+        assertEquals(listOf("2"), filterPodcastsByGenre(podcasts, "Technology").map { it.id })
+        assertTrue(filterPodcastsByGenre(podcasts, "News").isEmpty())
+    }
+
+    @Test
     fun resolveSubscriptionGenreItem_mapsExploreShortLabels() {
         val tech = resolveSubscriptionGenreItem("Technology")
         assertEquals("Tech", tech.label)
         assertEquals("Technology", tech.value)
+    }
+
+    @Test
+    fun resolveSubscriptionGenreItem_resolvesCustomIconFromPodcasts() {
+        val podcasts = listOf(
+            podcast("1", genre = "News", customGenre = "Coding", customGenreIcon = "code")
+        )
+        val item = resolveSubscriptionGenreItem("Coding", podcasts)
+        assertEquals("Coding", item.label)
+        assertEquals("Coding", item.value)
+        assertEquals(cx.aswin.boxlore.core.designsystem.icon.GenreIcons.findIcon("code"), item.icon)
+    }
+
+    @Test
+    fun resolveSubscriptionGenreItem_resolvesCustomIconFromDirectKey() {
+        val item = resolveSubscriptionGenreItem("Music", customIconKey = "headphones")
+        assertEquals("Music", item.label)
+        assertEquals(cx.aswin.boxlore.core.designsystem.icon.GenreIcons.findIcon("headphones"), item.icon)
     }
 
     @Test
@@ -104,6 +148,21 @@ class SubscriptionFilterLogicTest {
                 .distinctBy { it.value.lowercase(java.util.Locale.ROOT) }
         assertEquals(2, resolved.size)
         assertEquals(setOf("Technology", "Society & Culture"), resolved.map { it.value }.toSet())
+    }
+
+    @Test
+    fun resolveSubscriptionGenreItems_dedupesWithCustomIconPresent() {
+        val podcasts = listOf(
+            podcast("1", genre = "Technology", customGenre = "Tech", customGenreIcon = "tech"),
+            podcast("2", genre = "Technology"),
+        )
+        val raw = listOf("Technology", "Tech")
+        val resolved = raw
+            .map { resolveSubscriptionGenreItem(it, podcasts) }
+            .distinctBy { it.value.lowercase(java.util.Locale.ROOT) }
+        assertEquals(1, resolved.size)
+        assertEquals("Technology", resolved.first().value)
+        assertEquals(cx.aswin.boxlore.core.designsystem.icon.GenreIcons.findIcon("tech"), resolved.first().icon)
     }
 
     @Test

@@ -180,7 +180,8 @@ internal fun HomeViewModel.loadData() {
                         val history = historyDeferred.await()
                         val subscribedIds = subscribedIdsDeferred.await()
                         val subscribedPodcasts = subscribedPodcastsDeferred.await()
-                        val subscribedGenres = subscribedPodcasts.mapNotNull { it.genre }.distinct()
+                        val subscribedGenres =
+                            subscribedPodcasts.mapNotNull { it.genre }.distinct()
 
                         val bootstrapData =
                             podcastRepository.getHomeBootstrapData(

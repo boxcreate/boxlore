@@ -208,4 +208,62 @@ class PodcastDaoExtendedTest {
         dao.setFeedUrl("1258562", "https://feeds.example/show.xml")
         assertEquals("https://feeds.example/show.xml", dao.getPodcast("1258562")!!.feedUrl)
     }
+
+    @Test
+    fun updateCustomGenreUpdatesAndClearsOverrides() = runTest {
+        dao.upsert(podcast("1"))
+        dao.updateCustomGenre("1", "Custom Tech", "code")
+
+        val updated = dao.getPodcast("1")!!
+        assertEquals("Custom Tech", updated.customGenre)
+        assertEquals("code", updated.customGenreIcon)
+        assertEquals("Custom Tech", updated.effectiveGenre)
+
+        dao.clearCustomGenre("1")
+        val cleared = dao.getPodcast("1")!!
+        assertNull(cleared.customGenre)
+        assertNull(cleared.customGenreIcon)
+        assertEquals("Podcast", cleared.effectiveGenre)
+    }
+
+    @Test
+    fun retireLinkedPodcastIndexSubscriptionClearsCustomGenreAndIcon() = runTest {
+        dao.upsert(
+            podcast("1").copy(
+                customGenre = "My Custom Tag",
+                customGenreIcon = "star",
+            ),
+        )
+        dao.retireLinkedPodcastIndexSubscription("1")
+        val retired = dao.getPodcast("1")!!
+        assertFalse(retired.isSubscribed)
+        assertEquals(0L, retired.subscribedAt)
+        assertNull(retired.customGenre)
+        assertNull(retired.customGenreIcon)
+    }
+
+    @Test
+    fun setSubscribedFalseClearsCustomGenreAndIcon() = runTest {
+        dao.upsert(
+            podcast("1").copy(
+                customGenre = "Custom Genre",
+                customGenreIcon = "fire",
+            ),
+        )
+        dao.setSubscribed("1", false)
+        val unsubscribed = dao.getPodcast("1")!!
+        assertFalse(unsubscribed.isSubscribed)
+        assertNull(unsubscribed.customGenre)
+        assertNull(unsubscribed.customGenreIcon)
+        assertEquals("Podcast", unsubscribed.effectiveGenre)
+    }
+
+    @Test
+    fun podcastEntityEffectiveGenreFallsBackWhenUnsubscribed() {
+        val entity = podcast("1", isSubscribed = false).copy(
+            genre = "Technology",
+            customGenre = "Custom Tech",
+        )
+        assertEquals("Technology", entity.effectiveGenre)
+    }
 }
