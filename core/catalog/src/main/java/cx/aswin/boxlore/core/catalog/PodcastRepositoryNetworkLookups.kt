@@ -77,14 +77,25 @@ internal suspend fun PodcastRepository.getAllRssEpisodes(feedId: String): List<E
 
 internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): List<Episode> = try {
     val resolvedId = resolvePodcastIndexFeedId(feedId)
-    // Use paginated endpoint with safe limit
-    // This avoids the parsing issue with EpisodesResponse vs EpisodesPaginatedResponse
-    val response = api.getEpisodesPaginated(publicKey, resolvedId, limit = MAX_SAFE_PAGE_LIMIT).execute()
+    val page1Response =
+        api.getEpisodesPaginated(publicKey, resolvedId, limit = MAX_SAFE_PAGE_LIMIT, offset = 0).execute()
+    val page1Body = if (page1Response.isSuccessful) page1Response.body() else null
+    val page1Items = page1Body?.items.orEmpty().mapNotNull { mapToEpisode(it) }
+
     val piItems =
-        if (response.isSuccessful && response.body() != null) {
-            response.body()!!.items.mapNotNull { mapToEpisode(it) }
+        if (page1Body?.hasMore == true && page1Items.size < LOCAL_CATALOG_WINDOW_BOUND) {
+            val page2Response =
+                api.getEpisodesPaginated(
+                    publicKey,
+                    resolvedId,
+                    limit = MAX_SAFE_PAGE_LIMIT,
+                    offset = page1Items.size,
+                ).execute()
+            val page2Body = if (page2Response.isSuccessful) page2Response.body() else null
+            val page2Items = page2Body?.items.orEmpty().mapNotNull { mapToEpisode(it) }
+            (page1Items + page2Items).take(LOCAL_CATALOG_WINDOW_BOUND)
         } else {
-            emptyList()
+            page1Items
         }
     mergeCachedSupplementsNewest(resolvedId, piItems)
 } catch (e: kotlinx.coroutines.CancellationException) {

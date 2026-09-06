@@ -58,7 +58,7 @@ internal fun HomeViewModel.observeSelectedPodcast() {
                         val page =
                             podcastRepository.getEpisodesPaginated(
                                 podcastId,
-                                limit = 50,
+                                limit = 100,
                                 offset = 0,
                                 sort = "oldest",
                             )
