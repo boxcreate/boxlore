@@ -90,7 +90,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - `SubscriptionSortTest` covers subscription ordering, including Manual name round-trip.
 - `SubscriptionManualOrderLogicTest` covers seed/move/append/drop, ignoring unknown ids, and skipping non-podcast drag keys (genre header).
 - `SubscriptionSmartOrderLogicTest` covers Smart score-then-title order without a recency band.
-- `SubscriptionFilterLogicTest` covers genre extract/filter, sort labels, and chronological header buckets.
+- `SubscriptionFilterLogicTest` covers genre extract/filter (including hybrid custom tag frequency-first priority over catalog genres), custom icon resolution, sort labels, and chronological header buckets.
 - `DownloadModelsTest` covers download entity mapping, size/date formatting, and long-press multi-select (`longPressDownloadSelection`).
 
 ```bash
