@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -43,9 +43,9 @@ internal fun SubscriptionsFilterRow(
         if (onNewFolderClick != null) {
             item(key = "action_new_folder") {
                 ActionPillFilterChip(
-                    label = "+ Folder",
+                    label = "New folder",
                     onClick = onNewFolderClick,
-                    icon = Icons.Rounded.CreateNewFolder,
+                    icon = Icons.Rounded.Add,
                 )
             }
         }

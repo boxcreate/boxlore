@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.designsystem.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -86,7 +87,7 @@ fun PillFilterChip(
 }
 
 /**
- * Action-style pill chip (e.g. "+ Folder") with customizable container and content colors.
+ * Action-style pill chip (e.g. "+ New folder") with an outlined tonal treatment.
  */
 @Composable
 fun ActionPillFilterChip(
@@ -94,15 +95,22 @@ fun ActionPillFilterChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    containerColor: Color = MaterialTheme.colorScheme.tertiaryContainer,
-    contentColor: Color = MaterialTheme.colorScheme.onTertiaryContainer,
+    border: BorderStroke? = null,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f),
 ) {
+    val contentColor = MaterialTheme.colorScheme.primary
+    val effectiveBorder = border ?: BorderStroke(
+        width = 1.dp,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+    )
+
     Surface(
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(percent = 50),
         color = containerColor,
         contentColor = contentColor,
+        border = effectiveBorder,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -112,14 +120,16 @@ fun ActionPillFilterChip(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(14.dp),
+                    tint = contentColor,
+                    modifier = Modifier.size(16.dp),
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(5.dp))
             }
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = GoogleSansWeight.semiBold,
+                fontWeight = GoogleSansWeight.bold,
+                color = contentColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
