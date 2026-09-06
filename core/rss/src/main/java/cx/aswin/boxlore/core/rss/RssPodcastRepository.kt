@@ -141,6 +141,8 @@ class RssPodcastRepository private constructor(
                 rssHasNewEpisodes = false,
                 podcastGuid = parsed.podcastGuid,
                 linkedPodcastIndexId = exactMatch?.podcastId ?: existing?.linkedPodcastIndexId,
+                customGenre = stateSource?.customGenre,
+                customGenreIcon = stateSource?.customGenreIcon,
             )
         database.withTransaction {
             podcastDao.upsert(entity)
@@ -184,6 +186,8 @@ class RssPodcastRepository private constructor(
                             ?: rssPodcast.subscribedAt,
                         preferredSort = podcastIndexPodcast.preferredSort ?: rssPodcast.preferredSort,
                         linkedPodcastIndexId = podcastIndexId,
+                        customGenre = rssPodcast.customGenre ?: podcastIndexPodcast.customGenre,
+                        customGenreIcon = rssPodcast.customGenreIcon ?: podcastIndexPodcast.customGenreIcon,
                     )
                 podcastDao.upsert(linkedRssPodcast)
                 migrateLinkedState(
@@ -483,6 +487,8 @@ class RssPodcastRepository private constructor(
         rssCatalogStale = rssCatalogStale,
         rssHasNewEpisodes = rssHasNewEpisodes,
         linkedPodcastIndexId = linkedPodcastIndexId,
+        customGenre = customGenre?.takeIf { isSubscribed },
+        customGenreIcon = customGenreIcon?.takeIf { isSubscribed },
     )
 
     private suspend fun migrateLinkedState(

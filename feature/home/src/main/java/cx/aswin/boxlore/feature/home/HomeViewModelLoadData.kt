@@ -45,7 +45,7 @@ internal fun HomeViewModel.fetchPersonalizedRecommendations(region: String) {
             val subscribedGenres =
                 subscriptionRepository.subscribedPodcasts
                     .first()
-                    .mapNotNull { it.genre }
+                    .mapNotNull { it.recommendationGenre }
                     .distinct()
 
             android.util.Log.d(
@@ -180,7 +180,8 @@ internal fun HomeViewModel.loadData() {
                         val history = historyDeferred.await()
                         val subscribedIds = subscribedIdsDeferred.await()
                         val subscribedPodcasts = subscribedPodcastsDeferred.await()
-                        val subscribedGenres = subscribedPodcasts.mapNotNull { it.genre }.distinct()
+                        val subscribedGenres =
+                            subscribedPodcasts.mapNotNull { it.recommendationGenre }.distinct()
 
                         val bootstrapData =
                             podcastRepository.getHomeBootstrapData(

@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.AutoStories
-import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.FavoriteBorder
@@ -23,6 +22,8 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Weekend
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.ui.graphics.vector.ImageVector
+import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.model.Podcast
 
 /**
  * Genre pill metadata matched to Explore / Home / onboarding icons.
@@ -58,13 +59,63 @@ internal val SUBSCRIPTION_GENRE_CATALOG = listOf(
 
 internal val AllGenreIcon: ImageVector = Icons.Rounded.Apps
 
-internal fun resolveSubscriptionGenreItem(genre: String): SubscriptionGenreItem {
-    val match = SUBSCRIPTION_GENRE_CATALOG.find {
+internal fun resolveSubscriptionGenreItem(
+    genre: String,
+    podcasts: List<Podcast> = emptyList(),
+): SubscriptionGenreItem {
+    val standardMatch = SUBSCRIPTION_GENRE_CATALOG.find {
         it.value.equals(genre, ignoreCase = true) || it.label.equals(genre, ignoreCase = true)
     }
-    return match ?: SubscriptionGenreItem(
+
+    val customIconKey = podcasts.firstOrNull { pod ->
+        val eff = pod.effectiveGenre
+        val matchesDirect = eff.equals(genre, ignoreCase = true) ||
+            eff.split(",").any { it.trim().equals(genre, ignoreCase = true) }
+        val matchesStandard = standardMatch != null &&
+            (
+            eff.equals(standardMatch.value, ignoreCase = true) ||
+                eff.equals(standardMatch.label, ignoreCase = true) ||
+                eff.split(",").any { token ->
+                    val t = token.trim()
+                    t.equals(standardMatch.value, ignoreCase = true) ||
+                        t.equals(standardMatch.label, ignoreCase = true)
+                }
+            )
+        (matchesDirect || matchesStandard) && !pod.customGenreIcon.isNullOrBlank()
+    }?.customGenreIcon
+
+    val customIcon = GenreIcons.findIcon(customIconKey)
+    if (customIcon != null) {
+        return SubscriptionGenreItem(
+            label = standardMatch?.label ?: genre,
+            value = standardMatch?.value ?: genre,
+            icon = customIcon,
+        )
+    }
+
+    if (standardMatch != null) return standardMatch
+
+    return SubscriptionGenreItem(
         label = genre,
         value = genre,
-        icon = Icons.Rounded.Category,
+        icon = GenreIcons.findIcon(genre) ?: GenreIcons.defaultGenreIcon(genre),
     )
+}
+
+internal fun resolveSubscriptionGenreItem(
+    genre: String,
+    customIconKey: String?,
+): SubscriptionGenreItem {
+    val customIcon = GenreIcons.findIcon(customIconKey)
+    if (customIcon != null) {
+        val standardMatch = SUBSCRIPTION_GENRE_CATALOG.find {
+            it.value.equals(genre, ignoreCase = true) || it.label.equals(genre, ignoreCase = true)
+        }
+        return SubscriptionGenreItem(
+            label = standardMatch?.label ?: genre,
+            value = standardMatch?.value ?: genre,
+            icon = customIcon,
+        )
+    }
+    return resolveSubscriptionGenreItem(genre)
 }

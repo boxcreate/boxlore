@@ -37,6 +37,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal data class PodcastEpisodeSelectionWindow(
     val episodes: List<Episode>,
@@ -65,6 +67,7 @@ class PodcastInfoViewModel(
     private val scrollDepth = routeArgs.scrollDepth
     private val searchQuery = routeArgs.searchQuery
     private val supplementSupport = PodcastInfoSupplementSupport(repository, episodeSupplementPort)
+    private val customGenreMutex = Mutex()
     private val _uiState = MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Loading)
 
     private var currentPodcastId: String = ""
@@ -1275,6 +1278,8 @@ class PodcastInfoViewModel(
                 subscribedAt = if (isSubscribed) System.currentTimeMillis() else 0L,
                 notificationsEnabled = isSubscribed && latestState.podcast.notificationsEnabled,
                 autoDownloadEnabled = isSubscribed && latestState.podcast.autoDownloadEnabled,
+                customGenre = if (isSubscribed) latestState.podcast.customGenre else null,
+                customGenreIcon = if (isSubscribed) latestState.podcast.customGenreIcon else null,
             )
         _uiState.value =
             latestState.copy(
@@ -1287,6 +1292,33 @@ class PodcastInfoViewModel(
             isSubscribed = isSubscribed,
             entryPoint = entryPoint ?: "unknown",
         )
+    }
+
+    fun updateCustomGenre(customGenre: String?, customGenreIcon: String?) {
+        val state = _uiState.value as? PodcastInfoUiState.Success ?: return
+        if (!state.isSubscribed) return
+        val trimmedGenre = customGenre?.trim()?.takeIf { it.isNotEmpty() }
+        val trimmedIcon = customGenreIcon?.trim()?.takeIf { it.isNotEmpty() }
+        viewModelScope.launch {
+            customGenreMutex.withLock {
+                subscriptionRepository.updateCustomGenre(
+                    state.podcast.id,
+                    trimmedGenre,
+                    trimmedIcon,
+                )
+                val latest = _uiState.value as? PodcastInfoUiState.Success ?: return@withLock
+                if (latest.podcast.id == state.podcast.id && latest.isSubscribed) {
+                    _uiState.value =
+                        latest.copy(
+                            podcast =
+                            latest.podcast.copy(
+                                customGenre = trimmedGenre,
+                                customGenreIcon = trimmedIcon,
+                            ),
+                        )
+                }
+            }
+        }
     }
 
     private suspend fun refreshTipAfterSubscribe() {

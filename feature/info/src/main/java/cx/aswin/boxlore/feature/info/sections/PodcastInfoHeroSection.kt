@@ -40,7 +40,7 @@ internal fun PodcastInfoHeroSection(
     onDescExpandedChange: (Boolean) -> Unit,
     onPlayEpisode: (Episode) -> Unit,
     onPodcastClick: (String) -> Unit,
-    context: android.content.Context,
+    onEditGenre: () -> Unit = {},
 ) {
     Column(
         modifier =
@@ -126,7 +126,7 @@ internal fun PodcastInfoHeroSection(
             sortedPersons = sortedPersons,
             trailerEpisode = trailerEpisode,
             frequencyData = frequencyData,
-            context = context,
+            onEditGenre = onEditGenre,
             onPlayTrailer = onPlayEpisode,
         )
 

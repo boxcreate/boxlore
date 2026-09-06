@@ -81,6 +81,7 @@ internal fun ShowsTabContent(
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered(it, "shows")
             },
             distinctGenres = distinctGenres,
+            podcasts = podcasts,
             contentPadding = PaddingValues(horizontal = if (isGridView) 0.dp else 16.dp),
         )
     }
@@ -344,6 +345,7 @@ private fun LatestEpisodesList(
                             .trackLibrarySubscriptionsGenreFiltered(it, "latest")
                     },
                     distinctGenres = distinctGenres,
+                    podcasts = episodePodcasts,
                     modifier =
                     Modifier
                         .fillMaxWidth()

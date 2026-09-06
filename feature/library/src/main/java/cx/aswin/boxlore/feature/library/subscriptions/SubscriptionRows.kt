@@ -525,20 +525,52 @@ internal fun EpisodeRowArtwork(
     }
 }
 
-internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> = podcasts.flatMap { pod ->
-    pod.genre.split(",")
+private fun parseGenreTokens(raw: String): List<String> =
+    raw.split(",")
         .map { it.trim() }
         .filter { it.isNotEmpty() && !it.equals("podcast", ignoreCase = true) }
         .map { genre ->
             genre.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
         }
-}.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
+
+internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> {
+    val customCounts = mutableMapOf<String, Int>()
+    val customDisplay = mutableMapOf<String, String>()
+    val catalogGenres = mutableSetOf<String>()
+
+    for (pod in podcasts) {
+        val customRaw = pod.customGenre?.takeIf { it.isNotBlank() }
+        if (customRaw != null) {
+            for (tag in parseGenreTokens(customRaw)) {
+                val key = tag.lowercase()
+                customCounts[key] = (customCounts[key] ?: 0) + 1
+                customDisplay.putIfAbsent(key, tag)
+            }
+        } else {
+            catalogGenres.addAll(parseGenreTokens(pod.genre.orEmpty()))
+        }
+    }
+
+    val sortedCustom = customCounts.entries
+        .sortedWith(
+            compareByDescending<Map.Entry<String, Int>> { it.value }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { customDisplay[it.key] ?: it.key }
+        )
+        .map { customDisplay[it.key] ?: it.key }
+
+    val customLower = customCounts.keys.toSet()
+    val sortedCatalog = catalogGenres
+        .filter { it.lowercase() !in customLower }
+        .sortedWith(String.CASE_INSENSITIVE_ORDER)
+
+    return sortedCustom + sortedCatalog
+}
 
 internal fun filterPodcastsByGenre(podcasts: List<Podcast>, selectedGenre: String): List<Podcast> {
     if (selectedGenre == "All") return podcasts
-    val resolved = resolveSubscriptionGenreItem(selectedGenre)
+    val resolved = resolveSubscriptionGenreItem(selectedGenre, podcasts)
     return podcasts.filter { pod ->
-        pod.genre.split(",")
+        pod.effectiveGenre.split(",")
             .map { it.trim() }
             .any {
                 it.equals(selectedGenre, ignoreCase = true) ||

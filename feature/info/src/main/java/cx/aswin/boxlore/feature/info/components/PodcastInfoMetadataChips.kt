@@ -26,8 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -354,10 +356,19 @@ internal fun UpdateFrequencyChip(frequencyData: Pair<String, ImageVector>) {
 }
 
 @Composable
-internal fun GenreChip(genre: String) {
+internal fun GenreChip(
+    genre: String,
+    icon: ImageVector? = null,
+    onClick: (() -> Unit)? = null,
+) {
     Surface(
         shape = ExpressiveShapes.Pill,
         color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = if (onClick != null) {
+            Modifier.expressiveClickable(onClick = onClick)
+        } else {
+            Modifier
+        },
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -365,7 +376,7 @@ internal fun GenreChip(genre: String) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = genreIconFor(genre),
+                imageVector = icon ?: genreIconFor(genre),
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -472,9 +483,10 @@ internal fun PodcastInfoMetadataChipsRow(
     sortedPersons: List<Person>,
     trailerEpisode: Episode?,
     frequencyData: Pair<String, ImageVector>?,
-    context: android.content.Context,
+    onEditGenre: (() -> Unit)? = null,
     onPlayTrailer: (Episode) -> Unit,
 ) {
+    val context = LocalContext.current
     val medium = resolveDisplayMedium(podcast)
 
     LazyRow(
@@ -482,7 +494,7 @@ internal fun PodcastInfoMetadataChipsRow(
         contentPadding = PaddingValues(horizontal = 0.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        podcastIdentityChips(podcast, frequencyData)
+        podcastIdentityChips(podcast, frequencyData, onEditGenre)
 
         items(sortedPersons) { person ->
             CompactPersonChip(person = person, onClick = { openPersonLink(context, person) })
@@ -511,6 +523,7 @@ private fun openPersonLink(
 private fun LazyListScope.podcastIdentityChips(
     podcast: Podcast,
     frequencyData: Pair<String, ImageVector>?,
+    onEditGenre: (() -> Unit)? = null,
 ) {
     if (podcast.isRss) {
         item { RssFeedChip() }
@@ -518,8 +531,17 @@ private fun LazyListScope.podcastIdentityChips(
     if (frequencyData != null) {
         item { UpdateFrequencyChip(frequencyData) }
     }
-    if (podcast.genre.isNotEmpty()) {
-        item { GenreChip(podcast.genre) }
+    val effective = podcast.effectiveGenre
+    if (effective.isNotEmpty()) {
+        val icon = GenreIcons.findIcon(podcast.customGenreIcon)
+            ?: genreIconFor(effective)
+        item {
+            GenreChip(
+                genre = effective,
+                icon = icon,
+                onClick = onEditGenre,
+            )
+        }
     }
 }
 

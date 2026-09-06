@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -37,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.library.SubscriptionSort
 
@@ -167,38 +164,18 @@ internal fun SubscriptionGenreChips(
     selectedGenre: String,
     onGenreChange: (String) -> Unit,
     distinctGenres: List<String>,
+    podcasts: List<cx.aswin.boxlore.core.model.Podcast> = emptyList(),
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
 ) {
-    val genreItems = remember(distinctGenres) {
-        distinctGenres
-            .map { resolveSubscriptionGenreItem(it) }
-            .distinctBy { it.value.lowercase() }
-    }
-
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
+    SubscriptionsFilterRow(
+        selectedGenre = selectedGenre,
+        onGenreChange = onGenreChange,
+        distinctGenres = distinctGenres,
+        podcasts = podcasts,
+        modifier = modifier,
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        item {
-            PillFilterChip(
-                label = "All",
-                selected = selectedGenre == "All",
-                onClick = { onGenreChange("All") },
-                icon = AllGenreIcon,
-            )
-        }
-        items(genreItems, key = { it.value }) { genre ->
-            PillFilterChip(
-                label = genre.label,
-                selected = selectedGenre.equals(genre.value, ignoreCase = true) ||
-                    selectedGenre.equals(genre.label, ignoreCase = true),
-                onClick = { onGenreChange(genre.value) },
-                icon = genre.icon,
-            )
-        }
-    }
+    )
 }
 
 @Composable

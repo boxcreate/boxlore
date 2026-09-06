@@ -558,4 +558,64 @@ class PodcastInfoViewModelLogicTest {
         assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = true, hasTip = false))
         assertFalse(PodcastInfoPullRefreshLogic.shouldPersistLibraryTip(isSubscribed = false, hasTip = false))
     }
+
+    @Test
+    fun `enrichPodcastWithFallback preserves customGenre and customGenreIcon when subscribed`() {
+        val api = TestFixtures.podcast(id = "p1").copy(genre = "Technology")
+        val current = TestFixtures.podcast(id = "p1").copy(
+            subscribedAt = 12345L,
+            customGenre = "Deep Tech",
+            customGenreIcon = "code",
+        )
+        val enriched = PodcastInfoEnrichLogic.enrichPodcastWithFallback(
+            apiPodcast = api,
+            currentPodcast = current,
+            localPodcast = null,
+            pageEpisodes = emptyList(),
+            sortParam = "newest",
+        )
+        assertEquals("Deep Tech", enriched.customGenre)
+        assertEquals("code", enriched.customGenreIcon)
+        assertEquals("Deep Tech", enriched.effectiveGenre)
+
+        // Non-subscribed ignores custom overrides
+        val nonSubscribedEnriched = PodcastInfoEnrichLogic.enrichPodcastWithFallback(
+            apiPodcast = api,
+            currentPodcast = current.copy(subscribedAt = 0L),
+            localPodcast = null,
+            pageEpisodes = emptyList(),
+            sortParam = "newest",
+        )
+        assertNull(nonSubscribedEnriched.customGenre)
+        assertNull(nonSubscribedEnriched.customGenreIcon)
+        assertEquals("Technology", nonSubscribedEnriched.effectiveGenre)
+    }
+
+    @Test
+    fun `preserveSubscriptionProperties retains custom overrides when subscribed and clears on unsubscribe`() {
+        val refreshed = TestFixtures.podcast(id = "p1").copy(genre = "Comedy")
+        val latest = TestFixtures.podcast(id = "p1").copy(
+            subscribedAt = 100L,
+            customGenre = "Humor",
+            customGenreIcon = "comedy",
+        )
+
+        val preservedSubscribed = PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+            refreshedPodcast = refreshed,
+            latestPodcast = latest,
+            isSubscribed = true,
+        )
+        assertEquals("Humor", preservedSubscribed.customGenre)
+        assertEquals("comedy", preservedSubscribed.customGenreIcon)
+        assertEquals("Humor", preservedSubscribed.effectiveGenre)
+
+        val preservedUnsubscribed = PodcastInfoEnrichLogic.preserveSubscriptionProperties(
+            refreshedPodcast = refreshed,
+            latestPodcast = latest,
+            isSubscribed = false,
+        )
+        assertNull(preservedUnsubscribed.customGenre)
+        assertNull(preservedUnsubscribed.customGenreIcon)
+        assertEquals("Comedy", preservedUnsubscribed.effectiveGenre)
+    }
 }

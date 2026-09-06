@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.database
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import cx.aswin.boxlore.core.model.PodcastGenres
 
 @Entity(
     tableName = "podcasts",
@@ -59,9 +60,25 @@ data class PodcastEntity(
     val rssCatalogStale: Boolean = false,
     val rssHasNewEpisodes: Boolean = false,
     val linkedPodcastIndexId: String? = null,
+    val customGenre: String? = null,
+    val customGenreIcon: String? = null,
 ) {
     val isRss: Boolean
         get() = sourceType == SOURCE_RSS
+
+    val effectiveGenre: String
+        get() = if (isSubscribed) {
+            customGenre?.takeIf { it.isNotBlank() } ?: (genre ?: "Podcast")
+        } else {
+            genre ?: "Podcast"
+        }
+
+    val recommendationGenre: String
+        get() = if (isSubscribed) {
+            PodcastGenres.canonicalize(customGenre) ?: (genre ?: "Podcast")
+        } else {
+            genre ?: "Podcast"
+        }
 
     companion object {
         const val SOURCE_PODCAST_INDEX = "podcast_index"

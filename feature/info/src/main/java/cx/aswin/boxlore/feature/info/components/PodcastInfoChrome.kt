@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
@@ -364,6 +365,7 @@ internal data class PodcastInfoTopOverlayActions(
     val isSubscribed: Boolean = false,
     val isPinnedToHome: Boolean = false,
     val onToggleHomePin: () -> Unit = {},
+    val onEditGenre: () -> Unit = {},
 )
 
 internal data class MissingEpisodesChip(
@@ -530,6 +532,16 @@ private fun PodcastInfoOverflowMenuItems(
         },
     )
     if (actions.isSubscribed) {
+        DropdownMenuItem(
+            text = { Text("Change tag / genre") },
+            onClick = {
+                onDismiss()
+                actions.onEditGenre()
+            },
+            leadingIcon = {
+                Icon(Icons.Rounded.LocalOffer, contentDescription = null)
+            },
+        )
         DropdownMenuItem(
             text = { Text(if (actions.isPinnedToHome) "Unpin from Home screen" else "Pin to Home screen") },
             onClick = {

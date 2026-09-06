@@ -42,8 +42,9 @@ src/main/java/cx/aswin/boxlore/feature/library/
     HistoryTopBar.kt              — collapsible top app bar + overflow menu
   subscriptions/
     SubscriptionTabs.kt           — Shows|New Episodes switcher; Explore-style genre pills with icons
+    SubscriptionsFilterRow.kt     — horizontal filter chips row with dynamic custom genre & icon resolution
     SubscriptionsTabSelectorFab.kt — Floating segmented FAB pill indicator for Shows/New Episodes
-    SubscriptionGenreCatalog.kt   — genre label/icon map mirrored from Explore
+    SubscriptionGenreCatalog.kt   — genre label/icon map mirrored from Explore and resolved against custom podcast genre overrides
     SubscriptionTabContents.kt    — Shows grid/list + New Episodes catch-up list (Play All FAB); calvin reorderable on unfiltered Shows (ordered ids, current Podcast objects)
     SubscriptionRows.kt           — grid cards (title fallback on broken art), list/latest rows, date headers
     SubscriptionListRowParts.kt   — list artwork, title column, pin badge
@@ -89,7 +90,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - `SubscriptionSortTest` covers subscription ordering, including Manual name round-trip.
 - `SubscriptionManualOrderLogicTest` covers seed/move/append/drop, ignoring unknown ids, and skipping non-podcast drag keys (genre header).
 - `SubscriptionSmartOrderLogicTest` covers Smart score-then-title order without a recency band.
-- `SubscriptionFilterLogicTest` covers genre extract/filter, sort labels, and chronological header buckets.
+- `SubscriptionFilterLogicTest` covers genre extract/filter (including hybrid custom tag frequency-first priority over catalog genres), custom icon resolution, sort labels, and chronological header buckets.
 - `DownloadModelsTest` covers download entity mapping, size/date formatting, and long-press multi-select (`longPressDownloadSelection`).
 
 ```bash

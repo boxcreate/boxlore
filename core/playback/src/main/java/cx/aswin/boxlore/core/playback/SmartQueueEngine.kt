@@ -4,6 +4,7 @@ import cx.aswin.boxlore.core.database.PodcastScoring
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.PodcastGenres
 import cx.aswin.boxlore.core.network.model.EpisodeItem
 import cx.aswin.boxlore.core.network.model.HistoryItem
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
@@ -805,7 +806,7 @@ class DefaultSmartQueueEngine(
     // ── Helpers ────────────────────────────────────────────────────────────
 
     private suspend fun resolveGenre(currentPodcast: Podcast): String? {
-        val genre = currentPodcast.genre
+        val genre = PodcastGenres.canonicalize(currentPodcast.customGenre) ?: currentPodcast.genre
         if (genre.isNotBlank() && genre != "Podcast") return genre
         return runSuspendCatching { sources.getPodcastDetails(currentPodcast.id)?.genre }
             .getOrNull()

@@ -44,9 +44,17 @@ data class Podcast(
     val rssHasNewEpisodes: Boolean = false,
     /** Podcast Index row represented by this local RSS subscription, when known. */
     val linkedPodcastIndexId: String? = null,
+    val customGenre: String? = null,
+    val customGenreIcon: String? = null,
 ) {
     val isRss: Boolean
         get() = sourceType == SOURCE_RSS
+
+    val effectiveGenre: String
+        get() = customGenre?.takeIf { it.isNotBlank() } ?: genre
+
+    val recommendationGenre: String
+        get() = PodcastGenres.canonicalize(customGenre) ?: genre
 
     companion object {
         const val SOURCE_PODCAST_INDEX = "podcast_index"

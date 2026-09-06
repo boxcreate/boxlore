@@ -71,6 +71,21 @@ class RoomLocalCatalogTest {
     }
 
     @Test
+    fun getLocalPodcastMapsCustomGenreAndIcon() = runTest {
+        podcastDao.upsert(
+            entity("pod-custom", title = "Custom Show").copy(
+                customGenre = "My Tag",
+                customGenreIcon = "headphones",
+            ),
+        )
+
+        val podcast = catalog.getLocalPodcast("pod-custom")!!
+        assertEquals("My Tag", podcast.customGenre)
+        assertEquals("headphones", podcast.customGenreIcon)
+        assertEquals("My Tag", podcast.effectiveGenre)
+    }
+
+    @Test
     fun getLocalPodcastReturnsNullWhenMissing() = runTest {
         assertNull(catalog.getLocalPodcast("nobody"))
     }
@@ -204,5 +219,31 @@ class RoomLocalCatalogTest {
         val stored = podcastDao.getPodcast("-9003")!!
         assertEquals(PodcastEntity.SOURCE_RSS, stored.sourceType)
         assertEquals("https://feed.xml", stored.feedUrl)
+    }
+
+    @Test
+    fun upsertSubscribedPodcastPreservesCustomGenreAndIconOverrides() = runTest {
+        podcastDao.upsert(
+            entity("pod-override", title = "Original").copy(
+                customGenre = "Personal Tech",
+                customGenreIcon = "code",
+            ),
+        )
+
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "pod-override",
+                title = "Refreshed Title",
+                artist = "Artist",
+                imageUrl = "https://example.com/new.jpg",
+                customGenre = "Stale Network Genre",
+                customGenreIcon = "fire",
+            ),
+        )
+
+        val stored = podcastDao.getPodcast("pod-override")!!
+        assertEquals("Refreshed Title", stored.title)
+        assertEquals("Personal Tech", stored.customGenre)
+        assertEquals("code", stored.customGenreIcon)
     }
 }
