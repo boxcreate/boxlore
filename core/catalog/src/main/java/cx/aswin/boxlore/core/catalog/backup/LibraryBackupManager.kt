@@ -555,6 +555,8 @@ class LibraryBackupManager(
             )
             try {
                 rssPodcastRepository.refreshCatalogIfNeeded(id)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("JSON_IMPORT", "RSS catalog refresh failed for $id", e)
             }

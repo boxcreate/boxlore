@@ -107,7 +107,7 @@ internal fun ImportNotificationPermissionCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = ImportCorner,
-        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+        color = MaterialTheme.colorScheme.errorContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.28f)),
     ) {
         Column(
@@ -127,14 +127,14 @@ internal fun ImportNotificationPermissionCard(
                 text = "Enable notifications",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.bold,
-                color = MaterialTheme.colorScheme.error,
+                color = MaterialTheme.colorScheme.onErrorContainer,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "This backup includes shows with alerts or auto-downloads. " +
                     "Allow notifications so they can keep working in the background.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(14.dp))
