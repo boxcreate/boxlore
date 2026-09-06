@@ -2,13 +2,16 @@ package cx.aswin.boxlore.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
+import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.addToQueue
 import cx.aswin.boxlore.core.playback.addToQueueNext
@@ -57,6 +60,7 @@ class LibraryViewModel(
     private val downloadRepository: cx.aswin.boxlore.core.downloads.DownloadRepository,
     private val userPreferencesRepository: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
     private val adaptiveScorer: AdaptiveCandidateScorer,
+    private val folderRepository: FolderRepository? = null,
 ) : ViewModel() {
 
     val lastSeenEpisodes: StateFlow<Map<String, String>> = userPreferencesRepository.lastSeenEpisodesStream
@@ -92,6 +96,44 @@ class LibraryViewModel(
 
     fun setShowSortOrder(sortOrder: ShowSortOrder) {
         _showSortOrder.value = sortOrder
+    }
+
+    val folders: StateFlow<List<SubscriptionFolder>> =
+        folderRepository?.folders
+            ?.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            ) ?: MutableStateFlow<List<SubscriptionFolder>>(emptyList()).asStateFlow()
+
+    fun createFolder(
+        name: String,
+        icon: String?,
+        displaySize: FolderDisplaySize,
+        linkedGenre: String?,
+        podcastIds: List<String> = emptyList(),
+    ) {
+        viewModelScope.launch {
+            folderRepository?.createFolder(
+                name = name,
+                icon = icon,
+                displaySize = displaySize,
+                linkedGenre = linkedGenre,
+                podcastIds = podcastIds,
+            )
+        }
+    }
+
+    fun updateFolder(folder: SubscriptionFolder) {
+        viewModelScope.launch {
+            folderRepository?.updateFolder(folder)
+        }
+    }
+
+    fun deleteFolder(folderId: String) {
+        viewModelScope.launch {
+            folderRepository?.deleteFolder(folderId)
+        }
     }
 
     private val subscriptionSort = userPreferencesRepository.subscriptionSortStream

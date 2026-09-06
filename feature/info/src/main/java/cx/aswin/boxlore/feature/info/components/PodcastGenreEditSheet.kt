@@ -66,18 +66,23 @@ internal fun PodcastGenreEditSheet(
     customGenreIcon: String?,
     onDismissRequest: () -> Unit,
     onSave: (customGenre: String?, customGenreIcon: String?) -> Unit,
+    folderNames: List<String> = emptyList(),
 ) {
     var genreText by remember(customGenre) { mutableStateOf(customGenre ?: "") }
     var selectedIconKey by remember(customGenreIcon) { mutableStateOf(customGenreIcon) }
     val focusManager = LocalFocusManager.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    val allSuggestions = remember(folderNames) {
+        buildGenreSuggestionsWithFolders(folderNames)
+    }
+
     val editState = remember(genreText, selectedIconKey, catalogGenre, customGenre, customGenreIcon) {
         resolveGenreEditState(genreText, selectedIconKey, catalogGenre, customGenre, customGenreIcon)
     }
 
-    val suggestedIcons = remember(genreText) {
-        findSuggestedIcons(genreText)
+    val suggestedIcons = remember(genreText, allSuggestions) {
+        findSuggestedIcons(genreText, allSuggestions)
     }
 
     ModalBottomSheet(
@@ -129,6 +134,7 @@ internal fun PodcastGenreEditSheet(
 
             GenreEditSuggestionsRow(
                 genreText = genreText,
+                allSuggestions = allSuggestions,
                 onSelectSuggestion = { suggestion ->
                     genreText = suggestion.name
                     selectedIconKey = suggestion.iconKey
@@ -375,10 +381,11 @@ private fun GenreEditInputField(
 @Composable
 private fun GenreEditSuggestionsRow(
     genreText: String,
+    allSuggestions: List<GenreSuggestion> = ALL_GENRE_SUGGESTIONS,
     onSelectSuggestion: (GenreSuggestion) -> Unit,
 ) {
-    val suggestions = remember(genreText) {
-        filterGenreSuggestions(genreText)
+    val suggestions = remember(genreText, allSuggestions) {
+        filterGenreSuggestions(genreText, allSuggestions)
     }
 
     if (suggestions.isEmpty()) return

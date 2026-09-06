@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
+import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
@@ -85,5 +86,6 @@ class SmartDownloadWorkerTest {
         override val rankingRuntimeControls: RankingRuntimeControls get() = error("unused")
         override val historyRecommendationSource: HistoryRecommendationSource get() = error("unused")
         override val subscriptionForegroundSync: SubscriptionForegroundSync get() = error("unused")
+        override val folderRepository: FolderRepository get() = error("unused")
     }
 }

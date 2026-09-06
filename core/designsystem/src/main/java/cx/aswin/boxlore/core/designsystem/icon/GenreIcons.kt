@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Fingerprint
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Headphones
@@ -71,6 +72,7 @@ object GenreIcons {
         GenreIconItem("government", Icons.Rounded.Gavel, "Government"),
         GenreIconItem("tag", Icons.Rounded.LocalOffer, "Tag"),
         GenreIconItem("category", Icons.Rounded.Category, "Category"),
+        GenreIconItem("folder", Icons.Rounded.Folder, "Folder"),
     )
 
     private val byKey: Map<String, ImageVector> = all.associate { it.key.lowercase() to it.icon }
@@ -128,4 +130,32 @@ object GenreIcons {
 
     fun iconOrFallback(key: String?, fallbackGenre: String? = null): ImageVector =
         findIcon(key) ?: defaultGenreIcon(fallbackGenre)
+
+    fun defaultFolderIcon(): ImageVector = Icons.Rounded.Folder
+
+    fun folderIconOrFallback(key: String?): ImageVector =
+        findIcon(key) ?: defaultFolderIcon()
+
+    private fun GenreIconItem.matchesPrefix(query: String): Boolean =
+        key.lowercase().startsWith(query) || label.lowercase().startsWith(query)
+
+    private fun GenreIconItem.matchesSubstring(query: String): Boolean =
+        key.lowercase().contains(query) || label.lowercase().contains(query)
+
+    private fun findKeywordMatches(query: String): List<GenreIconItem> =
+        GENRE_KEYWORDS.mapNotNull { (keywords, iconVector) ->
+            val matches = keywords.any { it.contains(query) || query.contains(it) }
+            if (matches) all.firstOrNull { it.icon == iconVector } else null
+        }
+
+    fun suggestIcons(query: String): List<GenreIconItem> {
+        val trimmed = query.trim().lowercase()
+        if (trimmed.isEmpty()) return emptyList()
+
+        val prefixMatches = all.filter { it.matchesPrefix(trimmed) }
+        val keywordMatches = findKeywordMatches(trimmed)
+        val substringMatches = all.filter { it.matchesSubstring(trimmed) }
+
+        return (prefixMatches + keywordMatches + substringMatches).distinct().take(8)
+    }
 }

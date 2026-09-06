@@ -183,6 +183,7 @@ internal class NavGraphWiring(
     val userPrefs get() = container.userPreferencesRepository
     val queueManager get() = container.queueManager
     val smartDownloadManager get() = container.smartDownloadManager
+    val folderRepository get() = container.folderRepository
 }
 
 // ---------------------------------------------------------------------------

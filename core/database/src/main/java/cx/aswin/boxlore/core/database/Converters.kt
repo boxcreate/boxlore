@@ -47,4 +47,13 @@ class Converters {
             )
         }.getOrNull()
     }
+
+    @TypeConverter
+    fun fromFolderDisplaySize(size: cx.aswin.boxlore.core.model.FolderDisplaySize?): String =
+        (size ?: cx.aswin.boxlore.core.model.FolderDisplaySize.COMPACT).name
+
+    @TypeConverter
+    fun toFolderDisplaySize(value: String?): cx.aswin.boxlore.core.model.FolderDisplaySize =
+        value?.let { runCatching { cx.aswin.boxlore.core.model.FolderDisplaySize.valueOf(it) }.getOrNull() }
+            ?: cx.aswin.boxlore.core.model.FolderDisplaySize.COMPACT
 }

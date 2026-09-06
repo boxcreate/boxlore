@@ -390,6 +390,7 @@ class AutoDownloadWorkerTest {
         override val rankingRuntimeControls: cx.aswin.boxlore.core.ranking.RankingRuntimeControls get() = error("unused")
         override val historyRecommendationSource: cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource get() = error("unused")
         override val subscriptionForegroundSync: cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync get() = error("unused")
+        override val folderRepository: cx.aswin.boxlore.core.catalog.FolderRepository get() = error("unused")
     }
 
     private class FakeDownloadsDependencies(

@@ -87,6 +87,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
             localCatalog = container.localCatalogPort,
             episodeOfflineLookup = container.episodeOfflineLookupPort,
             subscriptionForegroundSync = container.subscriptionForegroundSync,
+            folderRepository = container.folderRepository,
         )
         val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.info.PodcastInfoViewModel>(
             factory = cx.aswin.boxlore.feature.info.InfoViewModelAssembler.podcastInfoFactory(

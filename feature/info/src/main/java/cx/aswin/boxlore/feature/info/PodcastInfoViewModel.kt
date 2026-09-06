@@ -70,6 +70,14 @@ class PodcastInfoViewModel(
     private val customGenreMutex = Mutex()
     private val _uiState = MutableStateFlow<PodcastInfoUiState>(PodcastInfoUiState.Loading)
 
+    val folderNames: StateFlow<List<String>> =
+        deps.folderRepository?.folderNames
+            ?.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList(),
+            ) ?: MutableStateFlow(emptyList())
+
     private var currentPodcastId: String = ""
     private val _currentPodcastIdFlow = MutableStateFlow("")
     private var currentOffset: Int = 0

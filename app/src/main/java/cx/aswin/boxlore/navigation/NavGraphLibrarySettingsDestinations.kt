@@ -20,6 +20,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
     val podcastRepository = w.podcastRepository
     val playbackRepository = w.playbackRepository
     val subscriptionRepository = w.subscriptionRepository
+    val folderRepository = w.folderRepository
     val userPrefs = w.userPrefs
     val scope = w.scope
     val opmlCallbacks = w.opmlCallbacks
@@ -296,6 +297,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
     val playbackRepository = w.playbackRepository
     val downloadRepository = w.downloadRepository
     val subscriptionRepository = w.subscriptionRepository
+    val folderRepository = w.folderRepository
     val userPrefs = w.userPrefs
     val smartDownloadManager = w.smartDownloadManager
     val queueManager = w.queueManager
@@ -319,6 +321,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                         downloadRepository,
                         userPrefs,
                         container.adaptiveCandidateScorer,
+                        folderRepository,
                     ) as T
                 },
             )
@@ -381,6 +384,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                         downloadRepository,
                         userPrefs,
                         container.adaptiveCandidateScorer,
+                        folderRepository,
                     ) as T
                 },
             )
@@ -443,6 +447,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                         downloadRepository,
                         userPrefs,
                         container.adaptiveCandidateScorer,
+                        folderRepository,
                     ) as T
                 },
             )
@@ -499,6 +504,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                         downloadRepository,
                         userPrefs,
                         container.adaptiveCandidateScorer,
+                        folderRepository,
                     ) as T
                 },
             )
@@ -584,6 +590,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                         downloadRepository,
                         userPrefs,
                         container.adaptiveCandidateScorer,
+                        folderRepository,
                     ) as T
                 },
             )

@@ -2,6 +2,7 @@ package cx.aswin.boxlore
 
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
+import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
 import cx.aswin.boxlore.core.catalog.LegacyRssRepair
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairActivation
@@ -9,6 +10,7 @@ import cx.aswin.boxlore.core.catalog.LegacyRssRepairCatalog
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairRuntime
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
+import cx.aswin.boxlore.core.catalog.RoomFolderRepository
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
 import cx.aswin.boxlore.core.catalog.SharedAppDependencies
 import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
@@ -218,6 +220,13 @@ class AppContainer(
             episodeSupplementPort = episodeSupplementRepository,
             localEpisodeCatalog = localEpisodeCatalogRepository,
             scope = syncScope,
+        )
+    }
+
+    override val folderRepository: FolderRepository by lazy {
+        RoomFolderRepository(
+            folderDao = database.folderDao(),
+            podcastDao = database.podcastDao(),
         )
     }
 

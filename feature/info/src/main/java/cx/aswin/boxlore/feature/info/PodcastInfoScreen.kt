@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
@@ -759,10 +760,12 @@ fun PodcastInfoScreen(
                 }
 
                 if (showPodcastGenreEdit && state.isSubscribed) {
+                    val folderNames by viewModel.folderNames.collectAsStateWithLifecycle()
                     PodcastGenreEditSheet(
                         catalogGenre = state.podcast.genre,
                         customGenre = state.podcast.customGenre,
                         customGenreIcon = state.podcast.customGenreIcon,
+                        folderNames = folderNames,
                         onDismissRequest = { showPodcastGenreEdit = false },
                         onSave = { newGenre, newIcon ->
                             viewModel.updateCustomGenre(newGenre, newIcon)

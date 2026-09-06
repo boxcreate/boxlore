@@ -583,3 +583,34 @@ fun findSuggestedIcons(
 
     return result.take(8)
 }
+
+/**
+ * Augments the base genre suggestions with user's existing subscription folder names,
+ * displaying them as suggestions when tagging podcasts in [PodcastGenreEditSheet].
+ */
+fun buildGenreSuggestionsWithFolders(
+    folderNames: List<String>,
+    baseSuggestions: List<GenreSuggestion> = ALL_GENRE_SUGGESTIONS,
+): List<GenreSuggestion> {
+    if (folderNames.isEmpty()) return baseSuggestions
+    val existingLower = baseSuggestions.map { it.name.trim().lowercase() }.toSet()
+    val folderSuggestions = folderNames
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && it.lowercase() !in existingLower }
+        .distinctBy { it.lowercase() }
+        .map { name ->
+            val iconItem = GenreIcons.findIcon(name)
+            val iconKey = if (iconItem != null) {
+                GenreIcons.all.firstOrNull { it.icon == iconItem }?.key ?: "folder"
+            } else {
+                "folder"
+            }
+            GenreSuggestion(
+                name = name,
+                iconKey = iconKey,
+                icon = iconItem ?: GenreIcons.defaultFolderIcon(),
+                keywords = listOf("folder", "tag", name.lowercase()),
+            )
+        }
+    return folderSuggestions + baseSuggestions
+}

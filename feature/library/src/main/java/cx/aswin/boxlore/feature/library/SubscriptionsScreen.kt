@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -72,6 +73,7 @@ import cx.aswin.boxlore.feature.library.subscriptions.ShowsSortMenuItems
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsTabContent
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsTabSelectorFab
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsTabSelectorFabHeight
+import cx.aswin.boxlore.feature.library.subscriptions.extractDistinctGenres
 import kotlinx.coroutines.launch
 
 val LocalLastSeenEpisodes = compositionLocalOf<Map<String, String>> { emptyMap() }
@@ -107,6 +109,7 @@ fun SubscriptionsScreen(
         val pinnedPodcastIds by viewModel.pinnedPodcastIds.collectAsStateWithLifecycle()
         val subscriptionsTabStyle by viewModel.subscriptionsTabStyle.collectAsStateWithLifecycle()
         var showSortMenu by remember { mutableStateOf(false) }
+        var showFolderEditSheet by remember { mutableStateOf(false) }
 
         val isFloatingTabs = subscriptionsTabStyle == SubscriptionsTabStyle.FLOATING
 
@@ -187,6 +190,9 @@ fun SubscriptionsScreen(
 
         val successState = uiState as? LibraryUiState.Success
         val hasSubscribedPodcasts = successState != null && successState.subscribedPodcasts.isNotEmpty()
+        val suggestedGenres = remember(successState?.subscribedPodcasts) {
+            extractDistinctGenres(successState?.subscribedPodcasts.orEmpty())
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
@@ -249,6 +255,14 @@ fun SubscriptionsScreen(
                                         }
                                     }
                                 } else {
+                                    if (pagerState.currentPage == 0) {
+                                        IconButton(onClick = { showFolderEditSheet = true }) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.CreateNewFolder,
+                                                contentDescription = "New folder"
+                                            )
+                                        }
+                                    }
                                     if (pagerState.currentPage == 0 && hasSubscribedPodcasts) {
                                         IconButton(onClick = {
                                             isGridView = !isGridView
@@ -428,6 +442,23 @@ fun SubscriptionsScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = animatedBottomOffset),
+                )
+            }
+
+            if (showFolderEditSheet) {
+                FolderEditSheet(
+                    initialFolder = null,
+                    suggestedGenres = suggestedGenres,
+                    onDismissRequest = { showFolderEditSheet = false },
+                    onSave = { name, icon, displaySize, linkedGenre ->
+                        viewModel.createFolder(
+                            name = name,
+                            icon = icon,
+                            displaySize = displaySize,
+                            linkedGenre = linkedGenre,
+                        )
+                        showFolderEditSheet = false
+                    },
                 )
             }
         }

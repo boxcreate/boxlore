@@ -24,6 +24,7 @@ data class InfoSharedDeps(
     val localCatalog: LocalCatalogPort,
     val episodeOfflineLookup: EpisodeOfflineLookupPort,
     val subscriptionForegroundSync: SubscriptionForegroundSync? = null,
+    val folderRepository: cx.aswin.boxlore.core.catalog.FolderRepository? = null,
 )
 
 data class PodcastInfoRouteArgs(

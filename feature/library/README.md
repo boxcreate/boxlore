@@ -9,6 +9,7 @@ Owns Library presentation: hub, history, subscriptions, liked episodes, download
 - `LibraryScreen` and `LibraryViewModel`. When Appearance **Cleaner Home** is on, the hub top bar shows Settings and Feedback (the same shortcuts Home normally owns).
 - `HistoryScreen` and `HistoryViewModel`. History uses a compact period-first hierarchy: a full-width listening-time hero, content-sized highlights, listening-pattern cards, then the filtered episode timeline. Highlights use a compact top-show row and explicit two-column metric grid instead of fixed-height carousel pages; paired cards match the tallest cell in their row, while an odd final metric spans the row as a featured card with a large tonal icon. The hero flows vertically so narrow phones do not sacrifice labels or leave split-column dead space; timeline rows allow longer episode/show copy. The one-time tracking-reset notice no longer appears.
 - `SubscriptionsScreen`, `LikedEpisodesScreen`, and `DownloadedEpisodesScreen`.
+- `FolderEditSheet` and `FolderEditComponents`: Subscription folder creation and edit sheet supporting optional icon selection (with "Clear icon" and graceful fallback), display sizes (`COMPACT`, `FEATURED`, `SHELF`), genre quick-fill suggestions from subscribed shows, and auto-sync with genre tags.
 - Downloads multi-select: checklist in the top bar, or long-press a show (hub) / episode (show list) to enter selection with that row checked, then delete several at once.
 - `SmartDownloadsSettingsScreen` and `AutoDownloadSettingsScreen`.
 - `PlayAllFab` and library UI helpers.
@@ -21,6 +22,8 @@ Owns Library presentation: hub, history, subscriptions, liked episodes, download
 src/main/java/cx/aswin/boxlore/feature/library/
   AutoDownloadSettingsScreen.kt
   DownloadedEpisodesScreen.kt
+  FolderEditComponents.kt
+  FolderEditSheet.kt
   HistoryScreen.kt
   HistoryViewModel.kt
   LibraryScreen.kt
@@ -92,6 +95,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - `SubscriptionSmartOrderLogicTest` covers Smart score-then-title order without a recency band.
 - `SubscriptionFilterLogicTest` covers genre extract/filter (including hybrid custom tag frequency-first priority over catalog genres), custom icon resolution, sort labels, and chronological header buckets.
 - `DownloadModelsTest` covers download entity mapping, size/date formatting, and long-press multi-select (`longPressDownloadSelection`).
+- `FolderEditLogicTest` covers `FolderDisplaySize`, optional icon fallback, genre quick-fill token extraction, auto-sync linked genre fallback, and `FakeFolderRepository` lifecycle.
 
 ```bash
 ./gradlew :feature:library:testDebugUnitTest
