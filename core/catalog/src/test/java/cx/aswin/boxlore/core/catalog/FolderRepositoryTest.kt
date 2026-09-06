@@ -135,4 +135,22 @@ class FolderRepositoryTest {
         val names = repository.folderNames.first()
         assertEquals(listOf("Apple", "Mango", "Zebra"), names)
     }
+
+    @Test
+    fun createFolder_supportsShowPodcastGrid() = runTest {
+        val folder = repository.createFolder(
+            name = "Grid Folder",
+            icon = "tech",
+            displaySize = FolderDisplaySize.COMPACT,
+            showPodcastGrid = true,
+        )
+
+        assertNotNull(folder.id)
+        org.junit.Assert.assertTrue(folder.showPodcastGrid)
+        org.junit.Assert.assertTrue(folder.effectiveShowPodcastGrid)
+
+        val retrieved = repository.getFolder(folder.id)
+        assertNotNull(retrieved)
+        org.junit.Assert.assertTrue(retrieved?.showPodcastGrid == true)
+    }
 }

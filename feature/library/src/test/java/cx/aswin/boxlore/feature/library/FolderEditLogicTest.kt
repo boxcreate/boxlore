@@ -40,6 +40,7 @@ class FolderEditLogicTest {
             icon: String?,
             displaySize: FolderDisplaySize,
             linkedGenre: String?,
+            showPodcastGrid: Boolean,
             podcastIds: List<String>,
         ): SubscriptionFolder {
             val folder = SubscriptionFolder(
@@ -48,6 +49,7 @@ class FolderEditLogicTest {
                 icon = icon?.takeIf { it.isNotBlank() },
                 displaySize = displaySize,
                 linkedGenre = linkedGenre?.takeIf { it.isNotBlank() },
+                showPodcastGrid = showPodcastGrid,
                 podcastCount = podcastIds.size,
                 podcastIds = podcastIds,
             )

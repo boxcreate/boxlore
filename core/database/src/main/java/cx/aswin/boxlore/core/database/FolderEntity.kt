@@ -12,5 +12,6 @@ data class FolderEntity(
     val icon: String? = null,
     val displaySize: FolderDisplaySize = FolderDisplaySize.COMPACT,
     val linkedGenre: String? = null,
+    val showPodcastGrid: Boolean = false,
     val createdAt: Long = 0L,
 )

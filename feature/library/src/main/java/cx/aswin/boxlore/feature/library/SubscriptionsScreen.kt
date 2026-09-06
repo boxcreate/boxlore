@@ -449,7 +449,7 @@ fun SubscriptionsScreen(
                         showFolderEditSheet = false
                         editingFolder = null
                     },
-                    onSave = { name, icon, displaySize, linkedGenre ->
+                    onSave = { name, icon, displaySize, linkedGenre, showPodcastGrid ->
                         val target = editingFolder
                         if (target != null) {
                             viewModel.updateFolder(
@@ -458,6 +458,7 @@ fun SubscriptionsScreen(
                                     icon = icon,
                                     displaySize = displaySize,
                                     linkedGenre = linkedGenre,
+                                    showPodcastGrid = showPodcastGrid,
                                 ),
                             )
                         } else {
@@ -466,6 +467,7 @@ fun SubscriptionsScreen(
                                 icon = icon,
                                 displaySize = displaySize,
                                 linkedGenre = linkedGenre,
+                                showPodcastGrid = showPodcastGrid,
                             )
                         }
                         showFolderEditSheet = false

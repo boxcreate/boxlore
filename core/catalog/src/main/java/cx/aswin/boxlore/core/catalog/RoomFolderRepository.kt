@@ -59,6 +59,7 @@ class RoomFolderRepository(
                 icon = entity.icon,
                 displaySize = entity.displaySize,
                 linkedGenre = entity.linkedGenre,
+                showPodcastGrid = entity.showPodcastGrid,
                 createdAt = entity.createdAt,
                 podcastCount = pIds.size,
                 podcastIds = pIds,
@@ -76,6 +77,7 @@ class RoomFolderRepository(
             icon = entity.icon,
             displaySize = entity.displaySize,
             linkedGenre = entity.linkedGenre,
+            showPodcastGrid = entity.showPodcastGrid,
             createdAt = entity.createdAt,
             podcastCount = pIds.size,
             podcastIds = pIds,
@@ -90,6 +92,7 @@ class RoomFolderRepository(
         icon: String?,
         displaySize: FolderDisplaySize,
         linkedGenre: String?,
+        showPodcastGrid: Boolean,
         podcastIds: List<String>,
     ): SubscriptionFolder {
         val id = UUID.randomUUID().toString()
@@ -116,6 +119,7 @@ class RoomFolderRepository(
             icon = trimmedIcon,
             displaySize = displaySize,
             linkedGenre = trimmedGenre,
+            showPodcastGrid = showPodcastGrid,
             createdAt = createdAt,
         )
         folderDao.upsertFolder(entity)
@@ -129,6 +133,7 @@ class RoomFolderRepository(
             icon = trimmedIcon,
             displaySize = displaySize,
             linkedGenre = trimmedGenre,
+            showPodcastGrid = showPodcastGrid,
             createdAt = createdAt,
             podcastCount = initialPodcastIds.size,
             podcastIds = initialPodcastIds,
@@ -146,6 +151,7 @@ class RoomFolderRepository(
             icon = trimmedIcon,
             displaySize = folder.displaySize,
             linkedGenre = trimmedGenre,
+            showPodcastGrid = folder.showPodcastGrid,
             createdAt = if (folder.createdAt > 0L) folder.createdAt else System.currentTimeMillis(),
         )
         folderDao.upsertFolder(entity)

@@ -17,6 +17,7 @@ interface FolderRepository {
         icon: String? = null,
         displaySize: FolderDisplaySize = FolderDisplaySize.COMPACT,
         linkedGenre: String? = null,
+        showPodcastGrid: Boolean = false,
         podcastIds: List<String> = emptyList(),
     ): SubscriptionFolder
 

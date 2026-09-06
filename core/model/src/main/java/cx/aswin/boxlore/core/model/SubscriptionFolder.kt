@@ -9,6 +9,7 @@ data class SubscriptionFolder(
     val icon: String? = null,
     val displaySize: FolderDisplaySize = FolderDisplaySize.COMPACT,
     val linkedGenre: String? = null,
+    val showPodcastGrid: Boolean = false,
     val createdAt: Long = 0L,
     val podcastCount: Int = 0,
     val podcastIds: List<String> = emptyList(),
@@ -18,4 +19,7 @@ data class SubscriptionFolder(
 
     val isGenreLinked: Boolean
         get() = !linkedGenre.isNullOrBlank()
+
+    val effectiveShowPodcastGrid: Boolean
+        get() = showPodcastGrid || icon.isNullOrBlank()
 }

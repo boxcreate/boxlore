@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.library
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +23,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -601,6 +606,171 @@ internal fun FolderAutoSyncCard(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun FolderCompactCoverStyleCard(
+    showPodcastGrid: Boolean,
+    hasIcon: Boolean,
+    selectedIconKey: String?,
+    onShowPodcastGridChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isIconSelected = hasIcon && !showPodcastGrid
+    val isGridSelected = showPodcastGrid || !hasIcon
+    val iconVector = GenreIcons.iconOrFallback(selectedIconKey, null)
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.GridView,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = "1×1 Cover Display",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = GoogleSansWeight.medium,
+                    )
+                }
+
+                Text(
+                    text = if (isIconSelected) "Folder Icon" else "Podcast Grid",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = GoogleSansWeight.medium,
+                )
+            }
+
+            Text(
+                text = if (hasIcon) {
+                    "Choose between folder icon badge or a 2×2 mini-grid of podcast artworks"
+                } else {
+                    "No icon chosen — displaying 2×2 mini-grid of podcast artworks"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                FolderCoverStyleOption(
+                    title = "Folder Icon",
+                    subtitle = if (hasIcon) "Tap to open" else "Pick icon below",
+                    iconVector = iconVector,
+                    isSelected = isIconSelected,
+                    onClick = if (hasIcon) {
+                        { onShowPodcastGridChange(false) }
+                    } else {
+                        null
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+
+                FolderCoverStyleOption(
+                    title = "Podcast Grid",
+                    subtitle = "Clickable covers",
+                    iconVector = Icons.Rounded.GridView,
+                    isSelected = isGridSelected,
+                    onClick = { onShowPodcastGridChange(true) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FolderCoverStyleOption(
+    title: String,
+    subtitle: String,
+    iconVector: ImageVector,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)?,
+) {
+    val enabled = onClick != null
+    Surface(
+        modifier = modifier
+            .clickable(enabled = enabled) { onClick?.invoke() },
+        shape = RoundedCornerShape(12.dp),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        },
+        border = BorderStroke(
+            width = if (isSelected) 1.5.dp else 1.dp,
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            },
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = iconVector,
+                contentDescription = null,
+                tint = if (enabled) {
+                    if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                },
+                modifier = Modifier.size(20.dp),
+            )
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = GoogleSansWeight.medium,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    },
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

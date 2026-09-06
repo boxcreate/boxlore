@@ -90,4 +90,32 @@ class SubscriptionFolderTest {
         assertEquals(3, showcaseFolder.displaySize.spanRows)
         assertEquals("3×3", showcaseFolder.displaySize.dimensionsLabel)
     }
+
+    @Test
+    fun `effectiveShowPodcastGrid respects showPodcastGrid and icon presence`() {
+        val iconlessFolder = SubscriptionFolder(
+            id = "f-1",
+            name = "Iconless",
+            icon = null,
+            showPodcastGrid = false,
+        )
+        // Iconless folders always default to showing the podcast grid
+        assertTrue(iconlessFolder.effectiveShowPodcastGrid)
+
+        val iconFolderWithGrid = SubscriptionFolder(
+            id = "f-2",
+            name = "With Icon Grid",
+            icon = "tech",
+            showPodcastGrid = true,
+        )
+        assertTrue(iconFolderWithGrid.effectiveShowPodcastGrid)
+
+        val iconFolderWithoutGrid = SubscriptionFolder(
+            id = "f-3",
+            name = "With Icon Single",
+            icon = "tech",
+            showPodcastGrid = false,
+        )
+        assertFalse(iconFolderWithoutGrid.effectiveShowPodcastGrid)
+    }
 }

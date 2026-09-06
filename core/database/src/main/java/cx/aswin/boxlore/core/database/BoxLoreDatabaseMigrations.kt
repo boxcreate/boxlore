@@ -265,6 +265,7 @@ object BoxLoreDatabaseMigrations {
                 icon TEXT,
                 displaySize TEXT NOT NULL,
                 linkedGenre TEXT,
+                showPodcastGrid INTEGER NOT NULL DEFAULT 0,
                 createdAt INTEGER NOT NULL
             )
             """.trimIndent(),

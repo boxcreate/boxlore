@@ -35,6 +35,7 @@ internal data class FolderEditFormState(
     val nameText: String,
     val selectedIconKey: String?,
     val selectedDisplaySize: FolderDisplaySize,
+    val showPodcastGrid: Boolean,
     val autoSyncGenre: Boolean,
     val effectiveLinkedGenre: String?,
     val suggestedGenres: List<String>,
@@ -44,6 +45,7 @@ internal data class FolderEditFormActions(
     val onNameChange: (String) -> Unit,
     val onSelectIcon: (String?) -> Unit,
     val onSelectDisplaySize: (FolderDisplaySize) -> Unit,
+    val onShowPodcastGridChange: (Boolean) -> Unit,
     val onAutoSyncChange: (Boolean) -> Unit,
     val onSelectLinkedGenre: (String) -> Unit,
     val onSelectSuggestedGenre: (String) -> Unit,
@@ -59,7 +61,7 @@ fun FolderEditSheet(
     initialFolder: SubscriptionFolder? = null,
     suggestedGenres: List<String> = emptyList(),
     onDismissRequest: () -> Unit,
-    onSave: (name: String, icon: String?, displaySize: FolderDisplaySize, linkedGenre: String?) -> Unit,
+    onSave: (name: String, icon: String?, displaySize: FolderDisplaySize, linkedGenre: String?, showPodcastGrid: Boolean) -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
     var nameText by remember(initialFolder) { mutableStateOf(initialFolder?.name ?: "") }
@@ -69,6 +71,9 @@ fun FolderEditSheet(
     }
     var selectedDisplaySize by remember(initialFolder) {
         mutableStateOf(initialFolder?.displaySize ?: FolderDisplaySize.COMPACT)
+    }
+    var showPodcastGrid by remember(initialFolder) {
+        mutableStateOf(initialFolder?.showPodcastGrid ?: false)
     }
     var autoSyncGenre by remember(initialFolder) {
         mutableStateOf(initialFolder?.isGenreLinked ?: false)
@@ -94,6 +99,7 @@ fun FolderEditSheet(
         nameText = nameText,
         selectedIconKey = selectedIconKey,
         selectedDisplaySize = selectedDisplaySize,
+        showPodcastGrid = showPodcastGrid,
         autoSyncGenre = autoSyncGenre,
         effectiveLinkedGenre = effectiveLinkedGenre,
         suggestedGenres = suggestedGenres,
@@ -107,6 +113,7 @@ fun FolderEditSheet(
             focusManager.clearFocus()
         },
         onSelectDisplaySize = { selectedDisplaySize = it },
+        onShowPodcastGridChange = { showPodcastGrid = it },
         onAutoSyncChange = { enabled ->
             autoSyncGenre = enabled
         },
@@ -132,7 +139,8 @@ fun FolderEditSheet(
             } else {
                 null
             }
-            onSave(finalName, finalIcon, selectedDisplaySize, finalLinked)
+            val finalShowPodcastGrid = if (finalIcon == null) true else showPodcastGrid
+            onSave(finalName, finalIcon, selectedDisplaySize, finalLinked, finalShowPodcastGrid)
         },
         onClose = onDismissRequest,
         onDelete = onDelete,
@@ -197,6 +205,15 @@ internal fun FolderEditSheetContent(
                 selectedSize = state.selectedDisplaySize,
                 onSizeSelected = actions.onSelectDisplaySize,
             )
+
+            if (state.selectedDisplaySize == FolderDisplaySize.COMPACT) {
+                FolderCompactCoverStyleCard(
+                    showPodcastGrid = state.showPodcastGrid,
+                    hasIcon = !state.selectedIconKey.isNullOrBlank(),
+                    selectedIconKey = state.selectedIconKey,
+                    onShowPodcastGridChange = actions.onShowPodcastGridChange,
+                )
+            }
 
             FolderIconPickerSection(
                 selectedIconKey = state.selectedIconKey,

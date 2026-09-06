@@ -92,30 +92,31 @@ class CustomFolderMigration33To34Test {
 
         BoxLoreDatabaseMigrations.migrate33To34(db)
 
-        // 1. Insert iconless folder with COMPACT size
+        // 1. Insert iconless folder with COMPACT size (default showPodcastGrid = 1)
         db.execSQL(
             """
-            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, createdAt)
-            VALUES ('folder-1', 'Daily Tech', NULL, 'COMPACT', 'Technology', 1000)
+            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, showPodcastGrid, createdAt)
+            VALUES ('folder-1', 'Daily Tech', NULL, 'COMPACT', 'Technology', 1, 1000)
             """.trimIndent(),
         )
 
-        // 2. Insert folder with icon and FEATURED size
+        // 2. Insert folder with icon and FEATURED size (showPodcastGrid = 0)
         db.execSQL(
             """
-            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, createdAt)
-            VALUES ('folder-2', 'Favorites', 'star', 'FEATURED', NULL, 2000)
+            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, showPodcastGrid, createdAt)
+            VALUES ('folder-2', 'Favorites', 'star', 'FEATURED', NULL, 0, 2000)
             """.trimIndent(),
         )
 
         // Verify folder rows
-        val folderCursor = db.query("SELECT folderId, name, icon, displaySize, linkedGenre FROM folders ORDER BY createdAt ASC")
+        val folderCursor = db.query("SELECT folderId, name, icon, displaySize, linkedGenre, showPodcastGrid FROM folders ORDER BY createdAt ASC")
         assertTrue(folderCursor.moveToFirst())
         assertEquals("folder-1", folderCursor.getString(0))
         assertEquals("Daily Tech", folderCursor.getString(1))
         assertNull(folderCursor.getString(2))
         assertEquals("COMPACT", folderCursor.getString(3))
         assertEquals("Technology", folderCursor.getString(4))
+        assertEquals(1, folderCursor.getInt(5))
 
         assertTrue(folderCursor.moveToNext())
         assertEquals("folder-2", folderCursor.getString(0))
@@ -123,6 +124,7 @@ class CustomFolderMigration33To34Test {
         assertEquals("star", folderCursor.getString(2))
         assertEquals("FEATURED", folderCursor.getString(3))
         assertNull(folderCursor.getString(4))
+        assertEquals(0, folderCursor.getInt(5))
         folderCursor.close()
 
         // 3. Insert cross-ref

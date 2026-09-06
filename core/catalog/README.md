@@ -21,7 +21,7 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 - `InstallReferrerManager` parses Play Install Referrer deep links and exposes optional `onInstallReferrerResolved` (channel + raw referrer). `:app` wires that callback into analytics; catalog must not depend on `:core:analytics`.
 - `RoomLocalCatalog` implements `LocalCatalogPort`; its metadata enrichment transaction updates only an existing subscribed row, so a late Podcast Info response cannot create or restore a subscription after unsubscribe. `RoomEpisodeOfflineLookup` implements `EpisodeOfflineLookupPort`.
 - `ports.ListeningHistoryBackupPort` and `ports.SmartDownloadSyncPort` keep backup and download seams out of UI modules.
-- `FolderRepository` and `RoomFolderRepository` manage library subscription folders: creating iconless or icon-assigned folders, updating display sizes, auto-syncing subscribed shows matching `linkedGenre`, adding/removing podcasts from folders, and cascading folder deletions without unsubscribing shows.
+- `FolderRepository` and `RoomFolderRepository` manage library subscription folders: creating iconless or icon-assigned folders with optional `showPodcastGrid` 1×1 cover style, updating display sizes, auto-syncing subscribed shows matching `linkedGenre`, adding/removing podcasts from folders, and cascading folder deletions without unsubscribing shows.
 - `:core:rss`, `:core:domain`, `:core:database`, and `:core:prefs` are re-exported where existing public signatures require those types.
 
 ## Internal structure

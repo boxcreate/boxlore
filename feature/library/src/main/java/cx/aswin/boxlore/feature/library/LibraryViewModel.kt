@@ -111,6 +111,7 @@ class LibraryViewModel(
         icon: String?,
         displaySize: FolderDisplaySize,
         linkedGenre: String?,
+        showPodcastGrid: Boolean = false,
         podcastIds: List<String> = emptyList(),
     ) {
         viewModelScope.launch {
@@ -119,6 +120,7 @@ class LibraryViewModel(
                 icon = icon,
                 displaySize = displaySize,
                 linkedGenre = linkedGenre,
+                showPodcastGrid = showPodcastGrid,
                 podcastIds = podcastIds,
             )
         }
