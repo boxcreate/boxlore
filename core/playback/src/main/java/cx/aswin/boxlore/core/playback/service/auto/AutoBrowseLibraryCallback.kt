@@ -17,10 +17,16 @@ import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-internal class AutoBrowseLibraryCallback(private val host: AutoBrowseLibraryHost,) : MediaLibrarySession.Callback {
-    private val mediaResolver = AutoMediaResolver(host)
-    private val treeBuilder = AutoBrowseTreeBuilder(host, mediaResolver)
+internal class AutoBrowseLibraryCallback(
+    private val host: AutoBrowseLibraryHost,
+    mediaResolver: AutoMediaResolver? = null,
+    resumptionHandler: AutoPlaybackResumptionHandler? = null,
+) : MediaLibrarySession.Callback {
+    private val mediaResolver = mediaResolver ?: AutoMediaResolver(host)
+    private val treeBuilder = AutoBrowseTreeBuilder(host, this.mediaResolver)
     private val voiceSearch = AutoVoiceSearchHandler(host, treeBuilder)
+    private val resumptionHandler =
+        resumptionHandler ?: AutoPlaybackResumptionHandler(host, this.mediaResolver)
 
     private val connectedAtMs =
         java.util.concurrent.ConcurrentHashMap<MediaSession.ControllerInfo, Long>()
@@ -270,6 +276,24 @@ internal class AutoBrowseLibraryCallback(private val host: AutoBrowseLibraryHost
         return super.onMediaButtonEvent(session, controllerInfo, intent)
     }
 
+    @Deprecated("Deprecated in Media3; delegates to 3-parameter overload.")
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
+        resumptionHandler.onPlaybackResumption(mediaSession, controller)
+
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        isStartedFromMediaNotification: Boolean,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
+        resumptionHandler.onPlaybackResumption(
+            mediaSession,
+            controller,
+            isStartedFromMediaNotification,
+        )
+
     override fun onGetLibraryRoot(
         session: MediaLibrarySession,
         browser: MediaSession.ControllerInfo,
@@ -428,23 +452,65 @@ internal class AutoBrowseLibraryCallback(private val host: AutoBrowseLibraryHost
         android.util.Log.d("AutoBrowse", "onGetItem: mediaId=$mediaId")
         return host.serviceScope.future {
             val item =
-                if (
+                when {
                     mediaId.startsWith(AutoBrowseContract.EPISODE_PREFIX) ||
-                    mediaId.startsWith(AutoBrowseContract.QUEUE_PREFIX) ||
-                    mediaId.startsWith(AutoBrowseContract.LEARN_PREFIX)
-                ) {
-                    mediaResolver.resolveMediaItem(MediaItem.Builder().setMediaId(mediaId).build())
-                } else {
-                    (
-                        treeBuilder.getRootChildren() +
-                            treeBuilder.getHomeChildren() +
-                            treeBuilder.getLibraryChildren() +
-                            treeBuilder.getDiscoverChildren()
+                        mediaId.startsWith(AutoBrowseContract.QUEUE_PREFIX) ||
+                        mediaId.startsWith(AutoBrowseContract.LEARN_PREFIX) -> {
+                        mediaResolver.resolveMediaItem(MediaItem.Builder().setMediaId(mediaId).build())
+                    }
+                    mediaId.startsWith(AutoBrowseContract.SUBSCRIPTION_PREFIX) -> {
+                        val podcastId = mediaId.removePrefix(AutoBrowseContract.SUBSCRIPTION_PREFIX)
+                        val podcast = host.database.podcastDao().getPodcast(podcastId)
+                        if (podcast != null) {
+                            AutoMediaItemFactory.browsable(
+                                id = mediaId,
+                                title = podcast.title,
+                                subtitle = podcast.author,
+                                artworkUri = AutoArtworkRepository.remoteUri(host.asContext(), podcast.imageUrl),
+                                mediaType = MediaMetadata.MEDIA_TYPE_PODCAST,
+                                childStyleExtras = AutoBrowseContract.mergeExtras(
+                                    AutoBrowseContract.listChildrenExtras(),
+                                    Bundle().apply {
+                                        putString(
+                                            androidx.media3.session.MediaConstants.EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE,
+                                            host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_subscriptions),
+                                        )
+                                    },
+                                ),
+                                singleItemStyle = androidx.media3.session.MediaConstants.EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM,
+                            )
+                        } else {
+                            treeBuilder.getSubscriptionsChildren().firstOrNull { it.mediaId == mediaId }
+                                ?: AutoMediaItemFactory.browsable(
+                                    id = mediaId,
+                                    title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_app_name),
+                                )
+                        }
+                    }
+                    else -> {
+                        val staticNode = (
+                            treeBuilder.getRootChildren() +
+                                treeBuilder.getHomeChildren() +
+                                treeBuilder.getLibraryChildren() +
+                                treeBuilder.getDiscoverChildren()
                         ).firstOrNull { it.mediaId == mediaId }
-                        ?: AutoMediaItemFactory.browsable(
-                            id = mediaId,
-                            title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_app_name),
-                        )
+
+                        if (staticNode != null) {
+                            staticNode
+                        } else {
+                            val resolvedEpisode = mediaResolver.resolveMediaItem(
+                                MediaItem.Builder().setMediaId(mediaId).build(),
+                            )
+                            if (resolvedEpisode.localConfiguration?.uri != null) {
+                                resolvedEpisode
+                            } else {
+                                AutoMediaItemFactory.browsable(
+                                    id = mediaId,
+                                    title = host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_app_name),
+                                )
+                            }
+                        }
+                    }
                 }
             LibraryResult.ofItem(item, null)
         }
