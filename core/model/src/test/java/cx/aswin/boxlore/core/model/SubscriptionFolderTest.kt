@@ -79,5 +79,15 @@ class SubscriptionFolderTest {
         assertEquals(2, largeFolder.displaySize.spanCols)
         assertEquals(3, largeFolder.displaySize.spanRows)
         assertEquals("2×3", largeFolder.displaySize.dimensionsLabel)
+
+        val showcaseFolder = SubscriptionFolder(
+            id = "folder-6",
+            name = "Showcase 3x3 Section",
+            displaySize = FolderDisplaySize.SHOWCASE,
+        )
+        assertEquals(FolderDisplaySize.SHOWCASE, showcaseFolder.displaySize)
+        assertEquals(3, showcaseFolder.displaySize.spanCols)
+        assertEquals(3, showcaseFolder.displaySize.spanRows)
+        assertEquals("3×3", showcaseFolder.displaySize.dimensionsLabel)
     }
 }

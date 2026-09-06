@@ -35,8 +35,8 @@ enum class FolderDisplaySize(
         spanCols = 2,
         spanRows = 3,
         dimensionsLabel = "2×3",
-        title = "Large",
-        subtitle = "Max 2×3",
+        title = "Tall",
+        subtitle = "2×3 tall",
     ),
     SHELF(
         spanCols = 3,
@@ -44,5 +44,19 @@ enum class FolderDisplaySize(
         dimensionsLabel = "3×1",
         title = "Shelf",
         subtitle = "Full row",
+    ),
+    PANEL(
+        spanCols = 3,
+        spanRows = 2,
+        dimensionsLabel = "3×2",
+        title = "Panel",
+        subtitle = "3×2 panel",
+    ),
+    SHOWCASE(
+        spanCols = 3,
+        spanRows = 3,
+        dimensionsLabel = "3×3",
+        title = "Showcase",
+        subtitle = "Max 3×3",
     ),
 }

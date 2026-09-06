@@ -110,12 +110,14 @@ class FolderEditLogicTest {
 
     @Test
     fun folderDisplaySize_enumCases() {
-        assertEquals(5, FolderDisplaySize.entries.size)
+        assertEquals(7, FolderDisplaySize.entries.size)
         assertTrue(FolderDisplaySize.entries.contains(FolderDisplaySize.COMPACT))
         assertTrue(FolderDisplaySize.entries.contains(FolderDisplaySize.WIDE))
         assertTrue(FolderDisplaySize.entries.contains(FolderDisplaySize.FEATURED))
         assertTrue(FolderDisplaySize.entries.contains(FolderDisplaySize.LARGE))
         assertTrue(FolderDisplaySize.entries.contains(FolderDisplaySize.SHELF))
+        assertTrue(FolderDisplaySize.entries.contains(FolderDisplaySize.PANEL))
+        assertTrue(FolderDisplaySize.entries.contains(FolderDisplaySize.SHOWCASE))
 
         // Verify dimensions and metadata
         assertEquals(1, FolderDisplaySize.COMPACT.spanCols)
@@ -137,6 +139,14 @@ class FolderEditLogicTest {
         assertEquals(3, FolderDisplaySize.SHELF.spanCols)
         assertEquals(1, FolderDisplaySize.SHELF.spanRows)
         assertEquals("3×1", FolderDisplaySize.SHELF.dimensionsLabel)
+
+        assertEquals(3, FolderDisplaySize.PANEL.spanCols)
+        assertEquals(2, FolderDisplaySize.PANEL.spanRows)
+        assertEquals("3×2", FolderDisplaySize.PANEL.dimensionsLabel)
+
+        assertEquals(3, FolderDisplaySize.SHOWCASE.spanCols)
+        assertEquals(3, FolderDisplaySize.SHOWCASE.spanRows)
+        assertEquals("3×3", FolderDisplaySize.SHOWCASE.dimensionsLabel)
     }
 
     @Test

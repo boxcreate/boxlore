@@ -2,7 +2,6 @@ package cx.aswin.boxlore.feature.library
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -181,8 +182,6 @@ internal fun FolderQuickFillChipsRow(
 ) {
     if (genres.isEmpty()) return
 
-    val scrollState = rememberScrollState()
-
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = "Suggestions from your library",
@@ -191,13 +190,11 @@ internal fun FolderQuickFillChipsRow(
             fontWeight = GoogleSansWeight.medium,
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(scrollState),
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            genres.forEach { genre ->
+            items(genres, key = { it }) { genre ->
                 val icon = GenreIcons.iconOrFallback(null, genre)
                 PillFilterChip(
                     label = genre,
@@ -215,6 +212,11 @@ internal fun FolderDisplaySizeSelector(
     selectedSize: FolderDisplaySize,
     onSizeSelected: (FolderDisplaySize) -> Unit,
 ) {
+    val initialIndex = remember {
+        FolderDisplaySize.entries.indexOf(selectedSize).coerceAtLeast(0)
+    }
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -241,13 +243,12 @@ internal fun FolderDisplaySizeSelector(
             }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FolderDisplaySize.entries.forEach { size ->
+            items(FolderDisplaySize.entries, key = { it.name }) { size ->
                 FolderDisplaySizeCard(
                     size = size,
                     isSelected = selectedSize == size,
@@ -365,6 +366,12 @@ internal fun FolderIconPickerSection(
         suggestedIcons + GenreIcons.all.filterNot { it.key in suggestedKeys }
     }
 
+    val initialIndex = remember {
+        val matchIndex = displayIcons.indexOfFirst { it.key.equals(selectedIconKey, ignoreCase = true) }
+        if (matchIndex >= 0) matchIndex + 1 else 0
+    }
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -404,19 +411,20 @@ internal fun FolderIconPickerSection(
             }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            FolderDefaultIconTile(
-                isSelected = selectedIconKey.isNullOrBlank(),
-                onClick = { onSelectIcon(null) },
-            )
+            item(key = "default_folder_icon") {
+                FolderDefaultIconTile(
+                    isSelected = selectedIconKey.isNullOrBlank(),
+                    onClick = { onSelectIcon(null) },
+                )
+            }
 
-            displayIcons.forEach { item ->
+            items(displayIcons, key = { it.key }) { item ->
                 val isSelected = selectedIconKey.equals(item.key, ignoreCase = true)
                 FolderIconTile(
                     item = item,
@@ -578,13 +586,11 @@ internal fun FolderAutoSyncCard(
             }
 
             if (autoSync && suggestedGenres.isNotEmpty() && onSelectLinkedGenre != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    suggestedGenres.forEach { genre ->
+                    items(suggestedGenres, key = { it }) { genre ->
                         val isSelected = linkedGenre.equals(genre, ignoreCase = true)
                         val icon = GenreIcons.iconOrFallback(null, genre)
                         PillFilterChip(
