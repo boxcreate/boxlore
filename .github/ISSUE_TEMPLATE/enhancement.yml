@@ -1,0 +1,65 @@
+name: ⚡ Enhancement
+description: Suggest an improvement, refinement, or optimization to an existing feature
+title: "[Enhancement]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a suggestion to refine, polish, or optimize an existing feature in boxlore? We'd love to hear it! ⚡
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this relate to?
+      options:
+        - Playback
+        - Player UI
+        - Search & Explore
+        - Home & Recommendations
+        - Library & Offline
+        - Onboarding
+        - Widgets
+        - Platform (Wear/TV/Tablet/Cast)
+        - iOS
+        - Backend & Catalog
+        - Analytics
+        - Performance & Optimization
+        - Developer / CI
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: "How does the feature currently work or behave?"
+      placeholder: "Currently, when viewing..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-enhancement
+    attributes:
+      label: Proposed Enhancement
+      description: "What improvement, refinement, or optimization would you like to see?"
+      placeholder: "It would be great if..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Problem & Motivation
+      description: "Why would this change improve the user experience or performance?"
+      placeholder: "This makes navigation faster / reduces clutter because..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups, Screenshots, or References
+      description: "Any concept sketches, mockups, or examples illustrating the idea"
+    validations:
+      required: false
