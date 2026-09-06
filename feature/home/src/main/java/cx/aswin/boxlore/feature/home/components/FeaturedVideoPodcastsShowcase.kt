@@ -2,6 +2,7 @@
 
 package cx.aswin.boxlore.feature.home.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -189,17 +190,19 @@ private fun SpotlightArtworkTile(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .shadow(
+                .expressiveClickable(
+                    onClick = onClick,
+                ).shadow(
                     elevation = 3.dp,
                     shape = ArtworkShape,
                     clip = false,
+                ).background(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = ArtworkShape,
                 ).border(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.outlineVariant,
                     shape = ArtworkShape,
-                ).expressiveClickable(
-                    shape = ArtworkShape,
-                    onClick = onClick,
                 ).clip(ArtworkShape),
         ) {
             OptimizedImage(
