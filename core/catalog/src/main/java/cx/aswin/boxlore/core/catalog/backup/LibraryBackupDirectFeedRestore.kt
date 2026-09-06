@@ -32,13 +32,23 @@ internal object LibraryBackupDirectFeedRestore {
         targets: List<DirectFeedOptInBackup>,
         actions: DirectFeedRestoreActions,
         concurrency: Int = DEFAULT_CONCURRENCY,
+        onTargetStarted: (suspend (podcastId: String) -> Unit)? = null,
+        onTargetCompleted: (suspend (podcastId: String) -> Unit)? = null,
     ) {
         if (targets.isEmpty()) return
         val gate = Semaphore(concurrency.coerceAtLeast(1))
         coroutineScope {
             targets.map { optIn ->
                 async {
-                    gate.withPermit { restoreOne(optIn, actions) }
+                    gate.withPermit {
+                        val id = optIn.podcastId?.trim().orEmpty()
+                        if (id.isNotEmpty()) onTargetStarted?.invoke(id)
+                        try {
+                            restoreOne(optIn, actions)
+                        } finally {
+                            if (id.isNotEmpty()) onTargetCompleted?.invoke(id)
+                        }
+                    }
                 }
             }.awaitAll()
         }

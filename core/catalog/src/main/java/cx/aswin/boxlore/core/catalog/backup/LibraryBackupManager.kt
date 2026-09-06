@@ -206,48 +206,21 @@ class LibraryBackupManager(
         onProgress(JsonBackupProgress(phase = JsonBackupPhase.PREPARING))
         val backup = gson.fromJson(jsonString, BoxLoreBackup::class.java)
         restoreImportedGlobalPreferences(backup.globalPreferences)
-        val totalSubs = backup.subscriptions.size
+        val titleMap = backup.subscriptions.associate { it.podcastId to it.title }
         val importedIds = mutableListOf<String>()
-        for ((index, entity) in backup.subscriptions.withIndex()) {
-            onProgress(
-                JsonBackupProgress(
-                    phase = JsonBackupPhase.SUBSCRIBING,
-                    current = index,
-                    total = totalSubs,
-                    currentTitle = entity.title,
-                ),
-            )
+        for (entity in backup.subscriptions) {
             importBackupSubscription(entity, backup)?.let { importedIds += it }
         }
-        if (totalSubs > 0) {
-            onProgress(
-                JsonBackupProgress(
-                    phase = JsonBackupPhase.SUBSCRIBING,
-                    current = totalSubs,
-                    total = totalSubs,
-                    currentTitle = "",
-                ),
-            )
-        }
-        onProgress(
-            JsonBackupProgress(
-                phase = JsonBackupPhase.RESTORING_HISTORY,
-                current = 0,
-                total = backup.history.size,
-            ),
-        )
         restoreImportedHistory(backup.history, importedIds)
         backup.adaptiveRanking?.let { rankingBackup ->
             adaptiveRankingRepository.restoreBackup(rankingBackup)
         }
-        onProgress(
-            JsonBackupProgress(
-                phase = JsonBackupPhase.REFRESHING_FEEDS,
-                current = 0,
-                total = importedIds.size,
-            ),
+        refreshImportedLatestEpisodes(
+            importedIds = importedIds,
+            backupOptIns = backup.directFeedOptIns,
+            titleMap = titleMap,
+            onProgress = onProgress,
         )
-        refreshImportedLatestEpisodes(importedIds, backup.directFeedOptIns)
         onProgress(
             JsonBackupProgress(
                 phase = JsonBackupPhase.COMPLETED,
@@ -447,7 +420,12 @@ class LibraryBackupManager(
         }
     }
 
-    private suspend fun refreshImportedLatestEpisodes(importedIds: List<String>, backupOptIns: List<DirectFeedOptInBackup>?,) {
+    private suspend fun refreshImportedLatestEpisodes(
+        importedIds: List<String>,
+        backupOptIns: List<DirectFeedOptInBackup>?,
+        titleMap: Map<String, String> = emptyMap(),
+        onProgress: suspend (JsonBackupProgress) -> Unit = {},
+    ) {
         val subscriptionFeedUrls =
             importedIds.associateWith { id ->
                 subscriptionRepository.getPodcastEntity(id)?.feedUrl
@@ -458,23 +436,138 @@ class LibraryBackupManager(
                 backupOptIns = backupOptIns,
                 subscriptionFeedUrls = subscriptionFeedUrls,
             )
+        val total = refreshPlan.directFeedTargets.size + refreshPlan.piSyncIds.size + refreshPlan.rssIds.size
+        if (total == 0) return
+
+        val completedCount = java.util.concurrent.atomic.AtomicInteger(0)
+
+        suspend fun resolveTitle(id: String): String =
+            titleMap[id]?.ifBlank { null } ?: subscriptionRepository.getPodcastEntity(id)?.title.orEmpty()
+
+        val initialTargetId = refreshPlan.directFeedTargets.firstOrNull()?.podcastId.orEmpty().ifBlank {
+            refreshPlan.rssIds.firstOrNull() ?: refreshPlan.piSyncIds.firstOrNull().orEmpty()
+        }
+        val initialTitle = if (initialTargetId.isNotBlank()) resolveTitle(initialTargetId) else ""
+
+        onProgress(
+            JsonBackupProgress(
+                phase = JsonBackupPhase.REFRESHING_FEEDS,
+                current = 0,
+                total = total,
+                currentTitle = initialTitle,
+            ),
+        )
+
         LibraryBackupDirectFeedLogic.runPostSubscribeRefresh(
             plan = refreshPlan,
-            restoreDirectFeeds = { restoreImportedDirectFeeds(it) },
-            syncPi = { ids ->
-                try {
-                    val syncedMap = podcastRepository.syncSubscriptions(ids)
-                    for ((id, ep) in syncedMap) {
-                        subscriptionRepository.updateLatestEpisode(id, ep)
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Log.e("JSON_IMPORT", "Failed to sync episodes", e)
-                }
+            restoreDirectFeeds = { targets ->
+                restoreImportedDirectFeeds(
+                    targets = targets,
+                    onTargetStarted = { id ->
+                        val title = resolveTitle(id)
+                        onProgress(
+                            JsonBackupProgress(
+                                phase = JsonBackupPhase.REFRESHING_FEEDS,
+                                current = completedCount.get(),
+                                total = total,
+                                currentTitle = title,
+                            ),
+                        )
+                    },
+                    onTargetCompleted = { id ->
+                        val done = completedCount.incrementAndGet()
+                        val title = resolveTitle(id)
+                        onProgress(
+                            JsonBackupProgress(
+                                phase = JsonBackupPhase.REFRESHING_FEEDS,
+                                current = done,
+                                total = total,
+                                currentTitle = title,
+                            ),
+                        )
+                    },
+                )
             },
-            refreshRss = { refreshImportedRssCatalogs(it) },
+            syncPi = { ids ->
+                syncPiSubscriptionsWithProgress(ids, total, completedCount, ::resolveTitle, onProgress)
+            },
+            refreshRss = { ids ->
+                refreshRssCatalogsWithProgress(ids, total, completedCount, ::resolveTitle, onProgress)
+            },
         )
+    }
+
+    private suspend fun syncPiSubscriptionsWithProgress(
+        ids: List<String>,
+        total: Int,
+        completedCount: java.util.concurrent.atomic.AtomicInteger,
+        resolveTitle: suspend (String) -> String,
+        onProgress: suspend (JsonBackupProgress) -> Unit,
+    ) {
+        for (id in ids) {
+            val title = resolveTitle(id)
+            onProgress(
+                JsonBackupProgress(
+                    phase = JsonBackupPhase.REFRESHING_FEEDS,
+                    current = completedCount.get(),
+                    total = total,
+                    currentTitle = title,
+                ),
+            )
+        }
+        try {
+            val syncedMap = podcastRepository.syncSubscriptions(ids)
+            for ((id, ep) in syncedMap) {
+                subscriptionRepository.updateLatestEpisode(id, ep)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("JSON_IMPORT", "Failed to sync episodes", e)
+        }
+        val done = completedCount.addAndGet(ids.size)
+        onProgress(
+            JsonBackupProgress(
+                phase = JsonBackupPhase.REFRESHING_FEEDS,
+                current = done,
+                total = total,
+                currentTitle = "",
+            ),
+        )
+    }
+
+    private suspend fun refreshRssCatalogsWithProgress(
+        rssIds: List<String>,
+        total: Int,
+        completedCount: java.util.concurrent.atomic.AtomicInteger,
+        resolveTitle: suspend (String) -> String,
+        onProgress: suspend (JsonBackupProgress) -> Unit,
+    ) {
+        for (id in rssIds) {
+            val title = resolveTitle(id)
+            onProgress(
+                JsonBackupProgress(
+                    phase = JsonBackupPhase.REFRESHING_FEEDS,
+                    current = completedCount.get(),
+                    total = total,
+                    currentTitle = title,
+                ),
+            )
+            try {
+                rssPodcastRepository.refreshCatalogIfNeeded(id)
+            } catch (e: Exception) {
+                Log.e("JSON_IMPORT", "RSS catalog refresh failed for $id", e)
+            }
+            val done = completedCount.incrementAndGet()
+            onProgress(
+                JsonBackupProgress(
+                    phase = JsonBackupPhase.REFRESHING_FEEDS,
+                    current = done,
+                    total = total,
+                    currentTitle = title,
+                ),
+            )
+        }
     }
 
     suspend fun importFromOpml(inputStream: InputStream): Int = LibraryBackupImportLogic.opmlImportCount(
@@ -622,7 +715,12 @@ class LibraryBackupManager(
 
     private fun supplementPort(): EpisodeSupplementPort? = episodeSupplementPort ?: podcastRepository.episodeSupplementRepository
 
-    private suspend fun restoreImportedLocalCatalogs(targets: List<DirectFeedOptInBackup>, catalog: LocalEpisodeCatalogPort,) {
+    private suspend fun restoreImportedLocalCatalogs(
+        targets: List<DirectFeedOptInBackup>,
+        catalog: LocalEpisodeCatalogPort,
+        onTargetStarted: (suspend (podcastId: String) -> Unit)? = null,
+        onTargetCompleted: (suspend (podcastId: String) -> Unit)? = null,
+    ) {
         LibraryBackupDirectFeedRestore.restoreAndRefresh(
             targets = targets,
             actions =
@@ -688,13 +786,24 @@ class LibraryBackupManager(
                     Log.e("JSON_IMPORT", "Local catalog restore failed for $id", error)
                 },
             ),
+            onTargetStarted = onTargetStarted,
+            onTargetCompleted = onTargetCompleted,
         )
     }
 
-    private suspend fun restoreImportedDirectFeeds(targets: List<DirectFeedOptInBackup>) {
+    private suspend fun restoreImportedDirectFeeds(
+        targets: List<DirectFeedOptInBackup>,
+        onTargetStarted: (suspend (podcastId: String) -> Unit)? = null,
+        onTargetCompleted: (suspend (podcastId: String) -> Unit)? = null,
+    ) {
         val catalog = podcastRepository.localEpisodeCatalog
         if (catalog != null) {
-            restoreImportedLocalCatalogs(targets, catalog)
+            restoreImportedLocalCatalogs(
+                targets = targets,
+                catalog = catalog,
+                onTargetStarted = onTargetStarted,
+                onTargetCompleted = onTargetCompleted,
+            )
             return
         }
         val port = supplementPort() ?: return
@@ -741,17 +850,9 @@ class LibraryBackupManager(
                     Log.e("JSON_IMPORT", "Direct-feed restore failed for $id", error)
                 },
             ),
+            onTargetStarted = onTargetStarted,
+            onTargetCompleted = onTargetCompleted,
         )
-    }
-
-    private suspend fun refreshImportedRssCatalogs(rssIds: Collection<String>) {
-        for (id in rssIds) {
-            try {
-                rssPodcastRepository.refreshCatalogIfNeeded(id)
-            } catch (e: Exception) {
-                Log.e("JSON_IMPORT", "RSS catalog refresh failed for $id", e)
-            }
-        }
     }
 
     suspend fun markAllEpisodesCompleted(podcast: cx.aswin.boxlore.core.model.Podcast) {

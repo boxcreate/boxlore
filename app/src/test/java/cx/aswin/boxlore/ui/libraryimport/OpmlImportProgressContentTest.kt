@@ -58,14 +58,22 @@ class OpmlImportProgressContentTest {
     }
 
     @Test
-    fun heroVisualFor_clampsProgressBetweenZeroAndOne() {
+    fun heroVisualFor_zeroOrNegativeProgress_isIndeterminate() {
+        val zeroState = OpmlImportState.ImportingJson(
+            totalCount = 10,
+            progress = 0f,
+        )
+        assertEquals(ImportHeroVisual.Indeterminate, heroVisualFor(zeroState))
+
         val negativeState = OpmlImportState.ImportingJson(
             totalCount = 10,
             progress = -0.2f,
         )
-        val negativeHero = heroVisualFor(negativeState) as ImportHeroVisual.Progress
-        assertEquals(0f, negativeHero.value, 0.001f)
+        assertEquals(ImportHeroVisual.Indeterminate, heroVisualFor(negativeState))
+    }
 
+    @Test
+    fun heroVisualFor_clampsProgressAtOne() {
         val overflowState = OpmlImportState.ImportingJson(
             totalCount = 10,
             progress = 1.8f,

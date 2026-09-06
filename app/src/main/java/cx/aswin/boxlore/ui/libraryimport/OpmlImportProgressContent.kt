@@ -48,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import cx.aswin.boxlore.core.catalog.backup.JsonBackupPhase
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 internal val ImportCorner = RoundedCornerShape(24.dp)
@@ -67,13 +66,18 @@ internal fun contentKeyFor(state: OpmlImportState): String = when (state) {
 
 internal fun heroVisualFor(state: OpmlImportState): ImportHeroVisual? = when (state) {
     is OpmlImportState.ImportingJson ->
-        if (state.totalCount > 0) {
+        if (state.totalCount > 0 && state.progress > 0f) {
             ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
         } else {
             ImportHeroVisual.Indeterminate
         }
     is OpmlImportState.Parsing -> ImportHeroVisual.Indeterminate
-    is OpmlImportState.Importing -> ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
+    is OpmlImportState.Importing ->
+        if (state.totalCount > 0 && state.progress > 0f) {
+            ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
+        } else {
+            ImportHeroVisual.Indeterminate
+        }
     is OpmlImportState.Completing -> ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
     is OpmlImportState.Success -> ImportHeroVisual.Complete
     else -> null
@@ -104,31 +108,17 @@ internal fun ProgressFlowScaffold(hero: ImportHeroVisual, state: OpmlImportState
             when (current) {
                 is OpmlImportState.ImportingJson -> {
                     when {
-                        current.phase == JsonBackupPhase.SUBSCRIBING && current.totalCount > 0 ->
+                        current.totalCount > 0 ->
                             ProgressCopy(
                                 title = "Restoring podcasts",
                                 subtitle = "Subscribing ${minOf(current.currentCount + 1, current.totalCount)} of ${current.totalCount}",
                                 detail = current.currentTitle.ifBlank { null },
                             )
 
-                        current.phase == JsonBackupPhase.RESTORING_HISTORY ->
-                            ProgressCopy(
-                                title = "Restoring history",
-                                subtitle = "Bringing in playback progress and history",
-                                detail = current.currentTitle.ifBlank { null },
-                            )
-
-                        current.phase == JsonBackupPhase.REFRESHING_FEEDS ->
-                            ProgressCopy(
-                                title = "Updating feeds",
-                                subtitle = "Fetching latest episodes for restored shows",
-                                detail = current.currentTitle.ifBlank { null },
-                            )
-
                         else ->
                             ProgressCopy(
-                                title = "Restoring backup",
-                                subtitle = "Bringing in shows and playback history",
+                                title = "Restoring podcasts",
+                                subtitle = "Preparing your library",
                                 detail = current.currentTitle.ifBlank { null },
                             )
                     }

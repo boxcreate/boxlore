@@ -10,9 +10,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -84,19 +86,24 @@ internal fun ImportNotificationPermissionCard(
     onOpenSettings: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    var promptAttempted by rememberSaveable { mutableStateOf(false) }
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { granted ->
+            promptAttempted = true
             AnalyticsHelper.trackNotificationPermissionDecided(granted)
             onPermissionChanged(areAppNotificationsEnabled(context))
         },
     )
 
-    val needsRuntimePermission = Build.VERSION.SDK_INT >= 33 &&
+    val canRequestRuntimePermission = Build.VERSION.SDK_INT >= 33 &&
+        !promptAttempted &&
         ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.POST_NOTIFICATIONS,
-        ) != PackageManager.PERMISSION_GRANTED
+        ) != PackageManager.PERMISSION_GRANTED &&
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -131,52 +138,29 @@ internal fun ImportNotificationPermissionCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            NotificationCardButtons(
-                needsRuntimePermission = needsRuntimePermission,
-                onGrant = { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                onSettings = onOpenSettings,
-            )
-        }
-    }
-}
-
-@Composable
-private fun NotificationCardButtons(
-    needsRuntimePermission: Boolean,
-    onGrant: () -> Unit,
-    onSettings: () -> Unit,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (needsRuntimePermission) {
+            Spacer(modifier = Modifier.height(14.dp))
             Button(
-                onClick = onGrant,
+                onClick = {
+                    if (canRequestRuntimePermission) {
+                        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        onOpenSettings()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text("Grant permission", color = MaterialTheme.colorScheme.onError)
+                Text(
+                    text = if (canRequestRuntimePermission) {
+                        "Enable notifications"
+                    } else {
+                        "Enable in settings"
+                    },
+                    color = MaterialTheme.colorScheme.onError,
+                    fontWeight = GoogleSansWeight.semiBold,
+                )
             }
-        }
-        Button(
-            onClick = onSettings,
-            colors = if (needsRuntimePermission) {
-                ButtonDefaults.filledTonalButtonColors()
-            } else {
-                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            },
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            Text(
-                "Settings",
-                color = if (needsRuntimePermission) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onError
-                },
-            )
         }
     }
 }
