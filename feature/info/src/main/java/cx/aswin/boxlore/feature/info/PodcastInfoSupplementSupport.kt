@@ -271,7 +271,7 @@ internal class PodcastInfoSupplementSupport(
          */
         const val SUPPLEMENT_BASELINE_LIMIT = 1000
         private const val DISPLAY_PAGE_SIZE = 20
-        private const val OLDEST_PAGE_SIZE = 200
+        private const val OLDEST_PAGE_SIZE = 50
     }
 }
 

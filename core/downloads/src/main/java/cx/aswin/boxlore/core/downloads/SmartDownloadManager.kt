@@ -156,7 +156,7 @@ class SmartDownloadManager(
                     }.maxByOrNull { it.lastPlayedAt }
                     ?.episodeId
 
-            val page = podcastRepository.getEpisodesPaginated(pod.podcastId, limit = 200, offset = 0, sort = "oldest")
+            val page = podcastRepository.getEpisodesPaginated(pod.podcastId, limit = 100, offset = 0, sort = "oldest")
             val allEpisodes = page.episodes
 
             return when {

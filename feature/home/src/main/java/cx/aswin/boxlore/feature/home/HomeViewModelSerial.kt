@@ -48,7 +48,7 @@ internal fun HomeViewModel.startOldestSortResolution() {
                                         val page =
                                             podcastRepository.getEpisodesPaginated(
                                                 pod.id,
-                                                limit = 200,
+                                                limit = 100,
                                                 offset = 0,
                                                 sort = "oldest",
                                             )
