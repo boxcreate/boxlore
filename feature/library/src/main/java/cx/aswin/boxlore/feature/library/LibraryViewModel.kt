@@ -77,7 +77,7 @@ class LibraryViewModel(
         userPreferencesRepository.subscriptionsTabStyleStream.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle.TOP,
+            initialValue = userPreferencesRepository.cachedSubscriptionsTabStyle,
         )
 
     private val _downloadsSortOrder = MutableStateFlow(DownloadsSortOrder.RECENT)
