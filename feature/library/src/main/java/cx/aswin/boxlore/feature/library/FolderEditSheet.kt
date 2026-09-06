@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.library
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -15,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -150,59 +153,64 @@ fun FolderEditSheet(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun FolderEditSheetContent(
     state: FolderEditFormState,
     actions: FolderEditFormActions,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    CompositionLocalProvider(
+        LocalOverscrollFactory provides null,
     ) {
-        FolderEditTopBar(
-            isEditing = state.isEditing,
-            canSave = state.canSave,
-            onClose = actions.onClose,
-            onDelete = actions.onDelete,
-            onSave = actions.onSave,
-        )
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            FolderEditTopBar(
+                isEditing = state.isEditing,
+                canSave = state.canSave,
+                onClose = actions.onClose,
+                onDelete = actions.onDelete,
+                onSave = actions.onSave,
+            )
 
-        FolderNameInputField(
-            nameText = state.nameText,
-            onNameChange = actions.onNameChange,
-            iconKey = state.selectedIconKey,
-            onDone = actions.onDone,
-        )
+            FolderNameInputField(
+                nameText = state.nameText,
+                onNameChange = actions.onNameChange,
+                iconKey = state.selectedIconKey,
+                onDone = actions.onDone,
+            )
 
-        if (state.suggestedGenres.isNotEmpty()) {
-            FolderQuickFillChipsRow(
-                genres = state.suggestedGenres,
-                onSelectGenre = actions.onSelectSuggestedGenre,
+            if (state.suggestedGenres.isNotEmpty()) {
+                FolderQuickFillChipsRow(
+                    genres = state.suggestedGenres,
+                    onSelectGenre = actions.onSelectSuggestedGenre,
+                )
+            }
+
+            FolderDisplaySizeSelector(
+                selectedSize = state.selectedDisplaySize,
+                onSizeSelected = actions.onSelectDisplaySize,
+            )
+
+            FolderIconPickerSection(
+                selectedIconKey = state.selectedIconKey,
+                queryText = state.nameText,
+                onSelectIcon = actions.onSelectIcon,
+            )
+
+            FolderAutoSyncCard(
+                autoSync = state.autoSyncGenre,
+                onAutoSyncChange = actions.onAutoSyncChange,
+                linkedGenre = state.effectiveLinkedGenre ?: state.nameText.trim(),
+                suggestedGenres = state.suggestedGenres,
+                onSelectLinkedGenre = actions.onSelectLinkedGenre,
             )
         }
-
-        FolderDisplaySizeSelector(
-            selectedSize = state.selectedDisplaySize,
-            onSizeSelected = actions.onSelectDisplaySize,
-        )
-
-        FolderIconPickerSection(
-            selectedIconKey = state.selectedIconKey,
-            queryText = state.nameText,
-            onSelectIcon = actions.onSelectIcon,
-        )
-
-        FolderAutoSyncCard(
-            autoSync = state.autoSyncGenre,
-            onAutoSyncChange = actions.onAutoSyncChange,
-            linkedGenre = state.effectiveLinkedGenre ?: state.nameText.trim(),
-            suggestedGenres = state.suggestedGenres,
-            onSelectLinkedGenre = actions.onSelectLinkedGenre,
-        )
     }
 }
