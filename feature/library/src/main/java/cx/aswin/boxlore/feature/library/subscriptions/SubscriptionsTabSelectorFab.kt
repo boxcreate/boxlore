@@ -198,26 +198,41 @@ private fun LatestTabButton(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (badgeCount > 0) {
-                Spacer(modifier = Modifier.width(4.dp))
-                Badge(
-                    containerColor = if (isSelected) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                    contentColor = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onPrimary
-                    },
-                ) {
-                    Text(
-                        text = if (badgeCount > 99) "99+" else "$badgeCount",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
+            LatestTabBadge(
+                badgeCount = badgeCount,
+                isSelected = isSelected,
+            )
         }
+    }
+}
+
+@Composable
+private fun LatestTabBadge(
+    badgeCount: Int,
+    isSelected: Boolean,
+) {
+    if (badgeCount <= 0) return
+
+    val containerColor = if (isSelected) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val contentColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onPrimary
+    }
+    val badgeText = if (badgeCount > 99) "99+" else badgeCount.toString()
+
+    Spacer(modifier = Modifier.width(4.dp))
+    Badge(
+        containerColor = containerColor,
+        contentColor = contentColor,
+    ) {
+        Text(
+            text = badgeText,
+            style = MaterialTheme.typography.labelSmall,
+        )
     }
 }
