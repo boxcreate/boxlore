@@ -25,6 +25,29 @@ object ExploreBrowseLogic {
         return existing + incoming.filter { idOf(it) !in existingIds }
     }
 
+    fun projectDisplayList(podcasts: List<Podcast>): List<Podcast> =
+        cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(podcasts) { it.id }
+
+    fun projectGridItems(
+        displayList: List<Podcast>,
+        isSearching: Boolean,
+        hasCurrentVibe: Boolean,
+    ): List<Podcast> =
+        if (!isSearching && displayList.isNotEmpty() && !hasCurrentVibe) {
+            displayList.drop(1)
+        } else {
+            displayList
+        }
+
+    fun filterAlsoFound(
+        alsoFound: List<Podcast>,
+        catalog: List<Podcast>,
+    ): List<Podcast> {
+        val catalogIds = catalog.mapNotNull { it.id.trim().takeIf(String::isNotEmpty) }.toSet()
+        val filtered = alsoFound.filter { it.id.trim().takeIf(String::isNotEmpty) !in catalogIds }
+        return cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(filtered) { it.id }
+    }
+
     fun episodeToSearchPodcast(episode: Episode): Podcast = Podcast(
         id = episode.podcastId.orEmpty(),
         title = episode.podcastTitle.orEmpty(),

@@ -11,6 +11,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 - `PredictiveBackWrapper` peeks the NavHost (scale 1.0 → 0.9) during system Back. Progress always returns to rest after commit or cancel so a Back that replaces the start destination (cold-start Subscriptions → Home) does not leave Home scaled down.
 - Shared discovery poster cards: `FeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`, and `FeedPosterSpacing` (Home “Based on Your Taste” and Explore For You).
 - `ProgressiveSearchScrollLogic` decides when a progressive Find-a-show list should pin to the top (query change, new top hit, or Matches header). Used by onboarding search and Explore Find-a-show; Ask anything does not use it.
+- `LazyListKeyPolicy` provides safe deduplication and collision-free key generation for LazyColumn, LazyRow, and LazyGrid lists, preventing `IllegalArgumentException: Key was already used` crashes from duplicate backend feeds or search hits.
 - `share.ShareManager` for composite share cards and the system share sheet; emits glossary `share_content` via `:core:analytics`. `ShareBottomSheet` presents a clear content preview, a switch-style timestamp option, a primary artwork share action, and separate link/story actions.
 - `share.ShareCardRenderer` builds the share-card bitmaps used by `ShareManager`. Stories separate episode/show details from a reduced branding block and retain the “listen now” prompt; square message artwork uses smaller branding without that prompt.
 
@@ -53,6 +54,7 @@ src/main/res/
 - Unit tests live under `core/designsystem/src/test`.
 - `ThemeBrandTokensTest` covers brand seed, contrast helper, and scheme-resolution behavior.
 - `ProgressiveSearchScrollLogicTest` covers pin-to-top when catalog hits prepend over local matches.
+- `LazyListKeyPolicyTest` covers safe deduplication, key prefixing, blank ID fallbacks, and duplicate collision disambiguation.
 - `PredictiveBackPeekTest` covers rest progress after a predictive-back gesture (scale must return to 1).
 - Screenshot goldens (optional local Roborazzi) live in feature modules (see `:feature:home`).
 

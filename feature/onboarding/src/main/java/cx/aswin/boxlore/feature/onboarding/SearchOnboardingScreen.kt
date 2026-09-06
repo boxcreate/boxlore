@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
+import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -203,7 +204,9 @@ internal fun OnboardingSearchScreen(
                             Text("No recommendations found", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     } else {
-                        val distinctPopular = remember(popularPodcasts) { popularPodcasts.distinctBy { it.id } }
+                        val distinctPopular = remember(popularPodcasts) {
+                            LazyListKeyPolicy.deduplicateById(popularPodcasts) { it.id }
+                        }
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -211,7 +214,10 @@ internal fun OnboardingSearchScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.weight(1f),
                         ) {
-                            items(distinctPopular, key = { it.id }) { podcast ->
+                            items(
+                                distinctPopular,
+                                key = { LazyListKeyPolicy.safeKey(it.id, prefix = "popular_show") }
+                            ) { podcast ->
                                 val isSubscribed = podcast.id in subscribedIds
                                 PopularPodcastGridItem(
                                     podcast = podcast,
@@ -253,11 +259,14 @@ internal fun OnboardingSearchScreen(
                 }
             }
             else -> {
-                val distinctResults = remember(results) { results.distinctBy { it.id } }
+                val distinctResults = remember(results) {
+                    LazyListKeyPolicy.deduplicateById(results) { it.id }
+                }
                 val distinctAlsoFound =
                     remember(alsoFoundResults, distinctResults) {
-                        val catalogIds = distinctResults.map { it.id }.toSet()
-                        alsoFoundResults.distinctBy { it.id }.filter { it.id !in catalogIds }
+                        val catalogIds = distinctResults.mapNotNull { it.id.trim().takeIf(String::isNotEmpty) }.toSet()
+                        val filtered = alsoFoundResults.filter { it.id.trim().takeIf(String::isNotEmpty) !in catalogIds }
+                        LazyListKeyPolicy.deduplicateById(filtered) { it.id }
                     }
                 val listState = rememberLazyListState()
                 val pinSnapshot =
@@ -292,7 +301,10 @@ internal fun OnboardingSearchScreen(
                             )
                         }
                     }
-                    items(distinctResults, key = { it.id }) { podcast ->
+                    items(
+                        distinctResults,
+                        key = { LazyListKeyPolicy.safeKey(it.id, prefix = "search_show") }
+                    ) { podcast ->
                         SearchResultRow(
                             podcast = podcast,
                             isSubscribed = podcast.id in subscribedIds,
@@ -309,7 +321,10 @@ internal fun OnboardingSearchScreen(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
                             )
                         }
-                        items(distinctAlsoFound, key = { "also_${it.id}" }) { podcast ->
+                        items(
+                            distinctAlsoFound,
+                            key = { LazyListKeyPolicy.safeKey(it.id, prefix = "also_show") }
+                        ) { podcast ->
                             SearchResultRow(
                                 podcast = podcast,
                                 isSubscribed = podcast.id in subscribedIds,
@@ -344,13 +359,19 @@ internal fun OnboardingSearchScreen(
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    val selectedPodcastsList = remember(subscribedIds, selectedPodcasts) {
+                        val list = subscribedIds.mapNotNull { selectedPodcasts[it] }
+                        LazyListKeyPolicy.deduplicateById(list) { it.id }
+                    }
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(vertical = 4.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        val selectedPodcastsList = subscribedIds.mapNotNull { selectedPodcasts[it] }
-                        items(selectedPodcastsList, key = { it.id }) { podcast ->
+                        items(
+                            selectedPodcastsList,
+                            key = { LazyListKeyPolicy.safeKey(it.id, prefix = "selected_show") }
+                        ) { podcast ->
                             Box(
                                 modifier = Modifier.size(56.dp),
                             ) {
