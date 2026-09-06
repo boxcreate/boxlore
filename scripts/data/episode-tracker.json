@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-06T14:20:21.110Z",
+  "lastRun": "2026-09-06T17:15:05.628Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1788549517762
     },
     "385117": {
-      "lastRssKey": "92116a62-a9fc-11f1-a969-9f28d5571e9a",
-      "lastEpisodeTitle": "10AM ET 09/06/2026 Newscast",
+      "lastRssKey": "b6d6ea34-aa15-11f1-9ed3-ef75f5048c7b",
+      "lastEpisodeTitle": "1PM ET 09/06/2026 Newscast",
       "lastEpisodeId": "60026121123",
-      "lastCheckedAt": 1788704426954
+      "lastCheckedAt": 1788714912555
     },
     "386911": {
       "lastRssKey": "fe6bbddc-a887-11f1-9153-5fae2fe654bd",
@@ -96,10 +96,10 @@
       "lastCheckedAt": 1788540280223
     },
     "419624": {
+      "lastRssKey": "421354b8-c04f-4202-9c3a-48a375e73b54",
+      "lastEpisodeTitle": "Jak as Dywizjonu 303 został najemnikiem. Powojenne losy Jana Zumbacha",
       "lastEpisodeId": "59723237419",
-      "lastEpisodeTitle": "Jak Niemcy sfingowali pretekst do wojny. Kulisy prowokacji gliwickiej",
-      "lastRssKey": "99473048-2021-4a77-a3af-4e1e3755e3b2",
-      "lastCheckedAt": 1788608382584
+      "lastCheckedAt": 1788714914993
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -575,6 +575,12 @@
       "lastEpisodeTitle": "早餐有派系 你是哪一派｜EP127",
       "lastEpisodeId": "59730670618",
       "lastCheckedAt": 1788340779079
+    },
+    "6744768": {
+      "lastRssKey": "654f24c3-2098-4b61-b039-fd6ec6906a4a",
+      "lastEpisodeTitle": "How I Became a Communist in China",
+      "lastEpisodeId": "59871186213",
+      "lastCheckedAt": 1788714962102
     },
     "6761897": {
       "lastRssKey": "7b609bf1-05bb-40b4-b67f-8620a7380a5c",
