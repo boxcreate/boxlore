@@ -82,6 +82,10 @@ The app uses your listening activity—such as what you play, skip, and like—t
 <li>Fixed background crashes when restoring playback sessions or updating widgets. <a href="https://github.com/boxcreate/boxlore/pull/1042"><img src="https://img.shields.io/badge/PR-1042-6750A4?style=flat-square" alt="PR #1042" height="18"/></a></li>
 <li>resolve OutOfMemoryError on large pagination and parsing (#1026) <a href="https://github.com/boxcreate/boxlore/pul... ([#1044](https://github.com/boxcreate/boxlore/pull/1044"><img src="https://img.shields.io/badge/PR-1044-6750A4?style=flat-square" alt="PR #1044" height="18"/></a></li>
 </ul>
+<b>🐛 Fixes:</b>
+<ul align="left">
+<li>Android Auto now seamlessly resumes your last played podcast and queue when reconnecting in your vehicle instead of showing an error screen. <a href="https://github.com/boxcreate/boxlore/pull/1045"><img src="https://img.shields.io/badge/PR-1045-6750A4?style=flat-square" alt="PR #1045" height="18"/></a></li>
+</ul>
 <b>• High:</b>
 <ul align="left">
 <li>Fixed an issue where episodes played from Android Auto showed missing show names and could cause playback to resume an older session on restart. <a href="https://github.com/boxcreate/boxlore/pull/1036"><img src="https://img.shields.io/badge/PR-1036-6750A4?style=flat-square" alt="PR #1036" height="18"/></a></li>
