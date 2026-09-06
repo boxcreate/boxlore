@@ -30,6 +30,8 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.ui.graphics.vector.ImageVector
+import cx.aswin.boxlore.core.designsystem.icon.GenreIconItem
+import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 
 /**
  * Metadata for a suggested genre or topic chip in [PodcastGenreEditSheet].
@@ -547,4 +549,37 @@ fun filterGenreSuggestions(
         }
         .sortedBy { it.second }
         .map { it.first }
+}
+
+/**
+ * Returns distinct icons suggested for the given user query, based on matching suggestions
+ * and icon metadata. Returns empty list if [query] is blank.
+ */
+fun findSuggestedIcons(
+    query: String,
+    allSuggestions: List<GenreSuggestion> = ALL_GENRE_SUGGESTIONS,
+): List<GenreIconItem> {
+    val trimmed = query.trim()
+    if (trimmed.isEmpty()) return emptyList()
+
+    val matchingSuggestions = filterGenreSuggestions(trimmed, allSuggestions)
+    val suggestionIconKeys = matchingSuggestions.map { it.iconKey }.distinct()
+
+    val itemsByKey = GenreIcons.all.associateBy { it.key.lowercase() }
+    val result = mutableListOf<GenreIconItem>()
+
+    // Top icons from matched suggestions
+    suggestionIconKeys.forEach { key ->
+        itemsByKey[key.lowercase()]?.let { result.add(it) }
+    }
+
+    // Direct match against icon labels / keys
+    val norm = trimmed.lowercase()
+    GenreIcons.all.forEach { item ->
+        if (item !in result && (item.label.lowercase().contains(norm) || item.key.lowercase().contains(norm))) {
+            result.add(item)
+        }
+    }
+
+    return result.take(8)
 }

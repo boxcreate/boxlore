@@ -168,4 +168,32 @@ class PodcastGenreSuggestionsTest {
         assertFalse(result.isEmpty())
         assertEquals("Coding", result.first().name)
     }
+
+    @Test
+    fun `findSuggestedIcons returns empty when query is blank`() {
+        assertTrue(findSuggestedIcons("").isEmpty())
+        assertTrue(findSuggestedIcons("   ").isEmpty())
+    }
+
+    @Test
+    fun `findSuggestedIcons returns relevant icons for query matching suggestions`() {
+        val techIcons = findSuggestedIcons("tech")
+        assertFalse(techIcons.isEmpty())
+        assertTrue(techIcons.any { it.key == "tech" })
+
+        val comedyIcons = findSuggestedIcons("standup comedy")
+        assertFalse(comedyIcons.isEmpty())
+        assertTrue(comedyIcons.any { it.key == "comedy" })
+    }
+
+    @Test
+    fun `findSuggestedIcons matches direct icon labels`() {
+        val fireIcons = findSuggestedIcons("fire")
+        assertFalse(fireIcons.isEmpty())
+        assertTrue(fireIcons.any { it.key == "fire" })
+
+        val starIcons = findSuggestedIcons("star")
+        assertFalse(starIcons.isEmpty())
+        assertTrue(starIcons.any { it.key == "star" })
+    }
 }

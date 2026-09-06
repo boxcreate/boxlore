@@ -6,11 +6,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -18,22 +17,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
@@ -75,6 +76,12 @@ internal fun PodcastGenreEditSheet(
 
     val hasCustomizations = !customGenre.isNullOrBlank() || !customGenreIcon.isNullOrBlank()
     val isDirty = genreText.trim() != (customGenre ?: "") || selectedIconKey != customGenreIcon
+    val canReset = hasCustomizations || genreText.isNotBlank() || selectedIconKey != null
+    val canSave = isDirty || (genreText.isNotBlank() && !hasCustomizations)
+
+    val suggestedIcons = remember(genreText) {
+        findSuggestedIcons(genreText)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -89,22 +96,31 @@ internal fun PodcastGenreEditSheet(
             Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 24.dp),
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            GenreEditHeader()
-
-            GenreEditPreviewCard(
-                catalogGenre = catalogGenre,
-                genreText = genreText,
-                effectiveGenre = effectiveGenre,
-                effectiveIcon = effectiveIcon,
+            GenreEditTopBar(
+                onClose = onDismissRequest,
+                canReset = canReset,
+                onReset = {
+                    focusManager.clearFocus()
+                    onSave(null, null)
+                    onDismissRequest()
+                },
+                canSave = canSave,
+                onSave = {
+                    focusManager.clearFocus()
+                    val finalGenre = genreText.trim().takeIf { it.isNotEmpty() }
+                    onSave(finalGenre, selectedIconKey)
+                    onDismissRequest()
+                },
             )
 
-            GenreEditTextField(
+            GenreEditTagCard(
                 genreText = genreText,
                 catalogGenre = catalogGenre,
+                effectiveIcon = effectiveIcon,
                 onValueChange = { genreText = it },
                 onDone = { focusManager.clearFocus() },
             )
@@ -118,31 +134,22 @@ internal fun PodcastGenreEditSheet(
                 },
             )
 
-            HorizontalDivider()
+            if (suggestedIcons.isNotEmpty()) {
+                GenreEditSuggestedIconsRow(
+                    suggestedIcons = suggestedIcons,
+                    selectedIconKey = selectedIconKey,
+                    onSelectIcon = { key ->
+                        focusManager.clearFocus()
+                        selectedIconKey = if (selectedIconKey.equals(key, ignoreCase = true)) null else key
+                    },
+                )
+            }
 
-            GenreEditIconPicker(
+            GenreEditAllIconsGrid(
                 selectedIconKey = selectedIconKey,
-                onSelectIcon = {
+                onSelectIcon = { key ->
                     focusManager.clearFocus()
-                    selectedIconKey = it
-                },
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            GenreEditActionButtons(
-                canReset = hasCustomizations || genreText.isNotBlank() || selectedIconKey != null,
-                canSave = isDirty || (genreText.isNotBlank() && !hasCustomizations),
-                onReset = {
-                    focusManager.clearFocus()
-                    onSave(null, null)
-                    onDismissRequest()
-                },
-                onSave = {
-                    focusManager.clearFocus()
-                    val finalGenre = genreText.trim().takeIf { it.isNotEmpty() }
-                    onSave(finalGenre, selectedIconKey)
-                    onDismissRequest()
+                    selectedIconKey = if (selectedIconKey.equals(key, ignoreCase = true)) null else key
                 },
             )
         }
@@ -150,113 +157,174 @@ internal fun PodcastGenreEditSheet(
 }
 
 @Composable
-private fun GenreEditHeader() {
-    Text(
-        text = "Change tag / genre",
-        style = MaterialTheme.typography.headlineSmall,
-        fontWeight = GoogleSansWeight.bold,
-    )
+private fun GenreEditTopBar(
+    onClose: () -> Unit,
+    canReset: Boolean,
+    onReset: () -> Unit,
+    canSave: Boolean,
+    onSave: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Close,
+                contentDescription = "Close",
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
 
-    Text(
-        text = "Personalize the tag and icon for this podcast in your library and filter chips.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+        Text(
+            text = "Tag & Icon",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = GoogleSansWeight.bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 8.dp),
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (canReset) {
+                TextButton(
+                    onClick = onReset,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = "Reset",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = GoogleSansWeight.medium,
+                    )
+                }
+            }
+
+            Button(
+                onClick = onSave,
+                enabled = canSave,
+                shape = ExpressiveShapes.Pill,
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
+            ) {
+                Text(
+                    text = "Save",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = GoogleSansWeight.bold,
+                )
+            }
+        }
+    }
 }
 
 @Composable
-private fun GenreEditTextField(
+private fun GenreEditTagCard(
     genreText: String,
     catalogGenre: String,
+    effectiveIcon: ImageVector,
     onValueChange: (String) -> Unit,
     onDone: () -> Unit,
 ) {
-    OutlinedTextField(
-        value = genreText,
-        onValueChange = onValueChange,
-        label = { Text("Tag or genre name") },
-        placeholder = { Text(catalogGenre.ifEmpty { "e.g. Deep Dives, Favorites" }) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Words,
-            imeAction = ImeAction.Done,
-        ),
-        keyboardActions = KeyboardActions(
-            onDone = { onDone() },
-        ),
-        trailingIcon = {
-            if (genreText.isNotEmpty()) {
-                IconButton(onClick = { onValueChange("") }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Clear,
-                        contentDescription = "Clear tag input",
-                    )
-                }
-            }
-        },
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-    )
-}
-
-@Composable
-private fun GenreEditPreviewCard(
-    catalogGenre: String,
-    genreText: String,
-    effectiveGenre: String,
-    effectiveIcon: ImageVector,
-) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Column {
-                Text(
-                    text = "PREVIEW",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = GoogleSansWeight.bold,
-                )
-                if (catalogGenre.isNotBlank() && genreText.isNotBlank()) {
-                    Text(
-                        text = "Default: $catalogGenre",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            }
-
-            Surface(
-                shape = ExpressiveShapes.Pill,
-                color = MaterialTheme.colorScheme.secondaryContainer,
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                    modifier = Modifier.size(48.dp),
                 ) {
-                    Icon(
-                        imageVector = effectiveIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = effectiveIcon,
+                            contentDescription = "Selected tag icon",
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = effectiveGenre,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        text = "TAG NAME",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = GoogleSansWeight.bold,
                     )
+                    BasicTextField(
+                        value = genreText,
+                        onValueChange = onValueChange,
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.titleMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = GoogleSansWeight.bold,
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                            imeAction = ImeAction.Done,
+                        ),
+                        keyboardActions = KeyboardActions(onDone = { onDone() }),
+                        decorationBox = { innerTextField ->
+                            if (genreText.isEmpty()) {
+                                Text(
+                                    text = catalogGenre.ifEmpty { "e.g. Deep Dives, Favorites" },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                )
+                            }
+                            innerTextField()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 2.dp),
+                    )
+                }
+
+                if (genreText.isNotEmpty()) {
+                    IconButton(
+                        onClick = { onValueChange("") },
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Clear,
+                            contentDescription = "Clear tag input",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
             }
+        }
+
+        if (catalogGenre.isNotBlank() && genreText.isNotBlank()) {
+            Text(
+                text = "Default catalog genre: $catalogGenre",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(start = 6.dp),
+            )
         }
     }
 }
@@ -279,7 +347,7 @@ private fun GenreEditSuggestionsRow(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = if (genreText.isBlank()) "Standard genres & tags" else "Matching suggestions (${suggestions.size})",
+            text = if (genreText.isBlank()) "Quick suggestions" else "Matching tags (${suggestions.size})",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = GoogleSansWeight.bold,
@@ -305,7 +373,39 @@ private fun GenreEditSuggestionsRow(
 }
 
 @Composable
-private fun GenreEditIconPicker(
+private fun GenreEditSuggestedIconsRow(
+    suggestedIcons: List<GenreIconItem>,
+    selectedIconKey: String?,
+    onSelectIcon: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Suggested icons",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = GoogleSansWeight.bold,
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            suggestedIcons.forEach { item ->
+                val isSelected = selectedIconKey.equals(item.key, ignoreCase = true)
+                GenreIconCell(
+                    item = item,
+                    isSelected = isSelected,
+                    onClick = { onSelectIcon(item.key) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GenreEditAllIconsGrid(
     selectedIconKey: String?,
     onSelectIcon: (String?) -> Unit,
 ) {
@@ -316,7 +416,7 @@ private fun GenreEditIconPicker(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Choose an icon",
+                text = "All icons",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = GoogleSansWeight.bold,
@@ -335,67 +435,37 @@ private fun GenreEditIconPicker(
             }
         }
 
-        val chunkedIcons = remember { GenreIcons.all.chunked(6) }
+        val (row1, row2) = remember {
+            val half = (GenreIcons.all.size + 1) / 2
+            GenreIcons.all.take(half) to GenreIcons.all.drop(half)
+        }
+
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            chunkedIcons.forEach { rowIcons ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    rowIcons.forEach { item ->
-                        val isSelected = selectedIconKey.equals(item.key, ignoreCase = true)
-                        GenreIconCell(
-                            item = item,
-                            isSelected = isSelected,
-                            onClick = {
-                                onSelectIcon(if (isSelected) null else item.key)
-                            },
-                        )
-                    }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row1.forEach { item ->
+                    val isSelected = selectedIconKey.equals(item.key, ignoreCase = true)
+                    GenreIconCell(
+                        item = item,
+                        isSelected = isSelected,
+                        onClick = { onSelectIcon(if (isSelected) null else item.key) },
+                    )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun GenreEditActionButtons(
-    canReset: Boolean,
-    canSave: Boolean,
-    onReset: () -> Unit,
-    onSave: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedButton(
-            onClick = onReset,
-            enabled = canReset,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = "Reset to default",
-                style = MaterialTheme.typography.labelMedium,
-            )
-        }
-
-        Button(
-            onClick = onSave,
-            enabled = canSave,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = "Save",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = GoogleSansWeight.bold,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row2.forEach { item ->
+                    val isSelected = selectedIconKey.equals(item.key, ignoreCase = true)
+                    GenreIconCell(
+                        item = item,
+                        isSelected = isSelected,
+                        onClick = { onSelectIcon(if (isSelected) null else item.key) },
+                    )
+                }
+            }
         }
     }
 }
