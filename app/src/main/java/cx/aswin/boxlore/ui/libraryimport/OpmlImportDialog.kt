@@ -45,23 +45,28 @@ sealed interface OpmlImportState {
 
     data object ShowSelector : OpmlImportState
 
+    sealed interface ActiveImportState : OpmlImportState {
+        val progress: Float
+        val totalCount: Int
+    }
+
     data class ImportingJson(
         val currentTitle: String = "",
-        val progress: Float = 0f,
+        override val progress: Float = 0f,
         val currentCount: Int = 0,
-        val totalCount: Int = 0,
+        override val totalCount: Int = 0,
         val phase: JsonBackupPhase = JsonBackupPhase.PREPARING,
-    ) : OpmlImportState
+    ) : ActiveImportState
 
     data class Parsing(val uri: android.net.Uri,) : OpmlImportState
 
     data class Importing(
         val currentFeedTitle: String,
-        val progress: Float,
+        override val progress: Float,
         val currentCount: Int,
-        val totalCount: Int,
+        override val totalCount: Int,
         val importedPodcasts: List<Podcast>,
-    ) : OpmlImportState
+    ) : ActiveImportState
 
     data class AskCompleted(val importedPodcasts: List<Podcast>, val selectedIds: Set<String>,) : OpmlImportState
 

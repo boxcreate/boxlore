@@ -65,19 +65,13 @@ internal fun contentKeyFor(state: OpmlImportState): String = when (state) {
 }
 
 internal fun heroVisualFor(state: OpmlImportState): ImportHeroVisual? = when (state) {
-    is OpmlImportState.ImportingJson ->
+    is OpmlImportState.ActiveImportState ->
         if (state.totalCount > 0 && state.progress > 0f) {
             ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
         } else {
             ImportHeroVisual.Indeterminate
         }
     is OpmlImportState.Parsing -> ImportHeroVisual.Indeterminate
-    is OpmlImportState.Importing ->
-        if (state.totalCount > 0 && state.progress > 0f) {
-            ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
-        } else {
-            ImportHeroVisual.Indeterminate
-        }
     is OpmlImportState.Completing -> ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
     is OpmlImportState.Success -> ImportHeroVisual.Complete
     else -> null

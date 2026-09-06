@@ -58,6 +58,20 @@ class OpmlImportProgressContentTest {
     }
 
     @Test
+    fun heroVisualFor_importingOpmlWithPositiveTotal_isProgress() {
+        val state = OpmlImportState.Importing(
+            currentFeedTitle = "Show B",
+            progress = 0.75f,
+            currentCount = 15,
+            totalCount = 20,
+            importedPodcasts = emptyList(),
+        )
+        val hero = heroVisualFor(state)
+        assertTrue(hero is ImportHeroVisual.Progress)
+        assertEquals(0.75f, (hero as ImportHeroVisual.Progress).value, 0.001f)
+    }
+
+    @Test
     fun heroVisualFor_zeroOrNegativeProgress_isIndeterminate() {
         val zeroState = OpmlImportState.ImportingJson(
             totalCount = 10,
