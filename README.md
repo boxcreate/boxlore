@@ -2,11 +2,9 @@
 
 <img src="docs/images/featured_banner.png" width="960" alt="boxlore screens showing podcast playback, home, and lore discovery"/>
 
-# boxlore
+**podcasts, done better.**
 
-**Find podcasts. Follow your favorites. Listen anywhere.**
-
-Search by name or topic, get recommendations, listen offline, watch video episodes, and keep up with new episodes.
+Search by name or topic, get recommendations, listen offline, watch video shows, and keep up with new episodes.
 
 <p>
 <!-- download-play:start -->
