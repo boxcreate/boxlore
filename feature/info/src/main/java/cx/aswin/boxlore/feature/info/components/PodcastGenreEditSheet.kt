@@ -326,7 +326,6 @@ private fun GenreEditInputField(
     OutlinedTextField(
         value = genreText,
         onValueChange = onValueChange,
-        label = { Text("Custom tag name") },
         placeholder = {
             Text(
                 text = stringResource(R.string.genre_edit_placeholder),
