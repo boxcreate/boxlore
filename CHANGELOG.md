@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserved show name metadata during Android Auto playback and resolved session restore reversions when replaying completed episodes (#1035). ([#1036](https://github.com/boxcreate/boxlore/pull/1036)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Adapted the Cast button in the expanded player sheet to respect dark and light themes and match the Share button theming (#1037). ([#1039](https://github.com/boxcreate/boxlore/pull/1039)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Handled broken pipe and network disconnect exceptions safely during Android Auto artwork streaming (#1027). ([#1041](https://github.com/boxcreate/boxlore/pull/1041)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Enforce `MediaController` main-thread affinity in `PlaybackRepository` to prevent `IllegalStateException` on background session restoration. ([#1042](https://github.com/boxcreate/boxlore/pull/1042)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019
 ### Critical
@@ -71,6 +72,11 @@ readme-copy:end pr=1039 -->
 ### Medium
 - Fixed an intermittent crash that could occur when disconnecting from Android Auto during artwork loading.
 readme-copy:end pr=1041 -->
+
+<!-- readme-copy:start pr=1042
+### Improvements
+- Fixed background crashes when restoring playback sessions or updating widgets.
+readme-copy:end pr=1042 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added

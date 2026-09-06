@@ -76,6 +76,10 @@ The app uses your listening activity—such as what you play, skip, and like—t
 <li>Fixed an issue where the queue would skip upcoming episodes of the show you were listening to. <a href="https://github.com/boxcreate/boxlore/pull/1019"><img src="https://img.shields.io/badge/PR-1019-6750A4?style=flat-square" alt="PR #1019" height="18"/></a></li>
 <li>Added a convenient queue banner to preview and add upcoming episodes of a show when played from recommendations. <a href="https://github.com/boxcreate/boxlore/pull/1019"><img src="https://img.shields.io/badge/PR-1019-6750A4?style=flat-square" alt="PR #1019" height="18"/></a></li>
 </ul>
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>Fixed background crashes when restoring playback sessions or updating widgets. <a href="https://github.com/boxcreate/boxlore/pull/1042"><img src="https://img.shields.io/badge/PR-1042-6750A4?style=flat-square" alt="PR #1042" height="18"/></a></li>
+</ul>
 <b>• High:</b>
 <ul align="left">
 <li>Fixed an issue where episodes played from Android Auto showed missing show names and could cause playback to resume an older session on restart. <a href="https://github.com/boxcreate/boxlore/pull/1036"><img src="https://img.shields.io/badge/PR-1036-6750A4?style=flat-square" alt="PR #1036" height="18"/></a></li>
