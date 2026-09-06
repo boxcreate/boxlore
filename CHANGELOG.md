@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Subscriptions tab presentation style preference (`top` vs `floating`) in `:core:prefs`, Settings UI, and Subscriptions screen. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Elevated Play All FAB animation when floating tab selector is active. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Backup and restore support for `subscriptionsTabStyle`, `navigationStyle`, and `fontRoundness` in `LibraryBackupManager`. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Custom podcast genre tag and icon picker for subscribed shows (#1051, #1032). ([#1055](https://github.com/boxcreate/boxlore/pull/1055)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Room migration 13 to 14 adding `custom_genre` and `custom_genre_icon` columns to `podcasts`. ([#1055](https://github.com/boxcreate/boxlore/pull/1055)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Curated 30+ Material rounded icon catalog in `GenreIcons.kt`. ([#1055](https://github.com/boxcreate/boxlore/pull/1055)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Hybrid user-priority ordering for custom tags in Subscriptions filter chips. ([#1055](https://github.com/boxcreate/boxlore/pull/1055)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Changed
 - Resolved out-of-memory errors during large podcast pagination and feed parsing by streaming responses and bounding in-memory cache sizes (#1026). ([#1044](https://github.com/boxcreate/boxlore/pull/1044)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Modernize ktlint setup with Compose-friendly `.editorconfig`, remove 24 legacy XML baseline files, and apply repository-wide code formatting. ([#1020](https://github.com/boxcreate/boxlore/pull/1020)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -39,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Forwarded `onSetSubscriptionsTabStyle` callback in `AppearanceActions.trackedForAnalytics()` to register clicks in Settings > Appearance. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Streamlined JSON library restore with real-time show-by-show progress reporting and active wavy loader animation throughout feed downloads. ([#1050](https://github.com/boxcreate/boxlore/pull/1050)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Refactored post-restore notification card to a single dynamic button that triggers the system runtime permission dialog and refreshes on resume. ([#1050](https://github.com/boxcreate/boxlore/pull/1050)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Reset custom tags and icons to default catalog genres when unsubscribing from a show. ([#1055](https://github.com/boxcreate/boxlore/pull/1055)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019
 ### Critical
@@ -118,6 +123,11 @@ readme-copy:end pr=1048 -->
 - Added real-time show progress and active animated loader when restoring library backups.
 - Streamlined notification permission prompt after backup restore to a single tap.
 readme-copy:end pr=1050 -->
+
+<!-- readme-copy:start pr=1055
+### Improvements
+- Added custom podcast tags and icons for subscribed shows in boxlore, with live chip preview, keyword suggestions, and priority filtering in Subscriptions.
+readme-copy:end pr=1055 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added
