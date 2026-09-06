@@ -23,7 +23,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -70,6 +69,7 @@ import cx.aswin.boxlore.feature.library.subscriptions.LatestTabActions
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabConfig
 import cx.aswin.boxlore.feature.library.subscriptions.LatestTabContent
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsSortMenuItems
+import cx.aswin.boxlore.feature.library.subscriptions.ShowsTabActions
 import cx.aswin.boxlore.feature.library.subscriptions.ShowsTabContent
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsTabSelectorFab
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsTabSelectorFabHeight
@@ -256,15 +256,7 @@ fun SubscriptionsScreen(
                                         }
                                     }
                                 } else {
-                                    if (pagerState.currentPage == 0) {
-                                        IconButton(onClick = { showFolderEditSheet = true }) {
-                                            Icon(
-                                                imageVector = Icons.Rounded.CreateNewFolder,
-                                                contentDescription = "New folder"
-                                            )
-                                        }
-                                    }
-                                    if (pagerState.currentPage == 0 && hasSubscribedPodcasts) {
+                                    if (hasSubscribedPodcasts) {
                                         IconButton(onClick = {
                                             isGridView = !isGridView
                                             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(isGridView)
@@ -381,15 +373,18 @@ fun SubscriptionsScreen(
                                 when (page) {
                                     0 -> ShowsTabContent(
                                         podcasts = podcasts,
-                                        onExploreClick = onExploreClick,
-                                        onPodcastClick = {
-                                            viewModel.subPodcastsClickedCount++
-                                            onPodcastClick(it)
-                                        },
                                         isGridView = isGridView,
                                         canReorder = searchQuery.isBlank(),
                                         pinnedPodcastIds = pinnedPodcastIds,
-                                        onReorder = viewModel::reorderSubscriptions,
+                                        actions = ShowsTabActions(
+                                            onExploreClick = onExploreClick,
+                                            onPodcastClick = {
+                                                viewModel.subPodcastsClickedCount++
+                                                onPodcastClick(it)
+                                            },
+                                            onReorder = viewModel::reorderSubscriptions,
+                                            onNewFolderClick = { showFolderEditSheet = true },
+                                        ),
                                     )
                                     1 -> {
                                         LatestTabContent(

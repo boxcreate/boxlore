@@ -41,22 +41,28 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 private const val ShowsGenreHeaderKey = "shows_genre_header"
 private val ShowsBlockedReorderKeys = setOf(ShowsGenreHeaderKey)
 
+/** Callbacks for [ShowsTabContent], grouped to keep the composable parameter list small. */
+internal data class ShowsTabActions(
+    val onExploreClick: () -> Unit,
+    val onPodcastClick: (String) -> Unit,
+    val onReorder: (orderedIds: List<String>) -> Unit = {},
+    val onNewFolderClick: (() -> Unit)? = null,
+)
+
 @Composable
 internal fun ShowsTabContent(
     podcasts: List<Podcast>,
-    onExploreClick: () -> Unit,
-    onPodcastClick: (String) -> Unit,
     isGridView: Boolean,
+    actions: ShowsTabActions,
     canReorder: Boolean = false,
     pinnedPodcastIds: Set<String> = emptySet(),
-    onReorder: (orderedIds: List<String>) -> Unit = {},
 ) {
     if (podcasts.isEmpty()) {
         ExpressiveSolarSystemEmptyState(
             title = "No Subscriptions Yet",
             description = "Follow your favorite podcasts to see them here.",
             actionText = "Find Podcasts",
-            onExploreClick = onExploreClick,
+            onExploreClick = actions.onExploreClick,
         )
         return
     }
@@ -83,6 +89,7 @@ internal fun ShowsTabContent(
             distinctGenres = distinctGenres,
             podcasts = podcasts,
             contentPadding = PaddingValues(horizontal = if (isGridView) 0.dp else 16.dp),
+            onNewFolderClick = actions.onNewFolderClick,
         )
     }
 
@@ -97,7 +104,7 @@ internal fun ShowsTabContent(
                 )
             if (moved != null) {
                 orderedIds = moved
-                onReorder(moved)
+                actions.onReorder(moved)
             }
         }
     }
@@ -107,7 +114,7 @@ internal fun ShowsTabContent(
             orderedPodcasts = orderedPodcasts,
             reorderEnabled = reorderEnabled,
             pinnedPodcastIds = pinnedPodcastIds,
-            onPodcastClick = onPodcastClick,
+            onPodcastClick = actions.onPodcastClick,
             onMove = applyReorder,
             genreChips = genreChips,
         )
@@ -116,7 +123,7 @@ internal fun ShowsTabContent(
             orderedPodcasts = orderedPodcasts,
             reorderEnabled = reorderEnabled,
             pinnedPodcastIds = pinnedPodcastIds,
-            onPodcastClick = onPodcastClick,
+            onPodcastClick = actions.onPodcastClick,
             onMove = applyReorder,
             genreChips = genreChips,
         )

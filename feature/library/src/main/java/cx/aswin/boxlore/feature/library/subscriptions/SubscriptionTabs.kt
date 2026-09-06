@@ -167,6 +167,7 @@ internal fun SubscriptionGenreChips(
     podcasts: List<cx.aswin.boxlore.core.model.Podcast> = emptyList(),
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    onNewFolderClick: (() -> Unit)? = null,
 ) {
     SubscriptionsFilterRow(
         selectedGenre = selectedGenre,
@@ -175,6 +176,7 @@ internal fun SubscriptionGenreChips(
         podcasts = podcasts,
         modifier = modifier,
         contentPadding = contentPadding,
+        onNewFolderClick = onNewFolderClick,
     )
 }
 

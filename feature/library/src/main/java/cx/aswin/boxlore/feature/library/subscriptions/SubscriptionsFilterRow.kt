@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.ActionPillFilterChip
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -23,6 +26,7 @@ internal fun SubscriptionsFilterRow(
     podcasts: List<Podcast> = emptyList(),
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    onNewFolderClick: (() -> Unit)? = null,
 ) {
     val genreItems = remember(distinctGenres, podcasts) {
         distinctGenres
@@ -35,7 +39,16 @@ internal fun SubscriptionsFilterRow(
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        item {
+        if (onNewFolderClick != null) {
+            item(key = "action_new_folder") {
+                ActionPillFilterChip(
+                    label = "+ Folder",
+                    onClick = onNewFolderClick,
+                    icon = Icons.Rounded.CreateNewFolder,
+                )
+            }
+        }
+        item(key = "filter_all") {
             PillFilterChip(
                 label = "All",
                 selected = selectedGenre == "All",
