@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback
 
 import android.os.Looper
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -28,25 +29,39 @@ internal object PlaybackThreadPolicy {
             mainLooper != null && Looper.myLooper() == mainLooper
         }.getOrDefault(false)
     }
+    fun runOnMainThread(
+        scope: CoroutineScope?,
+        block: () -> Unit,
+    ) {
+        if (isMainThread()) {
+            block()
+        } else {
+            scope?.launch(mainDispatcher) {
+                block()
+            } ?: block()
+        }
+    }
+
+    inline fun <T> runCatchingOnMain(
+        defaultValue: T,
+        block: () -> T,
+    ): T =
+        if (isMainThread()) {
+            runCatching(block).getOrDefault(defaultValue)
+        } else {
+            android.util.Log.w(
+                "PlaybackRepo",
+                "MediaController method queried from non-main thread ${Thread.currentThread().name}; returning fallback",
+            )
+            defaultValue
+        }
 }
 
 internal fun PlaybackRepository.runOnMainThread(block: () -> Unit) {
-    if (PlaybackThreadPolicy.isMainThread()) {
-        block()
-    } else {
-        repositoryScope.launch(PlaybackThreadPolicy.mainDispatcher) {
-            block()
-        }
-    }
+    PlaybackThreadPolicy.runOnMainThread(repositoryScope, block)
 }
 
-internal inline fun <T> PlaybackRepository.runCatchingOnMain(defaultValue: T, block: () -> T): T =
-    if (PlaybackThreadPolicy.isMainThread()) {
-        runCatching(block).getOrDefault(defaultValue)
-    } else {
-        android.util.Log.w(
-            "PlaybackRepo",
-            "MediaController method queried from non-main thread ${Thread.currentThread().name}; returning fallback",
-        )
-        defaultValue
-    }
+internal inline fun <T> PlaybackRepository.runCatchingOnMain(
+    defaultValue: T,
+    block: () -> T,
+): T = PlaybackThreadPolicy.runCatchingOnMain(defaultValue, block)

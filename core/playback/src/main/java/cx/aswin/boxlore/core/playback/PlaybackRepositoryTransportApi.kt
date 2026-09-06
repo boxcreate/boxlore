@@ -53,7 +53,7 @@ fun PlaybackRepository.currentRepeatMode(): Int =
 
 fun PlaybackRepository.toggleShuffle(): Boolean {
     if (!PlaybackThreadPolicy.isMainThread()) {
-        runOnMainThread { toggleShuffle() }
+        Log.w("PlaybackRepo", "toggleShuffle queried/invoked from non-main thread; ignoring")
         return false
     }
     val mediaController = controller?.takeIf { it.isConnected } ?: return false
@@ -64,7 +64,7 @@ fun PlaybackRepository.toggleShuffle(): Boolean {
 
 fun PlaybackRepository.cycleRepeatMode(): Int {
     if (!PlaybackThreadPolicy.isMainThread()) {
-        runOnMainThread { cycleRepeatMode() }
+        Log.w("PlaybackRepo", "cycleRepeatMode queried/invoked from non-main thread; ignoring")
         return Player.REPEAT_MODE_OFF
     }
     val mediaController = controller?.takeIf { it.isConnected } ?: return Player.REPEAT_MODE_OFF

@@ -4,8 +4,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -34,7 +34,7 @@ class PlaybackThreadPolicyTest {
         val evaluated = AtomicBoolean(false)
 
         val result =
-            runCatchingOnMainTest(defaultValue = "fallback") {
+            PlaybackThreadPolicy.runCatchingOnMain(defaultValue = "fallback") {
                 evaluated.set(true)
                 "success"
             }
@@ -49,7 +49,7 @@ class PlaybackThreadPolicyTest {
         val evaluated = AtomicBoolean(false)
 
         val result =
-            runCatchingOnMainTest(defaultValue = "fallback") {
+            PlaybackThreadPolicy.runCatchingOnMain(defaultValue = "fallback") {
                 evaluated.set(true)
                 "success"
             }
@@ -63,7 +63,7 @@ class PlaybackThreadPolicyTest {
         PlaybackThreadPolicy.isMainThreadOverride = { true }
 
         val result =
-            runCatchingOnMainTest(defaultValue = 42) {
+            PlaybackThreadPolicy.runCatchingOnMain(defaultValue = 42) {
                 error("MediaController method called from wrong thread")
             }
 
@@ -74,11 +74,9 @@ class PlaybackThreadPolicyTest {
     fun `runOnMainThread runs synchronously when on main thread`() {
         PlaybackThreadPolicy.isMainThreadOverride = { true }
         val counter = AtomicInteger(0)
+        val scope = CoroutineScope(PlaybackThreadPolicy.mainDispatcher)
 
-        runOnMainThreadTest(
-            isMain = true,
-            dispatch = { /* not called */ },
-        ) {
+        PlaybackThreadPolicy.runOnMainThread(scope) {
             counter.incrementAndGet()
         }
 
@@ -98,12 +96,13 @@ class PlaybackThreadPolicyTest {
         try {
             val executedThread = AtomicReference<String>()
             val waitLock = java.util.concurrent.CountDownLatch(1)
+            val scope = CoroutineScope(mainDispatcher)
 
             val backgroundExecutor = Executors.newSingleThreadExecutor()
             backgroundExecutor.submit {
                 // Off main thread
                 assertFalse(PlaybackThreadPolicy.isMainThread())
-                kotlinx.coroutines.CoroutineScope(mainDispatcher).launch {
+                PlaybackThreadPolicy.runOnMainThread(scope) {
                     executedThread.set(Thread.currentThread().name)
                     waitLock.countDown()
                 }
@@ -137,31 +136,16 @@ class PlaybackThreadPolicyTest {
         }
 
         // With runCatchingOnMain: safely returns default value without throwing
-        val safeResult = runCatchingOnMainTest(defaultValue = false) {
+        val safeResult = PlaybackThreadPolicy.runCatchingOnMain(defaultValue = false) {
             simulatedMediaController.isPlaying()
         }
         assertFalse(safeResult)
 
         // On main thread: returns real value
         PlaybackThreadPolicy.isMainThreadOverride = { true }
-        val mainResult = runCatchingOnMainTest(defaultValue = false) {
+        val mainResult = PlaybackThreadPolicy.runCatchingOnMain(defaultValue = false) {
             simulatedMediaController.isPlaying()
         }
         assertTrue(mainResult)
-    }
-
-    private fun <T> runCatchingOnMainTest(defaultValue: T, block: () -> T): T =
-        if (PlaybackThreadPolicy.isMainThread()) {
-            runCatching(block).getOrDefault(defaultValue)
-        } else {
-            defaultValue
-        }
-
-    private fun runOnMainThreadTest(isMain: Boolean, dispatch: (() -> Unit) -> Unit, block: () -> Unit) {
-        if (isMain) {
-            block()
-        } else {
-            dispatch(block)
-        }
     }
 }
