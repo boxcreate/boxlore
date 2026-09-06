@@ -80,6 +80,7 @@ The app uses your listening activity—such as what you play, skip, and like—t
 <ul align="left">
 <li>Fixed crashes when viewing search results and recommendation shelves with duplicate items. <a href="https://github.com/boxcreate/boxlore/pull/1043"><img src="https://img.shields.io/badge/PR-1043-6750A4?style=flat-square" alt="PR #1043" height="18"/></a></li>
 <li>Fixed background crashes when restoring playback sessions or updating widgets. <a href="https://github.com/boxcreate/boxlore/pull/1042"><img src="https://img.shields.io/badge/PR-1042-6750A4?style=flat-square" alt="PR #1042" height="18"/></a></li>
+<li>resolve OutOfMemoryError on large pagination and parsing (#1026) <a href="https://github.com/boxcreate/boxlore/pul... ([#1044](https://github.com/boxcreate/boxlore/pull/1044"><img src="https://img.shields.io/badge/PR-1044-6750A4?style=flat-square" alt="PR #1044" height="18"/></a></li>
 </ul>
 <b>• High:</b>
 <ul align="left">
@@ -92,6 +93,7 @@ The app uses your listening activity—such as what you play, skip, and like—t
 <li>Fixed an intermittent crash that could occur when disconnecting from Android Auto during artwork loading. <a href="https://github.com/boxcreate/boxlore/pull/1041"><img src="https://img.shields.io/badge/PR-1041-6750A4?style=flat-square" alt="PR #1041" height="18"/></a></li>
 <li>Fixed the Cast icon in the full-screen player so it adapts to light and dark themes and matches the Share button. <a href="https://github.com/boxcreate/boxlore/pull/1039"><img src="https://img.shields.io/badge/PR-1039-6750A4?style=flat-square" alt="PR #1039" height="18"/></a></li>
 </ul>
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
 
 

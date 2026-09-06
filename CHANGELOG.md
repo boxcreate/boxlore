@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added interactive same-show continuation banner with expandable episode preview and quick-refill action in the player queue sheet. ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 ### Changed
 - Modernize ktlint setup with Compose-friendly `.editorconfig`, remove 24 legacy XML baseline files, and apply repository-wide code formatting. ([#1020](https://github.com/boxcreate/boxlore/pull/1020)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- resolve OutOfMemoryError on large pagination and parsing (#1026) ([#1044](https://github.com/boxcreate/boxlore/pull/1044)) <!-- impact:user-impact-medium -->
 - Enabled Gradle configuration cache in gradle.properties, reducing build configuration time for local and CI builds ([#1021](https://github.com/boxcreate/boxlore/pull/1021)) <!-- impact:no-user-impact -->
 ### Fixed
 - Fixed same-show continuation in `SmartQueueEngine` by restoring forward chronological queries in `LocalEpisodeCatalogDao` and `RssEpisodeDao` (#1017). ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
