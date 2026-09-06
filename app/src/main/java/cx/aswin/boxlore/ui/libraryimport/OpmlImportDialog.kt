@@ -36,6 +36,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import cx.aswin.boxlore.core.catalog.backup.JsonBackupPhase
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -44,7 +45,13 @@ sealed interface OpmlImportState {
 
     data object ShowSelector : OpmlImportState
 
-    data object ImportingJson : OpmlImportState
+    data class ImportingJson(
+        val currentTitle: String = "",
+        val progress: Float = 0f,
+        val currentCount: Int = 0,
+        val totalCount: Int = 0,
+        val phase: JsonBackupPhase = JsonBackupPhase.PREPARING,
+    ) : OpmlImportState
 
     data class Parsing(val uri: android.net.Uri,) : OpmlImportState
 

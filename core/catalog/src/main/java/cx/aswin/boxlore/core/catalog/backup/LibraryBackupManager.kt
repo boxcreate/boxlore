@@ -199,18 +199,62 @@ class LibraryBackupManager(
             .replace("'", "&apos;")
     }
 
-    suspend fun importLibraryFromJson(jsonString: String): Pair<Int, Boolean> = try {
+    suspend fun importLibraryFromJson(
+        jsonString: String,
+        onProgress: suspend (JsonBackupProgress) -> Unit = {},
+    ): Pair<Int, Boolean> = try {
+        onProgress(JsonBackupProgress(phase = JsonBackupPhase.PREPARING))
         val backup = gson.fromJson(jsonString, BoxLoreBackup::class.java)
         restoreImportedGlobalPreferences(backup.globalPreferences)
+        val totalSubs = backup.subscriptions.size
         val importedIds = mutableListOf<String>()
-        for (entity in backup.subscriptions) {
+        for ((index, entity) in backup.subscriptions.withIndex()) {
+            onProgress(
+                JsonBackupProgress(
+                    phase = JsonBackupPhase.SUBSCRIBING,
+                    current = index,
+                    total = totalSubs,
+                    currentTitle = entity.title,
+                ),
+            )
             importBackupSubscription(entity, backup)?.let { importedIds += it }
         }
+        if (totalSubs > 0) {
+            onProgress(
+                JsonBackupProgress(
+                    phase = JsonBackupPhase.SUBSCRIBING,
+                    current = totalSubs,
+                    total = totalSubs,
+                    currentTitle = "",
+                ),
+            )
+        }
+        onProgress(
+            JsonBackupProgress(
+                phase = JsonBackupPhase.RESTORING_HISTORY,
+                current = 0,
+                total = backup.history.size,
+            ),
+        )
         restoreImportedHistory(backup.history, importedIds)
         backup.adaptiveRanking?.let { rankingBackup ->
             adaptiveRankingRepository.restoreBackup(rankingBackup)
         }
+        onProgress(
+            JsonBackupProgress(
+                phase = JsonBackupPhase.REFRESHING_FEEDS,
+                current = 0,
+                total = importedIds.size,
+            ),
+        )
         refreshImportedLatestEpisodes(importedIds, backup.directFeedOptIns)
+        onProgress(
+            JsonBackupProgress(
+                phase = JsonBackupPhase.COMPLETED,
+                current = importedIds.size,
+                total = importedIds.size,
+            ),
+        )
         Pair(
             importedIds.size,
             backup.subscriptions.any { it.notificationsEnabled || it.autoDownloadEnabled },

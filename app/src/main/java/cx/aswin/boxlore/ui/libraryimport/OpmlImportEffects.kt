@@ -199,7 +199,7 @@ suspend fun performJsonLibraryImport(
     userPrefs: UserPreferencesRepository,
     onStateChange: (OpmlImportState) -> Unit,
 ) {
-    onStateChange(OpmlImportState.ImportingJson)
+    onStateChange(OpmlImportState.ImportingJson())
     withContext(Dispatchers.IO) {
         try {
             val jsonStr =
@@ -223,7 +223,19 @@ suspend fun performJsonLibraryImport(
                     podcastRepository,
                     userPrefs,
                     context,
-                ).importLibraryFromJson(jsonStr)
+                ).importLibraryFromJson(jsonStr) { progress ->
+                    withContext(Dispatchers.Main) {
+                        onStateChange(
+                            OpmlImportState.ImportingJson(
+                                currentTitle = progress.currentTitle,
+                                progress = progress.progressRatio,
+                                currentCount = progress.current,
+                                totalCount = progress.total,
+                                phase = progress.phase,
+                            ),
+                        )
+                    }
+                }
             AnalyticsHelper.trackBackupRestoreResult(
                 action = "import",
                 success = true,

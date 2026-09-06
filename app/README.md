@@ -62,6 +62,7 @@ src/main/java/cx/aswin/boxlore/
     libraryimport/
       OpmlImportDialog.kt
       ImportDialogSystemBars.kt
+      ImportNotificationPermissionCard.kt
       OpmlImportEffects.kt
       OpmlImportProgressContent.kt
   updates/
