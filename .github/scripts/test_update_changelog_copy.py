@@ -96,6 +96,16 @@ class ReleaseCopyParseTest(unittest.TestCase):
         )
         self.assertEqual(impact, "user-impact-critical")
 
+    def test_normalize_readme_heading_aliases(self) -> None:
+        self.assertEqual(uc._normalize_readme_heading("High"), "Fixes")
+        self.assertEqual(uc._normalize_readme_heading("Medium"), "Fixes")
+        self.assertEqual(uc._normalize_readme_heading("Low"), "Fixes")
+        self.assertEqual(uc._normalize_readme_heading("Key Updates"), "Critical")
+        self.assertEqual(uc._normalize_readme_heading("Highlights"), "Critical")
+        self.assertEqual(uc._normalize_readme_heading("Improvements"), "Improvements")
+        self.assertEqual(uc._normalize_readme_heading("Fixes"), "Fixes")
+
+
 
 class LockedChangelogFlowTest(unittest.TestCase):
     def test_append_uses_verbatim_copy_and_skips_groq(self) -> None:

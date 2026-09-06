@@ -122,6 +122,7 @@ Keep a Changelog bullets for engineers. Use `### Added` / `### Changed` / `### F
 ### README What's New / Upcoming (listener copy)
 
 Plain listener English for README Upcoming, then What's New on release, and in-app release notes. Product name is **boxlore** (lowercase). No class names, FCM keys, or CI.
+Use functional categories: `### Critical` (for `user-impact-critical`), `### Improvements`, or `### Fixes`. Do not use impact levels like `### High` or `### Medium` as headings.
 
 <!-- release-copy:readme:start -->
 

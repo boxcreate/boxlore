@@ -78,26 +78,19 @@ The app uses your listening activity—such as what you play, skip, and like—t
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
-<li>Fixed crashes when viewing search results and recommendation shelves with duplicate items. <a href="https://github.com/boxcreate/boxlore/pull/1043"><img src="https://img.shields.io/badge/PR-1043-6750A4?style=flat-square" alt="PR #1043" height="18"/></a></li>
+<li>Resolved out-of-memory errors during large podcast pagination and feed parsing by streaming responses and bounding in-memory cache sizes. <a href="https://github.com/boxcreate/boxlore/pull/1044"><img src="https://img.shields.io/badge/PR-1044-6750A4?style=flat-square" alt="PR #1044" height="18"/></a></li>
 <li>Fixed background crashes when restoring playback sessions or updating widgets. <a href="https://github.com/boxcreate/boxlore/pull/1042"><img src="https://img.shields.io/badge/PR-1042-6750A4?style=flat-square" alt="PR #1042" height="18"/></a></li>
-<li>resolve OutOfMemoryError on large pagination and parsing (#1026) <a href="https://github.com/boxcreate/boxlore/pul... ([#1044](https://github.com/boxcreate/boxlore/pull/1044"><img src="https://img.shields.io/badge/PR-1044-6750A4?style=flat-square" alt="PR #1044" height="18"/></a></li>
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
 <li>Android Auto now seamlessly resumes your last played podcast and queue when reconnecting in your vehicle instead of showing an error screen. <a href="https://github.com/boxcreate/boxlore/pull/1045"><img src="https://img.shields.io/badge/PR-1045-6750A4?style=flat-square" alt="PR #1045" height="18"/></a></li>
-</ul>
-<b>• High:</b>
-<ul align="left">
 <li>Fixed an issue where episodes played from Android Auto showed missing show names and could cause playback to resume an older session on restart. <a href="https://github.com/boxcreate/boxlore/pull/1036"><img src="https://img.shields.io/badge/PR-1036-6750A4?style=flat-square" alt="PR #1036" height="18"/></a></li>
 <li>Resolved an issue where receiving many episode notifications over time could cause audio playback to fail to start. <a href="https://github.com/boxcreate/boxlore/pull/1034"><img src="https://img.shields.io/badge/PR-1034-6750A4?style=flat-square" alt="PR #1034" height="18"/></a></li>
 <li>Pulling down to refresh on a podcast's page now checks for newly released episodes without resetting your notification or download settings. <a href="https://github.com/boxcreate/boxlore/pull/1022"><img src="https://img.shields.io/badge/PR-1022-6750A4?style=flat-square" alt="PR #1022" height="18"/></a></li>
-</ul>
-<b>• Medium:</b>
-<ul align="left">
+<li>Fixed crashes when viewing search results and recommendation shelves with duplicate items. <a href="https://github.com/boxcreate/boxlore/pull/1043"><img src="https://img.shields.io/badge/PR-1043-6750A4?style=flat-square" alt="PR #1043" height="18"/></a></li>
 <li>Fixed an intermittent crash that could occur when disconnecting from Android Auto during artwork loading. <a href="https://github.com/boxcreate/boxlore/pull/1041"><img src="https://img.shields.io/badge/PR-1041-6750A4?style=flat-square" alt="PR #1041" height="18"/></a></li>
 <li>Fixed the Cast icon in the full-screen player so it adapts to light and dark themes and matches the Share button. <a href="https://github.com/boxcreate/boxlore/pull/1039"><img src="https://img.shields.io/badge/PR-1039-6750A4?style=flat-square" alt="PR #1039" height="18"/></a></li>
 </ul>
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
 
 

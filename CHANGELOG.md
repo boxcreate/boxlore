@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added interactive same-show continuation banner with expandable episode preview and quick-refill action in the player queue sheet. ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 ### Changed
 - Modernize ktlint setup with Compose-friendly `.editorconfig`, remove 24 legacy XML baseline files, and apply repository-wide code formatting. ([#1020](https://github.com/boxcreate/boxlore/pull/1020)) <!-- impact:no-user-impact --> <!-- copy:locked -->
-- resolve OutOfMemoryError on large pagination and parsing (#1026) ([#1044](https://github.com/boxcreate/boxlore/pull/1044)) <!-- impact:user-impact-medium -->
+- Resolved out-of-memory errors during large podcast pagination and feed parsing by streaming responses and bounding in-memory cache sizes (#1026). ([#1044](https://github.com/boxcreate/boxlore/pull/1044)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Enabled Gradle configuration cache in gradle.properties, reducing build configuration time for local and CI builds ([#1021](https://github.com/boxcreate/boxlore/pull/1021)) <!-- impact:no-user-impact -->
 ### Fixed
 - Fixed same-show continuation in `SmartQueueEngine` by restoring forward chronological queries in `LocalEpisodeCatalogDao` and `RssEpisodeDao` (#1017). ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 readme-copy:end pr=1019 -->
 
 <!-- readme-copy:start pr=1022
-### High
+### Fixes
 - Pulling down to refresh on a podcast's page now checks for newly released episodes without resetting your notification or download settings.
 readme-copy:end pr=1022 -->
 
@@ -57,22 +57,22 @@ readme-copy:end pr=1030 -->
 readme-copy:end pr=1033 -->
 
 <!-- readme-copy:start pr=1034
-### High
+### Fixes
 - Resolved an issue where receiving many episode notifications over time could cause audio playback to fail to start.
 readme-copy:end pr=1034 -->
 
 <!-- readme-copy:start pr=1036
-### High
+### Fixes
 - Fixed an issue where episodes played from Android Auto showed missing show names and could cause playback to resume an older session on restart.
 readme-copy:end pr=1036 -->
 
 <!-- readme-copy:start pr=1039
-### Medium
+### Fixes
 - Fixed the Cast icon in the full-screen player so it adapts to light and dark themes and matches the Share button.
 readme-copy:end pr=1039 -->
 
 <!-- readme-copy:start pr=1041
-### Medium
+### Fixes
 - Fixed an intermittent crash that could occur when disconnecting from Android Auto during artwork loading.
 readme-copy:end pr=1041 -->
 
@@ -82,9 +82,14 @@ readme-copy:end pr=1041 -->
 readme-copy:end pr=1042 -->
 
 <!-- readme-copy:start pr=1043
-### Improvements
+### Fixes
 - Fixed crashes when viewing search results and recommendation shelves with duplicate items.
 readme-copy:end pr=1043 -->
+
+<!-- readme-copy:start pr=1044
+### Improvements
+- Resolved out-of-memory errors during large podcast pagination and feed parsing by streaming responses and bounding in-memory cache sizes.
+readme-copy:end pr=1044 -->
 
 <!-- readme-copy:start pr=1045
 ### Fixes

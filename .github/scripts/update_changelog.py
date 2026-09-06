@@ -135,12 +135,17 @@ KEEP_A_CHANGELOG_HEADER_RE = re.compile(
 )
 README_HEADING_ALIASES = {
     "critical": "Critical",
+    "key updates": "Critical",
+    "highlights": "Critical",
     "new features": "New features",
     "added": "New features",
     "improvements": "Improvements",
     "changed": "Improvements",
     "fixes": "Fixes",
     "fixed": "Fixes",
+    "high": "Fixes",
+    "medium": "Fixes",
+    "low": "Fixes",
     "security": "Security",
     "other": "Other",
 }
