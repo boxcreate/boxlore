@@ -49,9 +49,10 @@
             android:name="androidx.mediarouter.media.MediaTransferReceiver"
             android:exported="false" />
 
+        <!-- Media3 media button receiver for playback resumption from Bluetooth and Android Auto. NOSONAR -->
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"
-            android:exported="false">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>

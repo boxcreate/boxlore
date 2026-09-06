@@ -137,6 +137,7 @@ dependencies {
     implementation(projects.core.analytics)
     implementation(projects.core.ranking)
     implementation(libs.androidx.media3.cast)
+    implementation(libs.androidx.media3.session)
     implementation(projects.core.rss)
     implementation(projects.feature.home)
     implementation(project(":feature:player"))

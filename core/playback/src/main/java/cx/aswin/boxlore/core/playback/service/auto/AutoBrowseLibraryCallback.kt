@@ -21,10 +21,11 @@ internal class AutoBrowseLibraryCallback(
     private val host: AutoBrowseLibraryHost,
     mediaResolver: AutoMediaResolver? = null,
     resumptionHandler: AutoPlaybackResumptionHandler? = null,
+    treeBuilder: AutoBrowseTreeBuilder? = null,
 ) : MediaLibrarySession.Callback {
     private val mediaResolver = mediaResolver ?: AutoMediaResolver(host)
-    private val treeBuilder = AutoBrowseTreeBuilder(host, this.mediaResolver)
-    private val voiceSearch = AutoVoiceSearchHandler(host, treeBuilder)
+    private val treeBuilder = treeBuilder ?: AutoBrowseTreeBuilder(host, this.mediaResolver)
+    private val voiceSearch = AutoVoiceSearchHandler(host, this.treeBuilder)
     private val resumptionHandler =
         resumptionHandler ?: AutoPlaybackResumptionHandler(host, this.mediaResolver)
 
@@ -456,7 +457,8 @@ internal class AutoBrowseLibraryCallback(
         }
     }
 
-    private suspend fun resolveGetItem(mediaId: String): MediaItem = when {
+    @androidx.annotation.VisibleForTesting
+    internal suspend fun resolveGetItem(mediaId: String): MediaItem = when {
         isEpisodeOrLearnMediaId(mediaId) -> resolvePrefixedEpisode(mediaId)
         mediaId.startsWith(AutoBrowseContract.SUBSCRIPTION_PREFIX) -> resolveSubscriptionFolder(mediaId)
         else -> resolveStaticOrRawEpisode(mediaId)
