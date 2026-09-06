@@ -1,10 +1,5 @@
 package cx.aswin.boxlore.ui.libraryimport
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -28,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
 import androidx.compose.material.icons.rounded.ImportExport
-import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.SettingsBackupRestore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,6 +33,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,16 +45,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
-private val ImportCorner = RoundedCornerShape(24.dp)
+internal val ImportCorner = RoundedCornerShape(24.dp)
 
 internal fun contentKeyFor(state: OpmlImportState): String = when (state) {
     OpmlImportState.Idle -> "idle"
     OpmlImportState.ShowSelector -> "selector"
-    OpmlImportState.ImportingJson -> "importing_json"
+    is OpmlImportState.ImportingJson -> "importing_json"
     is OpmlImportState.Parsing -> "parsing"
     is OpmlImportState.Importing -> "importing"
     is OpmlImportState.AskCompleted -> "ask"
@@ -65,10 +65,13 @@ internal fun contentKeyFor(state: OpmlImportState): String = when (state) {
 }
 
 internal fun heroVisualFor(state: OpmlImportState): ImportHeroVisual? = when (state) {
-    OpmlImportState.ImportingJson,
-    is OpmlImportState.Parsing,
-    -> ImportHeroVisual.Indeterminate
-    is OpmlImportState.Importing -> ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
+    is OpmlImportState.ActiveImportState ->
+        if (state.totalCount > 0 && state.progress > 0f) {
+            ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
+        } else {
+            ImportHeroVisual.Indeterminate
+        }
+    is OpmlImportState.Parsing -> ImportHeroVisual.Indeterminate
     is OpmlImportState.Completing -> ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
     is OpmlImportState.Success -> ImportHeroVisual.Complete
     else -> null
@@ -97,11 +100,23 @@ internal fun ProgressFlowScaffold(hero: ImportHeroVisual, state: OpmlImportState
             label = "import_progress_copy",
         ) { current ->
             when (current) {
-                OpmlImportState.ImportingJson ->
-                    ProgressCopy(
-                        title = "Restoring backup",
-                        subtitle = "Bringing in shows and playback history",
-                    )
+                is OpmlImportState.ImportingJson -> {
+                    when {
+                        current.totalCount > 0 ->
+                            ProgressCopy(
+                                title = "Restoring podcasts",
+                                subtitle = "Subscribing ${minOf(current.currentCount + 1, current.totalCount)} of ${current.totalCount}",
+                                detail = current.currentTitle.ifBlank { null },
+                            )
+
+                        else ->
+                            ProgressCopy(
+                                title = "Restoring podcasts",
+                                subtitle = "Preparing your library",
+                                detail = current.currentTitle.ifBlank { null },
+                            )
+                    }
+                }
 
                 is OpmlImportState.Parsing ->
                     ProgressCopy(
@@ -313,21 +328,30 @@ internal fun ImportOptionCard(icon: ImageVector, title: String, subtitle: String
     }
 }
 
-internal fun hasPostNotificationPermission(context: android.content.Context): Boolean {
-    if (Build.VERSION.SDK_INT < 33) return true
-    return ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.POST_NOTIFICATIONS,
-    ) == PackageManager.PERMISSION_GRANTED
-}
-
 @Composable
 internal fun SuccessCopy(state: OpmlImportState.Success, onDone: () -> Unit,) {
     val context = LocalContext.current
+    var hasNotificationPermission by remember {
+        mutableStateOf(areAppNotificationsEnabled(context))
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasNotificationPermission = areAppNotificationsEnabled(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val showNotificationPrompt =
         state.isJson &&
             state.hasNotificationsEnabled &&
-            !hasPostNotificationPermission(context)
+            !hasNotificationPermission
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -351,7 +375,10 @@ internal fun SuccessCopy(state: OpmlImportState.Success, onDone: () -> Unit,) {
 
         if (showNotificationPrompt) {
             Spacer(modifier = Modifier.height(16.dp))
-            ImportNotificationPermissionCard()
+            ImportNotificationPermissionCard(
+                onPermissionChanged = { hasNotificationPermission = it },
+                onOpenSettings = { openAppNotificationSettings(context) },
+            )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -401,74 +428,6 @@ internal fun ImportSuccessSummary(state: OpmlImportState.Success) {
             SummaryRow(label = "Imported shows", value = "${state.importedCount}")
             if (!state.isJson && state.completedCount > 0) {
                 SummaryRow(label = "Marked played", value = "${state.completedCount}")
-            }
-        }
-    }
-}
-
-@Composable
-internal fun ImportNotificationPermissionCard() {
-    val requestPermissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission(),
-            onResult = { granted ->
-                AnalyticsHelper.trackNotificationPermissionDecided(granted)
-            },
-        )
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = ImportCorner,
-        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
-        border =
-        androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.error.copy(alpha = 0.28f),
-        ),
-    ) {
-        Column(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.NotificationsActive,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(26.dp),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Enable notifications",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = GoogleSansWeight.bold,
-                color = MaterialTheme.colorScheme.error,
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text =
-                "This backup includes shows with alerts or auto-downloads. " +
-                    "Allow notifications so they can keep working in the background.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = {
-                    if (Build.VERSION.SDK_INT >= 33) {
-                        requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                },
-                colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                ),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text("Grant permission", color = MaterialTheme.colorScheme.onError)
             }
         }
     }

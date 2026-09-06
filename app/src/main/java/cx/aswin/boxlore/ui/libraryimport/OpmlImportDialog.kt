@@ -36,6 +36,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import cx.aswin.boxlore.core.catalog.backup.JsonBackupPhase
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -44,17 +45,28 @@ sealed interface OpmlImportState {
 
     data object ShowSelector : OpmlImportState
 
-    data object ImportingJson : OpmlImportState
+    sealed interface ActiveImportState : OpmlImportState {
+        val progress: Float
+        val totalCount: Int
+    }
+
+    data class ImportingJson(
+        val currentTitle: String = "",
+        override val progress: Float = 0f,
+        val currentCount: Int = 0,
+        override val totalCount: Int = 0,
+        val phase: JsonBackupPhase = JsonBackupPhase.PREPARING,
+    ) : ActiveImportState
 
     data class Parsing(val uri: android.net.Uri,) : OpmlImportState
 
     data class Importing(
         val currentFeedTitle: String,
-        val progress: Float,
+        override val progress: Float,
         val currentCount: Int,
-        val totalCount: Int,
+        override val totalCount: Int,
         val importedPodcasts: List<Podcast>,
-    ) : OpmlImportState
+    ) : ActiveImportState
 
     data class AskCompleted(val importedPodcasts: List<Podcast>, val selectedIds: Set<String>,) : OpmlImportState
 

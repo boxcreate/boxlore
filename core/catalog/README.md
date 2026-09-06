@@ -54,6 +54,7 @@ src/main/java/cx/aswin/boxlore/core/catalog/
   logic/
   backup/
     LibraryBackupManager.kt
+    LibraryBackupProgress.kt
     LibraryBackupDirectFeed.kt
     LibraryBackupDirectFeedRestore.kt
     LibraryBackupImportLogic.kt

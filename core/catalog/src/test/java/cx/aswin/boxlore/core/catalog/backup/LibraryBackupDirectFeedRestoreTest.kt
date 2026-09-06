@@ -103,4 +103,28 @@ class LibraryBackupDirectFeedRestoreTest {
         )
         assertFalse(called)
     }
+
+    @Test
+    fun `restoreAndRefresh invokes progress callbacks per target`() = runTest {
+        val started = mutableListOf<String>()
+        val completed = mutableListOf<String>()
+        LibraryBackupDirectFeedRestore.restoreAndRefresh(
+            targets = listOf(
+                DirectFeedOptInBackup("201", "https://feeds.example/201.xml"),
+                DirectFeedOptInBackup("202", "https://feeds.example/202.xml"),
+            ),
+            actions = DirectFeedRestoreActions(
+                restoreStub = { _, _ -> },
+                ensureFeedUrl = { _, _ -> },
+                invalidateCache = {},
+                refreshFeed = { _, _ -> EpisodeSupplementOutcome.NoDisconnect },
+                saveTip = { _, _ -> },
+                syncTrackedUrl = {},
+            ),
+            onTargetStarted = { started.add(it) },
+            onTargetCompleted = { completed.add(it) },
+        )
+        assertEquals(listOf("201", "202"), started.sorted())
+        assertEquals(listOf("201", "202"), completed.sorted())
+    }
 }
