@@ -147,4 +147,25 @@ class PodcastGenreSuggestionsTest {
             )
         }
     }
+
+    @Test
+    fun `enhanced keywords match appropriate genres`() {
+        assertEquals("Philosophy", filterGenreSuggestions("stoicism").first().name)
+        assertEquals("Finance", filterGenreSuggestions("bitcoin").first().name)
+        assertEquals("Technology", filterGenreSuggestions("artificial intelligence").first().name)
+        assertEquals("True Crime", filterGenreSuggestions("serial killer").first().name)
+        assertEquals("Sports", filterGenreSuggestions("formula 1").first().name)
+        assertEquals("Science", filterGenreSuggestions("astronomy").first().name)
+        assertEquals("Automotive", filterGenreSuggestions("tesla").first().name)
+        assertEquals("Psychology", filterGenreSuggestions("adhd").first().name)
+        assertEquals("Books", filterGenreSuggestions("book club").first().name)
+        assertEquals("Ideas", filterGenreSuggestions("innovation").first().name)
+    }
+
+    @Test
+    fun `multi-token query matches across corpus`() {
+        val result = filterGenreSuggestions("python code")
+        assertFalse(result.isEmpty())
+        assertEquals("Coding", result.first().name)
+    }
 }
