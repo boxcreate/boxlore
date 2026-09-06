@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added interactive same-show continuation banner with expandable episode preview and quick-refill action in the player queue sheet. ([#1019](https://github.com/boxcreate/boxlore/pull/1019)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Subscriptions tab presentation style preference (`top` vs `floating`) in `:core:prefs`, Settings UI, and Subscriptions screen. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Elevated Play All FAB animation when floating tab selector is active. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Backup and restore support for `subscriptionsTabStyle`, `navigationStyle`, and `fontRoundness` in `LibraryBackupManager`. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Changed
 - Resolved out-of-memory errors during large podcast pagination and feed parsing by streaming responses and bounding in-memory cache sizes (#1026). ([#1044](https://github.com/boxcreate/boxlore/pull/1044)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Modernize ktlint setup with Compose-friendly `.editorconfig`, remove 24 legacy XML baseline files, and apply repository-wide code formatting. ([#1020](https://github.com/boxcreate/boxlore/pull/1020)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -33,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enforce `MediaController` main-thread affinity in `PlaybackRepository` to prevent `IllegalStateException` on background session restoration. ([#1042](https://github.com/boxcreate/boxlore/pull/1042)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Protect `LazyColumn` and `LazyRow` lists against duplicate keys to prevent `IllegalArgumentException` in recommendation and explore feeds. ([#1043](https://github.com/boxcreate/boxlore/pull/1043)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Fixed Video Spotlight card tap animation in `FeaturedVideoPodcastsShowcase` by placing `expressiveClickable` before shadow, border, and surface background (#1031). ([#1046](https://github.com/boxcreate/boxlore/pull/1046)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Forwarded `onSetSubscriptionsTabStyle` callback in `AppearanceActions.trackedForAnalytics()` to register clicks in Settings > Appearance. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019
 ### Critical
@@ -101,6 +105,11 @@ readme-copy:end pr=1045 -->
 ### Fixes
 - Fixed Video Spotlight cards on the Home screen so their dropshadow and border scale smoothly with the artwork during tap animation instead of revealing a static outer outline.
 readme-copy:end pr=1046 -->
+
+<!-- readme-copy:start pr=1048
+### Improvements
+- Added tab style preference for Subscriptions in Settings > Appearance, allowing users to choose between top header tabs or a bottom floating selector in boxlore.
+readme-copy:end pr=1048 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added
