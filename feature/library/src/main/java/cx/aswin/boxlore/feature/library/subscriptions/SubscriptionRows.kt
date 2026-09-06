@@ -525,14 +525,46 @@ internal fun EpisodeRowArtwork(
     }
 }
 
-internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> = podcasts.flatMap { pod ->
-    pod.effectiveGenre.split(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() && !it.equals("podcast", ignoreCase = true) }
-        .map { genre ->
-            genre.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> {
+    fun parseGenres(raw: String): List<String> =
+        raw.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.equals("podcast", ignoreCase = true) }
+            .map { genre ->
+                genre.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+            }
+
+    val customCounts = mutableMapOf<String, Int>()
+    val catalogGenres = mutableSetOf<String>()
+
+    for (pod in podcasts) {
+        val customRaw = pod.customGenre?.takeIf { it.isNotBlank() }
+        if (customRaw != null) {
+            parseGenres(customRaw).forEach { tag ->
+                customCounts[tag] = (customCounts[tag] ?: 0) + 1
+            }
+        } else {
+            val catalogRaw = pod.genre.orEmpty()
+            parseGenres(catalogRaw).forEach { tag ->
+                catalogGenres.add(tag)
+            }
         }
-}.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
+    }
+
+    val sortedCustom = customCounts.entries
+        .sortedWith(
+            compareByDescending<Map.Entry<String, Int>> { it.value }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.key }
+        )
+        .map { it.key }
+
+    val customLower = sortedCustom.map { it.lowercase() }.toSet()
+    val sortedCatalog = catalogGenres
+        .filter { it.lowercase() !in customLower }
+        .sortedWith(String.CASE_INSENSITIVE_ORDER)
+
+    return sortedCustom + sortedCatalog
+}
 
 internal fun filterPodcastsByGenre(podcasts: List<Podcast>, selectedGenre: String): List<Podcast> {
     if (selectedGenre == "All") return podcasts

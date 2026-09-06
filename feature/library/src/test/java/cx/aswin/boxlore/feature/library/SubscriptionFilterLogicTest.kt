@@ -80,6 +80,20 @@ class SubscriptionFilterLogicTest {
     }
 
     @Test
+    fun extractDistinctGenres_prioritizesCustomTagsByFrequencyThenCatalogGenresAZ() {
+        val podcasts = listOf(
+            podcast("1", genre = "Comedy", customGenre = "Tech"),
+            podcast("2", genre = "Society", customGenre = "Alpha"),
+            podcast("3", genre = "Music", customGenre = "Tech"),
+            podcast("4", genre = "News"),
+            podcast("5", genre = "Arts"),
+            podcast("6", genre = "Tech"),
+        )
+        val genres = extractDistinctGenres(podcasts)
+        assertEquals(listOf("Tech", "Alpha", "Arts", "News"), genres)
+    }
+
+    @Test
     fun filterPodcastsByGenre_allReturnsInput() {
         val podcasts = listOf(podcast("1", genre = "News"), podcast("2", genre = "Comedy"))
         assertEquals(podcasts, filterPodcastsByGenre(podcasts, "All"))
