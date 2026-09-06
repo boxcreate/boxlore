@@ -567,7 +567,7 @@ internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> {
 }
 
 internal fun filterPodcastsByGenre(podcasts: List<Podcast>, selectedGenre: String): List<Podcast> {
-    if (selectedGenre == "All") return podcasts
+    if (selectedGenre.equals("All", ignoreCase = true) || selectedGenre.isBlank()) return podcasts
     val resolved = resolveSubscriptionGenreItem(selectedGenre, podcasts)
     return podcasts.filter { pod ->
         pod.effectiveGenre.split(",")

@@ -70,7 +70,7 @@ internal fun ShowsTabContent(
     var selectedGenre by rememberSaveable { mutableStateOf("All") }
     val filteredPodcasts = remember(podcasts, selectedGenre) { filterPodcastsByGenre(podcasts, selectedGenre) }
     val distinctPodcasts = remember(filteredPodcasts) { filteredPodcasts.distinctBy { it.id } }
-    val reorderEnabled = canReorder && selectedGenre == "All"
+    val reorderEnabled = canReorder && (selectedGenre.equals("All", ignoreCase = true) || selectedGenre.isBlank())
     val incomingIds = remember(distinctPodcasts) { distinctPodcasts.map { it.id } }
     var orderedIds by remember { mutableStateOf(incomingIds) }
     LaunchedEffect(incomingIds) {

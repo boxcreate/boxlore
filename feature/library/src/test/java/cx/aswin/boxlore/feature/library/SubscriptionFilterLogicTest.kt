@@ -111,6 +111,13 @@ class SubscriptionFilterLogicTest {
     }
 
     @Test
+    fun filterPodcastsByGenre_blankReturnsInput() {
+        val podcasts = listOf(podcast("1", genre = "News"), podcast("2", genre = "Comedy"))
+        assertEquals(podcasts, filterPodcastsByGenre(podcasts, ""))
+        assertEquals(podcasts, filterPodcastsByGenre(podcasts, "   "))
+    }
+
+    @Test
     fun filterPodcastsByGenre_matchesCaseInsensitive() {
         val podcasts = listOf(
             podcast("1", genre = "News, Politics"),

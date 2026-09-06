@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -48,21 +49,25 @@ internal fun SubscriptionsFilterRow(
                 )
             }
         }
-        item(key = "filter_all") {
-            PillFilterChip(
-                label = "All",
-                selected = selectedGenre == "All",
-                onClick = { onGenreChange("All") },
-                icon = AllGenreIcon,
-            )
-        }
         items(genreItems, key = { it.value }) { genre ->
+            val isSelected = !selectedGenre.equals("All", ignoreCase = true) &&
+                selectedGenre.isNotBlank() &&
+                (
+                    selectedGenre.equals(genre.value, ignoreCase = true) ||
+                        selectedGenre.equals(genre.label, ignoreCase = true)
+                )
             PillFilterChip(
                 label = genre.label,
-                selected = selectedGenre.equals(genre.value, ignoreCase = true) ||
-                    selectedGenre.equals(genre.label, ignoreCase = true),
-                onClick = { onGenreChange(genre.value) },
+                selected = isSelected,
+                onClick = {
+                    if (isSelected) {
+                        onGenreChange("All")
+                    } else {
+                        onGenreChange(genre.value)
+                    }
+                },
                 icon = genre.icon,
+                trailingIcon = if (isSelected) Icons.Rounded.Close else null,
             )
         }
     }
