@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -31,6 +30,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
@@ -70,14 +70,9 @@ internal fun PodcastGenreEditSheet(
     val focusManager = LocalFocusManager.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val effectiveGenre = genreText.trim().ifEmpty { catalogGenre.ifEmpty { "Podcast" } }
-    val effectiveIcon: ImageVector = GenreIcons.findIcon(selectedIconKey)
-        ?: GenreIcons.defaultGenreIcon(effectiveGenre)
-
-    val hasCustomizations = !customGenre.isNullOrBlank() || !customGenreIcon.isNullOrBlank()
-    val isDirty = genreText.trim() != (customGenre ?: "") || selectedIconKey != customGenreIcon
-    val canReset = hasCustomizations || genreText.isNotBlank() || selectedIconKey != null
-    val canSave = isDirty || (genreText.isNotBlank() && !hasCustomizations)
+    val editState = remember(genreText, selectedIconKey, catalogGenre, customGenre, customGenreIcon) {
+        resolveGenreEditState(genreText, selectedIconKey, catalogGenre, customGenre, customGenreIcon)
+    }
 
     val suggestedIcons = remember(genreText) {
         findSuggestedIcons(genreText)
@@ -92,8 +87,7 @@ internal fun PodcastGenreEditSheet(
         modifier = Modifier.imePadding(),
     ) {
         Column(
-            modifier =
-            Modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
@@ -102,13 +96,13 @@ internal fun PodcastGenreEditSheet(
         ) {
             GenreEditTopBar(
                 onClose = onDismissRequest,
-                canReset = canReset,
+                canReset = editState.canReset,
                 onReset = {
                     focusManager.clearFocus()
                     onSave(null, null)
                     onDismissRequest()
                 },
-                canSave = canSave,
+                canSave = editState.canSave,
                 onSave = {
                     focusManager.clearFocus()
                     val finalGenre = genreText.trim().takeIf { it.isNotEmpty() }
@@ -117,10 +111,17 @@ internal fun PodcastGenreEditSheet(
                 },
             )
 
-            GenreEditTagCard(
+            GenreEditLivePreview(
+                effectiveGenre = editState.effectiveGenre,
+                effectiveIcon = editState.effectiveIcon,
+                catalogGenre = catalogGenre,
+                isCustomized = editState.isCustomized,
+            )
+
+            GenreEditInputField(
                 genreText = genreText,
                 catalogGenre = catalogGenre,
-                effectiveIcon = effectiveIcon,
+                effectiveIcon = editState.effectiveIcon,
                 onValueChange = { genreText = it },
                 onDone = { focusManager.clearFocus() },
             )
@@ -154,6 +155,39 @@ internal fun PodcastGenreEditSheet(
             )
         }
     }
+}
+
+private data class GenreEditState(
+    val effectiveGenre: String,
+    val effectiveIcon: ImageVector,
+    val canReset: Boolean,
+    val canSave: Boolean,
+    val isCustomized: Boolean,
+)
+
+private fun resolveGenreEditState(
+    genreText: String,
+    selectedIconKey: String?,
+    catalogGenre: String,
+    customGenre: String?,
+    customGenreIcon: String?,
+): GenreEditState {
+    val trimmed = genreText.trim()
+    val effectiveGenre = trimmed.ifEmpty { catalogGenre.ifEmpty { "Podcast" } }
+    val effectiveIcon = GenreIcons.findIcon(selectedIconKey) ?: GenreIcons.defaultGenreIcon(effectiveGenre)
+    val hasCustomizations = !customGenre.isNullOrBlank() || !customGenreIcon.isNullOrBlank()
+    val isDirty = trimmed != (customGenre ?: "") || selectedIconKey != customGenreIcon
+    val canReset = hasCustomizations || trimmed.isNotEmpty() || selectedIconKey != null
+    val canSave = isDirty || (trimmed.isNotEmpty() && !hasCustomizations)
+    val isCustomized = hasCustomizations || (trimmed.isNotEmpty() && trimmed != catalogGenre)
+
+    return GenreEditState(
+        effectiveGenre = effectiveGenre,
+        effectiveIcon = effectiveIcon,
+        canReset = canReset,
+        canSave = canSave,
+        isCustomized = isCustomized,
+    )
 }
 
 @Composable
@@ -227,106 +261,105 @@ private fun GenreEditTopBar(
 }
 
 @Composable
-private fun GenreEditTagCard(
+private fun GenreEditLivePreview(
+    effectiveGenre: String,
+    effectiveIcon: ImageVector,
+    catalogGenre: String,
+    isCustomized: Boolean,
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Live preview",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    fontWeight = GoogleSansWeight.bold,
+                )
+                if (isCustomized && catalogGenre.isNotBlank()) {
+                    Text(
+                        text = "Catalog: $catalogGenre",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            GenreChip(
+                genre = effectiveGenre,
+                icon = effectiveIcon,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GenreEditInputField(
     genreText: String,
     catalogGenre: String,
     effectiveIcon: ImageVector,
     onValueChange: (String) -> Unit,
     onDone: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
-                    modifier = Modifier.size(48.dp),
+    OutlinedTextField(
+        value = genreText,
+        onValueChange = onValueChange,
+        label = { Text("Custom tag name") },
+        placeholder = {
+            Text(
+                text = catalogGenre.ifEmpty { "e.g. Deep Dives, Favorites" },
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = effectiveIcon,
+                contentDescription = "Selected icon",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        },
+        trailingIcon = {
+            if (genreText.isNotEmpty()) {
+                IconButton(
+                    onClick = { onValueChange("") },
+                    modifier = Modifier.size(32.dp),
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = effectiveIcon,
-                            contentDescription = "Selected tag icon",
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "TAG NAME",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = GoogleSansWeight.bold,
+                    Icon(
+                        imageVector = Icons.Rounded.Clear,
+                        contentDescription = "Clear tag input",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
                     )
-                    BasicTextField(
-                        value = genreText,
-                        onValueChange = onValueChange,
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.titleMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = GoogleSansWeight.bold,
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Words,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(onDone = { onDone() }),
-                        decorationBox = { innerTextField ->
-                            if (genreText.isEmpty()) {
-                                Text(
-                                    text = catalogGenre.ifEmpty { "e.g. Deep Dives, Favorites" },
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                )
-                            }
-                            innerTextField()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 2.dp),
-                    )
-                }
-
-                if (genreText.isNotEmpty()) {
-                    IconButton(
-                        onClick = { onValueChange("") },
-                        modifier = Modifier.size(32.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Clear,
-                            contentDescription = "Clear tag input",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
                 }
             }
-        }
-
-        if (catalogGenre.isNotBlank() && genreText.isNotBlank()) {
-            Text(
-                text = "Default catalog genre: $catalogGenre",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(start = 6.dp),
-            )
-        }
-    }
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Words,
+            imeAction = ImeAction.Done,
+        ),
+        keyboardActions = KeyboardActions(onDone = { onDone() }),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
