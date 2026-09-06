@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-06T19:24:42.409Z",
+  "lastRun": "2026-09-06T21:33:30.115Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -78,10 +78,10 @@
       "lastCheckedAt": 1788549517762
     },
     "385117": {
-      "lastRssKey": "7aee396c-aa26-11f1-94b3-8bc46018873a",
-      "lastEpisodeTitle": "3PM ET 09/06/2026 Newscast",
+      "lastRssKey": "3e541e3e-aa37-11f1-a49d-3b5428920843",
+      "lastEpisodeTitle": "5PM ET 09/06/2026 Newscast",
       "lastEpisodeId": "60034401235",
-      "lastCheckedAt": 1788722688824
+      "lastCheckedAt": 1788730415271
     },
     "386911": {
       "lastRssKey": "fe6bbddc-a887-11f1-9153-5fae2fe654bd",
@@ -377,6 +377,18 @@
       "lastEpisodeId": "59662120628",
       "lastCheckedAt": 1788172545760
     },
+    "1809220": {
+      "lastRssKey": "43ae7d14-9662-42a7-80a8-b481014b9a11",
+      "lastEpisodeTitle": "WHO ELSE COULD GET OFFER SHEETED THIS OFFSEASON?",
+      "lastEpisodeId": "57421560583",
+      "lastCheckedAt": 1788730441194
+    },
+    "2136580": {
+      "lastRssKey": "b91a0fdf-c3af-4a69-a822-26bee80e5f6f",
+      "lastEpisodeTitle": "Episode 382: The Montreal Canadiens Gave Us A Season We'll NEVER Forget!",
+      "lastEpisodeId": "58874707637",
+      "lastCheckedAt": 1788730441420
+    },
     "2407094": {
       "lastRssKey": "6a9c5455b339e57fd9afbd0d",
       "lastEpisodeTitle": "La France s’est trompée et annonce une nouvelle carte",
@@ -393,6 +405,12 @@
       "lastEpisodeTitle": "El Héroe perdido capitulo 42",
       "lastEpisodeId": "2138780960",
       "lastCheckedAt": 1788029139347
+    },
+    "3237767": {
+      "lastRssKey": "7c05b02e-0c7b-4a2b-9510-15a7072b9d93",
+      "lastEpisodeTitle": "Our Top 10 NFL Defenses for 2026",
+      "lastEpisodeId": "59884546748",
+      "lastCheckedAt": 1788730443811
     },
     "3353685": {
       "lastEpisodeId": "59982883194",
@@ -511,6 +529,12 @@
       "lastEpisodeId": "59029892138",
       "lastCheckedAt": 1786787427464
     },
+    "5601294": {
+      "lastRssKey": "302129fa-3288-408d-8b97-e25ec0e59663",
+      "lastEpisodeTitle": "Hellebuyck Wants Out & Makar Is Locked Up- The Mike Bartner Show",
+      "lastEpisodeId": "59772195141",
+      "lastCheckedAt": 1788730449372
+    },
     "5650484": {
       "lastRssKey": "8175a2f1-e3cc-43f5-b520-eb5c12316a59",
       "lastEpisodeTitle": "Recast: Ella on That's Absurd, Please Elaborate",
@@ -551,6 +575,12 @@
       "lastEpisodeTitle": "Bug Droids in Bucket Hats",
       "lastRssKey": "6a9792ceda248a131d446d60",
       "lastCheckedAt": 1788491166610
+    },
+    "6602135": {
+      "lastRssKey": "75815325-d437-47de-a47f-a411416cd7e7",
+      "lastEpisodeTitle": "Nick Drake & the cycles of life",
+      "lastEpisodeId": "59895386080",
+      "lastCheckedAt": 1788730451346
     },
     "6655297": {
       "lastRssKey": "indieventurepodcast.podbean.com/de56da24-4fe7-3091-9600-95f3fab63c08",
@@ -659,6 +689,12 @@
       "lastEpisodeId": "33401269201",
       "lastCheckedAt": 1786559336271
     },
+    "7239415": {
+      "lastRssKey": "72059d00-a976-11f1-b754-b73524ddddbb",
+      "lastEpisodeTitle": "Things just took a tough turn... - Multiple huge Habs prospect updates",
+      "lastEpisodeId": "60017503213",
+      "lastCheckedAt": 1788730457173
+    },
     "7324937": {
       "lastRssKey": "2a0b8d34-a8cc-11f1-ad8c-fbfbf5e6b94c",
       "lastEpisodeTitle": "The Zone of Silence: America's Missile Secret",
@@ -707,11 +743,17 @@
       "lastEpisodeId": "57793191904",
       "lastCheckedAt": 1786559337402
     },
+    "7584644": {
+      "lastRssKey": "6a9518811348fdc761401ddb",
+      "lastEpisodeTitle": "Summer Session 3: Courage Under Pressure...The Hip, Rush & Carrying On",
+      "lastEpisodeId": "59747541808",
+      "lastCheckedAt": 1788730459013
+    },
     "7587315": {
-      "lastRssKey": "6bf5ab28-a6e5-11f1-8f10-3f0bf1bac456",
-      "lastEpisodeTitle": "The Scale of the Universe",
+      "lastRssKey": "82495844-a86a-11f1-bf38-2b4d40998663",
+      "lastEpisodeTitle": "The Threshold of Human Sensation",
       "lastEpisodeId": "58798183213",
-      "lastCheckedAt": 1788397478594
+      "lastCheckedAt": 1788730459132
     },
     "7634730": {
       "lastRssKey": "d2cdf2d7-f2df-4fc5-92d3-6d81c8e08cd6",
