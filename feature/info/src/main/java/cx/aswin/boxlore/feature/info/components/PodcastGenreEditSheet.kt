@@ -122,7 +122,6 @@ internal fun PodcastGenreEditSheet(
 
             GenreEditInputField(
                 genreText = genreText,
-                catalogGenre = catalogGenre,
                 effectiveIcon = editState.effectiveIcon,
                 onValueChange = { genreText = it },
                 onDone = { focusManager.clearFocus() },
@@ -320,7 +319,6 @@ private fun GenreEditLivePreview(
 @Composable
 private fun GenreEditInputField(
     genreText: String,
-    catalogGenre: String,
     effectiveIcon: ImageVector,
     onValueChange: (String) -> Unit,
     onDone: () -> Unit,
@@ -331,7 +329,7 @@ private fun GenreEditInputField(
         label = { Text("Custom tag name") },
         placeholder = {
             Text(
-                text = catalogGenre.ifEmpty { "e.g. Deep Dives, Favorites" },
+                text = stringResource(R.string.genre_edit_placeholder),
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             )
         },

@@ -14,4 +14,5 @@
     <string name="episode_selection_limit">Selection is limited to 1,000 episodes</string>
     <string name="subscribe_to_edit_genre">Subscribe to the show to edit genre</string>
     <string name="genre_visibility_hint">Visible on this podcast page, Subscriptions filters, and folders.</string>
+    <string name="genre_edit_placeholder">Click to set custom tag</string>
 </resources>
