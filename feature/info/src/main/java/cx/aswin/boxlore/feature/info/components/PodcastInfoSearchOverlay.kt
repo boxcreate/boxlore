@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import kotlinx.coroutines.flow.Flow
@@ -181,6 +182,9 @@ fun PodcastInfoSearchOverlay(
                     )
                 }
             } else if (displayList.isNotEmpty()) {
+                val distinctDisplayList = remember(displayList) {
+                    LazyListKeyPolicy.deduplicateById(displayList) { it.id }
+                }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding =
@@ -190,7 +194,10 @@ fun PodcastInfoSearchOverlay(
                     ),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    itemsIndexed(displayList, key = { _, ep -> ep.id }) { index, episode ->
+                    itemsIndexed(
+                        distinctDisplayList,
+                        key = { index, ep -> LazyListKeyPolicy.safeKey(ep.id, index, prefix = "search_ep") }
+                    ) { index, episode ->
                         val isDownloaded = downloadedEpisodeIds.contains(episode.id)
                         val isDownloading = downloadingEpisodeIds.contains(episode.id)
                         val isCompleted = completedEpisodeIds.contains(episode.id)

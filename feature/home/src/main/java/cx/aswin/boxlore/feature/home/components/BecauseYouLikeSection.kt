@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.Subscriptions
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -165,7 +167,10 @@ fun BecauseYouLikeSection(
         }
 
         // --- Subsection 1: Suggested Shows (OutlinedCard Grid Matching CuratedEpisodeCard) ---
-        if (suggestedPodcasts.list.isNotEmpty()) {
+        val distinctSuggestedPodcasts = remember(suggestedPodcasts.list) {
+            LazyListKeyPolicy.deduplicateById(suggestedPodcasts.list) { it.id }
+        }
+        if (distinctSuggestedPodcasts.isNotEmpty()) {
             Spacer(modifier = Modifier.height(28.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 BecauseYouLikeSectionHeader(
@@ -178,7 +183,10 @@ fun BecauseYouLikeSection(
                     contentPadding = PaddingValues(horizontal = 0.dp),
                     horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap),
                 ) {
-                    items(suggestedPodcasts.list, key = { it.id }) { suggestedPodcast ->
+                    items(
+                        distinctSuggestedPodcasts,
+                        key = { LazyListKeyPolicy.safeKey(it.id, prefix = "byl_show") }
+                    ) { suggestedPodcast ->
                         PodcastCard(
                             podcast = suggestedPodcast,
                             onClick = { onPodcastClick(suggestedPodcast) },
@@ -192,7 +200,10 @@ fun BecauseYouLikeSection(
         }
 
         // --- Subsection 2: Recommended Episodes ---
-        if (recommendations.list.isNotEmpty()) {
+        val distinctRecommendations = remember(recommendations.list) {
+            LazyListKeyPolicy.deduplicateById(recommendations.list) { it.id }
+        }
+        if (distinctRecommendations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(28.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 BecauseYouLikeSectionHeader(
@@ -205,7 +216,10 @@ fun BecauseYouLikeSection(
                     contentPadding = PaddingValues(horizontal = 0.dp),
                     horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap),
                 ) {
-                    items(recommendations.list, key = { it.id }) { episode ->
+                    items(
+                        distinctRecommendations,
+                        key = { LazyListKeyPolicy.safeKey(it.id, prefix = "byl_ep") }
+                    ) { episode ->
                         val parentPodcast =
                             Podcast(
                                 id = episode.podcastId ?: "",

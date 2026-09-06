@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
@@ -176,7 +177,9 @@ fun ExploreRelatedShowsRail(
     modifier: Modifier = Modifier,
     title: String = "Related shows",
 ) {
-    val railItems = remember(podcasts) { podcasts.take(RELATED_SHOWS_RAIL_MAX) }
+    val railItems = remember(podcasts) {
+        LazyListKeyPolicy.deduplicateById(podcasts) { it.id }.take(RELATED_SHOWS_RAIL_MAX)
+    }
     if (railItems.isEmpty()) return
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -192,7 +195,10 @@ fun ExploreRelatedShowsRail(
             contentPadding = PaddingValues(bottom = 4.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            itemsIndexed(railItems, key = { _, podcast -> podcast.id }) { index, podcast ->
+            itemsIndexed(
+                railItems,
+                key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "related_show") }
+            ) { index, podcast ->
                 // Clickable without a clip shape — clipping the whole column was eating title glyphs
                 // at the bottom-left of the rounded bounds.
                 Column(
@@ -329,11 +335,17 @@ fun ExploreVibeChipRow(
     onVibeSelected: (id: String, name: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val distinctVibes = remember(vibes) {
+        LazyListKeyPolicy.deduplicateBy(vibes) { it.first }
+    }
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(vibes, key = { it.first }) { vibe ->
+        items(
+            distinctVibes,
+            key = { LazyListKeyPolicy.safeKey(it.first, prefix = "vibe_chip") }
+        ) { vibe ->
             ExploreVibeChip(
                 vibe = vibe,
                 onClick = { onVibeSelected(vibe.first, vibe.second) },

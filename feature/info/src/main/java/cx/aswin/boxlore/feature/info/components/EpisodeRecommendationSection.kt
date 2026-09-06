@@ -29,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -119,6 +121,9 @@ internal fun EpisodeRecommendationSection(
                 }
             }
             Spacer(Modifier.height(14.dp))
+            val distinctEpisodes = remember(state.episodes) {
+                LazyListKeyPolicy.deduplicateById(state.episodes) { it.id }
+            }
             LazyRow(
                 state = listState,
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -126,8 +131,11 @@ internal fun EpisodeRecommendationSection(
             ) {
                 when {
                     state.loading -> items(4) { RecommendationSkeleton() }
-                    state.episodes.isNotEmpty() ->
-                        items(state.episodes, key = { it.id }) { episode ->
+                    distinctEpisodes.isNotEmpty() ->
+                        items(
+                            distinctEpisodes,
+                            key = { LazyListKeyPolicy.safeKey(it.id, prefix = "rec_ep") }
+                        ) { episode ->
                             ExpressiveEpisodeCard(
                                 episode = episode,
                                 imageUrl =

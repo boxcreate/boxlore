@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -61,6 +60,7 @@ import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalS
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.regionDisplayLabel
+import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
@@ -170,7 +170,10 @@ fun ExploreContent(
         }
         is ExploreUiState.Success -> uiState
     }
-    val displayList = if (state.isSearching) state.searchResults else state.trending
+    val rawDisplayList = if (state.isSearching) state.searchResults else state.trending
+    val displayList = remember(rawDisplayList) {
+        LazyListKeyPolicy.deduplicateById(rawDisplayList) { it.id }
+    }
 
     val isRecommendationsFallback = state.isRecommendationsFallback
 
@@ -349,13 +352,14 @@ fun ExploreContent(
                     }
             }
 
-            val distinctVibes = remember(state.suggestedVibes) { state.suggestedVibes.distinctBy { it.first } }
+            val distinctVibes = remember(state.suggestedVibes) {
+                LazyListKeyPolicy.deduplicateBy(state.suggestedVibes) { it.first }
+            }
 
             val alsoFoundDistinct = remember(state.alsoFoundResults, displayList) {
                 val catalogIds = displayList.map { it.id }.toSet()
-                state.alsoFoundResults
-                    .distinctBy { it.id }
-                    .filter { it.id !in catalogIds }
+                val filtered = state.alsoFoundResults.filter { it.id !in catalogIds }
+                LazyListKeyPolicy.deduplicateById(filtered) { it.id }
             }
 
             val pinSnapshot =
@@ -383,7 +387,7 @@ fun ExploreContent(
 
             val rawGridItems = if (!state.isSearching && displayList.isNotEmpty() && state.currentVibe == null) displayList.drop(1) else displayList
             val gridItems = remember(rawGridItems) {
-                rawGridItems.distinctBy { podcast ->
+                val titleDistinct = rawGridItems.distinctBy { podcast ->
                     val titleKey = podcast.title.lowercase().replace(Regex("[^a-z0-9]"), "").trim()
                     val artistKey = podcast.artist.lowercase().replace(Regex("[^a-z0-9]"), "").trim()
                     if (titleKey.isNotEmpty() && artistKey.isNotEmpty()) {
@@ -392,10 +396,19 @@ fun ExploreContent(
                         podcast.id
                     }
                 }
+                LazyListKeyPolicy.deduplicateById(titleDistinct) { it.id }
             }
 
             val semanticPodcastsDistinct = remember(state.semanticPodcastResults) {
-                state.semanticPodcastResults.distinctBy { it.id }
+                LazyListKeyPolicy.deduplicateById(state.semanticPodcastResults) { it.id }
+            }
+
+            val distinctSemanticEpisodes = remember(state.semanticSearchResults) {
+                LazyListKeyPolicy.deduplicateById(state.semanticSearchResults) { it.id }
+            }
+
+            val distinctRecommendations = remember(state.recommendations) {
+                LazyListKeyPolicy.deduplicateById(state.recommendations) { it.id }
             }
 
             LazyVerticalStaggeredGrid(
@@ -420,7 +433,7 @@ fun ExploreContent(
                                 )
                             }
                         } else {
-                            val eps = state.semanticSearchResults
+                            val eps = distinctSemanticEpisodes
                             val pods = semanticPodcastsDistinct
                             val showContent = eps.isNotEmpty() || pods.isNotEmpty()
                             val showLoader = state.isSemanticLoading
@@ -493,7 +506,10 @@ fun ExploreContent(
                                                 ),
                                             )
                                         }
-                                        item(span = StaggeredGridItemSpan.FullLine) {
+                                        item(
+                                             key = LazyListKeyPolicy.safeKey(eps.firstOrNull()?.id, prefix = "semantic_episodes_hero"),
+                                             span = StaggeredGridItemSpan.FullLine,
+                                         ) {
                                             val heroEp = eps[0]
                                             val parentPodcast = Podcast(
                                                 id = heroEp.podcastId ?: "",
@@ -522,7 +538,10 @@ fun ExploreContent(
                                             )
                                         }
 
-                                        itemsIndexed(eps.drop(1), key = { _, episode -> "search_semantic_${episode.id}" }) { index, episode ->
+                                        itemsIndexed(
+                                            eps.drop(1),
+                                            key = { index, episode -> LazyListKeyPolicy.safeKey(episode.id, index, prefix = "search_semantic") }
+                                        ) { index, episode ->
                                             val parentPodcast = Podcast(
                                                 id = episode.podcastId ?: "",
                                                 title = episode.podcastTitle ?: "Podcast",
@@ -574,7 +593,10 @@ fun ExploreContent(
                                 ) {
                                     ExploreSuggestedMoodsHeader()
                                 }
-                                items(distinctVibes, key = { "vibe_${it.first}" }) { vibe ->
+                                items(
+                                    distinctVibes,
+                                    key = { LazyListKeyPolicy.safeKey(it.first, prefix = "vibe") }
+                                ) { vibe ->
                                     ExploreVibeCard(vibe = vibe, onClick = {
                                         searchActive = false
                                         focusManager.clearFocus()
@@ -632,7 +654,10 @@ fun ExploreContent(
                                         )
                                     }
                                 }
-                                itemsIndexed(gridItems, key = { _, it -> "grid_${it.id}" }) { index, podcast ->
+                                itemsIndexed(
+                                    gridItems,
+                                    key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }
+                                ) { index, podcast ->
                                     val cardHeight = 160.dp
                                     val entryPointStr = if (state.currentVibe != null) "explore_vibe" else "explore_search"
                                     ExplorePodcastCard(
@@ -656,7 +681,10 @@ fun ExploreContent(
                                             modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                                         )
                                     }
-                                    itemsIndexed(alsoFound, key = { _, podcast -> "also_${podcast.id}" }) { index, podcast ->
+                                    itemsIndexed(
+                                        alsoFound,
+                                        key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "also") }
+                                    ) { index, podcast ->
                                         ExplorePodcastCard(
                                             podcast = podcast,
                                             cardHeight = 160.dp,
@@ -708,7 +736,7 @@ fun ExploreContent(
 
                     if (state.selectedTab == 1) {
                         // For You — staggered bento layout; title-only posters (no show name) like Home taste cards
-                        val recs = state.recommendations
+                        val recs = distinctRecommendations
                         val showContent = recs.isNotEmpty()
                         val showSkeletons = state.isRecommendationsLoading && recs.isEmpty()
                         val showEmptyState = !state.isRecommendationsLoading && recs.isEmpty()
@@ -729,7 +757,10 @@ fun ExploreContent(
                                 ExploreRecommendationsEmptyState()
                             }
                         } else if (showContent) {
-                            item(span = StaggeredGridItemSpan.FullLine) {
+                            item(
+                                key = LazyListKeyPolicy.safeKey(recs.firstOrNull()?.id, prefix = "rec_hero"),
+                                span = StaggeredGridItemSpan.FullLine,
+                            ) {
                                 val heroEp = recs[0]
                                 val parentPodcast = Podcast(
                                     id = heroEp.podcastId ?: "",
@@ -755,7 +786,10 @@ fun ExploreContent(
                                 )
                             }
 
-                            itemsIndexed(recs.drop(1), key = { _, it -> "rec_${it.id}" }) { index, episode ->
+                            itemsIndexed(
+                                recs.drop(1),
+                                key = { index, episode -> LazyListKeyPolicy.safeKey(episode.id, index, prefix = "rec") }
+                            ) { index, episode ->
                                 val parentPodcast = Podcast(
                                     id = episode.podcastId ?: "",
                                     title = episode.podcastTitle ?: "Podcast",
@@ -806,7 +840,10 @@ fun ExploreContent(
                             }
                         } else if (showContent) {
                             // Featured Hero Card (P1 only, when not searching and has content)
-                            item(span = StaggeredGridItemSpan.FullLine) {
+                            item(
+                                key = LazyListKeyPolicy.safeKey(displayList.firstOrNull()?.id, prefix = "trending_hero"),
+                                span = StaggeredGridItemSpan.FullLine,
+                            ) {
                                 ExploreHeroCard(
                                     podcast = displayList[0],
                                     onClick = { onPodcastClick(displayList[0].id, "explore_hero", state.currentCategory, 0) },
@@ -815,7 +852,10 @@ fun ExploreContent(
                             }
 
                             val showGenreChip = state.currentCategory == "All"
-                            itemsIndexed(gridItems, key = { _, it -> "grid_${it.id}" }) { index, podcast ->
+                            itemsIndexed(
+                                gridItems,
+                                key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }
+                            ) { index, podcast ->
                                 val cardHeight = 160.dp
                                 ExplorePodcastCard(
                                     podcast = podcast,
