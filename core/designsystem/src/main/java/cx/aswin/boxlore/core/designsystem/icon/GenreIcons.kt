@@ -86,6 +86,7 @@ object GenreIcons {
             "money" -> Icons.Rounded.AttachMoney
             "true crime" -> Icons.Rounded.Fingerprint
             "talk" -> Icons.Rounded.Forum
+            "work" -> Icons.Rounded.Work
             else -> null
         }
     }
@@ -93,31 +94,35 @@ object GenreIcons {
     private val GENRE_KEYWORDS: List<Pair<List<String>, ImageVector>> = listOf(
         listOf("music") to Icons.Rounded.MusicNote,
         listOf("comedy") to Icons.Rounded.SentimentVerySatisfied,
-        listOf("sport") to Icons.Rounded.SportsBaseball,
+        listOf("sport", "sports") to Icons.Rounded.SportsBaseball,
         listOf("science") to Icons.Rounded.Science,
         listOf("tech", "computer") to Icons.Rounded.Computer,
         listOf("news") to Icons.Rounded.Newspaper,
         listOf("health", "fitness") to Icons.Rounded.Favorite,
         listOf("history") to Icons.Rounded.AccountBalance,
-        listOf("art", "design") to Icons.Rounded.Palette,
+        listOf("art", "arts", "design") to Icons.Rounded.Palette,
         listOf("education") to Icons.Rounded.School,
-        listOf("tv", "film", "movie") to Icons.Rounded.Movie,
-        listOf("fiction", "story", "book") to Icons.Rounded.AutoStories,
-        listOf("game", "gaming") to Icons.Rounded.SportsEsports,
+        listOf("tv", "film", "movie", "movies") to Icons.Rounded.Movie,
+        listOf("fiction", "story", "stories", "book", "books") to Icons.Rounded.AutoStories,
+        listOf("game", "games", "gaming") to Icons.Rounded.SportsEsports,
         listOf("religion", "spiritual") to Icons.Rounded.Star,
-        listOf("family", "kid") to Icons.Rounded.Face,
-        listOf("business", "work") to Icons.Rounded.Work,
+        listOf("family", "kid", "kids") to Icons.Rounded.Face,
+        listOf("business", "work", "startup", "startups") to Icons.Rounded.Work,
         listOf("government", "gavel") to Icons.Rounded.Gavel,
         listOf("crime") to Icons.Rounded.Fingerprint,
         listOf("chat", "talk", "society", "culture") to Icons.Rounded.Forum,
         listOf("finance", "money", "invest") to Icons.Rounded.AttachMoney,
     )
 
+    private fun matchesKeyword(genre: String, keyword: String): Boolean =
+        Regex("""(^|[^\p{L}\p{N}])${Regex.escape(keyword)}($|[^\p{L}\p{N}])""")
+            .containsMatchIn(genre)
+
     fun defaultGenreIcon(genre: String?): ImageVector {
         if (genre.isNullOrBlank()) return Icons.Rounded.Category
         val normalized = genre.trim().lowercase()
         return GENRE_KEYWORDS.firstOrNull { (keywords, _) ->
-            keywords.any { normalized.contains(it) }
+            keywords.any { matchesKeyword(normalized, it) }
         }?.second ?: Icons.Rounded.Category
     }
 

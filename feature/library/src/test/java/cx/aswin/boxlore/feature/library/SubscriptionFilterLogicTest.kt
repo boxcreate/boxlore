@@ -94,6 +94,17 @@ class SubscriptionFilterLogicTest {
     }
 
     @Test
+    fun extractDistinctGenres_combinesFrequencyForMixedCaseCustomTags() {
+        val podcasts = listOf(
+            podcast("1", customGenre = "rock"),
+            podcast("2", customGenre = "ROCK"),
+            podcast("3", customGenre = "Pop"),
+        )
+        val genres = extractDistinctGenres(podcasts)
+        assertEquals(listOf("Rock", "Pop"), genres)
+    }
+
+    @Test
     fun filterPodcastsByGenre_allReturnsInput() {
         val podcasts = listOf(podcast("1", genre = "News"), podcast("2", genre = "Comedy"))
         assertEquals(podcasts, filterPodcastsByGenre(podcasts, "All"))

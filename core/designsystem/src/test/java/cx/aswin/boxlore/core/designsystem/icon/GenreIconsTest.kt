@@ -40,6 +40,8 @@ class GenreIconsTest {
     fun `defaultGenreIcon resolves common podcast genres`() {
         assertEquals(Icons.Rounded.Newspaper, GenreIcons.defaultGenreIcon("News"))
         assertEquals(Icons.Rounded.MusicNote, GenreIcons.defaultGenreIcon("Music"))
+        assertEquals(GenreIcons.findIcon("art"), GenreIcons.defaultGenreIcon("Arts"))
+        assertEquals(GenreIcons.findIcon("work"), GenreIcons.defaultGenreIcon("Startups"))
         assertEquals(Icons.Rounded.Category, GenreIcons.defaultGenreIcon("Unknown Genre"))
         assertEquals(Icons.Rounded.Category, GenreIcons.defaultGenreIcon(null))
     }

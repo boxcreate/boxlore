@@ -220,4 +220,30 @@ class RoomLocalCatalogTest {
         assertEquals(PodcastEntity.SOURCE_RSS, stored.sourceType)
         assertEquals("https://feed.xml", stored.feedUrl)
     }
+
+    @Test
+    fun upsertSubscribedPodcastPreservesCustomGenreAndIconOverrides() = runTest {
+        podcastDao.upsert(
+            entity("pod-override", title = "Original").copy(
+                customGenre = "Personal Tech",
+                customGenreIcon = "code",
+            ),
+        )
+
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "pod-override",
+                title = "Refreshed Title",
+                artist = "Artist",
+                imageUrl = "https://example.com/new.jpg",
+                customGenre = "Stale Network Genre",
+                customGenreIcon = "fire",
+            ),
+        )
+
+        val stored = podcastDao.getPodcast("pod-override")!!
+        assertEquals("Refreshed Title", stored.title)
+        assertEquals("Personal Tech", stored.customGenre)
+        assertEquals("code", stored.customGenreIcon)
+    }
 }
