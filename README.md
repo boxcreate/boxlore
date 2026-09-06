@@ -4,7 +4,7 @@
 
 
 
-**Its a podcast player, but better**
+## Its a podcast player, but better
 
 Search by name or topic, get recommendations, listen offline, watch video shows, and keep up with new episodes.
 
