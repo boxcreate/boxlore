@@ -24,7 +24,7 @@ import cx.aswin.boxlore.core.database.entities.QueueItem
         FolderEntity::class,
         PodcastFolderCrossRef::class,
     ],
-    version = 34,
+    version = 35,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -258,6 +258,20 @@ abstract class BoxLoreDatabase : RoomDatabase() {
                 }
             }
 
+        private val MIGRATION_34_35 =
+            object : Migration(34, 35) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    BoxLoreDatabaseMigrations.migrate34To35(db)
+                }
+            }
+
+        private val MIGRATION_33_35 =
+            object : Migration(33, 35) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    BoxLoreDatabaseMigrations.migrate33To35(db)
+                }
+            }
+
         @Volatile
         @Suppress("PropertyName")
         private var INSTANCE: BoxLoreDatabase? = null
@@ -322,6 +336,8 @@ abstract class BoxLoreDatabase : RoomDatabase() {
                         MIGRATION_31_32,
                         MIGRATION_32_33,
                         MIGRATION_33_34,
+                        MIGRATION_34_35,
+                        MIGRATION_33_35,
                     ).fallbackToDestructiveMigration(dropAllTables = true) // For development simplicity on older versions
                     .build()
             INSTANCE = instance

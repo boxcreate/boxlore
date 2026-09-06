@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 34,
-    "identityHash": "178ee04b27ac154122fbd2c8b70fe94a",
+    "version": 35,
+    "identityHash": "e56cb1ee2606fdf18e01d3917cacc174",
     "entities": [
       {
         "tableName": "listening_history",
@@ -1325,7 +1325,7 @@
       },
       {
         "tableName": "folders",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`folderId` TEXT NOT NULL, `name` TEXT NOT NULL, `icon` TEXT, `displaySize` TEXT NOT NULL, `linkedGenre` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`folderId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`folderId` TEXT NOT NULL, `name` TEXT NOT NULL, `icon` TEXT, `displaySize` TEXT NOT NULL, `linkedGenre` TEXT, `showPodcastGrid` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`folderId`))",
         "fields": [
           {
             "fieldPath": "folderId",
@@ -1354,6 +1354,12 @@
             "fieldPath": "linkedGenre",
             "columnName": "linkedGenre",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "showPodcastGrid",
+            "columnName": "showPodcastGrid",
+            "affinity": "INTEGER",
+            "notNull": true
           },
           {
             "fieldPath": "createdAt",
@@ -1430,7 +1436,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '178ee04b27ac154122fbd2c8b70fe94a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e56cb1ee2606fdf18e01d3917cacc174')"
     ]
   }
 }

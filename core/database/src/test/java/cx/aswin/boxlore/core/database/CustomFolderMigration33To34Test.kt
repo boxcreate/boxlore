@@ -92,31 +92,30 @@ class CustomFolderMigration33To34Test {
 
         BoxLoreDatabaseMigrations.migrate33To34(db)
 
-        // 1. Insert iconless folder with COMPACT size (default showPodcastGrid = 1)
+        // 1. Insert iconless folder with COMPACT size in version 34
         db.execSQL(
             """
-            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, showPodcastGrid, createdAt)
-            VALUES ('folder-1', 'Daily Tech', NULL, 'COMPACT', 'Technology', 1, 1000)
+            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, createdAt)
+            VALUES ('folder-1', 'Daily Tech', NULL, 'COMPACT', 'Technology', 1000)
             """.trimIndent(),
         )
 
-        // 2. Insert folder with icon and FEATURED size (showPodcastGrid = 0)
+        // 2. Insert folder with icon and FEATURED size in version 34
         db.execSQL(
             """
-            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, showPodcastGrid, createdAt)
-            VALUES ('folder-2', 'Favorites', 'star', 'FEATURED', NULL, 0, 2000)
+            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, createdAt)
+            VALUES ('folder-2', 'Favorites', 'star', 'FEATURED', NULL, 2000)
             """.trimIndent(),
         )
 
-        // Verify folder rows
-        val folderCursor = db.query("SELECT folderId, name, icon, displaySize, linkedGenre, showPodcastGrid FROM folders ORDER BY createdAt ASC")
+        // Verify version 34 folder rows
+        val folderCursor = db.query("SELECT folderId, name, icon, displaySize, linkedGenre FROM folders ORDER BY createdAt ASC")
         assertTrue(folderCursor.moveToFirst())
         assertEquals("folder-1", folderCursor.getString(0))
         assertEquals("Daily Tech", folderCursor.getString(1))
         assertNull(folderCursor.getString(2))
         assertEquals("COMPACT", folderCursor.getString(3))
         assertEquals("Technology", folderCursor.getString(4))
-        assertEquals(1, folderCursor.getInt(5))
 
         assertTrue(folderCursor.moveToNext())
         assertEquals("folder-2", folderCursor.getString(0))
@@ -124,10 +123,30 @@ class CustomFolderMigration33To34Test {
         assertEquals("star", folderCursor.getString(2))
         assertEquals("FEATURED", folderCursor.getString(3))
         assertNull(folderCursor.getString(4))
-        assertEquals(0, folderCursor.getInt(5))
         folderCursor.close()
 
-        // 3. Insert cross-ref
+        // 3. Now run migrate34To35 to add showPodcastGrid column
+        BoxLoreDatabaseMigrations.migrate34To35(db)
+
+        // Verify default value 0 for existing rows
+        val v35Cursor = db.query("SELECT folderId, showPodcastGrid FROM folders ORDER BY createdAt ASC")
+        assertTrue(v35Cursor.moveToFirst())
+        assertEquals("folder-1", v35Cursor.getString(0))
+        assertEquals(0, v35Cursor.getInt(1))
+
+        assertTrue(v35Cursor.moveToNext())
+        assertEquals("folder-2", v35Cursor.getString(0))
+        assertEquals(0, v35Cursor.getInt(1))
+        v35Cursor.close()
+
+        // 4. Update showPodcastGrid for folder-1
+        db.execSQL("UPDATE folders SET showPodcastGrid = 1 WHERE folderId = 'folder-1'")
+        val updatedCursor = db.query("SELECT showPodcastGrid FROM folders WHERE folderId = 'folder-1'")
+        assertTrue(updatedCursor.moveToFirst())
+        assertEquals(1, updatedCursor.getInt(0))
+        updatedCursor.close()
+
+        // 5. Insert cross-ref
         db.execSQL(
             """
             INSERT INTO podcast_folder_cross_ref (podcastId, folderId)
@@ -141,7 +160,7 @@ class CustomFolderMigration33To34Test {
         assertEquals("folder-1", crossRefCursor.getString(1))
         crossRefCursor.close()
 
-        // 4. Test CASCADE delete: deleting folder-1 removes its cross-ref, while keeping podcast intact
+        // 6. Test CASCADE delete: deleting folder-1 removes its cross-ref, while keeping podcast intact
         db.execSQL("DELETE FROM folders WHERE folderId = 'folder-1'")
 
         val emptyRefCursor = db.query("SELECT COUNT(*) FROM podcast_folder_cross_ref WHERE folderId = 'folder-1'")
@@ -156,5 +175,42 @@ class CustomFolderMigration33To34Test {
         assertEquals("Kotlin Devs", podcastCheck.getString(1))
         assertEquals(1, podcastCheck.getInt(2))
         podcastCheck.close()
+    }
+
+    @Test
+    fun migrate33To35DirectMigrationCreatesFoldersWithShowPodcastGrid() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val config =
+            androidx.sqlite.db.SupportSQLiteOpenHelper.Configuration
+                .builder(context)
+                .name(null)
+                .callback(
+                    object : androidx.sqlite.db.SupportSQLiteOpenHelper.Callback(33) {
+                        override fun onCreate(db: SupportSQLiteDatabase) = Unit
+                        override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+                    },
+                ).build()
+
+        val openHelper = FrameworkSQLiteOpenHelperFactory().create(config)
+        val db = openHelper.writableDatabase
+
+        BoxLoreDatabaseMigrations.migrate33To35(db)
+
+        db.execSQL(
+            """
+            INSERT INTO folders (folderId, name, icon, displaySize, linkedGenre, showPodcastGrid, createdAt)
+            VALUES ('folder-direct', 'Direct V35', 'grid', 'COMPACT', 'Tech', 1, 3000)
+            """.trimIndent(),
+        )
+
+        val cursor = db.query("SELECT folderId, name, icon, displaySize, linkedGenre, showPodcastGrid FROM folders WHERE folderId = 'folder-direct'")
+        assertTrue(cursor.moveToFirst())
+        assertEquals("folder-direct", cursor.getString(0))
+        assertEquals("Direct V35", cursor.getString(1))
+        assertEquals("grid", cursor.getString(2))
+        assertEquals("COMPACT", cursor.getString(3))
+        assertEquals("Tech", cursor.getString(4))
+        assertEquals(1, cursor.getInt(5))
+        cursor.close()
     }
 }
