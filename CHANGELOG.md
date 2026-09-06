@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adapted the Cast button in the expanded player sheet to respect dark and light themes and match the Share button theming (#1037). ([#1039](https://github.com/boxcreate/boxlore/pull/1039)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Handled broken pipe and network disconnect exceptions safely during Android Auto artwork streaming (#1027). ([#1041](https://github.com/boxcreate/boxlore/pull/1041)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Enforce `MediaController` main-thread affinity in `PlaybackRepository` to prevent `IllegalStateException` on background session restoration. ([#1042](https://github.com/boxcreate/boxlore/pull/1042)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Protect `LazyColumn` and `LazyRow` lists against duplicate keys to prevent `IllegalArgumentException` in recommendation and explore feeds. ([#1043](https://github.com/boxcreate/boxlore/pull/1043)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019
 ### Critical
@@ -77,6 +78,11 @@ readme-copy:end pr=1041 -->
 ### Improvements
 - Fixed background crashes when restoring playback sessions or updating widgets.
 readme-copy:end pr=1042 -->
+
+<!-- readme-copy:start pr=1043
+### Improvements
+- Fixed crashes when viewing search results and recommendation shelves with duplicate items.
+readme-copy:end pr=1043 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added

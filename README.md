@@ -78,6 +78,7 @@ The app uses your listening activity—such as what you play, skip, and like—t
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Fixed crashes when viewing search results and recommendation shelves with duplicate items. <a href="https://github.com/boxcreate/boxlore/pull/1043"><img src="https://img.shields.io/badge/PR-1043-6750A4?style=flat-square" alt="PR #1043" height="18"/></a></li>
 <li>Fixed background crashes when restoring playback sessions or updating widgets. <a href="https://github.com/boxcreate/boxlore/pull/1042"><img src="https://img.shields.io/badge/PR-1042-6750A4?style=flat-square" alt="PR #1042" height="18"/></a></li>
 </ul>
 <b>• High:</b>
