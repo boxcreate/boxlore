@@ -78,6 +78,8 @@ The app uses your listening activity—such as what you play, skip, and like—t
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Added real-time show progress and active animated loader when restoring library backups. <a href="https://github.com/boxcreate/boxlore/pull/1050"><img src="https://img.shields.io/badge/PR-1050-6750A4?style=flat-square" alt="PR #1050" height="18"/></a></li>
+<li>Streamlined notification permission prompt after backup restore to a single tap. <a href="https://github.com/boxcreate/boxlore/pull/1050"><img src="https://img.shields.io/badge/PR-1050-6750A4?style=flat-square" alt="PR #1050" height="18"/></a></li>
 <li>Added tab style preference for Subscriptions in Settings > Appearance, allowing users to choose between top header tabs or a bottom floating selector in boxlore. <a href="https://github.com/boxcreate/boxlore/pull/1048"><img src="https://img.shields.io/badge/PR-1048-6750A4?style=flat-square" alt="PR #1048" height="18"/></a></li>
 <li>Resolved out-of-memory errors during large podcast pagination and feed parsing by streaming responses and bounding in-memory cache sizes. <a href="https://github.com/boxcreate/boxlore/pull/1044"><img src="https://img.shields.io/badge/PR-1044-6750A4?style=flat-square" alt="PR #1044" height="18"/></a></li>
 <li>Fixed background crashes when restoring playback sessions or updating widgets. <a href="https://github.com/boxcreate/boxlore/pull/1042"><img src="https://img.shields.io/badge/PR-1042-6750A4?style=flat-square" alt="PR #1042" height="18"/></a></li>

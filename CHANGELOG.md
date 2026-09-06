@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Protect `LazyColumn` and `LazyRow` lists against duplicate keys to prevent `IllegalArgumentException` in recommendation and explore feeds. ([#1043](https://github.com/boxcreate/boxlore/pull/1043)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Fixed Video Spotlight card tap animation in `FeaturedVideoPodcastsShowcase` by placing `expressiveClickable` before shadow, border, and surface background (#1031). ([#1046](https://github.com/boxcreate/boxlore/pull/1046)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Forwarded `onSetSubscriptionsTabStyle` callback in `AppearanceActions.trackedForAnalytics()` to register clicks in Settings > Appearance. ([#1048](https://github.com/boxcreate/boxlore/pull/1048)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Streamlined JSON library restore with real-time show-by-show progress reporting and active wavy loader animation throughout feed downloads. ([#1050](https://github.com/boxcreate/boxlore/pull/1050)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Refactored post-restore notification card to a single dynamic button that triggers the system runtime permission dialog and refreshes on resume. ([#1050](https://github.com/boxcreate/boxlore/pull/1050)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1019
 ### Critical
@@ -110,6 +112,12 @@ readme-copy:end pr=1046 -->
 ### Improvements
 - Added tab style preference for Subscriptions in Settings > Appearance, allowing users to choose between top header tabs or a bottom floating selector in boxlore.
 readme-copy:end pr=1048 -->
+
+<!-- readme-copy:start pr=1050
+### Improvements
+- Added real-time show progress and active animated loader when restoring library backups.
+- Streamlined notification permission prompt after backup restore to a single tap.
+readme-copy:end pr=1050 -->
 ## [v0.0.24] - 2026-08-30
 
 ### Added
