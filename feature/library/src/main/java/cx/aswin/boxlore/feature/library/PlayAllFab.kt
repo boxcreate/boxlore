@@ -30,10 +30,12 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 fun BoxScope.PlayAllFab(
     onClick: () -> Unit,
     isPlayerActive: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bottomPaddingOverride: androidx.compose.ui.unit.Dp? = null,
 ) {
+    val targetPadding = bottomPaddingOverride ?: if (isPlayerActive) 154.dp else 88.dp
     val bottomPadding by animateDpAsState(
-        targetValue = if (isPlayerActive) 154.dp else 88.dp,
+        targetValue = targetPadding,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMediumLow

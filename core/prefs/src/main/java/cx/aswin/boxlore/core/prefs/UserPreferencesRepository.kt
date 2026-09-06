@@ -70,6 +70,10 @@ class UserPreferencesRepository(context: Context,) {
     val cachedSubscriptionsDefaultTab: String
         get() = SubscriptionsDefaultTab.sanitize(syncPrefs.getString(SubscriptionsDefaultTab.PREF_KEY, null))
 
+    /** Subscriptions tab layout: `top` (default) or `floating`. */
+    val cachedSubscriptionsTabStyle: String
+        get() = SubscriptionsTabStyle.sanitize(syncPrefs.getString(SubscriptionsTabStyle.PREF_KEY, null))
+
     val cachedThemeBrand: String
         get() = syncPrefs.getString("theme_brand", null) ?: "violet"
 
@@ -455,6 +459,29 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
+    val subscriptionsTabStyleStream: Flow<String> =
+        dataStore.data
+            .catch { exception ->
+                if (exception is IOException) emit(emptyPreferences()) else throw exception
+            }.map { preferences ->
+                val stored = preferences[Keys.SUBSCRIPTIONS_TAB_STYLE]
+                if (stored != null) {
+                    val style = SubscriptionsTabStyle.sanitize(stored)
+                    syncPrefs.edit().putString(SubscriptionsTabStyle.PREF_KEY, style).apply()
+                    style
+                } else {
+                    cachedSubscriptionsTabStyle
+                }
+            }.distinctUntilChanged()
+
+    suspend fun setSubscriptionsTabStyle(style: String) {
+        val sanitized = SubscriptionsTabStyle.sanitize(style)
+        syncPrefs.edit().putString(SubscriptionsTabStyle.PREF_KEY, sanitized).apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] = sanitized
+        }
+    }
+
     /**
      * After Google Backup, SharedPreferences fast-cache can restore while DataStore does not.
      * Copy cache values into missing DataStore keys so UI streams and workers stay aligned.
@@ -487,6 +514,9 @@ class UserPreferencesRepository(context: Context,) {
             }
             if (preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] == null) {
                 preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = cachedSubscriptionsDefaultTab
+            }
+            if (preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] == null) {
+                preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] = cachedSubscriptionsTabStyle
             }
             if (preferences[Keys.WIDGET_APPEARANCE] == null) {
                 preferences[Keys.WIDGET_APPEARANCE] = cachedWidgetAppearance

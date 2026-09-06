@@ -92,6 +92,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                     currentWidgetAppearance = settingsState.widgetAppearance,
                     currentExploreDefaultTab = settingsState.exploreDefaultTab,
                     currentSubscriptionsDefaultTab = settingsState.subscriptionsDefaultTab,
+                    currentSubscriptionsTabStyle = settingsState.subscriptionsTabStyle,
                 ),
                 actions =
                 cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions(
@@ -113,6 +114,9 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                     },
                     onSetSubscriptionsDefaultTab = { tab ->
                         scope.launch { userPrefs.setSubscriptionsDefaultTab(tab) }
+                    },
+                    onSetSubscriptionsTabStyle = { style ->
+                        scope.launch { userPrefs.setSubscriptionsTabStyle(style) }
                     },
                 ),
             ),

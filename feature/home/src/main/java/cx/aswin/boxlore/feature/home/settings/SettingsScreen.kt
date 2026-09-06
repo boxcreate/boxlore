@@ -375,7 +375,7 @@ private fun trackedLibraryBackupActions(
 )
 
 /** Wraps the appearance callbacks with their analytics tracking, without changing behavior. */
-private fun AppearanceActions.trackedForAnalytics(): AppearanceActions = AppearanceActions(
+internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = AppearanceActions(
     onSetThemeConfig = {
         AnalyticsHelper.trackSettingsInteraction("theme_mode_changed", it)
         onSetThemeConfig(it)
@@ -419,6 +419,10 @@ private fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appeara
     onSetSubscriptionsDefaultTab = {
         AnalyticsHelper.trackSettingsInteraction("subscriptions_default_tab_changed", it)
         onSetSubscriptionsDefaultTab(it)
+    },
+    onSetSubscriptionsTabStyle = {
+        AnalyticsHelper.trackSettingsInteraction("subscriptions_tab_style_changed", it)
+        onSetSubscriptionsTabStyle(it)
     },
 )
 

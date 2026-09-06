@@ -46,6 +46,7 @@ import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
+import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.feature.home.settings.components.AccentSwatchGrid
 import cx.aswin.boxlore.feature.home.settings.components.SettingsChoiceRow
@@ -69,6 +70,7 @@ data class AppearanceUiState(
     val currentWidgetAppearance: String = WidgetAppearance.APP,
     val currentExploreDefaultTab: String = ExploreDefaultTab.FOR_YOU,
     val currentSubscriptionsDefaultTab: String = SubscriptionsDefaultTab.SHOWS,
+    val currentSubscriptionsTabStyle: String = SubscriptionsTabStyle.TOP,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -84,6 +86,7 @@ data class AppearanceActions(
     val onSetWidgetAppearance: (String) -> Unit = {},
     val onSetExploreDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsDefaultTab: (String) -> Unit = {},
+    val onSetSubscriptionsTabStyle: (String) -> Unit = {},
 )
 
 @Composable
@@ -150,6 +153,11 @@ internal fun AppearanceSettingsPage(
             onSetExploreDefaultTab = actions.onSetExploreDefaultTab,
             currentSubscriptionsDefaultTab = state.currentSubscriptionsDefaultTab,
             onSetSubscriptionsDefaultTab = actions.onSetSubscriptionsDefaultTab,
+        )
+
+        SubscriptionsTabStyleSection(
+            currentSubscriptionsTabStyle = state.currentSubscriptionsTabStyle,
+            onSetSubscriptionsTabStyle = actions.onSetSubscriptionsTabStyle,
         )
 
         HomeChromeSection(
@@ -275,6 +283,32 @@ private fun DefaultTabPicker(
             labelStyle = MaterialTheme.typography.labelMedium,
             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
         )
+    }
+}
+
+@Composable
+private fun SubscriptionsTabStyleSection(
+    currentSubscriptionsTabStyle: String,
+    onSetSubscriptionsTabStyle: (String) -> Unit,
+) {
+    val selected = SubscriptionsTabStyle.sanitize(currentSubscriptionsTabStyle)
+    SettingsGroup(
+        title = "Subscriptions tabs",
+        footer = "Choose whether tabs sit in the top header or float at the bottom (like Explore).",
+    ) {
+        SettingsContent {
+            ConnectedOptionSelector(
+                options =
+                listOf(
+                    SubscriptionsTabStyle.TOP to "Top",
+                    SubscriptionsTabStyle.FLOATING to "Floating",
+                ),
+                selected = selected,
+                onSelect = onSetSubscriptionsTabStyle,
+                labelStyle = MaterialTheme.typography.labelMedium,
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+            )
+        }
     }
 }
 

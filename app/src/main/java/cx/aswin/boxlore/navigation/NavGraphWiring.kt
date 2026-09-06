@@ -120,6 +120,7 @@ data class NavSettingsState(
     val widgetAppearance: String,
     val exploreDefaultTab: String,
     val subscriptionsDefaultTab: String,
+    val subscriptionsTabStyle: String = cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle.TOP,
 )
 
 /** Callbacks for OPML import state owned by MainActivity. */

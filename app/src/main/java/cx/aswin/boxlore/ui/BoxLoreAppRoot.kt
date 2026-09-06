@@ -370,6 +370,9 @@ fun BoxLoreAppRoot(
     val subscriptionsDefaultTab by userPrefs.subscriptionsDefaultTabStream.collectAsState(
         initial = remember { userPrefs.cachedSubscriptionsDefaultTab },
     )
+    val subscriptionsTabStyle by userPrefs.subscriptionsTabStyleStream.collectAsState(
+        initial = remember { userPrefs.cachedSubscriptionsTabStyle },
+    )
     val navigationStyle = remember(navigationStyleKey) { NavigationStyle.fromKey(navigationStyleKey) }
     val fontRoundness =
         remember(fontRoundnessKey) {
@@ -627,6 +630,7 @@ fun BoxLoreAppRoot(
                                     widgetAppearance = widgetAppearance,
                                     exploreDefaultTab = exploreDefaultTab,
                                     subscriptionsDefaultTab = subscriptionsDefaultTab,
+                                    subscriptionsTabStyle = subscriptionsTabStyle,
                                 ),
                             )
                         }

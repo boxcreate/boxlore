@@ -73,6 +73,13 @@ class LibraryViewModel(
             initialValue = false,
         )
 
+    val subscriptionsTabStyle: StateFlow<String> =
+        userPreferencesRepository.subscriptionsTabStyleStream.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = userPreferencesRepository.cachedSubscriptionsTabStyle,
+        )
+
     private val _downloadsSortOrder = MutableStateFlow(DownloadsSortOrder.RECENT)
     val downloadsSortOrder = _downloadsSortOrder.asStateFlow()
 

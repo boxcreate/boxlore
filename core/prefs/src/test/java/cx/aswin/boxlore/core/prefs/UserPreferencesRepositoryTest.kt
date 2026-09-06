@@ -197,6 +197,13 @@ class UserPreferencesRepositoryTest {
         assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.cachedSubscriptionsDefaultTab)
         repository.setSubscriptionsDefaultTab("unknown")
         assertEquals(SubscriptionsDefaultTab.SHOWS, repository.subscriptionsDefaultTabStream.first())
+
+        assertEquals(SubscriptionsTabStyle.TOP, repository.subscriptionsTabStyleStream.first())
+        repository.setSubscriptionsTabStyle(SubscriptionsTabStyle.FLOATING)
+        assertEquals(SubscriptionsTabStyle.FLOATING, repository.subscriptionsTabStyleStream.first())
+        assertEquals(SubscriptionsTabStyle.FLOATING, repository.cachedSubscriptionsTabStyle)
+        repository.setSubscriptionsTabStyle("unknown")
+        assertEquals(SubscriptionsTabStyle.TOP, repository.subscriptionsTabStyleStream.first())
     }
 
     @Test
@@ -208,6 +215,7 @@ class UserPreferencesRepositoryTest {
         assertEquals(OpenAppTo.HOME, repository.cachedOpenAppTo)
         assertEquals(ExploreDefaultTab.FOR_YOU, repository.cachedExploreDefaultTab)
         assertEquals(SubscriptionsDefaultTab.SHOWS, repository.cachedSubscriptionsDefaultTab)
+        assertEquals(SubscriptionsTabStyle.TOP, repository.cachedSubscriptionsTabStyle)
         assertFalse(repository.cachedUseDynamicColor)
     }
 

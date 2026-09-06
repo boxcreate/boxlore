@@ -66,9 +66,15 @@ class LibraryBackupManualOrderPinsTest {
             GlobalPreferencesBackup(
                 exploreDefaultTab = "top",
                 subscriptionsDefaultTab = "new_episodes",
+                subscriptionsTabStyle = "floating",
+                navigationStyle = "classic",
+                fontRoundness = "soft",
             )
         val parsed = gson.fromJson(gson.toJson(prefs), GlobalPreferencesBackup::class.java)
         assertEquals("top", parsed.exploreDefaultTab)
         assertEquals("new_episodes", parsed.subscriptionsDefaultTab)
+        assertEquals("floating", parsed.subscriptionsTabStyle)
+        assertEquals("classic", parsed.navigationStyle)
+        assertEquals("soft", parsed.fontRoundness)
     }
 }
