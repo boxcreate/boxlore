@@ -8,25 +8,54 @@ import java.io.IOException
 import kotlinx.coroutines.launch
 
 /** Transport / seek / speed [PlaybackRepository] API. */
-fun PlaybackRepository.isTransportReady(): Boolean = controller?.isConnected == true
+fun PlaybackRepository.isTransportReady(): Boolean =
+    runCatchingOnMain(defaultValue = false) {
+        controller?.isConnected == true
+    }
 
-fun PlaybackRepository.resume(entryPointContext: android.os.Bundle? = null) = transportHelper.resume(entryPointContext)
+fun PlaybackRepository.resume(entryPointContext: android.os.Bundle? = null) {
+    runOnMainThread {
+        transportHelper.resume(entryPointContext)
+    }
+}
 
 fun PlaybackRepository.skipToEpisode(
     index: Int,
     entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
     sourceContext: android.os.Bundle? = null,
-) = transportHelper.skipToEpisode(index, entryPoint, sourceContext)
+) {
+    runOnMainThread {
+        transportHelper.skipToEpisode(index, entryPoint, sourceContext)
+    }
+}
 
-fun PlaybackRepository.skipToNextEpisode() = transportHelper.skipToNextEpisode()
+fun PlaybackRepository.skipToNextEpisode() {
+    runOnMainThread {
+        transportHelper.skipToNextEpisode()
+    }
+}
 
-fun PlaybackRepository.skipToPreviousEpisode() = transportHelper.skipToPreviousEpisode()
+fun PlaybackRepository.skipToPreviousEpisode() {
+    runOnMainThread {
+        transportHelper.skipToPreviousEpisode()
+    }
+}
 
-fun PlaybackRepository.isShuffleEnabled(): Boolean = controller?.takeIf { it.isConnected }?.shuffleModeEnabled == true
+fun PlaybackRepository.isShuffleEnabled(): Boolean =
+    runCatchingOnMain(defaultValue = false) {
+        controller?.takeIf { it.isConnected }?.shuffleModeEnabled == true
+    }
 
-fun PlaybackRepository.currentRepeatMode(): Int = controller?.takeIf { it.isConnected }?.repeatMode ?: Player.REPEAT_MODE_OFF
+fun PlaybackRepository.currentRepeatMode(): Int =
+    runCatchingOnMain(defaultValue = Player.REPEAT_MODE_OFF) {
+        controller?.takeIf { it.isConnected }?.repeatMode ?: Player.REPEAT_MODE_OFF
+    }
 
 fun PlaybackRepository.toggleShuffle(): Boolean {
+    if (!PlaybackThreadPolicy.isMainThread()) {
+        runOnMainThread { toggleShuffle() }
+        return false
+    }
     val mediaController = controller?.takeIf { it.isConnected } ?: return false
     val enabled = !mediaController.shuffleModeEnabled
     mediaController.shuffleModeEnabled = enabled
@@ -34,6 +63,10 @@ fun PlaybackRepository.toggleShuffle(): Boolean {
 }
 
 fun PlaybackRepository.cycleRepeatMode(): Int {
+    if (!PlaybackThreadPolicy.isMainThread()) {
+        runOnMainThread { cycleRepeatMode() }
+        return Player.REPEAT_MODE_OFF
+    }
     val mediaController = controller?.takeIf { it.isConnected } ?: return Player.REPEAT_MODE_OFF
     val nextMode = PlaybackRepeatModePolicy.next(mediaController.repeatMode)
     mediaController.repeatMode = nextMode
@@ -41,11 +74,13 @@ fun PlaybackRepository.cycleRepeatMode(): Int {
 }
 
 fun PlaybackRepository.togglePlayPause(entryPointContext: android.os.Bundle? = null) {
-    val mediaController = controller?.takeIf { it.isConnected } ?: return
-    if (mediaController.isPlaying) {
-        mediaController.pause()
-    } else {
-        resume(entryPointContext)
+    runOnMainThread {
+        val mediaController = controller?.takeIf { it.isConnected } ?: return@runOnMainThread
+        if (mediaController.isPlaying) {
+            mediaController.pause()
+        } else {
+            resume(entryPointContext)
+        }
     }
 }
 
@@ -58,40 +93,48 @@ internal object PlaybackRepeatModePolicy {
 }
 
 fun PlaybackRepository.pause() {
-    controller?.takeIf { it.isConnected }?.pause()
+    runOnMainThread {
+        controller?.takeIf { it.isConnected }?.pause()
+    }
 }
 
 fun PlaybackRepository.skipForward() {
-    val mediaController = controller?.takeIf { it.isConnected } ?: return
-    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-        .setSeekSource("seek_forward")
-    val incrementMs = PlaybackSkipPolicy.sanitizeSeekForward(playerState.value.seekForwardMs)
-    val targetMs = mediaController.currentPosition.coerceAtLeast(0L) + incrementMs
-    val boundedTargetMs =
-        mediaController.duration
-            .takeIf { it > 0L }
-            ?.let(targetMs::coerceAtMost)
-            ?: targetMs
-    seekTo(boundedTargetMs)
+    runOnMainThread {
+        val mediaController = controller?.takeIf { it.isConnected } ?: return@runOnMainThread
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper
+            .setSeekSource("seek_forward")
+        val incrementMs = PlaybackSkipPolicy.sanitizeSeekForward(playerState.value.seekForwardMs)
+        val targetMs = mediaController.currentPosition.coerceAtLeast(0L) + incrementMs
+        val boundedTargetMs =
+            mediaController.duration
+                .takeIf { it > 0L }
+                ?.let(targetMs::coerceAtMost)
+                ?: targetMs
+        seekTo(boundedTargetMs)
+    }
 }
 
 fun PlaybackRepository.skipBackward() {
-    val mediaController = controller?.takeIf { it.isConnected } ?: return
-    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-        .setSeekSource("seek_backward")
-    val incrementMs = PlaybackSkipPolicy.sanitizeSeekBackward(playerState.value.seekBackwardMs)
-    seekTo((mediaController.currentPosition - incrementMs).coerceAtLeast(0L))
+    runOnMainThread {
+        val mediaController = controller?.takeIf { it.isConnected } ?: return@runOnMainThread
+        cx.aswin.boxlore.core.analytics.AnalyticsHelper
+            .setSeekSource("seek_backward")
+        val incrementMs = PlaybackSkipPolicy.sanitizeSeekBackward(playerState.value.seekBackwardMs)
+        seekTo((mediaController.currentPosition - incrementMs).coerceAtLeast(0L))
+    }
 }
 
 fun PlaybackRepository.setPlaybackSpeed(speed: Float) {
-    val sanitized = PlaybackControlSync.sanitizePlaybackSpeed(speed)
-    controller?.takeIf { it.isConnected }?.playbackParameters = PlaybackParameters(sanitized)
-    playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = sanitized)
-    repositoryScope.launch {
-        try {
-            userPreferencesRepository.setPlaybackSpeed(sanitized)
-        } catch (exception: IOException) {
-            Log.w("PlaybackRepo", "Unable to persist playback speed", exception)
+    runOnMainThread {
+        val sanitized = PlaybackControlSync.sanitizePlaybackSpeed(speed)
+        controller?.takeIf { it.isConnected }?.playbackParameters = PlaybackParameters(sanitized)
+        playerStateFlow.value = playerStateFlow.value.copy(playbackSpeed = sanitized)
+        repositoryScope.launch {
+            try {
+                userPreferencesRepository.setPlaybackSpeed(sanitized)
+            } catch (exception: IOException) {
+                Log.w("PlaybackRepo", "Unable to persist playback speed", exception)
+            }
         }
     }
 }
