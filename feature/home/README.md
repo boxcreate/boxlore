@@ -58,6 +58,7 @@ src/main/java/cx/aswin/boxlore/feature/home/
 ```
 
 Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel, section-row, and logic files keep UI assembly and behavior testable.
+- `FeaturedVideoPodcastsShowcase`: Curated video showcase with cohesive touch-press spring scaling, solid surface backgrounds, and independent HD/SD action targets.
 
 ## Dependencies
 
@@ -89,6 +90,7 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
   discovery greeting, editorial-row selection and de-duplication, equal-height poster grid
   extent math, and Your Shows pin precedence, foreground refresh cadence, and score hysteresis
   (`HomeShowsOrderLogicTest`), plus other pure Home logic helpers.
+- Video podcast editorial showcase catalog order, uniqueness, and TED Talks HD/SD feed routing (`FeaturedVideoPodcastsTest`).
 - Optional Roborazzi goldens for settings dialogs (local only; not CI-gated).
 
 ```bash
