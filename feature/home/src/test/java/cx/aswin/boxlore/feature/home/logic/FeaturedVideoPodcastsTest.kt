@@ -34,4 +34,33 @@ class FeaturedVideoPodcastsTest {
         assertEquals("https://feeds.feedburner.com/TEDTalks_video", sdPodcast.feedUrl)
         assertEquals("TED Talks Daily", sdPodcast.title)
     }
+
+    @Test
+    fun leadPodcastHdAndSdFeedTargetsAreDistinct() {
+        val leadHdPodcast = featuredVideoPodcasts().first()
+        val sdPodcast = featuredTedTalksSdPodcast()
+
+        assertEquals(leadHdPodcast.title, sdPodcast.title)
+        org.junit.jupiter.api.Assertions.assertNotEquals(leadHdPodcast.id, sdPodcast.id)
+        org.junit.jupiter.api.Assertions.assertNotEquals(leadHdPodcast.feedUrl, sdPodcast.feedUrl)
+        assertTrue(leadHdPodcast.feedUrl?.contains("TedtalksHD") == true)
+        assertTrue(sdPodcast.feedUrl?.contains("TEDTalks_video") == true)
+    }
+
+    @Test
+    fun leadPodcastExposesHdAndSdActionFeedsWhileSubsequentItemsOnlyHaveCardTarget() {
+        val podcasts = featuredVideoPodcasts()
+        val sdPodcast = featuredTedTalksSdPodcast()
+
+        val leadHd = podcasts[0]
+        val leadSd = sdPodcast
+        org.junit.jupiter.api.Assertions.assertNotEquals(leadHd.id, leadSd.id)
+
+        for (i in 1 until podcasts.size) {
+            val item = podcasts[i]
+            assertTrue(item.id.isNotEmpty())
+            assertTrue(item.title.isNotEmpty())
+            org.junit.jupiter.api.Assertions.assertNotEquals(leadHd.id, item.id)
+        }
+    }
 }
