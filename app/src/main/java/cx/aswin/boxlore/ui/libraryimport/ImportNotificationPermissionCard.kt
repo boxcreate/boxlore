@@ -102,8 +102,7 @@ internal fun ImportNotificationPermissionCard(
         ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.POST_NOTIFICATIONS,
-        ) != PackageManager.PERMISSION_GRANTED &&
-        NotificationManagerCompat.from(context).areNotificationsEnabled()
+        ) != PackageManager.PERMISSION_GRANTED
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
