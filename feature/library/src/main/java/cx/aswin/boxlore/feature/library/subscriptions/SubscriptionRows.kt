@@ -558,7 +558,7 @@ internal fun extractDistinctGenres(podcasts: List<Podcast>): List<String> {
         )
         .map { customDisplay[it.key] ?: it.key }
 
-    val customLower = customCounts.keys
+    val customLower = customCounts.keys.toSet()
     val sortedCatalog = catalogGenres
         .filter { it.lowercase() !in customLower }
         .sortedWith(String.CASE_INSENSITIVE_ORDER)
