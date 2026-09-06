@@ -99,6 +99,32 @@ class OnboardingSuggestionsLanesTest {
         assertEquals(2, OnboardingSuggestionsLanes.selectedCountInLane(lane, setOf("1", "3", "9")))
     }
 
+    @Test
+    fun `deduplicateLanes strips duplicate ids and blank ids`() {
+        val lanes = listOf(
+            OnboardingSuggestionsLane(id = "lane_1", title = "First", purpose = "", isCharts = false, podcasts = emptyList()),
+            OnboardingSuggestionsLane(id = "lane_1", title = "Duplicate", purpose = "", isCharts = false, podcasts = emptyList()),
+            OnboardingSuggestionsLane(id = "   ", title = "Blank", purpose = "", isCharts = false, podcasts = emptyList()),
+            OnboardingSuggestionsLane(id = "lane_2", title = "Second", purpose = "", isCharts = false, podcasts = emptyList()),
+        )
+        val deduplicated = OnboardingSuggestionsLanes.deduplicateLanes(lanes)
+        assertEquals(listOf("lane_1", "lane_2"), deduplicated.map { it.id })
+        assertEquals("First", deduplicated[0].title)
+    }
+
+    @Test
+    fun `deduplicatePodcasts strips duplicate ids and blank ids preserving first occurrence`() {
+        val podcasts = listOf(
+            samplePodcast("p1").copy(title = "First"),
+            samplePodcast("p1").copy(title = "Duplicate First"),
+            samplePodcast("   "),
+            samplePodcast("p2").copy(title = "Second"),
+        )
+        val deduplicated = OnboardingSuggestionsLanes.deduplicatePodcasts(podcasts)
+        assertEquals(listOf("p1", "p2"), deduplicated.map { it.id })
+        assertEquals("First", deduplicated[0].title)
+    }
+
     private fun samplePodcast(id: String) = Podcast(
         id = id,
         title = "Show $id",

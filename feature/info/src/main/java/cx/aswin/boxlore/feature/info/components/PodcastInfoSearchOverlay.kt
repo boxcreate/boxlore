@@ -161,6 +161,9 @@ fun PodcastInfoSearchOverlay(
                 .padding(innerPadding)
                 .imePadding(),
         ) {
+            val distinctDisplayList = remember(displayList) {
+                LazyListKeyPolicy.deduplicateById(displayList) { it.id }
+            }
             if (isSearching) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -170,7 +173,7 @@ fun PodcastInfoSearchOverlay(
                         size = 64.dp,
                     )
                 }
-            } else if (query.isNotEmpty() && displayList.isEmpty()) {
+            } else if (query.isNotEmpty() && distinctDisplayList.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -181,10 +184,7 @@ fun PodcastInfoSearchOverlay(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            } else if (displayList.isNotEmpty()) {
-                val distinctDisplayList = remember(displayList) {
-                    LazyListKeyPolicy.deduplicateById(displayList) { it.id }
-                }
+            } else if (distinctDisplayList.isNotEmpty()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding =

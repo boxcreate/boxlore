@@ -42,6 +42,12 @@ internal object OnboardingSuggestionsLanes {
             )
     }
 
+    fun deduplicateLanes(lanes: List<OnboardingSuggestionsLane>): List<OnboardingSuggestionsLane> =
+        cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(lanes) { it.id }
+
+    fun deduplicatePodcasts(podcasts: List<Podcast>): List<Podcast> =
+        cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(podcasts) { it.id }
+
     fun clampIndex(
         index: Int,
         laneCount: Int,

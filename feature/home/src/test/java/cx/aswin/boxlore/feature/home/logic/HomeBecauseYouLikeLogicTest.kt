@@ -137,6 +137,52 @@ class HomeBecauseYouLikeLogicTest {
         assertEquals("Podcast", fallback.title)
     }
 
+    @Test
+    fun `filterRailPodcasts removes duplicate ids and drops blank ids`() {
+        val podcasts = listOf(
+            TestFixtures.podcast(id = "show-1", title = "Show 1"),
+            TestFixtures.podcast(id = "show-1", title = "Show 1 Dup"),
+            TestFixtures.podcast(id = "   ", title = "Blank"),
+            TestFixtures.podcast(id = "show-2", title = "Show 2"),
+        )
+        val filtered = HomeBecauseYouLikeLogic.filterRailPodcasts(podcasts)
+        assertEquals(listOf("show-1", "show-2"), filtered.map { it.id })
+        assertEquals("Show 1", filtered[0].title)
+    }
+
+    @Test
+    fun `filterRailPodcasts returns empty list when all ids are invalid or list is empty`() {
+        val allInvalid = listOf(
+            TestFixtures.podcast(id = ""),
+            TestFixtures.podcast(id = "   "),
+        )
+        assertEquals(emptyList<String>(), HomeBecauseYouLikeLogic.filterRailPodcasts(allInvalid).map { it.id })
+        assertEquals(emptyList<String>(), HomeBecauseYouLikeLogic.filterRailPodcasts(emptyList()).map { it.id })
+    }
+
+    @Test
+    fun `filterRailEpisodes removes duplicate ids and drops blank ids`() {
+        val episodes = listOf(
+            TestFixtures.episode(id = "ep-1", title = "Episode 1"),
+            TestFixtures.episode(id = "ep-1", title = "Episode 1 Dup"),
+            TestFixtures.episode(id = "  ", title = "Blank"),
+            TestFixtures.episode(id = "ep-2", title = "Episode 2"),
+        )
+        val filtered = HomeBecauseYouLikeLogic.filterRailEpisodes(episodes)
+        assertEquals(listOf("ep-1", "ep-2"), filtered.map { it.id })
+        assertEquals("Episode 1", filtered[0].title)
+    }
+
+    @Test
+    fun `filterRailEpisodes returns empty list when all ids are invalid or list is empty`() {
+        val allInvalid = listOf(
+            TestFixtures.episode(id = ""),
+            TestFixtures.episode(id = "   "),
+        )
+        assertEquals(emptyList<String>(), HomeBecauseYouLikeLogic.filterRailEpisodes(allInvalid).map { it.id })
+        assertEquals(emptyList<String>(), HomeBecauseYouLikeLogic.filterRailEpisodes(emptyList()).map { it.id })
+    }
+
     private fun historyItem(
         podcastId: String,
         name: String,

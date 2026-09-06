@@ -57,6 +57,17 @@ internal data class EpisodeRecommendationState(
     val emptyMessage: String? = null,
 )
 
+internal object EpisodeRecommendationSectionLogic {
+    fun filterEpisodes(episodes: List<Episode>): List<Episode> =
+        LazyListKeyPolicy.deduplicateById(episodes) { it.id }
+
+    fun shouldRender(
+        isLoading: Boolean,
+        hasEpisodes: Boolean,
+        emptyMessage: String?,
+    ): Boolean = isLoading || hasEpisodes || emptyMessage != null
+}
+
 @Composable
 internal fun EpisodeRecommendationSection(
     state: EpisodeRecommendationState,
@@ -65,6 +76,18 @@ internal fun EpisodeRecommendationSection(
     onHeaderClick: (() -> Unit)? = null,
     onScrollStarted: (() -> Unit)? = null,
 ) {
+    val distinctEpisodes = remember(state.episodes) {
+        EpisodeRecommendationSectionLogic.filterEpisodes(state.episodes)
+    }
+    if (!EpisodeRecommendationSectionLogic.shouldRender(
+            isLoading = state.loading,
+            hasEpisodes = distinctEpisodes.isNotEmpty(),
+            emptyMessage = state.emptyMessage,
+        )
+    ) {
+        return
+    }
+
     val listState = rememberLazyListState()
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) onScrollStarted?.invoke()
@@ -80,50 +103,11 @@ internal fun EpisodeRecommendationSection(
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(modifier = Modifier.padding(vertical = 16.dp)) {
-            Row(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (onHeaderClick != null) {
-                            Modifier.expressiveClickable(
-                                shape = MaterialTheme.shapes.large,
-                                onClick = onHeaderClick,
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ).padding(horizontal = 20.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = state.icon,
-                    contentDescription = null,
-                    tint = state.accentColor,
-                    modifier = Modifier.size(22.dp),
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = state.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = GoogleSansWeight.extraBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                if (onHeaderClick != null) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                        contentDescription = "Open ${state.title}",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            EpisodeRecommendationHeader(
+                state = state,
+                onHeaderClick = onHeaderClick,
+            )
             Spacer(Modifier.height(14.dp))
-            val distinctEpisodes = remember(state.episodes) {
-                LazyListKeyPolicy.deduplicateById(state.episodes) { it.id }
-            }
             LazyRow(
                 state = listState,
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -155,6 +139,53 @@ internal fun EpisodeRecommendationSection(
                         }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EpisodeRecommendationHeader(
+    state: EpisodeRecommendationState,
+    onHeaderClick: (() -> Unit)?,
+) {
+    Row(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .then(
+                if (onHeaderClick != null) {
+                    Modifier.expressiveClickable(
+                        shape = MaterialTheme.shapes.large,
+                        onClick = onHeaderClick,
+                    )
+                } else {
+                    Modifier
+                },
+            ).padding(horizontal = 20.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = state.icon,
+            contentDescription = null,
+            tint = state.accentColor,
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = state.title,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = GoogleSansWeight.extraBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (onHeaderClick != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = "Open ${state.title}",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

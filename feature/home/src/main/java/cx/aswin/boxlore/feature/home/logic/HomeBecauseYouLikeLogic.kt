@@ -33,6 +33,12 @@ internal object HomeBecauseYouLikeLogic {
         scores: Map<String, Double>,
     ): List<Episode> = episodes.sortedByDescending { scores[it.id] ?: 0.0 }
 
+    fun filterRailPodcasts(podcasts: List<Podcast>): List<Podcast> =
+        cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(podcasts) { it.id }
+
+    fun filterRailEpisodes(episodes: List<Episode>): List<Episode> =
+        cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy.deduplicateById(episodes) { it.id }
+
     fun candidatePodcastsFromHistory(
         subs: List<Podcast>,
         history: List<HomeListeningHistoryItem>,

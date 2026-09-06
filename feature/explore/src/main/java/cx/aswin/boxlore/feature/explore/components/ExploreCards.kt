@@ -336,7 +336,7 @@ fun ExploreVibeChipRow(
     modifier: Modifier = Modifier,
 ) {
     val distinctVibes = remember(vibes) {
-        LazyListKeyPolicy.deduplicateBy(vibes) { it.first }
+        LazyListKeyPolicy.deduplicateById(vibes) { it.first }
     }
     LazyRow(
         modifier = modifier.fillMaxWidth(),

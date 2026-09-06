@@ -56,4 +56,69 @@ class ExploreBrowseLogicTest {
         assertEquals("News", podcast.genre)
         assertTrue(podcast.latestEpisode === episode)
     }
+
+    @Test
+    fun `projectDisplayList removes duplicates and drops blank ids`() {
+        val podcasts = listOf(
+            TestFixtures.podcast(id = "show-1", title = "First"),
+            TestFixtures.podcast(id = "show-1", title = "Duplicate First"),
+            TestFixtures.podcast(id = "  ", title = "Blank ID"),
+            TestFixtures.podcast(id = "show-2", title = "Second"),
+        )
+        val projected = ExploreBrowseLogic.projectDisplayList(podcasts)
+        assertEquals(listOf("show-1", "show-2"), projected.map { it.id })
+        assertEquals("First", projected[0].title)
+    }
+
+    @Test
+    fun `projectGridItems drops hero when browsing without vibe`() {
+        val displayList = listOf(
+            TestFixtures.podcast(id = "hero"),
+            TestFixtures.podcast(id = "grid-1"),
+            TestFixtures.podcast(id = "grid-2"),
+        )
+        val gridItems = ExploreBrowseLogic.projectGridItems(
+            displayList = displayList,
+            isSearching = false,
+            hasCurrentVibe = false,
+        )
+        assertEquals(listOf("grid-1", "grid-2"), gridItems.map { it.id })
+    }
+
+    @Test
+    fun `projectGridItems retains hero when searching or when vibe is active`() {
+        val displayList = listOf(
+            TestFixtures.podcast(id = "hero"),
+            TestFixtures.podcast(id = "grid-1"),
+        )
+        val searchingGrid = ExploreBrowseLogic.projectGridItems(
+            displayList = displayList,
+            isSearching = true,
+            hasCurrentVibe = false,
+        )
+        assertEquals(listOf("hero", "grid-1"), searchingGrid.map { it.id })
+
+        val vibeGrid = ExploreBrowseLogic.projectGridItems(
+            displayList = displayList,
+            isSearching = false,
+            hasCurrentVibe = true,
+        )
+        assertEquals(listOf("hero", "grid-1"), vibeGrid.map { it.id })
+    }
+
+    @Test
+    fun `filterAlsoFound drops items present in catalog with whitespace normalization`() {
+        val catalog = listOf(
+            TestFixtures.podcast(id = " show-1 "),
+            TestFixtures.podcast(id = "show-2"),
+        )
+        val alsoFound = listOf(
+            TestFixtures.podcast(id = "show-1"),
+            TestFixtures.podcast(id = "show-3"),
+            TestFixtures.podcast(id = "show-3"),
+            TestFixtures.podcast(id = "   "),
+        )
+        val filtered = ExploreBrowseLogic.filterAlsoFound(alsoFound, catalog)
+        assertEquals(listOf("show-3"), filtered.map { it.id })
+    }
 }

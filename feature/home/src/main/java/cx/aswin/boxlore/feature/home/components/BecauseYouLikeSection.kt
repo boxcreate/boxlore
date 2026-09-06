@@ -32,6 +32,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 import cx.aswin.boxlore.feature.home.StablePodcastList
+import cx.aswin.boxlore.feature.home.logic.HomeBecauseYouLikeLogic
 
 @Composable
 fun BecauseYouLikeSection(
@@ -168,7 +169,7 @@ fun BecauseYouLikeSection(
 
         // --- Subsection 1: Suggested Shows (OutlinedCard Grid Matching CuratedEpisodeCard) ---
         val distinctSuggestedPodcasts = remember(suggestedPodcasts.list) {
-            LazyListKeyPolicy.deduplicateById(suggestedPodcasts.list) { it.id }
+            HomeBecauseYouLikeLogic.filterRailPodcasts(suggestedPodcasts.list)
         }
         if (distinctSuggestedPodcasts.isNotEmpty()) {
             Spacer(modifier = Modifier.height(28.dp))
@@ -201,7 +202,7 @@ fun BecauseYouLikeSection(
 
         // --- Subsection 2: Recommended Episodes ---
         val distinctRecommendations = remember(recommendations.list) {
-            LazyListKeyPolicy.deduplicateById(recommendations.list) { it.id }
+            HomeBecauseYouLikeLogic.filterRailEpisodes(recommendations.list)
         }
         if (distinctRecommendations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(28.dp))

@@ -264,8 +264,8 @@ internal fun OnboardingSearchScreen(
                 }
                 val distinctAlsoFound =
                     remember(alsoFoundResults, distinctResults) {
-                        val catalogIds = distinctResults.map { it.id }.toSet()
-                        val filtered = alsoFoundResults.filter { it.id !in catalogIds }
+                        val catalogIds = distinctResults.mapNotNull { it.id.trim().takeIf(String::isNotEmpty) }.toSet()
+                        val filtered = alsoFoundResults.filter { it.id.trim().takeIf(String::isNotEmpty) !in catalogIds }
                         LazyListKeyPolicy.deduplicateById(filtered) { it.id }
                     }
                 val listState = rememberLazyListState()

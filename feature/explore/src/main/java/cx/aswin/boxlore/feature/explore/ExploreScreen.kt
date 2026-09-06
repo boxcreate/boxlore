@@ -83,6 +83,7 @@ import cx.aswin.boxlore.feature.explore.components.ExploreTabSelectorFab
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeCard
 import cx.aswin.boxlore.feature.explore.components.ExploreVibeChipRow
 import cx.aswin.boxlore.feature.explore.components.SearchTabSelector
+import cx.aswin.boxlore.feature.explore.logic.ExploreBrowseLogic
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
@@ -172,7 +173,7 @@ fun ExploreContent(
     }
     val rawDisplayList = if (state.isSearching) state.searchResults else state.trending
     val displayList = remember(rawDisplayList) {
-        LazyListKeyPolicy.deduplicateById(rawDisplayList) { it.id }
+        ExploreBrowseLogic.projectDisplayList(rawDisplayList)
     }
 
     val isRecommendationsFallback = state.isRecommendationsFallback
@@ -353,13 +354,11 @@ fun ExploreContent(
             }
 
             val distinctVibes = remember(state.suggestedVibes) {
-                LazyListKeyPolicy.deduplicateBy(state.suggestedVibes) { it.first }
+                LazyListKeyPolicy.deduplicateById(state.suggestedVibes) { it.first }
             }
 
             val alsoFoundDistinct = remember(state.alsoFoundResults, displayList) {
-                val catalogIds = displayList.map { it.id }.toSet()
-                val filtered = state.alsoFoundResults.filter { it.id !in catalogIds }
-                LazyListKeyPolicy.deduplicateById(filtered) { it.id }
+                ExploreBrowseLogic.filterAlsoFound(state.alsoFoundResults, displayList)
             }
 
             val pinSnapshot =
@@ -385,7 +384,11 @@ fun ExploreContent(
                 previousPin = pinSnapshot
             }
 
-            val rawGridItems = if (!state.isSearching && displayList.isNotEmpty() && state.currentVibe == null) displayList.drop(1) else displayList
+            val rawGridItems = ExploreBrowseLogic.projectGridItems(
+                displayList = displayList,
+                isSearching = state.isSearching,
+                hasCurrentVibe = state.currentVibe != null,
+            )
             val gridItems = remember(rawGridItems) {
                 val titleDistinct = rawGridItems.distinctBy { podcast ->
                     val titleKey = podcast.title.lowercase().replace(Regex("[^a-z0-9]"), "").trim()

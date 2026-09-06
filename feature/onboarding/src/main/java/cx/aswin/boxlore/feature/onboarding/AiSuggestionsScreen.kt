@@ -94,7 +94,7 @@ internal fun AiSuggestionsScreen(
                     chartsPodcasts = uiState.genreChartsPodcasts,
                     selectedGenres = uiState.selectedGenres,
                 )
-            LazyListKeyPolicy.deduplicateById(rawLanes) { it.id }
+            OnboardingSuggestionsLanes.deduplicateLanes(rawLanes)
         }
 
     var selectedLaneIndex by rememberSaveable(lanes.map { it.id }) { mutableIntStateOf(0) }
@@ -169,7 +169,7 @@ internal fun AiSuggestionsScreen(
                 }
             else -> {
                 val distinctLanePodcasts = remember(activeLane.podcasts) {
-                    LazyListKeyPolicy.deduplicateById(activeLane.podcasts) { it.id }
+                    OnboardingSuggestionsLanes.deduplicatePodcasts(activeLane.podcasts)
                 }
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
@@ -201,13 +201,11 @@ internal fun AiSuggestionsScreen(
                             label = "laneHeader",
                         ) {
                             val lane = lanes.firstOrNull { l -> l.id == it } ?: activeLane
+                            val selectedInLane = distinctLanePodcasts.count { it.id in uiState.subscribedPodcastIds }
                             SuggestionsActiveLaneHeader(
                                 lane = lane,
-                                selectedInLane =
-                                OnboardingSuggestionsLanes.selectedCountInLane(
-                                    lane,
-                                    uiState.subscribedPodcastIds,
-                                ),
+                                selectedInLane = selectedInLane,
+                                totalInLane = distinctLanePodcasts.size,
                                 onToggleAll = {
                                     if (!lane.isCharts) {
                                         onToggleRowSubscriptions(lane.title)
@@ -406,9 +404,10 @@ private fun SuggestionsLaneCountBadge(
 private fun SuggestionsActiveLaneHeader(
     lane: OnboardingSuggestionsLane,
     selectedInLane: Int,
+    totalInLane: Int,
     onToggleAll: () -> Unit,
 ) {
-    val allSelected = lane.podcasts.isNotEmpty() && selectedInLane == lane.podcasts.size
+    val allSelected = totalInLane > 0 && selectedInLane == totalInLane
     // Compact toolbar: purpose + Select all only (title already on the active chip).
     Row(
         modifier =
