@@ -42,6 +42,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
     HistoryTopBar.kt              — collapsible top app bar + overflow menu
   subscriptions/
     SubscriptionTabs.kt           — Shows|New Episodes switcher; Explore-style genre pills with icons
+    SubscriptionsTabSelectorFab.kt — Floating segmented FAB pill indicator for Shows/New Episodes
     SubscriptionGenreCatalog.kt   — genre label/icon map mirrored from Explore
     SubscriptionTabContents.kt    — Shows grid/list + New Episodes catch-up list (Play All FAB); calvin reorderable on unfiltered Shows (ordered ids, current Podcast objects)
     SubscriptionRows.kt           — grid cards (title fallback on broken art), list/latest rows, date headers
@@ -54,6 +55,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 ## Subscriptions UX contracts
 
 - Route: `library/subscriptions?tab={0|1}` (`0` = Shows, `1` = New Episodes). Omitting `tab` (Library hub, Open app to Subscriptions) uses Appearance **Default tabs** (`shows` / `new_episodes`). Explicit `tab` still wins (Home Latest, widgets).
+- Tab presentation style: Appearance setting allows switching Subscriptions tab style between **Top** (header tab switcher, default) and **Floating** (bottom pill FAB mirroring Explore). When Floating is active, top header tabs are omitted, and the Play All FAB on New Episodes elevates above the floating tab selector with spring animation.
 - Shows: image-only 3-column grid (default) or richer list; Explore-style `PillFilterChip` genres **with icons**; sort menu in the top bar (Smart / Recently Updated / A–Z / Most Listened / Manual); Smart shares Home Your Shows' deterministic score (log-normalized listening signals plus a bounded three-day subscribe-recency floor, not a front-of-list slice); long-press-drag artwork on the unfiltered Shows list (genre All, empty search) to reorder — covers keep the usual shrink-bounce on tap and stay rounded while dragging; the first drop seeds `subscription_manual_order` from the visible list and switches `subscription_sort` to Manual; drag state stores ordered ids and re-reads current `Podcast` objects so artwork/episode badges stay fresh; new shows append A–Z at the end of Manual; unsubscribe drops that id from Manual order (and Home pins); a circular pin badge marks Home-pinned shows; NEW badge uses shared `isLatestEpisodeNew` (Room `rssHasNewEpisodes` for true-RSS and PI direct-feed tips, else 48h); broken/missing art shows podcast title on the cover.
 - New Episodes: latest episode per show from Room `latestEpisode` (PI tip, or publisher-feed tip when opted into **Missing episodes?**); the screen calls `SubscriptionForegroundSync.requestRefresh` on appear so this is a live `/sync` (including **Open app to** Subscriptions), not a cache-only paint from a previous session. Same icon genre pills; Smart vs Chronological sort plus **Hide played episodes** checkbox in the Sort menu; denser play rows; quieter sticky date headers; Play All FAB.
 - Search stays in the top bar without removing the tab switcher. No glance/summary strip. Genre row is pills-only (sort/hide are not on that row).

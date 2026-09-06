@@ -15,6 +15,7 @@ internal object Keys {
     val OPEN_APP_TO = stringPreferencesKey("open_app_to")
     val EXPLORE_DEFAULT_TAB = stringPreferencesKey(ExploreDefaultTab.PREF_KEY)
     val SUBSCRIPTIONS_DEFAULT_TAB = stringPreferencesKey(SubscriptionsDefaultTab.PREF_KEY)
+    val SUBSCRIPTIONS_TAB_STYLE = stringPreferencesKey(SubscriptionsTabStyle.PREF_KEY)
     val HAS_DISMISSED_REGION_NUDGE = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_region_nudge")
     val HAS_DISMISSED_EXPLORE_REGION_NUDGE = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_explore_region_nudge")
     val WAS_INITIAL_REGION_MATCH = androidx.datastore.preferences.core.booleanPreferencesKey("was_initial_region_match")

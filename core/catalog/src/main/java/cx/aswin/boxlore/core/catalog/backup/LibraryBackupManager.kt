@@ -37,6 +37,8 @@ data class GlobalPreferencesBackup(
     val themeBrand: String? = null,
     val surfaceStyle: String? = null,
     val useDynamicColor: Boolean? = null,
+    val fontRoundness: String? = null,
+    val navigationStyle: String? = null,
     val openAppTo: String? = null,
     val subscriptionSort: String? = null,
     val subscriptionManualOrder: List<String>? = null,
@@ -57,6 +59,7 @@ data class GlobalPreferencesBackup(
     val widgetAppearance: String? = null,
     val exploreDefaultTab: String? = null,
     val subscriptionsDefaultTab: String? = null,
+    val subscriptionsTabStyle: String? = null,
     val smartDownloadsEnabled: Boolean? = null,
     val smartDownloadsMaxEpisodes: Int? = null,
     val smartDownloadsStorageBudget: Long? = null,
@@ -112,6 +115,8 @@ class LibraryBackupManager(
                     themeBrand = userPrefs.themeBrandStream.first(),
                     surfaceStyle = userPrefs.surfaceStyleStream.first(),
                     useDynamicColor = userPrefs.useDynamicColorStream.first(),
+                    fontRoundness = userPrefs.fontRoundnessStream.first(),
+                    navigationStyle = userPrefs.navigationStyleStream.first(),
                     openAppTo = userPrefs.openAppToStream.first(),
                     subscriptionSort = userPrefs.subscriptionSortStream.first(),
                     subscriptionManualOrder = userPrefs.subscriptionManualOrderStream.first(),
@@ -132,6 +137,7 @@ class LibraryBackupManager(
                     widgetAppearance = userPrefs.widgetAppearanceStream.first(),
                     exploreDefaultTab = userPrefs.exploreDefaultTabStream.first(),
                     subscriptionsDefaultTab = userPrefs.subscriptionsDefaultTabStream.first(),
+                    subscriptionsTabStyle = userPrefs.subscriptionsTabStyleStream.first(),
                     smartDownloadsEnabled = userPrefs.smartDownloadsEnabledStream.first(),
                     smartDownloadsMaxEpisodes = userPrefs.smartDownloadsMaxEpisodesStream.first(),
                     smartDownloadsStorageBudget = userPrefs.smartDownloadsStorageBudgetStream.first(),
@@ -226,6 +232,8 @@ class LibraryBackupManager(
         prefs.themeBrand.writePref { up.setThemeBrand(it) }
         prefs.surfaceStyle.writePref { up.setSurfaceStyle(it) }
         prefs.useDynamicColor.writePref { up.setUseDynamicColor(it) }
+        prefs.fontRoundness.writePref { up.setFontRoundness(it) }
+        prefs.navigationStyle.writePref { up.setNavigationStyle(it) }
         prefs.openAppTo.writePref { up.setOpenAppTo(it) }
         prefs.subscriptionSort.writePref { up.setSubscriptionSort(it) }
         prefs.subscriptionManualOrder.writePref { up.setSubscriptionManualOrder(it) }
@@ -246,6 +254,7 @@ class LibraryBackupManager(
         prefs.widgetAppearance.writePref { up.setWidgetAppearance(it) }
         prefs.exploreDefaultTab.writePref { up.setExploreDefaultTab(it) }
         prefs.subscriptionsDefaultTab.writePref { up.setSubscriptionsDefaultTab(it) }
+        prefs.subscriptionsTabStyle.writePref { up.setSubscriptionsTabStyle(it) }
         restoreImportedSmartDownloadPrefs(prefs, up)
         prefs.autoDownloadWifiOnly.writePref { up.setAutoDownloadWifiOnly(it) }
         prefs.autoDownloadMaxEpisodes.writePref { up.setAutoDownloadMaxEpisodes(it) }

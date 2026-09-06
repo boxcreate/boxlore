@@ -13,6 +13,7 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 - `FontRoundnessAxis` centralizes lettering preset keys and ROND axis values for prefs, playback (Android Auto collage badges), and other non-Compose readers.
 - `WidgetAppearance` sanitizes home-screen widget chrome (`app` default vs `system`) and reads it from theme fast-cache for RemoteViews.
 - `ExploreDefaultTab` / `SubscriptionsDefaultTab` sanitize Appearance **Default tabs** (`for_you`/`top`, `shows`/`new_episodes`) and resolve the pager index when a route does not already pick a tab.
+- `SubscriptionsTabStyle` defines and sanitizes Subscriptions tab layout choices: `top` (default) vs `floating` (FAB style).
 - `BoxcastPrefs` stores the permanent Home video-showcase dismissal in the canonical `boxlore_prefs` file (`featured_video_showcase_dismissed`). The showcase asks for confirmation before writing it and does not reappear afterward.
 - `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
 - `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, Learn history, and learner-log gates. `clearBylCacheIfPodcastId` invalidates a Because-you-like cache when its seed show adopts a new catalog id.
@@ -26,16 +27,17 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 ```text
 src/main/java/cx/aswin/boxlore/core/prefs/
   BoxcastPrefs.kt
-  EngagementPromptConstants.kt
-  PlaybackSkipBounds.kt
-  PrefsFileMigrator.kt
-  UserPreferenceKeys.kt
-  FontRoundnessAxis.kt
-  WidgetAppearance.kt
   DefaultLandingTabs.kt
-  UserPreferencesRepository.kt
-  PreferenceIdList.kt
+  EngagementPromptConstants.kt
+  FontRoundnessAxis.kt
   HomePinnedShows.kt
+  PlaybackSkipBounds.kt
+  PreferenceIdList.kt
+  PrefsFileMigrator.kt
+  SubscriptionsTabStyle.kt
+  UserPreferenceKeys.kt
+  UserPreferencesRepository.kt
+  WidgetAppearance.kt
 ```
 
 ## Dependencies

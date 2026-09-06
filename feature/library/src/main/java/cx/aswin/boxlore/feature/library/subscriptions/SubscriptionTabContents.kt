@@ -235,23 +235,29 @@ private fun ShowsReorderableList(
     }
 }
 
+/** Configuration for [LatestTabContent], grouped to keep the composable parameter list small. */
+internal data class LatestTabConfig(
+    val useSmartRank: Boolean,
+    val hideCompleted: Boolean,
+    val isPlayerActive: Boolean = false,
+    val playAllBottomPadding: androidx.compose.ui.unit.Dp? = null,
+)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun LatestTabContent(
     podcasts: List<Podcast>,
     allHistory: List<ListeningHistoryEntity>,
-    useSmartRank: Boolean,
-    hideCompleted: Boolean,
+    config: LatestTabConfig,
     scoreEpisodes: suspend (
         List<Podcast>,
         List<ListeningHistoryEntity>,
     ) -> Map<String, Double>,
     actions: LatestTabActions,
-    isPlayerActive: Boolean = false,
 ) {
     val allWithLatest = remember(podcasts) { podcasts.filter { it.latestEpisode != null } }
-    val episodePodcasts = remember(allWithLatest, hideCompleted) {
-        if (hideCompleted) {
+    val episodePodcasts = remember(allWithLatest, config.hideCompleted) {
+        if (config.hideCompleted) {
             allWithLatest.filter { it.episodeStatus != EpisodeStatus.COMPLETED }
         } else {
             allWithLatest
@@ -277,10 +283,9 @@ internal fun LatestTabContent(
             LatestEpisodesList(
                 episodePodcasts = episodePodcasts,
                 allHistory = allHistory,
-                useSmartRank = useSmartRank,
+                config = config,
                 scoreEpisodes = scoreEpisodes,
                 actions = actions,
-                isPlayerActive = isPlayerActive,
             )
     }
 }
@@ -298,13 +303,12 @@ internal data class LatestTabActions(
 private fun LatestEpisodesList(
     episodePodcasts: List<Podcast>,
     allHistory: List<ListeningHistoryEntity>,
-    useSmartRank: Boolean,
+    config: LatestTabConfig,
     scoreEpisodes: suspend (
         List<Podcast>,
         List<ListeningHistoryEntity>,
     ) -> Map<String, Double>,
     actions: LatestTabActions,
-    isPlayerActive: Boolean,
 ) {
     val distinctGenres = remember(episodePodcasts) { extractDistinctGenres(episodePodcasts) }
     var selectedGenre by rememberSaveable { mutableStateOf("All") }
@@ -315,15 +319,15 @@ private fun LatestEpisodesList(
         initialValue = emptyMap<String, Double>(),
         filteredEpisodePodcasts,
         allHistory,
-        useSmartRank,
+        config.useSmartRank,
     ) {
-        value = scoreLatestIfNeeded(useSmartRank, filteredEpisodePodcasts, allHistory, scoreEpisodes)
+        value = scoreLatestIfNeeded(config.useSmartRank, filteredEpisodePodcasts, allHistory, scoreEpisodes)
     }
-    val displayPodcasts = remember(filteredEpisodePodcasts, useSmartRank, episodeScores) {
-        sortLatestDisplayPodcasts(filteredEpisodePodcasts, useSmartRank, episodeScores)
+    val displayPodcasts = remember(filteredEpisodePodcasts, config.useSmartRank, episodeScores) {
+        sortLatestDisplayPodcasts(filteredEpisodePodcasts, config.useSmartRank, episodeScores)
     }
-    val groupedEpisodes = remember(displayPodcasts, useSmartRank) {
-        groupLatestByDateHeader(displayPodcasts, useSmartRank)
+    val groupedEpisodes = remember(displayPodcasts, config.useSmartRank) {
+        groupLatestByDateHeader(displayPodcasts, config.useSmartRank)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -347,7 +351,7 @@ private fun LatestEpisodesList(
                 )
             }
             latestEpisodeItems(
-                useSmartRank = useSmartRank,
+                useSmartRank = config.useSmartRank,
                 displayPodcasts = displayPodcasts,
                 groupedEpisodes = groupedEpisodes,
                 actions = actions,
@@ -355,8 +359,9 @@ private fun LatestEpisodesList(
         }
         LatestPlayAllFab(
             displayPodcasts = displayPodcasts,
-            isPlayerActive = isPlayerActive,
+            isPlayerActive = config.isPlayerActive,
             onPlayEpisodes = actions.onPlayEpisodes,
+            bottomPaddingOverride = config.playAllBottomPadding,
         )
     }
 }
@@ -413,11 +418,13 @@ private fun BoxScope.LatestPlayAllFab(
     displayPodcasts: List<Podcast>,
     isPlayerActive: Boolean,
     onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)?,
+    bottomPaddingOverride: androidx.compose.ui.unit.Dp? = null,
 ) {
     if (displayPodcasts.isEmpty() || onPlayEpisodes == null) return
     val firstPodcast = displayPodcasts.firstOrNull() ?: return
     PlayAllFab(
         isPlayerActive = isPlayerActive,
+        bottomPaddingOverride = bottomPaddingOverride,
         onClick = {
             onPlayEpisodes(displayPodcasts.map { it.latestEpisode!! }, firstPodcast)
         },
