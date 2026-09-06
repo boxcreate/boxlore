@@ -162,7 +162,7 @@ internal fun FolderEditSheetContent(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
             .padding(bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         FolderEditTopBar(
             isEditing = state.isEditing,
@@ -170,13 +170,6 @@ internal fun FolderEditSheetContent(
             onClose = actions.onClose,
             onDelete = actions.onDelete,
             onSave = actions.onSave,
-        )
-
-        FolderEditLivePreview(
-            name = state.nameText,
-            iconKey = state.selectedIconKey,
-            displaySize = state.selectedDisplaySize,
-            linkedGenre = state.effectiveLinkedGenre,
         )
 
         FolderNameInputField(
@@ -198,18 +191,18 @@ internal fun FolderEditSheetContent(
             onSizeSelected = actions.onSelectDisplaySize,
         )
 
-        FolderAutoSyncToggle(
+        FolderIconPickerSection(
+            selectedIconKey = state.selectedIconKey,
+            queryText = state.nameText,
+            onSelectIcon = actions.onSelectIcon,
+        )
+
+        FolderAutoSyncCard(
             autoSync = state.autoSyncGenre,
             onAutoSyncChange = actions.onAutoSyncChange,
             linkedGenre = state.effectiveLinkedGenre ?: state.nameText.trim(),
             suggestedGenres = state.suggestedGenres,
             onSelectLinkedGenre = actions.onSelectLinkedGenre,
-        )
-
-        FolderIconPickerSection(
-            selectedIconKey = state.selectedIconKey,
-            queryText = state.nameText,
-            onSelectIcon = actions.onSelectIcon,
         )
     }
 }

@@ -57,4 +57,27 @@ class SubscriptionFolderTest {
 
         assertFalse(folder.hasIcon)
     }
+
+    @Test
+    fun `folder supports wide and large 2x3 max display sizes`() {
+        val wideFolder = SubscriptionFolder(
+            id = "folder-4",
+            name = "Wide Section",
+            displaySize = FolderDisplaySize.WIDE,
+        )
+        assertEquals(FolderDisplaySize.WIDE, wideFolder.displaySize)
+        assertEquals(2, wideFolder.displaySize.spanCols)
+        assertEquals(1, wideFolder.displaySize.spanRows)
+        assertEquals("2×1", wideFolder.displaySize.dimensionsLabel)
+
+        val largeFolder = SubscriptionFolder(
+            id = "folder-5",
+            name = "Large 2x3 Section",
+            displaySize = FolderDisplaySize.LARGE,
+        )
+        assertEquals(FolderDisplaySize.LARGE, largeFolder.displaySize)
+        assertEquals(2, largeFolder.displaySize.spanCols)
+        assertEquals(3, largeFolder.displaySize.spanRows)
+        assertEquals("2×3", largeFolder.displaySize.dimensionsLabel)
+    }
 }
