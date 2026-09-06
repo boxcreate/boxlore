@@ -27,8 +27,25 @@ class PodcastGenresTest {
         assertEquals("Religion & Spirituality", PodcastGenres.canonicalize("religion"))
         assertEquals("Kids & Family", PodcastGenres.canonicalize("family"))
         assertEquals("TV & Film", PodcastGenres.canonicalize("tv"))
+        assertEquals("TV & Film", PodcastGenres.canonicalize("movie"))
+        assertEquals("TV & Film", PodcastGenres.canonicalize("movies"))
+        assertEquals("TV & Film", PodcastGenres.canonicalize("film"))
+        assertEquals("TV & Film", PodcastGenres.canonicalize("films"))
+        assertEquals("TV & Film", PodcastGenres.canonicalize("cinema"))
         assertEquals("Technology", PodcastGenres.canonicalize("tech"))
         assertEquals("Technology", PodcastGenres.canonicalize("Technology & Science"))
+        assertEquals("Technology", PodcastGenres.canonicalize("software"))
+        assertEquals("Technology", PodcastGenres.canonicalize("coding"))
+        assertEquals("Comedy", PodcastGenres.canonicalize("comedy"))
+        assertEquals("Comedy", PodcastGenres.canonicalize("standup"))
+        assertEquals("Comedy", PodcastGenres.canonicalize("funny"))
+        assertEquals("True Crime", PodcastGenres.canonicalize("crime"))
+        assertEquals("True Crime", PodcastGenres.canonicalize("true crime"))
+        assertEquals("Sports", PodcastGenres.canonicalize("sport"))
+        assertEquals("Business", PodcastGenres.canonicalize("finance"))
+        assertEquals("Business", PodcastGenres.canonicalize("money"))
+        assertEquals("Leisure", PodcastGenres.canonicalize("gaming"))
+        assertEquals("Government", PodcastGenres.canonicalize("politics"))
     }
 
     @Test
@@ -37,6 +54,8 @@ class PodcastGenresTest {
         assertNull(PodcastGenres.canonicalize(""))
         assertNull(PodcastGenres.canonicalize("   "))
         assertNull(PodcastGenres.canonicalize("Underwater Basket Weaving"))
+        assertNull(PodcastGenres.canonicalize("Favorites"))
+        assertNull(PodcastGenres.canonicalize("Deep Dives"))
     }
 
     @Test
@@ -74,5 +93,49 @@ class PodcastGenresTest {
         )
         assertEquals("Tech Deep Dives", customPod.effectiveGenre)
         assertEquals("code", customPod.customGenreIcon)
+    }
+
+    @Test
+    fun podcastRecommendationGenreResolvesCanonicalCustomGenre() {
+        val customPod = Podcast(
+            id = "1",
+            title = "Test",
+            artist = "Host",
+            imageUrl = "",
+            genre = "Comedy",
+            customGenre = "movie",
+        )
+        assertEquals("TV & Film", customPod.recommendationGenre)
+        assertEquals("movie", customPod.effectiveGenre)
+    }
+
+    @Test
+    fun podcastRecommendationGenreFallsBackToCatalogGenreWhenCustomGenreIsArbitrary() {
+        val customPod = Podcast(
+            id = "1",
+            title = "Test",
+            artist = "Host",
+            imageUrl = "",
+            genre = "Comedy",
+            customGenre = "Favorites",
+        )
+        assertEquals("Comedy", customPod.recommendationGenre)
+        assertEquals("Favorites", customPod.effectiveGenre)
+    }
+
+    @Test
+    fun podcastRecommendationGenreFallsBackToCatalogGenreWhenCustomGenreNullOrBlank() {
+        val nullCustomPod = Podcast(
+            id = "1",
+            title = "Test",
+            artist = "Host",
+            imageUrl = "",
+            genre = "News",
+            customGenre = null,
+        )
+        assertEquals("News", nullCustomPod.recommendationGenre)
+
+        val blankCustomPod = nullCustomPod.copy(customGenre = "   ")
+        assertEquals("News", blankCustomPod.recommendationGenre)
     }
 }

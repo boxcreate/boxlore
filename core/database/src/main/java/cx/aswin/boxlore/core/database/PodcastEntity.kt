@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.database
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import cx.aswin.boxlore.core.model.PodcastGenres
 
 @Entity(
     tableName = "podcasts",
@@ -68,6 +69,13 @@ data class PodcastEntity(
     val effectiveGenre: String
         get() = if (isSubscribed) {
             customGenre?.takeIf { it.isNotBlank() } ?: (genre ?: "Podcast")
+        } else {
+            genre ?: "Podcast"
+        }
+
+    val recommendationGenre: String
+        get() = if (isSubscribed) {
+            PodcastGenres.canonicalize(customGenre) ?: (genre ?: "Podcast")
         } else {
             genre ?: "Podcast"
         }

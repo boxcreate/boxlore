@@ -44,7 +44,7 @@ class HomeGenreResolutionTest {
     }
 
     @Test
-    fun `subscribedGenres extraction for recommendation queries uses catalog genre`() {
+    fun `subscribedGenres extraction for recommendation queries adapts to canonical custom genre`() {
         val pod1 = Podcast(
             id = "1",
             title = "One",
@@ -53,7 +53,7 @@ class HomeGenreResolutionTest {
             imageUrl = "",
             feedUrl = "",
             genre = "Comedy",
-            customGenre = "Standup",
+            customGenre = "Film",
             subscribedAt = 1000L,
         )
         val pod2 = Podcast(
@@ -67,7 +67,18 @@ class HomeGenreResolutionTest {
             customGenre = null,
             subscribedAt = 1000L,
         )
-        val genres = listOf(pod1, pod2).mapNotNull { it.genre }.distinct()
-        assertEquals(listOf("Comedy", "Technology"), genres)
+        val pod3 = Podcast(
+            id = "3",
+            title = "Three",
+            artist = "C",
+            description = "",
+            imageUrl = "",
+            feedUrl = "",
+            genre = "Business",
+            customGenre = "Favorites",
+            subscribedAt = 1000L,
+        )
+        val genres = listOf(pod1, pod2, pod3).mapNotNull { it.recommendationGenre }.distinct()
+        assertEquals(listOf("TV & Film", "Technology", "Business"), genres)
     }
 }

@@ -1,6 +1,6 @@
 package cx.aswin.boxlore.feature.info.components
 
-import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -8,14 +8,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
@@ -30,6 +34,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,30 +44,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
 import cx.aswin.boxlore.core.designsystem.icon.GenreIconItem
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-
-private val STANDARD_SUGGESTIONS = listOf(
-    "Tech",
-    "News",
-    "Comedy",
-    "True Crime",
-    "Business",
-    "Society",
-    "Science",
-    "Music",
-    "Sports",
-    "History",
-    "Education",
-    "Health",
-    "Fiction",
-    "Favorites",
-    "Deep Dives",
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +65,8 @@ internal fun PodcastGenreEditSheet(
 ) {
     var genreText by remember(customGenre) { mutableStateOf(customGenre ?: "") }
     var selectedIconKey by remember(customGenreIcon) { mutableStateOf(customGenreIcon) }
+    val focusManager = LocalFocusManager.current
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val effectiveGenre = genreText.trim().ifEmpty { catalogGenre.ifEmpty { "Podcast" } }
     val effectiveIcon: ImageVector = GenreIcons.findIcon(selectedIconKey)
@@ -85,13 +77,16 @@ internal fun PodcastGenreEditSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentWindowInsets = { WindowInsets.navigationBars },
+        modifier = Modifier.imePadding(),
     ) {
         Column(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 24.dp),
@@ -122,6 +117,13 @@ internal fun PodcastGenreEditSheet(
                 label = { Text("Tag or genre name") },
                 placeholder = { Text(catalogGenre.ifEmpty { "e.g. Deep Dives, Favorites" }) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { focusManager.clearFocus() },
+                ),
                 trailingIcon = {
                     if (genreText.isNotEmpty()) {
                         IconButton(onClick = { genreText = "" }) {
@@ -139,13 +141,8 @@ internal fun PodcastGenreEditSheet(
             GenreEditSuggestionsRow(
                 genreText = genreText,
                 onSelectSuggestion = { suggestion ->
-                    genreText = suggestion
-                    if (selectedIconKey == null) {
-                        val matchedIcon = GenreIcons.findIcon(suggestion)
-                        if (matchedIcon != null) {
-                            selectedIconKey = suggestion.lowercase()
-                        }
-                    }
+                    genreText = suggestion.name
+                    selectedIconKey = suggestion.iconKey
                 },
             )
 
@@ -240,11 +237,17 @@ private fun GenreEditPreviewCard(
 @Composable
 private fun GenreEditSuggestionsRow(
     genreText: String,
-    onSelectSuggestion: (String) -> Unit,
+    onSelectSuggestion: (GenreSuggestion) -> Unit,
 ) {
+    val suggestions = remember(genreText) {
+        filterGenreSuggestions(genreText)
+    }
+
+    if (suggestions.isEmpty()) return
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Suggestions",
+            text = if (genreText.isBlank()) "Standard genres & tags" else "Matching suggestions (${suggestions.size})",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = GoogleSansWeight.bold,
@@ -256,10 +259,11 @@ private fun GenreEditSuggestionsRow(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            STANDARD_SUGGESTIONS.forEach { suggestion ->
-                val isSelected = genreText.equals(suggestion, ignoreCase = true)
+            suggestions.forEach { suggestion ->
+                val isSelected = genreText.equals(suggestion.name, ignoreCase = true)
                 PillFilterChip(
-                    label = suggestion,
+                    label = suggestion.name,
+                    icon = suggestion.icon,
                     selected = isSelected,
                     onClick = { onSelectSuggestion(suggestion) },
                 )
@@ -381,33 +385,21 @@ private fun GenreIconCell(
         MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .then(
-                if (isSelected) {
-                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onClick),
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = containerColor,
+        contentColor = contentColor,
+        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        modifier = Modifier.size(44.dp),
     ) {
-        Surface(
-            shape = CircleShape,
-            color = containerColor,
-            modifier = Modifier.size(40.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = item.label,
-                    modifier = Modifier.size(20.dp),
-                    tint = contentColor,
-                )
-            }
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.label,
+                modifier = Modifier.size(20.dp),
+                tint = contentColor,
+            )
         }
     }
 }

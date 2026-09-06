@@ -53,6 +53,9 @@ data class Podcast(
     val effectiveGenre: String
         get() = customGenre?.takeIf { it.isNotBlank() } ?: genre
 
+    val recommendationGenre: String
+        get() = PodcastGenres.canonicalize(customGenre) ?: genre
+
     companion object {
         const val SOURCE_PODCAST_INDEX = "podcast_index"
         const val SOURCE_RSS = "rss"

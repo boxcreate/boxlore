@@ -144,6 +144,7 @@ class SmartQueueEngineTest {
         id: String,
         type: String = "episodic",
         genre: String = "Comedy",
+        customGenre: String? = null,
         preferredSort: String? = null,
         latestEpisode: Episode? = null,
     ) = Podcast(
@@ -153,6 +154,7 @@ class SmartQueueEngineTest {
         imageUrl = "https://img/$id.png",
         type = type,
         genre = genre,
+        customGenre = customGenre,
         preferredSort = preferredSort,
         latestEpisode = latestEpisode,
     )
@@ -760,6 +762,44 @@ class SmartQueueEngineTest {
 
         assertEquals(1, sources.trendingCalls)
         assertEquals("de", sources.lastTrendingCountry)
+        assertEquals("Comedy", sources.lastTrendingCategory)
+        assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
+    }
+
+    @Test
+    fun `trending category adapts to canonicalized customGenre`() = runTest {
+        val sources = FakeSources()
+        sources.region = "us"
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.recommendations = emptyList()
+        sources.trendingPodcasts = listOf(podcast("trend1"))
+        sources.episodesByPodcast["trend1"] = listOf(episode(901, "trend1"))
+
+        val batch = engine(sources).getNextEpisodes(
+            currentItem(1),
+            podcast("pod1", genre = "Comedy", customGenre = "movie", type = "serial"),
+        )
+
+        assertEquals(1, sources.trendingCalls)
+        assertEquals("TV & Film", sources.lastTrendingCategory)
+        assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
+    }
+
+    @Test
+    fun `trending category safely falls back to catalog genre when customGenre is arbitrary`() = runTest {
+        val sources = FakeSources()
+        sources.region = "us"
+        sources.episodesByPodcast["pod1"] = listOf(episode(1))
+        sources.recommendations = emptyList()
+        sources.trendingPodcasts = listOf(podcast("trend1"))
+        sources.episodesByPodcast["trend1"] = listOf(episode(901, "trend1"))
+
+        val batch = engine(sources).getNextEpisodes(
+            currentItem(1),
+            podcast("pod1", genre = "Comedy", customGenre = "Favorites", type = "serial"),
+        )
+
+        assertEquals(1, sources.trendingCalls)
         assertEquals("Comedy", sources.lastTrendingCategory)
         assertTrue(batch.any { it.source == SmartQueueEngine.SOURCE_TRENDING })
     }

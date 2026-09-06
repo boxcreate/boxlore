@@ -98,7 +98,7 @@ class SubscriptionRepository(
                 FeedbackTarget(
                     episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
                     podcastId = podcast.id,
-                    genre = podcast.genre,
+                    genre = podcast.recommendationGenre,
                 ),
                 action = RankingAction.SUBSCRIBE,
             )
@@ -132,7 +132,7 @@ class SubscriptionRepository(
             FeedbackTarget(
                 episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
                 podcastId = podcast.id,
-                genre = podcast.genre,
+                genre = podcast.recommendationGenre,
             ),
             action = RankingAction.UNSUBSCRIBE,
         )
@@ -235,7 +235,7 @@ class SubscriptionRepository(
                 FeedbackTarget(
                     episodeId = podcast.latestEpisode?.id ?: "podcast:${podcast.id}",
                     podcastId = podcast.id,
-                    genre = podcast.genre,
+                    genre = podcast.recommendationGenre,
                 ),
                 action = RankingAction.SUBSCRIBE,
             )
