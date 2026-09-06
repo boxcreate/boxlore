@@ -305,7 +305,34 @@ object BoxLoreDatabaseMigrations {
     }
 
     fun migrate33To35(db: SupportSQLiteDatabase) {
-        migrate33To34(db)
-        migrate34To35(db)
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS folders (
+                folderId TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                icon TEXT,
+                displaySize TEXT NOT NULL,
+                linkedGenre TEXT,
+                showPodcastGrid INTEGER NOT NULL DEFAULT 0,
+                createdAt INTEGER NOT NULL
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS podcast_folder_cross_ref (
+                podcastId TEXT NOT NULL,
+                folderId TEXT NOT NULL,
+                PRIMARY KEY(podcastId, folderId),
+                FOREIGN KEY(folderId) REFERENCES folders(folderId) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_podcast_folder_cross_ref_folderId ON podcast_folder_cross_ref(folderId)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_podcast_folder_cross_ref_podcastId ON podcast_folder_cross_ref(podcastId)",
+        )
     }
 }
