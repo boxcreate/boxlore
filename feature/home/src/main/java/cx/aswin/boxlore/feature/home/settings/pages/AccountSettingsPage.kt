@@ -8,6 +8,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,8 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -73,6 +76,9 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.core.network.AuthRepository
+import cx.aswin.boxlore.feature.home.settings.components.SettingsActionRow
+import cx.aswin.boxlore.feature.home.settings.components.SettingsContent
+import cx.aswin.boxlore.feature.home.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.home.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.home.settings.components.SettingsScaffold
 import kotlinx.coroutines.launch
@@ -163,107 +169,105 @@ internal fun AccountSettingsPage(
 }
 
 @Composable
-private fun SignedInContent(
+private fun ColumnScope.SignedInContent(
     user: BoxLoreUser,
     onSignOut: () -> Unit,
     onDeleteAccountClick: () -> Unit,
 ) {
-    SettingsGroup(title = "Your Profile") {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = MaterialTheme.shapes.extraLarge,
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(68.dp),
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(68.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        val initial = (user.displayName ?: user.email)?.take(1)?.uppercase() ?: "B"
-                        Text(
-                            text = initial,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = GoogleSansWeight.bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                Text(
-                    text = user.displayName ?: user.email ?: "boxlore listener",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = GoogleSansWeight.bold,
-                    textAlign = TextAlign.Center,
-                )
-
-                val email = user.email
-                if (user.displayName != null && email != null) {
-                    Spacer(Modifier.height(2.dp))
+                Box(contentAlignment = Alignment.Center) {
+                    val initial = (user.displayName ?: user.email)?.take(1)?.uppercase() ?: "B"
                     Text(
-                        text = email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
+                        text = initial,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = GoogleSansWeight.bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
+            }
 
-                Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(15.dp),
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = "Cloud sync active",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = GoogleSansWeight.medium,
-                        )
-                    }
-                }
+            Text(
+                text = user.displayName ?: user.email ?: "boxlore listener",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = GoogleSansWeight.bold,
+                textAlign = TextAlign.Center,
+            )
 
-                Spacer(Modifier.height(8.dp))
-
+            val email = user.email
+            if (user.displayName != null && email != null) {
+                Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "ID: ${user.uid.take(16)}...",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    fontFamily = FontFamily.Monospace,
+                    text = email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                 )
             }
+
+            Spacer(Modifier.height(12.dp))
+
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(15.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Cloud sync active",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        fontWeight = GoogleSansWeight.medium,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = "ID: ${user.uid.take(16)}...",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                fontFamily = FontFamily.Monospace,
+            )
         }
     }
 
-    SettingsGroup(title = "Cloud Synchronization") {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            shape = MaterialTheme.shapes.large,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-        ) {
+    SettingsGroup(
+        title = "Cloud Synchronization",
+        footer = "Your subscriptions, playlists, and settings stay backed up and accessible across your devices.",
+    ) {
+        SettingsContent {
             Row(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
@@ -289,7 +293,7 @@ private fun SignedInContent(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "Your subscriptions, playlists, and settings stay backed up and accessible across your devices.",
+                        text = "Connected and synchronizing changes across all your devices.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -298,55 +302,26 @@ private fun SignedInContent(
         }
     }
 
-    SettingsGroup(title = "Session") {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-            OutlinedButton(
-                onClick = onSignOut,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = MaterialTheme.shapes.large,
-            ) {
-                Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Sign Out", fontWeight = GoogleSansWeight.medium)
-            }
-        }
-    }
-
-    SettingsGroup(title = "Danger Zone") {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-            Text(
-                text = "Deleting your account permanently removes your cloud profile. Local data and downloads on this device will not be erased.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onDeleteAccountClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error,
-                ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.DeleteForever,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("Delete Account Permanently", fontWeight = GoogleSansWeight.medium)
-            }
-        }
+    SettingsGroup(title = "Account") {
+        SettingsActionRow(
+            title = "Sign Out",
+            supportingText = "Disconnect this device from your cloud account",
+            icon = Icons.AutoMirrored.Rounded.Logout,
+            onClick = onSignOut,
+        )
+        SettingsDivider()
+        SettingsActionRow(
+            title = "Delete Account",
+            supportingText = "Permanently remove your cloud profile and cross-device data",
+            icon = Icons.Rounded.DeleteForever,
+            destructive = true,
+            onClick = onDeleteAccountClick,
+        )
     }
 }
 
 @Composable
-private fun SignedOutContent(
+private fun ColumnScope.SignedOutContent(
     authRepository: AuthRepository?,
 ) {
     val context = LocalContext.current
@@ -360,477 +335,482 @@ private fun SignedOutContent(
     var magicLinkSent by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        // Hero Header
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(60.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.CloudSync,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(30.dp),
-                        )
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = "boxlore Account",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = GoogleSansWeight.bold,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "Sign in to keep your subscriptions, queue, and listening progress in sync across all your devices.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(18.dp))
-
-        // 1. Google 1-Tap Sign-In Surface
-        val googleShape = MaterialTheme.shapes.large
-        Surface(
-            shape = googleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    // Hero Header
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
-                .expressiveClickable(shape = googleShape) {
-                    if (isLoading) return@expressiveClickable
-                    isLoading = true
-                    errorMessage = null
-                    scope.launch {
-                        try {
-                            val credentialManager = CredentialManager.create(context)
-                            val googleIdOption = GetGoogleIdOption.Builder()
-                                .setFilterByAuthorizedAccounts(false)
-                                .setServerClientId(GOOGLE_SERVER_CLIENT_ID)
-                                .setAutoSelectEnabled(false)
-                                .build()
-
-                            val request = GetCredentialRequest.Builder()
-                                .addCredentialOption(googleIdOption)
-                                .build()
-
-                            val result = credentialManager.getCredential(context = context, request = request)
-                            val credential = result.credential
-                            if (credential is CustomCredential &&
-                                credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-                            ) {
-                                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                                val signInResult = authRepository?.signInWithGoogle(googleIdTokenCredential.idToken)
-                                if (signInResult?.isSuccess == true) {
-                                    Toast.makeText(context, "Signed in with Google", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    errorMessage = signInResult?.exceptionOrNull()?.localizedMessage
-                                        ?: "Google sign-in failed"
-                                }
-                            } else {
-                                errorMessage = "Unexpected credential received"
-                            }
-                        } catch (_: GetCredentialCancellationException) {
-                            // User dismissed or cancelled the Google account chooser; not an error.
-                        } catch (e: GetCredentialException) {
-                            errorMessage = e.localizedMessage ?: "Google sign-in cancelled or failed"
-                        } catch (e: Exception) {
-                            errorMessage = e.localizedMessage ?: "Error during sign in"
-                        } finally {
-                            isLoading = false
-                        }
-                    }
-                },
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(60.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.AccountCircle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = "Continue with Google",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.CloudSync,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(30.dp),
+                    )
+                }
             }
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        // Divider with text
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            HorizontalDivider(
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.outlineVariant,
-            )
+            Spacer(Modifier.height(12.dp))
             Text(
-                text = "or continue with email",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 12.dp),
+                text = "boxlore Account",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = GoogleSansWeight.bold,
             )
-            HorizontalDivider(
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.outlineVariant,
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Sign in to keep your subscriptions, queue, and listening progress in sync across all your devices.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
+    }
 
-        Spacer(Modifier.height(14.dp))
+    // Google 1-Tap Sign-In Button
+    val googleShape = MaterialTheme.shapes.extraLarge
+    Card(
+        shape = googleShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .expressiveClickable(shape = googleShape) {
+                if (isLoading) return@expressiveClickable
+                isLoading = true
+                errorMessage = null
+                scope.launch {
+                    try {
+                        val credentialManager = CredentialManager.create(context)
+                        val googleIdOption = GetGoogleIdOption.Builder()
+                            .setFilterByAuthorizedAccounts(false)
+                            .setServerClientId(GOOGLE_SERVER_CLIENT_ID)
+                            .setAutoSelectEnabled(false)
+                            .build()
 
-        // Email Authentication Surface
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            shape = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth(),
+                        val request = GetCredentialRequest.Builder()
+                            .addCredentialOption(googleIdOption)
+                            .build()
+
+                        val result = credentialManager.getCredential(context = context, request = request)
+                        val credential = result.credential
+                        if (credential is CustomCredential &&
+                            credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                        ) {
+                            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            val signInResult = authRepository?.signInWithGoogle(googleIdTokenCredential.idToken)
+                            if (signInResult?.isSuccess == true) {
+                                Toast.makeText(context, "Signed in with Google", Toast.LENGTH_SHORT).show()
+                            } else {
+                                errorMessage = signInResult?.exceptionOrNull()?.localizedMessage
+                                    ?: "Google sign-in failed"
+                            }
+                        } else {
+                            errorMessage = "Unexpected credential received"
+                        }
+                    } catch (_: GetCredentialCancellationException) {
+                        // User dismissed or cancelled the Google account chooser; not an error.
+                    } catch (e: GetCredentialException) {
+                        errorMessage = e.localizedMessage ?: "Google sign-in cancelled or failed"
+                    } catch (e: Exception) {
+                        errorMessage = e.localizedMessage ?: "Error during sign in"
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                ConnectedOptionSelector(
-                    options = listOf(
-                        EmailAuthMethod.MAGIC_LINK to "Magic Link",
-                        EmailAuthMethod.PASSWORD to "Password",
-                    ),
-                    selected = selectedMethod,
-                    onSelect = {
-                        selectedMethod = it
+            Icon(
+                imageVector = Icons.Rounded.AccountCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "Continue with Google",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = GoogleSansWeight.bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+
+    // Divider with text
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+        Text(
+            text = "or continue with email",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        )
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
+
+    // Email Authentication Section
+    SettingsGroup(
+        title = "Email Sign In",
+        footer = if (selectedMethod == EmailAuthMethod.MAGIC_LINK) {
+            "Passwordless login: enter your email and tap the link sent to your inbox."
+        } else {
+            "Sign in or create an account with your email and password."
+        },
+    ) {
+        SettingsContent {
+            ConnectedOptionSelector(
+                options = listOf(
+                    EmailAuthMethod.MAGIC_LINK to "Magic Link",
+                    EmailAuthMethod.PASSWORD to "Password",
+                ),
+                selected = selectedMethod,
+                onSelect = {
+                    selectedMethod = it
+                    errorMessage = null
+                },
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            if (selectedMethod == EmailAuthMethod.MAGIC_LINK) {
+                // Magic Link Form
+                Text(
+                    text = "Passwordless login: enter your email address and we'll send a sign-in link. Tapping the link on this device logs you in instantly.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
                         errorMessage = null
                     },
+                    label = { Text("Email address") },
+                    leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.large,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (email.isNotBlank() && !isLoading) {
+                                isLoading = true
+                                errorMessage = null
+                                scope.launch {
+                                    val result = authRepository?.sendMagicLink(email.trim())
+                                    isLoading = false
+                                    if (result?.isSuccess == true) {
+                                        magicLinkSent = true
+                                    } else {
+                                        errorMessage = result?.exceptionOrNull()?.localizedMessage
+                                            ?: "Failed to send magic link"
+                                    }
+                                }
+                            }
+                        },
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(14.dp))
 
-                if (selectedMethod == EmailAuthMethod.MAGIC_LINK) {
-                    // Magic Link Form
-                    Text(
-                        text = "Passwordless login: Enter your email and we'll send a sign-in link. Tapping the link on this device logs you in instantly.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            errorMessage = null
-                        },
-                        label = { Text("Email address") },
-                        leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                if (email.isNotBlank() && !isLoading) {
-                                    isLoading = true
-                                    errorMessage = null
-                                    scope.launch {
-                                        val result = authRepository?.sendMagicLink(email.trim())
-                                        isLoading = false
-                                        if (result?.isSuccess == true) {
-                                            magicLinkSent = true
-                                        } else {
-                                            errorMessage = result?.exceptionOrNull()?.localizedMessage
-                                                ?: "Failed to send magic link"
-                                        }
-                                    }
-                                }
-                            },
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    Spacer(Modifier.height(14.dp))
-
-                    Button(
-                        onClick = {
-                            if (email.isBlank()) {
-                                errorMessage = "Please enter your email"
-                                return@Button
-                            }
-                            isLoading = true
-                            errorMessage = null
-                            scope.launch {
-                                val result = authRepository?.sendMagicLink(email.trim())
-                                isLoading = false
-                                if (result?.isSuccess == true) {
-                                    magicLinkSent = true
-                                } else {
-                                    errorMessage = result?.exceptionOrNull()?.localizedMessage
-                                        ?: "Failed to send magic link"
-                                }
-                            }
-                        },
-                        enabled = !isLoading && email.isNotBlank(),
-                        shape = MaterialTheme.shapes.large,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        } else {
-                            Text("Send Magic Link", fontWeight = GoogleSansWeight.bold)
+                Button(
+                    onClick = {
+                        if (email.isBlank()) {
+                            errorMessage = "Please enter your email"
+                            return@Button
                         }
-                    }
-
-                    AnimatedVisibility(
-                        visible = magicLinkSent,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
-                    ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = MaterialTheme.shapes.medium,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    Icons.Rounded.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Text(
-                                    text = "Magic link sent! Check your inbox on this device and tap the link to complete sign in.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    fontWeight = GoogleSansWeight.medium,
-                                )
+                        isLoading = true
+                        errorMessage = null
+                        scope.launch {
+                            val result = authRepository?.sendMagicLink(email.trim())
+                            isLoading = false
+                            if (result?.isSuccess == true) {
+                                magicLinkSent = true
+                            } else {
+                                errorMessage = result?.exceptionOrNull()?.localizedMessage
+                                    ?: "Failed to send magic link"
                             }
                         }
-                    }
-                } else {
-                    // Password Form
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            errorMessage = null
-                        },
-                        label = { Text("Email address") },
-                        leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    Spacer(Modifier.height(10.dp))
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            errorMessage = null
-                        },
-                        label = { Text("Password") },
-                        leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) {
-                                        Icons.Rounded.VisibilityOff
-                                    } else {
-                                        Icons.Rounded.Visibility
-                                    },
-                                    contentDescription = if (passwordVisible) {
-                                        "Hide password"
-                                    } else {
-                                        "Show password"
-                                    },
-                                )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) {
-                            VisualTransformation.None
-                        } else {
-                            PasswordVisualTransformation()
-                        },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    if (!isSignUp) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    if (email.isBlank()) {
-                                        errorMessage = "Enter your email address above to reset password"
-                                        return@TextButton
-                                    }
-                                    scope.launch {
-                                        val result = authRepository?.sendPasswordReset(email.trim())
-                                        if (result?.isSuccess == true) {
-                                            Toast.makeText(
-                                                context,
-                                                "Password reset email sent",
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                        } else {
-                                            errorMessage = result?.exceptionOrNull()?.localizedMessage
-                                                ?: "Failed to send reset email"
-                                        }
-                                    }
-                                },
-                            ) {
-                                Text("Forgot password?", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    } else {
-                        Spacer(Modifier.height(10.dp))
-                    }
-
-                    Button(
-                        onClick = {
-                            if (email.isBlank() || password.isBlank()) {
-                                errorMessage = "Please enter both email and password"
-                                return@Button
-                            }
-                            isLoading = true
-                            errorMessage = null
-                            scope.launch {
-                                val result = if (isSignUp) {
-                                    authRepository?.signUpWithEmailPassword(email.trim(), password)
-                                } else {
-                                    authRepository?.signInWithEmailPassword(email.trim(), password)
-                                }
-                                isLoading = false
-                                if (result?.isSuccess == true) {
-                                    Toast.makeText(
-                                        context,
-                                        if (isSignUp) "Account created!" else "Signed in!",
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                } else {
-                                    errorMessage = result?.exceptionOrNull()?.localizedMessage
-                                        ?: "Authentication failed"
-                                }
-                            }
-                        },
-                        enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
-                        shape = MaterialTheme.shapes.large,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        } else {
-                            Text(
-                                text = if (isSignUp) "Create Account" else "Sign In",
-                                fontWeight = GoogleSansWeight.bold,
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = if (isSignUp) "Already have an account?" else "Don't have an account?",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    },
+                    enabled = !isLoading && email.isNotBlank(),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
                         )
-                        Spacer(Modifier.width(4.dp))
-                        TextButton(onClick = {
-                            isSignUp = !isSignUp
-                            errorMessage = null
-                        }) {
-                            Text(
-                                text = if (isSignUp) "Sign In" else "Create one",
-                                fontWeight = GoogleSansWeight.bold,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
+                    } else {
+                        Text("Send Magic Link", fontWeight = GoogleSansWeight.bold)
                     }
                 }
 
-                if (errorMessage != null) {
+                AnimatedVisibility(
+                    visible = magicLinkSent,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                ) {
                     Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
+                        color = MaterialTheme.colorScheme.primaryContainer,
                         shape = MaterialTheme.shapes.medium,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 10.dp),
+                            .padding(top = 12.dp),
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.Info,
+                                Icons.Rounded.CheckCircle,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(20.dp),
                             )
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(10.dp))
                             Text(
-                                text = errorMessage!!,
+                                text = "Magic link sent! Check your inbox on this device and tap the link to complete sign in.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = GoogleSansWeight.medium,
                             )
                         }
+                    }
+                }
+            } else {
+                // Password Form
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        errorMessage = null
+                    },
+                    label = { Text("Email address") },
+                    leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.large,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        errorMessage = null
+                    },
+                    label = { Text("Password") },
+                    leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) {
+                                    Icons.Rounded.VisibilityOff
+                                } else {
+                                    Icons.Rounded.Visibility
+                                },
+                                contentDescription = if (passwordVisible) {
+                                    "Hide password"
+                                } else {
+                                    "Show password"
+                                },
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.large,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                if (!isSignUp) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(
+                            onClick = {
+                                if (email.isBlank()) {
+                                    errorMessage = "Enter your email address above to reset password"
+                                    return@TextButton
+                                }
+                                scope.launch {
+                                    val result = authRepository?.sendPasswordReset(email.trim())
+                                    if (result?.isSuccess == true) {
+                                        Toast.makeText(
+                                            context,
+                                            "Password reset email sent",
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    } else {
+                                        errorMessage = result?.exceptionOrNull()?.localizedMessage
+                                            ?: "Failed to send reset email"
+                                    }
+                                }
+                            },
+                        ) {
+                            Text("Forgot password?", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                } else {
+                    Spacer(Modifier.height(10.dp))
+                }
+
+                Button(
+                    onClick = {
+                        if (email.isBlank() || password.isBlank()) {
+                            errorMessage = "Please enter both email and password"
+                            return@Button
+                        }
+                        isLoading = true
+                        errorMessage = null
+                        scope.launch {
+                            val result = if (isSignUp) {
+                                authRepository?.signUpWithEmailPassword(email.trim(), password)
+                            } else {
+                                authRepository?.signInWithEmailPassword(email.trim(), password)
+                            }
+                            isLoading = false
+                            if (result?.isSuccess == true) {
+                                Toast.makeText(
+                                    context,
+                                    if (isSignUp) "Account created!" else "Signed in!",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            } else {
+                                errorMessage = result?.exceptionOrNull()?.localizedMessage
+                                    ?: "Authentication failed"
+                            }
+                        }
+                    },
+                    enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    } else {
+                        Text(
+                            text = if (isSignUp) "Create Account" else "Sign In",
+                            fontWeight = GoogleSansWeight.bold,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (isSignUp) "Already have an account?" else "Don't have an account?",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    TextButton(onClick = {
+                        isSignUp = !isSignUp
+                        errorMessage = null
+                    }) {
+                        Text(
+                            text = if (isSignUp) "Sign In" else "Create one",
+                            fontWeight = GoogleSansWeight.bold,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+
+            if (errorMessage != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = errorMessage!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
                     }
                 }
             }
