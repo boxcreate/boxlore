@@ -65,7 +65,7 @@ internal fun LibrarySettingsPage(
     val collapseCountryFaq = { isCountryFaqExpanded = false }
 
     SettingsScaffold(
-        title = "Library & Account",
+        title = "Library",
         onBack = onBack,
         onUnconsumedTap = if (isCountryFaqExpanded) collapseCountryFaq else null,
     ) {
