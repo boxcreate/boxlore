@@ -2,7 +2,6 @@ package cx.aswin.boxlore.feature.home.settings.pages
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
-import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.DownloadForOffline
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Palette
@@ -24,19 +23,11 @@ internal fun SettingsHub(
         onBack = onBack,
     ) {
         SettingsCategoryCard(
-            title = "Account",
-            description = "Cloud account, Google, and magic link sign in",
-            icon = Icons.Rounded.AccountCircle,
+            title = "Library & Account",
+            description = "Cloud sync, region, RSS feeds, import and export",
+            icon = Icons.AutoMirrored.Rounded.LibraryBooks,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            onClick = { onNavigate(ProfileSettingsDestination.Account) },
-        )
-        SettingsCategoryCard(
-            title = "Library",
-            description = "Region, RSS feeds, import and export",
-            icon = Icons.AutoMirrored.Rounded.LibraryBooks,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.Library) },
         )
         SettingsCategoryCard(

@@ -161,6 +161,14 @@ fun SettingsScreen(
     var destination by rememberSaveable {
         mutableStateOf(initialPage.toSettingsDestination())
     }
+    var previousDestination by rememberSaveable {
+        mutableStateOf<ProfileSettingsDestination?>(null)
+    }
+    val currentUser by (
+        repositories.authRepository?.currentUser?.collectAsStateWithLifecycle()
+            ?: remember { mutableStateOf(null) }
+    )
+    val accountStatus = currentUser?.let { it.email ?: it.displayName ?: "Connected" }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var isDeletionExpanded by rememberSaveable { mutableStateOf(false) }
     var analyticsIdVersion by remember { mutableIntStateOf(0) }
@@ -206,10 +214,16 @@ fun SettingsScreen(
     }
 
     BackHandler(enabled = destination != ProfileSettingsDestination.Hub) {
-        destination = ProfileSettingsDestination.Hub
+        val prev = previousDestination
+        previousDestination = null
+        destination = prev ?: ProfileSettingsDestination.Hub
     }
 
-    val returnToHub = { destination = ProfileSettingsDestination.Hub }
+    val returnToHub = {
+        val prev = previousDestination
+        previousDestination = null
+        destination = prev ?: ProfileSettingsDestination.Hub
+    }
     AnimatedContent(
         targetState = destination,
         transitionSpec = { settingsDestinationTransitionSpec() },
@@ -252,6 +266,11 @@ fun SettingsScreen(
                         importOpmlLauncher,
                     ),
                     onBack = returnToHub,
+                    onAccountClick = {
+                        previousDestination = ProfileSettingsDestination.Library
+                        destination = ProfileSettingsDestination.Account
+                    },
+                    accountStatus = accountStatus,
                 )
 
             ProfileSettingsDestination.Appearance ->

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -57,15 +58,34 @@ internal fun LibrarySettingsPage(
     onAddRssClick: () -> Unit,
     backupActions: LibraryBackupActions,
     onBack: () -> Unit,
+    onAccountClick: () -> Unit,
+    accountStatus: String? = null,
 ) {
     var isCountryFaqExpanded by rememberSaveable { mutableStateOf(false) }
     val collapseCountryFaq = { isCountryFaqExpanded = false }
 
     SettingsScaffold(
-        title = "Library",
+        title = "Library & Account",
         onBack = onBack,
         onUnconsumedTap = if (isCountryFaqExpanded) collapseCountryFaq else null,
     ) {
+        SettingsGroup(title = "Account & Cloud Sync") {
+            SettingsNavigationRow(
+                title = "Cloud sync with account",
+                supportingText =
+                if (accountStatus != null) {
+                    "Signed in as $accountStatus"
+                } else {
+                    "Sign in to backup and sync your library across devices"
+                },
+                trailingText = if (accountStatus != null) "Connected" else "Set up",
+                icon = Icons.Rounded.CloudSync,
+                onClick = {
+                    collapseCountryFaq()
+                    onAccountClick()
+                },
+            )
+        }
         SettingsGroup(title = "Discovery") {
             SettingsContent {
                 ContentRegionLanguagePicker(
