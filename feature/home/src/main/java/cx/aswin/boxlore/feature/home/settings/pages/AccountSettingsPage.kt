@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -444,6 +445,8 @@ private fun SignedOutContent(
                             } else {
                                 errorMessage = "Unexpected credential received"
                             }
+                        } catch (_: GetCredentialCancellationException) {
+                            // User dismissed or cancelled the Google account chooser; not an error.
                         } catch (e: GetCredentialException) {
                             errorMessage = e.localizedMessage ?: "Google sign-in cancelled or failed"
                         } catch (e: Exception) {
