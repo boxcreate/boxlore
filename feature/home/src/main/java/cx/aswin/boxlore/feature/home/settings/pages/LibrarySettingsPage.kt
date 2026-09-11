@@ -78,7 +78,6 @@ internal fun LibrarySettingsPage(
                 } else {
                     "Sign in to backup and sync your library across devices"
                 },
-                trailingText = if (accountStatus != null) "Connected" else "Set up",
                 icon = Icons.Rounded.CloudSync,
                 onClick = {
                     collapseCountryFaq()
