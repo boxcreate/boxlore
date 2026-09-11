@@ -37,6 +37,7 @@ import cx.aswin.boxlore.feature.home.settings.dialogs.AddRssFeedDialog
 import cx.aswin.boxlore.feature.home.settings.dialogs.ResetAnalyticsDialog
 import cx.aswin.boxlore.feature.home.settings.dialogs.RssMatchConfirmationDialog
 import cx.aswin.boxlore.feature.home.settings.pages.AboutSettingsPage
+import cx.aswin.boxlore.feature.home.settings.pages.AccountSettingsPage
 import cx.aswin.boxlore.feature.home.settings.pages.AppInfo
 import cx.aswin.boxlore.feature.home.settings.pages.AppearanceActions
 import cx.aswin.boxlore.feature.home.settings.pages.AppearanceSettingsPage
@@ -81,6 +82,7 @@ data class RegionSettings(
 data class SettingsRepositories(
     val rssPodcastRepository: cx.aswin.boxlore.core.rss.RssPodcastRepository,
     val rankingFeedbackRepository: cx.aswin.boxlore.core.ranking.RankingFeedbackRepository,
+    val authRepository: cx.aswin.boxlore.core.network.AuthRepository? = null,
 )
 
 /** [SettingsScreen]'s top-level identifiers/callbacks that aren't tied to a specific sub-page. */
@@ -218,6 +220,12 @@ fun SettingsScreen(
                 SettingsHub(
                     onBack = onBack,
                     onNavigate = { destination = it },
+                )
+
+            ProfileSettingsDestination.Account ->
+                AccountSettingsPage(
+                    authRepository = repositories.authRepository,
+                    onBack = returnToHub,
                 )
 
             ProfileSettingsDestination.Library ->

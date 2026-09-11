@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.home.settings.pages
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
+import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.DownloadForOffline
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Palette
@@ -22,6 +23,14 @@ internal fun SettingsHub(
         title = "Settings",
         onBack = onBack,
     ) {
+        SettingsCategoryCard(
+            title = "Account",
+            description = "Cloud account, Google, and magic link sign in",
+            icon = Icons.Rounded.AccountCircle,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            onClick = { onNavigate(ProfileSettingsDestination.Account) },
+        )
         SettingsCategoryCard(
             title = "Library",
             description = "Region, RSS feeds, import and export",

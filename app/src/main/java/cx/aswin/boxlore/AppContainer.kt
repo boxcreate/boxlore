@@ -317,4 +317,15 @@ class AppContainer(
             }
         }
     }
+
+    val authRepository: cx.aswin.boxlore.core.network.AuthRepository by lazy {
+        cx.aswin.boxlore.core.network.FirebaseAuthRepository(
+            auth = com.google.firebase.auth.FirebaseAuth.getInstance(),
+            pendingEmailStore = object : cx.aswin.boxlore.core.network.PendingEmailStore {
+                private val prefs = BoxcastPrefs(appContext)
+                override fun getPendingEmail(): String? = prefs.getPendingAuthEmail()
+                override fun setPendingEmail(email: String?) = prefs.setPendingAuthEmail(email)
+            },
+        )
+    }
 }

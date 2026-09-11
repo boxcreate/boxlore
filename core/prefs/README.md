@@ -16,7 +16,7 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 - `SubscriptionsTabStyle` defines and sanitizes Subscriptions tab layout choices: `top` (default) vs `floating` (FAB style).
 - `BoxcastPrefs` stores the permanent Home video-showcase dismissal in the canonical `boxlore_prefs` file (`featured_video_showcase_dismissed`). The showcase asks for confirmation before writing it and does not reappear afterward.
 - `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
-- `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, time-of-day rotation slot keys (`cached_byl_slot`), Learn history, and learner-log gates. `clearBylCacheIfPodcastId` invalidates a Because-you-like cache (including its cached slot key) when its seed show adopts a new catalog id.
+- `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, time-of-day rotation slot keys (`cached_byl_slot`), Learn history, learner-log gates, and pending magic link authentication email (`pending_auth_email`). `clearBylCacheIfPodcastId` invalidates a Because-you-like cache (including its cached slot key) when its seed show adopts a new catalog id.
 - `resolveLearnerLogEnabled(isDebugBuild)`: debug defaults on when unset; **release is always off** unless the user explicitly persisted `true` via the debug-screen toggle.
 - `UserPreferenceKeys` centralizes DataStore preference keys.
 - `PrefsFileMigrator` opens canonical SharedPreferences files and migrates from legacy file names.

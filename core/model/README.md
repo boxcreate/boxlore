@@ -21,6 +21,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - `Podcast.recommendationGenre`: resolves canonicalized `customGenre` via `PodcastGenres.canonicalize` so valid standard reclassifications adapt personalized recommendations and Smart Queue, falling back to `genre` when the tag is arbitrary.
 - `FolderDisplaySize`: display sizing enum (`COMPACT 1×1`, `WIDE 2×1`, `FEATURED 2×2`, `LARGE 2×3`, `SHELF 3×1`, `PANEL 3×2`, `SHOWCASE 3×3` max) for library subscription folders, with placement properties (`isPinnedToTop`, `placementLabel`) distinguishing grid-movable (`1×1 COMPACT`) from top-pinned display sizes.
 - `SubscriptionFolder`: domain model representing a custom folder organizing subscribed podcasts with optional icon, display size, `showPodcastGrid` toggle for 1×1 covers, and linked genre auto-syncing.
+- `BoxLoreUser`: domain model representing an authenticated user account (UID, email, display name, email verification flag, anonymous status).
 
 ## Internal structure
 

@@ -262,6 +262,7 @@ class ArchitectureGuardTest {
                         "FirebaseMessaging",
                         "FirebaseAppCheck",
                         "FirebaseApp",
+                        "FirebaseAuth",
                         "FirebaseCrashlytics",
                         "DebugAppCheckProviderFactory",
                         "PlayIntegrityAppCheckProviderFactory",
@@ -357,6 +358,9 @@ class ArchitectureGuardTest {
             "RssPodcastRepository",
             // Covered by Retrofit/Room transcript cache integration suites.
             "TranscriptRepository",
+            // Firebase Auth contract and implementation bound to Google Play Services / Firebase SDK tasks.
+            "AuthRepository",
+            "FirebaseAuthRepository",
         )
 
     @Test

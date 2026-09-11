@@ -91,6 +91,7 @@
                 <data android:host="aswin.cx" />
                 <data android:pathPrefix="/boxlore/share" />
                 <data android:pathPrefix="/boxcast/share" />
+                <data android:pathPrefix="/boxlore/auth" />
             </intent-filter>
         </activity>
 
