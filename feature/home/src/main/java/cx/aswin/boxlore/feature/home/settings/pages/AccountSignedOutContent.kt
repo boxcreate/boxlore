@@ -692,23 +692,9 @@ internal fun ColumnScope.SignedOutContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.End,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            TextButton(
-                                onClick = {
-                                    passwordMode = PasswordMode.SIGN_UP
-                                    errorMessage = null
-                                },
-                                enabled = !isAnyLoading,
-                            ) {
-                                Text(
-                                    text = "Need an account? Sign up",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = GoogleSansWeight.medium,
-                                )
-                            }
-
                             TextButton(
                                 onClick = {
                                     if (email.isBlank()) {
@@ -739,27 +725,12 @@ internal fun ColumnScope.SignedOutContent(
                             }
                         }
                     } else {
-                        Row(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
+                                .padding(top = 4.dp, start = 4.dp),
+                            contentAlignment = Alignment.CenterStart,
                         ) {
-                            TextButton(
-                                onClick = {
-                                    passwordMode = PasswordMode.SIGN_IN
-                                    errorMessage = null
-                                },
-                                enabled = !isAnyLoading,
-                            ) {
-                                Text(
-                                    text = "Already have an account? Sign in",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = GoogleSansWeight.medium,
-                                )
-                            }
-
                             Text(
                                 text = "Min. 6 characters",
                                 style = MaterialTheme.typography.bodySmall,
