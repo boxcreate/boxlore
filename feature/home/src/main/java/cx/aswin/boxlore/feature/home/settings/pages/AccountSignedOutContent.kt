@@ -89,7 +89,7 @@ private enum class EmailAuthMethod {
 
 private enum class PasswordMode {
     SIGN_IN,
-    CREATE_ACCOUNT,
+    SIGN_UP,
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
@@ -300,16 +300,6 @@ internal fun ColumnScope.SignedOutContent(
     // 4. Email Authentication Card
     SettingsGroup(
         title = "Email Sign-In",
-        footer = when (emailAuthMethod) {
-            EmailAuthMethod.MAGIC_LINK ->
-                "Passwordless sign-in works for both new and existing accounts. Tap the link in your email to sign in."
-            EmailAuthMethod.PASSWORD ->
-                if (passwordMode == PasswordMode.SIGN_IN) {
-                    "Sign in with your email and existing password, or use Magic Link to sign in without a password."
-                } else {
-                    "Create a new password-protected boxlore account."
-                }
-        },
     ) {
         SettingsContent {
             ConnectedOptionSelector(
@@ -402,7 +392,7 @@ internal fun ColumnScope.SignedOutContent(
                         }
                     } else {
                         Text(
-                            text = "No password needed. Enter your email and we'll send a sign-in link that works for both new and existing accounts.",
+                            text = "Enter your email to receive a passwordless sign-in link.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -502,7 +492,7 @@ internal fun ColumnScope.SignedOutContent(
                     ConnectedOptionSelector(
                         options = listOf(
                             PasswordMode.SIGN_IN to "Sign In",
-                            PasswordMode.CREATE_ACCOUNT to "Create Account",
+                            PasswordMode.SIGN_UP to "Sign Up",
                         ),
                         selected = passwordMode,
                         onSelect = {
@@ -512,18 +502,6 @@ internal fun ColumnScope.SignedOutContent(
                     )
 
                     Spacer(Modifier.height(14.dp))
-
-                    Text(
-                        text = if (passwordMode == PasswordMode.SIGN_IN) {
-                            "Sign in with your email and existing password."
-                        } else {
-                            "Create a new password-protected account."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    Spacer(Modifier.height(12.dp))
 
                     OutlinedTextField(
                         value = email,
@@ -600,7 +578,7 @@ internal fun ColumnScope.SignedOutContent(
                                     isEmailLoading = true
                                     errorMessage = null
                                     scope.launch {
-                                        val result = if (passwordMode == PasswordMode.CREATE_ACCOUNT) {
+                                        val result = if (passwordMode == PasswordMode.SIGN_UP) {
                                             authRepository?.signUpWithEmailPassword(email.trim(), password)
                                         } else {
                                             authRepository?.signInWithEmailPassword(email.trim(), password)
@@ -609,7 +587,7 @@ internal fun ColumnScope.SignedOutContent(
                                         if (result?.isSuccess == true) {
                                             Toast.makeText(
                                                 context,
-                                                if (passwordMode == PasswordMode.CREATE_ACCOUNT) "Account created!" else "Signed in!",
+                                                if (passwordMode == PasswordMode.SIGN_UP) "Account created!" else "Signed in!",
                                                 Toast.LENGTH_SHORT,
                                             ).show()
                                         } else {
@@ -622,14 +600,14 @@ internal fun ColumnScope.SignedOutContent(
                                                     rawError.contains("user-not-found", ignoreCase = true)
                                                 )
                                             ) {
-                                                errorMessage = "Incorrect email or password. If you don't have an account yet, tap 'Need an account? Sign up' below."
-                                            } else if (passwordMode == PasswordMode.CREATE_ACCOUNT &&
+                                                errorMessage = "Incorrect email or password. If you don't have an account yet, switch to 'Sign Up'."
+                                            } else if (passwordMode == PasswordMode.SIGN_UP &&
                                                 (
                                                     rawError.contains("already in use", ignoreCase = true) ||
                                                     rawError.contains("email-already-in-use", ignoreCase = true)
                                                 )
                                             ) {
-                                                errorMessage = "An account already exists with this email. Tap 'Already have an account? Sign in' below."
+                                                errorMessage = "An account already exists with this email. Switch to 'Sign In'."
                                             } else {
                                                 errorMessage = rawError
                                             }
@@ -660,7 +638,7 @@ internal fun ColumnScope.SignedOutContent(
                         ) {
                             TextButton(
                                 onClick = {
-                                    passwordMode = PasswordMode.CREATE_ACCOUNT
+                                    passwordMode = PasswordMode.SIGN_UP
                                     errorMessage = null
                                 },
                                 enabled = !isAnyLoading,
@@ -739,7 +717,7 @@ internal fun ColumnScope.SignedOutContent(
                                 errorMessage = "Please enter both email and password"
                                 return@Button
                             }
-                            if (passwordMode == PasswordMode.CREATE_ACCOUNT && password.length < 6) {
+                            if (passwordMode == PasswordMode.SIGN_UP && password.length < 6) {
                                 errorMessage = "Password must be at least 6 characters"
                                 return@Button
                             }
@@ -747,7 +725,7 @@ internal fun ColumnScope.SignedOutContent(
                             isEmailLoading = true
                             errorMessage = null
                             scope.launch {
-                                val result = if (passwordMode == PasswordMode.CREATE_ACCOUNT) {
+                                val result = if (passwordMode == PasswordMode.SIGN_UP) {
                                     authRepository?.signUpWithEmailPassword(email.trim(), password)
                                 } else {
                                     authRepository?.signInWithEmailPassword(email.trim(), password)
@@ -756,7 +734,7 @@ internal fun ColumnScope.SignedOutContent(
                                 if (result?.isSuccess == true) {
                                     Toast.makeText(
                                         context,
-                                        if (passwordMode == PasswordMode.CREATE_ACCOUNT) "Account created!" else "Signed in!",
+                                        if (passwordMode == PasswordMode.SIGN_UP) "Account created!" else "Signed in!",
                                         Toast.LENGTH_SHORT,
                                     ).show()
                                 } else {
@@ -769,14 +747,14 @@ internal fun ColumnScope.SignedOutContent(
                                             rawError.contains("user-not-found", ignoreCase = true)
                                         )
                                     ) {
-                                        errorMessage = "Incorrect email or password. If you don't have an account yet, tap 'Need an account? Sign up' above."
-                                    } else if (passwordMode == PasswordMode.CREATE_ACCOUNT &&
+                                        errorMessage = "Incorrect email or password. If you don't have an account yet, switch to 'Sign Up'."
+                                    } else if (passwordMode == PasswordMode.SIGN_UP &&
                                         (
                                             rawError.contains("already in use", ignoreCase = true) ||
                                             rawError.contains("email-already-in-use", ignoreCase = true)
                                         )
                                     ) {
-                                        errorMessage = "An account already exists with this email. Tap 'Already have an account? Sign in' above."
+                                        errorMessage = "An account already exists with this email. Switch to 'Sign In'."
                                     } else {
                                         errorMessage = rawError
                                     }
@@ -797,7 +775,7 @@ internal fun ColumnScope.SignedOutContent(
                             )
                         } else {
                             Text(
-                                text = if (passwordMode == PasswordMode.CREATE_ACCOUNT) "Create Account" else "Sign In",
+                                text = if (passwordMode == PasswordMode.SIGN_UP) "Sign Up" else "Sign In",
                                 fontWeight = GoogleSansWeight.bold,
                             )
                         }
