@@ -125,7 +125,7 @@ internal fun SettingsScaffold(
             )
         },
     ) { innerPadding ->
-        val bottomPadding = if (WindowInsets.isImeVisible) 16.dp else 200.dp
+        val bottomPadding = if (WindowInsets.isImeVisible) 96.dp else 200.dp
         Box(
             modifier =
             Modifier
