@@ -1,13 +1,5 @@
 # What we track and why
 
-Most privacy pages are written by corporate lawyers to disguise what an app takes from you. 
-
-This page is written by the people building **boxlore**, to tell you the unvarnished truth about what data leaves your phone, why we collect it, and the strict boundaries we never cross.
-
-> **boxlore is not built for profit. It is a few friends finishing a childhood dream: watching code turn into magic on screens.**
->
-> *Never sold · Zero ads · Anonymous usage only*
-
 ---
 
 ## The Three Ironclad Rules
