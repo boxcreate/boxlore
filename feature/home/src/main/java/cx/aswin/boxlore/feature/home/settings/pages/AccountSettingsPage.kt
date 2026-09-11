@@ -8,19 +8,24 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -51,6 +56,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,13 +66,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -91,6 +94,7 @@ import cx.aswin.boxlore.feature.home.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.home.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.home.settings.components.SettingsScaffold
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
@@ -117,6 +121,7 @@ internal fun AccountSettingsPage(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
     val currentUser by (
         authRepository?.currentUser?.collectAsState()
             ?: remember { mutableStateOf<BoxLoreUser?>(null) }
@@ -127,6 +132,7 @@ internal fun AccountSettingsPage(
     SettingsScaffold(
         title = "Account",
         onBack = onBack,
+        scrollState = scrollState,
     ) {
         val user = currentUser
         if (user != null) {
@@ -141,6 +147,7 @@ internal fun AccountSettingsPage(
         } else {
             SignedOutContent(
                 authRepository = authRepository,
+                scrollState = scrollState,
             )
         }
     }
@@ -330,14 +337,24 @@ private fun ColumnScope.SignedInContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColumnScope.SignedOutContent(
     authRepository: AuthRepository?,
+    scrollState: ScrollState,
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
+
+    val isImeVisible = WindowInsets.isImeVisible
+    LaunchedEffect(isImeVisible) {
+        if (isImeVisible) {
+            delay(150)
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
 
     var authMode by remember { mutableStateOf(AuthMode.SIGN_IN) }
     var email by remember { mutableStateOf("") }
@@ -351,7 +368,7 @@ private fun ColumnScope.SignedOutContent(
     var magicLinkSent by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // 1. Hero Card
+    // 1. Compact Hero Card
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -363,33 +380,33 @@ private fun ColumnScope.SignedOutContent(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(44.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.CloudSync,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
                 text = "Cloud Sync & Account",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.bold,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = "Sign in to keep your subscriptions, queue, and playback progress synchronized across all your devices.",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
@@ -491,7 +508,11 @@ private fun ColumnScope.SignedOutContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    GoogleGLogo(modifier = Modifier.size(20.dp))
+                    Image(
+                        painter = painterResource(cx.aswin.boxlore.core.designsystem.R.drawable.ic_google_logo),
+                        contentDescription = "Google",
+                        modifier = Modifier.size(20.dp),
+                    )
                     Spacer(Modifier.width(12.dp))
                     Text(
                         text = "Continue with Google",
@@ -567,9 +588,24 @@ private fun ColumnScope.SignedOutContent(
                     imeAction = ImeAction.Next,
                 ),
                 keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                    onNext = {
+                        focusManager.moveFocus(FocusDirection.Down)
+                        scope.launch {
+                            delay(50)
+                            scrollState.animateScrollTo(scrollState.maxValue)
+                        }
+                    },
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            scope.launch {
+                                delay(150)
+                                scrollState.animateScrollTo(scrollState.maxValue)
+                            }
+                        }
+                    },
             )
 
             Spacer(Modifier.height(12.dp))
@@ -632,7 +668,16 @@ private fun ColumnScope.SignedOutContent(
                         }
                     },
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            scope.launch {
+                                delay(150)
+                                scrollState.animateScrollTo(scrollState.maxValue)
+                            }
+                        }
+                    },
             )
 
             if (authMode == AuthMode.SIGN_IN) {
@@ -815,64 +860,5 @@ private fun ColumnScope.SignedOutContent(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun GoogleGLogo(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val size = size.minDimension
-        val strokeWidth = size * 0.22f
-        val center = Offset(size / 2f, size / 2f)
-        val radius = (size - strokeWidth) / 2f
-
-        // Red top arc
-        drawArc(
-            color = Color(0xFFEA4335),
-            startAngle = 190f,
-            sweepAngle = 135f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-            topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f),
-            size = Size(size - strokeWidth, size - strokeWidth),
-        )
-        // Yellow arc
-        drawArc(
-            color = Color(0xFFFBBC05),
-            startAngle = 130f,
-            sweepAngle = 65f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-            topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f),
-            size = Size(size - strokeWidth, size - strokeWidth),
-        )
-        // Green bottom arc
-        drawArc(
-            color = Color(0xFF34A853),
-            startAngle = 35f,
-            sweepAngle = 100f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-            topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f),
-            size = Size(size - strokeWidth, size - strokeWidth),
-        )
-        // Blue right arc
-        drawArc(
-            color = Color(0xFF4285F4),
-            startAngle = -25f,
-            sweepAngle = 65f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-            topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f),
-            size = Size(size - strokeWidth, size - strokeWidth),
-        )
-        // Blue horizontal crossbar
-        drawLine(
-            color = Color(0xFF4285F4),
-            start = Offset(center.x - size * 0.05f, center.y),
-            end = Offset(center.x + radius + strokeWidth / 2f, center.y),
-            strokeWidth = strokeWidth,
-            cap = StrokeCap.Round,
-        )
     }
 }

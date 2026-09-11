@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home.settings.components
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -7,9 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -36,12 +40,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun SettingsScaffold(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
     onUnconsumedTap: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -88,6 +93,7 @@ internal fun SettingsScaffold(
             )
         },
     ) { innerPadding ->
+        val bottomPadding = if (WindowInsets.isImeVisible) 16.dp else 200.dp
         Box(
             modifier =
             Modifier
@@ -109,12 +115,12 @@ internal fun SettingsScaffold(
                 Modifier
                     .fillMaxWidth()
                     .widthIn(max = 720.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(
                         start = 16.dp,
                         top = 8.dp,
                         end = 16.dp,
-                        bottom = 200.dp,
+                        bottom = bottomPadding,
                     ).pointerInput(Unit) {
                         awaitEachGesture {
                             awaitFirstDown(requireUnconsumed = true)
