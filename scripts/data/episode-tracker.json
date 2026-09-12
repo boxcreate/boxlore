@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-12T19:33:22.179Z",
+  "lastRun": "2026-09-12T21:56:52.550Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -89,10 +89,10 @@
       "lastCheckedAt": 1789148971790
     },
     "385117": {
-      "lastRssKey": "7ca73f90-aedd-11f1-b690-1fd323be67e1",
-      "lastEpisodeTitle": "3PM ET 09/12/2026 Newscast",
+      "lastRssKey": "400152e0-aeee-11f1-886a-63a765ae4828",
+      "lastEpisodeTitle": "5PM ET 09/12/2026 Newscast",
       "lastEpisodeId": "60299427603",
-      "lastCheckedAt": 1789241609574
+      "lastCheckedAt": 1789250219342
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -339,6 +339,11 @@
       "lastEpisodeTitle": "Perfect start for the Premier League in Europe and is it crunch time for Spurs already? Football Weekly Extra",
       "lastEpisodeId": "58884055225",
       "lastCheckedAt": 1789135523271
+    },
+    "1047865": {
+      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-dont-let-your-desires-replace-allah",
+      "lastEpisodeTitle": "Don’t Let Your Desires Replace Allah",
+      "lastCheckedAt": 1789250244283
     },
     "1065434": {
       "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1119",
@@ -799,10 +804,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7239415": {
-      "lastRssKey": "74872a86-ae2f-11f1-b5c4-0b8be8f63750",
-      "lastEpisodeTitle": "There is some serious HYPE around this...",
+      "lastRssKey": "f21fed24-aef3-11f1-a4ba-9f6bfcb8ec09",
+      "lastEpisodeTitle": "I cannot believe this is real...",
       "lastEpisodeId": "60132290764",
-      "lastCheckedAt": 1789167635763
+      "lastCheckedAt": 1789250273871
     },
     "7248222": {
       "lastRssKey": "aaad98ba-ae2b-11f1-8a15-8f0d4481ae1c",
