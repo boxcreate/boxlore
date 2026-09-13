@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-13T03:21:41.959Z",
+  "lastRun": "2026-09-13T08:28:57.324Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -54,6 +54,12 @@
       "lastEpisodeId": "58691788675",
       "lastCheckedAt": 1789158651228
     },
+    "215799": {
+      "lastRssKey": "ba3c9663-7bec-426c-b824-042d4d8b3d3b",
+      "lastEpisodeTitle": "Blowing Up Your Life",
+      "lastEpisodeId": "60067652281",
+      "lastCheckedAt": 1789288144318
+    },
     "222512": {
       "lastRssKey": "Buzzsprout-19794366",
       "lastEpisodeTitle": "Clear Intentions In A Chaotic World | Anchored Ep. 1",
@@ -88,17 +94,29 @@
       "lastEpisodeId": "59764839545",
       "lastCheckedAt": 1789148971790
     },
+    "353744": {
+      "lastRssKey": "flightcast:01M1SPGR9XRZBMZ3HEZKB0HB7M",
+      "lastEpisodeTitle": "Why Normal Life Feels So Boring",
+      "lastEpisodeId": "60295405214",
+      "lastCheckedAt": 1789288148097
+    },
     "385117": {
-      "lastRssKey": "8773443a-af20-11f1-bff3-f3c0ba82aafa",
-      "lastEpisodeTitle": "11PM ET 09/12/2026 Newscast",
+      "lastRssKey": "708ad164-af4a-11f1-b2dd-83c7f35092b9",
+      "lastEpisodeTitle": "4AM ET 09/13/2026 Newscast",
       "lastEpisodeId": "60305907902",
-      "lastCheckedAt": 1789269711322
+      "lastCheckedAt": 1789288148242
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
       "lastEpisodeTitle": "NerdCast 1047 - Emmy 2026: Polvos, Viúvas e Problemas com Dinheiro",
       "lastEpisodeId": "59666491926",
       "lastCheckedAt": 1789148972580
+    },
+    "388141": {
+      "lastRssKey": "6a8c96f46d62278f83a3d1ed",
+      "lastEpisodeTitle": "What listening to live concerts do to your ears with Jim Hudspeth (Senses Miniseries #5)",
+      "lastEpisodeId": "60145641127",
+      "lastCheckedAt": 1789288149556
     },
     "415434": {
       "lastRssKey": "c9f305ec-c3c7-11f0-8340-1bac5f0d5f2a",
@@ -118,11 +136,23 @@
       "lastRssKey": "https://why-s-1991.podomatic.com/entry/2013-07-18T23_23_03-07_00",
       "lastCheckedAt": 1786765059294
     },
+    "432535": {
+      "lastRssKey": "95cd1b1a-9008-4558-8eea-b90e8d92f5e5",
+      "lastEpisodeTitle": "It's Your Time to Heal: God's Steps with Pastor Derwin Gray",
+      "lastEpisodeId": "59964924407",
+      "lastCheckedAt": 1789288153771
+    },
     "437685": {
       "lastRssKey": "8493846e-8d60-11f1-adef-17181c296479",
       "lastEpisodeTitle": "Ivan the Terrible",
       "lastEpisodeId": "60283437617",
       "lastCheckedAt": 1789211126981
+    },
+    "438184": {
+      "lastRssKey": "89a285ea-abab-11f1-86c7-5f39f30f083b",
+      "lastEpisodeTitle": "Decoding Tony Hawk’s mindset in 72 minutes",
+      "lastEpisodeId": "60158268454",
+      "lastCheckedAt": 1789288155377
     },
     "444331": {
       "lastRssKey": "8bc9001c-ace9-11f1-8456-cf79c5ae6c4e",
@@ -147,10 +177,21 @@
       "lastEpisodeId": "60210237480",
       "lastCheckedAt": 1789070221277
     },
+    "462634": {
+      "lastRssKey": "gid://art19-episode-locator/V0/41sY447QyAQAomHaREuoFjaKfx3bIAP-iABlF1epTpA",
+      "lastEpisodeTitle": "393. The Lindsay Clancy Trial Part 20",
+      "lastEpisodeId": "60190468112",
+      "lastCheckedAt": 1789288158453
+    },
     "466583": {
       "lastRssKey": "55550814-a7e9-11f1-9a1e-f34adf9c9e73",
       "lastEpisodeTitle": "The Gucci Murder",
       "lastCheckedAt": 1788785819665
+    },
+    "467929": {
+      "lastRssKey": "40deaedc-5603-4412-a534-f7ecfdf91207",
+      "lastEpisodeTitle": "705: Dr. Martin Seligman - Positive Psychology, Learned Optimism, Grit, PERMA, Agency, Resilience, and Predicting the Future",
+      "lastCheckedAt": 1789288160157
     },
     "483834": {
       "lastRssKey": "6aa4b7b9c939da2795d9f96d",
@@ -223,16 +264,22 @@
       "lastCheckedAt": 1786559318597
     },
     "593004": {
-      "lastRssKey": "68c292ec-a968-11f1-8252-bbe01947e52f",
-      "lastEpisodeTitle": "You CAN'T SAY THAT About The President",
+      "lastRssKey": "4fdce22a-af3d-11f1-b6f9-6f5645a1151a",
+      "lastEpisodeTitle": "Kash Patel Reads All Your Mean Tweets About Him And It Makes Him Very Sad",
       "lastEpisodeId": "59396147606",
-      "lastCheckedAt": 1788643853208
+      "lastCheckedAt": 1789288166149
     },
     "724143": {
       "lastRssKey": "a7390264-ae2b-11f1-8c13-1f5ff4da1332",
       "lastEpisodeTitle": "PF investiga Flávio Bolsonaro por corrupção, Mendonça nega seletividade e Andrei seguiu ordem de Moraes",
       "lastEpisodeId": "60065032576",
       "lastCheckedAt": 1789167593895
+    },
+    "739525": {
+      "lastRssKey": "gid://art19-episode-locator/V0/hlfIEJeS2K_iQgzutRXXJAC6dXv-jL4o0bS-FNofBpM",
+      "lastEpisodeTitle": "#882: Why Kids Can Learn 10x Faster Than We Think — Niels Hoven of Mentava (Tim Coaching Session)",
+      "lastEpisodeId": "60216372746",
+      "lastCheckedAt": 1789288168215
     },
     "743229": {
       "lastEpisodeId": "60284166632",
@@ -263,6 +310,11 @@
       "lastEpisodeTitle": "Why Craters Are Round, Size of Life, The Real Length of Day – TYTYK",
       "lastEpisodeId": "60095652951",
       "lastCheckedAt": 1788857949653
+    },
+    "790970": {
+      "lastRssKey": "c997659a-ab9b-11f1-add6-7359fc461a99",
+      "lastEpisodeTitle": "BITESIZE | A Monk’s Guide To Finding Happiness & Thriving in Hard Times | Gelong Thubten #678",
+      "lastCheckedAt": 1789288170525
     },
     "808826": {
       "lastRssKey": "6a9fc06ea84f75ab704f7f9d",
@@ -295,10 +347,10 @@
       "lastCheckedAt": 1789135517535
     },
     "928708": {
-      "lastRssKey": "e53f765e-ade2-11f1-89e2-93a01953dadc",
-      "lastEpisodeTitle": "This Day in History - September 12, 2026",
-      "lastEpisodeId": "60049745208",
-      "lastCheckedAt": 1789193553360
+      "lastRssKey": "5fc7983e-adf7-11f1-ba90-33bb168e4558",
+      "lastEpisodeTitle": "This Day in History - September 13, 2026",
+      "lastEpisodeId": "60316335695",
+      "lastCheckedAt": 1789288172985
     },
     "946758": {
       "lastRssKey": "10a4917c-77b5-11f0-8752-337e8b32dca6",
@@ -313,10 +365,10 @@
       "lastCheckedAt": 1789119170279
     },
     "980370": {
-      "lastRssKey": "6aa1bc90b520126fa0ee07e7",
-      "lastEpisodeTitle": "Why is it so hard for men to open up? A journalist and an entrepreneur answer | Joshua Johnson and Blake Mycoskie",
+      "lastRssKey": "6aa1bcfe156a52f880976343",
+      "lastEpisodeTitle": "How to turn setbacks into success | Amy Shoenthal",
       "lastEpisodeId": "60252776187",
-      "lastCheckedAt": 1789233713165
+      "lastCheckedAt": 1789288174394
     },
     "998969": {
       "lastRssKey": "audioboom-01a08695-5122-7f95-aa17-08ed4cce1af4",
@@ -420,6 +472,12 @@
       "lastRssKey": "cmtwk18tm01tz01tpbe2p79a8",
       "lastEpisodeTitle": "霸軒廣播電台#158 你家有淹水嗎？",
       "lastCheckedAt": 1789119185910
+    },
+    "1286498": {
+      "lastRssKey": "Buzzsprout-19769470",
+      "lastEpisodeTitle": "Can Anyone Stop a President From Starting a War? (#318)",
+      "lastEpisodeId": "60095848808",
+      "lastCheckedAt": 1789288187417
     },
     "1365758": {
       "lastRssKey": "a8e086bc-acd4-11f1-9687-3bc4959b6315",
@@ -557,10 +615,10 @@
       "lastCheckedAt": 1786559328886
     },
     "4507961": {
-      "lastRssKey": "f07f1d18-1250-4854-b654-ce1d21a3fdba",
-      "lastEpisodeTitle": "234 - Silent Link: Anonymous eSIM Service",
+      "lastRssKey": "fcb4c219-b170-4fd7-bae8-24fbc7b227cc",
+      "lastEpisodeTitle": "Outlast the Upcoming Cyber 9/11",
       "lastEpisodeId": "59615847309",
-      "lastCheckedAt": 1788737461644
+      "lastCheckedAt": 1789288197949
     },
     "4780435": {
       "lastRssKey": "tag:soundcloud,2010:tracks/2385719535",
@@ -619,6 +677,11 @@
       "lastEpisodeId": "59561995429",
       "lastCheckedAt": 1789028445701
     },
+    "5698881": {
+      "lastRssKey": "a0fbbadc-a8e0-4a30-9e7c-8b16a72cf88c",
+      "lastEpisodeTitle": "Stanford Psychologist: 7 Small Things You Can Do Right Now to Enjoy Life More",
+      "lastCheckedAt": 1789288202774
+    },
     "5716308": {
       "lastRssKey": "urn:bbc:podcast:p0p94csf",
       "lastEpisodeTitle": "EP 223: Robbie Evans",
@@ -654,6 +717,17 @@
       "lastEpisodeTitle": "Saudi pipeline, Trump in Ireland and Celine in Paris",
       "lastEpisodeId": "59712792909",
       "lastCheckedAt": 1789222688721
+    },
+    "5980114": {
+      "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
+      "lastEpisodeTitle": "Jim Kwik’s Limitless Daily to Train Your Brain & Master Your Mind 🧠 E172",
+      "lastEpisodeId": "59330075457",
+      "lastCheckedAt": 1789288205863
+    },
+    "6074303": {
+      "lastRssKey": "10f90f85-4d2d-4224-b8d7-62f0b022d98c",
+      "lastEpisodeTitle": "AI Optimism and the Agony of Waiting",
+      "lastCheckedAt": 1789288206086
     },
     "6264274": {
       "lastRssKey": "18d91ae8-ad7a-4659-9843-1c8af96e287f",
@@ -749,6 +823,12 @@
       "lastEpisodeId": "60295282994",
       "lastCheckedAt": 1789233745359
     },
+    "6894068": {
+      "lastRssKey": "f74c8f50-aad4-11f1-8072-5fdd7ee2b865",
+      "lastEpisodeTitle": "#136: Attract Everything You Want In Life: Stop These Low-Vibe Behaviors (RERUN)",
+      "lastEpisodeId": "60250854357",
+      "lastCheckedAt": 1789288212994
+    },
     "6897392": {
       "lastRssKey": "https://api.spreaker.com/episode/59779845",
       "lastEpisodeTitle": "The Adventures of Maisie - A Vacation for Mrs Hammerslogger",
@@ -767,6 +847,12 @@
       "lastEpisodeId": "60224383480",
       "lastCheckedAt": 1789102872444
     },
+    "6959250": {
+      "lastRssKey": "99f92a05-76b6-4edd-b507-b1ad2cda5d61",
+      "lastEpisodeTitle": "Listen to this if you're feeling discouraged",
+      "lastEpisodeId": "58092773078",
+      "lastCheckedAt": 1789288214791
+    },
     "6994919": {
       "lastEpisodeId": "42873997390",
       "lastEpisodeTitle": "#16 Robert - Palliativpfleger",
@@ -778,6 +864,11 @@
       "lastEpisodeTitle": "Introducing: Sons of Patriarchy",
       "lastEpisodeId": "47507791854",
       "lastCheckedAt": 1786559335991
+    },
+    "7064213": {
+      "lastRssKey": "5cd0a71f-2005-406f-8003-fe849a9c8e5c",
+      "lastEpisodeTitle": "198. Dr. Bryce Appelbaum: Your Eyes Are Connected to Everything—Focus, Balance, Brain Health & Aging",
+      "lastCheckedAt": 1789288217575
     },
     "7098500": {
       "lastRssKey": "66bb84b96ceb55ab6dbacb631fecaac54ddbcff7",
@@ -927,6 +1018,12 @@
       "lastEpisodeTitle": "Hakeem Oluseyi: The different realms of the universe, in 69 minutes",
       "lastEpisodeId": "55941239469",
       "lastCheckedAt": 1786559339176
+    },
+    "7935877": {
+      "lastRssKey": "flightcast:01M1VYEHXSDGYHQHWZ2NED0BNQ",
+      "lastEpisodeTitle": "The Invisible Programs Running Your Life",
+      "lastEpisodeId": "60116322367",
+      "lastCheckedAt": 1789288228094
     },
     "7954192": {
       "lastEpisodeId": "59218201194",
