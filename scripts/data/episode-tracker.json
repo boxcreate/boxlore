@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-13T13:26:10.439Z",
+  "lastRun": "2026-09-13T17:01:32.615Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -101,10 +101,10 @@
       "lastCheckedAt": 1789288148097
     },
     "385117": {
-      "lastRssKey": "5c6f0fa4-af74-11f1-a3d9-7f15fb9bebd7",
-      "lastEpisodeTitle": "9AM ET 09/13/2026 Newscast",
+      "lastRssKey": "821399d2-af8d-11f1-b393-fb7ed2ee3120",
+      "lastEpisodeTitle": "12PM ET 09/13/2026 Newscast",
       "lastEpisodeId": "60305907902",
-      "lastCheckedAt": 1789305978525
+      "lastCheckedAt": 1789318907986
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -125,10 +125,10 @@
       "lastCheckedAt": 1789148973259
     },
     "419624": {
-      "lastRssKey": "421354b8-c04f-4202-9c3a-48a375e73b54",
-      "lastEpisodeTitle": "Jak as Dywizjonu 303 został najemnikiem. Powojenne losy Jana Zumbacha",
+      "lastRssKey": "7241b0a1-aec7-4d25-b783-69368b4f6b40",
+      "lastEpisodeTitle": "Raj dla nazistów? Jak Argentyna otworzyła drzwi zbrodniarzom wojennym",
       "lastEpisodeId": "59723237419",
-      "lastCheckedAt": 1788714914993
+      "lastCheckedAt": 1789318911863
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -194,9 +194,9 @@
       "lastCheckedAt": 1789288160157
     },
     "483834": {
-      "lastRssKey": "6aa4b7b9c939da2795d9f96d",
-      "lastEpisodeTitle": "Matt Berry Plays IKEA Furniture in Official Skyrim Mod, Point Break TV Series at AMC — September 12, 2026",
-      "lastCheckedAt": 1789233689714
+      "lastRssKey": "6aa4b88fff74edfd0099836f",
+      "lastEpisodeTitle": "Oh, Mary! Play Gets HBO Streaming Release, Danganronpa 2x2 Gets Release Date and Trailer — September 13, 2026",
+      "lastCheckedAt": 1789318920632
     },
     "490022": {
       "lastRssKey": "51094fa0-f93d-4e96-8aaa-8985c46cfb58",
@@ -304,6 +304,12 @@
       "lastEpisodeTitle": "The Last 12 Weeks - Ep. 5",
       "lastEpisodeId": "56439207381",
       "lastCheckedAt": 1786559319432
+    },
+    "757675": {
+      "lastRssKey": "d3072578-a3af-11f1-bac4-67a7ac3cb628",
+      "lastEpisodeTitle": "Episode #252 ... Slaughterhouse-Five - Kurt Vonnegut",
+      "lastEpisodeId": "59676157450",
+      "lastCheckedAt": 1789318929535
     },
     "771813": {
       "lastRssKey": "1abce225-afd1-4233-bb25-481995d56e63",
@@ -457,10 +463,10 @@
       "lastCheckedAt": 1789167610396
     },
     "1258562": {
-      "lastRssKey": "6a940426057694768e5ae005",
-      "lastEpisodeTitle": "206. A Werewolf in Virginia | Pankaj Bhasin",
+      "lastRssKey": "6aa6b20c5b934194476d7e33",
+      "lastEpisodeTitle": "207. The Chameli Bagh Murders | Oishee Rahman",
       "lastEpisodeId": "53310059829",
-      "lastCheckedAt": 1788100917560
+      "lastCheckedAt": 1789318947003
     },
     "1266933": {
       "lastRssKey": "4c5fea84-d345-4950-ad09-54ab043d0ef2",
@@ -492,9 +498,9 @@
       "lastCheckedAt": 1789211169861
     },
     "1545709": {
-      "lastRssKey": "audioboom-01a090ef-268e-706b-b6e7-9567416b5a2b",
-      "lastEpisodeTitle": "10th September 2026 - Apple Launches and Gadget Reviews on BBC Radio London",
-      "lastCheckedAt": 1789149005539
+      "lastRssKey": "audioboom-01a09b5c-8a7b-763b-b076-b61baef001e8",
+      "lastEpisodeTitle": "11th September 2026 - DIscussing Apple's New Products on LBC",
+      "lastCheckedAt": 1789318949978
     },
     "1621172": {
       "lastRssKey": "https://krfp.org/?p=33432",
@@ -883,10 +889,10 @@
       "lastCheckedAt": 1788997885128
     },
     "7183032": {
-      "lastRssKey": "7f808eb2-50b4-4d8c-9036-eaf56a7b7a42",
-      "lastEpisodeTitle": "I Was Kidnapped for Accepting Islam! - Hindu Converts to Islam",
-      "lastEpisodeId": "60090008359",
-      "lastCheckedAt": 1789306037188
+      "lastRssKey": "40403625-39d2-4e98-9f81-2865ae55e362",
+      "lastEpisodeTitle": "The Punishment of Lut's People Visualized by AI - 3 Qur'anic Miracles Discovered!",
+      "lastEpisodeId": "60255242233",
+      "lastCheckedAt": 1789318993200
     },
     "7200648": {
       "lastRssKey": "https://api.spreaker.com/episode/64228821",
