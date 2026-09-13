@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-13T19:38:46.627Z",
+  "lastRun": "2026-09-13T22:07:59.112Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -25,10 +25,10 @@
       "lastCheckedAt": 1786636690918
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75053735",
-      "lastEpisodeTitle": "BRICS summit, warning labels for packed food, and Orangutans in Odisha",
-      "lastEpisodeId": "60222538413",
-      "lastCheckedAt": 1789102791637
+      "lastRssKey": "https://api.spreaker.com/episode/75107855",
+      "lastEpisodeTitle": "The Catch Up: Xi Jinping to attend the BRICS summit, and more (11 September)",
+      "lastEpisodeId": "60341489953",
+      "lastCheckedAt": 1789337281514
     },
     "78573": {
       "lastRssKey": "c17cd965-08a1-4e4c-82ee-86fc5f7ffe2f",
@@ -107,10 +107,10 @@
       "lastCheckedAt": 1789288148097
     },
     "385117": {
-      "lastRssKey": "a7055bfe-afa6-11f1-8810-e7990a1a67c6",
-      "lastEpisodeTitle": "3PM ET 09/13/2026 Newscast",
+      "lastRssKey": "6ae22e2a-afb7-11f1-9e69-c382508463d0",
+      "lastEpisodeTitle": "5PM ET 09/13/2026 Newscast",
       "lastEpisodeId": "60305907902",
-      "lastCheckedAt": 1789328338080
+      "lastCheckedAt": 1789337289538
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -235,10 +235,16 @@
       "lastCheckedAt": 1786559316926
     },
     "522792": {
-      "lastRssKey": "bd5ee5bc-a8e6-11f1-99f9-3f70d5f14071",
-      "lastEpisodeTitle": "PlayStation Says Buying Isn’t Owning - WAN Show September 4, 2026",
+      "lastRssKey": "5e3d9e26-afb1-11f1-82b2-575ae8bdba15",
+      "lastEpisodeTitle": "Microsoft Did It First Apple - WAN Show September 11, 2026",
       "lastEpisodeId": "59973348867",
-      "lastCheckedAt": 1788594517244
+      "lastCheckedAt": 1789337304424
+    },
+    "522889": {
+      "lastRssKey": "1deb13a6-a865-11f1-a4b4-1b0f8f96fb03",
+      "lastEpisodeTitle": "1037: WebMCP is here (and you should care)",
+      "lastEpisodeId": "60153257823",
+      "lastCheckedAt": 1789337305020
     },
     "555427": {
       "lastEpisodeId": "386077022",
@@ -256,6 +262,12 @@
       "lastEpisodeTitle": "Series 13: Jilly Cooper",
       "lastEpisodeId": "58699345714",
       "lastCheckedAt": 1788935063789
+    },
+    "573431": {
+      "lastRssKey": "gid://art19-episode-locator/V0/Mm0jehIhDuSAPZgP-WroJH5XsdJ5R0aTQVex1Q1LZxc",
+      "lastEpisodeTitle": "Roomba: Hitting the Wall | Fast, Cheap, and Out of Control | 1",
+      "lastEpisodeId": "60171505389",
+      "lastCheckedAt": 1789337306918
     },
     "577105": {
       "lastRssKey": "prx_7057_82aaba05-80c9-4d2e-8069-3c20f2b7dbc8",
@@ -339,6 +351,12 @@
       "lastEpisodeTitle": "Stop Waiting For External Validation",
       "lastEpisodeId": "59832566518",
       "lastCheckedAt": 1789119167714
+    },
+    "853158": {
+      "lastRssKey": "8683e0db-2d7a-4f35-bdc5-9d35933936cf",
+      "lastEpisodeTitle": "Episode 529: Zoom calls on my open floor plan and laconic staff engineer",
+      "lastEpisodeId": "60118865665",
+      "lastCheckedAt": 1789337313618
     },
     "889671": {
       "lastRssKey": "8e86a38f-6fe5-430c-b7d6-23448ad2e6a3",
@@ -632,6 +650,11 @@
       "lastEpisodeId": "59615847309",
       "lastCheckedAt": 1789288197949
     },
+    "4622987": {
+      "lastRssKey": "a0767417-5dc9-410a-89ba-fd796fba50d0",
+      "lastEpisodeTitle": "رادیوجادی ۲۴۷ - حمام طلا",
+      "lastCheckedAt": 1789337338964
+    },
     "4780435": {
       "lastRssKey": "tag:soundcloud,2010:tracks/2385719535",
       "lastEpisodeTitle": "وعي ١١١ | سلسلة الصحابة | عبدالله بن ام مكتوم",
@@ -711,6 +734,11 @@
       "lastEpisodeTitle": "The Ducks Waive Chris Kreider In A Disaster Move For Anaheim",
       "lastEpisodeId": "60007884583",
       "lastCheckedAt": 1789045332926
+    },
+    "5848065": {
+      "lastRssKey": "6aa2c6202e8bb8424c465b86",
+      "lastEpisodeTitle": "مهدی شجاری | من فقط یک بار زندگی می‌کنم",
+      "lastCheckedAt": 1789337344269
     },
     "5930143": {
       "lastRssKey": "8ddf0a8d-54be-4951-b734-77428daa8b3e",
@@ -895,10 +923,10 @@
       "lastCheckedAt": 1788997885128
     },
     "7183032": {
-      "lastRssKey": "40403625-39d2-4e98-9f81-2865ae55e362",
-      "lastEpisodeTitle": "The Punishment of Lut's People Visualized by AI - 3 Qur'anic Miracles Discovered!",
+      "lastRssKey": "7f808eb2-50b4-4d8c-9036-eaf56a7b7a42",
+      "lastEpisodeTitle": "I Was Kidnapped for Accepting Islam! - Hindu Converts to Islam",
       "lastEpisodeId": "60255242233",
-      "lastCheckedAt": 1789318993200
+      "lastCheckedAt": 1789337357900
     },
     "7200648": {
       "lastRssKey": "https://api.spreaker.com/episode/64228821",
@@ -907,10 +935,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7239415": {
-      "lastRssKey": "f21fed24-aef3-11f1-a4ba-9f6bfcb8ec09",
-      "lastEpisodeTitle": "I cannot believe this is real...",
+      "lastRssKey": "831526a4-afbd-11f1-8af7-6b09cccec47f",
+      "lastEpisodeTitle": "We are watching MASTERY at work...",
       "lastEpisodeId": "60132290764",
-      "lastCheckedAt": 1789250273871
+      "lastCheckedAt": 1789337358994
     },
     "7248222": {
       "lastRssKey": "aaad98ba-ae2b-11f1-8a15-8f0d4481ae1c",
@@ -979,10 +1007,10 @@
       "lastCheckedAt": 1788730459013
     },
     "7587315": {
-      "lastRssKey": "a59bda16-ac60-11f1-91eb-1ba7aa851859",
-      "lastEpisodeTitle": "What Is Collagen All About?",
+      "lastRssKey": "de5337c4-ad27-11f1-8ac8-ff43bbfd70ad",
+      "lastEpisodeTitle": "Why Your Body Needs Gravity",
       "lastEpisodeId": "58798183213",
-      "lastCheckedAt": 1788997889136
+      "lastCheckedAt": 1789337362543
     },
     "7632237": {
       "lastEpisodeId": "47263048021",
