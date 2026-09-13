@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-13T08:28:57.324Z",
+  "lastRun": "2026-09-13T13:26:10.439Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -101,10 +101,10 @@
       "lastCheckedAt": 1789288148097
     },
     "385117": {
-      "lastRssKey": "708ad164-af4a-11f1-b2dd-83c7f35092b9",
-      "lastEpisodeTitle": "4AM ET 09/13/2026 Newscast",
+      "lastRssKey": "5c6f0fa4-af74-11f1-a3d9-7f15fb9bebd7",
+      "lastEpisodeTitle": "9AM ET 09/13/2026 Newscast",
       "lastEpisodeId": "60305907902",
-      "lastCheckedAt": 1789288148242
+      "lastCheckedAt": 1789305978525
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -143,10 +143,10 @@
       "lastCheckedAt": 1789288153771
     },
     "437685": {
-      "lastRssKey": "8493846e-8d60-11f1-adef-17181c296479",
-      "lastEpisodeTitle": "Ivan the Terrible",
-      "lastEpisodeId": "60283437617",
-      "lastCheckedAt": 1789211126981
+      "lastRssKey": "85686f30-8d60-11f1-adef-fb229391e60e",
+      "lastEpisodeTitle": "The Cheyenne Mountain Complex",
+      "lastEpisodeId": "60321475228",
+      "lastCheckedAt": 1789305983093
     },
     "438184": {
       "lastRssKey": "89a285ea-abab-11f1-86c7-5f39f30f083b",
@@ -282,10 +282,10 @@
       "lastCheckedAt": 1789288168215
     },
     "743229": {
-      "lastEpisodeId": "60284166632",
-      "lastEpisodeTitle": "Naomi Klein and Astra Taylor Say the End of the World is Now on the Table",
-      "lastRssKey": "f50ae759-a407-44b9-9fcb-693ea68c115d",
-      "lastCheckedAt": 1789211150957
+      "lastRssKey": "00fc117b-ac68-403a-a2a6-17074a21e49b",
+      "lastEpisodeTitle": "The Good, the Bad and the Good-Bad (Movie)",
+      "lastEpisodeId": "60322366174",
+      "lastCheckedAt": 1789305998741
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -416,10 +416,10 @@
       "lastCheckedAt": 1789167605395
     },
     "1106580": {
-      "lastRssKey": "cmstvsme70bhv01zlcwix23co",
-      "lastEpisodeTitle": "什麼時候該停止跟AI聊心事？ - 洪兆祥博士",
+      "lastRssKey": "cmtztxupm06tq01qjaquy1m0j",
+      "lastEpisodeTitle": "百靈果NEWS｜凱莉在英國被趕下車、你支持關閉社群平台演算法嗎、德國極右派靠女同志贏選舉",
       "lastEpisodeId": "59827465254",
-      "lastCheckedAt": 1789059924436
+      "lastCheckedAt": 1789306011005
     },
     "1116485": {
       "lastRssKey": "6aa5838bc9002c9c13290988",
@@ -639,9 +639,9 @@
       "lastCheckedAt": 1789119200474
     },
     "4898105": {
-      "lastRssKey": "73990c2a-acc2-11f1-91ea-6772209e70ae",
-      "lastEpisodeTitle": "IGN Game Review: Onimusha: Way of the Sword",
-      "lastCheckedAt": 1789211182824
+      "lastRssKey": "606b9158-ad9f-11f1-bd98-37fa74eb12cc",
+      "lastEpisodeTitle": "IGN Movie Review: Practical Magic 2",
+      "lastCheckedAt": 1789306024445
     },
     "5107672": {
       "lastRssKey": "6c5e5764-f024-4308-843f-a925142939b4",
@@ -713,10 +713,10 @@
       "lastCheckedAt": 1788990618187
     },
     "5972153": {
-      "lastRssKey": "f0d526f8-aea0-11f1-965a-e7f734ba7625",
-      "lastEpisodeTitle": "Saudi pipeline, Trump in Ireland and Celine in Paris",
+      "lastRssKey": "0db050ac-af66-11f1-adf9-d394d854d9d0",
+      "lastEpisodeTitle": "AI slowdown, Trump's Houthi problem, Irish unity and the US Open",
       "lastEpisodeId": "59712792909",
-      "lastCheckedAt": 1789222688721
+      "lastCheckedAt": 1789306027083
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -818,10 +818,10 @@
       "lastCheckedAt": 1789045339116
     },
     "6866732": {
-      "lastRssKey": "https://api.spreaker.com/episode/75090351",
-      "lastEpisodeTitle": "নিঝুম রাতের আতঙ্ক",
-      "lastEpisodeId": "60295282994",
-      "lastCheckedAt": 1789233745359
+      "lastRssKey": "https://api.spreaker.com/episode/75101161",
+      "lastEpisodeTitle": "Hercule Poirot - Evil Under The Sun",
+      "lastEpisodeId": "60325146574",
+      "lastCheckedAt": 1789306033346
     },
     "6894068": {
       "lastRssKey": "f74c8f50-aad4-11f1-8072-5fdd7ee2b865",
@@ -830,10 +830,10 @@
       "lastCheckedAt": 1789288212994
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779845",
-      "lastEpisodeTitle": "The Adventures of Maisie - A Vacation for Mrs Hammerslogger",
+      "lastRssKey": "https://api.spreaker.com/episode/59779850",
+      "lastEpisodeTitle": "Encore Theater - The Man In White",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1789211193956
+      "lastCheckedAt": 1789306033998
     },
     "6912659": {
       "lastRssKey": "babbaf25-6379-4266-8817-8a50517a6cfb",
@@ -883,10 +883,10 @@
       "lastCheckedAt": 1788997885128
     },
     "7183032": {
-      "lastRssKey": "40403625-39d2-4e98-9f81-2865ae55e362",
-      "lastEpisodeTitle": "The Punishment of Lut's People Visualized by AI - 3 Qur'anic Miracles Discovered!",
+      "lastRssKey": "7f808eb2-50b4-4d8c-9036-eaf56a7b7a42",
+      "lastEpisodeTitle": "I Was Kidnapped for Accepting Islam! - Hindu Converts to Islam",
       "lastEpisodeId": "60090008359",
-      "lastCheckedAt": 1789070262326
+      "lastCheckedAt": 1789306037188
     },
     "7200648": {
       "lastRssKey": "https://api.spreaker.com/episode/64228821",
@@ -907,10 +907,10 @@
       "lastCheckedAt": 1789167636186
     },
     "7319490": {
-      "lastRssKey": "01a05eb0-2016-7266-99a4-deed8661abea",
-      "lastEpisodeTitle": "Gen Z and The American Dream | Surrounded Follow Up w/Maxwell Frost",
+      "lastRssKey": "01a08d05-55ac-7511-8266-e7aebcdbce43",
+      "lastEpisodeTitle": "1 Conservative vs 20 Liberals (ft. The Split’s Austin Julio Broughton) | Surrounded",
       "lastEpisodeId": "60031436115",
-      "lastCheckedAt": 1788841457950
+      "lastCheckedAt": 1789306038528
     },
     "7324937": {
       "lastRssKey": "374cc96a-aebf-11f1-bdf2-23ea4521fd2a",
@@ -955,10 +955,10 @@
       "lastCheckedAt": 1786911630083
     },
     "7492905": {
-      "lastRssKey": "d3ff31e0-95a5-11f1-a776-df7c653c1b3d",
-      "lastEpisodeTitle": "Vergecast: ELIZA, the world's first chatbot",
+      "lastRssKey": "12b46332-5aa1-11f1-a6e8-1f45ea83f0b0",
+      "lastEpisodeTitle": "Oregon Trail: Saddle up",
       "lastEpisodeId": "57793191904",
-      "lastCheckedAt": 1786559337402
+      "lastCheckedAt": 1789306040939
     },
     "7584644": {
       "lastRssKey": "6a9518811348fdc761401ddb",
@@ -985,10 +985,10 @@
       "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastRssKey": "5cef2ead-aa5a-4b87-82fe-97b623c6516a",
-      "lastEpisodeTitle": "Revelation 17",
-      "lastEpisodeId": "60282923840",
-      "lastCheckedAt": 1789211204681
+      "lastRssKey": "0dde359a-58a3-423f-90d9-432cfe7119fd",
+      "lastEpisodeTitle": "Revelation 18",
+      "lastEpisodeId": "60320955450",
+      "lastCheckedAt": 1789306041736
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
