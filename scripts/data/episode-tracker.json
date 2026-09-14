@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-13T22:07:59.112Z",
+  "lastRun": "2026-09-14T00:20:21.729Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -23,6 +23,12 @@
       "lastEpisodeTitle": "Disney: The Renaissance and the Empire",
       "lastRssKey": "dc17bee9-e7e2-4c06-afdd-e80244a0e9db",
       "lastCheckedAt": 1786636690918
+    },
+    "55386": {
+      "lastRssKey": "gid://art19-episode-locator/V0/SanDK7mVtp2zEyO2jSkKj9jGwsy1AqCm4PCnGXqQdi4",
+      "lastEpisodeTitle": "Personal Brand Expert: How to Find Your Purpose and Expand Your Impact",
+      "lastEpisodeId": "60085919668",
+      "lastCheckedAt": 1789345224766
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75107855",
@@ -107,10 +113,10 @@
       "lastCheckedAt": 1789288148097
     },
     "385117": {
-      "lastRssKey": "6ae22e2a-afb7-11f1-9e69-c382508463d0",
-      "lastEpisodeTitle": "5PM ET 09/13/2026 Newscast",
+      "lastRssKey": "9075ce62-afd0-11f1-91a6-b3959167c2b1",
+      "lastEpisodeTitle": "8PM ET 09/13/2026 Newscast",
       "lastEpisodeId": "60305907902",
-      "lastCheckedAt": 1789337289538
+      "lastCheckedAt": 1789345231839
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -195,9 +201,9 @@
       "lastCheckedAt": 1788785819665
     },
     "467929": {
-      "lastRssKey": "40deaedc-5603-4412-a534-f7ecfdf91207",
-      "lastEpisodeTitle": "705: Dr. Martin Seligman - Positive Psychology, Learned Optimism, Grit, PERMA, Agency, Resilience, and Predicting the Future",
-      "lastCheckedAt": 1789288160157
+      "lastRssKey": "4af7ca65-c87b-440f-83e5-9f291d895968",
+      "lastEpisodeTitle": "706: Daniel Lubetzky - KIND Snacks Founder & Shark Tank Investor on Kindness, Grit, Values-Driven Leadership. and Building a Billion-Dollar Brand",
+      "lastCheckedAt": 1789345239019
     },
     "483834": {
       "lastRssKey": "6aa4b88fff74edfd0099836f",
@@ -434,10 +440,10 @@
       "lastCheckedAt": 1789086160450
     },
     "1070334": {
-      "lastRssKey": "cc1b6606-ad06-11f1-b3da-43b8b6089437",
-      "lastEpisodeTitle": "Thoughts on Hypnotism",
+      "lastRssKey": "1907cb34-ad08-11f1-81a0-ef69836ae16a",
+      "lastEpisodeTitle": "Frank’s No Influencer!",
       "lastEpisodeId": "60139663372",
-      "lastCheckedAt": 1789086161181
+      "lastCheckedAt": 1789345261333
     },
     "1076260": {
       "lastRssKey": "8ef05e53-c773-4437-9dbe-b4c20111e8c2",
@@ -481,10 +487,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6aa468be7d9d1b16784001d0",
-      "lastEpisodeTitle": "In-Car Insights: Reflecting on a busy first day of action at the Madring",
+      "lastRssKey": "6aa72abf5b9341944783db98",
+      "lastEpisodeTitle": "Spanish GP: Why F1's Madring debut was so dull + was Lando Norris robbed?",
       "lastEpisodeId": "59631407122",
-      "lastCheckedAt": 1789167610396
+      "lastCheckedAt": 1789345266949
     },
     "1258562": {
       "lastRssKey": "6aa6b20c5b934194476d7e33",
@@ -822,10 +828,10 @@
       "lastCheckedAt": 1788997878706
     },
     "6725294": {
-      "lastRssKey": "cmtms3egx0bzx01u4a6uy7hg9",
-      "lastEpisodeTitle": "腸道爛 連快樂的資格都沒有 ft. 林文鑫教授｜EP128",
+      "lastRssKey": "cmtwgft9609up01rkfd6b0h1m",
+      "lastEpisodeTitle": "全遠端工作 真的比較爽嗎｜EP129",
       "lastEpisodeId": "59730670618",
-      "lastCheckedAt": 1788737469917
+      "lastCheckedAt": 1789345301066
     },
     "6744768": {
       "lastRssKey": "54ee17d2-7d4b-455f-bfa1-329f01bb29b2",
@@ -1058,6 +1064,11 @@
       "lastEpisodeTitle": "Hakeem Oluseyi: The different realms of the universe, in 69 minutes",
       "lastEpisodeId": "55941239469",
       "lastCheckedAt": 1786559339176
+    },
+    "7932902": {
+      "lastRssKey": "mnbg87vgfd.podbean.com/14ed29f5-d82a-5e79-82be-66de33e5e9f5",
+      "lastEpisodeTitle": "Why cant we TAKE OUR OWN ADVICE about narcissists ~ Dr. Ramani",
+      "lastCheckedAt": 1789345311850
     },
     "7935877": {
       "lastRssKey": "flightcast:01M1VYEHXSDGYHQHWZ2NED0BNQ",
