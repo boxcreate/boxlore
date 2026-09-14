@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-14T10:53:14.629Z",
+  "lastRun": "2026-09-14T16:47:09.894Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -25,10 +25,10 @@
       "lastCheckedAt": 1789363039070
     },
     "55386": {
-      "lastRssKey": "gid://art19-episode-locator/V0/SanDK7mVtp2zEyO2jSkKj9jGwsy1AqCm4PCnGXqQdi4",
-      "lastEpisodeTitle": "Personal Brand Expert: How to Find Your Purpose and Expand Your Impact",
+      "lastRssKey": "gid://art19-episode-locator/V0/_GMwJEFS5WLp3HE6k_qVeknc0JNLxo4FKCOko_RS6fk",
+      "lastEpisodeTitle": "Nutrition Expert: Why Weight Loss May Be the Wrong Goal for Better Health and Longevity",
       "lastEpisodeId": "60085919668",
-      "lastCheckedAt": 1789345224766
+      "lastCheckedAt": 1789404431852
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75107832",
@@ -37,10 +37,10 @@
       "lastCheckedAt": 1789363040308
     },
     "78573": {
-      "lastRssKey": "c17cd965-08a1-4e4c-82ee-86fc5f7ffe2f",
-      "lastEpisodeTitle": "PARADISUL AMĂGITOR ȘI ZÂMBETUL ÎNȘELĂTOR - SERGIU TOADER #IGDLCC 349",
+      "lastRssKey": "c1eff3ee-c9d0-44e4-9629-ac758b5d51c4",
+      "lastEpisodeTitle": "NU MAI ATÂRNĂM TABLOURI DE PEREȚI - OVIDIU BOJOR #IGDLCC 350",
       "lastEpisodeId": "60118059161",
-      "lastCheckedAt": 1788888235099
+      "lastCheckedAt": 1789404432968
     },
     "83316": {
       "lastRssKey": "3e3f3a82-af9b-11f1-ad89-77ec95c060f4",
@@ -67,10 +67,10 @@
       "lastCheckedAt": 1789158651228
     },
     "215799": {
-      "lastRssKey": "ba3c9663-7bec-426c-b824-042d4d8b3d3b",
-      "lastEpisodeTitle": "Blowing Up Your Life",
-      "lastEpisodeId": "60067652281",
-      "lastCheckedAt": 1789288144318
+      "lastRssKey": "66172720-ae9f-4d8e-911c-d71cb88c7d98",
+      "lastEpisodeTitle": "Why Conversations Go Wrong",
+      "lastEpisodeId": "60371391238",
+      "lastCheckedAt": 1789404435933
     },
     "222512": {
       "lastRssKey": "Buzzsprout-19794366",
@@ -89,16 +89,21 @@
       "lastEpisodeTitle": "Real Christianity, Real Results",
       "lastCheckedAt": 1789328336305
     },
+    "300687": {
+      "lastRssKey": "36bbba5a-4ac8-4120-aba5-7ed540f935df",
+      "lastEpisodeTitle": "Inteligencia Artificial, tu resumen semanal | Me cambió la ropa sin tocarme la cara",
+      "lastCheckedAt": 1789404439072
+    },
     "311214": {
       "lastEpisodeId": "567104661",
       "lastEpisodeTitle": "The Cemetery Shadow Man",
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "6664F660-309D-41CC-8F6C-6F26BDB02EF9",
-      "lastEpisodeTitle": "Is AI the Answer to America’s Mental-Health Crisis?",
+      "lastRssKey": "B22F2D77-28D6-4867-81DC-D664034BA4FD",
+      "lastEpisodeTitle": "TNB Tech Minute: AI Executives Call for a Slowdown",
       "lastEpisodeId": "60259364774",
-      "lastCheckedAt": 1789211122261
+      "lastCheckedAt": 1789404439318
     },
     "331078": {
       "lastRssKey": "81cf7800-a890-11f1-95c4-6bf1c8d69f49",
@@ -113,10 +118,10 @@
       "lastCheckedAt": 1789383209823
     },
     "385117": {
-      "lastRssKey": "61c3fd1a-b024-11f1-8916-73e0bf9c2199",
-      "lastEpisodeTitle": "6AM ET 09/14/2026 Newscast",
-      "lastEpisodeId": "60362373070",
-      "lastCheckedAt": 1789383210465
+      "lastRssKey": "acc8bd78-b056-11f1-b8d6-930adcb164f8",
+      "lastEpisodeTitle": "12PM ET 09/14/2026 Newscast",
+      "lastEpisodeId": "60373055801",
+      "lastCheckedAt": 1789404440440
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -155,10 +160,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432535": {
-      "lastRssKey": "95cd1b1a-9008-4558-8eea-b90e8d92f5e5",
-      "lastEpisodeTitle": "It's Your Time to Heal: God's Steps with Pastor Derwin Gray",
+      "lastRssKey": "2ea05913-2cf8-4111-8baa-c9a881ad7e9d",
+      "lastEpisodeTitle": "The Trauma You Inherited Isn't Yours — But You Can Break It | Mark Wolynn",
       "lastEpisodeId": "59964924407",
-      "lastCheckedAt": 1789288153771
+      "lastCheckedAt": 1789404444446
     },
     "437685": {
       "lastRssKey": "858816d2-8d60-11f1-adef-232dcb1e6539",
@@ -167,10 +172,10 @@
       "lastCheckedAt": 1789383217392
     },
     "438184": {
-      "lastRssKey": "89a285ea-abab-11f1-86c7-5f39f30f083b",
-      "lastEpisodeTitle": "Decoding Tony Hawk’s mindset in 72 minutes",
-      "lastEpisodeId": "60158268454",
-      "lastCheckedAt": 1789288155377
+      "lastRssKey": "74f58fec-b02a-11f1-b703-1f555d6de825",
+      "lastEpisodeTitle": "David Rubenstein: We took $5M and turned it into $500B",
+      "lastEpisodeId": "60366557067",
+      "lastCheckedAt": 1789404445917
     },
     "444331": {
       "lastRssKey": "8bc9001c-ace9-11f1-8456-cf79c5ae6c4e",
@@ -253,10 +258,10 @@
       "lastCheckedAt": 1789337304424
     },
     "522889": {
-      "lastRssKey": "1deb13a6-a865-11f1-a4b4-1b0f8f96fb03",
-      "lastEpisodeTitle": "1037: WebMCP is here (and you should care)",
-      "lastEpisodeId": "60153257823",
-      "lastCheckedAt": 1789337305020
+      "lastRssKey": "14e35aa4-ad45-11f1-91e7-2ff201cabe75",
+      "lastEpisodeTitle": "1038: OpenAI Releases GPT 6 Astra",
+      "lastEpisodeId": "60364387159",
+      "lastCheckedAt": 1789404451829
     },
     "555427": {
       "lastEpisodeId": "386077022",
@@ -407,10 +412,10 @@
       "lastCheckedAt": 1789119170279
     },
     "980370": {
-      "lastRssKey": "6aa1bcfe156a52f880976343",
-      "lastEpisodeTitle": "How to turn setbacks into success | Amy Shoenthal",
+      "lastRssKey": "6aa808faa6e9aef4ccb6de56",
+      "lastEpisodeTitle": "How AI unleashed (not replaced) my creativity | Kelly A. Boesch",
       "lastEpisodeId": "60252776187",
-      "lastCheckedAt": 1789288174394
+      "lastCheckedAt": 1789404465646
     },
     "998969": {
       "lastRssKey": "audioboom-01a09b3a-5217-786e-8cd5-1011a80f679b",
@@ -429,10 +434,10 @@
       "lastCheckedAt": 1788643859907
     },
     "1047718": {
-      "lastRssKey": "6aa3eb538f08f0e737cbc969",
-      "lastEpisodeTitle": "Perfect start for the Premier League in Europe and is it crunch time for Spurs already? Football Weekly Extra",
+      "lastRssKey": "6aa7ce0c8f0828e7af7f2dda",
+      "lastEpisodeTitle": "VAR controversy decides Manchester derby as City keep pace with Arsenal: Football Weekly",
       "lastEpisodeId": "58884055225",
-      "lastCheckedAt": 1789135523271
+      "lastCheckedAt": 1789404467665
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-dont-let-your-desires-replace-allah",
@@ -464,10 +469,10 @@
       "lastCheckedAt": 1789306011005
     },
     "1116485": {
-      "lastRssKey": "6aa7c0fb59e0cd900baf49b3",
-      "lastEpisodeTitle": "Underperforming Midfield | Daily News Update",
+      "lastRssKey": "6aa8086b5802ae9a7adca3da",
+      "lastEpisodeTitle": "REACTION To Man United's CONTROVERSIAL Manchester Derby Defeat",
       "lastEpisodeId": "60284915433",
-      "lastCheckedAt": 1789383249260
+      "lastCheckedAt": 1789404472769
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -481,10 +486,10 @@
       "lastCheckedAt": 1789102842517
     },
     "1193286": {
+      "lastRssKey": "08071c54-b05a-11f1-96b7-9fb936a27625",
+      "lastEpisodeTitle": "Tournoi De Golf Des Canadiens, Kreider, Bolduc et plus | Le Sick Podcast Avec Tony Marinaro 14/09/26",
       "lastEpisodeId": "60294977653",
-      "lastEpisodeTitle": "The Biggest Surprise At Habs Training Camp Will Be… | The Sick Podcast with Tony Marinaro Sept 11 2026",
-      "lastRssKey": "6a6e46e6-ae17-11f1-961e-cb7854f055f7",
-      "lastCheckedAt": 1789233722905
+      "lastCheckedAt": 1789404474097
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -791,11 +796,17 @@
       "lastEpisodeTitle": "Spider-Noir Cancelled, Biggest Summer Box Office Ever",
       "lastCheckedAt": 1789045335042
     },
+    "6280366": {
+      "lastEpisodeId": "60342428155",
+      "lastEpisodeTitle": "10 Ways to Think Bigger with Opportunity AI",
+      "lastRssKey": "7c4c5e25-80fd-4f69-8be1-61957430ca5c",
+      "lastCheckedAt": 1789404489911
+    },
     "6413946": {
-      "lastRssKey": "892e0b4c-a769-49af-868d-e1b1010f4f99",
-      "lastEpisodeTitle": "EP 821: Gobierno quiere reducir el uso de dinero en efectivo, Decisiones del INE abren la puerta a fraude electoral y Recordamos los ataques del 11-S, a 25 años",
+      "lastRssKey": "089994fd-5179-463d-a93e-4d563b1b2e88",
+      "lastEpisodeTitle": "EP 822: Regresan el libro de texto de matemáticas, Exhiben propiedades del exdirector de Pemex y Piden freno a desarrollo de la inteligencia artificial",
       "lastEpisodeId": "60198639919",
-      "lastCheckedAt": 1789135558058
+      "lastCheckedAt": 1789404490319
     },
     "6456494": {
       "lastRssKey": "6aa09a1399455f9a93cb84ac",
@@ -804,10 +815,10 @@
       "lastCheckedAt": 1788935098200
     },
     "6559880": {
-      "lastRssKey": "f2511988-ad47-11f1-9b6d-e7bf806efcdf",
-      "lastEpisodeTitle": "The Champions League Is Back",
+      "lastRssKey": "7c8c4ffc-b04d-11f1-a0dc-575e7919c6ec",
+      "lastEpisodeTitle": "VAR Controversy Overshadows Manchester Derby",
       "lastEpisodeId": "60154075225",
-      "lastCheckedAt": 1789102865622
+      "lastCheckedAt": 1789404490743
     },
     "6602135": {
       "lastRssKey": "75815325-d437-47de-a47f-a411416cd7e7",
@@ -845,10 +856,10 @@
       "lastCheckedAt": 1789345301066
     },
     "6744768": {
-      "lastRssKey": "54ee17d2-7d4b-455f-bfa1-329f01bb29b2",
-      "lastEpisodeTitle": "Why You Should NEVER Come to China",
+      "lastRssKey": "95f8b6c6-f7fa-4879-bc49-04209e366308",
+      "lastEpisodeTitle": "I've had it with China",
       "lastEpisodeId": "59871186213",
-      "lastCheckedAt": 1788785859790
+      "lastCheckedAt": 1789404504127
     },
     "6761897": {
       "lastRssKey": "826188bb-79f6-40a1-9329-eef473d8575c",
@@ -1077,9 +1088,9 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/2239cf4a-2de2-5470-9666-d8f8009ccffc",
-      "lastEpisodeTitle": "What happens when you STOP FAWNING over the narcissist ~ Dr. Ramani",
-      "lastCheckedAt": 1789383298121
+      "lastRssKey": "mnbg87vgfd.podbean.com/2b4c551a-ad6a-538a-8110-49a640161b01",
+      "lastEpisodeTitle": "Getting FUTURE FROZEN by a narcissist ~ Dr. Ramani",
+      "lastCheckedAt": 1789404512988
     },
     "7935877": {
       "lastRssKey": "flightcast:01M1VYEHXSDGYHQHWZ2NED0BNQ",
