@@ -3,6 +3,8 @@ package cx.aswin.boxlore.feature.home.settings.pages
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -23,17 +25,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -66,7 +69,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -211,49 +213,40 @@ internal fun ColumnScope.SignedOutContent(
         }
     }
 
-    // 1. Compact Header
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(54.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.CloudSync,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(28.dp),
-                )
+    fun openGmailApp() {
+        try {
+            val gmailIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.gm")
+            if (gmailIntent != null) {
+                context.startActivity(gmailIntent)
+            } else {
+                val emailIntent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_APP_EMAIL)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                if (emailIntent.resolveActivity(context.packageManager) != null) {
+                    context.startActivity(emailIntent)
+                } else {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")))
+                }
+            }
+        } catch (_: Exception) {
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")))
+            } catch (_: Exception) {
+                Toast.makeText(context, "Could not open email app", Toast.LENGTH_SHORT).show()
             }
         }
-
-        Spacer(Modifier.height(12.dp))
-
-        Text(
-            text = "boxlore Account",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = GoogleSansWeight.bold,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(6.dp))
-
-        Text(
-            text = "Sign in to keep your subscriptions, queue, and playback progress synchronized across all your devices.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
     }
 
-    Spacer(Modifier.height(4.dp))
+    // 1. Ultra-Light Header (Single-line explanation, zero heavy icons/para)
+    Text(
+        text = "Sign in to sync your library, queue, and playback across devices.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+    )
 
     // 2. Continue with Google Button
     val googleShape = MaterialTheme.shapes.extraLarge
@@ -417,39 +410,101 @@ internal fun ColumnScope.SignedOutContent(
             Spacer(Modifier.height(18.dp))
 
             if (!usePasswordAuth) {
-                // Email Link / Magic Link Flow (DEFAULT for both Sign In and Sign Up)
+                // Email Link Flow (DEFAULT for both Sign In and Sign Up)
                 if (magicLinkSent) {
                     Surface(
                         color = MaterialTheme.colorScheme.primaryContainer,
                         shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
                                 Icon(
                                     Icons.Rounded.CheckCircle,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp),
                                 )
                                 Spacer(Modifier.width(10.dp))
                                 Text(
-                                    text = "Sign-in link sent!",
-                                    style = MaterialTheme.typography.titleSmall,
+                                    text = if (activeAuthMode == AuthMode.SIGN_UP) "Sign-up link sent!" else "Sign-in link sent!",
+                                    style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     fontWeight = GoogleSansWeight.bold,
                                 )
                             }
-                            Spacer(Modifier.height(6.dp))
+
+                            Spacer(Modifier.height(8.dp))
+
                             Text(
-                                text = "We sent a link to $email. Open the email on this device and tap the link to ${if (activeAuthMode == AuthMode.SIGN_UP) "create your account" else "sign in"}.",
-                                style = MaterialTheme.typography.bodySmall,
+                                text = "We sent an instant link to $email. Open the email on this device and tap the link to complete.",
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
+
                             Spacer(Modifier.height(12.dp))
+
+                            // Prominent Spam Alert Callout
+                            Surface(
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shape = MaterialTheme.shapes.small,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Warning,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(22.dp),
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        text = "Important: The email will 99% land in your Spam or Junk folder! Please check there.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(14.dp))
+
+                            // Open Gmail Button
+                            Button(
+                                onClick = { openGmailApp() },
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(46.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "Open Gmail",
+                                    fontWeight = GoogleSansWeight.bold,
+                                )
+                            }
+
+                            Spacer(Modifier.height(6.dp))
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 TextButton(
@@ -463,7 +518,6 @@ internal fun ColumnScope.SignedOutContent(
                                         style = MaterialTheme.typography.labelMedium,
                                     )
                                 }
-                                Spacer(Modifier.width(8.dp))
                                 TextButton(
                                     onClick = { submitEmailLink() },
                                     enabled = !isAnyLoading,
@@ -480,7 +534,7 @@ internal fun ColumnScope.SignedOutContent(
                 } else {
                     Text(
                         text = if (activeAuthMode == AuthMode.SIGN_UP) {
-                            "Enter your email to create an account. We'll send an instant verification link — no password needed."
+                            "Enter your email to create an account. We'll send an instant verification link."
                         } else {
                             "Enter your email to receive a passwordless sign-in link."
                         },
@@ -794,7 +848,7 @@ internal fun ColumnScope.SignedOutContent(
 
                 Spacer(Modifier.height(14.dp))
 
-                // Prominent Outlined Option: Use Email Link Instead
+                // Prominent Outlined Option: Email me a link instead
                 OutlinedButton(
                     onClick = {
                         usePasswordAuth = false
@@ -813,12 +867,41 @@ internal fun ColumnScope.SignedOutContent(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Use passwordless email link instead",
+                        text = "Email me a link instead",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = GoogleSansWeight.medium,
                     )
                 }
             }
+        }
+    }
+
+    // 5. Privacy & Data Callout (At the bottom of the page)
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Security,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(20.dp)
+                    .padding(top = 2.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "This account is used purely for cloud sync identification and is never linked to the app usage (tracking) data collected. Your email is only logged by Firebase (Google) for auth verification and is not stored in our servers.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
