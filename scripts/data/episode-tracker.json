@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-15T18:22:47.444Z",
+  "lastRun": "2026-09-15T21:37:32.393Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -31,10 +31,10 @@
       "lastCheckedAt": 1789404431852
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75124961",
-      "lastEpisodeTitle": "Deep Dive: Inside Delhi's Underworld",
-      "lastEpisodeId": "60389401101",
-      "lastCheckedAt": 1789443255537
+      "lastRssKey": "https://api.spreaker.com/episode/75150125",
+      "lastEpisodeTitle": "The Catch Up: India now exporter of Hilsa (15 September)",
+      "lastEpisodeId": "60423542409",
+      "lastCheckedAt": 1789508256699
     },
     "78573": {
       "lastRssKey": "c1eff3ee-c9d0-44e4-9629-ac758b5d51c4",
@@ -100,16 +100,16 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "1CD5EFAB-8E5E-483A-A833-FACE4D4EBE12",
-      "lastEpisodeTitle": "TNB Tech Minute: Fed System for Monitoring Banks Suffered Outage Last Month",
+      "lastRssKey": "51AA5C19-8832-4051-BC25-E92706327ACB",
+      "lastEpisodeTitle": "TNB Tech Minute: Bessent Responds to AI Safety Concerns",
       "lastEpisodeId": "60416074327",
-      "lastCheckedAt": 1789496574396
+      "lastCheckedAt": 1789508263744
     },
     "331078": {
-      "lastRssKey": "81fec93e-a890-11f1-95c4-ef9383bebf64",
-      "lastEpisodeTitle": "The Great AI Slowdown?",
+      "lastRssKey": "8232fd58-a890-11f1-95c4-1bcd0344cd2d",
+      "lastEpisodeTitle": "Trump Says: No Slowdown!",
       "lastEpisodeId": "59764839545",
-      "lastCheckedAt": 1789418721718
+      "lastCheckedAt": 1789508264470
     },
     "353744": {
       "lastRssKey": "flightcast:01M2DX439H6Y4QVMYY7JGJ2V0Q",
@@ -118,10 +118,10 @@
       "lastCheckedAt": 1789383209823
     },
     "385117": {
-      "lastRssKey": "9a640518-b130-11f1-896d-b3d183cf8b1c",
-      "lastEpisodeTitle": "2PM ET 09/15/2026 Newscast",
+      "lastRssKey": "bbd129b0-b149-11f1-bccf-5fe7a74de4f7",
+      "lastEpisodeTitle": "5PM ET 09/15/2026 Newscast",
       "lastEpisodeId": "60404689683",
-      "lastCheckedAt": 1789496575327
+      "lastCheckedAt": 1789508265427
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -142,10 +142,10 @@
       "lastCheckedAt": 1789363050162
     },
     "415434": {
-      "lastRssKey": "48f90e96-6e7b-11f1-94bf-ef54c8a359e7",
-      "lastEpisodeTitle": "Who is the $1,059 Steam VR headset for?",
-      "lastEpisodeId": "59905313780",
-      "lastCheckedAt": 1789418724733
+      "lastRssKey": "c948bccc-c3c7-11f0-8340-d326bdbf1b05",
+      "lastEpisodeTitle": "Is social media driving teen mental health issues?",
+      "lastEpisodeId": "60427690690",
+      "lastCheckedAt": 1789508267300
     },
     "419624": {
       "lastRssKey": "7241b0a1-aec7-4d25-b783-69368b4f6b40",
@@ -264,6 +264,12 @@
       "lastEpisodeId": "59973348867",
       "lastCheckedAt": 1789337304424
     },
+    "522811": {
+      "lastRssKey": "37c66119-fcef-4eba-8000-91ecae9ec5a6",
+      "lastEpisodeTitle": "لماذا تخلّى علماء الإسلام عن عروبتهم",
+      "lastEpisodeId": "53203252980",
+      "lastCheckedAt": 1789508283942
+    },
     "522889": {
       "lastRssKey": "14e35aa4-ad45-11f1-91e7-2ff201cabe75",
       "lastEpisodeTitle": "1038: OpenAI Releases GPT 6 Astra",
@@ -365,10 +371,10 @@
       "lastCheckedAt": 1789288170525
     },
     "808826": {
-      "lastRssKey": "6a9fc06ea84f75ab704f7f9d",
-      "lastEpisodeTitle": "Jeopardy!",
-      "lastEpisodeId": "58865121562",
-      "lastCheckedAt": 1788897988323
+      "lastRssKey": "6aa263cac939da27952fa921",
+      "lastEpisodeTitle": "Jeopardy 2!",
+      "lastEpisodeId": "60428476792",
+      "lastCheckedAt": 1789508291765
     },
     "838740": {
       "lastRssKey": "55d3cbdc-ae41-11f1-a182-572eebf33b23",
@@ -430,10 +436,10 @@
       "lastCheckedAt": 1789328361738
     },
     "1015378": {
-      "lastRssKey": "b72632fc-68fc-41b3-a88c-fdca9e1cf2db",
-      "lastEpisodeTitle": "Satya Nadella on the AI Doomer Slowdown, Microsoft's Master Plan & Who Wins AI",
-      "lastEpisodeId": "60421730972",
-      "lastCheckedAt": 1789496600201
+      "lastRssKey": "cea835d1-fb37-4f07-a91e-356e7e5c8fca",
+      "lastEpisodeTitle": "JD Vance on AI, Entitlement Fraud, Iran War, Israel, H-1B Abuse & the Midterms",
+      "lastEpisodeId": "60428620192",
+      "lastCheckedAt": 1789508298393
     },
     "1021803": {
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
@@ -804,10 +810,10 @@
       "lastCheckedAt": 1789045335042
     },
     "6280366": {
-      "lastEpisodeId": "60398783450",
-      "lastEpisodeTitle": "Even Other AI Labs Are Rallying Around Anthropic’s Slowdown Proposal",
-      "lastRssKey": "2e06be01-08ae-4d18-a782-589e7791f953",
-      "lastCheckedAt": 1789463670741
+      "lastEpisodeId": "60428684376",
+      "lastEpisodeTitle": "Trump Rails Against AI Slowdown \"Hoax\"",
+      "lastRssKey": "f5413953-aaf1-42f0-9ca2-6dd4563239c8",
+      "lastCheckedAt": 1789508329401
     },
     "6413946": {
       "lastRssKey": "b773bdab-431a-4d51-bb8a-c8dbaeb66c4c",
@@ -988,10 +994,10 @@
       "lastCheckedAt": 1789337358994
     },
     "7248222": {
-      "lastRssKey": "07f5e37c-b081-11f1-8bc2-b364dc59df48",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Lunes 14 de septiembre de 2026",
+      "lastRssKey": "cd420a2c-b147-11f1-9e26-5f05f080be8f",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Martes 15 de septiembre de 2026",
       "lastEpisodeId": "60136042421",
-      "lastCheckedAt": 1789429374473
+      "lastCheckedAt": 1789508357775
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1119,10 +1125,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/f7777e7b-cd39-59be-a30e-0069977ffa95",
-      "lastEpisodeTitle": "THIS is why HEARTBREAK is worse in narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/d7e5ade7-956d-5d1a-a90e-0e357f5f61cb",
+      "lastEpisodeTitle": "Why you need OTHER PEOPLE to HEAL from a narcissistic relationship ~ Dr. Ramani",
       "lastEpisodeId": "60421245852",
-      "lastCheckedAt": 1789496645351
+      "lastCheckedAt": 1789508366781
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
