@@ -217,6 +217,7 @@ internal fun ColumnScope.SignedOutContent(
         try {
             val gmailIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.gm")
             if (gmailIntent != null) {
+                gmailIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(gmailIntent)
             } else {
                 val emailIntent = Intent(Intent.ACTION_MAIN).apply {
@@ -226,12 +227,20 @@ internal fun ColumnScope.SignedOutContent(
                 if (emailIntent.resolveActivity(context.packageManager) != null) {
                     context.startActivity(emailIntent)
                 } else {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")))
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        },
+                    )
                 }
             }
         } catch (_: Exception) {
             try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")))
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    },
+                )
             } catch (_: Exception) {
                 Toast.makeText(context, "Could not open email app", Toast.LENGTH_SHORT).show()
             }
