@@ -1,10 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -29,11 +24,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Warning
@@ -69,7 +62,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -92,12 +87,6 @@ private const val GOOGLE_SIGN_IN_TIMEOUT_MS = 15_000L
 private enum class AuthMode {
     SIGN_IN,
     SIGN_UP,
-}
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -136,22 +125,6 @@ internal fun ColumnScope.SignedOutContent(
         }
     }
 
-    fun cleanError(raw: String?, isSignUp: Boolean): String {
-        if (raw == null) return "Authentication failed"
-        val lower = raw.lowercase()
-        return when {
-            !isSignUp && (lower.contains("no user") || lower.contains("invalid-credential") || lower.contains("user-not-found")) ->
-                "Incorrect email or password. Don't have an account? Switch to 'Sign Up'."
-            isSignUp && (lower.contains("already in use") || lower.contains("email-already-in-use")) ->
-                "An account already exists with this email. Switch to 'Sign In'."
-            lower.contains("weak-password") ->
-                "Password must be at least 6 characters."
-            lower.contains("invalid-email") ->
-                "Please enter a valid email address."
-            else -> raw
-        }
-    }
-
     fun submitEmailLink() {
         val trimmedEmail = email.trim()
         if (trimmedEmail.isBlank()) {
@@ -167,7 +140,7 @@ internal fun ColumnScope.SignedOutContent(
             if (result?.isSuccess == true) {
                 magicLinkSent = true
             } else {
-                errorMessage = cleanError(result?.exceptionOrNull()?.localizedMessage, isSignUp = activeAuthMode == AuthMode.SIGN_UP)
+                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage, isSignUp = activeAuthMode == AuthMode.SIGN_UP)
             }
         }
     }
@@ -208,41 +181,7 @@ internal fun ColumnScope.SignedOutContent(
                     Toast.LENGTH_SHORT,
                 ).show()
             } else {
-                errorMessage = cleanError(result?.exceptionOrNull()?.localizedMessage, isSignUp = isSignUp)
-            }
-        }
-    }
-
-    fun openGmailApp() {
-        try {
-            val gmailIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.gm")
-            if (gmailIntent != null) {
-                gmailIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(gmailIntent)
-            } else {
-                val emailIntent = Intent(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_APP_EMAIL)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                if (emailIntent.resolveActivity(context.packageManager) != null) {
-                    context.startActivity(emailIntent)
-                } else {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        },
-                    )
-                }
-            }
-        } catch (_: Exception) {
-            try {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    },
-                )
-            } catch (_: Exception) {
-                Toast.makeText(context, "Could not open email app", Toast.LENGTH_SHORT).show()
+                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage, isSignUp = isSignUp)
             }
         }
     }
@@ -421,122 +360,172 @@ internal fun ColumnScope.SignedOutContent(
             if (!usePasswordAuth) {
                 // Email Link Flow (DEFAULT for both Sign In and Sign Up)
                 if (magicLinkSent) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = MaterialTheme.shapes.medium,
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                        // Status header with badge
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth(),
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(40.dp),
                             ) {
-                                Icon(
-                                    Icons.Rounded.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                                Spacer(Modifier.width(10.dp))
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Email,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(22.dp),
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = if (activeAuthMode == AuthMode.SIGN_UP) "Sign-up link sent!" else "Sign-in link sent!",
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = GoogleSansWeight.bold,
                                 )
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = "Tap the link on this device to finish",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
+                        }
 
-                            Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(14.dp))
 
-                            Text(
-                                text = "We sent an instant link to $email. Open the email on this device and tap the link to complete.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
-
-                            Spacer(Modifier.height(12.dp))
-
-                            // Prominent Spam Alert Callout
-                            Surface(
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = MaterialTheme.shapes.small,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Warning,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(22.dp),
-                                    )
-                                    Spacer(Modifier.width(10.dp))
-                                    Text(
-                                        text = "Important: The email will 99% land in your Spam or Junk folder! Please check there.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = GoogleSansWeight.bold,
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                }
-                            }
-
-                            Spacer(Modifier.height(14.dp))
-
-                            // Open Gmail Button
-                            Button(
-                                onClick = { openGmailApp() },
-                                shape = MaterialTheme.shapes.medium,
+                        // Sent to email pill
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(46.dp),
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
+                                Text(
+                                    text = "Sent to",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = "Open Gmail",
+                                    text = email,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = GoogleSansWeight.bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
                                 )
                             }
+                        }
 
-                            Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(12.dp))
 
+                        // Prominent Spam Alert Callout
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.35f)),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.Top,
                             ) {
-                                TextButton(
-                                    onClick = {
-                                        magicLinkSent = false
-                                        email = ""
-                                    },
-                                ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Warning,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .padding(top = 1.dp),
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Use different email",
-                                        style = MaterialTheme.typography.labelMedium,
-                                    )
-                                }
-                                TextButton(
-                                    onClick = { submitEmailLink() },
-                                    enabled = !isAnyLoading,
-                                ) {
-                                    Text(
-                                        text = "Resend link",
-                                        style = MaterialTheme.typography.labelMedium,
+                                        text = "Check your Spam or Junk folder",
+                                        style = MaterialTheme.typography.labelLarge,
                                         fontWeight = GoogleSansWeight.bold,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    Spacer(Modifier.height(3.dp))
+                                    Text(
+                                        text = "Important: The email will 99% land in your Spam or Junk folder! Please check there if you don't see it in your inbox.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        lineHeight = 17.sp,
                                     )
                                 }
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+
+                        // Open Gmail Button
+                        val isGmail = email.trim().endsWith("@gmail.com", ignoreCase = true) ||
+                            email.trim().endsWith("@googlemail.com", ignoreCase = true)
+                        Button(
+                            onClick = { openGmailOrEmailApp(context) },
+                            shape = MaterialTheme.shapes.large,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = if (isGmail) "Open Gmail" else "Open Email App",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = GoogleSansWeight.bold,
+                            )
+                        }
+
+                        Spacer(Modifier.height(6.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    magicLinkSent = false
+                                    email = ""
+                                },
+                            ) {
+                                Text(
+                                    text = "Use different email",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            TextButton(
+                                onClick = { submitEmailLink() },
+                                enabled = !isAnyLoading,
+                            ) {
+                                Text(
+                                    text = "Resend link",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = GoogleSansWeight.bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
                             }
                         }
                     }
@@ -886,31 +875,5 @@ internal fun ColumnScope.SignedOutContent(
     }
 
     // 5. Privacy & Data Callout (At the bottom of the page)
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Security,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(20.dp)
-                    .padding(top = 2.dp),
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = "This account is used purely for cloud sync identification and is never linked to the app usage (tracking) data collected. Your email is only logged by Firebase (Google) for auth verification and is not stored in our servers.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    AccountPrivacyCard()
 }

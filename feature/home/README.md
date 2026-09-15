@@ -58,9 +58,10 @@ src/main/java/cx/aswin/boxlore/feature/home/
     pages/
       AccountSettingsPage.kt
       AccountSignedOutContent.kt
+      AccountAuthHelpers.kt
 ```
 
-Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel, section-row, settings pages (`AccountSettingsPage` and `AccountSignedOutContent`), and logic files keep UI assembly and behavior testable.
+Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel, section-row, settings pages (`AccountSettingsPage`, `AccountSignedOutContent`, and `AccountAuthHelpers`), and logic files keep UI assembly and behavior testable.
 - `FeaturedVideoPodcastsShowcase`: Curated video showcase with cohesive touch-press spring scaling, solid surface backgrounds, and independent HD/SD action targets.
 
 ## Dependencies
