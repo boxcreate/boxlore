@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
-private val SETTINGS_CONTENT_BOTTOM_PADDING = 120.dp
+private val SETTINGS_CONTENT_BOTTOM_PADDING = 220.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

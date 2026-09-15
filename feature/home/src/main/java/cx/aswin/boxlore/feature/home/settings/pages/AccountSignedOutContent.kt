@@ -42,6 +42,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -86,9 +87,8 @@ private const val GOOGLE_SERVER_CLIENT_ID =
 
 private const val GOOGLE_SIGN_IN_TIMEOUT_MS = 15_000L
 
-private enum class AccountAuthTab {
-    EMAIL_LINK,
-    PASSWORD,
+private enum class AuthMode {
+    SIGN_IN,
     SIGN_UP,
 }
 
@@ -110,10 +110,11 @@ internal fun ColumnScope.SignedOutContent(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
-    val cardRequester = remember { BringIntoViewRequester() }
+    val actionButtonRequester = remember { BringIntoViewRequester() }
     val imeBottom = WindowInsets.ime.getBottom(density)
 
-    var activeTab by remember { mutableStateOf(AccountAuthTab.EMAIL_LINK) }
+    var activeAuthMode by remember { mutableStateOf(AuthMode.SIGN_IN) }
+    var usePasswordAuth by remember { mutableStateOf(false) }
     var isAnyInputFocused by remember { mutableStateOf(false) }
 
     var email by remember { mutableStateOf("") }
@@ -129,7 +130,7 @@ internal fun ColumnScope.SignedOutContent(
 
     LaunchedEffect(imeBottom, isAnyInputFocused) {
         if (imeBottom > 0 && isAnyInputFocused) {
-            cardRequester.bringIntoView()
+            actionButtonRequester.bringIntoView()
         }
     }
 
@@ -138,9 +139,9 @@ internal fun ColumnScope.SignedOutContent(
         val lower = raw.lowercase()
         return when {
             !isSignUp && (lower.contains("no user") || lower.contains("invalid-credential") || lower.contains("user-not-found")) ->
-                "Incorrect email or password. If you don't have an account yet, switch to 'Sign Up'."
+                "Incorrect email or password. Don't have an account? Switch to 'Sign Up'."
             isSignUp && (lower.contains("already in use") || lower.contains("email-already-in-use")) ->
-                "An account already exists with this email. Switch to 'Password' to sign in."
+                "An account already exists with this email. Switch to 'Sign In'."
             lower.contains("weak-password") ->
                 "Password must be at least 6 characters."
             lower.contains("invalid-email") ->
@@ -164,14 +165,15 @@ internal fun ColumnScope.SignedOutContent(
             if (result?.isSuccess == true) {
                 magicLinkSent = true
             } else {
-                errorMessage = cleanError(result?.exceptionOrNull()?.localizedMessage, isSignUp = false)
+                errorMessage = cleanError(result?.exceptionOrNull()?.localizedMessage, isSignUp = activeAuthMode == AuthMode.SIGN_UP)
             }
         }
     }
 
-    fun submitPasswordAuth(isSignUp: Boolean) {
+    fun submitPasswordAuth() {
         val trimmedEmail = email.trim()
         val trimmedPassword = password.trim()
+        val isSignUp = activeAuthMode == AuthMode.SIGN_UP
 
         if (trimmedEmail.isBlank()) {
             errorMessage = "Please enter your email address"
@@ -384,11 +386,9 @@ internal fun ColumnScope.SignedOutContent(
         )
     }
 
-    // 4. Primary Auth Module Card
+    // 4. Primary Auth Card
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .bringIntoViewRequester(cardRequester),
+        modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -400,177 +400,96 @@ internal fun ColumnScope.SignedOutContent(
                 .fillMaxWidth()
                 .padding(20.dp),
         ) {
-            // Three Prominent Equal-Width Modes: Email Link (default), Password, Sign Up
+            // Prominent 2-option selector: Sign In | Sign Up (50% width each, zero ellipsis!)
             ConnectedOptionSelector(
                 options = listOf(
-                    AccountAuthTab.EMAIL_LINK to "Email Link",
-                    AccountAuthTab.PASSWORD to "Password",
-                    AccountAuthTab.SIGN_UP to "Sign Up",
+                    AuthMode.SIGN_IN to "Sign In",
+                    AuthMode.SIGN_UP to "Sign Up",
                 ),
-                selected = activeTab,
-                onSelect = { tab ->
-                    activeTab = tab
+                selected = activeAuthMode,
+                onSelect = { mode ->
+                    activeAuthMode = mode
                     errorMessage = null
                     magicLinkSent = false
                 },
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
 
-            when (activeTab) {
-                AccountAuthTab.EMAIL_LINK -> {
-                    // Passwordless Email Link Flow (Default)
-                    if (magicLinkSent) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = MaterialTheme.shapes.medium,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Rounded.CheckCircle,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(22.dp),
-                                    )
-                                    Spacer(Modifier.width(10.dp))
-                                    Text(
-                                        text = "Sign-in link sent!",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        fontWeight = GoogleSansWeight.bold,
-                                    )
-                                }
-                                Spacer(Modifier.height(6.dp))
+            if (!usePasswordAuth) {
+                // Email Link / Magic Link Flow (DEFAULT for both Sign In and Sign Up)
+                if (magicLinkSent) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Rounded.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                                Spacer(Modifier.width(10.dp))
                                 Text(
-                                    text = "We sent a link to $email. Open the email on this device and tap the link to sign in automatically.",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    text = "Sign-in link sent!",
+                                    style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    TextButton(
-                                        onClick = {
-                                            magicLinkSent = false
-                                            email = ""
-                                        },
-                                    ) {
-                                        Text(
-                                            text = "Use different email",
-                                            style = MaterialTheme.typography.labelMedium,
-                                        )
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    TextButton(
-                                        onClick = { submitEmailLink() },
-                                        enabled = !isAnyLoading,
-                                    ) {
-                                        Text(
-                                            text = "Resend link",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = GoogleSansWeight.bold,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = "Enter your email to receive a passwordless sign-in link.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = {
-                                email = it
-                                errorMessage = null
-                            },
-                            label = { Text("Email address") },
-                            leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
-                            singleLine = true,
-                            shape = MaterialTheme.shapes.large,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Email,
-                                imeAction = ImeAction.Done,
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = { submitEmailLink() },
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onFocusChanged { focusState ->
-                                    if (focusState.isFocused) {
-                                        isAnyInputFocused = true
-                                        scope.launch { cardRequester.bringIntoView() }
-                                    }
-                                },
-                        )
-
-                        if (errorMessage != null) {
-                            Spacer(Modifier.height(12.dp))
-                            Surface(
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = MaterialTheme.shapes.medium,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Info,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                    Spacer(Modifier.width(10.dp))
-                                    Text(
-                                        text = errorMessage!!,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { submitEmailLink() },
-                            enabled = !isAnyLoading && email.isNotBlank(),
-                            shape = MaterialTheme.shapes.large,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                        ) {
-                            if (isEmailLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                )
-                            } else {
-                                Text(
-                                    text = "Send Sign-In Link",
                                     fontWeight = GoogleSansWeight.bold,
                                 )
                             }
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = "We sent a link to $email. Open the email on this device and tap the link to ${if (activeAuthMode == AuthMode.SIGN_UP) "create your account" else "sign in"}.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                TextButton(
+                                    onClick = {
+                                        magicLinkSent = false
+                                        email = ""
+                                    },
+                                ) {
+                                    Text(
+                                        text = "Use different email",
+                                        style = MaterialTheme.typography.labelMedium,
+                                    )
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                TextButton(
+                                    onClick = { submitEmailLink() },
+                                    enabled = !isAnyLoading,
+                                ) {
+                                    Text(
+                                        text = "Resend link",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = GoogleSansWeight.bold,
+                                    )
+                                }
+                            }
                         }
                     }
-                }
+                } else {
+                    Text(
+                        text = if (activeAuthMode == AuthMode.SIGN_UP) {
+                            "Enter your email to create an account. We'll send an instant verification link — no password needed."
+                        } else {
+                            "Enter your email to receive a passwordless sign-in link."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
 
-                AccountAuthTab.PASSWORD -> {
-                    // Password Sign In Flow
+                    Spacer(Modifier.height(12.dp))
+
                     OutlinedTextField(
                         value = email,
                         onValueChange = {
@@ -583,67 +502,190 @@ internal fun ColumnScope.SignedOutContent(
                         shape = MaterialTheme.shapes.large,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) },
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { focusState ->
-                                if (focusState.isFocused) {
-                                    isAnyInputFocused = true
-                                    scope.launch { cardRequester.bringIntoView() }
-                                }
-                            },
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            errorMessage = null
-                        },
-                        label = { Text("Password") },
-                        leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) {
-                                        Icons.Rounded.VisibilityOff
-                                    } else {
-                                        Icons.Rounded.Visibility
-                                    },
-                                    contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) {
-                            VisualTransformation.None
-                        } else {
-                            PasswordVisualTransformation()
-                        },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done,
                         ),
                         keyboardActions = KeyboardActions(
-                            onDone = { submitPasswordAuth(isSignUp = false) },
+                            onDone = { submitEmailLink() },
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .onFocusChanged { focusState ->
                                 if (focusState.isFocused) {
                                     isAnyInputFocused = true
-                                    scope.launch { cardRequester.bringIntoView() }
+                                    scope.launch { actionButtonRequester.bringIntoView() }
                                 }
                             },
                     )
 
+                    if (errorMessage != null) {
+                        Spacer(Modifier.height(12.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = MaterialTheme.shapes.medium,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    text = errorMessage!!,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Primary Button: Send Sign-In Link or Send Sign-Up Link
+                    Button(
+                        onClick = { submitEmailLink() },
+                        enabled = !isAnyLoading && email.isNotBlank(),
+                        shape = MaterialTheme.shapes.large,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .bringIntoViewRequester(actionButtonRequester),
+                    ) {
+                        if (isEmailLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        } else {
+                            Text(
+                                text = if (activeAuthMode == AuthMode.SIGN_UP) "Send Sign-Up Link" else "Send Sign-In Link",
+                                fontWeight = GoogleSansWeight.bold,
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // Prominent Outlined Option: Use Password Instead
+                    OutlinedButton(
+                        onClick = {
+                            usePasswordAuth = true
+                            errorMessage = null
+                        },
+                        shape = MaterialTheme.shapes.large,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Lock,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = if (activeAuthMode == AuthMode.SIGN_UP) "Sign up with password instead" else "Sign in with password instead",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = GoogleSansWeight.medium,
+                        )
+                    }
+                }
+            } else {
+                // Password Flow (Prominent option for both Sign In and Sign Up)
+                Text(
+                    text = if (activeAuthMode == AuthMode.SIGN_UP) {
+                        "Choose a password (minimum 6 characters) to create your account."
+                    } else {
+                        "Enter your email and password to access your account."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        errorMessage = null
+                    },
+                    label = { Text("Email address") },
+                    leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.large,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                isAnyInputFocused = true
+                                scope.launch { actionButtonRequester.bringIntoView() }
+                            }
+                        },
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        errorMessage = null
+                    },
+                    label = { Text("Password") },
+                    leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) {
+                                    Icons.Rounded.VisibilityOff
+                                } else {
+                                    Icons.Rounded.Visibility
+                                },
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.large,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { submitPasswordAuth() },
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                isAnyInputFocused = true
+                                scope.launch { actionButtonRequester.bringIntoView() }
+                            }
+                        },
+                )
+
+                if (activeAuthMode == AuthMode.SIGN_IN) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -681,135 +723,7 @@ internal fun ColumnScope.SignedOutContent(
                             )
                         }
                     }
-
-                    if (errorMessage != null) {
-                        Spacer(Modifier.height(6.dp))
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = MaterialTheme.shapes.medium,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Text(
-                                    text = errorMessage!!,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(10.dp))
-
-                    Button(
-                        onClick = { submitPasswordAuth(isSignUp = false) },
-                        enabled = !isAnyLoading && email.isNotBlank() && password.isNotBlank(),
-                        shape = MaterialTheme.shapes.large,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                    ) {
-                        if (isEmailLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        } else {
-                            Text(
-                                text = "Sign In",
-                                fontWeight = GoogleSansWeight.bold,
-                            )
-                        }
-                    }
-                }
-
-                AccountAuthTab.SIGN_UP -> {
-                    // Account Creation (Sign Up) Flow
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            errorMessage = null
-                        },
-                        label = { Text("Email address") },
-                        leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) },
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { focusState ->
-                                if (focusState.isFocused) {
-                                    isAnyInputFocused = true
-                                    scope.launch { cardRequester.bringIntoView() }
-                                }
-                            },
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            errorMessage = null
-                        },
-                        label = { Text("Password") },
-                        leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) {
-                                        Icons.Rounded.VisibilityOff
-                                    } else {
-                                        Icons.Rounded.Visibility
-                                    },
-                                    contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) {
-                            VisualTransformation.None
-                        } else {
-                            PasswordVisualTransformation()
-                        },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { submitPasswordAuth(isSignUp = true) },
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { focusState ->
-                                if (focusState.isFocused) {
-                                    isAnyInputFocused = true
-                                    scope.launch { cardRequester.bringIntoView() }
-                                }
-                            },
-                    )
-
+                } else {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -822,58 +736,87 @@ internal fun ColumnScope.SignedOutContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
 
-                    if (errorMessage != null) {
-                        Spacer(Modifier.height(6.dp))
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = MaterialTheme.shapes.medium,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Spacer(Modifier.width(10.dp))
-                                Text(
-                                    text = errorMessage!!,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(10.dp))
-
-                    Button(
-                        onClick = { submitPasswordAuth(isSignUp = true) },
-                        enabled = !isAnyLoading && email.isNotBlank() && password.isNotBlank(),
-                        shape = MaterialTheme.shapes.large,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
+                if (errorMessage != null) {
+                    Spacer(Modifier.height(6.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        if (isEmailLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary,
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(18.dp),
                             )
-                        } else {
+                            Spacer(Modifier.width(10.dp))
                             Text(
-                                text = "Sign Up",
-                                fontWeight = GoogleSansWeight.bold,
+                                text = errorMessage!!,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f),
                             )
                         }
                     }
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                // Primary Button: Sign In or Sign Up
+                Button(
+                    onClick = { submitPasswordAuth() },
+                    enabled = !isAnyLoading && email.isNotBlank() && password.isNotBlank(),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .bringIntoViewRequester(actionButtonRequester),
+                ) {
+                    if (isEmailLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    } else {
+                        Text(
+                            text = if (activeAuthMode == AuthMode.SIGN_UP) "Sign Up" else "Sign In",
+                            fontWeight = GoogleSansWeight.bold,
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                // Prominent Outlined Option: Use Email Link Instead
+                OutlinedButton(
+                    onClick = {
+                        usePasswordAuth = false
+                        errorMessage = null
+                    },
+                    shape = MaterialTheme.shapes.large,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Email,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Use passwordless email link instead",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = GoogleSansWeight.medium,
+                    )
                 }
             }
         }
