@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-16T18:39:40.332Z",
+  "lastRun": "2026-09-16T21:54:10.921Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -31,10 +31,10 @@
       "lastCheckedAt": 1789404431852
     },
     "55810": {
-      "lastEpisodeId": "60442955826",
-      "lastEpisodeTitle": "NPR News: 09-16-2026 12AM EDT",
-      "lastRssKey": "03024eae-9fbf-4033-950e-32e4ea0c80d8",
-      "lastCheckedAt": 1789551683866
+      "lastEpisodeId": "60471022619",
+      "lastEpisodeTitle": "NPR News: 09-16-2026 2PM EDT",
+      "lastRssKey": "8b205a17-861c-40c4-b657-d683d7189db1",
+      "lastCheckedAt": 1789595653184
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75150093",
@@ -61,10 +61,10 @@
       "lastCheckedAt": 1789328331492
     },
     "160817": {
-      "lastRssKey": "https://linuxunplugged.com/684",
-      "lastEpisodeTitle": "You Ain't Ready For This Jelly | LINUX Unplugged 684",
-      "lastEpisodeId": "60349575771",
-      "lastCheckedAt": 1789363044118
+      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/84",
+      "lastEpisodeTitle": "My Last Quest | The Launch 🚀 84",
+      "lastEpisodeId": "60471840366",
+      "lastCheckedAt": 1789595656354
     },
     "212882": {
       "lastRssKey": "44ad3b40-a7f8-11f0-954a-fb2acbcf8232",
@@ -111,10 +111,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "A90EE5A2-751C-4ACC-AF53-F4CF43D18768",
-      "lastEpisodeTitle": "TNB Tech Minute: OpenAI Considers Pre-IPO Funding Round at Over $1.2 Trillion Valuation",
-      "lastEpisodeId": "60463426411",
-      "lastCheckedAt": 1789583988563
+      "lastRssKey": "C4D5A4B1-5252-42F1-B158-2970272FDAE6",
+      "lastEpisodeTitle": "TNB Tech Minute: EU Chief Plans to Curb Children’s Access to Social Media",
+      "lastEpisodeId": "60473253237",
+      "lastCheckedAt": 1789595659339
     },
     "331078": {
       "lastRssKey": "8265cfb2-a890-11f1-95c4-eb0a3d01e039",
@@ -129,10 +129,10 @@
       "lastCheckedAt": 1789383209823
     },
     "385117": {
-      "lastRssKey": "c4b28e1a-b1f9-11f1-9b59-838bef1af01d",
-      "lastEpisodeTitle": "2PM ET 09/16/2026 Newscast",
+      "lastRssKey": "e5fd4b82-b212-11f1-82ca-57cce5e44df8",
+      "lastEpisodeTitle": "5PM ET 09/16/2026 Newscast",
       "lastEpisodeId": "60404689683",
-      "lastCheckedAt": 1789583989297
+      "lastCheckedAt": 1789595659899
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -153,10 +153,10 @@
       "lastCheckedAt": 1789569427380
     },
     "415434": {
-      "lastRssKey": "c948bccc-c3c7-11f0-8340-d326bdbf1b05",
-      "lastEpisodeTitle": "Is social media driving teen mental health issues?",
+      "lastRssKey": "492cd172-6e7b-11f1-94bf-97e17acbe1a6",
+      "lastEpisodeTitle": "Your AI apocalypse questions, answered",
       "lastEpisodeId": "60427690690",
-      "lastCheckedAt": 1789508267300
+      "lastCheckedAt": 1789595661970
     },
     "419624": {
       "lastRssKey": "7241b0a1-aec7-4d25-b783-69368b4f6b40",
@@ -327,6 +327,12 @@
       "lastEpisodeTitle": "Kash Patel Reads All Your Mean Tweets About Him And It Makes Him Very Sad",
       "lastEpisodeId": "59396147606",
       "lastCheckedAt": 1789288166149
+    },
+    "665403": {
+      "lastEpisodeId": "60434133188",
+      "lastEpisodeTitle": "#1721 Jefferson and Adams: A Fresh Interpretation",
+      "lastRssKey": "652f9788-3bf9-4f78-9c2a-51c5f3da51ff",
+      "lastCheckedAt": 1789595674009
     },
     "724143": {
       "lastRssKey": "dcf2a0ac-b1b6-11f1-9a80-57cb39fc12ca",
@@ -1149,10 +1155,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/e67c0b27-e827-52ee-b743-a9b6a90026e1",
-      "lastEpisodeTitle": "The Story of the Little Girl with the Braids ~ Dr. Ramani",
-      "lastEpisodeId": "60421245852",
-      "lastCheckedAt": 1789584060822
+      "lastRssKey": "mnbg87vgfd.podbean.com/5737499e-115c-57e7-bc92-9c662aea3178",
+      "lastEpisodeTitle": "Betrayal PatternsHow narcissist deceive you and betray your trust ~ Dr. Ramani",
+      "lastEpisodeId": "60476707252",
+      "lastCheckedAt": 1789595728000
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
