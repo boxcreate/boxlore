@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-16T04:35:41.810Z",
+  "lastRun": "2026-09-16T09:41:20.550Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -13,10 +13,10 @@
       "lastCheckedAt": 1789158639543
     },
     "9926": {
-      "lastRssKey": "c29a4f06-abdb-11f1-bbdd-cf974381e4e8",
-      "lastEpisodeTitle": "The Chupacabra: Puerto Rico’s Vampire Cryptid",
+      "lastRssKey": "84d32e7e-b151-11f1-89fc-fbc06131a95e",
+      "lastEpisodeTitle": "Missing Heiress: The Disappearance of Juanita Nielsen",
       "lastEpisodeId": "59343962292",
-      "lastCheckedAt": 1788954174392
+      "lastCheckedAt": 1789551681736
     },
     "48166": {
       "lastRssKey": "68b66323-6e74-4c90-8157-ef3f1ed0d042",
@@ -29,6 +29,12 @@
       "lastEpisodeTitle": "Nutrition Expert: Why Weight Loss May Be the Wrong Goal for Better Health and Longevity",
       "lastEpisodeId": "60085919668",
       "lastCheckedAt": 1789404431852
+    },
+    "55810": {
+      "lastEpisodeId": "60442955826",
+      "lastEpisodeTitle": "NPR News: 09-16-2026 12AM EDT",
+      "lastRssKey": "03024eae-9fbf-4033-950e-32e4ea0c80d8",
+      "lastCheckedAt": 1789551683866
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75150093",
@@ -84,6 +90,11 @@
       "lastEpisodeId": "60196429938",
       "lastCheckedAt": 1789363045956
     },
+    "230598": {
+      "lastRssKey": "b7c3497c-a54a-11f0-b1fc-236b310e14f8",
+      "lastEpisodeTitle": "The Worst Possible Thing I Could’ve Done",
+      "lastCheckedAt": 1789551687880
+    },
     "271849": {
       "lastRssKey": "tag:soundcloud,2010:tracks/2399817216",
       "lastEpisodeTitle": "Real Christianity, Real Results",
@@ -118,10 +129,10 @@
       "lastCheckedAt": 1789383209823
     },
     "385117": {
-      "lastRssKey": "6cb04056-b184-11f1-be4c-877bb66fee6e",
-      "lastEpisodeTitle": "12AM ET 09/16/2026 Newscast",
+      "lastRssKey": "50cf9f6a-b1ae-11f1-aeb8-b7430d35812e",
+      "lastEpisodeTitle": "5AM ET 09/16/2026 Newscast",
       "lastEpisodeId": "60404689683",
-      "lastCheckedAt": 1789533354319
+      "lastCheckedAt": 1789551689943
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -166,10 +177,10 @@
       "lastCheckedAt": 1789404444446
     },
     "437685": {
-      "lastRssKey": "85a711b8-8d60-11f1-adef-8b61cf3af147",
-      "lastEpisodeTitle": "The Avignon Papacy",
-      "lastEpisodeId": "60361386581",
-      "lastCheckedAt": 1789463604297
+      "lastRssKey": "85c538d2-8d60-11f1-adef-f7104ac579bd",
+      "lastEpisodeTitle": "Fluorine: The Most Reactive Element",
+      "lastEpisodeId": "60452303497",
+      "lastCheckedAt": 1789551694725
     },
     "438184": {
       "lastRssKey": "74f58fec-b02a-11f1-b703-1f555d6de825",
@@ -294,10 +305,10 @@
       "lastCheckedAt": 1789533375319
     },
     "573431": {
-      "lastRssKey": "gid://art19-episode-locator/V0/Mm0jehIhDuSAPZgP-WroJH5XsdJ5R0aTQVex1Q1LZxc",
-      "lastEpisodeTitle": "Roomba: Hitting the Wall | Fast, Cheap, and Out of Control | 1",
+      "lastRssKey": "gid://art19-episode-locator/V0/nP-FDoiHgfcT4fwfKtZw7DpLOiZ4N37RgyEnYXuxF1Q",
+      "lastEpisodeTitle": "Roomba: Hitting the Wall | The Moat | 2",
       "lastEpisodeId": "60171505389",
-      "lastCheckedAt": 1789337306918
+      "lastCheckedAt": 1789551703882
     },
     "577105": {
       "lastRssKey": "prx_7057_82aaba05-80c9-4d2e-8069-3c20f2b7dbc8",
@@ -377,10 +388,10 @@
       "lastCheckedAt": 1789508291765
     },
     "838740": {
-      "lastRssKey": "55d3cbdc-ae41-11f1-a182-572eebf33b23",
-      "lastEpisodeTitle": "⁠BENNY BLANCO: The Secret to Failing Your Way to Success",
+      "lastRssKey": "ac5b67a4-b15b-11f1-9a35-97bf96f31149",
+      "lastEpisodeTitle": "OPRAH WINFREY: The Life Lessons That Changed Everything",
       "lastEpisodeId": "59832566518",
-      "lastCheckedAt": 1789383235037
+      "lastCheckedAt": 1789551709926
     },
     "853158": {
       "lastRssKey": "c43c1979-9287-4d78-a024-eb4bff3daa81",
@@ -482,10 +493,10 @@
       "lastCheckedAt": 1789482315256
     },
     "1116485": {
-      "lastRssKey": "6aa9be450e61351aaa2584b4",
-      "lastEpisodeTitle": "Liverpool 3-1 Tottenham | Andoni Iraola Carabao Cup Post-Match Press Conference",
+      "lastRssKey": "6aaa5c1a122d25df7b7dd1bc",
+      "lastEpisodeTitle": "Liverpool Youngsters Show Their Class! & Arsenal Interest In Ngumoha | Redmen Bitesize",
       "lastEpisodeId": "60433813817",
-      "lastCheckedAt": 1789516757704
+      "lastCheckedAt": 1789551720120
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -494,9 +505,9 @@
       "lastCheckedAt": 1786559324168
     },
     "1183952": {
-      "lastRssKey": "d7c9fea3-e387-4f80-9e20-25f130336c9d",
-      "lastEpisodeTitle": "【呱吉】新資料夾(300)：沒有翅膀那我們造飛機",
-      "lastCheckedAt": 1789102842517
+      "lastRssKey": "4bdc6b76-74f8-4aef-99b1-230963514808",
+      "lastEpisodeTitle": "【呱吉直播】人生晚長EP126：法綠白話文｜來賓：法律白話文 貴智、珞亦、YOYO",
+      "lastCheckedAt": 1789551721232
     },
     "1193286": {
       "lastRssKey": "73c4a9d2-b160-11f1-8ea9-03f065c7a9eb",
@@ -545,11 +556,17 @@
       "lastEpisodeId": "59970276449",
       "lastCheckedAt": 1789383252415
     },
+    "1366771": {
+      "lastEpisodeId": "60449779936",
+      "lastEpisodeTitle": "Morning briefing Wednesday 16th September",
+      "lastRssKey": "6aa9f3627f8a8df4337c2115",
+      "lastCheckedAt": 1789551724470
+    },
     "1388001": {
-      "lastRssKey": "78cea07e-d573-4405-a3a7-4b0e5033d60b",
-      "lastEpisodeTitle": "En Israël, les réalisateurs du film « Naza » primé à Venise sont qualifiés de « traitres »",
+      "lastRssKey": "d41885fc-1c17-4bbd-87d4-cb75ea55f006",
+      "lastEpisodeTitle": "Le premier ministre canadien Mark Carney à Strasbourg pour proposer des fiançailles à l’Europe",
       "lastEpisodeId": "60281941926",
-      "lastCheckedAt": 1789463646166
+      "lastCheckedAt": 1789551724691
     },
     "1545709": {
       "lastRssKey": "audioboom-01a09b94-757b-7a32-b727-7ea588232d98",
@@ -575,10 +592,10 @@
       "lastCheckedAt": 1789363082885
     },
     "2407094": {
-      "lastRssKey": "6aa97f7d7011631dd3d8a72a",
-      "lastEpisodeTitle": "Trump vient de revendiquer un territoire français avec une carte (15/09)",
-      "lastEpisodeId": "60404114821",
-      "lastCheckedAt": 1789496610117
+      "lastRssKey": "6aa97d7a413998c27cf31f3d",
+      "lastEpisodeTitle": "(Pop) Macklemore écarté de la tournée d’Ed Sheeran pour des propos sur la Palestine… HugoDécrypte",
+      "lastEpisodeId": "60446426759",
+      "lastCheckedAt": 1789551726667
     },
     "2574026": {
       "lastRssKey": "3abce698-ad2a-11f1-8c34-ebcf131b0f10",
@@ -776,10 +793,10 @@
       "lastCheckedAt": 1789337344269
     },
     "5930143": {
-      "lastRssKey": "78cea07e-d573-4405-a3a7-4b0e5033d60b",
-      "lastEpisodeTitle": "En Israël, les réalisateurs du film « Naza » primé à Venise sont qualifiés de « traitres »",
-      "lastEpisodeId": "60100923177",
-      "lastCheckedAt": 1789463667659
+      "lastRssKey": "d41885fc-1c17-4bbd-87d4-cb75ea55f006",
+      "lastEpisodeTitle": "Le premier ministre canadien Mark Carney à Strasbourg pour proposer des fiançailles à l’Europe",
+      "lastEpisodeId": "60450867491",
+      "lastCheckedAt": 1789551737251
     },
     "5945547": {
       "lastRssKey": "225d9636-5e61-45d5-a360-e0e5a006255a",
@@ -805,9 +822,9 @@
       "lastCheckedAt": 1789288206086
     },
     "6264274": {
-      "lastRssKey": "18d91ae8-ad7a-4659-9843-1c8af96e287f",
-      "lastEpisodeTitle": "Spider-Noir Cancelled, Biggest Summer Box Office Ever",
-      "lastCheckedAt": 1789045335042
+      "lastRssKey": "e213b604-7657-497c-b768-8fb6ec53f8f5",
+      "lastEpisodeTitle": "Another X-Man Cast, Godzilla Returns, and the Emmys Crown Their Winners",
+      "lastCheckedAt": 1789551738477
     },
     "6280366": {
       "lastEpisodeId": "60428684376",
@@ -917,16 +934,16 @@
       "lastCheckedAt": 1789288212994
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779860",
-      "lastEpisodeTitle": "The Adventures of Maisie - The Room Clerk",
+      "lastRssKey": "https://api.spreaker.com/episode/59779864",
+      "lastEpisodeTitle": "Bold Venture - The Quam Yi Statue",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1789463680342
+      "lastCheckedAt": 1789551751256
     },
     "6912659": {
-      "lastRssKey": "babbaf25-6379-4266-8817-8a50517a6cfb",
-      "lastEpisodeTitle": "#108 - Os Assassinatos de Villisca: oito mortos e um assassino desconhecido - Villisca | EUA",
+      "lastRssKey": "9273275b-ec2a-4d98-97f7-249fdaa9fbee",
+      "lastEpisodeTitle": "#109 - O desaparecimento de Amy Lynn Bradley - Curaçao",
       "lastEpisodeId": "59528388535",
-      "lastCheckedAt": 1788954228490
+      "lastCheckedAt": 1789551751540
     },
     "6926108": {
       "lastRssKey": "0597c5fe-adcb-11f1-b45e-67ec09d0a20e",
@@ -945,6 +962,12 @@
       "lastEpisodeTitle": "Listen to this if you're feeling discouraged",
       "lastEpisodeId": "58092773078",
       "lastCheckedAt": 1789288214791
+    },
+    "6976251": {
+      "lastEpisodeId": "26749961702",
+      "lastEpisodeTitle": "There Was Something Evil In That Church",
+      "lastRssKey": "https://api.spreaker.com/episode/61102694",
+      "lastCheckedAt": 1789551752409
     },
     "6994919": {
       "lastEpisodeId": "42873997390",
@@ -1048,10 +1071,10 @@
       "lastCheckedAt": 1786891727057
     },
     "7448514": {
-      "lastRssKey": "cmttq8ybf0xvt01w0ez1lab4y",
-      "lastEpisodeTitle": "EP55｜當母愛成為犯罪種子的養分！ft.《蘑菇》編劇馮勃棣",
+      "lastRssKey": "cmtwhmu8800s001ryhdcpe9eh",
+      "lastEpisodeTitle": "EP56｜〈那些在犯罪漩渦裡的人們〉台中捷運隨機傷人案 ft. 洪媽媽",
       "lastEpisodeId": "59858095438",
-      "lastCheckedAt": 1788954233815
+      "lastCheckedAt": 1789551758424
     },
     "7485285": {
       "lastRssKey": "436057a0-7cde-4cb2-8c2d-15af327d215b",
@@ -1090,10 +1113,10 @@
       "lastCheckedAt": 1786559338104
     },
     "7639797": {
-      "lastRssKey": "1978c8b2-bce1-4c69-bd1b-4bda18034721",
-      "lastEpisodeTitle": "Revelation 20",
-      "lastEpisodeId": "60360488562",
-      "lastCheckedAt": 1789463692711
+      "lastRssKey": "2bb64395-ec12-4462-810f-dcb1bb717a90",
+      "lastEpisodeTitle": "Revelation 21",
+      "lastEpisodeId": "60451774424",
+      "lastCheckedAt": 1789551759577
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
@@ -1125,10 +1148,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/e7aadece-73de-5876-bb7e-bb1177cacfcf",
-      "lastEpisodeTitle": "I HAVE EXCITING NEWS ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/a27f78bf-69e8-560f-80e0-97d1304874a1",
+      "lastEpisodeTitle": "9 things we grieve as we heal from narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "60421245852",
-      "lastCheckedAt": 1789533449916
+      "lastCheckedAt": 1789551761530
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
