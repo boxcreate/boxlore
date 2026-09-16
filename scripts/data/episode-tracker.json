@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-15T23:58:36.111Z",
+  "lastRun": "2026-09-16T04:35:41.810Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -31,10 +31,10 @@
       "lastCheckedAt": 1789404431852
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75150125",
-      "lastEpisodeTitle": "The Catch Up: India now exporter of Hilsa (15 September)",
-      "lastEpisodeId": "60423542409",
-      "lastCheckedAt": 1789508256699
+      "lastRssKey": "https://api.spreaker.com/episode/75150093",
+      "lastEpisodeTitle": "Punjab's drone threat, Odisha's mining dispute, and a zero-vote mystery",
+      "lastEpisodeId": "60435307194",
+      "lastCheckedAt": 1789533345407
     },
     "78573": {
       "lastRssKey": "c1eff3ee-c9d0-44e4-9629-ac758b5d51c4",
@@ -118,10 +118,10 @@
       "lastCheckedAt": 1789383209823
     },
     "385117": {
-      "lastRssKey": "82bd3518-b15a-11f1-9817-7f139b2dc331",
-      "lastEpisodeTitle": "7PM ET 09/15/2026 Newscast",
+      "lastRssKey": "6cb04056-b184-11f1-be4c-877bb66fee6e",
+      "lastEpisodeTitle": "12AM ET 09/16/2026 Newscast",
       "lastEpisodeId": "60404689683",
-      "lastCheckedAt": 1789516725269
+      "lastCheckedAt": 1789533354319
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -178,16 +178,16 @@
       "lastCheckedAt": 1789404445917
     },
     "444331": {
-      "lastRssKey": "8bc9001c-ace9-11f1-8456-cf79c5ae6c4e",
-      "lastEpisodeTitle": "#682 - Bishop Robert Barron",
-      "lastEpisodeId": "60191287855",
-      "lastCheckedAt": 1789028389857
+      "lastRssKey": "559ee446-b173-11f1-a259-d7e2802e9afc",
+      "lastEpisodeTitle": "#683 - Neil deGrasse Tyson",
+      "lastEpisodeId": "60439156071",
+      "lastCheckedAt": 1789533362282
     },
     "444785": {
-      "lastRssKey": "c859f24d-9fee-425d-a857-d71154fa096d",
-      "lastEpisodeTitle": "UNDENIABLE: Montreal Canadiens Sign Martin St-Louis to 4-Year Deal, Expectations SOAR",
-      "lastEpisodeId": "60395820123",
-      "lastCheckedAt": 1789463606733
+      "lastRssKey": "29522d0c-b6a4-4602-8390-70eb850c5758",
+      "lastEpisodeTitle": "PAYDAY: Montreal Canadiens LOCK IN Alex Newhook, target PLAYOFF success, and address Xhekaj",
+      "lastEpisodeId": "60441745147",
+      "lastCheckedAt": 1789533363172
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -288,10 +288,10 @@
       "lastCheckedAt": 1789463619459
     },
     "570903": {
-      "lastRssKey": "urn:bbc:podcast:p0p3xtfv",
-      "lastEpisodeTitle": "Series 13: Jilly Cooper",
+      "lastRssKey": "urn:bbc:podcast:m00310mr",
+      "lastEpisodeTitle": "Series 13: Stephen Hawking",
       "lastEpisodeId": "58699345714",
-      "lastCheckedAt": 1788935063789
+      "lastCheckedAt": 1789533375319
     },
     "573431": {
       "lastRssKey": "gid://art19-episode-locator/V0/Mm0jehIhDuSAPZgP-WroJH5XsdJ5R0aTQVex1Q1LZxc",
@@ -407,10 +407,10 @@
       "lastCheckedAt": 1789463628973
     },
     "928708": {
-      "lastRssKey": "64b6d2a8-afad-11f1-bef5-33e08088473a",
-      "lastEpisodeTitle": "This Day in History - September 15, 2026",
+      "lastRssKey": "1cd2d92c-afae-11f1-8ba1-2b4c37c08724",
+      "lastEpisodeTitle": "This Day in History - September 16, 2026",
       "lastEpisodeId": "60316335695",
-      "lastCheckedAt": 1789463629803
+      "lastCheckedAt": 1789533385321
     },
     "946758": {
       "lastRssKey": "10cc122e-77b5-11f0-8752-0bb04facbe23",
@@ -464,10 +464,10 @@
       "lastCheckedAt": 1789086160450
     },
     "1070334": {
-      "lastRssKey": "1907cb34-ad08-11f1-81a0-ef69836ae16a",
-      "lastEpisodeTitle": "Frank’s No Influencer!",
-      "lastEpisodeId": "60139663372",
-      "lastCheckedAt": 1789345261333
+      "lastRssKey": "c779be2a-b127-11f1-9741-933c00fd7754",
+      "lastEpisodeTitle": "Frank Skinner's Radio Days: Haribo Ring",
+      "lastEpisodeId": "60436867156",
+      "lastCheckedAt": 1789533393616
     },
     "1076260": {
       "lastRssKey": "8ef05e53-c773-4437-9dbe-b4c20111e8c2",
@@ -499,10 +499,10 @@
       "lastCheckedAt": 1789102842517
     },
     "1193286": {
-      "lastRssKey": "afe30ba2-b11f-11f1-a7b1-a7457486b272",
-      "lastEpisodeTitle": "La Fenêtre Du Canadien Est Ouverte | Le Sick Podcast Avec Tony Marinaro 15/09/26",
+      "lastRssKey": "73c4a9d2-b160-11f1-8ea9-03f065c7a9eb",
+      "lastEpisodeTitle": "Habs Are Officially Ready For The 2026-27 Season! | The Sick Podcast with Tony Marinaro Sept 15 2026",
       "lastEpisodeId": "60418066331",
-      "lastCheckedAt": 1789496606697
+      "lastCheckedAt": 1789533397887
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -822,16 +822,16 @@
       "lastCheckedAt": 1789482346153
     },
     "6456494": {
-      "lastRssKey": "6aa09a1399455f9a93cb84ac",
-      "lastEpisodeTitle": "Lake Android Faithful",
+      "lastRssKey": "6aaa01ab79ba7f1eccfc55fb",
+      "lastEpisodeTitle": "Apple Invents Foldables!",
       "lastEpisodeId": "59912911833",
-      "lastCheckedAt": 1788935098200
+      "lastCheckedAt": 1789533417556
     },
     "6559880": {
-      "lastRssKey": "7c8c4ffc-b04d-11f1-a0dc-575e7919c6ec",
-      "lastEpisodeTitle": "VAR Controversy Overshadows Manchester Derby",
+      "lastRssKey": "009f2bf8-b11f-11f1-b13d-274adc3ddc41",
+      "lastEpisodeTitle": "Is Mbappé Confident or Arrogant? Barcelona’s Perfect Start & Kane’s Ballon d’Or Bid",
       "lastEpisodeId": "60154075225",
-      "lastCheckedAt": 1789404490743
+      "lastCheckedAt": 1789533418222
     },
     "6602135": {
       "lastRssKey": "75815325-d437-47de-a47f-a411416cd7e7",
@@ -935,10 +935,10 @@
       "lastCheckedAt": 1789429370778
     },
     "6956562": {
-      "lastRssKey": "8e56de5b-3557-4ea5-a897-5950e7412cda",
-      "lastEpisodeTitle": "Is America’s $40 trillion debt a problem?",
-      "lastEpisodeId": "60391036143",
-      "lastCheckedAt": 1789443357867
+      "lastRssKey": "ef516c16-5fa6-479f-bf74-a117eeba1845",
+      "lastEpisodeTitle": "How India's elder-care industry works",
+      "lastEpisodeId": "60437008175",
+      "lastCheckedAt": 1789533436670
     },
     "6959250": {
       "lastRssKey": "99f92a05-76b6-4edd-b507-b1ad2cda5d61",
@@ -1024,10 +1024,10 @@
       "lastCheckedAt": 1789383292429
     },
     "7376606": {
-      "lastRssKey": "d6274d81-5a02-4c1d-b0ad-bab3ee7c8265",
-      "lastEpisodeTitle": "Why You Wouldn’t Survive a Single Day in the Past 🏚️⚔️ | 2 Hours of Brutal Everyday History | Boring History for Sleep",
+      "lastRssKey": "aa053692-83a0-4b03-a337-bd79467a6892",
+      "lastEpisodeTitle": "Alexander the Great: The Complete Story ⚔️👑 | The Boy Who Conquered the World | Boring History for Sleep",
       "lastEpisodeId": "60391137690",
-      "lastCheckedAt": 1789443366577
+      "lastCheckedAt": 1789533444815
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0030yr5",
@@ -1125,10 +1125,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/8acd2dcc-4b4f-5762-9b7c-796e397feee5",
-      "lastEpisodeTitle": "Real time BETRAYAL ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/e7aadece-73de-5876-bb7e-bb1177cacfcf",
+      "lastEpisodeTitle": "I HAVE EXCITING NEWS ~ Dr. Ramani",
       "lastEpisodeId": "60421245852",
-      "lastCheckedAt": 1789516794769
+      "lastCheckedAt": 1789533449916
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
