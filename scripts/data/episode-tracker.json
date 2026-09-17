@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-17T10:16:28.484Z",
+  "lastRun": "2026-09-17T15:11:02.676Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -117,10 +117,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "C4D5A4B1-5252-42F1-B158-2970272FDAE6",
-      "lastEpisodeTitle": "TNB Tech Minute: EU Chief Plans to Curb Children’s Access to Social Media",
-      "lastEpisodeId": "60473253237",
-      "lastCheckedAt": 1789595659339
+      "lastRssKey": "C863CCAB-E60F-463F-8B32-69D62F0D5B79",
+      "lastEpisodeTitle": "TNB Tech Minute: OpenAI Shares New Safety Incidents and Rules for Reporting Them",
+      "lastEpisodeId": "60508643133",
+      "lastCheckedAt": 1789657873207
     },
     "331078": {
       "lastRssKey": "8265cfb2-a890-11f1-95c4-eb0a3d01e039",
@@ -135,10 +135,10 @@
       "lastCheckedAt": 1789383209823
     },
     "385117": {
-      "lastRssKey": "e0fa67a6-b27f-11f1-9778-6f397de05126",
-      "lastEpisodeTitle": "6AM ET 09/17/2026 Newscast",
-      "lastEpisodeId": "60488835077",
-      "lastCheckedAt": 1789640202574
+      "lastRssKey": "6849d824-b2a1-11f1-acea-137048a71fa6",
+      "lastEpisodeTitle": "10AM ET 09/17/2026 Newscast",
+      "lastEpisodeId": "60507540598",
+      "lastCheckedAt": 1789657874376
     },
     "386911": {
       "lastRssKey": "dbaa7700-aded-11f1-a091-032c1ad7361c",
@@ -251,10 +251,10 @@
       "lastCheckedAt": 1789482285186
     },
     "491579": {
-      "lastRssKey": "6aaa9bd2fce2f88226c74381",
-      "lastEpisodeTitle": "Propaganda: Angry Geordie Noises",
-      "lastEpisodeId": "60245020569",
-      "lastCheckedAt": 1789569437868
+      "lastRssKey": "6aabde958577b7eb50586db7",
+      "lastEpisodeTitle": "Justice For DCL! | The Square Ball",
+      "lastEpisodeId": "60504866053",
+      "lastCheckedAt": 1789657883554
     },
     "497129": {
       "lastRssKey": "12381::3562671",
@@ -339,6 +339,12 @@
       "lastEpisodeId": "59396147606",
       "lastCheckedAt": 1789288166149
     },
+    "640518": {
+      "lastRssKey": "6aa2fa7f2e8bb8424c59d70a",
+      "lastEpisodeTitle": "#377: Fussball-Loge",
+      "lastEpisodeId": "60218523536",
+      "lastCheckedAt": 1789657897649
+    },
     "665403": {
       "lastEpisodeId": "60434133188",
       "lastEpisodeTitle": "#1721 Jefferson and Adams: A Fresh Interpretation",
@@ -356,6 +362,12 @@
       "lastEpisodeTitle": "#882: Why Kids Can Learn 10x Faster Than We Think — Niels Hoven of Mentava (Tim Coaching Session)",
       "lastEpisodeId": "60216372746",
       "lastCheckedAt": 1789288168215
+    },
+    "742927": {
+      "lastRssKey": "tag:soundcloud,2010:tracks/2399300805",
+      "lastEpisodeTitle": "Runde #599: Was macht Star Wars zu Star Wars?",
+      "lastEpisodeId": "60319860430",
+      "lastCheckedAt": 1789657901378
     },
     "743229": {
       "lastRssKey": "47f783de-0450-4f3b-9a6c-251b63ddff6e",
@@ -403,6 +415,11 @@
       "lastEpisodeTitle": "Jeopardy 2!",
       "lastEpisodeId": "60428476792",
       "lastCheckedAt": 1789508291765
+    },
+    "837535": {
+      "lastRssKey": "0b3da338-b2a4-11f1-8c43-535ab31f9121",
+      "lastEpisodeTitle": "Finanzfluss vs. Meta: Das URTEIL ist da!",
+      "lastCheckedAt": 1789657903307
     },
     "838740": {
       "lastRssKey": "ac5b67a4-b15b-11f1-9a35-97bf96f31149",
@@ -453,10 +470,10 @@
       "lastCheckedAt": 1789496597896
     },
     "980370": {
-      "lastRssKey": "6aa80986b54f356fc7aecbd1",
-      "lastEpisodeTitle": "Campaigns spend millions to influence voters. This works better | Katie Paris",
+      "lastRssKey": "6aaabba7fce2f88226cec482",
+      "lastEpisodeTitle": "How to use tech to outsmart dictators | Leopoldo López",
       "lastEpisodeId": "60252776187",
-      "lastCheckedAt": 1789584011613
+      "lastCheckedAt": 1789657906414
     },
     "998969": {
       "lastRssKey": "audioboom-01a0aaca-84b5-7cbe-8d26-eba8ce3c8831",
@@ -474,11 +491,16 @@
       "lastEpisodeTitle": "Finding Your Life Path, Solved",
       "lastCheckedAt": 1788643859907
     },
+    "1035900": {
+      "lastRssKey": "46ea33d8-70c2-4548-855b-f3349948de7c",
+      "lastEpisodeTitle": "Diablo 5 Interview: RIP Open World & Die neue Karawane!",
+      "lastCheckedAt": 1789657909559
+    },
     "1047718": {
-      "lastRssKey": "6aa8017c8f085b2bd2162645",
-      "lastEpisodeTitle": "Kane on target, Barcelona stay perfect and Ballon d’Or debate – Football Weekly",
+      "lastRssKey": "6aaba4ea8f08c4af80ed61b9",
+      "lastEpisodeTitle": "Manchester United crisis klaxon alert and Sunderland soar: Football Weekly Extra",
       "lastEpisodeId": "58884055225",
-      "lastCheckedAt": 1789463635678
+      "lastCheckedAt": 1789657909729
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-is-the-quran-biased-toward-men-truth-or-propaganda-qa",
@@ -510,10 +532,10 @@
       "lastCheckedAt": 1789482315256
     },
     "1116485": {
-      "lastRssKey": "6aabb41f1c247db87e550a59",
-      "lastEpisodeTitle": "Arsenal Want to Sign Rio Ngumoha! | Liverpool Transfer News Update",
+      "lastRssKey": "6aabe74423678bff881065e9",
+      "lastEpisodeTitle": "Has Alexis Mac Allister Earned a New Deal at Liverpool?",
       "lastEpisodeId": "60461626103",
-      "lastCheckedAt": 1789640244521
+      "lastCheckedAt": 1789657914967
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -574,10 +596,10 @@
       "lastCheckedAt": 1789640249437
     },
     "1366771": {
-      "lastEpisodeId": "60477796813",
-      "lastEpisodeTitle": "Evening briefing Wednesday 16th September",
-      "lastRssKey": "6aaac1104cef87591d416290",
-      "lastCheckedAt": 1789603696900
+      "lastEpisodeId": "60504658125",
+      "lastEpisodeTitle": "Afternoon briefing Thursday 17th September",
+      "lastRssKey": "6aabc88c5d36baebf13e68f1",
+      "lastCheckedAt": 1789657918126
     },
     "1388001": {
       "lastRssKey": "1285aea3-7398-4673-98f9-70955cf739a0",
@@ -607,6 +629,12 @@
       "lastEpisodeTitle": "Episode 384: MARTY ST. LOUIS + ARBER XHEKAJ + ALEX NEWHOOK EXTENSIONS! Canadiens Training Camp Begins!",
       "lastEpisodeId": "58874707637",
       "lastCheckedAt": 1789621714860
+    },
+    "2136949": {
+      "lastRssKey": "6aa83ca42469d1a3b3cb1d35",
+      "lastEpisodeTitle": "Folge 139: Helmut Rademacher – Brennen soll Lüneburg!",
+      "lastEpisodeId": "60389178535",
+      "lastCheckedAt": 1789657919557
     },
     "2407094": {
       "lastRssKey": "6aaac422eefd65122d1ab9f8",
@@ -700,6 +728,12 @@
       "lastEpisodeTitle": "Listen Now: Audible True Crime",
       "lastEpisodeId": "42575210570",
       "lastCheckedAt": 1787558289534
+    },
+    "4179651": {
+      "lastRssKey": "6904b9053906f8011ab86270",
+      "lastEpisodeTitle": "#106: Fragen über Fragen und Podcastpause.",
+      "lastEpisodeId": "45138014932",
+      "lastCheckedAt": 1789657924392
     },
     "4239702": {
       "lastEpisodeId": "42157398048",
@@ -851,16 +885,22 @@
       "lastCheckedAt": 1789621729829
     },
     "6413946": {
-      "lastRssKey": "b773bdab-431a-4d51-bb8a-c8dbaeb66c4c",
-      "lastEpisodeTitle": "EP 823: Morena designa candidatos en Guerrero y Michoacán, Morelos y su universidad, bajo la lupa por muerte de estudiante española y Más vale tarde que nunca, investigan monopolio en el futbol",
+      "lastRssKey": "381d4084-1a1a-42e5-a22c-fc67626275cb",
+      "lastEpisodeTitle": "EP 824: Corcholatas ya provocan conflictos en la 4T, Sheinbaum destaca la soberanía en el Grito y el desfile de independencia y Aprietan a empresas para sacar más impuestos",
       "lastEpisodeId": "60198639919",
-      "lastCheckedAt": 1789482346153
+      "lastCheckedAt": 1789657930985
     },
     "6456494": {
       "lastRssKey": "6aaa01ab79ba7f1eccfc55fb",
       "lastEpisodeTitle": "Apple Invents Foldables!",
       "lastEpisodeId": "59912911833",
       "lastCheckedAt": 1789533417556
+    },
+    "6467886": {
+      "lastRssKey": "a70e0d0a-b102-11f1-adfd-739f364a8801",
+      "lastEpisodeTitle": "#332 - Zwei Drittel infiziert: Bin ich auch betroffen?",
+      "lastEpisodeId": "60465080889",
+      "lastCheckedAt": 1789657931496
     },
     "6559880": {
       "lastRssKey": "009f2bf8-b11f-11f1-b13d-274adc3ddc41",
@@ -885,10 +925,10 @@
       "lastCheckedAt": 1789640271775
     },
     "6655297": {
-      "lastRssKey": "indieventurepodcast.podbean.com/de56da24-4fe7-3091-9600-95f3fab63c08",
-      "lastEpisodeTitle": "#65. Liam Made a Whole Game?! The 3rd Annual Indieventure Sleepover",
-      "lastEpisodeId": "58623529123",
-      "lastCheckedAt": 1787233535135
+      "lastRssKey": "indieventurepodcast.podbean.com/3b67977b-17e5-37c4-aada-4332098953f8",
+      "lastEpisodeTitle": "#66. Gamescom Season of the Beast",
+      "lastEpisodeId": "60509388415",
+      "lastCheckedAt": 1789657932137
     },
     "6686930": {
       "lastRssKey": "661671f397ce6d00176628b4",
@@ -1111,6 +1151,12 @@
       "lastEpisodeId": "57793191904",
       "lastCheckedAt": 1789306040939
     },
+    "7540523": {
+      "lastRssKey": "8257452a-d639-4918-8fb2-7ca994d89861",
+      "lastEpisodeTitle": "Staffelfinale im Supermarkt (S01/E10)",
+      "lastEpisodeId": "46949995660",
+      "lastCheckedAt": 1789657943228
+    },
     "7584644": {
       "lastRssKey": "6aa8307db54f356fc7b8c044",
       "lastEpisodeTitle": "Music @ Work (2000) Side A With Podcast Legend Sean McGinity",
@@ -1122,6 +1168,12 @@
       "lastEpisodeTitle": "How Codes Were Used To Hack The Telegram Business",
       "lastEpisodeId": "58798183213",
       "lastCheckedAt": 1789603746219
+    },
+    "7606603": {
+      "lastRssKey": "51051648-b657-4085-a131-c9d20e285b2d",
+      "lastEpisodeTitle": "Hass & Morddrohungen: Der Preis für echten Tierschutz | Episode 16",
+      "lastEpisodeId": "53528938093",
+      "lastCheckedAt": 1789657943590
     },
     "7632237": {
       "lastEpisodeId": "47263048021",
@@ -1171,10 +1223,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/9ac2b1db-b382-53d3-a13d-9c58e856ef7c",
-      "lastEpisodeTitle": "30 things that people in narcissistic relationships are told ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/5ce68aa2-51fe-5afc-ba65-238236a66575",
+      "lastEpisodeTitle": "Becoming WHOLE again AFTER BETRAYAL ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789640290601
+      "lastCheckedAt": 1789657944557
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
