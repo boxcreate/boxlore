@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-19T14:39:14.162Z",
+  "lastRun": "2026-09-19T17:48:01.700Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -31,10 +31,10 @@
       "lastCheckedAt": 1789404431852
     },
     "55810": {
-      "lastEpisodeId": "60580807928",
-      "lastEpisodeTitle": "NPR News: 09-18-2026 11PM EDT",
-      "lastRssKey": "40c316dd-10d7-4a46-bb36-e0d70b5e4f65",
-      "lastCheckedAt": 1789799403406
+      "lastEpisodeId": "60603194523",
+      "lastEpisodeTitle": "NPR News: 09-19-2026 12PM EDT",
+      "lastRssKey": "732e1f28-aa8a-490e-bbf1-bf5bc1f5ee14",
+      "lastCheckedAt": 1789840084756
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75229925",
@@ -71,6 +71,11 @@
       "lastEpisodeTitle": "My Last Quest | The Launch 🚀 84",
       "lastEpisodeId": "60471840366",
       "lastCheckedAt": 1789595656354
+    },
+    "204808": {
+      "lastRssKey": "3ab37973-3424-475e-bae6-798e6ca43fab",
+      "lastEpisodeTitle": "NFL WEEK 2 PREVIEW",
+      "lastCheckedAt": 1789840091918
     },
     "212882": {
       "lastRssKey": "44e3d466-a7f8-11f0-954a-df6ad4d325f0",
@@ -135,10 +140,10 @@
       "lastCheckedAt": 1789817132579
     },
     "385117": {
-      "lastRssKey": "bce2b73c-b433-11f1-9f25-67e83bce5963",
-      "lastEpisodeTitle": "10AM ET 09/19/2026 Newscast",
+      "lastRssKey": "de71b89e-b44c-11f1-b705-9bcd97a7459c",
+      "lastEpisodeTitle": "President Trump is set to join world leaders at the United Nations General Assembly next week in New York City.",
       "lastEpisodeId": "60584765174",
-      "lastCheckedAt": 1789828763726
+      "lastCheckedAt": 1789840096448
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -251,10 +256,10 @@
       "lastCheckedAt": 1789640214417
     },
     "483834": {
-      "lastRssKey": "6aad73c5f0112d8f457f9ce9",
-      "lastEpisodeTitle": "Demon Slayer Infinity Castle Part 1 Teaser, and Netflix's Sacrifice Official Trailer  — September 18, 2026",
-      "lastEpisodeId": "60384824655",
-      "lastCheckedAt": 1789754754708
+      "lastRssKey": "6aaddac164d244acc61f61c3",
+      "lastEpisodeTitle": "Disney +'s Coven Academy Series, Scrubs Revival series Season 2 — September 19, 2026",
+      "lastEpisodeId": "60603867985",
+      "lastCheckedAt": 1789840108677
     },
     "490022": {
       "lastRssKey": "33353920-c88e-4e53-981e-b75987fcd11b",
@@ -293,10 +298,10 @@
       "lastCheckedAt": 1786559316926
     },
     "522792": {
-      "lastRssKey": "5e3d9e26-afb1-11f1-82b2-575ae8bdba15",
-      "lastEpisodeTitle": "Microsoft Did It First Apple - WAN Show September 11, 2026",
+      "lastRssKey": "3fc4435e-b3ea-11f1-93ea-bf02bf7a0c0d",
+      "lastEpisodeTitle": "I’m a Tesla Driver Now - WAN Show September 18, 2026",
       "lastEpisodeId": "59973348867",
-      "lastCheckedAt": 1789337304424
+      "lastCheckedAt": 1789840113988
     },
     "522811": {
       "lastRssKey": "37c66119-fcef-4eba-8000-91ecae9ec5a6",
@@ -475,10 +480,10 @@
       "lastCheckedAt": 1789603680763
     },
     "902798": {
-      "lastRssKey": "b79ad82c-bf69-4149-b397-1be1ffc46d6c",
-      "lastEpisodeTitle": "Former Secret Service Agent: How Presidents Are Protected | Evy Poumpouras | FO563 Raj Shamani",
+      "lastRssKey": "b482a486-cfd6-4809-9418-56b3b7f5ef67",
+      "lastEpisodeTitle": "How Top VCs Pick Founders, Evaluate Startups & Fund Them | Sasha Mirchandani | FO564 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1789672277289
+      "lastCheckedAt": 1789840129026
     },
     "906591": {
       "lastRssKey": "8569548e-b26a-11f1-976a-6721ea2ce419",
@@ -505,10 +510,10 @@
       "lastCheckedAt": 1789727939729
     },
     "980370": {
-      "lastRssKey": "6aabff67fa2bb1bafe272880",
-      "lastEpisodeTitle": "How to make AI companies pay your energy bill | Ari Matusiak",
+      "lastRssKey": "6aad5d477aa361c6129253f0",
+      "lastEpisodeTitle": "How tech will (and won't) replace your doctor | Zack Abbott and Dhruv Khullar",
       "lastEpisodeId": "60252776187",
-      "lastCheckedAt": 1789754776729
+      "lastCheckedAt": 1789840131251
     },
     "998969": {
       "lastRssKey": "audioboom-01a0aaca-84b5-7cbe-8d26-eba8ce3c8831",
@@ -1027,16 +1032,16 @@
       "lastCheckedAt": 1789691946242
     },
     "6866470": {
-      "lastRssKey": "https://api.spreaker.com/episode/75101851",
-      "lastEpisodeTitle": "Shorts: দক্ষিণরায়",
-      "lastEpisodeId": "60327573737",
-      "lastCheckedAt": 1789496636910
+      "lastRssKey": "https://api.spreaker.com/episode/75237939",
+      "lastEpisodeTitle": "রিপুর আবর্তে",
+      "lastEpisodeId": "60603920510",
+      "lastCheckedAt": 1789840172038
     },
     "6866732": {
-      "lastRssKey": "https://api.spreaker.com/episode/75101161",
-      "lastEpisodeTitle": "Hercule Poirot - Evil Under The Sun",
-      "lastEpisodeId": "60325146574",
-      "lastCheckedAt": 1789306033346
+      "lastRssKey": "https://api.spreaker.com/episode/75237539",
+      "lastEpisodeTitle": "অশরীরী",
+      "lastEpisodeId": "60603126737",
+      "lastCheckedAt": 1789840173188
     },
     "6894068": {
       "lastRssKey": "3c1d35f8-b14c-11f1-85ec-a38cdb3c3269",
@@ -1271,10 +1276,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/c0b3f1a6-abfa-5a75-9dd6-6c7d74e0c9fd",
-      "lastEpisodeTitle": "Working with Ambivalent Clients Experiencing Narcissistic Relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/783d2d77-9c70-5717-ba6b-79391022f190",
+      "lastEpisodeTitle": "TOP 5 sources of narcissistic SUPPLY ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789828845327
+      "lastCheckedAt": 1789840188823
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
