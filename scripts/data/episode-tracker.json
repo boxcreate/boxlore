@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-19T06:29:59.992Z",
+  "lastRun": "2026-09-19T11:25:21.226Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -117,10 +117,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "02C7389D-2AD2-42B0-8160-5A21EEBAC31C",
-      "lastEpisodeTitle": "TNB Tech Minute: California Gov. Issues Executive Order to Weigh AI Oversight",
-      "lastEpisodeId": "60564867013",
-      "lastCheckedAt": 1789765621366
+      "lastRssKey": "8219A5C3-8010-4D9C-8F33-6B89383B91D8",
+      "lastEpisodeTitle": "AI Therapists Are Here. Are They Safe?",
+      "lastEpisodeId": "60591117405",
+      "lastCheckedAt": 1789817131249
     },
     "331078": {
       "lastRssKey": "82ce76f2-a890-11f1-95c4-972516c314ba",
@@ -129,16 +129,16 @@
       "lastCheckedAt": 1789754740622
     },
     "353744": {
-      "lastRssKey": "flightcast:01M2DX439H6Y4QVMYY7JGJ2V0Q",
-      "lastEpisodeTitle": "What Breakups ACTUALLY Do To Men",
+      "lastRssKey": "flightcast:01M2DXAN3W0QGCVMS356W1E2ZA",
+      "lastEpisodeTitle": "The Secret to Fixing Your Adulthood",
       "lastEpisodeId": "60295405214",
-      "lastCheckedAt": 1789383209823
+      "lastCheckedAt": 1789817132579
     },
     "385117": {
-      "lastRssKey": "aec733fa-b3f0-11f1-8239-87beb9b820a8",
-      "lastEpisodeTitle": "2AM ET 09/19/2026 Newscast",
+      "lastRssKey": "97492fd8-b41a-11f1-9beb-a3fa53b29bad",
+      "lastEpisodeTitle": "7AM ET 09/19/2026 Newscast",
       "lastEpisodeId": "60584765174",
-      "lastCheckedAt": 1789799414811
+      "lastCheckedAt": 1789817132713
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -189,10 +189,10 @@
       "lastCheckedAt": 1789404444446
     },
     "437685": {
-      "lastRssKey": "8600b844-8d60-11f1-adef-9b4033b553ef",
-      "lastEpisodeTitle": "The History of Whaling (Encore)",
-      "lastEpisodeId": "60498650050",
-      "lastCheckedAt": 1789727911166
+      "lastRssKey": "861f9a52-8d60-11f1-adef-0bd784e2c930",
+      "lastEpisodeTitle": "The Rise and Fall of Vaudeville",
+      "lastEpisodeId": "60590164568",
+      "lastCheckedAt": 1789817137990
     },
     "438184": {
       "lastRssKey": "f2e0c3bc-b355-11f1-a53c-9be1fe16839d",
@@ -304,6 +304,12 @@
       "lastEpisodeId": "60455337522",
       "lastCheckedAt": 1789569443213
     },
+    "545784": {
+      "lastEpisodeId": "60579069588",
+      "lastEpisodeTitle": "Presseklub: Stoppt Schwesig die AFD?",
+      "lastRssKey": "ba90fc106a36318dbb3db090a78332d4",
+      "lastCheckedAt": 1789817148449
+    },
     "555427": {
       "lastEpisodeId": "386077022",
       "lastEpisodeTitle": "Special announcement - a new podcast",
@@ -376,16 +382,22 @@
       "lastCheckedAt": 1789657901378
     },
     "743229": {
-      "lastRssKey": "ae2b3624-beb3-48ad-88be-b30749629103",
-      "lastEpisodeTitle": "The Techno-Religion at the Center of the A.I. Debate",
+      "lastRssKey": "33e85a29-706c-4d8d-a020-d8e4da10e7b8",
+      "lastEpisodeTitle": "Aaron Sorkin Still Believes in American Institutions, Even If No One Else Does",
       "lastEpisodeId": "60453258993",
-      "lastCheckedAt": 1789727931961
+      "lastCheckedAt": 1789817157237
     },
     "743322": {
       "lastEpisodeId": "51557400761",
       "lastEpisodeTitle": "Goshawk | Ep. 30",
       "lastRssKey": "9c39ba2a-1c63-11f1-b26d-b3f48439fc7f",
       "lastCheckedAt": 1787801220675
+    },
+    "744169": {
+      "lastEpisodeId": "60586009465",
+      "lastEpisodeTitle": "When You Know You're Alone You Make Different Decisions with Margret Glaspy",
+      "lastRssKey": "8cb0d668-b044-11f1-9a23-f32ce1cd444d",
+      "lastCheckedAt": 1789817158054
     },
     "744587": {
       "lastRssKey": "a8fdcd21-671a-4da9-8110-609a361c7f5e",
@@ -538,10 +550,10 @@
       "lastCheckedAt": 1789482315256
     },
     "1116485": {
-      "lastRssKey": "6aad457b42a8b2310e64ca13",
-      "lastEpisodeTitle": "Bournemouth v Liverpool | Premier League Match Preview",
+      "lastRssKey": "6aad51f911c566086d87c194",
+      "lastEpisodeTitle": "Alexis Mac Allister is Good Again & VAR Ruins the Manc Derby! | Redmen Weekly",
       "lastEpisodeId": "60461626103",
-      "lastCheckedAt": 1789754788529
+      "lastCheckedAt": 1789817179100
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -567,10 +579,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6aac09e8bf7eb386d3fcd379",
-      "lastEpisodeTitle": "Tech Show: Why doesn't car compatibility play a bigger role in driver recruitment?",
+      "lastRssKey": "6aad4cdb0a12e917742e3c95",
+      "lastEpisodeTitle": "Is the FIA right to help Alonso and Honda?",
       "lastEpisodeId": "60422102044",
-      "lastCheckedAt": 1789672294383
+      "lastCheckedAt": 1789817181733
     },
     "1258562": {
       "lastRssKey": "6aa6b20c5b934194476d7e33",
@@ -602,10 +614,10 @@
       "lastCheckedAt": 1789640249437
     },
     "1366771": {
-      "lastEpisodeId": "60560463161",
-      "lastEpisodeTitle": "Afternoon briefing Friday 18th September",
-      "lastRssKey": "6aad0f10bf7eb386d32d8eba",
-      "lastCheckedAt": 1789754792532
+      "lastEpisodeId": "60587515046",
+      "lastEpisodeTitle": "Evening briefing Friday 18th September",
+      "lastRssKey": "6aad7b387aa361c6129ece3b",
+      "lastCheckedAt": 1789817184955
     },
     "1388001": {
       "lastRssKey": "757dcf9c-7344-4154-9447-81a235d2d1ae",
@@ -631,10 +643,10 @@
       "lastCheckedAt": 1788730441194
     },
     "2136580": {
-      "lastRssKey": "d5f8e6ac-5aaa-4689-9ed4-84c54a21323a",
-      "lastEpisodeTitle": "Episode 384: MARTY ST. LOUIS + ARBER XHEKAJ + ALEX NEWHOOK EXTENSIONS! Canadiens Training Camp Begins!",
+      "lastRssKey": "784f33af-76f7-42be-8ebe-fb2ef936e097",
+      "lastEpisodeTitle": "Episode 385: CHRIS KREIDER PLAYING ON THE MONTREAL CANADIENS TOP LINE?",
       "lastEpisodeId": "58874707637",
-      "lastCheckedAt": 1789621714860
+      "lastCheckedAt": 1789817186515
     },
     "2136949": {
       "lastRssKey": "6aa83ca42469d1a3b3cb1d35",
@@ -677,10 +689,10 @@
       "lastCheckedAt": 1789640256886
     },
     "3353685": {
-      "lastEpisodeId": "60530565381",
-      "lastEpisodeTitle": "Apple Verifies iPhone Photos to Fight Slop, Hackers Crack Open Flock's Software, US Confirms Weapons in Orbit + more!",
-      "lastRssKey": "f07cae0c-b232-11f1-a0a7-172f91e66be1",
-      "lastCheckedAt": 1789709722862
+      "lastEpisodeId": "60586969768",
+      "lastEpisodeTitle": "Meta One Plans Reach $499 a Month, Microsoft Exec Called AI Scraping Labor Theft, AI Songs Hit Spotify Artist Pages + more!",
+      "lastRssKey": "1d92390c-b3c3-11f1-ad0a-1b60b818b65a",
+      "lastCheckedAt": 1789817191642
     },
     "3423895": {
       "lastEpisodeId": "60583452250",
@@ -789,9 +801,9 @@
       "lastCheckedAt": 1789621724282
     },
     "4898105": {
-      "lastRssKey": "249bedc0-b2fa-11f1-a441-cbff53ab25fb",
-      "lastEpisodeTitle": "Spider-Man: Brand New Day Becomes North America's Highest-Grossing Movie of All Time",
-      "lastCheckedAt": 1789727986493
+      "lastRssKey": "a892e798-b249-11f1-9f59-5f9911acee0d",
+      "lastEpisodeTitle": "IGN Game Review: Marvel's Wolverine",
+      "lastCheckedAt": 1789817197991
     },
     "5107672": {
       "lastRssKey": "6c5e5764-f024-4308-843f-a925142939b4",
@@ -898,10 +910,10 @@
       "lastCheckedAt": 1789584033549
     },
     "6280366": {
-      "lastEpisodeId": "60537414275",
-      "lastEpisodeTitle": "Why Everyone Is Getting Excited About Personal AI Agents",
-      "lastRssKey": "02b2d6fb-dfc7-4875-acc3-8fbceba79297",
-      "lastCheckedAt": 1789727995778
+      "lastEpisodeId": "60592860794",
+      "lastEpisodeTitle": "The AI Challenges Businesses Are Actually Focused On Right Now",
+      "lastRssKey": "05d6a935-f68e-4fd0-b9b7-fd2ce936d402",
+      "lastCheckedAt": 1789817205344
     },
     "6413946": {
       "lastRssKey": "89b77b20-18b1-4e06-ab77-5bc428684a7f",
@@ -916,10 +928,10 @@
       "lastCheckedAt": 1789533417556
     },
     "6467886": {
-      "lastRssKey": "a70e0d0a-b102-11f1-adfd-739f364a8801",
-      "lastEpisodeTitle": "#332 - Zwei Drittel infiziert: Bin ich auch betroffen?",
-      "lastEpisodeId": "60465080889",
-      "lastCheckedAt": 1789657931496
+      "lastRssKey": "b7dd2664-b398-11f1-a5bf-431ffa21eeca",
+      "lastEpisodeTitle": "#333 - Wie kann ich mir illegal eine Waffe besorgen?",
+      "lastEpisodeId": "60587854234",
+      "lastCheckedAt": 1789817206160
     },
     "6559880": {
       "lastRssKey": "62d5f2b4-b2d9-11f1-b6a3-0bd283a70c83",
@@ -1016,10 +1028,10 @@
       "lastCheckedAt": 1789728019057
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779873",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Edward French Matter",
+      "lastRssKey": "https://api.spreaker.com/episode/59779874",
+      "lastEpisodeTitle": "FBI in Peace and War - Dumb Luck",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1789728019601
+      "lastCheckedAt": 1789817225918
     },
     "6912659": {
       "lastRssKey": "9273275b-ec2a-4d98-97f7-249fdaa9fbee",
@@ -1242,10 +1254,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/2f309355-feba-5c2e-9b25-a1a31a23ba01",
-      "lastEpisodeTitle": "6 NORMAL reactions AFTER a narcissistic break up ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/48f802d1-ab89-59b3-a12c-a39e76eca7b7",
+      "lastEpisodeTitle": "When narcissism is WEAPONIZED by the narcissist ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789799506315
+      "lastCheckedAt": 1789817236209
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
