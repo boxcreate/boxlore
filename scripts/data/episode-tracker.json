@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-19T11:25:21.226Z",
+  "lastRun": "2026-09-19T14:39:14.162Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -135,10 +135,10 @@
       "lastCheckedAt": 1789817132579
     },
     "385117": {
-      "lastRssKey": "97492fd8-b41a-11f1-9beb-a3fa53b29bad",
-      "lastEpisodeTitle": "7AM ET 09/19/2026 Newscast",
+      "lastRssKey": "bce2b73c-b433-11f1-9f25-67e83bce5963",
+      "lastEpisodeTitle": "10AM ET 09/19/2026 Newscast",
       "lastEpisodeId": "60584765174",
-      "lastCheckedAt": 1789817132713
+      "lastCheckedAt": 1789828763726
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -169,6 +169,12 @@
       "lastEpisodeTitle": "Raj dla nazistów? Jak Argentyna otworzyła drzwi zbrodniarzom wojennym",
       "lastEpisodeId": "59723237419",
       "lastCheckedAt": 1789318911863
+    },
+    "431205": {
+      "lastRssKey": "d971c8d5-d277-4979-85ea-1f2050d0b9f5",
+      "lastEpisodeTitle": "Nvidia Too Cheap to Ignore?, AI Safety Debate, Apple’s iPhone Launch 9/18/26",
+      "lastEpisodeId": "60571577178",
+      "lastCheckedAt": 1789828768053
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -393,6 +399,12 @@
       "lastRssKey": "9c39ba2a-1c63-11f1-b26d-b3f48439fc7f",
       "lastCheckedAt": 1787801220675
     },
+    "744119": {
+      "lastRssKey": "92fefc13-5346-42ea-b63e-b4c8018a46e3",
+      "lastEpisodeTitle": "Marco Rubio en Los Andes: una vieja estrategia en esteroides",
+      "lastEpisodeId": "60558735788",
+      "lastCheckedAt": 1789828790913
+    },
     "744169": {
       "lastEpisodeId": "60586009465",
       "lastEpisodeTitle": "When You Know You're Alone You Make Different Decisions with Margret Glaspy",
@@ -433,6 +445,11 @@
       "lastEpisodeTitle": "Jeopardy 2!",
       "lastEpisodeId": "60428476792",
       "lastCheckedAt": 1789508291765
+    },
+    "827592": {
+      "lastRssKey": "01a42f07-7277-43f5-91f1-b4c8012fd1c7",
+      "lastEpisodeTitle": "Selects: Fallout Shelters: Probably Useless (Let’s Never Find Out)",
+      "lastCheckedAt": 1789828793574
     },
     "837535": {
       "lastRssKey": "0b3da338-b2a4-11f1-8c43-535ab31f9121",
@@ -887,10 +904,10 @@
       "lastCheckedAt": 1789584032330
     },
     "5972153": {
-      "lastRssKey": "96bd31e6-b342-11f1-829f-d3f9815798a2",
-      "lastEpisodeTitle": "Trump press ban,  Saudi stealth jets, drugs in space (Updated)",
+      "lastRssKey": "12f4fd16-b410-11f1-b4aa-8f666e27a729",
+      "lastEpisodeTitle": "Google AI hack, Greenland, Germany's leader and Mbappe",
       "lastEpisodeId": "60563336783",
-      "lastCheckedAt": 1789774205244
+      "lastCheckedAt": 1789828827026
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1254,10 +1271,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/48f802d1-ab89-59b3-a12c-a39e76eca7b7",
-      "lastEpisodeTitle": "When narcissism is WEAPONIZED by the narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/c0b3f1a6-abfa-5a75-9dd6-6c7d74e0c9fd",
+      "lastEpisodeTitle": "Working with Ambivalent Clients Experiencing Narcissistic Relationships ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789817236209
+      "lastCheckedAt": 1789828845327
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
