@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-19T01:29:15.805Z",
+  "lastRun": "2026-09-19T06:29:59.992Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -31,16 +31,16 @@
       "lastCheckedAt": 1789404431852
     },
     "55810": {
-      "lastEpisodeId": "60553002836",
-      "lastEpisodeTitle": "NPR News: 09-18-2026 9AM EDT",
-      "lastRssKey": "386928da-f026-413f-94df-086e41895490",
-      "lastCheckedAt": 1789742867643
+      "lastEpisodeId": "60580807928",
+      "lastEpisodeTitle": "NPR News: 09-18-2026 11PM EDT",
+      "lastRssKey": "40c316dd-10d7-4a46-bb36-e0d70b5e4f65",
+      "lastCheckedAt": 1789799403406
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75190788",
-      "lastEpisodeTitle": "Central Square Foundation: Can PAL help children learn at their Own Pace",
-      "lastEpisodeId": "60535370938",
-      "lastCheckedAt": 1789709645682
+      "lastRssKey": "https://api.spreaker.com/episode/75229925",
+      "lastEpisodeTitle": "The Catch Up: Amit Shah sets 2029 deadline for BJP-ruled states, and more (18 September)",
+      "lastEpisodeId": "60582367563",
+      "lastCheckedAt": 1789799404342
     },
     "78573": {
       "lastRssKey": "c1eff3ee-c9d0-44e4-9629-ac758b5d51c4",
@@ -91,10 +91,10 @@
       "lastCheckedAt": 1789516722197
     },
     "229239": {
-      "lastRssKey": "d8b7954c-2c73-11f1-bc71-0b720296b4e8",
-      "lastEpisodeTitle": "The Brutal Reality For Most Men Today (& how to fix it) - Dr K HealthyGamer - #1151",
+      "lastRssKey": "ef15c8f4-2c73-11f1-ab5b-0ba0eda0acd9",
+      "lastEpisodeTitle": "Why Sydney Sweeney Has Two Big Targets On Her Chest - William Costello - #1152",
       "lastEpisodeId": "60196429938",
-      "lastCheckedAt": 1789621659284
+      "lastCheckedAt": 1789799410372
     },
     "230598": {
       "lastRssKey": "b7c3497c-a54a-11f0-b1fc-236b310e14f8",
@@ -135,10 +135,10 @@
       "lastCheckedAt": 1789383209823
     },
     "385117": {
-      "lastRssKey": "c5533da0-b3c6-11f1-a336-23068b8db184",
-      "lastEpisodeTitle": "9PM ET 09/18/2026 Newscast",
-      "lastEpisodeId": "60566284041",
-      "lastCheckedAt": 1789781367037
+      "lastRssKey": "aec733fa-b3f0-11f1-8239-87beb9b820a8",
+      "lastEpisodeTitle": "2AM ET 09/19/2026 Newscast",
+      "lastEpisodeId": "60584765174",
+      "lastCheckedAt": 1789799414811
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -388,10 +388,10 @@
       "lastCheckedAt": 1787801220675
     },
     "744587": {
-      "lastRssKey": "7f63e02a-3d78-481f-a927-2aa8b954ab94",
-      "lastEpisodeTitle": "La Fábrica Poseída de Iztpalapa y otros relatos de horror",
-      "lastEpisodeId": "59650837980",
-      "lastCheckedAt": 1789443291548
+      "lastRssKey": "a8fdcd21-671a-4da9-8110-609a361c7f5e",
+      "lastEpisodeTitle": "Mi Familia es parte de una Secta (historias de terror)",
+      "lastEpisodeId": "60580843881",
+      "lastCheckedAt": 1789799440476
     },
     "745392": {
       "lastRssKey": "20ad2ce9-3088-449b-8001-2e3e739b54d8",
@@ -458,10 +458,10 @@
       "lastCheckedAt": 1789640232640
     },
     "928708": {
-      "lastRssKey": "e55c6352-b1ae-11f1-91c3-635eb65ab9b7",
-      "lastEpisodeTitle": "This Day in History - September 18, 2026",
+      "lastRssKey": "23188cca-b1af-11f1-b045-d3c368f695d0",
+      "lastEpisodeTitle": "This Day in History - September 19, 2026",
       "lastEpisodeId": "60316335695",
-      "lastCheckedAt": 1789709699862
+      "lastCheckedAt": 1789799444763
     },
     "946758": {
       "lastRssKey": "10cc122e-77b5-11f0-8752-0bb04facbe23",
@@ -555,10 +555,10 @@
       "lastCheckedAt": 1789709713170
     },
     "1193286": {
-      "lastRssKey": "b9f824ae-b379-11f1-8cce-5b42b8068009",
-      "lastEpisodeTitle": "Florian Xhekaj Impressionne ; Peut-Il Se Tailler Une Place? | Le Sick Podcast Avec Tony Marinaro 18/09/26",
-      "lastEpisodeId": "60418066331",
-      "lastCheckedAt": 1789754790018
+      "lastRssKey": "1eddaf6e-b3ad-11f1-b0d8-8f0163b7687f",
+      "lastEpisodeTitle": "Habs Rookies Turning Heads At Training Camp | The Sick Podcast with Tony Marinaro September 18 2026",
+      "lastEpisodeId": "60583563884",
+      "lastCheckedAt": 1789799455714
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -608,10 +608,10 @@
       "lastCheckedAt": 1789754792532
     },
     "1388001": {
-      "lastRssKey": "8c1c208f-ae18-46fb-81b1-8a3d8ecba2ac",
-      "lastEpisodeTitle": "Oui ou non, sommes-nous en guerre avec la Russie ?",
+      "lastRssKey": "757dcf9c-7344-4154-9447-81a235d2d1ae",
+      "lastEpisodeTitle": "Le mouvement de rébellion au Yémen fait trembler le monde",
       "lastEpisodeId": "60539654196",
-      "lastCheckedAt": 1789727956899
+      "lastCheckedAt": 1789799459862
     },
     "1545709": {
       "lastRssKey": "audioboom-01a09b94-757b-7a32-b727-7ea588232d98",
@@ -643,10 +643,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6aac2512b4b395e10de173b2",
-      "lastEpisodeTitle": "(Pop) Un nouveau pays a décidé de boycotter l’Eurovision… HugoDécrypte",
-      "lastEpisodeId": "60538472487",
-      "lastCheckedAt": 1789727974099
+      "lastRssKey": "6aad6f24ba6372f7f98e64f6",
+      "lastEpisodeTitle": "(Pop) Le patrimoine français est-il en danger à cause du changement climatique ?… HugoDécrypte",
+      "lastEpisodeId": "60584451139",
+      "lastCheckedAt": 1789799461638
     },
     "2574026": {
       "lastRssKey": "dfef7122-b2b0-11f1-993d-8b6b2c5fd3f2",
@@ -681,6 +681,12 @@
       "lastEpisodeTitle": "Apple Verifies iPhone Photos to Fight Slop, Hackers Crack Open Flock's Software, US Confirms Weapons in Orbit + more!",
       "lastRssKey": "f07cae0c-b232-11f1-a0a7-172f91e66be1",
       "lastCheckedAt": 1789709722862
+    },
+    "3423895": {
+      "lastEpisodeId": "60583452250",
+      "lastEpisodeTitle": "Der Fall Ancient Aliens: Haben sie die Pyramiden gebaut?",
+      "lastRssKey": "/002106e254a8a9cfee46c45c752dcb2c",
+      "lastCheckedAt": 1789799464300
     },
     "3487352": {
       "lastRssKey": "5cec6d24-b889-4b2e-abd4-ee085f4e01f2",
@@ -857,10 +863,10 @@
       "lastCheckedAt": 1789672314996
     },
     "5930143": {
-      "lastRssKey": "8c1c208f-ae18-46fb-81b1-8a3d8ecba2ac",
-      "lastEpisodeTitle": "Oui ou non, sommes-nous en guerre avec la Russie ?",
+      "lastRssKey": "757dcf9c-7344-4154-9447-81a235d2d1ae",
+      "lastEpisodeTitle": "Le mouvement de rébellion au Yémen fait trembler le monde",
       "lastEpisodeId": "60450867491",
-      "lastCheckedAt": 1789727993202
+      "lastCheckedAt": 1789799474438
     },
     "5945547": {
       "lastRssKey": "b93f5713-82a6-45a0-9804-5fb69dc5ff13",
@@ -1236,10 +1242,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/4ef4f206-e7ce-5fff-b14a-227a60f8971b",
-      "lastEpisodeTitle": "5 Ways narcissists make life exhausting for everyone else ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/2f309355-feba-5c2e-9b25-a1a31a23ba01",
+      "lastEpisodeTitle": "6 NORMAL reactions AFTER a narcissistic break up ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789781448537
+      "lastCheckedAt": 1789799506315
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
