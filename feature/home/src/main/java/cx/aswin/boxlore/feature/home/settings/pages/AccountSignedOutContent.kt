@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -42,14 +41,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -62,29 +59,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.exceptions.GetCredentialCancellationException
-import androidx.credentials.exceptions.GetCredentialException
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.network.AuthRepository
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
-
-private const val GOOGLE_SERVER_CLIENT_ID =
-    "74591511411-l1jc8fftg8u7hcv354ooi644omsuksei.apps.googleusercontent.com"
-
-private const val GOOGLE_SIGN_IN_TIMEOUT_MS = 15_000L
-
-private enum class AuthMode {
-    SIGN_IN,
-    SIGN_UP,
-}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -100,151 +78,13 @@ internal fun ColumnScope.SignedOutContent(
     val actionButtonRequester = remember { BringIntoViewRequester() }
     val imeBottom = WindowInsets.ime.getBottom(density)
 
-    var activeAuthMode by remember { mutableStateOf(AuthMode.SIGN_IN) }
-    var usePasswordAuth by remember { mutableStateOf(false) }
-    var isAnyInputFocused by remember { mutableStateOf(false) }
+    val state = remember(authRepository, context, activity, focusManager, scope) {
+        AccountAuthState(authRepository, context, activity, focusManager, scope)
+    }
 
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    var isGoogleLoading by remember { mutableStateOf(false) }
-    var isEmailLoading by remember { mutableStateOf(false) }
-    val isAnyLoading = isGoogleLoading || isEmailLoading
-
-    var magicLinkSent by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(imeBottom, isAnyInputFocused) {
-        if (imeBottom > 0 && isAnyInputFocused) {
+    LaunchedEffect(imeBottom, state.isAnyInputFocused) {
+        if (imeBottom > 0 && state.isAnyInputFocused) {
             actionButtonRequester.bringIntoView()
-        }
-    }
-
-    fun submitEmailLink() {
-        val trimmedEmail = email.trim()
-        if (trimmedEmail.isBlank()) {
-            errorMessage = "Please enter your email address"
-            return
-        }
-        focusManager.clearFocus()
-        isEmailLoading = true
-        errorMessage = null
-        scope.launch {
-            val result = authRepository?.sendMagicLink(trimmedEmail)
-            isEmailLoading = false
-            if (result?.isSuccess == true) {
-                magicLinkSent = true
-            } else {
-                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
-            }
-        }
-    }
-
-    fun submitPasswordAuth() {
-        val trimmedEmail = email.trim()
-        val trimmedPassword = password.trim()
-        val isSignUp = activeAuthMode == AuthMode.SIGN_UP
-
-        if (trimmedEmail.isBlank()) {
-            errorMessage = "Please enter your email address"
-            return
-        }
-        if (trimmedPassword.isBlank()) {
-            errorMessage = "Please enter your password"
-            return
-        }
-        if (isSignUp && trimmedPassword.length < 6) {
-            errorMessage = "Password must be at least 6 characters"
-            return
-        }
-
-        focusManager.clearFocus()
-        isEmailLoading = true
-        errorMessage = null
-
-        scope.launch {
-            val result = if (isSignUp) {
-                authRepository?.signUpWithEmailPassword(trimmedEmail, trimmedPassword)
-            } else {
-                authRepository?.signInWithEmailPassword(trimmedEmail, trimmedPassword)
-            }
-            isEmailLoading = false
-            if (result?.isSuccess == true) {
-                Toast.makeText(
-                    context,
-                    if (isSignUp) "Account created!" else "Signed in!",
-                    Toast.LENGTH_SHORT,
-                ).show()
-            } else {
-                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
-            }
-        }
-    }
-
-    fun handleGoogleSignIn() {
-        if (isAnyLoading) return
-        focusManager.clearFocus()
-        isGoogleLoading = true
-        errorMessage = null
-        scope.launch {
-            try {
-                withTimeout(GOOGLE_SIGN_IN_TIMEOUT_MS) {
-                    val credentialManager = CredentialManager.create(activity ?: context)
-                    val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(
-                        serverClientId = GOOGLE_SERVER_CLIENT_ID,
-                    ).build()
-
-                    val request = GetCredentialRequest.Builder()
-                        .addCredentialOption(signInWithGoogleOption)
-                        .build()
-
-                    val result = credentialManager.getCredential(
-                        context = activity ?: context,
-                        request = request,
-                    )
-                    val credential = result.credential
-                    if (credential is CustomCredential &&
-                        credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-                    ) {
-                        val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
-                        val signInResult = authRepository?.signInWithGoogle(googleIdToken)
-                        if (signInResult?.isSuccess == true) {
-                            Toast.makeText(context, "Signed in with Google!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            errorMessage = signInResult?.exceptionOrNull()?.localizedMessage
-                                ?: "Google sign-in failed"
-                        }
-                    } else {
-                        errorMessage = "Unexpected credential received"
-                    }
-                }
-            } catch (_: GetCredentialCancellationException) {
-                // User cancelled Google picker dialog.
-            } catch (e: GetCredentialException) {
-                errorMessage = e.localizedMessage ?: "Google sign-in error"
-            } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Google sign-in timed out"
-            } finally {
-                isGoogleLoading = false
-            }
-        }
-    }
-
-    fun handleForgotPassword() {
-        val trimmedEmail = email.trim()
-        if (trimmedEmail.isBlank()) {
-            errorMessage = "Enter your email address above to reset password"
-            return
-        }
-        focusManager.clearFocus()
-        scope.launch {
-            val result = authRepository?.sendPasswordReset(trimmedEmail)
-            if (result?.isSuccess == true) {
-                Toast.makeText(context, "Password reset email sent", Toast.LENGTH_SHORT).show()
-            } else {
-                errorMessage = result?.exceptionOrNull()?.localizedMessage ?: "Failed to send reset email"
-            }
         }
     }
 
@@ -260,9 +100,9 @@ internal fun ColumnScope.SignedOutContent(
 
     // 2. Continue with Google Button
     GoogleSignInButton(
-        isLoading = isGoogleLoading,
-        enabled = !isAnyLoading,
-        onClick = { handleGoogleSignIn() },
+        isLoading = state.isGoogleLoading,
+        enabled = !state.isAnyLoading,
+        onClick = state::handleGoogleSignIn,
     )
 
     // 3. Divider
@@ -287,97 +127,59 @@ internal fun ColumnScope.SignedOutContent(
                     AuthMode.SIGN_IN to "Sign In",
                     AuthMode.SIGN_UP to "Sign Up",
                 ),
-                selected = activeAuthMode,
-                onSelect = { mode ->
-                    activeAuthMode = mode
-                    errorMessage = null
-                    magicLinkSent = false
-                },
+                selected = state.activeAuthMode,
+                onSelect = state::selectAuthMode,
             )
 
             Spacer(Modifier.height(18.dp))
 
-            when {
-                magicLinkSent && !usePasswordAuth -> {
-                    EmailLinkSentSection(
-                        email = email,
-                        isSignUp = activeAuthMode == AuthMode.SIGN_UP,
-                        isAnyLoading = isAnyLoading,
-                        onOpenEmail = { openGmailOrEmailApp(context) },
-                        onUseDifferentEmail = {
-                            magicLinkSent = false
-                            email = ""
-                        },
-                        onResendLink = { submitEmailLink() },
-                    )
-                }
-                !usePasswordAuth -> {
-                    EmailLinkInputSection(
-                        state = EmailInputState(
-                            email = email,
-                            isSignUp = activeAuthMode == AuthMode.SIGN_UP,
-                            isLoading = isEmailLoading,
-                            errorMessage = errorMessage,
-                        ),
-                        actions = EmailInputActions(
-                            onEmailChange = {
-                                email = it
-                                errorMessage = null
-                            },
-                            onSendLink = { submitEmailLink() },
-                            onSwitchToPassword = {
-                                usePasswordAuth = true
-                                errorMessage = null
-                            },
-                            onInputFocused = {
-                                isAnyInputFocused = true
-                                scope.launch { actionButtonRequester.bringIntoView() }
-                            },
-                        ),
-                        actionButtonRequester = actionButtonRequester,
-                    )
-                }
-                else -> {
-                    PasswordAuthSection(
-                        state = PasswordInputState(
-                            email = email,
-                            password = password,
-                            passwordVisible = passwordVisible,
-                            isSignUp = activeAuthMode == AuthMode.SIGN_UP,
-                            isLoading = isEmailLoading,
-                            errorMessage = errorMessage,
-                        ),
-                        actions = PasswordInputActions(
-                            onEmailChange = {
-                                email = it
-                                errorMessage = null
-                            },
-                            onPasswordChange = {
-                                password = it
-                                errorMessage = null
-                            },
-                            onTogglePasswordVisible = { passwordVisible = !passwordVisible },
-                            onForgotPassword = { handleForgotPassword() },
-                            onSubmit = { submitPasswordAuth() },
-                            onSwitchToEmailLink = {
-                                usePasswordAuth = false
-                                errorMessage = null
-                            },
-                            onInputFocused = {
-                                isAnyInputFocused = true
-                                scope.launch { actionButtonRequester.bringIntoView() }
-                            },
-                            onNextField = { focusManager.moveFocus(FocusDirection.Down) },
-                        ),
-                        actionButtonRequester = actionButtonRequester,
-                    )
-                }
-            }
+            PrimaryAuthCardBody(
+                state = state,
+                actionButtonRequester = actionButtonRequester,
+                focusManager = focusManager,
+            )
         }
     }
 
     // 5. Privacy & Data Callout
     AccountPrivacyCard()
+}
+
+@Composable
+private fun PrimaryAuthCardBody(
+    state: AccountAuthState,
+    actionButtonRequester: BringIntoViewRequester,
+    focusManager: FocusManager,
+) {
+    when {
+        state.magicLinkSent && !state.usePasswordAuth -> {
+            EmailLinkSentSection(
+                email = state.email,
+                isSignUp = state.activeAuthMode == AuthMode.SIGN_UP,
+                isAnyLoading = state.isAnyLoading,
+                onOpenEmail = { openGmailOrEmailApp(state.context) },
+                onUseDifferentEmail = state::resetToNewEmail,
+                onResendLink = state::submitEmailLink,
+            )
+        }
+        !state.usePasswordAuth -> {
+            EmailLinkInputSection(
+                state = state.toEmailInputState(),
+                actions = state.toEmailInputActions(actionButtonRequester),
+                actionButtonRequester = actionButtonRequester,
+            )
+        }
+        else -> {
+            PasswordAuthSection(
+                state = state.toPasswordInputState(),
+                actions = state.toPasswordInputActions(
+                    actionButtonRequester = actionButtonRequester,
+                    onNextField = { focusManager.moveFocus(FocusDirection.Down) },
+                ),
+                actionButtonRequester = actionButtonRequester,
+            )
+        }
+    }
 }
 
 @Composable
@@ -714,6 +516,139 @@ private fun EmailLinkInputSection(
 }
 
 @Composable
+private fun PasswordVisibilityToggle(
+    passwordVisible: Boolean,
+    onToggle: () -> Unit,
+) {
+    IconButton(onClick = onToggle) {
+        Icon(
+            imageVector = if (passwordVisible) {
+                Icons.Rounded.VisibilityOff
+            } else {
+                Icons.Rounded.Visibility
+            },
+            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+        )
+    }
+}
+
+@Composable
+private fun PasswordTextField(
+    password: String,
+    passwordVisible: Boolean,
+    onPasswordChange: (String) -> Unit,
+    onToggleVisible: () -> Unit,
+    onInputFocused: () -> Unit,
+    onSubmit: () -> Unit,
+) {
+    OutlinedTextField(
+        value = password,
+        onValueChange = onPasswordChange,
+        label = { Text("Password") },
+        leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
+        trailingIcon = {
+            PasswordVisibilityToggle(
+                passwordVisible = passwordVisible,
+                onToggle = onToggleVisible,
+            )
+        },
+        visualTransformation = if (passwordVisible) {
+            VisualTransformation.None
+        } else {
+            PasswordVisualTransformation()
+        },
+        singleLine = true,
+        shape = MaterialTheme.shapes.large,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = { onSubmit() },
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                if (focusState.isFocused) {
+                    onInputFocused()
+                }
+            },
+    )
+}
+
+@Composable
+private fun PasswordHelperRow(
+    isSignUp: Boolean,
+    isLoading: Boolean,
+    onForgotPassword: () -> Unit,
+) {
+    if (!isSignUp) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 2.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(
+                onClick = onForgotPassword,
+                enabled = !isLoading,
+            ) {
+                Text(
+                    text = "Forgot password?",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp, start = 4.dp, bottom = 4.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Text(
+                text = "Must be at least 6 characters",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PasswordSubmitButton(
+    isSignUp: Boolean,
+    isLoading: Boolean,
+    enabled: Boolean,
+    onSubmit: () -> Unit,
+    actionButtonRequester: BringIntoViewRequester,
+) {
+    Button(
+        onClick = onSubmit,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .bringIntoViewRequester(actionButtonRequester),
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        } else {
+            Text(
+                text = if (isSignUp) "Sign Up" else "Sign In",
+                fontWeight = GoogleSansWeight.bold,
+            )
+        }
+    }
+}
+
+@Composable
 private fun PasswordAuthSection(
     state: PasswordInputState,
     actions: PasswordInputActions,
@@ -756,78 +691,20 @@ private fun PasswordAuthSection(
 
     Spacer(Modifier.height(12.dp))
 
-    OutlinedTextField(
-        value = state.password,
-        onValueChange = actions.onPasswordChange,
-        label = { Text("Password") },
-        leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
-        trailingIcon = {
-            IconButton(onClick = actions.onTogglePasswordVisible) {
-                Icon(
-                    imageVector = if (state.passwordVisible) {
-                        Icons.Rounded.VisibilityOff
-                    } else {
-                        Icons.Rounded.Visibility
-                    },
-                    contentDescription = if (state.passwordVisible) "Hide password" else "Show password",
-                )
-            }
-        },
-        visualTransformation = if (state.passwordVisible) {
-            VisualTransformation.None
-        } else {
-            PasswordVisualTransformation()
-        },
-        singleLine = true,
-        shape = MaterialTheme.shapes.large,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Done,
-        ),
-        keyboardActions = KeyboardActions(
-            onDone = { actions.onSubmit() },
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    actions.onInputFocused()
-                }
-            },
+    PasswordTextField(
+        password = state.password,
+        passwordVisible = state.passwordVisible,
+        onPasswordChange = actions.onPasswordChange,
+        onToggleVisible = actions.onTogglePasswordVisible,
+        onInputFocused = actions.onInputFocused,
+        onSubmit = actions.onSubmit,
     )
 
-    if (!state.isSignUp) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(
-                onClick = actions.onForgotPassword,
-                enabled = !state.isLoading,
-            ) {
-                Text(
-                    text = "Forgot password?",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp, start = 4.dp, bottom = 4.dp),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            Text(
-                text = "Must be at least 6 characters",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    PasswordHelperRow(
+        isSignUp = state.isSignUp,
+        isLoading = state.isLoading,
+        onForgotPassword = actions.onForgotPassword,
+    )
 
     if (state.errorMessage != null) {
         AuthErrorBanner(message = state.errorMessage)
@@ -835,28 +712,14 @@ private fun PasswordAuthSection(
 
     Spacer(Modifier.height(10.dp))
 
-    Button(
-        onClick = actions.onSubmit,
-        enabled = !state.isLoading && state.email.isNotBlank() && state.password.isNotBlank(),
-        shape = MaterialTheme.shapes.large,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .bringIntoViewRequester(actionButtonRequester),
-    ) {
-        if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        } else {
-            Text(
-                text = if (state.isSignUp) "Sign Up" else "Sign In",
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-    }
+    val isSubmitEnabled = !state.isLoading && state.email.isNotBlank() && state.password.isNotBlank()
+    PasswordSubmitButton(
+        isSignUp = state.isSignUp,
+        isLoading = state.isLoading,
+        enabled = isSubmitEnabled,
+        onSubmit = actions.onSubmit,
+        actionButtonRequester = actionButtonRequester,
+    )
 
     Spacer(Modifier.height(14.dp))
 

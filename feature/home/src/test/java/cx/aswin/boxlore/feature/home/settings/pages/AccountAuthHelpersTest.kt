@@ -51,4 +51,27 @@ class AccountAuthHelpersTest {
         val message = "Custom error from identity provider"
         assertEquals(message, cleanAccountError(message))
     }
+
+    @Test
+    fun validatePasswordInputs_emptyEmail_returnsEmailPrompt() {
+        assertEquals("Please enter your email address", validatePasswordInputs("", "123456", isSignUp = false))
+        assertEquals("Please enter your email address", validatePasswordInputs("   ", "123456", isSignUp = true))
+    }
+
+    @Test
+    fun validatePasswordInputs_emptyPassword_returnsPasswordPrompt() {
+        assertEquals("Please enter your password", validatePasswordInputs("test@boxlore.example", "", isSignUp = false))
+        assertEquals("Please enter your password", validatePasswordInputs("test@boxlore.example", "   ", isSignUp = true))
+    }
+
+    @Test
+    fun validatePasswordInputs_shortPasswordSignUp_returnsMinLengthPrompt() {
+        assertEquals("Password must be at least 6 characters", validatePasswordInputs("test@boxlore.example", "12345", isSignUp = true))
+    }
+
+    @Test
+    fun validatePasswordInputs_validInputs_returnsNull() {
+        org.junit.Assert.assertNull(validatePasswordInputs("test@boxlore.example", "123456", isSignUp = true))
+        org.junit.Assert.assertNull(validatePasswordInputs("test@boxlore.example", "pass", isSignUp = false))
+    }
 }
