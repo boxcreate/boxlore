@@ -70,7 +70,7 @@ and listen without paywalls, subscriptions, or ads.
       <br/>
       <p>🎨</p>
       <b>Beautiful</b><br/>
-      <sub>Fluid Material 3 interface with dynamic theming, video playback, chapters, and quiet controls.</sub>
+      <sub>Fluid Material 3 interface with dynamic theming, video playback, chapters, and clean controls.</sub>
       <br/><br/>
     </td>
     <td width="33%" align="center" valign="top">
@@ -84,7 +84,7 @@ and listen without paywalls, subscriptions, or ads.
       <br/>
       <p>🔒</p>
       <b>Yours</b><br/>
-      <sub>Full library ownership and offline downloads. Zero ads, zero subscriptions, and zero feature paywalls.</sub>
+      <sub>Deep customization, full library ownership, and offline downloads. Zero ads, zero subscriptions, and no paywalls.</sub>
       <br/><br/>
     </td>
   </tr>
