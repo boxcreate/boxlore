@@ -19,6 +19,7 @@ import cx.aswin.boxlore.surveys.NpsSurveyTriggers
 import cx.aswin.boxlore.ui.BoxLoreAppRoot
 import cx.aswin.boxlore.ui.CoilImageLoaderSetup
 import cx.aswin.boxlore.updates.PlayAppUpdateHelper
+import kotlinx.coroutines.launch
 
 /**
  * Activity shell: splash, edge-to-edge, Play updates, NPS triggers, Coil install,
@@ -70,6 +71,36 @@ class MainActivity : ComponentActivity() {
         intentState.value = intent
         warmStartIntent.value = intent
         handlePlayerIntent(intent)
+        handleAuthIntent(intent)
+    }
+
+    private fun handleAuthIntent(intent: android.content.Intent?) {
+        val uri = intent?.data ?: return
+        val linkString = uri.toString()
+        val authRepo = (application as BoxLoreApplication).container.authRepository
+        if (authRepo.isSignInWithEmailLink(linkString)) {
+            val prefs = cx.aswin.boxlore.core.prefs.BoxcastPrefs(this)
+            val pendingEmail = prefs.getPendingAuthEmail()
+            if (!pendingEmail.isNullOrBlank()) {
+                lifecycleScope.launch {
+                    val result = authRepo.signInWithEmailLink(pendingEmail, linkString)
+                    if (result.isSuccess) {
+                        android.widget.Toast.makeText(
+                            this@MainActivity,
+                            "Signed in as ${result.getOrNull()?.email ?: "user"}",
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                    } else {
+                        android.util.Log.e("MainActivity", "Magic link sign-in failed", result.exceptionOrNull())
+                        android.widget.Toast.makeText(
+                            this@MainActivity,
+                            result.exceptionOrNull()?.localizedMessage ?: "Failed to sign in with link",
+                            android.widget.Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                }
+            }
+        }
     }
 
     private fun handlePlayerIntent(intent: android.content.Intent) {
@@ -128,6 +159,7 @@ class MainActivity : ComponentActivity() {
             warmStartIntent.value = intent
         }
         handlePlayerIntent(intent)
+        handleAuthIntent(intent)
 
         try {
             enableEdgeToEdge()

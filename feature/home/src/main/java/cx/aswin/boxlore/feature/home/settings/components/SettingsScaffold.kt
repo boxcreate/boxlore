@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home.settings.components
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -29,9 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.lerp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
+private val SETTINGS_CONTENT_BOTTOM_PADDING = 220.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,11 +45,14 @@ internal fun SettingsScaffold(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
     onUnconsumedTap: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val currentOnUnconsumedTap = rememberUpdatedState(onUnconsumedTap)
+    val focusManager = LocalFocusManager.current
+
     val titleStyle =
         lerp(
             start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
@@ -63,6 +72,8 @@ internal fun SettingsScaffold(
                     Text(
                         text = title,
                         style = titleStyle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 navigationIcon = {
@@ -86,7 +97,16 @@ internal fun SettingsScaffold(
             modifier =
             Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .imePadding()
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = true)
+                        if (waitForUpOrCancellation() != null) {
+                            currentOnUnconsumedTap.value?.invoke() ?: focusManager.clearFocus()
+                        }
+                    }
+                },
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(
@@ -94,25 +114,12 @@ internal fun SettingsScaffold(
                 Modifier
                     .fillMaxWidth()
                     .widthIn(max = 720.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(
                         start = 16.dp,
                         top = 8.dp,
                         end = 16.dp,
-                        bottom = 200.dp,
-                    ).then(
-                        if (onUnconsumedTap != null) {
-                            Modifier.pointerInput(Unit) {
-                                awaitEachGesture {
-                                    awaitFirstDown(requireUnconsumed = true)
-                                    if (waitForUpOrCancellation() != null) {
-                                        currentOnUnconsumedTap.value?.invoke()
-                                    }
-                                }
-                            }
-                        } else {
-                            Modifier
-                        },
+                        bottom = SETTINGS_CONTENT_BOTTOM_PADDING,
                     ),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 content = content,

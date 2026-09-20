@@ -4,6 +4,7 @@ internal enum class ProfileSettingsDestination(
     val title: String,
 ) {
     Hub("Settings"),
+    Account("Account"),
     Library("Library"),
     Appearance("Appearance"),
     Playback("Playback"),

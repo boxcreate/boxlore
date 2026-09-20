@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -38,6 +39,16 @@ import cx.aswin.boxlore.feature.home.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.home.settings.components.SettingsScaffold
 
 /**
+ * Discovery region and language preferences for [LibrarySettingsPage].
+ */
+data class LibraryDiscoveryPreferences(
+    val currentRegion: String,
+    val contentLanguages: List<String>,
+    val onSetRegion: (String) -> Unit,
+    val onSetContentLanguages: (List<String>) -> Unit,
+)
+
+/**
  * Export/import callbacks for [LibrarySettingsPage], grouped to keep its parameter count small.
  * Also used by [cx.aswin.boxlore.feature.home.settings.SettingsScreen].
  */
@@ -50,13 +61,12 @@ data class LibraryBackupActions(
 
 @Composable
 internal fun LibrarySettingsPage(
-    currentRegion: String,
-    contentLanguages: List<String>,
-    onSetRegion: (String) -> Unit,
-    onSetContentLanguages: (List<String>) -> Unit,
+    discoveryPreferences: LibraryDiscoveryPreferences,
     onAddRssClick: () -> Unit,
     backupActions: LibraryBackupActions,
     onBack: () -> Unit,
+    onAccountClick: () -> Unit,
+    accountStatus: String? = null,
 ) {
     var isCountryFaqExpanded by rememberSaveable { mutableStateOf(false) }
     val collapseCountryFaq = { isCountryFaqExpanded = false }
@@ -66,18 +76,25 @@ internal fun LibrarySettingsPage(
         onBack = onBack,
         onUnconsumedTap = if (isCountryFaqExpanded) collapseCountryFaq else null,
     ) {
+        LibraryAccountSyncGroup(
+            accountStatus = accountStatus,
+            onAccountClick = {
+                collapseCountryFaq()
+                onAccountClick()
+            },
+        )
         SettingsGroup(title = "Discovery") {
             SettingsContent {
                 ContentRegionLanguagePicker(
-                    activeRegion = currentRegion,
-                    selectedLanguages = contentLanguages,
+                    activeRegion = discoveryPreferences.currentRegion,
+                    selectedLanguages = discoveryPreferences.contentLanguages,
                     onSwitchRegion = {
                         collapseCountryFaq()
-                        onSetRegion(it)
+                        discoveryPreferences.onSetRegion(it)
                     },
                     onLanguagesChange = {
                         collapseCountryFaq()
-                        onSetContentLanguages(it)
+                        discoveryPreferences.onSetContentLanguages(it)
                     },
                 )
             }
@@ -101,49 +118,79 @@ internal fun LibrarySettingsPage(
             )
         }
 
-        SettingsGroup(title = "Export") {
-            SettingsNavigationRow(
-                title = "Full library backup",
-                supportingText = "Subscriptions, history, likes, settings, and catalog shows with Missing episodes? (JSON)",
-                icon = Icons.Rounded.FileUpload,
-                onClick = {
-                    collapseCountryFaq()
-                    backupActions.onExportJson()
-                },
-            )
-            SettingsDivider()
-            SettingsNavigationRow(
-                title = "Subscriptions only",
-                supportingText = "OPML file",
-                icon = Icons.Rounded.FileUpload,
-                onClick = {
-                    collapseCountryFaq()
-                    backupActions.onExportOpml()
-                },
-            )
-        }
+        LibraryBackupGroups(
+            backupActions = backupActions,
+            onAction = collapseCountryFaq,
+        )
+    }
+}
 
-        SettingsGroup(title = "Import") {
-            SettingsNavigationRow(
-                title = "Full library backup",
-                supportingText = "Restores Missing episodes? opt-ins and refreshes those shows",
-                icon = Icons.Rounded.FileDownload,
-                onClick = {
-                    collapseCountryFaq()
-                    backupActions.onImportJson()
-                },
-            )
-            SettingsDivider()
-            SettingsNavigationRow(
-                title = "Subscriptions only",
-                supportingText = "Import from an OPML file",
-                icon = Icons.Rounded.FileDownload,
-                onClick = {
-                    collapseCountryFaq()
-                    backupActions.onImportOpml()
-                },
-            )
-        }
+@Composable
+private fun LibraryAccountSyncGroup(
+    accountStatus: String?,
+    onAccountClick: () -> Unit,
+) {
+    SettingsGroup(title = "Account & Cloud Sync") {
+        SettingsNavigationRow(
+            title = "Cloud sync with account",
+            supportingText = if (accountStatus != null) {
+                "Signed in as $accountStatus"
+            } else {
+                "Sign in to backup and sync your library across devices"
+            },
+            icon = Icons.Rounded.CloudSync,
+            onClick = onAccountClick,
+        )
+    }
+}
+
+@Composable
+private fun LibraryBackupGroups(
+    backupActions: LibraryBackupActions,
+    onAction: () -> Unit,
+) {
+    SettingsGroup(title = "Export") {
+        SettingsNavigationRow(
+            title = "Full library backup",
+            supportingText = "Subscriptions, history, likes, settings, and catalog shows with Missing episodes? (JSON)",
+            icon = Icons.Rounded.FileUpload,
+            onClick = {
+                onAction()
+                backupActions.onExportJson()
+            },
+        )
+        SettingsDivider()
+        SettingsNavigationRow(
+            title = "Subscriptions only",
+            supportingText = "OPML file",
+            icon = Icons.Rounded.FileUpload,
+            onClick = {
+                onAction()
+                backupActions.onExportOpml()
+            },
+        )
+    }
+
+    SettingsGroup(title = "Import") {
+        SettingsNavigationRow(
+            title = "Full library backup",
+            supportingText = "Restores Missing episodes? opt-ins and refreshes those shows",
+            icon = Icons.Rounded.FileDownload,
+            onClick = {
+                onAction()
+                backupActions.onImportJson()
+            },
+        )
+        SettingsDivider()
+        SettingsNavigationRow(
+            title = "Subscriptions only",
+            supportingText = "Import from an OPML file",
+            icon = Icons.Rounded.FileDownload,
+            onClick = {
+                onAction()
+                backupActions.onImportOpml()
+            },
+        )
     }
 }
 

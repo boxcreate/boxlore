@@ -168,5 +168,18 @@ class BoxcastPrefs(context: Context) {
         const val KEY_DISMISSED_CURIOSITIES = "dismissed_curiosities"
         const val KEY_LEARN_CURIOSITY_HISTORY = "learn_curiosity_history"
         const val KEY_LEARNER_LOG_ENABLED = "learner_log_enabled"
+        const val KEY_PENDING_AUTH_EMAIL = "pending_auth_email"
+    }
+
+    // ── Auth / Magic Link ───────────────────────────────────────────────────
+
+    fun getPendingAuthEmail(): String? = prefs.getString(KEY_PENDING_AUTH_EMAIL, null)
+
+    fun setPendingAuthEmail(email: String?) {
+        if (email == null) {
+            prefs.edit().remove(KEY_PENDING_AUTH_EMAIL).apply()
+        } else {
+            prefs.edit().putString(KEY_PENDING_AUTH_EMAIL, email).apply()
+        }
     }
 }

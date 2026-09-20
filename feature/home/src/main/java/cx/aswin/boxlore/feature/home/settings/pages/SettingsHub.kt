@@ -23,11 +23,11 @@ internal fun SettingsHub(
         onBack = onBack,
     ) {
         SettingsCategoryCard(
-            title = "Library",
-            description = "Region, RSS feeds, import and export",
+            title = "Library & Account",
+            description = "Cloud sync, region, RSS feeds, import and export",
             icon = Icons.AutoMirrored.Rounded.LibraryBooks,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.Library) },
         )
         SettingsCategoryCard(

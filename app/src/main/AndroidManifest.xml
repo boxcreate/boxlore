@@ -13,9 +13,14 @@
 
     <queries>
         <package android:name="com.instagram.android" />
+        <package android:name="com.google.android.gm" />
         <intent>
             <action android:name="com.instagram.share.ADD_TO_STORY" />
             <data android:mimeType="image/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_EMAIL" />
         </intent>
     </queries>
 
@@ -91,6 +96,7 @@
                 <data android:host="aswin.cx" />
                 <data android:pathPrefix="/boxlore/share" />
                 <data android:pathPrefix="/boxcast/share" />
+                <data android:pathPrefix="/boxlore/auth" />
             </intent-filter>
         </activity>
 

@@ -53,6 +53,7 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
             cx.aswin.boxlore.feature.home.settings.SettingsRepositories(
                 rssPodcastRepository = container.rssPodcastRepository,
                 rankingFeedbackRepository = container.rankingFeedbackRepository,
+                authRepository = container.authRepository,
             ),
             config =
             cx.aswin.boxlore.feature.home.settings.SettingsScreenConfig(

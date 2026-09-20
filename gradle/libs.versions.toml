@@ -37,6 +37,8 @@ rssParser = "6.1.7"
 firebase-bom = "34.16.0"
 google-services = "4.5.0"
 firebase-crashlytics-plugin = "3.0.7"
+credentials = "1.3.0"
+googleid = "1.1.1"
 
 [libraries]
 posthog-android = { group = "com.posthog", name = "posthog-android", version.ref = "posthog" }
@@ -101,12 +103,18 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 # Firebase
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
 
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 firebase-database = { group = "com.google.firebase", name = "firebase-database" }
 firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
 firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
 google-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+# Auth & Credentials
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
+googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 
 # Media
 androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }

@@ -183,10 +183,16 @@ dependencies {
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.database)
+    implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck.playintegrity)
     // Debug provider is guarded by BuildConfig.DEBUG at runtime; only debug
     // tokens registered in Firebase console can ever attest through it
     implementation(libs.firebase.appcheck.debug)
+
+    // Credentials / Google Sign-In
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     // WorkManager
     implementation(libs.androidx.work.runtime)
