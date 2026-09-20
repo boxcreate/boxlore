@@ -135,6 +135,16 @@ private fun ColumnScope.SignedInContent(
     onSignOut: () -> Unit,
     onDeleteAccountClick: () -> Unit,
 ) {
+    UserProfileCard(user = user)
+    CloudSyncInfoGroup()
+    AccountManagementGroup(
+        onSignOut = onSignOut,
+        onDeleteAccountClick = onDeleteAccountClick,
+    )
+}
+
+@Composable
+private fun UserProfileCard(user: BoxLoreUser) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -212,7 +222,10 @@ private fun ColumnScope.SignedInContent(
             }
         }
     }
+}
 
+@Composable
+private fun CloudSyncInfoGroup() {
     SettingsGroup(
         title = "Cloud Synchronization",
         footer = "Your subscriptions, queue, and playback progress stay backed up and synchronized across your devices.",
@@ -253,7 +266,13 @@ private fun ColumnScope.SignedInContent(
             }
         }
     }
+}
 
+@Composable
+private fun AccountManagementGroup(
+    onSignOut: () -> Unit,
+    onDeleteAccountClick: () -> Unit,
+) {
     SettingsGroup(title = "Account Management") {
         SettingsActionRow(
             title = "Sign Out",

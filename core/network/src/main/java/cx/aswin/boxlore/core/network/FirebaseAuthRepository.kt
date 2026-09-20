@@ -35,17 +35,17 @@ class FirebaseAuthRepository(
     override suspend fun signInWithGoogle(idToken: String): Result<BoxLoreUser> = runCatching {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         val authResult = auth.signInWithCredential(credential).awaitTask()
-        authResult.user.toBoxLoreUser() ?: throw IllegalStateException("User was null after Google sign-in")
+        authResult.user.toBoxLoreUser() ?: error("User was null after Google sign-in")
     }
 
     override suspend fun signInWithEmailPassword(email: String, password: String): Result<BoxLoreUser> = runCatching {
         val authResult = auth.signInWithEmailAndPassword(email, password).awaitTask()
-        authResult.user.toBoxLoreUser() ?: throw IllegalStateException("User was null after email sign-in")
+        authResult.user.toBoxLoreUser() ?: error("User was null after email sign-in")
     }
 
     override suspend fun signUpWithEmailPassword(email: String, password: String): Result<BoxLoreUser> = runCatching {
         val authResult = auth.createUserWithEmailAndPassword(email, password).awaitTask()
-        authResult.user.toBoxLoreUser() ?: throw IllegalStateException("User was null after sign-up")
+        authResult.user.toBoxLoreUser() ?: error("User was null after sign-up")
     }
 
     override suspend fun sendMagicLink(email: String): Result<Unit> = runCatching {
@@ -61,7 +61,7 @@ class FirebaseAuthRepository(
     override suspend fun signInWithEmailLink(email: String, emailLink: String): Result<BoxLoreUser> = runCatching {
         val authResult = auth.signInWithEmailLink(email, emailLink).awaitTask()
         pendingEmailStore?.setPendingEmail(null)
-        authResult.user.toBoxLoreUser() ?: throw IllegalStateException("User was null after email link sign-in")
+        authResult.user.toBoxLoreUser() ?: error("User was null after email link sign-in")
     }
 
     override fun isSignInWithEmailLink(link: String): Boolean = auth.isSignInWithEmailLink(link)
@@ -76,7 +76,7 @@ class FirebaseAuthRepository(
     }
 
     override suspend fun deleteAccount(): Result<Unit> = runCatching {
-        val user = auth.currentUser ?: throw IllegalStateException("No authenticated user to delete")
+        val user = auth.currentUser ?: error("No authenticated user to delete")
         user.delete().awaitTask()
         pendingEmailStore?.setPendingEmail(null)
     }

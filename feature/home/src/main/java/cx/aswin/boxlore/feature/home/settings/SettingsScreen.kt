@@ -136,18 +136,9 @@ fun SettingsScreen(
     libraryBackupWriters: LibraryBackupWriters = LibraryBackupWriters(),
     downloadsNavigation: DownloadsNavigation = DownloadsNavigation(),
 ) {
-    val currentRegion = regionSettings.currentRegion
-    val contentLanguages = regionSettings.contentLanguages
-    val onSetRegion = regionSettings.onSetRegion
-    val onSetContentLanguages = regionSettings.onSetContentLanguages
-    val onBack = config.onBack
     val onResetAnalytics = config.onResetAnalytics
     val appInstanceId = config.appInstanceId
     val initialPage = config.initialPage
-    val appearanceState = appearanceSettings.state
-    val appearanceActions = appearanceSettings.actions
-    val playbackState = playbackSettings.state
-    val playbackActions = playbackSettings.actions
     val context = LocalContext.current
     val settingsViewModel: SettingsViewModel =
         viewModel(
@@ -169,7 +160,7 @@ fun SettingsScreen(
         repositories.authRepository?.currentUser?.collectAsStateWithLifecycle()
             ?: remember { mutableStateOf(null) }
     )
-    val accountStatus = currentUser?.let { it.email ?: it.displayName ?: "Connected" }
+    val accountStatus = resolveAccountStatus(currentUser)
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var isDeletionExpanded by rememberSaveable { mutableStateOf(false) }
     var analyticsIdVersion by remember { mutableIntStateOf(0) }
@@ -225,6 +216,100 @@ fun SettingsScreen(
         previousDestination = null
         destination = prev ?: ProfileSettingsDestination.Hub
     }
+
+    val contentBundle = SettingsPagesContentBundle(
+        regionSettings = regionSettings,
+        appearanceSettings = appearanceSettings,
+        playbackSettings = playbackSettings,
+        downloadsNavigation = downloadsNavigation,
+        settingsViewModel = settingsViewModel,
+        context = context,
+    )
+
+    val uiData = SettingsPagesUiData(
+        accountStatus = accountStatus,
+        deletionId = deletionId,
+        isDeletionExpanded = isDeletionExpanded,
+        appInfo = appInfo,
+    )
+
+    val actions = SettingsPagesActions(
+        onNavigate = { destination = it },
+        onReturnToHub = returnToHub,
+        onNavigateToAccountFromLibrary = {
+            previousDestination = ProfileSettingsDestination.Library
+            destination = ProfileSettingsDestination.Account
+        },
+        onDeletionExpandedChange = { isDeletionExpanded = it },
+        onShowResetDialog = { showResetDialog = true },
+        backupActions = trackedLibraryBackupActions(
+            exportJsonLauncher,
+            exportOpmlLauncher,
+            importJsonLauncher,
+            importOpmlLauncher,
+        ),
+    )
+
+    SettingsAnimatedPages(
+        destination = destination,
+        config = config,
+        repositories = repositories,
+        contentBundle = contentBundle,
+        uiData = uiData,
+        actions = actions,
+    )
+
+    SettingsDialogs(
+        rssState = rssState,
+        settingsViewModel = settingsViewModel,
+        showResetDialog = showResetDialog,
+        onDismissResetDialog = { showResetDialog = false },
+        onConfirmResetDialog = {
+            AnalyticsHelper.trackSettingsInteraction("analytics_reset")
+            onResetAnalytics()
+            analyticsIdVersion++
+            showResetDialog = false
+        },
+    )
+}
+
+private fun resolveAccountStatus(user: cx.aswin.boxlore.core.model.BoxLoreUser?): String? =
+    user?.let { it.email ?: it.displayName ?: "Connected" }
+
+internal data class SettingsPagesContentBundle(
+    val regionSettings: RegionSettings,
+    val appearanceSettings: AppearanceSettings,
+    val playbackSettings: PlaybackSettings,
+    val downloadsNavigation: DownloadsNavigation,
+    val settingsViewModel: SettingsViewModel,
+    val context: Context,
+)
+
+internal data class SettingsPagesUiData(
+    val accountStatus: String?,
+    val deletionId: String,
+    val isDeletionExpanded: Boolean,
+    val appInfo: AppInfo,
+)
+
+internal data class SettingsPagesActions(
+    val onNavigate: (ProfileSettingsDestination) -> Unit,
+    val onReturnToHub: () -> Unit,
+    val onNavigateToAccountFromLibrary: () -> Unit,
+    val onDeletionExpandedChange: (Boolean) -> Unit,
+    val onShowResetDialog: () -> Unit,
+    val backupActions: LibraryBackupActions,
+)
+
+@Composable
+private fun SettingsAnimatedPages(
+    destination: ProfileSettingsDestination,
+    config: SettingsScreenConfig,
+    repositories: SettingsRepositories,
+    contentBundle: SettingsPagesContentBundle,
+    uiData: SettingsPagesUiData,
+    actions: SettingsPagesActions,
+) {
     AnimatedContent(
         targetState = destination,
         transitionSpec = { settingsDestinationTransitionSpec() },
@@ -233,97 +318,97 @@ fun SettingsScreen(
         when (currentDestination) {
             ProfileSettingsDestination.Hub ->
                 SettingsHub(
-                    onBack = onBack,
-                    onNavigate = { destination = it },
+                    onBack = config.onBack,
+                    onNavigate = actions.onNavigate,
                 )
 
             ProfileSettingsDestination.Account ->
                 AccountSettingsPage(
                     authRepository = repositories.authRepository,
-                    onBack = returnToHub,
+                    onBack = actions.onReturnToHub,
                 )
 
             ProfileSettingsDestination.Library ->
                 LibrarySettingsPage(
                     discoveryPreferences = LibraryDiscoveryPreferences(
-                        currentRegion = currentRegion,
-                        contentLanguages = contentLanguages,
+                        currentRegion = contentBundle.regionSettings.currentRegion,
+                        contentLanguages = contentBundle.regionSettings.contentLanguages,
                         onSetRegion = {
                             AnalyticsHelper.trackSettingsInteraction("content_region_changed", it)
-                            onSetRegion(it)
+                            contentBundle.regionSettings.onSetRegion(it)
                         },
                         onSetContentLanguages = {
                             AnalyticsHelper.trackSettingsInteraction(
                                 "content_languages_changed",
                                 it.joinToString(","),
                             )
-                            onSetContentLanguages(it)
+                            contentBundle.regionSettings.onSetContentLanguages(it)
                         },
                     ),
-                    onAddRssClick = { settingsViewModel.openAddRssDialog() },
-                    backupActions =
-                    trackedLibraryBackupActions(
-                        exportJsonLauncher,
-                        exportOpmlLauncher,
-                        importJsonLauncher,
-                        importOpmlLauncher,
-                    ),
-                    onBack = returnToHub,
-                    onAccountClick = {
-                        previousDestination = ProfileSettingsDestination.Library
-                        destination = ProfileSettingsDestination.Account
-                    },
-                    accountStatus = accountStatus,
+                    onAddRssClick = { contentBundle.settingsViewModel.openAddRssDialog() },
+                    backupActions = actions.backupActions,
+                    onBack = actions.onReturnToHub,
+                    onAccountClick = actions.onNavigateToAccountFromLibrary,
+                    accountStatus = uiData.accountStatus,
                 )
 
             ProfileSettingsDestination.Appearance ->
                 AppearanceSettingsPage(
-                    state = appearanceState,
-                    actions = appearanceActions.trackedForAnalytics(),
-                    onBack = returnToHub,
+                    state = contentBundle.appearanceSettings.state,
+                    actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
+                    onBack = actions.onReturnToHub,
                 )
 
             ProfileSettingsDestination.Playback ->
                 PlaybackSettingsPage(
-                    state = playbackState,
-                    actions = playbackActions,
-                    onBack = returnToHub,
+                    state = contentBundle.playbackSettings.state,
+                    actions = contentBundle.playbackSettings.actions,
+                    onBack = actions.onReturnToHub,
                 )
 
             ProfileSettingsDestination.Downloads ->
                 DownloadsSettingsPage(
-                    onSmartDownloadsClick = downloadsNavigation.onNavigateToSmartDownloads,
-                    onAutoDownloadsClick = downloadsNavigation.onNavigateToAutoDownloads,
-                    onBack = returnToHub,
+                    onSmartDownloadsClick = contentBundle.downloadsNavigation.onNavigateToSmartDownloads,
+                    onAutoDownloadsClick = contentBundle.downloadsNavigation.onNavigateToAutoDownloads,
+                    onBack = actions.onReturnToHub,
                 )
 
             ProfileSettingsDestination.Privacy ->
                 PrivacySettingsPage(
-                    deletionId = deletionId,
-                    isDeletionExpanded = isDeletionExpanded,
+                    deletionId = uiData.deletionId,
+                    isDeletionExpanded = uiData.isDeletionExpanded,
                     actions =
                     PrivacySettingsActions(
-                        onDeletionExpandedChange = { isDeletionExpanded = it },
-                        onResetIdentityClick = { showResetDialog = true },
-                        onResetRecommendationsClick = settingsViewModel::resetRecommendations,
-                        onCopyDeletionId = { copyDeletionId(context, deletionId) },
+                        onDeletionExpandedChange = actions.onDeletionExpandedChange,
+                        onResetIdentityClick = actions.onShowResetDialog,
+                        onResetRecommendationsClick = contentBundle.settingsViewModel::resetRecommendations,
+                        onCopyDeletionId = { copyDeletionId(contentBundle.context, uiData.deletionId) },
                         onEmailDeletionRequest = {
-                            requestAnalyticsDeletionByEmail(context, deletionId)
+                            requestAnalyticsDeletionByEmail(contentBundle.context, uiData.deletionId)
                         },
                     ),
-                    onBack = returnToHub,
+                    onBack = actions.onReturnToHub,
                 )
 
             ProfileSettingsDestination.About ->
                 AboutSettingsPage(
-                    appInfo = appInfo,
-                    onVisitPodcastIndex = { visitPodcastIndexHomepage(context) },
-                    onOpenChangelog = { openChangelog(context) },
-                    onBack = returnToHub,
+                    appInfo = uiData.appInfo,
+                    onVisitPodcastIndex = { visitPodcastIndexHomepage(contentBundle.context) },
+                    onOpenChangelog = { openChangelog(contentBundle.context) },
+                    onBack = actions.onReturnToHub,
                 )
         }
     }
+}
 
+@Composable
+private fun SettingsDialogs(
+    rssState: SettingsRssUiState,
+    settingsViewModel: SettingsViewModel,
+    showResetDialog: Boolean,
+    onDismissResetDialog: () -> Unit,
+    onConfirmResetDialog: () -> Unit,
+) {
     if (rssState.showAddRssDialog) {
         AddRssFeedDialog(
             url = rssState.rssUrl,
@@ -348,13 +433,8 @@ fun SettingsScreen(
 
     if (showResetDialog) {
         ResetAnalyticsDialog(
-            onDismiss = { showResetDialog = false },
-            onConfirm = {
-                AnalyticsHelper.trackSettingsInteraction("analytics_reset")
-                onResetAnalytics()
-                analyticsIdVersion++
-                showResetDialog = false
-            },
+            onDismiss = onDismissResetDialog,
+            onConfirm = onConfirmResetDialog,
         )
     }
 }

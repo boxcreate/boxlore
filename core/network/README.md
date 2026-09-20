@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and response DTOs, and network serialization contracts for Boxlore's HTTP API. It does not own repositories, RSS feed parsing, Room persistence, Compose UI, or feature workflows.
+Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and response DTOs, and network serialization contracts for boxlore's HTTP API. It does not own repositories, RSS feed parsing, Room persistence, Compose UI, or feature workflows.
 
 ## Public API
 
