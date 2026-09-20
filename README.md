@@ -4,10 +4,12 @@
 
 <br/><br/>
 
-## Beautiful. Smart. Yours.
+# Beautiful. Smart. Yours.
 
 <p align="center">
-Fast, ad-free podcasting crafted for Android. Explore shows through semantic topic search, enjoy intelligent discovery tuned to your taste, and listen without paywalls, subscriptions, or ads.
+<b>Fast, ad-free podcasting crafted for Android.</b><br/>
+Explore shows through semantic topic search, enjoy intelligent discovery tuned to your taste,<br/>
+and listen without paywalls, subscriptions, or ads.
 </p>
 
 <br/>
@@ -30,6 +32,7 @@ Fast, ad-free podcasting crafted for Android. Explore shows through semantic top
 <a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;label=GitHub%20release&amp;color=6750A4" alt="GitHub latest release"/></a>
 <a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20Store%20version&amp;color=6750A4&amp;style=flat-square" alt="Google Play Store version"/></a>
 <img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total GitHub downloads"/>
+<img src="https://img.shields.io/badge/Zero%20Ads-Forever-4F378B?style=flat-square&logo=adblock&logoColor=white" alt="Zero Ads Forever"/>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Strict-4F378B?style=flat-square&logo=lock&logoColor=EADDFF" alt="PolyForm Strict License"/></a>
 </p>
 
@@ -55,18 +58,45 @@ Fast, ad-free podcasting crafted for Android. Explore shows through semantic top
 
 <a id="about"></a>
 
-boxlore is an Android app for finding, following, and playing podcasts. Search for a show even when the spelling is imperfect, or describe a subject to find relevant shows and episodes.
+**boxlore** is crafted to make podcast listening better. Built for listeners who care about quality software, it combines thoughtful audio and video controls with intelligent discovery—completely free of ads, subscriptions, and paywalls.
 
-You can listen online or offline, build a queue, and keep subscriptions, downloads, history, and likes in one library.
+<br/>
 
-### How discovery and recommendations work
-Unlike mainstream platforms that use centralized engagement algorithms to maximize screen time, boxlore uses a two-stage hybrid architecture:
-* **Server-side semantic matching:** To find relevant candidates across a vast catalog, the app sends bounded listening seeds (recent shows you completed, liked, or engaged with) to our servers to run semantic vector search against our podcast index.
-* **On-device taste tuning:** The candidate shows returned by the server are then re-ranked locally on your phone using an on-device learning model that adapts to your skip habits and time of day—without building a persistent cloud advertising profile.
+<div align="center">
 
-Read **[The soul of boxlore](docs/SOUL.md)**: why this app is free, ad-free, and crafted with care.
+<table width="100%">
+  <tr>
+    <td width="33%" align="center" valign="top">
+      <br/>
+      <p>🎨</p>
+      <b>Beautiful</b><br/>
+      <sub>Fluid Material 3 interface with dynamic theming, video playback, chapters, and quiet controls.</sub>
+      <br/><br/>
+    </td>
+    <td width="33%" align="center" valign="top">
+      <br/>
+      <p>🧠</p>
+      <b>Smart</b><br/>
+      <sub>Natural-language semantic search by topic, paired with hybrid vector recommendations.</sub>
+      <br/><br/>
+    </td>
+    <td width="33%" align="center" valign="top">
+      <br/>
+      <p>🔒</p>
+      <b>Yours</b><br/>
+      <sub>Full library ownership and offline downloads. Zero ads, zero subscriptions, and zero feature paywalls.</sub>
+      <br/><br/>
+    </td>
+  </tr>
+</table>
 
-See **[What we track and why](docs/PRIVACY.md)**: full technical transparency into our requests and telemetry.
+<br/>
+
+| 📜 **[The soul of boxlore](docs/SOUL.md)** | 🔒 **[What we track and why](docs/PRIVACY.md)** |
+| :---: | :---: |
+| *Why this app is free, ad-free, and crafted with care.* | *How hybrid discovery works & full data transparency.* |
+
+</div>
 
 ## Features
 
