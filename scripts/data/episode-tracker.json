@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-20T20:22:37.268Z",
+  "lastRun": "2026-09-20T22:37:07.940Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "6156fea2-b36e-11f1-9950-c31b68b384d1",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789404431852
     },
     "55810": {
-      "lastRssKey": "39e661d1-ad97-4730-a401-eab788519691",
-      "lastEpisodeTitle": "NPR News: 09-20-2026 4PM EDT",
+      "lastRssKey": "bfe0a1e7-c332-45ed-99d4-a83027b6da5e",
+      "lastEpisodeTitle": "NPR News: 09-20-2026 6PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1789935762623
+      "lastCheckedAt": 1789943831458
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75229925",
@@ -126,9 +126,9 @@
       "lastCheckedAt": 1789551687880
     },
     "271849": {
-      "lastRssKey": "tag:soundcloud,2010:tracks/2399817216",
-      "lastEpisodeTitle": "Real Christianity, Real Results",
-      "lastCheckedAt": 1789328336305
+      "lastRssKey": "tag:soundcloud,2010:tracks/2404308390",
+      "lastEpisodeTitle": "Gospel Focus",
+      "lastCheckedAt": 1789943840132
     },
     "300687": {
       "lastRssKey": "36bbba5a-4ac8-4120-aba5-7ed540f935df",
@@ -159,10 +159,10 @@
       "lastCheckedAt": 1789817132579
     },
     "385117": {
-      "lastRssKey": "31da8f3c-b52f-11f1-9f4e-cf631059607f",
-      "lastEpisodeTitle": "4PM ET 09/20/2026 Newscast",
+      "lastRssKey": "f56d9f6a-b53f-11f1-af5a-035b9171ad79",
+      "lastEpisodeTitle": "6PM ET 09/20/2026 Newscast",
       "lastEpisodeId": "60642755332",
-      "lastCheckedAt": 1789935776760
+      "lastCheckedAt": 1789943842338
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -287,16 +287,16 @@
       "lastCheckedAt": 1789925701530
     },
     "490022": {
-      "lastRssKey": "33353920-c88e-4e53-981e-b75987fcd11b",
-      "lastEpisodeTitle": "Lindsay Clancy & the 13 Medications Prescribed to Her: 48 Hours of No Sleep After New Med",
-      "lastEpisodeId": "59835427127",
-      "lastCheckedAt": 1789754755244
+      "lastRssKey": "94eccd96-c916-40c8-8350-74d1671bf90b",
+      "lastEpisodeTitle": "“My Wife Is Not Bipolar” Nurse Testifies & All The Signs of Possible Hypomania Discussed in Court",
+      "lastEpisodeId": "60645087714",
+      "lastCheckedAt": 1789943855464
     },
     "491579": {
-      "lastRssKey": "6aad42cb0521dc2c81076ae9",
-      "lastEpisodeTitle": "Hayden Evans: On The Front Foot | The West Stand",
+      "lastRssKey": "6ab017c4010fc0f7a3c3c9fd",
+      "lastEpisodeTitle": "The Match Ball: Leeds United 0-0 Crystal Palace",
       "lastEpisodeId": "60504866053",
-      "lastCheckedAt": 1789742886367
+      "lastCheckedAt": 1789943856058
     },
     "497129": {
       "lastRssKey": "12381::3566190",
@@ -564,10 +564,10 @@
       "lastCheckedAt": 1789925728317
     },
     "1015378": {
-      "lastRssKey": "703e0913-cd78-4eb9-96d1-546c89a6aa07",
-      "lastEpisodeTitle": "Bill Gurley: Searching for Feynman",
-      "lastEpisodeId": "60574471557",
-      "lastCheckedAt": 1789781396582
+      "lastRssKey": "a2a542d5-2feb-441a-a523-910e16c2d193",
+      "lastEpisodeTitle": "Adam Foroughi, Applovin CEO: Surviving a 92% Drawdown, Ads as ML 1.0 & the $50B Game Ad Market",
+      "lastEpisodeId": "60644057107",
+      "lastCheckedAt": 1789943895687
     },
     "1021803": {
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
@@ -1182,10 +1182,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7239415": {
-      "lastRssKey": "d8bb24d4-b4b6-11f1-9187-93a52b673690",
-      "lastEpisodeTitle": "It's happening...",
+      "lastRssKey": "08a74fa2-b542-11f1-990d-7731a5091a46",
+      "lastEpisodeTitle": "This just made things WAY more difficult...",
       "lastEpisodeId": "60132290764",
-      "lastCheckedAt": 1789898400408
+      "lastCheckedAt": 1789943935661
     },
     "7248222": {
       "lastRssKey": "026bf798-b3b0-11f1-a254-d70f23c356dd",
@@ -1272,10 +1272,10 @@
       "lastCheckedAt": 1789418813409
     },
     "7587315": {
-      "lastRssKey": "d7da2a3a-b1df-11f1-a0f6-13ac5e67e8cf",
-      "lastEpisodeTitle": "How Codes Were Used To Hack The Telegram Business",
+      "lastRssKey": "9406f0b4-b373-11f1-b027-5784095f6c20",
+      "lastEpisodeTitle": "Dying In Space, Trapped Water, and What's Hidden In Pi?",
       "lastEpisodeId": "58798183213",
-      "lastCheckedAt": 1789603746219
+      "lastCheckedAt": 1789943938985
     },
     "7606603": {
       "lastRssKey": "51051648-b657-4085-a131-c9d20e285b2d",
@@ -1331,10 +1331,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/c14dbb54-eee7-52b2-8a3f-fe6614460873",
-      "lastEpisodeTitle": "What a windowless room can TEACH YOU about healing from narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/562ff172-7fea-5eac-9fa3-4593941f0d77",
+      "lastEpisodeTitle": "5 BARRIERS to healing from narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789935899797
+      "lastCheckedAt": 1789943940205
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
