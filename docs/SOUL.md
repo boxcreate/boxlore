@@ -18,8 +18,6 @@ We believe a podcast player should be a quiet, thoughtful companion—not an att
 - **Personalized for discovery, not addiction.** We use server-side semantic matching to understand topics and connect you with shows that genuinely match your curiosity. But our algorithms serve your interests, not advertisers. We don't sell your data, build ad profiles, or manipulate what you see to keep you hooked to a screen.
 - **Rooted in an open ecosystem.** We believe in open RSS, independent directories, and the fundamental right to [keep Android open](https://keepandroidopen.org/).
 
-None of this exists in isolation. boxlore stands on the shoulders of the open-source craftspeople, protocol stewards, and independent developers who built the open web and the modern Android ecosystem. We build on the commons they shared, and we honor their spirit.
-
 ### On Our License
 
 It might feel counterintuitive for us to champion open source while releasing boxlore under the [PolyForm Strict License](https://polyformproject.org/licenses/strict/1.0.0). 
@@ -35,3 +33,7 @@ The Android ecosystem is flooded with bad actors who scrape open repositories, s
 Software that helps people learn, listen, and explore should simply exist without a catch.
 
 A true tool respects your autonomy. It doesn't clamor for your attention, gamify your curiosity, or manipulate your habits. It gives you the capability, steps quietly out of the way, and lets you listen on your own terms.
+
+---
+
+<sub>**A quiet thank you:** boxlore is a small project, and it only exists because of the broader open-source commons. We are endlessly grateful to the thousands of developers who build the libraries, protocols, and open tools we rely on every day—often without recognition, just for the fun of building software. We're lucky to build on what you shared.</sub>
