@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-20T05:12:17.174Z",
+  "lastRun": "2026-09-20T09:58:34.313Z",
   "podcasts": {
     "2123": {
       "lastEpisodeId": "567722198",
@@ -11,6 +11,12 @@
       "lastEpisodeTitle": "How many dead people are on the internet?",
       "lastEpisodeId": "59343622582",
       "lastCheckedAt": 1789765611263
+    },
+    "8820": {
+      "lastRssKey": "5c0d6d9d-c45a-4211-89a7-80fd5414ef3c",
+      "lastEpisodeTitle": "Extreme Meteorology (EL NIÑO) with Marshall Shepherd",
+      "lastEpisodeId": "60573402291",
+      "lastCheckedAt": 1789898315211
     },
     "9926": {
       "lastRssKey": "84d32e7e-b151-11f1-89fc-fbc06131a95e",
@@ -31,10 +37,10 @@
       "lastCheckedAt": 1789404431852
     },
     "55810": {
+      "lastRssKey": "79d9d817-6d50-40fc-ac20-c4164911f8d6",
+      "lastEpisodeTitle": "NPR News: 09-20-2026 5AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastEpisodeTitle": "NPR News: 09-19-2026 12PM EDT",
-      "lastRssKey": "732e1f28-aa8a-490e-bbf1-bf5bc1f5ee14",
-      "lastCheckedAt": 1789840084756
+      "lastCheckedAt": 1789898316987
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75229925",
@@ -146,10 +152,10 @@
       "lastCheckedAt": 1789817132579
     },
     "385117": {
-      "lastRssKey": "73361a10-b4b1-11f1-976c-e38a2b65af54",
-      "lastEpisodeTitle": "1AM ET 09/20/2026 Newscast",
-      "lastEpisodeId": "60584765174",
-      "lastCheckedAt": 1789881149642
+      "lastRssKey": "fe34daa4-b4d2-11f1-bf93-3b3ee5567905",
+      "lastEpisodeTitle": "5AM ET 09/20/2026 Newscast",
+      "lastEpisodeId": "60627427698",
+      "lastCheckedAt": 1789898326404
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -206,10 +212,10 @@
       "lastCheckedAt": 1789404444446
     },
     "437685": {
-      "lastRssKey": "861f9a52-8d60-11f1-adef-0bd784e2c930",
-      "lastEpisodeTitle": "The Rise and Fall of Vaudeville",
-      "lastEpisodeId": "60590164568",
-      "lastCheckedAt": 1789817137990
+      "lastRssKey": "86d4094c-8d60-11f1-adef-d722e0166dd8",
+      "lastEpisodeTitle": "The Never-Ending Voyager Missions (Encore)",
+      "lastEpisodeId": "60627777720",
+      "lastCheckedAt": 1789898332549
     },
     "438184": {
       "lastRssKey": "f2e0c3bc-b355-11f1-a53c-9be1fe16839d",
@@ -322,10 +328,10 @@
       "lastCheckedAt": 1789569443213
     },
     "545784": {
-      "lastEpisodeId": "60619400257",
-      "lastEpisodeTitle": "Heimspiel: Wie wahrscheinlich ist der Putsch? (mit Michael Bröcker)",
-      "lastRssKey": "d4f7b7d8aa19e3400735c5b939eb70e2",
-      "lastCheckedAt": 1789881163300
+      "lastRssKey": "7fb171f295b89caa8a8d12c55f1f6bfc",
+      "lastEpisodeTitle": "01 | I’M SORRY, DAVE: HAL ON EARTH",
+      "lastEpisodeId": "60624620357",
+      "lastCheckedAt": 1789898343221
     },
     "555427": {
       "lastEpisodeId": "386077022",
@@ -463,9 +469,9 @@
       "lastCheckedAt": 1789828793574
     },
     "837535": {
-      "lastRssKey": "0b3da338-b2a4-11f1-8c43-535ab31f9121",
-      "lastEpisodeTitle": "Finanzfluss vs. Meta: Das URTEIL ist da!",
-      "lastCheckedAt": 1789657903307
+      "lastRssKey": "0c2966b2-b379-11f1-9841-83b74e7394c1",
+      "lastEpisodeTitle": "DAS ändert sich im Oktober 2026: Krankenkassen, Bahn-Sperrung, Zinsen & mehr!",
+      "lastCheckedAt": 1789898354944
     },
     "838740": {
       "lastRssKey": "dde1f526-b15c-11f1-b7f1-6307d2ecfae3",
@@ -516,10 +522,10 @@
       "lastCheckedAt": 1789727939729
     },
     "980370": {
-      "lastRssKey": "6aad5d477aa361c6129253f0",
-      "lastEpisodeTitle": "How tech will (and won't) replace your doctor | Zack Abbott and Dhruv Khullar",
+      "lastRssKey": "6aac27f78a1508074dc11ad1",
+      "lastEpisodeTitle": "The secret to mastering life's biggest transitions | Bruce Feiler",
       "lastEpisodeId": "60252776187",
-      "lastCheckedAt": 1789840131251
+      "lastCheckedAt": 1789898358602
     },
     "998969": {
       "lastRssKey": "audioboom-01a0aaca-84b5-7cbe-8d26-eba8ce3c8831",
@@ -538,9 +544,9 @@
       "lastCheckedAt": 1788643859907
     },
     "1035900": {
-      "lastRssKey": "5bb97703-0fb1-4471-ac85-f7bac65c0f9b",
-      "lastEpisodeTitle": "Starcraft als Shooter: Genial oder Wahnsinn?",
-      "lastCheckedAt": 1789754781486
+      "lastRssKey": "34f0facb-686a-453b-89ac-a3b19662986a",
+      "lastEpisodeTitle": "Diablo 4 ist tot, lang lebe Diablo 5! | mit Jessirocks",
+      "lastCheckedAt": 1789898362482
     },
     "1047718": {
       "lastRssKey": "6aaba4ea8f08c4af80ed61b9",
@@ -648,10 +654,10 @@
       "lastCheckedAt": 1789848416495
     },
     "1388001": {
-      "lastRssKey": "757dcf9c-7344-4154-9447-81a235d2d1ae",
-      "lastEpisodeTitle": "Le mouvement de rébellion au Yémen fait trembler le monde",
+      "lastRssKey": "309f0a0b-bd73-4750-aeba-2997886e25b8",
+      "lastEpisodeTitle": "Ouverture d'un procès de six Français accusés de terrorisme en Irak",
       "lastEpisodeId": "60539654196",
-      "lastCheckedAt": 1789799459862
+      "lastCheckedAt": 1789898371006
     },
     "1545709": {
       "lastRssKey": "audioboom-01a09b94-757b-7a32-b727-7ea588232d98",
@@ -823,10 +829,10 @@
       "lastCheckedAt": 1789383266405
     },
     "4894842": {
+      "lastRssKey": "3d7c1f63-6bda-4020-87a9-3859517bb561",
+      "lastEpisodeTitle": "Fan Favorite - \"The Watercooler\"",
       "lastEpisodeId": "60490150210",
-      "lastEpisodeTitle": "Meant to Be (PODCAST EXCLUSIVE EPISODE)",
-      "lastRssKey": "112c04dc-5b35-4dd1-be03-59596205fc88",
-      "lastCheckedAt": 1789621724282
+      "lastCheckedAt": 1789898381218
     },
     "4898105": {
       "lastRssKey": "a892e798-b249-11f1-9f59-5f9911acee0d",
@@ -903,10 +909,10 @@
       "lastCheckedAt": 1789672314996
     },
     "5930143": {
-      "lastRssKey": "757dcf9c-7344-4154-9447-81a235d2d1ae",
-      "lastEpisodeTitle": "Le mouvement de rébellion au Yémen fait trembler le monde",
+      "lastRssKey": "309f0a0b-bd73-4750-aeba-2997886e25b8",
+      "lastEpisodeTitle": "Ouverture d'un procès de six Français accusés de terrorisme en Irak",
       "lastEpisodeId": "60450867491",
-      "lastCheckedAt": 1789799474438
+      "lastCheckedAt": 1789898385653
     },
     "5945547": {
       "lastRssKey": "b93f5713-82a6-45a0-9804-5fb69dc5ff13",
@@ -1056,10 +1062,10 @@
       "lastCheckedAt": 1789728019057
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779874",
-      "lastEpisodeTitle": "FBI in Peace and War - Dumb Luck",
+      "lastRssKey": "https://api.spreaker.com/episode/59779876",
+      "lastEpisodeTitle": "Wayside Theater - Madcap Princess",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1789817225918
+      "lastCheckedAt": 1789898395510
     },
     "6912659": {
       "lastRssKey": "9273275b-ec2a-4d98-97f7-249fdaa9fbee",
@@ -1133,10 +1139,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7239415": {
-      "lastRssKey": "079463ce-b3ae-11f1-afbc-b7436b3a09d5",
-      "lastEpisodeTitle": "This development has me FIRED UP...",
+      "lastRssKey": "d8bb24d4-b4b6-11f1-9187-93a52b673690",
+      "lastEpisodeTitle": "It's happening...",
       "lastEpisodeId": "60132290764",
-      "lastCheckedAt": 1789774231603
+      "lastCheckedAt": 1789898400408
     },
     "7248222": {
       "lastRssKey": "026bf798-b3b0-11f1-a254-d70f23c356dd",
@@ -1169,10 +1175,10 @@
       "lastCheckedAt": 1789774233010
     },
     "7376606": {
-      "lastRssKey": "ad6fb151-9665-4e5b-b031-a27b7ef21a95",
-      "lastEpisodeTitle": "Sherlock Holmes: The Greatest Detective of All Time 🕵️‍♂️🔎 | The Complete Story & Mysteries | Boring History for Sleep",
-      "lastEpisodeId": "60530926173",
-      "lastCheckedAt": 1789881221279
+      "lastRssKey": "3741394c-c0a8-49cf-8f6b-d91b63fe385e",
+      "lastEpisodeTitle": "The Strangest Stories in History You Won’t Believe Are True 🤯📜 | Bizarre Events, Strange People & Forgotten History | Boring History for Sleep",
+      "lastEpisodeId": "60587171870",
+      "lastCheckedAt": 1789898401760
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031886",
@@ -1282,10 +1288,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/d0fa9472-1fb2-5879-9335-9f5e4289981a",
-      "lastEpisodeTitle": "Are the 7 DEADLY SINS describing narcissism ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/e87b901c-fc00-59aa-b54d-0a7b92f16813",
+      "lastEpisodeTitle": "When your child HAS A FRIEND with narcissistic parents ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789881224785
+      "lastCheckedAt": 1789898407837
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
