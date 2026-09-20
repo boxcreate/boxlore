@@ -1,10 +1,11 @@
 {
-  "lastRun": "2026-09-20T09:58:34.313Z",
+  "lastRun": "2026-09-20T14:03:36.706Z",
   "podcasts": {
     "2123": {
-      "lastEpisodeId": "567722198",
-      "lastEpisodeTitle": "Rewind: CEO Jim Farley on Ford's EV gamble",
-      "lastCheckedAt": 1782580345480
+      "lastRssKey": "6156fea2-b36e-11f1-9950-c31b68b384d1",
+      "lastEpisodeTitle": "Does AI need an antitrust exemption so it doesn't kill everyone????",
+      "lastEpisodeId": "60596669928",
+      "lastCheckedAt": 1789913017634
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7g",
@@ -24,6 +25,12 @@
       "lastEpisodeId": "59343962292",
       "lastCheckedAt": 1789551681736
     },
+    "44367": {
+      "lastRssKey": "svdeou1mmfjhwknm",
+      "lastEpisodeTitle": "709: Steel-Cable Insurance",
+      "lastEpisodeId": "60522510368",
+      "lastCheckedAt": 1789913019825
+    },
     "48166": {
       "lastRssKey": "68b66323-6e74-4c90-8157-ef3f1ed0d042",
       "lastEpisodeTitle": "Home Depot",
@@ -37,10 +44,10 @@
       "lastCheckedAt": 1789404431852
     },
     "55810": {
-      "lastRssKey": "79d9d817-6d50-40fc-ac20-c4164911f8d6",
-      "lastEpisodeTitle": "NPR News: 09-20-2026 5AM EDT",
+      "lastRssKey": "b4b66a21-ab51-48ba-912b-3eac45d32439",
+      "lastEpisodeTitle": "NPR News: 09-20-2026 9AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1789898316987
+      "lastCheckedAt": 1789913021522
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75229925",
@@ -152,10 +159,10 @@
       "lastCheckedAt": 1789817132579
     },
     "385117": {
-      "lastRssKey": "fe34daa4-b4d2-11f1-bf93-3b3ee5567905",
-      "lastEpisodeTitle": "5AM ET 09/20/2026 Newscast",
+      "lastRssKey": "8589a5cc-b4f4-11f1-9c63-bb9e626f4a34",
+      "lastEpisodeTitle": "Ed Sheeran addresses Macklemore controversy during concert",
       "lastEpisodeId": "60627427698",
-      "lastCheckedAt": 1789898326404
+      "lastCheckedAt": 1789913037120
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -168,6 +175,12 @@
       "lastEpisodeTitle": "The benefits of nontraditional healthcare with Dr. Charles Moore",
       "lastEpisodeId": "60145641127",
       "lastCheckedAt": 1789463597998
+    },
+    "398589": {
+      "lastRssKey": "gid://art19-episode-locator/V0/brT9nS4OtXXItVUn-nGn2tS9i0ApXWyGLoRRDR-BZx0",
+      "lastEpisodeTitle": "Varsity Blues | The Side Door | 2",
+      "lastEpisodeId": "60413630821",
+      "lastCheckedAt": 1789913038984
     },
     "399669": {
       "lastRssKey": "dfeb7579-4a4f-4c6c-baab-543b3c2a6480",
@@ -297,6 +310,12 @@
       "lastEpisodeId": "60536837136",
       "lastCheckedAt": 1789709670402
     },
+    "503644": {
+      "lastRssKey": "f73acdc3-543d-468d-a81b-037ebb202bed",
+      "lastEpisodeTitle": "The Body Politic Part I",
+      "lastEpisodeId": "60502443374",
+      "lastCheckedAt": 1789913056455
+    },
     "509873": {
       "lastRssKey": "c8796bd5-f78b-4bb0-90f0-9338588757a9",
       "lastEpisodeTitle": "Maddow reacts to report of Russian oligarch paying for Trump Jr.'s lavish wedding weekend",
@@ -332,6 +351,12 @@
       "lastEpisodeTitle": "01 | I’M SORRY, DAVE: HAL ON EARTH",
       "lastEpisodeId": "60624620357",
       "lastCheckedAt": 1789898343221
+    },
+    "555343": {
+      "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/megaphone/twit_1101/ARML1693313659.mp3",
+      "lastEpisodeTitle": "TWiT 1101: Adversarial Clothing - The Dramatic Calls to Regulate Artificial Intelligence",
+      "lastEpisodeId": "60370861424",
+      "lastCheckedAt": 1789913061965
     },
     "555427": {
       "lastEpisodeId": "386077022",
@@ -405,10 +430,10 @@
       "lastCheckedAt": 1789856681689
     },
     "743229": {
-      "lastRssKey": "33e85a29-706c-4d8d-a020-d8e4da10e7b8",
-      "lastEpisodeTitle": "Aaron Sorkin Still Believes in American Institutions, Even If No One Else Does",
-      "lastEpisodeId": "60453258993",
-      "lastCheckedAt": 1789817157237
+      "lastRssKey": "7cf9e5f0-c10d-4707-82c7-eb82d640ffd8",
+      "lastEpisodeTitle": "How a 1,000-Year-Old Tapestry Took London by Storm",
+      "lastEpisodeId": "60633627522",
+      "lastCheckedAt": 1789913070309
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -504,10 +529,10 @@
       "lastCheckedAt": 1789640232640
     },
     "928708": {
-      "lastRssKey": "23188cca-b1af-11f1-b045-d3c368f695d0",
-      "lastEpisodeTitle": "This Day in History - September 19, 2026",
-      "lastEpisodeId": "60316335695",
-      "lastCheckedAt": 1789799444763
+      "lastRssKey": "cf6c3d54-b4df-11f1-9093-d3f786a2b85e",
+      "lastEpisodeTitle": "This Day in History - September 20, 2026",
+      "lastEpisodeId": "60629683212",
+      "lastCheckedAt": 1789913079458
     },
     "946758": {
       "lastRssKey": "10cc122e-77b5-11f0-8752-0bb04facbe23",
@@ -520,6 +545,12 @@
       "lastEpisodeTitle": "WTF is a Googlebook?",
       "lastEpisodeId": "59952426656",
       "lastCheckedAt": 1789727939729
+    },
+    "959112": {
+      "lastRssKey": "https://9to5google.com/?p=730937",
+      "lastEpisodeTitle": "Googlebook Eve",
+      "lastEpisodeId": "60569052041",
+      "lastCheckedAt": 1789913082308
     },
     "980370": {
       "lastRssKey": "6aac27f78a1508074dc11ad1",
@@ -542,6 +573,12 @@
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
       "lastEpisodeTitle": "Finding Your Life Path, Solved",
       "lastCheckedAt": 1788643859907
+    },
+    "1026613": {
+      "lastRssKey": "c196b474-cd43-40c0-ab3a-2bed3756a248",
+      "lastEpisodeTitle": "A.I. Safety Goes Mainstream + a ‘Hard Fork’ Exit AMA",
+      "lastEpisodeId": "60548247176",
+      "lastCheckedAt": 1789913087292
     },
     "1035900": {
       "lastRssKey": "34f0facb-686a-453b-89ac-a3b19662986a",
@@ -578,10 +615,10 @@
       "lastCheckedAt": 1789765674545
     },
     "1106580": {
-      "lastRssKey": "cmtv8isca02sv01tp4cxo43dh",
-      "lastEpisodeTitle": "The KK Show 378 - 說蔣萬安是私生子構成誹謗嗎？ 法律白話文 貴智&YoYo",
+      "lastRssKey": "cmu9l2bd119hs01z52exn3nbw",
+      "lastEpisodeTitle": "百靈果NEWS｜花錢可以跟川普政府買特赦、紅髮艾德演唱會大炎上、Hyrox賽道的土石流💩",
       "lastEpisodeId": "59827465254",
-      "lastCheckedAt": 1789482315256
+      "lastCheckedAt": 1789913095556
     },
     "1116485": {
       "lastRssKey": "6aad51f911c566086d87c194",
@@ -619,10 +656,10 @@
       "lastCheckedAt": 1789817181733
     },
     "1258562": {
-      "lastRssKey": "6aa6b20c5b934194476d7e33",
-      "lastEpisodeTitle": "207. The Chameli Bagh Murders | Oishee Rahman",
+      "lastRssKey": "6aafb8a146fd9745ea5b6ee9",
+      "lastEpisodeTitle": "208. Murder at DuPont Plaza Hotel | Krishna Maharaj",
       "lastEpisodeId": "53310059829",
-      "lastCheckedAt": 1789318947003
+      "lastCheckedAt": 1789913098647
     },
     "1266933": {
       "lastRssKey": "4c5fea84-d345-4950-ad09-54ab043d0ef2",
@@ -648,10 +685,10 @@
       "lastCheckedAt": 1789640249437
     },
     "1366771": {
-      "lastEpisodeId": "60608177261",
-      "lastEpisodeTitle": "Daily briefing Saturday 19th September",
-      "lastRssKey": "6aae5efe3544546cb8b069c3",
-      "lastCheckedAt": 1789848416495
+      "lastRssKey": "6aafb2de51da7059ece09322",
+      "lastEpisodeTitle": "Daily briefing Sunday 20th September",
+      "lastEpisodeId": "60631710586",
+      "lastCheckedAt": 1789913100626
     },
     "1388001": {
       "lastRssKey": "309f0a0b-bd73-4750-aeba-2997886e25b8",
@@ -835,9 +872,9 @@
       "lastCheckedAt": 1789898381218
     },
     "4898105": {
-      "lastRssKey": "a892e798-b249-11f1-9f59-5f9911acee0d",
-      "lastEpisodeTitle": "IGN Game Review: Marvel's Wolverine",
-      "lastCheckedAt": 1789817197991
+      "lastRssKey": "4ef57d98-b2fa-11f1-b8eb-ff4aeb8d0cdb",
+      "lastEpisodeTitle": "IGN Movie Review: Resident Evil",
+      "lastCheckedAt": 1789913116946
     },
     "5107672": {
       "lastRssKey": "6c5e5764-f024-4308-843f-a925142939b4",
@@ -944,10 +981,10 @@
       "lastCheckedAt": 1789584033549
     },
     "6280366": {
+      "lastRssKey": "8ad2936e-1a03-405a-a270-2b5043e5f150",
+      "lastEpisodeTitle": "7 Ways How We Use AI Is Changing",
       "lastEpisodeId": "60592860794",
-      "lastEpisodeTitle": "The AI Challenges Businesses Are Actually Focused On Right Now",
-      "lastRssKey": "05d6a935-f68e-4fd0-b9b7-fd2ce936d402",
-      "lastCheckedAt": 1789817205344
+      "lastCheckedAt": 1789913124607
     },
     "6413946": {
       "lastRssKey": "89b77b20-18b1-4e06-ab77-5bc428684a7f",
@@ -1036,6 +1073,12 @@
       "lastEpisodeTitle": "ELLAM PHASES DHAN.",
       "lastEpisodeId": "53696806037",
       "lastCheckedAt": 1787770938932
+    },
+    "6841381": {
+      "lastRssKey": "6aabef275d36baebf1464b34",
+      "lastEpisodeTitle": "10 Future Gadgets You Need to Know About",
+      "lastEpisodeId": "60509180580",
+      "lastCheckedAt": 1789913140618
     },
     "6852067": {
       "lastRssKey": "56268fa6-b2f7-11f1-8d01-3f64cb407c13",
@@ -1175,10 +1218,10 @@
       "lastCheckedAt": 1789774233010
     },
     "7376606": {
-      "lastRssKey": "3741394c-c0a8-49cf-8f6b-d91b63fe385e",
-      "lastEpisodeTitle": "The Strangest Stories in History You Won’t Believe Are True 🤯📜 | Bizarre Events, Strange People & Forgotten History | Boring History for Sleep",
-      "lastEpisodeId": "60587171870",
-      "lastCheckedAt": 1789898401760
+      "lastRssKey": "ad6fb151-9665-4e5b-b031-a27b7ef21a95",
+      "lastEpisodeTitle": "Sherlock Holmes: The Greatest Detective of All Time 🕵️‍♂️🔎 | The Complete Story & Mysteries | Boring History for Sleep",
+      "lastEpisodeId": "60631240276",
+      "lastCheckedAt": 1789913163571
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031886",
@@ -1211,10 +1254,10 @@
       "lastCheckedAt": 1786911630083
     },
     "7492905": {
-      "lastRssKey": "12b46332-5aa1-11f1-a6e8-1f45ea83f0b0",
-      "lastEpisodeTitle": "Oregon Trail: Saddle up",
+      "lastRssKey": "12cb09fc-5aa1-11f1-a6e8-5309cbbd3079",
+      "lastEpisodeTitle": "TI-84: Monopoly math",
       "lastEpisodeId": "57793191904",
-      "lastCheckedAt": 1789306040939
+      "lastCheckedAt": 1789913165628
     },
     "7540523": {
       "lastRssKey": "8257452a-d639-4918-8fb2-7ca994d89861",
@@ -1288,10 +1331,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/e87b901c-fc00-59aa-b54d-0a7b92f16813",
-      "lastEpisodeTitle": "When your child HAS A FRIEND with narcissistic parents ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/c0a701a8-8b1c-5300-bb61-344242d7f446",
+      "lastEpisodeTitle": "How narcissists react if YOU GAIN WEIGHT ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789898407837
+      "lastCheckedAt": 1789913170444
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
