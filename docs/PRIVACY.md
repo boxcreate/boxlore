@@ -13,7 +13,7 @@ This page is written by the people building **boxlore**, to tell you the unvarni
 ## The Three Ironclad Rules
 
 1. **Zero Ads, Forever:** We do not have banner ads, sponsor tracking pixels, or cross-site advertising SDKs. boxlore will never have ads.
-2. **No Accounts, No Cloud Profiles:** We never ask for your name, email address, phone number, age, or gender. There is no account sign-up and no central user profile. The actual database managing your library, folders, and downloads lives strictly on your phone, not on a server.
+2. **Anonymous Usage & Zero Profile Linking:** Accounts in boxlore are completely optional and used purely for cloud backup and library sync across your devices. Your email is logged solely by Firebase (Google) for secure auth verification and is never stored on our application servers. Most importantly, **your account email is never connected, linked, or cross-referenced with your app usage or telemetry event profile**. Your telemetry activity remains strictly anonymous.
 3. **Your Taste Stays on Your Phone:** Your learned recommendation model, skip habits, and playback affinities are calculated strictly on your device using a local database. They are never sent to our servers.
 
 ---
@@ -58,7 +58,7 @@ We use PostHog for telemetry. Here are the five categories of data collected, an
 
 ## What Stays Strictly Local
 
-* **Your Library Database:** Your custom folders, custom tags, downloaded audio files, and complete library records live on your phone. We do not sync or mirror your library to a cloud server. (Individual actions like liking an episode or playing a show emit anonymous telemetry events as described above, but they are never tied to a personal identity).
+* **Your Library Database & Sync Isolation:** Your downloaded audio files, custom tags, and complete library records live on your phone. If you choose to enable cloud sync, your backup data is stored solely for device synchronization and is never tied to or cross-referenced with telemetry events. (Individual actions like liking an episode or playing a show emit anonymous telemetry events as described above, but they are never connected to your personal identity or account email).
 * **Your Personalization Brain:** boxlore runs an on-device Bayesian ranking model. The math that learns what you skip, finish, and like stays inside your phone's local database.
 * **Your Backups:** When you export a full JSON backup of your library, it is generated locally and saved to your phone storage. We never hold a copy of your backup on our servers unless you explicitly share it.
 
