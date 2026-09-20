@@ -57,11 +57,16 @@ Search by name or topic, get recommendations, listen offline, watch video shows,
 
 boxlore is an Android app for finding, following, and playing podcasts. Search for a show even when the spelling is imperfect, or describe a subject to find relevant shows and episodes.
 
-The app uses your listening activity—such as what you play, skip, and like—to suggest more podcasts. This personalization is processed on your device. You can listen online or offline, build a queue, and keep subscriptions, downloads, history, and likes in one library.
+You can listen online or offline, build a queue, and keep subscriptions, downloads, history, and likes in one library.
+
+### How discovery and recommendations work
+Unlike mainstream platforms that use centralized engagement algorithms to maximize screen time, boxlore uses a two-stage hybrid architecture:
+* **Server-side semantic matching:** To find relevant candidates across a vast catalog, the app sends bounded listening seeds (recent shows you completed, liked, or engaged with) to our servers to run semantic vector search against our podcast index.
+* **On-device taste tuning:** The candidate shows returned by the server are then re-ranked locally on your phone using an on-device learning model that adapts to your skip habits and time of day—without building a persistent cloud advertising profile.
 
 Read **[The soul of boxlore](docs/SOUL.md)**: why this app is free, ad-free, and crafted with care.
 
-See **[What we track and why](docs/PRIVACY.md)**: full transparency into our telemetry, with no ads and no selling of data.
+See **[What we track and why](docs/PRIVACY.md)**: full technical transparency into our requests and telemetry.
 
 ## Features
 
@@ -70,7 +75,7 @@ See **[What we track and why](docs/PRIVACY.md)**: full transparency into our tel
 | Feature | What it does |
 | :--- | :--- |
 | **Find podcasts** | Search by show name, even with a misspelling, or describe a topic to find podcasts and individual episodes about it. |
-| **Recommendations** | Get suggestions based on what you play, skip, and like. These suggestions are calculated on your device. |
+| **Recommendations** | Hybrid discovery: Server-side semantic vector search using your recent listening seeds, with on-device tuning for your playback habits. |
 | **Automatic queue** | When the list of episodes waiting to play runs low, Smart Queue can add more from the current show, unfinished listening, subscriptions, and recommendations. |
 | **Audio and video player** | Play audio and video episodes with speed controls, a sleep timer, chapters, transcripts, intro skipping, and a queue you can reorder. |
 | **Downloads and library** | Keep subscriptions, new episodes, downloads, likes, and listening history together. Smart Downloads can prepare episodes for offline listening. |
