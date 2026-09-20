@@ -4,10 +4,10 @@
 
 <br/><br/>
 
-## Podcasts, done better
+## Beautiful. Smart. Yours.
 
 <p align="center">
-Search by name or topic, get recommendations, listen offline, watch video shows, and keep up with new episodes.
+Fast, ad-free podcasting crafted for Android. Explore shows through semantic topic search, enjoy intelligent discovery tuned to your taste, and listen without paywalls, subscriptions, or ads.
 </p>
 
 <br/>
