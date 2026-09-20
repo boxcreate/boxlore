@@ -39,6 +39,16 @@ import cx.aswin.boxlore.feature.home.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.home.settings.components.SettingsScaffold
 
 /**
+ * Discovery region and language preferences for [LibrarySettingsPage].
+ */
+data class LibraryDiscoveryPreferences(
+    val currentRegion: String,
+    val contentLanguages: List<String>,
+    val onSetRegion: (String) -> Unit,
+    val onSetContentLanguages: (List<String>) -> Unit,
+)
+
+/**
  * Export/import callbacks for [LibrarySettingsPage], grouped to keep its parameter count small.
  * Also used by [cx.aswin.boxlore.feature.home.settings.SettingsScreen].
  */
@@ -51,10 +61,7 @@ data class LibraryBackupActions(
 
 @Composable
 internal fun LibrarySettingsPage(
-    currentRegion: String,
-    contentLanguages: List<String>,
-    onSetRegion: (String) -> Unit,
-    onSetContentLanguages: (List<String>) -> Unit,
+    discoveryPreferences: LibraryDiscoveryPreferences,
     onAddRssClick: () -> Unit,
     backupActions: LibraryBackupActions,
     onBack: () -> Unit,
@@ -88,15 +95,15 @@ internal fun LibrarySettingsPage(
         SettingsGroup(title = "Discovery") {
             SettingsContent {
                 ContentRegionLanguagePicker(
-                    activeRegion = currentRegion,
-                    selectedLanguages = contentLanguages,
+                    activeRegion = discoveryPreferences.currentRegion,
+                    selectedLanguages = discoveryPreferences.contentLanguages,
                     onSwitchRegion = {
                         collapseCountryFaq()
-                        onSetRegion(it)
+                        discoveryPreferences.onSetRegion(it)
                     },
                     onLanguagesChange = {
                         collapseCountryFaq()
-                        onSetContentLanguages(it)
+                        discoveryPreferences.onSetContentLanguages(it)
                     },
                 )
             }

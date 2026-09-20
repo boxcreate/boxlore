@@ -83,7 +83,6 @@ internal fun AccountSettingsPage(
         } else {
             SignedOutContent(
                 authRepository = authRepository,
-                scrollState = scrollState,
             )
         }
     }

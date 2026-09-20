@@ -44,6 +44,7 @@ import cx.aswin.boxlore.feature.home.settings.pages.AppearanceSettingsPage
 import cx.aswin.boxlore.feature.home.settings.pages.AppearanceUiState
 import cx.aswin.boxlore.feature.home.settings.pages.DownloadsSettingsPage
 import cx.aswin.boxlore.feature.home.settings.pages.LibraryBackupActions
+import cx.aswin.boxlore.feature.home.settings.pages.LibraryDiscoveryPreferences
 import cx.aswin.boxlore.feature.home.settings.pages.LibrarySettingsPage
 import cx.aswin.boxlore.feature.home.settings.pages.PlaybackActions
 import cx.aswin.boxlore.feature.home.settings.pages.PlaybackSettingsPage
@@ -244,19 +245,21 @@ fun SettingsScreen(
 
             ProfileSettingsDestination.Library ->
                 LibrarySettingsPage(
-                    currentRegion = currentRegion,
-                    contentLanguages = contentLanguages,
-                    onSetRegion = {
-                        AnalyticsHelper.trackSettingsInteraction("content_region_changed", it)
-                        onSetRegion(it)
-                    },
-                    onSetContentLanguages = {
-                        AnalyticsHelper.trackSettingsInteraction(
-                            "content_languages_changed",
-                            it.joinToString(","),
-                        )
-                        onSetContentLanguages(it)
-                    },
+                    discoveryPreferences = LibraryDiscoveryPreferences(
+                        currentRegion = currentRegion,
+                        contentLanguages = contentLanguages,
+                        onSetRegion = {
+                            AnalyticsHelper.trackSettingsInteraction("content_region_changed", it)
+                            onSetRegion(it)
+                        },
+                        onSetContentLanguages = {
+                            AnalyticsHelper.trackSettingsInteraction(
+                                "content_languages_changed",
+                                it.joinToString(","),
+                            )
+                            onSetContentLanguages(it)
+                        },
+                    ),
                     onAddRssClick = { settingsViewModel.openAddRssDialog() },
                     backupActions =
                     trackedLibraryBackupActions(

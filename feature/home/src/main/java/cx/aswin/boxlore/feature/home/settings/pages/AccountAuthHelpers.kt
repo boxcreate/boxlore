@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,7 +36,7 @@ internal tailrec fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-internal fun cleanAccountError(raw: String?, isSignUp: Boolean): String {
+internal fun cleanAccountError(raw: String?): String {
     if (raw == null) return "An unexpected error occurred"
     return when {
         raw.contains("user-not-found", ignoreCase = true) || raw.contains("no user", ignoreCase = true) ->
@@ -83,6 +85,94 @@ internal fun openGmailOrEmailApp(context: Context) {
             )
         } catch (_: Exception) {
             Toast.makeText(context, "Could not open email app", Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
+internal data class EmailInputState(
+    val email: String,
+    val isSignUp: Boolean,
+    val isLoading: Boolean,
+    val errorMessage: String?,
+)
+
+internal data class EmailInputActions(
+    val onEmailChange: (String) -> Unit,
+    val onSendLink: () -> Unit,
+    val onSwitchToPassword: () -> Unit,
+    val onInputFocused: () -> Unit,
+)
+
+internal data class PasswordInputState(
+    val email: String,
+    val password: String,
+    val passwordVisible: Boolean,
+    val isSignUp: Boolean,
+    val isLoading: Boolean,
+    val errorMessage: String?,
+)
+
+internal data class PasswordInputActions(
+    val onEmailChange: (String) -> Unit,
+    val onPasswordChange: (String) -> Unit,
+    val onTogglePasswordVisible: () -> Unit,
+    val onForgotPassword: () -> Unit,
+    val onSubmit: () -> Unit,
+    val onSwitchToEmailLink: () -> Unit,
+    val onInputFocused: () -> Unit,
+    val onNextField: () -> Unit,
+)
+
+@Composable
+internal fun AuthDivider() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+        Text(
+            text = "or",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 14.dp),
+        )
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
+}
+
+@Composable
+internal fun AuthErrorBanner(message: String) {
+    Spacer(Modifier.height(12.dp))
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
