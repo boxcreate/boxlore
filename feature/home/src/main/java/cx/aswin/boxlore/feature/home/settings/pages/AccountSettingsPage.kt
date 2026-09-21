@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home.settings.pages
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,7 @@ import cx.aswin.boxlore.feature.home.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.home.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.home.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.home.settings.components.SettingsScaffold
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -89,40 +91,87 @@ internal fun AccountSettingsPage(
         }
     }
 
+    AccountSettingsDialogs(
+        showDeleteConfirmation = showDeleteConfirmation,
+        showReauthRequiredDialog = showReauthRequiredDialog,
+        onDismissDeleteConfirmation = { showDeleteConfirmation = false },
+        onConfirmDelete = {
+            showDeleteConfirmation = false
+            handleDeleteAccount(
+                scope = scope,
+                context = context,
+                authRepository = authRepository,
+                onReauthRequired = { showReauthRequiredDialog = true },
+            )
+        },
+        onDismissReauthRequired = { showReauthRequiredDialog = false },
+        onSignOutToReauth = {
+            showReauthRequiredDialog = false
+            authRepository?.signOut()
+            Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
+        },
+    )
+}
+
+internal sealed interface AccountDeletionOutcome {
+    data object Success : AccountDeletionOutcome
+    data object ReauthRequired : AccountDeletionOutcome
+    data class Failure(val message: String) : AccountDeletionOutcome
+}
+
+internal fun resolveAccountDeletionOutcome(result: Result<*>?): AccountDeletionOutcome {
+    if (result?.isSuccess == true) {
+        return AccountDeletionOutcome.Success
+    }
+    val error = result?.exceptionOrNull()
+    return if (error.isRecentLoginRequired()) {
+        AccountDeletionOutcome.ReauthRequired
+    } else {
+        AccountDeletionOutcome.Failure(cleanAccountError(error?.localizedMessage))
+    }
+}
+
+private fun handleDeleteAccount(
+    scope: CoroutineScope,
+    context: Context,
+    authRepository: AuthRepository?,
+    onReauthRequired: () -> Unit,
+) {
+    scope.launch {
+        when (val outcome = resolveAccountDeletionOutcome(authRepository?.deleteAccount())) {
+            AccountDeletionOutcome.Success -> {
+                Toast.makeText(context, "Account deleted", Toast.LENGTH_SHORT).show()
+            }
+            AccountDeletionOutcome.ReauthRequired -> {
+                onReauthRequired()
+            }
+            is AccountDeletionOutcome.Failure -> {
+                Toast.makeText(context, outcome.message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountSettingsDialogs(
+    showDeleteConfirmation: Boolean,
+    showReauthRequiredDialog: Boolean,
+    onDismissDeleteConfirmation: () -> Unit,
+    onConfirmDelete: () -> Unit,
+    onDismissReauthRequired: () -> Unit,
+    onSignOutToReauth: () -> Unit,
+) {
     if (showDeleteConfirmation) {
         DeleteAccountConfirmationDialog(
-            onDismiss = { showDeleteConfirmation = false },
-            onConfirmDelete = {
-                showDeleteConfirmation = false
-                scope.launch {
-                    val result = authRepository?.deleteAccount()
-                    if (result?.isSuccess == true) {
-                        Toast.makeText(context, "Account deleted", Toast.LENGTH_SHORT).show()
-                    } else {
-                        val error = result?.exceptionOrNull()
-                        if (error.isRecentLoginRequired()) {
-                            showReauthRequiredDialog = true
-                        } else {
-                            Toast.makeText(
-                                context,
-                                cleanAccountError(error?.localizedMessage),
-                                Toast.LENGTH_LONG,
-                            ).show()
-                        }
-                    }
-                }
-            },
+            onDismiss = onDismissDeleteConfirmation,
+            onConfirmDelete = onConfirmDelete,
         )
     }
 
     if (showReauthRequiredDialog) {
         ReauthRequiredDialog(
-            onDismiss = { showReauthRequiredDialog = false },
-            onSignOutToReauth = {
-                showReauthRequiredDialog = false
-                authRepository?.signOut()
-                Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
-            },
+            onDismiss = onDismissReauthRequired,
+            onSignOutToReauth = onSignOutToReauth,
         )
     }
 }

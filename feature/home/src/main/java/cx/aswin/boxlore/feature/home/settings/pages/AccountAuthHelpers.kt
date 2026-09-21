@@ -205,6 +205,8 @@ internal data class PasswordInputActions(
     val onNextField: () -> Unit,
 )
 
+internal const val ERROR_INVALID_EMAIL = "Please enter a valid email address"
+
 internal fun validatePasswordInputs(
     email: String,
     password: String,
@@ -212,7 +214,7 @@ internal fun validatePasswordInputs(
     confirmPassword: String = "",
 ): String? = when {
     email.isBlank() -> "Please enter your email address"
-    !isValidEmail(email) -> "Please enter a valid email address"
+    !isValidEmail(email) -> ERROR_INVALID_EMAIL
     password.isBlank() -> "Please enter your password"
     isSignUp && password.length < 6 -> "Password must be at least 6 characters"
     isSignUp && confirmPassword.isBlank() -> "Please confirm your password"
@@ -329,7 +331,7 @@ internal class AccountAuthState(
             return
         }
         if (!isValidEmail(trimmedEmail)) {
-            errorMessage = "Please enter a valid email address"
+            errorMessage = ERROR_INVALID_EMAIL
             return
         }
         focusManager.clearFocus()
@@ -382,6 +384,8 @@ internal class AccountAuthState(
         isSignUp: Boolean,
     ) {
         if (result?.isSuccess == true) {
+            password = ""
+            confirmPassword = ""
             val successMessage = if (isSignUp) "Account created!" else "Signed in!"
             Toast.makeText(context, successMessage, Toast.LENGTH_SHORT).show()
         } else {
@@ -416,7 +420,7 @@ internal class AccountAuthState(
             return
         }
         if (!isValidEmail(trimmedEmail)) {
-            errorMessage = "Please enter a valid email address"
+            errorMessage = ERROR_INVALID_EMAIL
             return
         }
         focusManager.clearFocus()
@@ -508,8 +512,6 @@ internal class AccountAuthState(
                     state.activeAuthMode.name,
                     state.usePasswordAuth,
                     state.email,
-                    state.password,
-                    state.confirmPassword,
                     state.passwordVisible,
                     state.confirmPasswordVisible,
                     state.magicLinkSent,
@@ -522,12 +524,11 @@ internal class AccountAuthState(
                 } ?: AuthMode.SIGN_IN
                 val usePasswordAuth = list.getOrNull(1) as? Boolean ?: false
                 val email = (list.getOrNull(2) as? String).orEmpty()
-                val password = (list.getOrNull(3) as? String).orEmpty()
-                val confirmPassword = (list.getOrNull(4) as? String).orEmpty()
-                val passwordVisible = list.getOrNull(5) as? Boolean ?: false
-                val confirmPasswordVisible = list.getOrNull(6) as? Boolean ?: false
-                val magicLinkSent = list.getOrNull(7) as? Boolean ?: false
-                val errorMessage = list.getOrNull(8) as? String
+                val isLegacy = list.size >= 9
+                val passwordVisible = (if (isLegacy) list.getOrNull(5) else list.getOrNull(3)) as? Boolean ?: false
+                val confirmPasswordVisible = (if (isLegacy) list.getOrNull(6) else list.getOrNull(4)) as? Boolean ?: false
+                val magicLinkSent = (if (isLegacy) list.getOrNull(7) else list.getOrNull(5)) as? Boolean ?: false
+                val errorMessage = (if (isLegacy) list.getOrNull(8) else list.getOrNull(6)) as? String
                 AccountAuthState(
                     authRepository = authRepository,
                     context = context,
@@ -538,8 +539,8 @@ internal class AccountAuthState(
                         activeAuthMode = activeAuthMode,
                         usePasswordAuth = usePasswordAuth,
                         email = email,
-                        password = password,
-                        confirmPassword = confirmPassword,
+                        password = "",
+                        confirmPassword = "",
                         passwordVisible = passwordVisible,
                         confirmPasswordVisible = confirmPasswordVisible,
                         magicLinkSent = magicLinkSent,

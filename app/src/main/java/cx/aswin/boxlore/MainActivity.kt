@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private var consumedAuthLink: String? = null
+    private var inFlightAuthLink: String? = null
     private var pendingCrossDeviceAuthLink by mutableStateOf<String?>(null)
 
     override fun onNewIntent(intent: android.content.Intent) {
@@ -87,7 +88,7 @@ class MainActivity : ComponentActivity() {
             // Nullify intent data immediately so the one-time link is not routed as a podcast deep link.
             intent.data = null
             setIntent(intent)
-            if (consumedAuthLink == linkString || lastConsumedAuthLink == linkString) {
+            if (consumedAuthLink == linkString || lastConsumedAuthLink == linkString || inFlightAuthLink == linkString) {
                 return
             }
 
@@ -102,13 +103,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun completeSignInWithEmailLink(email: String, linkString: String) {
-        consumedAuthLink = linkString
-        lastConsumedAuthLink = linkString
+        inFlightAuthLink = linkString
         pendingCrossDeviceAuthLink = null
         val authRepo = (application as BoxLoreApplication).container.authRepository
         lifecycleScope.launch {
             val result = authRepo.signInWithEmailLink(email, linkString)
+            inFlightAuthLink = null
             if (result.isSuccess) {
+                consumedAuthLink = linkString
+                lastConsumedAuthLink = linkString
                 android.widget.Toast.makeText(
                     this@MainActivity,
                     "Signed in as ${result.getOrNull()?.email ?: "user"}",
@@ -116,6 +119,10 @@ class MainActivity : ComponentActivity() {
                 ).show()
             } else {
                 android.util.Log.e("MainActivity", "Magic link sign-in failed", result.exceptionOrNull())
+                val prefs = cx.aswin.boxlore.core.prefs.BoxcastPrefs(this@MainActivity)
+                if (prefs.getPendingAuthEmail().isNullOrBlank()) {
+                    pendingCrossDeviceAuthLink = linkString
+                }
                 android.widget.Toast.makeText(
                     this@MainActivity,
                     result.exceptionOrNull()?.localizedMessage ?: "Failed to sign in with link",

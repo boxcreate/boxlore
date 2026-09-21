@@ -205,12 +205,45 @@ class AccountAuthHelpersTest {
         assertEquals(AuthMode.SIGN_UP, restored.activeAuthMode)
         org.junit.Assert.assertTrue(restored.usePasswordAuth)
         assertEquals("listener@boxlore.example", restored.email)
-        assertEquals(" secret pass ", restored.password)
-        assertEquals(" secret pass ", restored.confirmPassword)
+        assertEquals("", restored.password)
+        assertEquals("", restored.confirmPassword)
         org.junit.Assert.assertTrue(restored.passwordVisible)
         org.junit.Assert.assertTrue(restored.confirmPasswordVisible)
         org.junit.Assert.assertTrue(restored.magicLinkSent)
         assertEquals("Previous attempt error", restored.errorMessage)
+    }
+
+    @Test
+    fun accountAuthState_saver_legacyListWithPasswords_discardsPasswords() {
+        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+
+        val saver = AccountAuthState.saver(
+            authRepository = null,
+            context = mockContext,
+            activity = null,
+            focusManager = mockFocusManager,
+            scope = scope,
+        )
+
+        val legacyList = listOf(
+            AuthMode.SIGN_IN.name,
+            true,
+            "legacy@boxlore.example",
+            "plaintext-pass",
+            "plaintext-confirm",
+            true,
+            false,
+            false,
+            null,
+        )
+        val restored = saver.restore(legacyList) as AccountAuthState
+        assertEquals("legacy@boxlore.example", restored.email)
+        assertEquals("", restored.password)
+        assertEquals("", restored.confirmPassword)
+        org.junit.Assert.assertTrue(restored.passwordVisible)
+        org.junit.Assert.assertFalse(restored.confirmPasswordVisible)
     }
 
     @Test

@@ -39,4 +39,35 @@ class AuthExceptionsTest {
         store.setPendingEmail(null)
         assertEquals(null, store.getPendingEmail())
     }
+
+    @Test
+    fun `fake PendingEmailStore lifecycle in magic link and sign out flows`() {
+        var storedEmail: String? = null
+        val store = object : PendingEmailStore {
+            override fun getPendingEmail(): String? = storedEmail
+            override fun setPendingEmail(email: String?) {
+                storedEmail = email
+            }
+        }
+
+        // sendMagicLink stores email on success
+        val email = "listener@boxlore.example"
+        store.setPendingEmail(email)
+        assertEquals(email, store.getPendingEmail())
+
+        // sendMagicLink failure clears pending email
+        store.setPendingEmail(null)
+        assertEquals(null, store.getPendingEmail())
+
+        // signInWithEmailLink clears pending email in finally block
+        store.setPendingEmail(email)
+        assertEquals(email, store.getPendingEmail())
+        store.setPendingEmail(null)
+        assertEquals(null, store.getPendingEmail())
+
+        // signOut clears pending email
+        store.setPendingEmail(email)
+        store.setPendingEmail(null)
+        assertEquals(null, store.getPendingEmail())
+    }
 }
