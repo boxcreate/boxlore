@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-09-21T05:55:31.850Z",
+  "lastRun": "2026-09-21T12:06:46.364Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "6156fea2-b36e-11f1-9950-c31b68b384d1",
-      "lastEpisodeTitle": "Does AI need an antitrust exemption so it doesn't kill everyone????",
+      "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
+      "lastEpisodeTitle": "Can CEO John Ternus find Apple's next big thing?",
       "lastEpisodeId": "60596669928",
-      "lastCheckedAt": 1789913017634
+      "lastCheckedAt": 1789992406940
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7g",
@@ -38,16 +38,16 @@
       "lastCheckedAt": 1789363039070
     },
     "55386": {
-      "lastRssKey": "gid://art19-episode-locator/V0/_GMwJEFS5WLp3HE6k_qVeknc0JNLxo4FKCOko_RS6fk",
-      "lastEpisodeTitle": "Nutrition Expert: Why Weight Loss May Be the Wrong Goal for Better Health and Longevity",
+      "lastRssKey": "gid://art19-episode-locator/V0/zaYogUJC_mEJObZ6GJvU7xQetoN5xNyvWakhJH_WJi4",
+      "lastEpisodeTitle": "Become Dangerously Smart with AI (in 32 minutes)",
       "lastEpisodeId": "60085919668",
-      "lastCheckedAt": 1789404431852
+      "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "f6eb3395-1ddc-4e52-b007-75527ac35fe2",
-      "lastEpisodeTitle": "NPR News: 09-21-2026 1AM EDT",
+      "lastRssKey": "a87376de-aac2-4232-b862-cbe0c241be81",
+      "lastEpisodeTitle": "NPR News: 09-21-2026 7AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1789970135955
+      "lastCheckedAt": 1789992411223
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75269262",
@@ -80,10 +80,10 @@
       "lastCheckedAt": 1789328331492
     },
     "160817": {
-      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/84",
-      "lastEpisodeTitle": "My Last Quest | The Launch 🚀 84",
-      "lastEpisodeId": "60471840366",
-      "lastCheckedAt": 1789595656354
+      "lastRssKey": "https://linuxunplugged.com/685",
+      "lastEpisodeTitle": "Pool Party | LINUX Unplugged 685",
+      "lastEpisodeId": "60660291960",
+      "lastCheckedAt": 1789992419031
     },
     "193209": {
       "lastRssKey": "5c1d663e-f163-482b-b4ad-4d643845b3a9",
@@ -131,9 +131,9 @@
       "lastCheckedAt": 1789943840132
     },
     "300687": {
-      "lastRssKey": "36bbba5a-4ac8-4120-aba5-7ed540f935df",
-      "lastEpisodeTitle": "Inteligencia Artificial, tu resumen semanal | Me cambió la ropa sin tocarme la cara",
-      "lastCheckedAt": 1789404439072
+      "lastRssKey": "bdd923fa-c56e-4f02-84b6-677522c1e4e7",
+      "lastEpisodeTitle": "Inteligencia Artificial, tu resumen semanal | Diapositivas listas para PowerPoint sin salir del chat",
+      "lastCheckedAt": 1789992423847
     },
     "311214": {
       "lastEpisodeId": "567104661",
@@ -153,16 +153,16 @@
       "lastCheckedAt": 1789754740622
     },
     "353744": {
-      "lastRssKey": "flightcast:01M2DXAN3W0QGCVMS356W1E2ZA",
-      "lastEpisodeTitle": "The Secret to Fixing Your Adulthood",
+      "lastRssKey": "flightcast:01M2X1DGXZZDMDGGVKCB1GKN0M",
+      "lastEpisodeTitle": "What Divorce Does To A Child",
       "lastEpisodeId": "60295405214",
-      "lastCheckedAt": 1789817132579
+      "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "9df72fc2-b57a-11f1-9f55-c37d7c3b066a",
-      "lastEpisodeTitle": "1AM ET 09/21/2026 Newscast",
-      "lastEpisodeId": "60655534638",
-      "lastCheckedAt": 1789970147757
+      "lastRssKey": "ec373eac-b5ac-11f1-8263-0794c2faa939",
+      "lastEpisodeTitle": "7AM ET 09/21/2026 Newscast",
+      "lastEpisodeId": "60664057326",
+      "lastCheckedAt": 1789992425447
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -213,10 +213,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M2TWBHJY0E53KG52TH9X9SGZ",
-      "lastEpisodeTitle": "Caught in the Canada trade war crossfire",
+      "lastRssKey": "01M2NN05T47W6NDNS7XMJA8SKH",
+      "lastEpisodeTitle": "How attitudes toward AI differ across generations",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1789774134188
+      "lastCheckedAt": 1789992432308
     },
     "432535": {
       "lastRssKey": "2ea05913-2cf8-4111-8baa-c9a881ad7e9d",
@@ -225,16 +225,16 @@
       "lastCheckedAt": 1789404444446
     },
     "437685": {
-      "lastRssKey": "86d4094c-8d60-11f1-adef-d722e0166dd8",
-      "lastEpisodeTitle": "The Never-Ending Voyager Missions (Encore)",
-      "lastEpisodeId": "60627777720",
-      "lastCheckedAt": 1789898332549
+      "lastRssKey": "8711aedc-8d60-11f1-adef-e3d5f2460a35",
+      "lastEpisodeTitle": "How DNA Solves Crimes",
+      "lastEpisodeId": "60661789452",
+      "lastCheckedAt": 1789992434091
     },
     "438184": {
-      "lastRssKey": "f2e0c3bc-b355-11f1-a53c-9be1fe16839d",
-      "lastEpisodeTitle": "Coach for SpaceX & OpenAI destroys your limiting beliefs for 88 minutes straight",
+      "lastRssKey": "42535506-b5b1-11f1-909d-f75037fc309d",
+      "lastEpisodeTitle": "Whatnot founder: This is the future of e-commerce",
       "lastEpisodeId": "60366557067",
-      "lastCheckedAt": 1789742881724
+      "lastCheckedAt": 1789992435145
     },
     "444331": {
       "lastRssKey": "06e64238-b45f-11f1-a09d-af41557ddf6b",
@@ -266,9 +266,9 @@
       "lastCheckedAt": 1789754752190
     },
     "466583": {
-      "lastRssKey": "5574773a-a7e9-11f1-9a1e-f716615474e8",
-      "lastEpisodeTitle": "Crownless: Heist at the Louvre",
-      "lastCheckedAt": 1789383220414
+      "lastRssKey": "55939a98-a7e9-11f1-9a1e-1f716d74f2ad",
+      "lastEpisodeTitle": "Sara Jo Pender: The Female Charles Manson?",
+      "lastCheckedAt": 1789992437793
     },
     "467929": {
       "lastRssKey": "78f1c8ea-13ed-42e2-9220-3947e40ae61a",
@@ -341,10 +341,10 @@
       "lastCheckedAt": 1789508283942
     },
     "522889": {
-      "lastRssKey": "ad358646-ad1e-11f1-aa79-4331a6ac6be5",
-      "lastEpisodeTitle": "1039: Should You Quit Your Job?",
-      "lastEpisodeId": "60455337522",
-      "lastCheckedAt": 1789569443213
+      "lastRssKey": "e6132d46-b1d4-11f1-8a39-4b1147cd065c",
+      "lastEpisodeTitle": "1040: Developing for the iPhone Duo",
+      "lastEpisodeId": "60664440534",
+      "lastCheckedAt": 1789992450367
     },
     "545784": {
       "lastRssKey": "2ab09262245463bd59c8abd530155c02",
@@ -412,10 +412,10 @@
       "lastCheckedAt": 1789595674009
     },
     "724143": {
-      "lastRssKey": "aec9a0e8-b3a7-11f1-bf4f-5bf53a32e0cb",
-      "lastEpisodeTitle": "Milton Leite se entrega, relação de Flávio Bolsonaro e advogado investigado e censura de Trump na Casa Branca",
+      "lastRssKey": "0d565a36-b5a4-11f1-8af0-87760af44306",
+      "lastEpisodeTitle": "Lula nos EUA em meio à tensão com Trump; voos de Moraes em avião de Vorcaro; morte de jovem em Fortaleza",
       "lastEpisodeId": "60409761274",
-      "lastCheckedAt": 1789774162157
+      "lastCheckedAt": 1789992456131
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/w-0oGFd2IzhFS0QEXBKFFS5ISPi0tChyH9JjnpZM9NI",
@@ -430,10 +430,10 @@
       "lastCheckedAt": 1789856681689
     },
     "743229": {
-      "lastRssKey": "7cf9e5f0-c10d-4707-82c7-eb82d640ffd8",
-      "lastEpisodeTitle": "How a 1,000-Year-Old Tapestry Took London by Storm",
+      "lastRssKey": "e84a1455-bf13-4d7e-b178-e2f7b285850d",
+      "lastEpisodeTitle": "The Trump Administration Defangs the Endangered Species Act",
       "lastEpisodeId": "60633627522",
-      "lastCheckedAt": 1789913070309
+      "lastCheckedAt": 1789992459245
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -500,10 +500,10 @@
       "lastCheckedAt": 1789970179347
     },
     "838740": {
-      "lastRssKey": "dde1f526-b15c-11f1-b7f1-6307d2ecfae3",
-      "lastEpisodeTitle": "Your Brain Is Addicted To Worst-Case Scenarios (3 Ways To Break The Habit)",
+      "lastRssKey": "61066efe-b47e-11f1-be65-8f53fa9b0eaf",
+      "lastEpisodeTitle": "LUCY HALE: “I Was Sabotaging My Life.”",
       "lastEpisodeId": "59832566518",
-      "lastCheckedAt": 1789727935765
+      "lastCheckedAt": 1789992464767
     },
     "853158": {
       "lastRssKey": "c43c1979-9287-4d78-a024-eb4bff3daa81",
@@ -622,10 +622,10 @@
       "lastCheckedAt": 1789913095556
     },
     "1116485": {
-      "lastRssKey": "6ab00574dc6edf03c114aa4b",
-      "lastEpisodeTitle": "GAKPO DESERVES SO MUCH CREDIT! | Bournemouth 0-1 Liverpool | Pajak's Match Reaction",
+      "lastRssKey": "6ab10dadab2e30e57e541ea7",
+      "lastEpisodeTitle": "FAIR CRITICISM? Reaction To Jamie Carragher’s Analysis Of Florian Wirtz’s Time At Liverpool",
       "lastEpisodeId": "60461626103",
-      "lastCheckedAt": 1789925737515
+      "lastCheckedAt": 1789992480127
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -680,22 +680,22 @@
       "lastCheckedAt": 1789463645336
     },
     "1365758": {
-      "lastRssKey": "07e9f8b8-b244-11f1-b80b-9fee5bb32f26",
-      "lastEpisodeTitle": "Essentials: How to Assess & Improve All Aspects of Your Fitness | Dr. Andy Galpin",
-      "lastEpisodeId": "59970276449",
-      "lastCheckedAt": 1789640249437
+      "lastRssKey": "e3e1190e-b57e-11f1-9a2b-0fd85f8c12f8",
+      "lastEpisodeTitle": "Best Tools for Gut Health & Weight Loss | Dr. Chris Thompson",
+      "lastEpisodeId": "60661458183",
+      "lastCheckedAt": 1789992483455
     },
     "1366771": {
-      "lastRssKey": "6ab092cd0521dc2c81e13c01",
-      "lastEpisodeTitle": "Morning briefing Monday 21st September",
-      "lastEpisodeId": "60631710586",
-      "lastCheckedAt": 1789970198973
+      "lastRssKey": "6ab10aef119942cbe11c8156",
+      "lastEpisodeTitle": "Afternoon Briefing Monday 21st September",
+      "lastEpisodeId": "60663473400",
+      "lastCheckedAt": 1789992484028
     },
     "1388001": {
-      "lastRssKey": "309f0a0b-bd73-4750-aeba-2997886e25b8",
-      "lastEpisodeTitle": "Ouverture d'un procès de six Français accusés de terrorisme en Irak",
+      "lastRssKey": "1b203325-f811-4744-8193-745b6e052a20",
+      "lastEpisodeTitle": "La puissance américaine entravée : le pari de Donald Trump sur la force a échoué",
       "lastEpisodeId": "60539654196",
-      "lastCheckedAt": 1789898371006
+      "lastCheckedAt": 1789992484711
     },
     "1545709": {
       "lastRssKey": "audioboom-01a0bf41-50f1-7590-9889-f898b8d0b36a",
@@ -797,10 +797,10 @@
       "lastCheckedAt": 1786636709711
     },
     "3927361": {
-      "lastRssKey": "urn:bbc:podcast:m0031wzv",
-      "lastEpisodeTitle": "Tennis' Darkest Hour: 1. The Little Peanut",
+      "lastRssKey": "urn:bbc:podcast:m00326ks",
+      "lastEpisodeTitle": "Tennis' Darkest Hour: 2. There’s Always A Contender",
       "lastEpisodeId": "58711221307",
-      "lastCheckedAt": 1789383261743
+      "lastCheckedAt": 1789992492678
     },
     "4051326": {
       "lastEpisodeId": "4818953989",
@@ -814,10 +814,10 @@
       "lastCheckedAt": 1789584026548
     },
     "4112681": {
-      "lastRssKey": "Buzzsprout-19799094",
-      "lastEpisodeTitle": "#151 - The Geography of Sleep",
-      "lastEpisodeId": "60357170852",
-      "lastCheckedAt": 1789383262832
+      "lastRssKey": "Buzzsprout-19829064",
+      "lastEpisodeTitle": "#152 - The Brain on Music",
+      "lastEpisodeId": "60658346150",
+      "lastCheckedAt": 1789992494132
     },
     "4150268": {
       "lastRssKey": "gid://art19-episode-locator/V0/Ya9YvfO8vj68NKL6z2kccY0KiSARF-uYwqupHs4A_18",
@@ -861,21 +861,21 @@
       "lastCheckedAt": 1787326350565
     },
     "4790854": {
-      "lastRssKey": "cmtwkni8z0f2t01tp4sxqes0j",
-      "lastEpisodeTitle": "EP242 | 怎麼讓房仲親口說出你要的數字 ft. 陳侯勳 談判大叔",
+      "lastRssKey": "cmuam56ne012101ym45g24082",
+      "lastEpisodeTitle": "EP243 | 兒童虐待比你想像的嚴重多了 ft. 呂立醫師",
       "lastEpisodeId": "59773833400",
-      "lastCheckedAt": 1789383266405
+      "lastCheckedAt": 1789992497301
     },
     "4894842": {
-      "lastRssKey": "3d7c1f63-6bda-4020-87a9-3859517bb561",
-      "lastEpisodeTitle": "Fan Favorite - \"The Watercooler\"",
+      "lastRssKey": "81f04ca0-0857-459b-8651-c3b00d7b0e15",
+      "lastEpisodeTitle": "Murder In Marseilles (PODCAST EXCLUSIVE EPISODE)",
       "lastEpisodeId": "60490150210",
-      "lastCheckedAt": 1789898381218
+      "lastCheckedAt": 1789992497785
     },
     "4898105": {
-      "lastRssKey": "4ef57d98-b2fa-11f1-b8eb-ff4aeb8d0cdb",
-      "lastEpisodeTitle": "IGN Movie Review: Resident Evil",
-      "lastCheckedAt": 1789913116946
+      "lastRssKey": "a90103c4-b571-11f1-a2ca-5b6dc59da74c",
+      "lastEpisodeTitle": "New GTA 5 Leak Suggests Rockstar Had Ambitious DLC Plans",
+      "lastCheckedAt": 1789992498274
     },
     "5107672": {
       "lastRssKey": "6c5e5764-f024-4308-843f-a925142939b4",
@@ -947,10 +947,10 @@
       "lastCheckedAt": 1789672314996
     },
     "5930143": {
-      "lastRssKey": "309f0a0b-bd73-4750-aeba-2997886e25b8",
-      "lastEpisodeTitle": "Ouverture d'un procès de six Français accusés de terrorisme en Irak",
-      "lastEpisodeId": "60450867491",
-      "lastCheckedAt": 1789898385653
+      "lastRssKey": "1b203325-f811-4744-8193-745b6e052a20",
+      "lastEpisodeTitle": "La puissance américaine entravée : le pari de Donald Trump sur la force a échoué",
+      "lastEpisodeId": "60664995918",
+      "lastCheckedAt": 1789992502155
     },
     "5945547": {
       "lastRssKey": "b93f5713-82a6-45a0-9804-5fb69dc5ff13",
@@ -959,10 +959,10 @@
       "lastCheckedAt": 1789584032330
     },
     "5972153": {
-      "lastRssKey": "9841c134-b4ec-11f1-8566-775dc2deb48c",
-      "lastEpisodeTitle": "Houthis target Saudi, Moscow drone attack and Ed Sheeran",
+      "lastRssKey": "6c5d7298-b58c-11f1-b3eb-a7ce4337cbac",
+      "lastEpisodeTitle": "Iran-US threats, Germany elections and AI at the UN",
       "lastEpisodeId": "60634460811",
-      "lastCheckedAt": 1789925772487
+      "lastCheckedAt": 1789992504529
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -988,10 +988,10 @@
       "lastCheckedAt": 1789913124607
     },
     "6413946": {
-      "lastRssKey": "89b77b20-18b1-4e06-ab77-5bc428684a7f",
-      "lastEpisodeTitle": "EP 825: Crece percepción de corrupción en las fuerzas armadas, Fiscalía involucra a empresa de Pemex en huachicol fiscal y Reportan muerte por una amiba en Yucatán",
+      "lastRssKey": "76abee76-48bf-4865-9619-6e890cc7cabe",
+      "lastEpisodeTitle": "EP 826: ¿Se equivocó la Fiscalía con presunto huachicol? Atacan la casa de diseñadora de vestido de Sheinbaum y El PAN ya también tiene a sus “defensores”",
       "lastEpisodeId": "60198639919",
-      "lastCheckedAt": 1789742933951
+      "lastCheckedAt": 1789992506608
     },
     "6456494": {
       "lastRssKey": "6aaa01ab79ba7f1eccfc55fb",
@@ -1052,10 +1052,10 @@
       "lastCheckedAt": 1789952027706
     },
     "6744768": {
-      "lastRssKey": "95f8b6c6-f7fa-4879-bc49-04209e366308",
-      "lastEpisodeTitle": "I've had it with China",
+      "lastRssKey": "0984fdbe-949e-4052-9963-e8f522f5b07a",
+      "lastEpisodeTitle": "High Above Bangkok with Seal on Tour",
       "lastEpisodeId": "59871186213",
-      "lastCheckedAt": 1789404504127
+      "lastCheckedAt": 1789992512786
     },
     "6761897": {
       "lastRssKey": "ca65e6da-fe9d-4183-b219-9ba829813650",
@@ -1106,10 +1106,10 @@
       "lastCheckedAt": 1789728019057
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779876",
-      "lastEpisodeTitle": "Wayside Theater - Madcap Princess",
+      "lastRssKey": "https://api.spreaker.com/episode/59779878",
+      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - Milford Brooks III",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1789898395510
+      "lastCheckedAt": 1789992515669
     },
     "6912659": {
       "lastRssKey": "9273275b-ec2a-4d98-97f7-249fdaa9fbee",
@@ -1171,10 +1171,10 @@
       "lastCheckedAt": 1789952038405
     },
     "7183032": {
-      "lastRssKey": "7f808eb2-50b4-4d8c-9036-eaf56a7b7a42",
-      "lastEpisodeTitle": "I Was Kidnapped for Accepting Islam! - Hindu Converts to Islam",
+      "lastRssKey": "173ad9ec-e103-4bd2-a508-0e0e88f74315",
+      "lastEpisodeTitle": "Universe: 6 Days or 13.8 Billion Years? - Science Keeps Confirming the Quran!",
       "lastEpisodeId": "60255242233",
-      "lastCheckedAt": 1789337357900
+      "lastCheckedAt": 1789992519742
     },
     "7200648": {
       "lastRssKey": "https://api.spreaker.com/episode/64228821",
@@ -1213,10 +1213,10 @@
       "lastCheckedAt": 1789443365235
     },
     "7324937": {
-      "lastRssKey": "b0e1efd4-2d42-11f1-801d-ab3ba9709aee",
-      "lastEpisodeTitle": "The Poltergeist Who Follows You Home",
-      "lastEpisodeId": "60569041739",
-      "lastCheckedAt": 1789774233010
+      "lastRssKey": "b03012a0-2d42-11f1-801d-c7fbfc3be39c",
+      "lastEpisodeTitle": "The Basement: Brian Laythe | Ghosts, Possession, and Shadow People",
+      "lastEpisodeId": "60661947962",
+      "lastCheckedAt": 1789992521809
     },
     "7376606": {
       "lastRssKey": "ee5ff12f-ab93-4e2a-8f50-5809da8386c9",
@@ -1332,10 +1332,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/96415e23-d624-5de7-b0f2-7c05313584df",
-      "lastEpisodeTitle": "A different way to think about LOVE BOMBING ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/c92a3965-05f4-5ab6-9d27-ae7eb36fbe21",
+      "lastEpisodeTitle": "The power of AUTHENTICITY (the word of the year) ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789970245073
+      "lastCheckedAt": 1789992525981
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
