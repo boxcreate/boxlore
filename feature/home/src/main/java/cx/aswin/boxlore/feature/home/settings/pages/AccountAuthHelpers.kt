@@ -111,10 +111,15 @@ internal fun cleanAccountError(raw: String?): String {
 
 internal fun Throwable?.isRecentLoginRequired(): Boolean {
     if (this == null) return false
-    if (this is RecentLoginRequiredException) return true
-    if (javaClass.simpleName.contains("RecentLoginRequired", ignoreCase = true)) return true
-    val msg = message.orEmpty()
-    return RECENT_LOGIN_KEYWORDS.any { msg.contains(it, ignoreCase = true) }
+    var current: Throwable? = this
+    while (current != null) {
+        if (current is RecentLoginRequiredException) return true
+        if (current.javaClass.simpleName.contains("RecentLoginRequired", ignoreCase = true)) return true
+        val msg = current.message.orEmpty()
+        if (RECENT_LOGIN_KEYWORDS.any { msg.contains(it, ignoreCase = true) }) return true
+        current = current.cause
+    }
+    return false
 }
 
 private val EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
@@ -279,11 +284,11 @@ internal data class SavedAccountAuthState(
 )
 
 internal class AccountAuthState(
-    val authRepository: AuthRepository?,
-    val context: Context,
-    val activity: Activity?,
-    val focusManager: FocusManager,
-    val scope: CoroutineScope,
+    var authRepository: AuthRepository?,
+    var context: Context,
+    var activity: Activity?,
+    var focusManager: FocusManager,
+    var scope: CoroutineScope,
     initialState: SavedAccountAuthState = SavedAccountAuthState(),
 ) {
     var activeAuthMode by mutableStateOf(initialState.activeAuthMode)
@@ -512,17 +517,17 @@ internal class AccountAuthState(
                 )
             },
             restore = { list ->
-                val activeAuthMode = runCatching {
-                    AuthMode.valueOf(list[0] as String)
-                }.getOrDefault(AuthMode.SIGN_IN)
-                val usePasswordAuth = list[1] as Boolean
-                val email = list[2] as String
-                val password = list[3] as String
-                val confirmPassword = (list[4] as? String).orEmpty()
-                val passwordVisible = list[5] as Boolean
-                val confirmPasswordVisible = list[6] as Boolean
-                val magicLinkSent = list[7] as Boolean
-                val errorMessage = list[8] as? String
+                val activeAuthMode = (list.getOrNull(0) as? String)?.let {
+                    runCatching { AuthMode.valueOf(it) }.getOrNull()
+                } ?: AuthMode.SIGN_IN
+                val usePasswordAuth = list.getOrNull(1) as? Boolean ?: false
+                val email = (list.getOrNull(2) as? String).orEmpty()
+                val password = (list.getOrNull(3) as? String).orEmpty()
+                val confirmPassword = (list.getOrNull(4) as? String).orEmpty()
+                val passwordVisible = list.getOrNull(5) as? Boolean ?: false
+                val confirmPasswordVisible = list.getOrNull(6) as? Boolean ?: false
+                val magicLinkSent = list.getOrNull(7) as? Boolean ?: false
+                val errorMessage = list.getOrNull(8) as? String
                 AccountAuthState(
                     authRepository = authRepository,
                     context = context,
@@ -553,15 +558,18 @@ internal fun rememberAccountAuthState(
     activity: Activity? = remember(context) { context.findActivity() },
     focusManager: FocusManager = LocalFocusManager.current,
     scope: CoroutineScope = rememberCoroutineScope(),
-): AccountAuthState = rememberSaveable(
-    authRepository,
-    context,
-    activity,
-    focusManager,
-    scope,
-    saver = AccountAuthState.saver(authRepository, context, activity, focusManager, scope),
-) {
-    AccountAuthState(authRepository, context, activity, focusManager, scope)
+): AccountAuthState {
+    val state = rememberSaveable(
+        saver = AccountAuthState.saver(authRepository, context, activity, focusManager, scope),
+    ) {
+        AccountAuthState(authRepository, context, activity, focusManager, scope)
+    }
+    state.authRepository = authRepository
+    state.context = context
+    state.activity = activity
+    state.focusManager = focusManager
+    state.scope = scope
+    return state
 }
 
 @Composable
@@ -623,7 +631,7 @@ internal fun AccountPrivacyCard(modifier: Modifier = Modifier) {
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp),

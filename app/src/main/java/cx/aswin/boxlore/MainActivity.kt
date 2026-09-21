@@ -66,13 +66,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private var consumedAuthLink: String? = null
+    private var pendingCrossDeviceAuthLink by mutableStateOf<String?>(null)
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intentState.value = intent
         handlePlayerIntent(intent)
         handleAuthIntent(intent)
+        intentState.value = intent
         if (intent.data != null || !intent.getStringExtra("target_route").isNullOrBlank()) {
             warmStartIntent.value = intent
         }
@@ -83,27 +84,27 @@ class MainActivity : ComponentActivity() {
         val linkString = uri.toString()
         val authRepo = (application as BoxLoreApplication).container.authRepository
         if (authRepo.isSignInWithEmailLink(linkString)) {
-            // Nullify intent data immediately so the one-time link is consumed and not replayed
-            // on configuration changes or routed as a podcast deep link.
+            // Nullify intent data immediately so the one-time link is not routed as a podcast deep link.
             intent.data = null
             setIntent(intent)
             if (consumedAuthLink == linkString || lastConsumedAuthLink == linkString) {
                 return
             }
-            consumedAuthLink = linkString
-            lastConsumedAuthLink = linkString
 
             val prefs = cx.aswin.boxlore.core.prefs.BoxcastPrefs(this)
             val pendingEmail = prefs.getPendingAuthEmail()
             if (!pendingEmail.isNullOrBlank()) {
                 completeSignInWithEmailLink(pendingEmail, linkString)
             } else {
-                promptCrossDeviceEmail(linkString)
+                pendingCrossDeviceAuthLink = linkString
             }
         }
     }
 
     private fun completeSignInWithEmailLink(email: String, linkString: String) {
+        consumedAuthLink = linkString
+        lastConsumedAuthLink = linkString
+        pendingCrossDeviceAuthLink = null
         val authRepo = (application as BoxLoreApplication).container.authRepository
         lifecycleScope.launch {
             val result = authRepo.signInWithEmailLink(email, linkString)
@@ -122,39 +123,6 @@ class MainActivity : ComponentActivity() {
                 ).show()
             }
         }
-    }
-
-    private fun promptCrossDeviceEmail(linkString: String) {
-        val input = android.widget.EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or
-                android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            hint = "email@example.com"
-            setSingleLine()
-        }
-        val container = android.widget.FrameLayout(this).apply {
-            val horizontalPadding = (24 * resources.displayMetrics.density).toInt()
-            val verticalPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(horizontalPadding, verticalPadding, horizontalPadding, 0)
-            addView(input)
-        }
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Sign in to boxlore")
-            .setMessage("Enter the email address you used to request this sign-in link.")
-            .setView(container)
-            .setPositiveButton("Sign In") { _, _ ->
-                val email = input.text.toString().trim()
-                if (email.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    completeSignInWithEmailLink(email, linkString)
-                } else {
-                    android.widget.Toast.makeText(
-                        this@MainActivity,
-                        "Please enter a valid email address",
-                        android.widget.Toast.LENGTH_SHORT,
-                    ).show()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
     }
 
     private fun handlePlayerIntent(intent: android.content.Intent) {
@@ -207,15 +175,17 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_CONSUMED_AUTH_LINK, consumedAuthLink)
+        outState.putString(KEY_PENDING_CROSS_DEVICE_AUTH_LINK, pendingCrossDeviceAuthLink)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         consumedAuthLink = savedInstanceState?.getString(KEY_CONSUMED_AUTH_LINK) ?: consumedAuthLink
-        intentState.value = intent
+        pendingCrossDeviceAuthLink = savedInstanceState?.getString(KEY_PENDING_CROSS_DEVICE_AUTH_LINK)
         handlePlayerIntent(intent)
         handleAuthIntent(intent)
+        intentState.value = intent
 
         // Cold-start deep links / push routes must use the same handleDeepLink path as warm starts.
         if (intent?.data != null || !intent?.getStringExtra("target_route").isNullOrBlank()) {
@@ -248,11 +218,23 @@ class MainActivity : ComponentActivity() {
                     it.setUiForeground(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
                 },
             )
+
+            pendingCrossDeviceAuthLink?.let { linkString ->
+                cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme {
+                    cx.aswin.boxlore.ui.CrossDeviceEmailDialog(
+                        onDismiss = { pendingCrossDeviceAuthLink = null },
+                        onConfirm = { email ->
+                            completeSignInWithEmailLink(email, linkString)
+                        },
+                    )
+                }
+            }
         }
     }
 
     companion object {
         private const val KEY_CONSUMED_AUTH_LINK = "cx.aswin.boxlore.consumed_auth_link"
+        private const val KEY_PENDING_CROSS_DEVICE_AUTH_LINK = "cx.aswin.boxlore.pending_cross_device_auth_link"
         private var lastConsumedAuthLink: String? = null
     }
 }

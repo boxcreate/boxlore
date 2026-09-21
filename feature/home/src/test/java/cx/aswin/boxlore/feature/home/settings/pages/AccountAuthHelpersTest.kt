@@ -70,6 +70,17 @@ class AccountAuthHelpersTest {
     }
 
     @Test
+    fun isRecentLoginRequired_matchesWrappedCause() {
+        val wrapped = java.lang.RuntimeException("Operation failed", cx.aswin.boxlore.core.network.RecentLoginRequiredException())
+        org.junit.Assert.assertTrue(wrapped.isRecentLoginRequired())
+
+        val deeplyWrapped = java.lang.IllegalStateException(
+            java.util.concurrent.ExecutionException("outer", java.lang.RuntimeException("requires-recent-login")),
+        )
+        org.junit.Assert.assertTrue(deeplyWrapped.isRecentLoginRequired())
+    }
+
+    @Test
     fun isValidEmail_validatesCorrectly() {
         org.junit.Assert.assertTrue(isValidEmail("test@boxlore.example"))
         org.junit.Assert.assertTrue(isValidEmail("user.name+tag@sub.domain.org"))
@@ -200,5 +211,34 @@ class AccountAuthHelpersTest {
         org.junit.Assert.assertTrue(restored.confirmPasswordVisible)
         org.junit.Assert.assertTrue(restored.magicLinkSent)
         assertEquals("Previous attempt error", restored.errorMessage)
+    }
+
+    @Test
+    fun accountAuthState_saver_withPartialOrCorruptedList_fallsBackToDefaultsSafely() {
+        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+
+        val saver = AccountAuthState.saver(
+            authRepository = null,
+            context = mockContext,
+            activity = null,
+            focusManager = mockFocusManager,
+            scope = scope,
+        )
+
+        val emptyList = emptyList<Any?>()
+        val restoredFromEmpty = saver.restore(emptyList) as AccountAuthState
+        assertEquals(AuthMode.SIGN_IN, restoredFromEmpty.activeAuthMode)
+        org.junit.Assert.assertFalse(restoredFromEmpty.usePasswordAuth)
+        assertEquals("", restoredFromEmpty.email)
+        assertEquals("", restoredFromEmpty.password)
+        assertEquals("", restoredFromEmpty.confirmPassword)
+
+        val corruptedList = listOf<Any?>("UNKNOWN_MODE", "not-a-bool", 12345)
+        val restoredFromCorrupted = saver.restore(corruptedList) as AccountAuthState
+        assertEquals(AuthMode.SIGN_IN, restoredFromCorrupted.activeAuthMode)
+        org.junit.Assert.assertFalse(restoredFromCorrupted.usePasswordAuth)
+        assertEquals("", restoredFromCorrupted.email)
     }
 }

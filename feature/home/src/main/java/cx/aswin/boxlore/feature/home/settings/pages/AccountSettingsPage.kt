@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,8 +64,8 @@ internal fun AccountSettingsPage(
             ?: remember { mutableStateOf<BoxLoreUser?>(null) }
     )
 
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
-    var showReauthRequiredDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
+    var showReauthRequiredDialog by rememberSaveable { mutableStateOf(false) }
 
     SettingsScaffold(
         title = "Account",
