@@ -128,6 +128,7 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Streamlined player chapter and transcript controls by removing deprecated background generation prompts. <a href="https://github.com/boxcreate/boxlore/pull/1071"><img src="https://img.shields.io/badge/PR-1071-6750A4?style=flat-square" alt="PR #1071" height="18"/></a></li>
 <li>resolve account authentication and settings refinements <a href="https://github.com/boxcreate/boxlore/pull/1070"><img src="https://img.shields.io/badge/PR-1070-6750A4?style=flat-square" alt="PR #1070" height="18"/></a></li>
 </ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>

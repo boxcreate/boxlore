@@ -11,8 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - introduce Firebase Authentication and redesign account settings ([#1069](https://github.com/boxcreate/boxlore/pull/1069)) <!-- impact:user-impact-medium -->
+### Changed
+- Removed deprecated remote auto-transcription polling and AI chapter generation triggers from the player interface. ([#1071](https://github.com/boxcreate/boxlore/pull/1071)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 ### Fixed
 - resolve account authentication and settings refinements ([#1070](https://github.com/boxcreate/boxlore/pull/1070)) <!-- impact:user-impact-medium -->
+
+<!-- readme-copy:start pr=1071
+### Fixes
+- Streamlined player chapter and transcript controls by removing deprecated background generation prompts.
+readme-copy:end pr=1071 -->
 ## [v0.0.25] - 2026-09-08
 
 ### Added
