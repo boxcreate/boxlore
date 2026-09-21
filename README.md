@@ -126,6 +126,10 @@ and listen without paywalls, subscriptions, or ads.
 <ul align="left">
 <li>introduce Firebase Authentication and redesign account settings <a href="https://github.com/boxcreate/boxlore/pull... ([#1069](https://github.com/boxcreate/boxlore/pull/1069"><img src="https://img.shields.io/badge/PR-1069-6750A4?style=flat-square" alt="PR #1069" height="18"/></a></li>
 </ul>
+<b>🐛 Fixes:</b>
+<ul align="left">
+<li>resolve account authentication and settings refinements <a href="https://github.com/boxcreate/boxlore/pull/1070"><img src="https://img.shields.io/badge/PR-1070-6750A4?style=flat-square" alt="PR #1070" height="18"/></a></li>
+</ul>
 <p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
 

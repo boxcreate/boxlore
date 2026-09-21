@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - introduce Firebase Authentication and redesign account settings ([#1069](https://github.com/boxcreate/boxlore/pull/1069)) <!-- impact:user-impact-medium -->
+### Fixed
+- resolve account authentication and settings refinements ([#1070](https://github.com/boxcreate/boxlore/pull/1070)) <!-- impact:user-impact-medium -->
 ## [v0.0.25] - 2026-09-08
 
 ### Added
