@@ -27,10 +27,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.Credential
@@ -44,6 +51,7 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.network.AuthRepository
+import cx.aswin.boxlore.core.network.RecentLoginRequiredException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -64,22 +72,59 @@ internal tailrec fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
+private val RECENT_LOGIN_KEYWORDS = listOf(
+    "recent-login",
+    "recent login",
+    "recent_login",
+    "recentlogin",
+    "recent authentication",
+    "requires-recent-login",
+    "credential_too_old",
+)
+
+private val ACCOUNT_ERROR_MAPPINGS = listOf(
+    listOf("user-not-found", "no user") to
+        "No account found with this email. Try signing up instead.",
+    listOf("wrong-password", "invalid-credential") to
+        "Incorrect password or credentials. Please try again.",
+    listOf("email-already-in-use", "already registered") to
+        "This email is already registered. Try signing in instead.",
+    listOf("weak-password") to
+        "Password is too weak. Please use at least 6 characters.",
+    listOf("invalid-email") to
+        "Please enter a valid email address.",
+    RECENT_LOGIN_KEYWORDS to
+        "For security, please sign out and sign in again before deleting your account.",
+    listOf("network") to
+        "Network error. Check your connection and try again.",
+)
+
 internal fun cleanAccountError(raw: String?): String {
     if (raw == null) return "An unexpected error occurred"
-    return when {
-        raw.contains("user-not-found", ignoreCase = true) || raw.contains("no user", ignoreCase = true) ->
-            "No account found with this email. Try signing up instead."
-        raw.contains("wrong-password", ignoreCase = true) || raw.contains("invalid-credential", ignoreCase = true) ->
-            "Incorrect password or credentials. Please try again."
-        raw.contains("email-already-in-use", ignoreCase = true) || raw.contains("already registered", ignoreCase = true) ->
-            "This email is already registered. Try signing in instead."
-        raw.contains("weak-password", ignoreCase = true) ->
-            "Password is too weak. Please use at least 6 characters."
-        raw.contains("invalid-email", ignoreCase = true) ->
-            "Please enter a valid email address."
-        raw.contains("network", ignoreCase = true) ->
-            "Network error. Check your connection and try again."
-        else -> raw
+    for ((keywords, message) in ACCOUNT_ERROR_MAPPINGS) {
+        if (keywords.any { raw.contains(it, ignoreCase = true) }) {
+            return message
+        }
+    }
+    return raw
+}
+
+internal fun Throwable?.isRecentLoginRequired(): Boolean {
+    if (this == null) return false
+    if (this is RecentLoginRequiredException) return true
+    if (javaClass.simpleName.contains("RecentLoginRequired", ignoreCase = true)) return true
+    val msg = message.orEmpty()
+    return RECENT_LOGIN_KEYWORDS.any { msg.contains(it, ignoreCase = true) }
+}
+
+private val EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
+
+internal fun isValidEmail(email: String): Boolean {
+    if (email.isBlank()) return false
+    return runCatching {
+        android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }.getOrElse {
+        EMAIL_REGEX.matches(email)
     }
 }
 
@@ -134,7 +179,9 @@ internal data class EmailInputActions(
 internal data class PasswordInputState(
     val email: String,
     val password: String,
+    val confirmPassword: String = "",
     val passwordVisible: Boolean,
+    val confirmPasswordVisible: Boolean = false,
     val isSignUp: Boolean,
     val isLoading: Boolean,
     val errorMessage: String?,
@@ -143,7 +190,9 @@ internal data class PasswordInputState(
 internal data class PasswordInputActions(
     val onEmailChange: (String) -> Unit,
     val onPasswordChange: (String) -> Unit,
+    val onConfirmPasswordChange: (String) -> Unit = {},
     val onTogglePasswordVisible: () -> Unit,
+    val onToggleConfirmPasswordVisible: () -> Unit = {},
     val onForgotPassword: () -> Unit,
     val onSubmit: () -> Unit,
     val onSwitchToEmailLink: () -> Unit,
@@ -155,10 +204,14 @@ internal fun validatePasswordInputs(
     email: String,
     password: String,
     isSignUp: Boolean,
+    confirmPassword: String = "",
 ): String? = when {
     email.isBlank() -> "Please enter your email address"
+    !isValidEmail(email) -> "Please enter a valid email address"
     password.isBlank() -> "Please enter your password"
     isSignUp && password.length < 6 -> "Password must be at least 6 characters"
+    isSignUp && confirmPassword.isBlank() -> "Please confirm your password"
+    isSignUp && password != confirmPassword -> "Passwords do not match"
     else -> null
 }
 
@@ -213,43 +266,65 @@ internal suspend fun performGoogleSignIn(
     )
 }
 
+internal data class SavedAccountAuthState(
+    val activeAuthMode: AuthMode = AuthMode.SIGN_IN,
+    val usePasswordAuth: Boolean = false,
+    val email: String = "",
+    val password: String = "",
+    val confirmPassword: String = "",
+    val passwordVisible: Boolean = false,
+    val confirmPasswordVisible: Boolean = false,
+    val magicLinkSent: Boolean = false,
+    val errorMessage: String? = null,
+)
+
 internal class AccountAuthState(
     val authRepository: AuthRepository?,
     val context: Context,
     val activity: Activity?,
     val focusManager: FocusManager,
     val scope: CoroutineScope,
+    initialState: SavedAccountAuthState = SavedAccountAuthState(),
 ) {
-    var activeAuthMode by mutableStateOf(AuthMode.SIGN_IN)
-    var usePasswordAuth by mutableStateOf(false)
+    var activeAuthMode by mutableStateOf(initialState.activeAuthMode)
+    var usePasswordAuth by mutableStateOf(initialState.usePasswordAuth)
     var isAnyInputFocused by mutableStateOf(false)
 
-    var email by mutableStateOf("")
-    var password by mutableStateOf("")
-    var passwordVisible by mutableStateOf(false)
+    var email by mutableStateOf(initialState.email)
+    var password by mutableStateOf(initialState.password)
+    var confirmPassword by mutableStateOf(initialState.confirmPassword)
+    var passwordVisible by mutableStateOf(initialState.passwordVisible)
+    var confirmPasswordVisible by mutableStateOf(initialState.confirmPasswordVisible)
 
     var isGoogleLoading by mutableStateOf(false)
     var isEmailLoading by mutableStateOf(false)
     val isAnyLoading: Boolean get() = isGoogleLoading || isEmailLoading
 
-    var magicLinkSent by mutableStateOf(false)
-    var errorMessage by mutableStateOf<String?>(null)
+    var magicLinkSent by mutableStateOf(initialState.magicLinkSent)
+    var errorMessage by mutableStateOf<String?>(initialState.errorMessage)
 
     fun selectAuthMode(mode: AuthMode) {
         activeAuthMode = mode
         errorMessage = null
         magicLinkSent = false
+        confirmPassword = ""
     }
 
     fun resetToNewEmail() {
         magicLinkSent = false
         email = ""
+        password = ""
+        confirmPassword = ""
     }
 
     fun submitEmailLink() {
         val trimmedEmail = email.trim()
         if (trimmedEmail.isBlank()) {
             errorMessage = "Please enter your email address"
+            return
+        }
+        if (!isValidEmail(trimmedEmail)) {
+            errorMessage = "Please enter a valid email address"
             return
         }
         focusManager.clearFocus()
@@ -268,10 +343,9 @@ internal class AccountAuthState(
 
     fun submitPasswordAuth() {
         val trimmedEmail = email.trim()
-        val trimmedPassword = password.trim()
         val isSignUp = activeAuthMode == AuthMode.SIGN_UP
 
-        val validationError = validatePasswordInputs(trimmedEmail, trimmedPassword, isSignUp)
+        val validationError = validatePasswordInputs(trimmedEmail, password, isSignUp, confirmPassword)
         if (validationError != null) {
             errorMessage = validationError
             return
@@ -282,7 +356,7 @@ internal class AccountAuthState(
         errorMessage = null
 
         scope.launch {
-            val result = executePasswordAuth(trimmedEmail, trimmedPassword, isSignUp)
+            val result = executePasswordAuth(trimmedEmail, password, isSignUp)
             isEmailLoading = false
             handlePasswordAuthResult(result, isSignUp)
         }
@@ -336,6 +410,10 @@ internal class AccountAuthState(
             errorMessage = "Enter your email address above to reset password"
             return
         }
+        if (!isValidEmail(trimmedEmail)) {
+            errorMessage = "Please enter a valid email address"
+            return
+        }
         focusManager.clearFocus()
         scope.launch {
             val result = authRepository?.sendPasswordReset(trimmedEmail)
@@ -373,7 +451,9 @@ internal class AccountAuthState(
     fun toPasswordInputState() = PasswordInputState(
         email = email,
         password = password,
+        confirmPassword = confirmPassword,
         passwordVisible = passwordVisible,
+        confirmPasswordVisible = confirmPasswordVisible,
         isSignUp = activeAuthMode == AuthMode.SIGN_UP,
         isLoading = isEmailLoading,
         errorMessage = errorMessage,
@@ -391,7 +471,12 @@ internal class AccountAuthState(
             password = it
             errorMessage = null
         },
+        onConfirmPasswordChange = {
+            confirmPassword = it
+            errorMessage = null
+        },
         onTogglePasswordVisible = { passwordVisible = !passwordVisible },
+        onToggleConfirmPasswordVisible = { confirmPasswordVisible = !confirmPasswordVisible },
         onForgotPassword = ::handleForgotPassword,
         onSubmit = ::submitPasswordAuth,
         onSwitchToEmailLink = {
@@ -404,6 +489,79 @@ internal class AccountAuthState(
         },
         onNextField = onNextField,
     )
+
+    companion object {
+        fun saver(
+            authRepository: AuthRepository?,
+            context: Context,
+            activity: Activity?,
+            focusManager: FocusManager,
+            scope: CoroutineScope,
+        ): Saver<AccountAuthState, Any> = listSaver(
+            save = { state ->
+                listOf(
+                    state.activeAuthMode.name,
+                    state.usePasswordAuth,
+                    state.email,
+                    state.password,
+                    state.confirmPassword,
+                    state.passwordVisible,
+                    state.confirmPasswordVisible,
+                    state.magicLinkSent,
+                    state.errorMessage,
+                )
+            },
+            restore = { list ->
+                val activeAuthMode = runCatching {
+                    AuthMode.valueOf(list[0] as String)
+                }.getOrDefault(AuthMode.SIGN_IN)
+                val usePasswordAuth = list[1] as Boolean
+                val email = list[2] as String
+                val password = list[3] as String
+                val confirmPassword = (list[4] as? String).orEmpty()
+                val passwordVisible = list[5] as Boolean
+                val confirmPasswordVisible = list[6] as Boolean
+                val magicLinkSent = list[7] as Boolean
+                val errorMessage = list[8] as? String
+                AccountAuthState(
+                    authRepository = authRepository,
+                    context = context,
+                    activity = activity,
+                    focusManager = focusManager,
+                    scope = scope,
+                    initialState = SavedAccountAuthState(
+                        activeAuthMode = activeAuthMode,
+                        usePasswordAuth = usePasswordAuth,
+                        email = email,
+                        password = password,
+                        confirmPassword = confirmPassword,
+                        passwordVisible = passwordVisible,
+                        confirmPasswordVisible = confirmPasswordVisible,
+                        magicLinkSent = magicLinkSent,
+                        errorMessage = errorMessage,
+                    ),
+                )
+            },
+        )
+    }
+}
+
+@Composable
+internal fun rememberAccountAuthState(
+    authRepository: AuthRepository?,
+    context: Context = LocalContext.current,
+    activity: Activity? = remember(context) { context.findActivity() },
+    focusManager: FocusManager = LocalFocusManager.current,
+    scope: CoroutineScope = rememberCoroutineScope(),
+): AccountAuthState = rememberSaveable(
+    authRepository,
+    context,
+    activity,
+    focusManager,
+    scope,
+    saver = AccountAuthState.saver(authRepository, context, activity, focusManager, scope),
+) {
+    AccountAuthState(authRepository, context, activity, focusManager, scope)
 }
 
 @Composable

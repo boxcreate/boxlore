@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.network
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import cx.aswin.boxlore.core.model.BoxLoreUser
@@ -49,19 +50,25 @@ class FirebaseAuthRepository(
     }
 
     override suspend fun sendMagicLink(email: String): Result<Unit> = runCatching {
-        pendingEmailStore?.setPendingEmail(email)
         val actionCodeSettings = ActionCodeSettings.newBuilder()
             .setUrl(magicLinkUrl)
             .setHandleCodeInApp(true)
             .setAndroidPackageName(packageName, true, null)
             .build()
         auth.sendSignInLinkToEmail(email, actionCodeSettings).awaitTask()
+        pendingEmailStore?.setPendingEmail(email)
+        Unit
+    }.onFailure {
+        pendingEmailStore?.setPendingEmail(null)
     }
 
     override suspend fun signInWithEmailLink(email: String, emailLink: String): Result<BoxLoreUser> = runCatching {
-        val authResult = auth.signInWithEmailLink(email, emailLink).awaitTask()
-        pendingEmailStore?.setPendingEmail(null)
-        authResult.user.toBoxLoreUser() ?: error("User was null after email link sign-in")
+        try {
+            val authResult = auth.signInWithEmailLink(email, emailLink).awaitTask()
+            authResult.user.toBoxLoreUser() ?: error("User was null after email link sign-in")
+        } finally {
+            pendingEmailStore?.setPendingEmail(null)
+        }
     }
 
     override fun isSignInWithEmailLink(link: String): Boolean = auth.isSignInWithEmailLink(link)
@@ -77,8 +84,21 @@ class FirebaseAuthRepository(
 
     override suspend fun deleteAccount(): Result<Unit> = runCatching {
         val user = auth.currentUser ?: error("No authenticated user to delete")
-        user.delete().awaitTask()
-        pendingEmailStore?.setPendingEmail(null)
+        try {
+            user.delete().awaitTask()
+            pendingEmailStore?.setPendingEmail(null)
+        } catch (e: Exception) {
+            if (isRecentLoginError(e)) {
+                throw RecentLoginRequiredException(e.message, e)
+            }
+            throw e
+        }
+    }
+
+    private fun isRecentLoginError(e: Exception): Boolean {
+        if (e is FirebaseAuthRecentLoginRequiredException) return true
+        val msg = e.message ?: return false
+        return RECENT_LOGIN_KEYWORDS.any { msg.contains(it, ignoreCase = true) }
     }
 
     override suspend fun getIdToken(forceRefresh: Boolean): String? = runCatching {
@@ -89,6 +109,11 @@ class FirebaseAuthRepository(
     companion object {
         const val MAGIC_LINK_DEFAULT_URL = "https://aswin.cx/boxlore/auth"
         const val PACKAGE_NAME_DEFAULT = "cx.aswin.boxlore"
+        private val RECENT_LOGIN_KEYWORDS = listOf(
+            "recent-login",
+            "requires-recent-login",
+            "credential_too_old",
+        )
     }
 }
 

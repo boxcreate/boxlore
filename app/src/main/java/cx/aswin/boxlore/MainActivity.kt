@@ -65,13 +65,17 @@ class MainActivity : ComponentActivity() {
         PlayAppUpdateHelper(this, updateLauncher)
     }
 
+    private var consumedAuthLink: String? = null
+
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         intentState.value = intent
-        warmStartIntent.value = intent
         handlePlayerIntent(intent)
         handleAuthIntent(intent)
+        if (intent.data != null || !intent.getStringExtra("target_route").isNullOrBlank()) {
+            warmStartIntent.value = intent
+        }
     }
 
     private fun handleAuthIntent(intent: android.content.Intent?) {
@@ -79,28 +83,78 @@ class MainActivity : ComponentActivity() {
         val linkString = uri.toString()
         val authRepo = (application as BoxLoreApplication).container.authRepository
         if (authRepo.isSignInWithEmailLink(linkString)) {
+            // Nullify intent data immediately so the one-time link is consumed and not replayed
+            // on configuration changes or routed as a podcast deep link.
+            intent.data = null
+            setIntent(intent)
+            if (consumedAuthLink == linkString || lastConsumedAuthLink == linkString) {
+                return
+            }
+            consumedAuthLink = linkString
+            lastConsumedAuthLink = linkString
+
             val prefs = cx.aswin.boxlore.core.prefs.BoxcastPrefs(this)
             val pendingEmail = prefs.getPendingAuthEmail()
             if (!pendingEmail.isNullOrBlank()) {
-                lifecycleScope.launch {
-                    val result = authRepo.signInWithEmailLink(pendingEmail, linkString)
-                    if (result.isSuccess) {
-                        android.widget.Toast.makeText(
-                            this@MainActivity,
-                            "Signed in as ${result.getOrNull()?.email ?: "user"}",
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
-                    } else {
-                        android.util.Log.e("MainActivity", "Magic link sign-in failed", result.exceptionOrNull())
-                        android.widget.Toast.makeText(
-                            this@MainActivity,
-                            result.exceptionOrNull()?.localizedMessage ?: "Failed to sign in with link",
-                            android.widget.Toast.LENGTH_LONG,
-                        ).show()
-                    }
-                }
+                completeSignInWithEmailLink(pendingEmail, linkString)
+            } else {
+                promptCrossDeviceEmail(linkString)
             }
         }
+    }
+
+    private fun completeSignInWithEmailLink(email: String, linkString: String) {
+        val authRepo = (application as BoxLoreApplication).container.authRepository
+        lifecycleScope.launch {
+            val result = authRepo.signInWithEmailLink(email, linkString)
+            if (result.isSuccess) {
+                android.widget.Toast.makeText(
+                    this@MainActivity,
+                    "Signed in as ${result.getOrNull()?.email ?: "user"}",
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
+            } else {
+                android.util.Log.e("MainActivity", "Magic link sign-in failed", result.exceptionOrNull())
+                android.widget.Toast.makeText(
+                    this@MainActivity,
+                    result.exceptionOrNull()?.localizedMessage ?: "Failed to sign in with link",
+                    android.widget.Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+    }
+
+    private fun promptCrossDeviceEmail(linkString: String) {
+        val input = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            hint = "email@example.com"
+            setSingleLine()
+        }
+        val container = android.widget.FrameLayout(this).apply {
+            val horizontalPadding = (24 * resources.displayMetrics.density).toInt()
+            val verticalPadding = (12 * resources.displayMetrics.density).toInt()
+            setPadding(horizontalPadding, verticalPadding, horizontalPadding, 0)
+            addView(input)
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Sign in to boxlore")
+            .setMessage("Enter the email address you used to request this sign-in link.")
+            .setView(container)
+            .setPositiveButton("Sign In") { _, _ ->
+                val email = input.text.toString().trim()
+                if (email.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    completeSignInWithEmailLink(email, linkString)
+                } else {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "Please enter a valid email address",
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun handlePlayerIntent(intent: android.content.Intent) {
@@ -150,16 +204,23 @@ class MainActivity : ComponentActivity() {
         super.onStop()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_CONSUMED_AUTH_LINK, consumedAuthLink)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        consumedAuthLink = savedInstanceState?.getString(KEY_CONSUMED_AUTH_LINK) ?: consumedAuthLink
         intentState.value = intent
+        handlePlayerIntent(intent)
+        handleAuthIntent(intent)
+
         // Cold-start deep links / push routes must use the same handleDeepLink path as warm starts.
         if (intent?.data != null || !intent?.getStringExtra("target_route").isNullOrBlank()) {
             warmStartIntent.value = intent
         }
-        handlePlayerIntent(intent)
-        handleAuthIntent(intent)
 
         try {
             enableEdgeToEdge()
@@ -172,7 +233,6 @@ class MainActivity : ComponentActivity() {
         }
 
         AnalyticsHelper.trackFirstLaunchIfNecessary(this)
-        handlePlayerIntent(intent)
         playAppUpdateHelper.checkForUpdates()
         CoilImageLoaderSetup.install(applicationContext)
 
@@ -189,5 +249,10 @@ class MainActivity : ComponentActivity() {
                 },
             )
         }
+    }
+
+    companion object {
+        private const val KEY_CONSUMED_AUTH_LINK = "cx.aswin.boxlore.consumed_auth_link"
+        private var lastConsumedAuthLink: String? = null
     }
 }

@@ -64,6 +64,7 @@ internal fun AccountSettingsPage(
     )
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showReauthRequiredDialog by remember { mutableStateOf(false) }
 
     SettingsScaffold(
         title = "Account",
@@ -88,45 +89,99 @@ internal fun AccountSettingsPage(
     }
 
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Account", fontWeight = GoogleSansWeight.bold) },
-            text = {
-                Text(
-                    "Are you sure you want to delete your boxlore account? " +
-                        "This permanently removes your cloud profile and cross-device sync data. " +
-                        "Your local downloads and podcast catalog on this device will not be erased.",
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteConfirmation = false
-                        scope.launch {
-                            val result = authRepository?.deleteAccount()
-                            if (result?.isSuccess == true) {
-                                Toast.makeText(context, "Account deleted", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    result?.exceptionOrNull()?.localizedMessage ?: "Failed to delete account",
-                                    Toast.LENGTH_LONG,
-                                ).show()
-                            }
+        DeleteAccountConfirmationDialog(
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirmDelete = {
+                showDeleteConfirmation = false
+                scope.launch {
+                    val result = authRepository?.deleteAccount()
+                    if (result?.isSuccess == true) {
+                        Toast.makeText(context, "Account deleted", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val error = result?.exceptionOrNull()
+                        if (error.isRecentLoginRequired()) {
+                            showReauthRequiredDialog = true
+                        } else {
+                            Toast.makeText(
+                                context,
+                                cleanAccountError(error?.localizedMessage),
+                                Toast.LENGTH_LONG,
+                            ).show()
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                ) {
-                    Text("Delete Permanently")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
+                    }
                 }
             },
         )
     }
+
+    if (showReauthRequiredDialog) {
+        ReauthRequiredDialog(
+            onDismiss = { showReauthRequiredDialog = false },
+            onSignOutToReauth = {
+                showReauthRequiredDialog = false
+                authRepository?.signOut()
+                Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+}
+
+@Composable
+private fun DeleteAccountConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirmDelete: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Account", fontWeight = GoogleSansWeight.bold) },
+        text = {
+            Text(
+                "Are you sure you want to delete your boxlore account? " +
+                    "This permanently removes your cloud profile and cross-device sync data. " +
+                    "Your local downloads and podcast catalog on this device will not be erased.",
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmDelete,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text("Delete Permanently")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+@Composable
+private fun ReauthRequiredDialog(
+    onDismiss: () -> Unit,
+    onSignOutToReauth: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Recent Sign-In Required", fontWeight = GoogleSansWeight.bold) },
+        text = {
+            Text(
+                "For your security, deleting your account requires recent authentication. " +
+                    "Please sign out and sign back in, then try deleting your account again.",
+            )
+        },
+        confirmButton = {
+            Button(onClick = onSignOutToReauth) {
+                Text("Sign Out to Re-authenticate")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 @Composable

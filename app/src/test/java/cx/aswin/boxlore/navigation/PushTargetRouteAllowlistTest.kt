@@ -11,6 +11,7 @@ class PushTargetRouteAllowlistTest {
     fun allowsKnownExactAndPrefixRoutes() {
         assertTrue(PushTargetRouteAllowlist.isAllowed("home"))
         assertTrue(PushTargetRouteAllowlist.isAllowed("settings"))
+        assertTrue(PushTargetRouteAllowlist.isAllowed("settings?page=account"))
         assertTrue(PushTargetRouteAllowlist.isAllowed("library/downloads"))
         assertTrue(PushTargetRouteAllowlist.isAllowed("podcast/123"))
         assertTrue(PushTargetRouteAllowlist.isAllowed("episode/abc?autoplay=true"))

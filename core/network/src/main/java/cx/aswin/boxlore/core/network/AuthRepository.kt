@@ -21,3 +21,15 @@ interface AuthRepository {
     suspend fun deleteAccount(): Result<Unit>
     suspend fun getIdToken(forceRefresh: Boolean = false): String?
 }
+
+/** Base exception for authentication errors across providers. */
+open class AuthException(message: String?, cause: Throwable? = null) : Exception(message, cause)
+
+/**
+ * Thrown when a sensitive operation (like account deletion) requires the user
+ * to have signed in recently.
+ */
+class RecentLoginRequiredException(
+    message: String? = "Recent authentication required",
+    cause: Throwable? = null,
+) : AuthException(message, cause)
