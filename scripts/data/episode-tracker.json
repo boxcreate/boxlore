@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-21T18:16:30.136Z",
+  "lastRun": "2026-09-21T22:07:18.801Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "ed7d35fe-66b9-4693-b40c-bfbaeb4fbf83",
-      "lastEpisodeTitle": "NPR News: 09-21-2026 2PM EDT",
+      "lastRssKey": "46df52a7-ce18-4958-952f-cbcd70511443",
+      "lastEpisodeTitle": "NPR News: 09-21-2026 5PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790014594304
+      "lastCheckedAt": 1790028442746
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75282380",
@@ -90,6 +90,12 @@
       "lastEpisodeTitle": "Hussain English Podcast",
       "lastEpisodeId": "8689067",
       "lastCheckedAt": 1789848367126
+    },
+    "199250": {
+      "lastEpisodeId": "33774316306",
+      "lastEpisodeTitle": "Pat Novak for Hire: The Jack of Clubs",
+      "lastRssKey": "542ca5bc-2164-4252-93e8-1a0e05a36eed",
+      "lastCheckedAt": 1790028449665
     },
     "204808": {
       "lastRssKey": "4425e1a6-6565-4ba5-83f9-5f88399ef0e1",
@@ -141,16 +147,22 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "17C4623F-DFD0-49B7-BF6A-EC098D1CEE5C",
-      "lastEpisodeTitle": "TNB Tech Minute: Bitcoin Surges Above $85,000",
-      "lastEpisodeId": "60669048511",
-      "lastCheckedAt": 1790014606452
+      "lastRssKey": "C2858695-D0DE-48D9-9EBE-62EFCF74238A",
+      "lastEpisodeTitle": "TNB Tech Minute: Meta’s Stock Soars as New AI Agent Gathers Steam",
+      "lastEpisodeId": "60676277766",
+      "lastCheckedAt": 1790028454836
+    },
+    "320115": {
+      "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
+      "lastEpisodeTitle": "Big Lives: Emmanuel's New Show",
+      "lastEpisodeId": "52764208570",
+      "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "82ce76f2-a890-11f1-95c4-972516c314ba",
-      "lastEpisodeTitle": "OpenAI Got Hacked By... AI",
+      "lastRssKey": "8303e2c4-a890-11f1-95c4-6b18dfebbbe4",
+      "lastEpisodeTitle": "The Googlebooks Are Here",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1789754740622
+      "lastCheckedAt": 1790028455591
     },
     "353744": {
       "lastRssKey": "flightcast:01M2X1DGXZZDMDGGVKCB1GKN0M",
@@ -159,10 +171,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "95795132-b5e7-11f1-877c-6f58ecf7a7e3",
-      "lastEpisodeTitle": "2PM ET 09/21/2026 Newscast",
-      "lastEpisodeId": "60664057326",
-      "lastCheckedAt": 1790014607808
+      "lastRssKey": "ba27f2f4-b600-11f1-984e-873e2c2e20fc",
+      "lastEpisodeTitle": "5PM ET 09/21/2026 Newscast",
+      "lastEpisodeId": "60678451178",
+      "lastCheckedAt": 1790028456082
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -189,10 +201,10 @@
       "lastCheckedAt": 1789569427380
     },
     "415434": {
-      "lastRssKey": "ca20e232-c3c7-11f0-8340-db185fdcacbd",
-      "lastEpisodeTitle": "The real story of the iPhone 18 Pro's camera",
+      "lastRssKey": "49481716-6e7b-11f1-94bf-1fbfdc2004d6",
+      "lastEpisodeTitle": "Googlebooks are coming for your Mac",
       "lastEpisodeId": "60427690690",
-      "lastCheckedAt": 1789754744116
+      "lastCheckedAt": 1790028459363
     },
     "419624": {
       "lastRssKey": "d30adff8-d3dc-4ae2-bcde-9f9ba3a0f0ff",
@@ -201,10 +213,10 @@
       "lastCheckedAt": 1789925693884
     },
     "431205": {
-      "lastRssKey": "d971c8d5-d277-4979-85ea-1f2050d0b9f5",
-      "lastEpisodeTitle": "Nvidia Too Cheap to Ignore?, AI Safety Debate, Apple’s iPhone Launch 9/18/26",
+      "lastRssKey": "593c2f85-3fb1-4072-a5e2-d8eac18ffe2a",
+      "lastEpisodeTitle": "AI Stocks Rally, Meta’s Muse Moment, Nike’s Swoon 9/21/26",
       "lastEpisodeId": "60571577178",
-      "lastCheckedAt": 1789828768053
+      "lastCheckedAt": 1790028461602
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -281,10 +293,10 @@
       "lastCheckedAt": 1789640214417
     },
     "483834": {
-      "lastRssKey": "6aaddb773544546cb88cf7a9",
-      "lastEpisodeTitle": "New Paramount Sequel Release Dates, 99 Nights in the Forest Movie Adaptation — September 20, 2026",
+      "lastRssKey": "6ab17584d00a4eacd5bd085e",
+      "lastEpisodeTitle": "New Blade Runner 2099 Photos, A24 Drops Slayground Horror Movie Teaser  — September 21, 2026",
       "lastEpisodeId": "60603867985",
-      "lastCheckedAt": 1789925701530
+      "lastCheckedAt": 1790028469414
     },
     "490022": {
       "lastRssKey": "94eccd96-c916-40c8-8350-74d1671bf90b",
@@ -399,6 +411,12 @@
       "lastEpisodeId": "59396147606",
       "lastCheckedAt": 1789288166149
     },
+    "628250": {
+      "lastRssKey": "41d84141-68bd-48fd-a7e7-9b58d3cd0c3e",
+      "lastEpisodeTitle": "Big_Want",
+      "lastEpisodeId": "60656264093",
+      "lastCheckedAt": 1790028490008
+    },
     "640518": {
       "lastRssKey": "6aab8dc05d36baebf12f6d3b",
       "lastEpisodeTitle": "#378: Das sauteure Shirt",
@@ -412,10 +430,10 @@
       "lastCheckedAt": 1790014628618
     },
     "724143": {
-      "lastRssKey": "0d565a36-b5a4-11f1-8af0-87760af44306",
-      "lastEpisodeTitle": "Lula nos EUA em meio à tensão com Trump; voos de Moraes em avião de Vorcaro; morte de jovem em Fortaleza",
+      "lastRssKey": "3899bfcc-b607-11f1-8e52-cf0a118cf619",
+      "lastEpisodeTitle": "Lula e Flávio empatados, boicote de emissoras à Casa Branca e pausa na carreira de João Fonseca",
       "lastEpisodeId": "60409761274",
-      "lastCheckedAt": 1789992456131
+      "lastCheckedAt": 1790028491310
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/w-0oGFd2IzhFS0QEXBKFFS5ISPi0tChyH9JjnpZM9NI",
@@ -565,10 +583,10 @@
       "lastCheckedAt": 1789925728317
     },
     "1015378": {
-      "lastRssKey": "a2a542d5-2feb-441a-a523-910e16c2d193",
-      "lastEpisodeTitle": "Adam Foroughi, Applovin CEO: Surviving a 92% Drawdown, Ads as ML 1.0 & the $50B Game Ad Market",
-      "lastEpisodeId": "60644057107",
-      "lastCheckedAt": 1789943895687
+      "lastRssKey": "053073fc-e856-48e9-9312-74082d4761ee",
+      "lastEpisodeTitle": "Naveen Rao: 4D Computing, AI's Energy Wall & Beating Biology",
+      "lastEpisodeId": "60678061138",
+      "lastCheckedAt": 1790028507310
     },
     "1021803": {
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
@@ -850,9 +868,9 @@
       "lastCheckedAt": 1789935860026
     },
     "4622987": {
-      "lastRssKey": "5c006235-f42f-449b-886b-bbf18ba02dbd",
-      "lastEpisodeTitle": "رادیوجادی ۲۵۶ – کتاب برای پیروزی – قسمت ۵۰ – کوری دکترو",
-      "lastCheckedAt": 1790014662247
+      "lastRssKey": "0f01f5bf-4a5f-4198-b1a4-333e1c4a83f9",
+      "lastEpisodeTitle": "رادیوجادی ۲۶۰ – کتاب برای پیروزی – قسمت ۵۴ – کوری دکترو",
+      "lastCheckedAt": 1790028531083
     },
     "4780435": {
       "lastRssKey": "tag:soundcloud,2010:tracks/2385719535",
@@ -922,6 +940,12 @@
       "lastEpisodeId": "60673418438",
       "lastCheckedAt": 1790014666109
     },
+    "5716515": {
+      "lastRssKey": "https://www.greatdetectives.net/detectives/?p=51616",
+      "lastEpisodeTitle": "Yours Truly Johnny Dollar: The Night in Paris Matter (EP5065)",
+      "lastEpisodeId": "60603888883",
+      "lastCheckedAt": 1790028539973
+    },
     "5724334": {
       "lastRssKey": "b4724d00-9d50-11f1-bd62-bf4ca431fd48",
       "lastEpisodeTitle": "206: Chair on a pole",
@@ -959,10 +983,10 @@
       "lastCheckedAt": 1789584032330
     },
     "5972153": {
-      "lastRssKey": "6c5d7298-b58c-11f1-b3eb-a7ce4337cbac",
-      "lastEpisodeTitle": "Iran-US threats, Germany elections and AI at the UN",
+      "lastRssKey": "ddde2c84-b5f8-11f1-978c-fb41d7d021a7",
+      "lastEpisodeTitle": "Paramount deal, Germany elections, AI at the UN (Updated)",
       "lastEpisodeId": "60634460811",
-      "lastCheckedAt": 1789992504529
+      "lastCheckedAt": 1790028544347
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -982,10 +1006,10 @@
       "lastCheckedAt": 1789584033549
     },
     "6280366": {
-      "lastRssKey": "8ad2936e-1a03-405a-a270-2b5043e5f150",
-      "lastEpisodeTitle": "7 Ways How We Use AI Is Changing",
+      "lastRssKey": "e7a9df0d-6988-4a49-b98a-f64a7da6a7a2",
+      "lastEpisodeTitle": "The State of the AI Debate",
       "lastEpisodeId": "60592860794",
-      "lastCheckedAt": 1789913124607
+      "lastCheckedAt": 1790028546324
     },
     "6413946": {
       "lastRssKey": "76abee76-48bf-4865-9619-6e890cc7cabe",
@@ -1026,6 +1050,12 @@
       "lastRssKey": "cb571878-467a-49c1-bb3a-a9e6128a2f0b",
       "lastEpisodeTitle": "The Fastest Way to Allah’s Pleasure | Rehan Salim | Firmly Rooted Ep 16",
       "lastCheckedAt": 1789640271775
+    },
+    "6637069": {
+      "lastRssKey": "deb8092e-b024-11f1-a289-1714963f05d3",
+      "lastEpisodeTitle": "The Bruce-Partington Plans - Part Four",
+      "lastEpisodeId": "60422002133",
+      "lastCheckedAt": 1790028549320
     },
     "6655297": {
       "lastRssKey": "indieventurepodcast.podbean.com/3b67977b-17e5-37c4-aada-4332098953f8",
@@ -1189,10 +1219,10 @@
       "lastCheckedAt": 1789943935661
     },
     "7248222": {
-      "lastRssKey": "026bf798-b3b0-11f1-a254-d70f23c356dd",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Viernes 18 de septiembre de 2026",
+      "lastRssKey": "ce9f04a4-b5fe-11f1-acd7-4f2531c9160d",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Lunes 21 de septiembre de 2026",
       "lastEpisodeId": "60571384940",
-      "lastCheckedAt": 1789774232451
+      "lastCheckedAt": 1790028570670
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1332,10 +1362,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/96640c20-4bfc-571f-89c6-03fc66bc461e",
-      "lastEpisodeTitle": "Can you be MENTALLY OUT of a narcissistic relationship you are STILL IN ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/5f901eda-5bad-528e-b810-73bb391208eb",
+      "lastEpisodeTitle": "EXPECT THIS when narcissists COP TO bad behavior ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1790014701594
+      "lastCheckedAt": 1790028576215
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
