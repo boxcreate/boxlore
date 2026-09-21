@@ -78,9 +78,13 @@ internal fun ColumnScope.SignedOutContent(
     val actionButtonRequester = remember { BringIntoViewRequester() }
     val imeBottom = WindowInsets.ime.getBottom(density)
 
-    val state = remember(authRepository, context, activity, focusManager, scope) {
-        AccountAuthState(authRepository, context, activity, focusManager, scope)
-    }
+    val state = rememberAccountAuthState(
+        authRepository = authRepository,
+        context = context,
+        activity = activity,
+        focusManager = focusManager,
+        scope = scope,
+    )
 
     LaunchedEffect(imeBottom, state.isAnyInputFocused) {
         if (imeBottom > 0 && state.isAnyInputFocused) {
@@ -295,7 +299,7 @@ private fun EmailLinkSentAddressCard(email: String) {
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainer,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -327,8 +331,8 @@ private fun EmailLinkSentAddressCard(email: String) {
 private fun EmailLinkSentSpamCard() {
     Surface(
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.35f)),
+        color = MaterialTheme.colorScheme.errorContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -543,44 +547,39 @@ private fun EmailLinkInputSection(
     }
 }
 
-@Composable
-private fun PasswordVisibilityToggle(
-    passwordVisible: Boolean,
-    onToggle: () -> Unit,
-) {
-    IconButton(onClick = onToggle) {
-        Icon(
-            imageVector = if (passwordVisible) {
-                Icons.Rounded.VisibilityOff
-            } else {
-                Icons.Rounded.Visibility
-            },
-            contentDescription = if (passwordVisible) "Hide password" else "Show password",
-        )
-    }
-}
+private data class PasswordFieldState(
+    val value: String,
+    val isVisible: Boolean,
+    val onValueChange: (String) -> Unit,
+    val onToggleVisible: () -> Unit,
+)
 
 @Composable
 private fun PasswordTextField(
-    password: String,
-    passwordVisible: Boolean,
-    onPasswordChange: (String) -> Unit,
-    onToggleVisible: () -> Unit,
+    state: PasswordFieldState,
     onInputFocused: () -> Unit,
-    onSubmit: () -> Unit,
+    label: String = "Password",
+    imeAction: ImeAction = ImeAction.Done,
+    onImeAction: () -> Unit = {},
 ) {
     OutlinedTextField(
-        value = password,
-        onValueChange = onPasswordChange,
-        label = { Text("Password") },
+        value = state.value,
+        onValueChange = state.onValueChange,
+        label = { Text(label) },
         leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
         trailingIcon = {
-            PasswordVisibilityToggle(
-                passwordVisible = passwordVisible,
-                onToggle = onToggleVisible,
-            )
+            IconButton(onClick = state.onToggleVisible) {
+                Icon(
+                    imageVector = if (state.isVisible) {
+                        Icons.Rounded.VisibilityOff
+                    } else {
+                        Icons.Rounded.Visibility
+                    },
+                    contentDescription = if (state.isVisible) "Hide password" else "Show password",
+                )
+            }
         },
-        visualTransformation = if (passwordVisible) {
+        visualTransformation = if (state.isVisible) {
             VisualTransformation.None
         } else {
             PasswordVisualTransformation()
@@ -589,10 +588,41 @@ private fun PasswordTextField(
         shape = MaterialTheme.shapes.large,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Done,
+            imeAction = imeAction,
         ),
         keyboardActions = KeyboardActions(
-            onDone = { onSubmit() },
+            onAny = { onImeAction() },
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                if (focusState.isFocused) {
+                    onInputFocused()
+                }
+            },
+    )
+}
+
+@Composable
+private fun EmailTextField(
+    email: String,
+    onEmailChange: (String) -> Unit,
+    onNext: () -> Unit,
+    onInputFocused: () -> Unit,
+) {
+    OutlinedTextField(
+        value = email,
+        onValueChange = onEmailChange,
+        label = { Text("Email address") },
+        leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
+        singleLine = true,
+        shape = MaterialTheme.shapes.large,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next,
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { onNext() },
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -694,39 +724,43 @@ private fun PasswordAuthSection(
 
     Spacer(Modifier.height(12.dp))
 
-    OutlinedTextField(
-        value = state.email,
-        onValueChange = actions.onEmailChange,
-        label = { Text("Email address") },
-        leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
-        singleLine = true,
-        shape = MaterialTheme.shapes.large,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Email,
-            imeAction = ImeAction.Next,
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = { actions.onNextField() },
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    actions.onInputFocused()
-                }
-            },
+    EmailTextField(
+        email = state.email,
+        onEmailChange = actions.onEmailChange,
+        onNext = actions.onNextField,
+        onInputFocused = actions.onInputFocused,
     )
 
     Spacer(Modifier.height(12.dp))
 
     PasswordTextField(
-        password = state.password,
-        passwordVisible = state.passwordVisible,
-        onPasswordChange = actions.onPasswordChange,
-        onToggleVisible = actions.onTogglePasswordVisible,
+        state = PasswordFieldState(
+            value = state.password,
+            isVisible = state.passwordVisible,
+            onValueChange = actions.onPasswordChange,
+            onToggleVisible = actions.onTogglePasswordVisible,
+        ),
         onInputFocused = actions.onInputFocused,
-        onSubmit = actions.onSubmit,
+        label = "Password",
+        imeAction = if (state.isSignUp) ImeAction.Next else ImeAction.Done,
+        onImeAction = if (state.isSignUp) actions.onNextField else actions.onSubmit,
     )
+
+    if (state.isSignUp) {
+        Spacer(Modifier.height(12.dp))
+        PasswordTextField(
+            state = PasswordFieldState(
+                value = state.confirmPassword,
+                isVisible = state.confirmPasswordVisible,
+                onValueChange = actions.onConfirmPasswordChange,
+                onToggleVisible = actions.onToggleConfirmPasswordVisible,
+            ),
+            onInputFocused = actions.onInputFocused,
+            label = "Confirm password",
+            imeAction = ImeAction.Done,
+            onImeAction = actions.onSubmit,
+        )
+    }
 
     PasswordHelperRow(
         isSignUp = state.isSignUp,
@@ -740,7 +774,10 @@ private fun PasswordAuthSection(
 
     Spacer(Modifier.height(10.dp))
 
-    val isSubmitEnabled = !state.isLoading && state.email.isNotBlank() && state.password.isNotBlank()
+    val isSubmitEnabled = !state.isLoading &&
+        state.email.isNotBlank() &&
+        state.password.isNotBlank() &&
+        (!state.isSignUp || state.confirmPassword.isNotBlank())
     PasswordSubmitButton(
         isSignUp = state.isSignUp,
         isLoading = state.isLoading,

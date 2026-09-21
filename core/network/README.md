@@ -7,8 +7,8 @@ Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and respon
 ## Public API
 
 - `BoxLoreApi` defines the Retrofit service surface, including additive `GET search/typeahead` (Meili show typeahead). Legacy `GET search` is unchanged. `GET search/semantic` keeps episode `items` for older clients and may include additive podcast `feeds` (one CF embed → Qdrant `podcasts` + `episodes`).
-- `AuthRepository` defines the core authentication contract (Google One Tap, email/password, passwordless email link sign-in, account deletion, and user state flow).
-- `FirebaseAuthRepository` provides the Firebase Auth implementation for `AuthRepository`.
+- `AuthRepository` defines the core authentication contract (Google One Tap, email/password, passwordless email link sign-in, account deletion, and user state flow) with `RecentLoginRequiredException` for sensitive operations.
+- `FirebaseAuthRepository` provides the Firebase Auth implementation for `AuthRepository`, ensuring pending email state is cleaned up on completion or failure, and mapping recent-login requirement errors on account deletion.
 - `PendingEmailStore` interface for saving/retrieving the pending email during email link sign-in.
 - `NetworkModule` creates OkHttp, Retrofit, and related network clients.
 - `StreamingJsonConverterFactory` streams response deserialization directly from OkHttp's `ResponseBody.byteStream()` via `Json.decodeFromStream` without monolithic string buffering.

@@ -620,7 +620,8 @@ private fun openChangelog(context: Context) {
     }
 }
 
-private fun String?.toSettingsDestination(): ProfileSettingsDestination = when (this?.trim()?.lowercase()) {
+internal fun String?.toSettingsDestination(): ProfileSettingsDestination = when (this?.trim()?.lowercase()) {
+    "account" -> ProfileSettingsDestination.Account
     "library" -> ProfileSettingsDestination.Library
     "appearance" -> ProfileSettingsDestination.Appearance
     "playback" -> ProfileSettingsDestination.Playback
