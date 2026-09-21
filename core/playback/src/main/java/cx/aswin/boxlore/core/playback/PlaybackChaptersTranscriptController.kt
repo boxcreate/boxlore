@@ -222,7 +222,6 @@ internal class PlaybackChaptersTranscriptController(
                                             playerStateFlow.value = playerStateFlow.value.copy(currentTranscript = transcript)
                                         }
                                     }
-
                                 } else if (episode != null && episode.audioUrl.isNotEmpty()) {
                                     val offlineTranscript = TranscriptOfflineStorage.getOfflineTranscript(context, episodeId)
                                     playerStateFlow.value =

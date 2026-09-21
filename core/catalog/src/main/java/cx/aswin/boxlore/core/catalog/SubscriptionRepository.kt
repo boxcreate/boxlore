@@ -59,6 +59,8 @@ class SubscriptionRepository(
                     description = podcast.description,
                     isSubscribed = true,
                     subscribedAt = System.currentTimeMillis(),
+                    unsubscribedAt = 0L,
+                    isDirty = true,
                     genre = podcast.genre, // Persist genre for Smart Queue matching
                     type = podcast.type,
                     lastRefreshed = System.currentTimeMillis(),
@@ -115,6 +117,8 @@ class SubscriptionRepository(
             target.copy(
                 isSubscribed = false,
                 subscribedAt = 0L,
+                unsubscribedAt = System.currentTimeMillis(),
+                isDirty = true,
                 notificationsEnabled = false,
                 autoDownloadEnabled = false,
                 customGenre = null,
@@ -191,6 +195,8 @@ class SubscriptionRepository(
                 isSubscribed = true,
                 subscribedAt = validRestoredSubscribedAt
                     ?: if (existing?.isSubscribed == true) existing.subscribedAt else now,
+                unsubscribedAt = 0L,
+                isDirty = true,
                 genre = podcast.genre,
                 type = typeVal,
                 lastRefreshed = existing?.lastRefreshed ?: now,

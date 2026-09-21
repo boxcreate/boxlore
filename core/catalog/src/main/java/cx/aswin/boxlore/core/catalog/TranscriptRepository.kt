@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.catalog
 import androidx.annotation.VisibleForTesting
 import java.net.URL
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /**

@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -204,6 +205,106 @@ class QueueRepositoryTest {
         repository.replaceQueue(listOf(domainEp))
         val replaced = database.queueDao().getQueueItemByEpisodeId("2")
         assertEquals("podcast_detail", replaced?.contextSourceId)
+    }
+
+    @Test
+    fun addToQueueBumpsQueueMetadataSequence() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        val meta1 = repository.getQueueMetadata()!!
+        assertEquals(1L, meta1.queueSequence)
+        assertTrue(meta1.queueUpdatedAt > 0L)
+        assertTrue(meta1.isDirty)
+
+        repository.addToQueue(episodeItem(2), podcast())
+        val meta2 = repository.getQueueMetadata()!!
+        assertEquals(2L, meta2.queueSequence)
+        assertTrue(meta2.queueUpdatedAt >= meta1.queueUpdatedAt)
+    }
+
+    @Test
+    fun removeFromQueueDeletesItemAndRecordsRemovedEpisodeId() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+
+        repository.removeFromQueue("1")
+
+        assertNull(repository.getQueueItemByEpisodeId("1"))
+        val remaining = repository.queue.first()
+        assertEquals(listOf("2"), remaining.map { it.id.toString() })
+
+        val meta = repository.getQueueMetadata()!!
+        assertTrue(meta.isDirty)
+        assertEquals("1", meta.recentRemovedEpisodeIds)
+
+        // Remove another item
+        repository.removeFromQueue("2")
+        val meta2 = repository.getQueueMetadata()!!
+        assertEquals("1,2", meta2.recentRemovedEpisodeIds)
+    }
+
+    @Test
+    fun clearQueueOnEmptyQueueBumpsMonotonicSequence() = runTest {
+        val initialSeq = repository.getQueueMetadata()?.queueSequence ?: 0L
+        repository.clearQueue()
+        val meta1 = repository.getQueueMetadata()!!
+        assertEquals(initialSeq + 1L, meta1.queueSequence)
+        assertTrue(meta1.isDirty)
+
+        // Clear again when already empty — must still increment sequence
+        repository.clearQueue()
+        val meta2 = repository.getQueueMetadata()!!
+        assertEquals(initialSeq + 2L, meta2.queueSequence)
+    }
+
+    @Test
+    fun markQueueSyncedUpdatesTimestampAndClearsDirty() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        assertTrue(repository.getQueueMetadata()!!.isDirty)
+
+        repository.markQueueSynced(7777L)
+        val syncedMeta = repository.getQueueMetadata()!!
+        assertFalse(syncedMeta.isDirty)
+        assertEquals(7777L, syncedMeta.syncedAt)
+    }
+
+    @Test
+    fun reAddingRemovedEpisodePrunesFromRecentRemovedEpisodeIds() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.removeFromQueue("1")
+        assertEquals("1", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
+
+        // Re-adding the episode must prune it from tombstones so sync won't treat it as deleted
+        repository.addToQueue(episodeItem(1), podcast())
+        val meta = repository.getQueueMetadata()!!
+        assertNull(meta.recentRemovedEpisodeIds)
+        assertTrue(meta.isDirty)
+    }
+
+    @Test
+    fun replaceQueuePrunesActiveEpisodesFromRecentRemovedEpisodeIds() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+        repository.removeFromQueue("1")
+        repository.removeFromQueue("2")
+        assertEquals("1,2", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
+
+        // Restoring episode 1 via replaceQueue should prune "1" and leave "2" tombstoned
+        repository.replaceQueue(listOf(domainEpisode("1")))
+        val meta = repository.getQueueMetadata()!!
+        assertEquals("2", meta.recentRemovedEpisodeIds)
+    }
+
+    @Test
+    fun reRemovingEpisodeMaintainsFifoTailRecency() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+        repository.removeFromQueue("1")
+        repository.removeFromQueue("2")
+        assertEquals("1,2", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
+
+        // Re-removing "1" must move it to the tail of the buffer (most recent)
+        repository.removeFromQueue("1")
+        assertEquals("2,1", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
     }
 
     private fun domainEpisode(id: String) = Episode(

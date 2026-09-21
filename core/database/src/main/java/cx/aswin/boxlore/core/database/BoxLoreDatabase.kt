@@ -7,6 +7,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
+import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 
 @Database(
     entities = [
@@ -16,6 +17,7 @@ import cx.aswin.boxlore.core.database.entities.QueueItem
         PodcastEntity::class,
         DownloadedEpisodeEntity::class,
         QueueItem::class,
+        QueueMetadataEntity::class,
         RssEpisodeEntity::class,
         EpisodeSupplementEntity::class,
         EpisodeSupplementItemEntity::class,
@@ -24,7 +26,7 @@ import cx.aswin.boxlore.core.database.entities.QueueItem
         FolderEntity::class,
         PodcastFolderCrossRef::class,
     ],
-    version = 36,
+    version = 37,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -279,6 +281,13 @@ abstract class BoxLoreDatabase : RoomDatabase() {
                 }
             }
 
+        private val MIGRATION_36_37 =
+            object : Migration(36, 37) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    BoxLoreDatabaseMigrations.migrate36To37(db)
+                }
+            }
+
         @Volatile
         @Suppress("PropertyName")
         private var INSTANCE: BoxLoreDatabase? = null
@@ -346,6 +355,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
                         MIGRATION_34_35,
                         MIGRATION_33_35,
                         MIGRATION_35_36,
+                        MIGRATION_36_37,
                     ).fallbackToDestructiveMigration(dropAllTables = true) // For development simplicity on older versions
                     .build()
             INSTANCE = instance

@@ -7,7 +7,10 @@ import cx.aswin.boxlore.core.model.PodcastGenres
 
 @Entity(
     tableName = "podcasts",
-    indices = [Index(value = ["linkedPodcastIndexId"])],
+    indices = [
+        Index(value = ["linkedPodcastIndexId"]),
+        Index(value = ["isDirty"]),
+    ],
 )
 data class PodcastEntity(
     @PrimaryKey
@@ -21,6 +24,9 @@ data class PodcastEntity(
     // Subscription State
     val isSubscribed: Boolean = false,
     val subscribedAt: Long = 0L,
+    val unsubscribedAt: Long = 0L,
+    val isDirty: Boolean = false,
+    val syncedAt: Long = 0L,
 
     val genre: String? = null,
     val type: String = "episodic",

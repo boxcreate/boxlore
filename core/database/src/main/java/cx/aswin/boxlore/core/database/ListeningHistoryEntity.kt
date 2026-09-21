@@ -1,9 +1,16 @@
 package cx.aswin.boxlore.core.database
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "listening_history")
+@Entity(
+    tableName = "listening_history",
+    indices = [
+        Index(value = ["isDirty"]),
+        Index(value = ["lastPlayedAt"]),
+    ],
+)
 data class ListeningHistoryEntity(
     @PrimaryKey
     val episodeId: String,
@@ -21,6 +28,7 @@ data class ListeningHistoryEntity(
     val durationMs: Long,
     val isCompleted: Boolean,
     val isLiked: Boolean = false, // New: User "Like" status
+    val likedAt: Long = 0L,
     val lastPlayedAt: Long,
 
     // Sync Status

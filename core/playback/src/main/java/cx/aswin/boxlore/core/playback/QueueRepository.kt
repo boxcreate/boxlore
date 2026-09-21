@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
 
+@Suppress("TooManyFunctions")
 class QueueRepository(private val database: BoxLoreDatabase, private val podcastRepository: PodcastRepository,) {
     private val TAG = "QueueRepository"
     private val queueDao = database.queueDao()
@@ -37,16 +38,8 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
             TAG,
             "addToQueue: episodeId=${episode.id}, title=${episode.title}, contextType=$contextType, contextSourceId=$contextSourceId",
         )
-        val maxPos = queueDao.getMaxPosition() ?: 0
-
         // Check for duplicates using String ID
         val episodeIdStr = episode.id.toString()
-        val existingCount = queueDao.countEpisode(episodeIdStr)
-        if (existingCount > 0) {
-            android.util.Log.w(TAG, "addToQueue: Episode ${episode.title} ($episodeIdStr) already in queue. Skipping.")
-            return
-        }
-
         val podcastTitle = podcast?.title ?: "Unknown Podcast"
         val podcastId = podcast?.id ?: ""
 
@@ -80,7 +73,7 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
                 duration = episode.duration ?: 0,
                 pubDate = episode.datePublished ?: 0L,
                 description = episode.description,
-                position = maxPos + 1,
+                position = 0,
                 contextType = contextType ?: "MANUAL",
                 contextSourceId = contextSourceId,
                 // Podcast 2.0
@@ -93,8 +86,28 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
                 episodeNumber = episode.episodeNumber,
                 enclosureType = episode.enclosureType,
             )
-        android.util.Log.d(TAG, "addToQueue: Inserting newItem at position ${maxPos + 1}")
-        queueDao.insertQueueItem(newItem)
+
+        val inserted = database.withTransaction {
+            val existingCount = queueDao.countEpisode(episodeIdStr)
+            if (existingCount > 0) {
+                return@withTransaction false
+            }
+            val maxPos = queueDao.getMaxPosition() ?: 0
+            val itemWithPos = newItem.copy(position = maxPos + 1)
+            android.util.Log.d(TAG, "addToQueue: Inserting newItem at position ${maxPos + 1}")
+            queueDao.insertQueueItem(itemWithPos)
+            queueDao.bumpQueueVersion(
+                updatedAt = System.currentTimeMillis(),
+                restoredEpisodeIds = listOf(newItem.episodeId),
+            )
+            true
+        }
+
+        if (!inserted) {
+            android.util.Log.w(TAG, "addToQueue: Episode ${episode.title} ($episodeIdStr) already in queue. Skipping.")
+            return
+        }
+
         if (newItem.contextType == "MANUAL" || newItem.contextType == QueueMath.CONTEXT_TYPE_LORE) {
             RankingFeedbackRepository.getIfInitialized()?.recordAction(
                 target =
@@ -116,7 +129,10 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
 
     suspend fun clearQueue() {
         android.util.Log.d(TAG, "clearQueue: Clearing all queue items")
-        queueDao.clearQueue()
+        database.withTransaction {
+            queueDao.clearQueue()
+            queueDao.bumpQueueVersion(System.currentTimeMillis())
+        }
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
             action = "clear",
             queueSize = 0,
@@ -137,6 +153,10 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
         }
         database.withTransaction {
             replaceQueueItems(uniqueEpisodes)
+            queueDao.bumpQueueVersion(
+                updatedAt = System.currentTimeMillis(),
+                restoredEpisodeIds = uniqueEpisodes.map { it.id },
+            )
         }
     }
 
@@ -280,6 +300,17 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
 
     suspend fun getQueueItemByEpisodeId(episodeId: String): cx.aswin.boxlore.core.database.entities.QueueItem? = queueDao.getQueueItemByEpisodeId(episodeId)
 
+    suspend fun removeFromQueue(episodeId: String) {
+        database.withTransaction {
+            queueDao.deleteQueueItemByEpisodeId(episodeId)
+            queueDao.bumpQueueVersion(
+                updatedAt = System.currentTimeMillis(),
+                deviceId = null,
+                removedEpisodeId = episodeId,
+            )
+        }
+    }
+
     /**
      * Rewrites row positions to match the given episode-id order (a Room transaction via
      * the DAO), preserving each row's contextType/contextSourceId provenance.
@@ -287,20 +318,42 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
      * position but are pushed after the reordered block.
      */
     suspend fun reorderQueue(orderedEpisodeIds: List<String>) {
-        val items = queueDao.getAllQueueItemsSync()
-        if (items.isEmpty() || orderedEpisodeIds.isEmpty()) return
+        database.withTransaction {
+            val items = queueDao.getAllQueueItemsSync()
+            if (items.isEmpty() || orderedEpisodeIds.isEmpty()) return@withTransaction
 
-        val byEpisodeId = items.associateBy { it.episodeId }
-        val reordered = mutableListOf<QueueItem>()
-        orderedEpisodeIds.distinct().forEach { episodeId ->
-            byEpisodeId[episodeId]?.let { reordered.add(it) }
+            val byEpisodeId = items.associateBy { it.episodeId }
+            val reordered = mutableListOf<QueueItem>()
+            orderedEpisodeIds.distinct().forEach { episodeId ->
+                byEpisodeId[episodeId]?.let { reordered.add(it) }
+            }
+            // Keep any rows that weren't part of the provided order (defensive) at the tail.
+            val coveredIds = reordered.map { it.episodeId }.toSet()
+            items.filter { it.episodeId !in coveredIds }.forEach { reordered.add(it) }
+
+            val updated = reordered.mapIndexed { index, item -> item.copy(position = index) }
+            android.util.Log.d(TAG, "reorderQueue: Rewriting positions for ${updated.size} items")
+            queueDao.updateQueuePositions(updated)
+            queueDao.bumpQueueVersion(System.currentTimeMillis())
         }
-        // Keep any rows that weren't part of the provided order (defensive) at the tail.
-        val coveredIds = reordered.map { it.episodeId }.toSet()
-        items.filter { it.episodeId !in coveredIds }.forEach { reordered.add(it) }
+    }
 
-        val updated = reordered.mapIndexed { index, item -> item.copy(position = index) }
-        android.util.Log.d(TAG, "reorderQueue: Rewriting positions for ${updated.size} items")
-        queueDao.updateQueuePositions(updated)
+    suspend fun getQueueMetadata(): cx.aswin.boxlore.core.database.entities.QueueMetadataEntity? =
+        queueDao.getQueueMetadata()
+
+    val queueMetadataFlow: Flow<cx.aswin.boxlore.core.database.entities.QueueMetadataEntity?> =
+        queueDao.getQueueMetadataFlow()
+
+    suspend fun markQueueSynced(timestamp: Long) {
+        queueDao.markQueueSynced(timestamp)
+    }
+
+    suspend fun bumpQueueVersion(
+        updatedAt: Long = System.currentTimeMillis(),
+        deviceId: String? = null,
+        removedEpisodeId: String? = null,
+        restoredEpisodeIds: Collection<String>? = null,
+    ) {
+        queueDao.bumpQueueVersion(updatedAt, deviceId, removedEpisodeId, restoredEpisodeIds)
     }
 }

@@ -358,4 +358,45 @@ object BoxLoreDatabaseMigrations {
             db.execSQL("ALTER TABLE downloaded_episodes ADD COLUMN transcriptUrl TEXT")
         }
     }
+
+    fun migrate36To37(db: SupportSQLiteDatabase) {
+        val podcastColumns = getTableColumns(db, "podcasts")
+        if (!podcastColumns.contains("unsubscribedAt")) {
+            db.execSQL("ALTER TABLE podcasts ADD COLUMN unsubscribedAt INTEGER NOT NULL DEFAULT 0")
+        }
+        if (!podcastColumns.contains("isDirty")) {
+            db.execSQL("ALTER TABLE podcasts ADD COLUMN isDirty INTEGER NOT NULL DEFAULT 0")
+        }
+        if (!podcastColumns.contains("syncedAt")) {
+            db.execSQL("ALTER TABLE podcasts ADD COLUMN syncedAt INTEGER NOT NULL DEFAULT 0")
+        }
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_podcasts_isDirty ON podcasts(isDirty)")
+
+        val historyColumns = getTableColumns(db, "listening_history")
+        if (!historyColumns.contains("likedAt")) {
+            db.execSQL("ALTER TABLE listening_history ADD COLUMN likedAt INTEGER NOT NULL DEFAULT 0")
+        }
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_listening_history_isDirty ON listening_history(isDirty)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_listening_history_lastPlayedAt ON listening_history(lastPlayedAt)")
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS queue_metadata (
+                id INTEGER NOT NULL PRIMARY KEY,
+                queueUpdatedAt INTEGER NOT NULL DEFAULT 0,
+                queueSequence INTEGER NOT NULL DEFAULT 0,
+                lastModifiedDeviceId TEXT,
+                isDirty INTEGER NOT NULL DEFAULT 0,
+                syncedAt INTEGER NOT NULL DEFAULT 0,
+                recentRemovedEpisodeIds TEXT
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            """
+            INSERT OR IGNORE INTO queue_metadata (id, queueUpdatedAt, queueSequence, isDirty, syncedAt)
+            VALUES (1, 0, 0, 0, 0)
+            """.trimIndent(),
+        )
+    }
 }

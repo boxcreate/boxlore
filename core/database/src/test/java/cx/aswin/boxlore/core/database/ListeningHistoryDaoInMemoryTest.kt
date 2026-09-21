@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -208,14 +209,18 @@ class ListeningHistoryDaoInMemoryTest {
 
     @Test
     fun likeStatusRoundTrips() = runTest {
-        dao.upsert(history("ep-1"))
-        dao.setLikeStatus("ep-1", true)
+        dao.upsert(history("ep-1", isDirty = false, lastPlayedAt = 500L))
+        dao.setLikeStatus("ep-1", true, now = 1000L)
 
-        assertTrue(dao.getHistoryItem("ep-1")!!.isLiked)
+        val liked = dao.getHistoryItem("ep-1")!!
+        assertTrue(liked.isLiked)
+        assertEquals(1000L, liked.likedAt)
+        assertEquals(500L, liked.lastPlayedAt)
+        assertTrue(liked.isDirty)
         assertEquals(listOf("ep-1"), dao.getLikedEpisodesList().map { it.episodeId })
         assertEquals(listOf("ep-1"), dao.getLikedEpisodes().first().map { it.episodeId })
 
-        dao.setLikeStatus("ep-1", false)
+        dao.setLikeStatus("ep-1", false, now = 1100L)
         assertTrue(dao.getLikedEpisodesList().isEmpty())
     }
 
@@ -232,12 +237,31 @@ class ListeningHistoryDaoInMemoryTest {
 
     @Test
     fun completionStatusAndCompletedIds() = runTest {
-        dao.upsertAll(listOf(history("a"), history("b")))
+        dao.upsertAll(listOf(history("a", isDirty = false), history("b", isDirty = false)))
         dao.setCompletionStatus("a", true)
 
-        assertTrue(dao.getHistoryItem("a")!!.isCompleted)
+        val itemA = dao.getHistoryItem("a")!!
+        assertTrue(itemA.isCompleted)
+        assertTrue(itemA.isDirty)
         assertEquals(listOf("a"), dao.getCompletedEpisodeIds())
         assertEquals(listOf("a"), dao.getCompletedEpisodeIdsFlow().first())
+    }
+
+    @Test
+    fun dirtyListeningHistoryAndMarkSynced() = runTest {
+        dao.upsert(history("clean-1", isDirty = false))
+        assertTrue(dao.getDirtyListeningHistory().isEmpty())
+
+        dao.setLikeStatus("clean-1", true, now = 1234L)
+        val dirty = dao.getDirtyListeningHistory()
+        assertEquals(1, dirty.size)
+        assertEquals("clean-1", dirty.first().episodeId)
+
+        dao.markListeningHistorySynced(listOf("clean-1"), timestamp = 5678L)
+        assertTrue(dao.getDirtyListeningHistory().isEmpty())
+        val synced = dao.getHistoryItem("clean-1")!!
+        assertFalse(synced.isDirty)
+        assertEquals(5678L, synced.syncedAt)
     }
 
     @Test
