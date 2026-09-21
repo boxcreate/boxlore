@@ -172,15 +172,6 @@ interface BoxLoreApi {
         @Query("itunesId") itunesId: String? = null
     ): retrofit2.Call<cx.aswin.boxlore.core.network.model.PodcastMetaResponse>
 
-    @GET("api/transcript")
-    fun getAutoTranscript(
-        @Header("X-App-Key") publicKey: String,
-        @Header("X-Device-UUID") deviceUuid: String,
-        @Query("episodeId") episodeId: String,
-        @Query("audioUrl") audioUrl: String,
-        @Query("transcriptUrl") transcriptUrl: String? = null,
-        @Query("checkOnly") checkOnly: Boolean? = null
-    ): retrofit2.Call<cx.aswin.boxlore.core.network.model.AutoTranscriptResponse>
 
     // --- AI ONBOARDING ---
 

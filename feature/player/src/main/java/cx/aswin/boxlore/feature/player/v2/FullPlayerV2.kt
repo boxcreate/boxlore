@@ -56,7 +56,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
-import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.CastMediaEligibility
@@ -104,7 +103,6 @@ internal class FullPlayerUiState {
     var showSpeedSheet by mutableStateOf(false)
     var showSleepSheet by mutableStateOf(false)
     var showShareSheet by mutableStateOf(false)
-    var showGenerateDialog by mutableStateOf(false)
     var showFullscreenTranscript by mutableStateOf(false)
     var showInlineTranscript by mutableStateOf(false)
     var isSyncEnabled by mutableStateOf(true)
@@ -121,7 +119,6 @@ internal val FullPlayerUiStateSaver =
                 state.showSpeedSheet,
                 state.showSleepSheet,
                 state.showShareSheet,
-                state.showGenerateDialog,
                 state.showFullscreenTranscript,
                 state.showInlineTranscript,
                 state.isSyncEnabled,
@@ -136,12 +133,11 @@ internal val FullPlayerUiStateSaver =
                 showSpeedSheet = values.getOrElse(2) { false }
                 showSleepSheet = values.getOrElse(3) { false }
                 showShareSheet = values.getOrElse(4) { false }
-                showGenerateDialog = values.getOrElse(5) { false }
-                showFullscreenTranscript = values.getOrElse(6) { false }
-                showInlineTranscript = values.getOrElse(7) { false }
-                isSyncEnabled = values.getOrElse(8) { true }
-                isAudioOnly = values.getOrElse(9) { false }
-                showRemoveDownloadDialog = values.getOrElse(10) { false }
+                showFullscreenTranscript = values.getOrElse(5) { false }
+                showInlineTranscript = values.getOrElse(6) { false }
+                isSyncEnabled = values.getOrElse(7) { true }
+                isAudioOnly = values.getOrElse(8) { false }
+                showRemoveDownloadDialog = values.getOrElse(9) { false }
             }
         },
     )
@@ -218,11 +214,6 @@ fun FullPlayerV2(
         }
     }
 
-    val canGenerateTranscript =
-        state.currentTranscript.isEmpty() &&
-            state.autoTranscriptState != AutoTranscriptState.GENERATING &&
-            state.autoTranscriptState != AutoTranscriptState.COMPLETED
-
     FullPlayerBody(
         model =
         FullPlayerBodyModel(
@@ -262,7 +253,6 @@ fun FullPlayerV2(
             podcast,
             colorScheme,
             positionFlow,
-            canGenerateTranscript,
         ),
         ui = ui,
         resources =
@@ -300,7 +290,6 @@ internal data class FullPlayerModalModel(
     val podcast: Podcast,
     val colorScheme: ColorScheme,
     val positionFlow: Flow<Long>,
-    val canGenerateTranscript: Boolean,
 )
 
 internal data class FullPlayerOverlayModel(

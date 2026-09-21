@@ -53,7 +53,6 @@ src/main/java/cx/aswin/boxlore/core/playback/
   PlaybackRepositoryCastApi.kt       # Cast session / stop extension API and policies
   PlaybackRepositoryHistoryApi.kt    # non-port history extension API
   PlaybackRepositorySleepApi.kt      # sleep / nudge extension API
-  PlaybackRepositoryChaptersApi.kt   # chapters / transcript extension API
   PlaybackSessionRestoreHelper.kt    # session restore & metadata healing helper
   SameShowContinuationCoordinator.kt # monitors playback origin & coordinates continuation offer
   SameShowContinuationLogic.kt       # candidate filter and trigger conditions

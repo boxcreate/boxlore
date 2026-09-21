@@ -47,7 +47,6 @@ import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.addSameShowContinuationEpisodes
 import cx.aswin.boxlore.core.playback.confirmQueueRemoval
 import cx.aswin.boxlore.core.playback.dismissSameShowContinuation
-import cx.aswin.boxlore.core.playback.generateAutoChapters
 import cx.aswin.boxlore.core.playback.moveQueueItem
 import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.persistQueueOrder
@@ -550,10 +549,7 @@ internal fun PlayerChaptersSheet(
             },
             onClose = { ui.showChaptersSheet = false },
             chaptersUrl = episode.chaptersUrl,
-            isChaptersLoading = state.isChaptersLoading,
-            hasTranscript = state.autoTranscriptState == AutoTranscriptState.NONE ||
-                state.autoTranscriptState == AutoTranscriptState.COMPLETED,
-            onGenerateChapters = playbackRepository::generateAutoChapters
+            isChaptersLoading = state.isChaptersLoading
         )
     }
 }
