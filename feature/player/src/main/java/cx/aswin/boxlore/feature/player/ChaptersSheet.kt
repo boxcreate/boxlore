@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,10 +46,7 @@ private fun ChaptersHeader(onClose: () -> Unit, colorScheme: ColorScheme) {
 
 @Composable
 private fun ChaptersEmptyPlaceholder(
-    hasTranscript: Boolean,
-    colorScheme: ColorScheme,
-    onClose: () -> Unit,
-    onGenerateChapters: () -> Unit
+    colorScheme: ColorScheme
 ) {
     Column(
         modifier = Modifier
@@ -65,31 +60,6 @@ private fun ChaptersEmptyPlaceholder(
             style = MaterialTheme.typography.bodyMedium,
             color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
-        if (hasTranscript) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    onClose()
-                    onGenerateChapters()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.primaryContainer,
-                    contentColor = colorScheme.onPrimaryContainer
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.AutoAwesome,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "Generate AI Chapters",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold)
-                )
-            }
-        }
     }
 }
 
@@ -101,9 +71,7 @@ fun ChaptersSheetContent(
     onSeek: (Long) -> Unit,
     onClose: () -> Unit,
     chaptersUrl: String? = null,
-    isChaptersLoading: Boolean = false,
-    hasTranscript: Boolean = false,
-    onGenerateChapters: () -> Unit = {}
+    isChaptersLoading: Boolean = false
 ) {
     val positionMs by positionFlow.collectAsState(initial = 0L)
     Surface(
@@ -131,10 +99,7 @@ fun ChaptersSheetContent(
                 }
             } else if (chapters.isEmpty()) {
                 ChaptersEmptyPlaceholder(
-                    hasTranscript = hasTranscript,
-                    colorScheme = colorScheme,
-                    onClose = onClose,
-                    onGenerateChapters = onGenerateChapters
+                    colorScheme = colorScheme
                 )
             } else {
                 LazyColumn(

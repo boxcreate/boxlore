@@ -17,7 +17,6 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.PlayerState
-import cx.aswin.boxlore.core.playback.generateAutoTranscript
 import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.setPlaybackSpeed
@@ -146,9 +145,6 @@ internal fun FullPlayerModalSheets(
     if (ui.showSleepSheet) {
         PlayerSleepSheet(dependencies.playbackRepository, model, ui)
     }
-    if (ui.showGenerateDialog && model.canGenerateTranscript) {
-        PlayerGenerateTranscriptDialog(dependencies.playbackRepository, model, ui)
-    }
     if (ui.showShareSheet) {
         PlayerShareSheet(model, ui, resources.context)
     }
@@ -208,28 +204,6 @@ internal fun PlayerSleepSheet(
     )
 }
 
-@Composable
-internal fun PlayerGenerateTranscriptDialog(
-    playbackRepository: PlaybackRepository,
-    model: FullPlayerModalModel,
-    ui: FullPlayerUiState
-) {
-    val durationSeconds = if (model.state.duration > 0) {
-        model.state.duration / 1000
-    } else {
-        model.episode.duration.toLong()
-    }
-    GenerateTranscriptDialog(
-        episodeDurationSec = durationSeconds,
-        autoTranscriptLimitLeft = model.state.autoTranscriptLimitLeft,
-        colorScheme = model.colorScheme,
-        onConfirm = {
-            ui.showGenerateDialog = false
-            playbackRepository.generateAutoTranscript()
-        },
-        onDismiss = { ui.showGenerateDialog = false }
-    )
-}
 
 @Composable
 internal fun PlayerShareSheet(
