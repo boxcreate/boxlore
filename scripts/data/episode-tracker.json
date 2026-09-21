@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-21T00:51:42.889Z",
+  "lastRun": "2026-09-21T05:55:31.850Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "6156fea2-b36e-11f1-9950-c31b68b384d1",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789404431852
     },
     "55810": {
-      "lastRssKey": "281319bd-e729-4eb1-b4db-b35562d73023",
-      "lastEpisodeTitle": "NPR News: 09-20-2026 8PM EDT",
+      "lastRssKey": "f6eb3395-1ddc-4e52-b007-75527ac35fe2",
+      "lastEpisodeTitle": "NPR News: 09-21-2026 1AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1789951908370
+      "lastCheckedAt": 1789970135955
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75269262",
@@ -115,10 +115,10 @@
       "lastCheckedAt": 1789516722197
     },
     "229239": {
-      "lastRssKey": "ef15c8f4-2c73-11f1-ab5b-0ba0eda0acd9",
-      "lastEpisodeTitle": "Why Sydney Sweeney Has Two Big Targets On Her Chest - William Costello - #1152",
+      "lastRssKey": "0609ba8e-2c74-11f1-b1fd-5be8ffc83263",
+      "lastEpisodeTitle": "The New Way For Ordinary People To Build Wealth - Tony Robbins - #1153",
       "lastEpisodeId": "60196429938",
-      "lastCheckedAt": 1789799410372
+      "lastCheckedAt": 1789970144496
     },
     "230598": {
       "lastRssKey": "b7c3497c-a54a-11f0-b1fc-236b310e14f8",
@@ -159,10 +159,10 @@
       "lastCheckedAt": 1789817132579
     },
     "385117": {
-      "lastRssKey": "b8f78378-b550-11f1-afb5-dff4acfb660f",
-      "lastEpisodeTitle": "8PM ET 09/20/2026 Newscast",
-      "lastEpisodeId": "60648680203",
-      "lastCheckedAt": 1789951921254
+      "lastRssKey": "9df72fc2-b57a-11f1-9f55-c37d7c3b066a",
+      "lastEpisodeTitle": "1AM ET 09/21/2026 Newscast",
+      "lastEpisodeId": "60655534638",
+      "lastCheckedAt": 1789970147757
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -243,10 +243,10 @@
       "lastCheckedAt": 1789848378558
     },
     "444785": {
-      "lastRssKey": "d2725a91-8b97-43c2-a6e9-c4451b773d70",
-      "lastEpisodeTitle": "INSIDE Montreal Canadiens’ TRAINING camp—Who will play with Suzuki and Caufield? Slafkovsky, or Kreider? Plus: Habs mailbag",
-      "lastEpisodeId": "60534485489",
-      "lastCheckedAt": 1789709663808
+      "lastRssKey": "a54aaef5-d9e0-4418-85e9-779e8691fa20",
+      "lastEpisodeTitle": "SPLIT SQUAD START: Montreal Canadiens DOMINATE Maple Leafs, Juraj Slafkovsky and Penalty Kill SHINE",
+      "lastEpisodeId": "60654384703",
+      "lastCheckedAt": 1789970155139
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -305,16 +305,16 @@
       "lastCheckedAt": 1789925703769
     },
     "499394": {
-      "lastRssKey": "flightcast:01M1KRZJXFDY091DTC2XYYRW7A",
-      "lastEpisodeTitle": "Most Replayed Moment: Is Renting Keeping You Poor? What&#39;s The Actual Cost Of Home Ownership? David Bach",
-      "lastEpisodeId": "60536837136",
-      "lastCheckedAt": 1789709670402
+      "lastRssKey": "flightcast:01M2RHNG0S1MZ1VD7AG18AGCZ7",
+      "lastEpisodeTitle": "Rick Rubin: What Jay-Z Did in 30 Minutes Left Me Speechless!",
+      "lastEpisodeId": "60656162319",
+      "lastCheckedAt": 1789970160579
     },
     "503644": {
-      "lastRssKey": "f73acdc3-543d-468d-a81b-037ebb202bed",
-      "lastEpisodeTitle": "The Body Politic Part I",
+      "lastRssKey": "002c26c7-e453-48d2-9483-22ed9c4a2523",
+      "lastEpisodeTitle": "Joel McHale Returns",
       "lastEpisodeId": "60502443374",
-      "lastCheckedAt": 1789913056455
+      "lastCheckedAt": 1789970161197
     },
     "509873": {
       "lastRssKey": "c8796bd5-f78b-4bb0-90f0-9338588757a9",
@@ -347,16 +347,16 @@
       "lastCheckedAt": 1789569443213
     },
     "545784": {
-      "lastRssKey": "7fb171f295b89caa8a8d12c55f1f6bfc",
-      "lastEpisodeTitle": "01 | I’M SORRY, DAVE: HAL ON EARTH",
-      "lastEpisodeId": "60624620357",
-      "lastCheckedAt": 1789898343221
+      "lastRssKey": "2ab09262245463bd59c8abd530155c02",
+      "lastEpisodeTitle": "Wie weiter nach dem Schock? (Presseklub Spezial)",
+      "lastEpisodeId": "60652478782",
+      "lastCheckedAt": 1789970166166
     },
     "555343": {
-      "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/megaphone/twit_1101/ARML1693313659.mp3",
-      "lastEpisodeTitle": "TWiT 1101: Adversarial Clothing - The Dramatic Calls to Regulate Artificial Intelligence",
+      "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/megaphone/twit_1102/ARML7990110102.mp3",
+      "lastEpisodeTitle": "TWiT 1102: Exclave Subpoena - OpenClaw, Meta&#039;s Muse, & Persistent Agentic Automation",
       "lastEpisodeId": "60370861424",
-      "lastCheckedAt": 1789913061965
+      "lastCheckedAt": 1789970166726
     },
     "555427": {
       "lastEpisodeId": "386077022",
@@ -494,9 +494,10 @@
       "lastCheckedAt": 1789828793574
     },
     "837535": {
-      "lastRssKey": "0c2966b2-b379-11f1-9841-83b74e7394c1",
-      "lastEpisodeTitle": "DAS ändert sich im Oktober 2026: Krankenkassen, Bahn-Sperrung, Zinsen & mehr!",
-      "lastCheckedAt": 1789898354944
+      "lastRssKey": "d32b06f0-b33b-11f1-8113-f3d8476f0e95",
+      "lastEpisodeTitle": "Warum du bei größerer Auswahl mehr Geld ausgibst! (#742)",
+      "lastEpisodeId": "60653657394",
+      "lastCheckedAt": 1789970179347
     },
     "838740": {
       "lastRssKey": "dde1f526-b15c-11f1-b7f1-6307d2ecfae3",
@@ -529,10 +530,10 @@
       "lastCheckedAt": 1789640232640
     },
     "928708": {
-      "lastRssKey": "cf6c3d54-b4df-11f1-9093-d3f786a2b85e",
-      "lastEpisodeTitle": "This Day in History - September 20, 2026",
+      "lastRssKey": "557f07a0-b4e0-11f1-aca9-e3ecbd5313b9",
+      "lastEpisodeTitle": "This Day in History - September 21, 2026",
       "lastEpisodeId": "60629683212",
-      "lastCheckedAt": 1789913079458
+      "lastCheckedAt": 1789970182246
     },
     "946758": {
       "lastRssKey": "10cc122e-77b5-11f0-8752-0bb04facbe23",
@@ -685,10 +686,10 @@
       "lastCheckedAt": 1789640249437
     },
     "1366771": {
-      "lastRssKey": "6aafb2de51da7059ece09322",
-      "lastEpisodeTitle": "Daily briefing Sunday 20th September",
+      "lastRssKey": "6ab092cd0521dc2c81e13c01",
+      "lastEpisodeTitle": "Morning briefing Monday 21st September",
       "lastEpisodeId": "60631710586",
-      "lastCheckedAt": 1789913100626
+      "lastCheckedAt": 1789970198973
     },
     "1388001": {
       "lastRssKey": "309f0a0b-bd73-4750-aeba-2997886e25b8",
@@ -784,10 +785,10 @@
       "lastCheckedAt": 1788608402916
     },
     "3759297": {
-      "lastRssKey": "7af0e4d4-affb-11f1-a6a4-b757b8d42efc",
-      "lastEpisodeTitle": "Insider Gaming",
+      "lastRssKey": "8247e93c-b57b-11f1-88a9-c3ef9a113569",
+      "lastEpisodeTitle": "Cloth Off The Bone",
       "lastEpisodeId": "59422345053",
-      "lastCheckedAt": 1789383259725
+      "lastCheckedAt": 1789970204857
     },
     "3880049": {
       "lastEpisodeId": "13360674190",
@@ -911,9 +912,9 @@
       "lastCheckedAt": 1789028445701
     },
     "5698881": {
-      "lastRssKey": "8562df69-03e2-422c-8ba7-2a6cc9bc55f2",
-      "lastEpisodeTitle": "Oprah Winfrey: How to Find Your Unique Purpose, Authentic Power, and Calling In Life",
-      "lastCheckedAt": 1789621726102
+      "lastRssKey": "d20b9dc3-f44a-405e-8da2-0edf01ac1790",
+      "lastEpisodeTitle": "Let Them: How to Handle Difficult People & Take Back Your Peace and Power",
+      "lastCheckedAt": 1789970211199
     },
     "5716308": {
       "lastRssKey": "urn:bbc:podcast:p0pb8sb7",
@@ -1063,10 +1064,10 @@
       "lastCheckedAt": 1789781434460
     },
     "6764080": {
-      "lastRssKey": "0a827c79-1061-4700-885c-b4c0007210d3",
-      "lastEpisodeTitle": "Greg Explains The Housing Crisis",
-      "lastEpisodeId": "58827636737",
-      "lastCheckedAt": 1788954227687
+      "lastRssKey": "b981b0f6-d3ef-477b-9b4e-b4cc004a765b",
+      "lastEpisodeTitle": "Life Hacks (Stuff Wot I Done Learned)",
+      "lastEpisodeId": "60656357645",
+      "lastCheckedAt": 1789970231954
     },
     "6766874": {
       "lastRssKey": "c58777c6-63b9-481e-a2d1-99e05fe828a9",
@@ -1123,10 +1124,10 @@
       "lastCheckedAt": 1789774227252
     },
     "6956562": {
-      "lastRssKey": "b8607622-d3b1-47e1-9f85-e193b52369da",
-      "lastEpisodeTitle": "India’s untapped pool of copper",
-      "lastEpisodeId": "60530114511",
-      "lastCheckedAt": 1789709760250
+      "lastRssKey": "9883a43c-0f9a-4271-abd5-f54777e51a35",
+      "lastEpisodeTitle": "How private is India’s private nuclear push?",
+      "lastEpisodeId": "60650702459",
+      "lastCheckedAt": 1789970234944
     },
     "6959250": {
       "lastRssKey": "99f92a05-76b6-4edd-b507-b1ad2cda5d61",
@@ -1218,10 +1219,10 @@
       "lastCheckedAt": 1789774233010
     },
     "7376606": {
-      "lastRssKey": "ad6fb151-9665-4e5b-b031-a27b7ef21a95",
-      "lastEpisodeTitle": "Sherlock Holmes: The Greatest Detective of All Time 🕵️‍♂️🔎 | The Complete Story & Mysteries | Boring History for Sleep",
+      "lastRssKey": "ee5ff12f-ab93-4e2a-8f50-5809da8386c9",
+      "lastEpisodeTitle": "Why the Nazis Feared Australian Soldiers More Than Americans or British Troops 🇦🇺⚔️ | Boring History for Sleep",
       "lastEpisodeId": "60631240276",
-      "lastCheckedAt": 1789913163571
+      "lastCheckedAt": 1789970240899
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031886",
@@ -1331,10 +1332,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/90cec19b-0158-54d4-9db7-bb713804829e",
-      "lastEpisodeTitle": "THIS is what SURVIVORS of narcissistic relationships CRAVE ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/96415e23-d624-5de7-b0f2-7c05313584df",
+      "lastEpisodeTitle": "A different way to think about LOVE BOMBING ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1789952047366
+      "lastCheckedAt": 1789970245073
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
