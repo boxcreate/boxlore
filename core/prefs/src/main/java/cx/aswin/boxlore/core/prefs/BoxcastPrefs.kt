@@ -169,6 +169,7 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LEARN_CURIOSITY_HISTORY = "learn_curiosity_history"
         const val KEY_LEARNER_LOG_ENABLED = "learner_log_enabled"
         const val KEY_PENDING_AUTH_EMAIL = "pending_auth_email"
+        const val KEY_SYNC_DEVICE_ID = "sync_device_id"
     }
 
     // ── Auth / Magic Link ───────────────────────────────────────────────────
@@ -181,5 +182,15 @@ class BoxcastPrefs(context: Context) {
         } else {
             prefs.edit().putString(KEY_PENDING_AUTH_EMAIL, email).apply()
         }
+    }
+
+    // ── Sync / Device Identity ──────────────────────────────────────────────
+
+    fun getOrCreateSyncDeviceId(): String {
+        val existing = prefs.getString(KEY_SYNC_DEVICE_ID, null)
+        if (!existing.isNullOrBlank()) return existing
+        val newId = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_SYNC_DEVICE_ID, newId).apply()
+        return newId
     }
 }

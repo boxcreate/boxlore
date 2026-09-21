@@ -256,3 +256,8 @@ class FakeConnectivityStatusPort(var online: Boolean = true,) : ConnectivityStat
         return online
     }
 }
+
+/** Controllable [DeviceIdentityPort] for testing sync attribution. */
+class FakeDeviceIdentityPort(var currentDeviceId: String = "test-device-id") : cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort {
+    override fun getDeviceId(): String = currentDeviceId
+}

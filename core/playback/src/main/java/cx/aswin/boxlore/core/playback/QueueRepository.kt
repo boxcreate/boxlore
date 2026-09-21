@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.entities.QueueItem
+import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Transcript
 import cx.aswin.boxlore.core.network.model.EpisodeItem
@@ -17,7 +18,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 @Suppress("TooManyFunctions")
-class QueueRepository(private val database: BoxLoreDatabase, private val podcastRepository: PodcastRepository,) {
+class QueueRepository(
+    private val database: BoxLoreDatabase,
+    private val podcastRepository: PodcastRepository,
+    private val deviceIdentityPort: DeviceIdentityPort? = null,
+) {
     private val TAG = "QueueRepository"
     private val queueDao = database.queueDao()
 
@@ -87,6 +92,7 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
                 enclosureType = episode.enclosureType,
             )
 
+        val localDeviceId = deviceIdentityPort?.getDeviceId()
         val inserted = database.withTransaction {
             val existingCount = queueDao.countEpisode(episodeIdStr)
             if (existingCount > 0) {
@@ -98,6 +104,7 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
             queueDao.insertQueueItem(itemWithPos)
             queueDao.bumpQueueVersion(
                 updatedAt = System.currentTimeMillis(),
+                deviceId = localDeviceId,
                 restoredEpisodeIds = listOf(newItem.episodeId),
             )
             true
@@ -129,9 +136,15 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
 
     suspend fun clearQueue() {
         android.util.Log.d(TAG, "clearQueue: Clearing all queue items")
+        val localDeviceId = deviceIdentityPort?.getDeviceId()
         database.withTransaction {
+            val removedIds = queueDao.getAllQueueItemsSync().map { it.episodeId }
             queueDao.clearQueue()
-            queueDao.bumpQueueVersion(System.currentTimeMillis())
+            queueDao.bumpQueueVersion(
+                updatedAt = System.currentTimeMillis(),
+                deviceId = localDeviceId,
+                removedEpisodeIds = removedIds,
+            )
         }
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
             action = "clear",
@@ -151,10 +164,16 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
                 "replaceQueue: Removed ${episodes.size - uniqueEpisodes.size} duplicate episode IDs",
             )
         }
+        val localDeviceId = deviceIdentityPort?.getDeviceId()
         database.withTransaction {
+            val oldIds = queueDao.getAllQueueItemsSync().map { it.episodeId }
+            val newIds = uniqueEpisodes.map { it.id }.toSet()
+            val removedIds = oldIds.filter { it !in newIds }
             replaceQueueItems(uniqueEpisodes)
             queueDao.bumpQueueVersion(
                 updatedAt = System.currentTimeMillis(),
+                deviceId = localDeviceId,
+                removedEpisodeIds = removedIds,
                 restoredEpisodeIds = uniqueEpisodes.map { it.id },
             )
         }
@@ -301,11 +320,12 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
     suspend fun getQueueItemByEpisodeId(episodeId: String): cx.aswin.boxlore.core.database.entities.QueueItem? = queueDao.getQueueItemByEpisodeId(episodeId)
 
     suspend fun removeFromQueue(episodeId: String) {
+        val localDeviceId = deviceIdentityPort?.getDeviceId()
         database.withTransaction {
             queueDao.deleteQueueItemByEpisodeId(episodeId)
             queueDao.bumpQueueVersion(
                 updatedAt = System.currentTimeMillis(),
-                deviceId = null,
+                deviceId = localDeviceId,
                 removedEpisodeId = episodeId,
             )
         }
@@ -318,6 +338,7 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
      * position but are pushed after the reordered block.
      */
     suspend fun reorderQueue(orderedEpisodeIds: List<String>) {
+        val localDeviceId = deviceIdentityPort?.getDeviceId()
         database.withTransaction {
             val items = queueDao.getAllQueueItemsSync()
             if (items.isEmpty() || orderedEpisodeIds.isEmpty()) return@withTransaction
@@ -334,7 +355,10 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
             val updated = reordered.mapIndexed { index, item -> item.copy(position = index) }
             android.util.Log.d(TAG, "reorderQueue: Rewriting positions for ${updated.size} items")
             queueDao.updateQueuePositions(updated)
-            queueDao.bumpQueueVersion(System.currentTimeMillis())
+            queueDao.bumpQueueVersion(
+                updatedAt = System.currentTimeMillis(),
+                deviceId = localDeviceId,
+            )
         }
     }
 
@@ -352,8 +376,10 @@ class QueueRepository(private val database: BoxLoreDatabase, private val podcast
         updatedAt: Long = System.currentTimeMillis(),
         deviceId: String? = null,
         removedEpisodeId: String? = null,
+        removedEpisodeIds: Collection<String>? = null,
         restoredEpisodeIds: Collection<String>? = null,
     ) {
-        queueDao.bumpQueueVersion(updatedAt, deviceId, removedEpisodeId, restoredEpisodeIds)
+        val resolvedDevice = deviceId ?: deviceIdentityPort?.getDeviceId()
+        queueDao.bumpQueueVersion(updatedAt, resolvedDevice, removedEpisodeId, removedEpisodeIds, restoredEpisodeIds)
     }
 }

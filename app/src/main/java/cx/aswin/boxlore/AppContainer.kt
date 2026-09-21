@@ -19,6 +19,7 @@ import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
 import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
+import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
@@ -167,8 +168,14 @@ class AppContainer(
         )
     }
 
+    val boxcastPrefs: BoxcastPrefs by lazy { BoxcastPrefs(appContext) }
+
+    override val deviceIdentityPort: DeviceIdentityPort by lazy {
+        DeviceIdentityPort { boxcastPrefs.getOrCreateSyncDeviceId() }
+    }
+
     val queueRepository: QueueRepository by lazy {
-        QueueRepository(database, podcastRepository)
+        QueueRepository(database, podcastRepository, deviceIdentityPort)
     }
 
     val playbackRepository: PlaybackRepository by lazy {

@@ -77,6 +77,7 @@ interface QueueDao {
         updatedAt: Long = System.currentTimeMillis(),
         deviceId: String? = null,
         removedEpisodeId: String? = null,
+        removedEpisodeIds: Collection<String>? = null,
         restoredEpisodeIds: Collection<String>? = null,
     ) {
         val current = getQueueMetadata() ?: QueueMetadataEntity(id = 1)
@@ -91,8 +92,14 @@ interface QueueDao {
             val restoredSet = restoredEpisodeIds.toSet()
             existingList.filter { it !in restoredSet }
         }
-        val updatedRemovedList = if (!removedEpisodeId.isNullOrBlank()) {
-            (withoutRestored - removedEpisodeId + removedEpisodeId).takeLast(50)
+        val toRemove = buildList {
+            if (!removedEpisodeId.isNullOrBlank()) add(removedEpisodeId)
+            if (!removedEpisodeIds.isNullOrEmpty()) addAll(removedEpisodeIds.filter { it.isNotBlank() })
+        }
+        val updatedRemovedList = if (toRemove.isNotEmpty()) {
+            val toRemoveSet = toRemove.toSet()
+            val filteredExisting = withoutRestored.filter { it !in toRemoveSet }
+            (filteredExisting + toRemove.distinct()).takeLast(50)
         } else {
             withoutRestored
         }

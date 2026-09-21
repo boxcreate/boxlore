@@ -38,6 +38,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class QueueRepositoryTest {
     private lateinit var database: BoxLoreDatabase
+    private lateinit var podcastRepository: PodcastRepository
     private lateinit var repository: QueueRepository
 
     @Before
@@ -50,7 +51,7 @@ class QueueRepositoryTest {
                 .build()
         val rss = RssPodcastRepository.createForTests(context = context, database = database)
         val api = NetworkModule.createBoxLoreApi("http://localhost/", context)
-        val podcastRepository =
+        podcastRepository =
             PodcastRepository(
                 baseUrl = "http://localhost/",
                 publicKey = "test-key",
@@ -305,6 +306,48 @@ class QueueRepositoryTest {
         // Re-removing "1" must move it to the tail of the buffer (most recent)
         repository.removeFromQueue("1")
         assertEquals("2,1", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
+    }
+
+    @Test
+    fun clearQueuePreservesBulkRemovedTombstones() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+        repository.addToQueue(episodeItem(3), podcast())
+
+        repository.clearQueue()
+
+        val meta = repository.getQueueMetadata()!!
+        assertTrue(meta.isDirty)
+        assertEquals("1,2,3", meta.recentRemovedEpisodeIds)
+    }
+
+    @Test
+    fun replaceQueuePreservesOmittedItemsAsTombstones() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        repository.addToQueue(episodeItem(2), podcast())
+        repository.addToQueue(episodeItem(3), podcast())
+
+        // Replace queue with only episode 2: episodes 1 and 3 are removed in bulk
+        repository.replaceQueue(listOf(domainEpisode("2")))
+
+        val meta = repository.getQueueMetadata()!!
+        assertTrue(meta.isDirty)
+        assertEquals("1,3", meta.recentRemovedEpisodeIds)
+    }
+
+    @Test
+    fun localQueueMutationsRecordDeviceIdFromPort() = runTest {
+        val fakeDevicePort = cx.aswin.boxlore.core.testing.fakes.FakeDeviceIdentityPort("phone-alpha")
+        val customRepo = QueueRepository(database, podcastRepository, fakeDevicePort)
+
+        customRepo.addToQueue(episodeItem(10), podcast())
+        val metaAdd = customRepo.getQueueMetadata()!!
+        assertEquals("phone-alpha", metaAdd.lastModifiedDeviceId)
+
+        fakeDevicePort.currentDeviceId = "phone-beta"
+        customRepo.removeFromQueue("10")
+        val metaRemove = customRepo.getQueueMetadata()!!
+        assertEquals("phone-beta", metaRemove.lastModifiedDeviceId)
     }
 
     private fun domainEpisode(id: String) = Episode(
