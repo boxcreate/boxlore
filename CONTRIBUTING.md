@@ -1,34 +1,41 @@
 # Contributing to boxlore
 
-Thank you for your interest in contributing to boxlore! We welcome contributions from everyone.
+Thank you for your interest in **boxlore**!
 
-## Getting Started
+## Licensing & Contribution Policy
 
-1. **Fork the Repository**: Start by forking the `boxcreate/boxlore` repository to your own GitHub account.
-2. **Clone the Repository**: Clone your fork locally (`git clone https://github.com/YOUR_USERNAME/boxlore.git`).
-3. **Create a Branch**: Create a new branch for your feature or bug fix (`git checkout -b feature/your-feature-name` or `git checkout -b fix/your-bug-fix-name`).
+boxlore is source-available under the [PolyForm Strict License 1.0.0](LICENSE). Under the terms of this license, personal and noncommercial use is permitted, but redistribution, modifications, and derivative works are restricted.
 
-## How to Contribute
+Because of this licensing model, **we do not recommend, solicit, or welcome code contributions or pull requests**. 
 
-### Reporting Bugs
-If you find a bug in the source code or a mistake in the documentation, you can help us by submitting an issue to our [GitHub Repository](https://github.com/boxcreate/boxlore/issues). Please use the **Bug Report** template to provide as much detail as possible.
+We ask that you please do not spend time writing code or opening pull requests for new features, refactors, or fixes, as external pull requests will generally not be accepted or merged.
 
-### Suggesting Enhancements
-If you have an idea for a new feature or improvement, please submit an issue using the **Feature Request** template. Provide a clear description of the problem your feature solves and the proposed solution.
+## We Welcome Suggestions & Feedback Instead!
 
-### Submitting Pull Requests
-- Ensure that your code adheres to standard Kotlin/Android formatting conventions.
-- If your PR introduces a new feature, include relevant documentation updates.
-- Please detail your changes clearly in the PR description so we can review your work properly.
-- Follow the PR template (Conventional Commit title, exactly one `user-impact-*` label including `user-impact-critical` for correctness fixes). Fill **Release copy** when the change should appear verbatim in CHANGELOG / README What's New.
-- **Merge gate:** unit checks run on every PR push (cancelling prior in-progress runs). Resolve SonarCloud + CodeRabbit threads, wait for `testDebugUnitTest` + `coderabbit-threads-resolved`, then squash-merge. See `.github/PULL_REQUEST_TEMPLATE.md`.
+While we don't accept code contributions, we **deeply appreciate and actively encourage your suggestions, feedback, and bug reports**. Your ideas directly shape the roadmap and design of boxlore.
 
-## API & Proxy Repository
+Here is how you can help:
 
-The API and proxy backend repository is tracked separately and is private due to security reasons. If you require changes to the API or want to request a new endpoint, please raise an issue on this repository using the **Feature Request** or **Bug Report** template, and it will be taken up.
+### 1. Suggesting Features & Enhancements
+If you have an idea for a new capability, UI improvement, or workflow enhancement:
+- Open an issue using the **Feature Request** or **Enhancement** template in our [GitHub Issues](https://github.com/boxcreate/boxlore/issues/new/choose).
+- Join the conversation and share ideas on [GitHub Discussions](https://github.com/boxcreate/boxlore/discussions).
+- Clearly describe your use case, why it matters, and how you envision the feature working.
 
-## Development Setup
+### 2. Reporting Bugs & Issues
+If you encounter unexpected behavior, crashes, or visual glitches:
+- Submit an issue using the **Bug Report** or **Crash Report** template in our [GitHub Issues](https://github.com/boxcreate/boxlore/issues/new/choose).
+- Include device specifications (model, Android version), the boxlore version, and clear steps to reproduce the problem.
 
-See the main [README.md](README.md) for instructions on setting up the boxlore development environment. 
+### 3. Security Vulnerabilities
+If you discover a security vulnerability or sensitive data exposure, please report it privately through [GitHub Security Advisories](https://github.com/boxcreate/boxlore/security/advisories/new) rather than opening a public issue.
 
-We appreciate your effort in helping improve boxlore!
+---
+
+## API & Backend Inquiries
+
+The recommendation, search, and catalog backend proxy is tracked in a separate private repository for security reasons. If you would like to request new search filters, catalog capabilities, or endpoint changes, please submit an issue on this repository using the **Feature Request** template, and it will be evaluated for implementation.
+
+## Local Development & Personal Use
+
+In accordance with the [PolyForm Strict License 1.0.0](LICENSE), you are welcome to build and run boxlore locally for personal study, testing, and private noncommercial use. Refer to the [README.md](README.md) and [ARCHITECTURE.md](ARCHITECTURE.md) for build setup and module details.
