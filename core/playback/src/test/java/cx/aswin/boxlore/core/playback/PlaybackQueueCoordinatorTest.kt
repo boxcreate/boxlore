@@ -132,7 +132,7 @@ class PlaybackQueueCoordinatorTest {
         val meta = queueRepository.getQueueMetadata()!!
         assertEquals(initialSeq + 1L, meta.queueSequence)
         assertTrue(meta.isDirty)
-        assertEquals("2", meta.recentRemovedEpisodeIds)
+        assertEquals(listOf("2"), cx.aswin.boxlore.core.database.dao.QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
     }
 
     private fun testEpisode(id: String, podcastId: String) = Episode(

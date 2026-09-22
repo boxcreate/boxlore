@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
@@ -235,12 +236,12 @@ class QueueRepositoryTest {
 
         val meta = repository.getQueueMetadata()!!
         assertTrue(meta.isDirty)
-        assertEquals("1", meta.recentRemovedEpisodeIds)
+        assertEquals(listOf("1"), QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
 
         // Remove another item
         repository.removeFromQueue("2")
         val meta2 = repository.getQueueMetadata()!!
-        assertEquals("1,2", meta2.recentRemovedEpisodeIds)
+        assertEquals(listOf("1", "2"), QueueDao.parseRecentRemovedEpisodeIds(meta2.recentRemovedEpisodeIds))
     }
 
     @Test
@@ -272,7 +273,7 @@ class QueueRepositoryTest {
     fun reAddingRemovedEpisodePrunesFromRecentRemovedEpisodeIds() = runTest {
         repository.addToQueue(episodeItem(1), podcast())
         repository.removeFromQueue("1")
-        assertEquals("1", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
+        assertEquals(listOf("1"), QueueDao.parseRecentRemovedEpisodeIds(repository.getQueueMetadata()!!.recentRemovedEpisodeIds))
 
         // Re-adding the episode must prune it from tombstones so sync won't treat it as deleted
         repository.addToQueue(episodeItem(1), podcast())
@@ -287,12 +288,12 @@ class QueueRepositoryTest {
         repository.addToQueue(episodeItem(2), podcast())
         repository.removeFromQueue("1")
         repository.removeFromQueue("2")
-        assertEquals("1,2", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
+        assertEquals(listOf("1", "2"), QueueDao.parseRecentRemovedEpisodeIds(repository.getQueueMetadata()!!.recentRemovedEpisodeIds))
 
         // Restoring episode 1 via replaceQueue should prune "1" and leave "2" tombstoned
         repository.replaceQueue(listOf(domainEpisode("1")))
         val meta = repository.getQueueMetadata()!!
-        assertEquals("2", meta.recentRemovedEpisodeIds)
+        assertEquals(listOf("2"), QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
     }
 
     @Test
@@ -301,11 +302,11 @@ class QueueRepositoryTest {
         repository.addToQueue(episodeItem(2), podcast())
         repository.removeFromQueue("1")
         repository.removeFromQueue("2")
-        assertEquals("1,2", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
+        assertEquals(listOf("1", "2"), QueueDao.parseRecentRemovedEpisodeIds(repository.getQueueMetadata()!!.recentRemovedEpisodeIds))
 
         // Re-removing "1" must move it to the tail of the buffer (most recent)
         repository.removeFromQueue("1")
-        assertEquals("2,1", repository.getQueueMetadata()!!.recentRemovedEpisodeIds)
+        assertEquals(listOf("2", "1"), QueueDao.parseRecentRemovedEpisodeIds(repository.getQueueMetadata()!!.recentRemovedEpisodeIds))
     }
 
     @Test
@@ -318,7 +319,7 @@ class QueueRepositoryTest {
 
         val meta = repository.getQueueMetadata()!!
         assertTrue(meta.isDirty)
-        assertEquals("1,2,3", meta.recentRemovedEpisodeIds)
+        assertEquals(listOf("1", "2", "3"), QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
     }
 
     @Test
@@ -332,7 +333,7 @@ class QueueRepositoryTest {
 
         val meta = repository.getQueueMetadata()!!
         assertTrue(meta.isDirty)
-        assertEquals("1,3", meta.recentRemovedEpisodeIds)
+        assertEquals(listOf("1", "3"), QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
     }
 
     @Test

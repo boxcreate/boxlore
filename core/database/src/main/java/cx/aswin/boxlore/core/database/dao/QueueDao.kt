@@ -117,7 +117,7 @@ interface QueueDao {
         private val gson = Gson()
         private val listStringType = object : TypeToken<List<String>>() {}.type
 
-        internal fun parseRecentRemovedEpisodeIds(raw: String?): List<String> {
+        fun parseRecentRemovedEpisodeIds(raw: String?): List<String> {
             if (raw.isNullOrBlank()) return emptyList()
             val trimmed = raw.trim()
             if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
@@ -129,7 +129,7 @@ interface QueueDao {
             return trimmed.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         }
 
-        internal fun serializeRecentRemovedEpisodeIds(ids: List<String>): String? {
+        fun serializeRecentRemovedEpisodeIds(ids: List<String>): String? {
             if (ids.isEmpty()) return null
             return gson.toJson(ids)
         }
