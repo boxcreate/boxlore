@@ -137,4 +137,12 @@ class QueueDaoInMemoryTest {
         val parsed = QueueDao.parseRecentRemovedEpisodeIds(legacyCsv)
         assertEquals(listOf("ep-1", "ep-2", "ep-3"), parsed)
     }
+
+    @Test
+    fun parseRecentRemovedEpisodeIds_malformedBracketedJson_fallsBackToCsv() {
+        // Bracketed string with invalid token syntax fails JSON parsing and falls back to CSV
+        val malformedJson = "[ep-1, :invalid]"
+        val parsed = QueueDao.parseRecentRemovedEpisodeIds(malformedJson)
+        assertEquals(listOf("[ep-1", ":invalid]"), parsed)
+    }
 }
