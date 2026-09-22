@@ -153,6 +153,8 @@ class BoxcastPrefs(context: Context) {
     }
 
     companion object {
+        private val syncDeviceIdLock = Any()
+
         /** Canonical SharedPreferences file name (migrated from `boxcast_prefs`). */
         const val PREFS_NAME = PrefsFileMigrator.Files.PREFS
 
@@ -186,11 +188,11 @@ class BoxcastPrefs(context: Context) {
 
     // ── Sync / Device Identity ──────────────────────────────────────────────
 
-    fun getOrCreateSyncDeviceId(): String {
+    fun getOrCreateSyncDeviceId(): String = synchronized(syncDeviceIdLock) {
         val existing = prefs.getString(KEY_SYNC_DEVICE_ID, null)
-        if (!existing.isNullOrBlank()) return existing
+        if (!existing.isNullOrBlank()) return@synchronized existing
         val newId = java.util.UUID.randomUUID().toString()
         prefs.edit().putString(KEY_SYNC_DEVICE_ID, newId).apply()
-        return newId
+        newId
     }
 }
