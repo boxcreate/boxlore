@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository

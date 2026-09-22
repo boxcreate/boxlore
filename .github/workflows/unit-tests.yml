@@ -2,12 +2,15 @@ name: Unit Tests
 
 # Runs on:
 # - `pull_request` — every PR push (new commits cancel the previous in-progress run)
+# - `push` to `master` — populates and refreshes the primary GitHub Actions build cache
 # - `workflow_dispatch` — manual full gate (always runs; ignores [skip unit])
 # Put `[skip unit]` in the PR title to no-op (still reports green as `testDebugUnitTest`).
 # Use only for docs/chore with no logic risk.
 # Bot pushes to master use boxlore-master-pusher (ruleset Integration bypass).
 on:
   pull_request:
+  push:
+    branches: [master]
   workflow_dispatch:
 
 # One active run per PR / ref — a new commit cancels the previous in-progress run.
@@ -16,86 +19,137 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  unit-tests:
-    name: testDebugUnitTest
+  detect-skip:
+    name: Detect Skip Condition
     runs-on: ubuntu-latest
-    timeout-minutes: 45
     permissions:
       contents: read
-      pull-requests: read
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
     steps:
       - name: Detect [skip unit] in PR title
-        id: skip
-        if: github.event_name == 'pull_request'
+        id: check
         env:
           PR_TITLE: ${{ github.event.pull_request.title || '' }}
         run: |
           set -euo pipefail
           echo "PR title: ${PR_TITLE}"
-          if echo "$PR_TITLE" | grep -qi '\[skip unit\]'; then
+          if [ "${{ github.event_name }}" = "pull_request" ] && echo "$PR_TITLE" | grep -qi '\[skip unit\]'; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "skipped via [skip unit]"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Skip unit suite
-        if: steps.skip.outputs.skip == 'true'
-        run: echo "Skipping unit suite ([skip unit] in PR title)"
-
+  unit-tests-and-quality:
+    name: Unit Tests & Quality
+    needs: detect-skip
+    if: needs.detect-skip.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
       - name: Checkout
-        if: steps.skip.outputs.skip != 'true'
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Changelog and release-note script tests
-        if: steps.skip.outputs.skip != 'true'
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 
       - name: Set up JDK 17
-        if: steps.skip.outputs.skip != 'true'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Setup Gradle
-        if: steps.skip.outputs.skip != 'true'
         uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
 
       # Real google-services.json lives in the GitHub Environment "release"
       # (GOOGLE_SERVICES_JSON_BASE64) and is not available to PR/push CI.
       # This stub only satisfies the Google Services Gradle plugin for unit tests.
       - name: Write CI stub google-services.json
-        if: steps.skip.outputs.skip != 'true'
         uses: ./.github/actions/write-ci-google-services
 
-      - name: Architecture guards (boundaries + Konsist)
-        if: steps.skip.outputs.skip != 'true'
+      - name: Architecture boundary checks
         run: |
           bash scripts/ci/check-feature-no-boxlore-database.sh
           bash scripts/ci/check-feature-no-posthog.sh
-          ./gradlew :core:testing:testDebugUnitTest
 
-      - name: Run detekt
-        if: steps.skip.outputs.skip != 'true'
-        run: ./gradlew detekt
-
-      - name: Run unit tests
-        if: steps.skip.outputs.skip != 'true'
-        run: ./gradlew testDebugUnitTest --continue
-
-      - name: Verify merged Kover coverage floor
-        if: steps.skip.outputs.skip != 'true'
-        run: ./gradlew :koverVerifyMerged
-
-      - name: Lint debug
-        if: steps.skip.outputs.skip != 'true'
-        run: ./gradlew lintDebug
-
-      - name: Dependency guard (app + core modules)
-        if: steps.skip.outputs.skip != 'true'
-        run: ./gradlew :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard
+      - name: Detekt, Unit Tests, Coverage & Dependency Guards
+        run: |
+          ./gradlew detekt testDebugUnitTest :koverVerifyMerged :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard --continue
 
       - name: Scrub google-services.json
-        if: always() && steps.skip.outputs.skip != 'true'
+        if: always()
         run: rm -f app/google-services.json
+
+  lint-debug:
+    name: Lint Debug
+    needs: detect-skip
+    if: needs.detect-skip.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
+
+      - name: Write CI stub google-services.json
+        uses: ./.github/actions/write-ci-google-services
+
+      - name: Lint debug
+        run: ./gradlew lintDebug
+
+      - name: Scrub google-services.json
+        if: always()
+        run: rm -f app/google-services.json
+
+  testDebugUnitTest:
+    name: testDebugUnitTest
+    needs: [detect-skip, unit-tests-and-quality, lint-debug]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Evaluate Check Suite
+        run: |
+          set -euo pipefail
+          SKIP="${{ needs.detect-skip.outputs.skip }}"
+          if [ "$SKIP" = "true" ]; then
+            echo "Suite skipped via [skip unit] in PR title."
+            exit 0
+          fi
+
+          TEST_RES="${{ needs.unit-tests-and-quality.result }}"
+          LINT_RES="${{ needs.lint-debug.result }}"
+          echo "Unit Tests & Quality result: $TEST_RES"
+          echo "Lint Debug result: $LINT_RES"
+
+          if [ "$TEST_RES" != "success" ] || [ "$LINT_RES" != "success" ]; then
+            echo "::error::One or more required CI check jobs failed (tests: $TEST_RES, lint: $LINT_RES)."
+            exit 1
+          fi
+
+          echo "All required tests, linters, and quality gates passed successfully."
