@@ -6,6 +6,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 import kotlinx.coroutines.flow.Flow
@@ -81,11 +83,7 @@ interface QueueDao {
         restoredEpisodeIds: Collection<String>? = null,
     ) {
         val current = getQueueMetadata() ?: QueueMetadataEntity(id = 1)
-        val existingList = current.recentRemovedEpisodeIds
-            ?.split(",")
-            ?.map { it.trim() }
-            ?.filter { it.isNotEmpty() }
-            ?: emptyList()
+        val existingList = parseRecentRemovedEpisodeIds(current.recentRemovedEpisodeIds)
         val withoutRestored = if (restoredEpisodeIds.isNullOrEmpty()) {
             existingList
         } else {
@@ -99,11 +97,11 @@ interface QueueDao {
         val updatedRemovedList = if (toRemove.isNotEmpty()) {
             val toRemoveSet = toRemove.toSet()
             val filteredExisting = withoutRestored.filter { it !in toRemoveSet }
-            (filteredExisting + toRemove.distinct()).takeLast(50)
+            (filteredExisting + toRemove.distinct()).takeLast(MAX_RECENT_REMOVED_EPISODES)
         } else {
             withoutRestored
         }
-        val updatedRemovedStr = if (updatedRemovedList.isEmpty()) null else updatedRemovedList.joinToString(",")
+        val updatedRemovedStr = serializeRecentRemovedEpisodeIds(updatedRemovedList)
         val updated = current.copy(
             queueUpdatedAt = updatedAt,
             queueSequence = current.queueSequence + 1L,
@@ -112,5 +110,28 @@ interface QueueDao {
             recentRemovedEpisodeIds = updatedRemovedStr,
         )
         upsertQueueMetadata(updated)
+    }
+
+    companion object {
+        private const val MAX_RECENT_REMOVED_EPISODES = 50
+        private val gson = Gson()
+        private val listStringType = object : TypeToken<List<String>>() {}.type
+
+        internal fun parseRecentRemovedEpisodeIds(raw: String?): List<String> {
+            if (raw.isNullOrBlank()) return emptyList()
+            val trimmed = raw.trim()
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                val parsed = runCatching {
+                    gson.fromJson<List<String>>(trimmed, listStringType)
+                }.getOrNull()
+                if (parsed != null) return parsed
+            }
+            return trimmed.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        }
+
+        internal fun serializeRecentRemovedEpisodeIds(ids: List<String>): String? {
+            if (ids.isEmpty()) return null
+            return gson.toJson(ids)
+        }
     }
 }
