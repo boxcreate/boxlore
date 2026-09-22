@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-22T17:08:46.341Z",
+  "lastRun": "2026-09-22T20:21:57.528Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "130f899b-2d58-45e8-8b7a-af99a67732a8",
-      "lastEpisodeTitle": "NPR News: 09-22-2026 12PM EDT",
+      "lastRssKey": "f908eb2e-c67a-4674-ad2c-0d855b68d890",
+      "lastEpisodeTitle": "NPR News: 09-22-2026 4PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790096932376
+      "lastCheckedAt": 1790108522527
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75284732",
-      "lastEpisodeTitle": "CCTVs at medical stores, Kamathipura’s redevelopment, and protests at IIT Bombay",
-      "lastEpisodeId": "60683473307",
-      "lastCheckedAt": 1790038862898
+      "lastRssKey": "https://api.spreaker.com/episode/75302945",
+      "lastEpisodeTitle": "The Catch Up: IIT Bombay suicide case takes a turn (22 September)",
+      "lastEpisodeId": "60708495916",
+      "lastCheckedAt": 1790108523819
     },
     "78573": {
       "lastRssKey": "c1eff3ee-c9d0-44e4-9629-ac758b5d51c4",
@@ -147,10 +147,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "FFE735B6-6948-4302-8D39-34033F5FA0C7",
-      "lastEpisodeTitle": "TNB Tech Minute: Alibaba Unveils New AI Chip",
-      "lastEpisodeId": "60702854290",
-      "lastCheckedAt": 1790096949665
+      "lastRssKey": "D85FC87A-B9CC-4A39-A811-6388ADA302F0",
+      "lastEpisodeTitle": "TNB Tech Minute: DoorDash Settles NYC Investigation Into Minimum-Pay Law Compliance",
+      "lastEpisodeId": "60709987674",
+      "lastCheckedAt": 1790108538312
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -159,10 +159,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "8303e2c4-a890-11f1-95c4-6b18dfebbbe4",
-      "lastEpisodeTitle": "The Googlebooks Are Here",
+      "lastRssKey": "83329416-a890-11f1-95c4-3ff6a676cf5c",
+      "lastEpisodeTitle": "Meta Finally Has An AI Hit",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1790028455591
+      "lastCheckedAt": 1790108539418
     },
     "353744": {
       "lastRssKey": "flightcast:01M2X1DGXZZDMDGGVKCB1GKN0M",
@@ -171,10 +171,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "ffee16fc-b69f-11f1-8246-bbc395dd8f1e",
-      "lastEpisodeTitle": "12PM ET 09/22/2026 Newscast",
+      "lastRssKey": "83b2c3d6-b6c1-11f1-8861-4f1dba465f3b",
+      "lastEpisodeTitle": "4PM ET 09/22/2026 Newscast",
       "lastEpisodeId": "60704675523",
-      "lastCheckedAt": 1790096951621
+      "lastCheckedAt": 1790108540337
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -201,10 +201,10 @@
       "lastCheckedAt": 1789569427380
     },
     "415434": {
-      "lastRssKey": "49481716-6e7b-11f1-94bf-1fbfdc2004d6",
-      "lastEpisodeTitle": "Googlebooks are coming for your Mac",
+      "lastRssKey": "c975b2e0-c3c7-11f0-8340-4b2676a25c90",
+      "lastEpisodeTitle": "DLSS5 Explained with Linus Tech Tips",
       "lastEpisodeId": "60427690690",
-      "lastCheckedAt": 1790028459363
+      "lastCheckedAt": 1790108543490
     },
     "419624": {
       "lastRssKey": "d30adff8-d3dc-4ae2-bcde-9f9ba3a0f0ff",
@@ -213,10 +213,10 @@
       "lastCheckedAt": 1789925693884
     },
     "431205": {
-      "lastRssKey": "593c2f85-3fb1-4072-a5e2-d8eac18ffe2a",
-      "lastEpisodeTitle": "AI Stocks Rally, Meta’s Muse Moment, Nike’s Swoon 9/21/26",
+      "lastRssKey": "a8bca6bd-2be5-4119-934d-1a3c1adb9ef0",
+      "lastEpisodeTitle": "Inspiring the AI Trade, Peloton Product Launch, and Muni Bonds to the Rescue? 9/22/26",
       "lastEpisodeId": "60571577178",
-      "lastCheckedAt": 1790028461602
+      "lastCheckedAt": 1790108546650
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -231,10 +231,10 @@
       "lastCheckedAt": 1790096957230
     },
     "432535": {
-      "lastRssKey": "2ea05913-2cf8-4111-8baa-c9a881ad7e9d",
-      "lastEpisodeTitle": "The Trauma You Inherited Isn't Yours — But You Can Break It | Mark Wolynn",
+      "lastRssKey": "df581185-7631-4f5a-949b-daf47fd2b3e8",
+      "lastEpisodeTitle": "The Hidden Truth About Your Brain, Trauma & Healing with Kelly Noonan Gores",
       "lastEpisodeId": "59964924407",
-      "lastCheckedAt": 1789404444446
+      "lastCheckedAt": 1790108549383
     },
     "437685": {
       "lastRssKey": "86b91b50-8d60-11f1-adef-47c9590e042d",
@@ -293,10 +293,10 @@
       "lastCheckedAt": 1789640214417
     },
     "483834": {
-      "lastRssKey": "6ab17584d00a4eacd5bd085e",
-      "lastEpisodeTitle": "New Blade Runner 2099 Photos, A24 Drops Slayground Horror Movie Teaser  — September 21, 2026",
+      "lastRssKey": "6ab2dd4593749e4c0b64c624",
+      "lastEpisodeTitle": "Apocalypse Z: New World Teaser Trailer, AMC Releases Fall FearFest Schedule — September 22, 2026",
       "lastEpisodeId": "60603867985",
-      "lastCheckedAt": 1790028469414
+      "lastCheckedAt": 1790108557379
     },
     "490022": {
       "lastRssKey": "94eccd96-c916-40c8-8350-74d1671bf90b",
@@ -501,10 +501,10 @@
       "lastCheckedAt": 1789691891551
     },
     "808826": {
-      "lastRssKey": "6aa263cac939da27952fa921",
-      "lastEpisodeTitle": "Jeopardy 2!",
+      "lastRssKey": "6aacb3fabafe1ba456473e96",
+      "lastEpisodeTitle": "Jeopardy 3 - Double Jeopardy!",
       "lastEpisodeId": "60428476792",
-      "lastCheckedAt": 1789508291765
+      "lastCheckedAt": 1790108581873
     },
     "827592": {
       "lastEpisodeId": "60700708189",
@@ -537,10 +537,10 @@
       "lastCheckedAt": 1789603680763
     },
     "902798": {
-      "lastRssKey": "b482a486-cfd6-4809-9418-56b3b7f5ef67",
-      "lastEpisodeTitle": "How Top VCs Pick Founders, Evaluate Startups & Fund Them | Sasha Mirchandani | FO564 Raj Shamani",
+      "lastRssKey": "e686d499-0cb3-4f5f-8b5b-a82f5c2ce7d8",
+      "lastEpisodeTitle": "How To Master Seduction, Understand Desire & Influence People | Robert Greene | FO565 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1789840129026
+      "lastCheckedAt": 1790108585568
     },
     "906591": {
       "lastRssKey": "0802f146-b650-11f1-bb2f-13d87f595845",
@@ -752,10 +752,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6ab1659dbc5ab4c77acfda8b",
-      "lastEpisodeTitle": "(Pop) Est-ce que toutes les productions françaises seront financées par Netflix en 2030 ?… HugoDécrypte",
+      "lastRssKey": "6ab2bbe2cb7adf420cf4ed0c",
+      "lastEpisodeTitle": "Poutine provoque l’Europe, qui répond, explications (22/09)",
       "lastEpisodeId": "60605909711",
-      "lastCheckedAt": 1790058980844
+      "lastCheckedAt": 1790108611948
     },
     "2574026": {
       "lastRssKey": "dfef7122-b2b0-11f1-993d-8b6b2c5fd3f2",
@@ -1013,10 +1013,10 @@
       "lastCheckedAt": 1789584033549
     },
     "6280366": {
-      "lastRssKey": "e7a9df0d-6988-4a49-b98a-f64a7da6a7a2",
-      "lastEpisodeTitle": "The State of the AI Debate",
+      "lastRssKey": "0914d398-764a-4604-b62a-c47c1245a38c",
+      "lastEpisodeTitle": "Agent Wars!",
       "lastEpisodeId": "60592860794",
-      "lastCheckedAt": 1790028546324
+      "lastCheckedAt": 1790108640799
     },
     "6413946": {
       "lastRssKey": "9a87a693-a043-446b-80b8-2d75a7a94164",
@@ -1370,10 +1370,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/f5b6d009-a303-5bb5-8c95-9bd2bc8a2a28",
-      "lastEpisodeTitle": "Surviving Thanksgiving with a Narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/ded9efab-b905-58da-b3c6-e89617181fdd",
+      "lastEpisodeTitle": "How narcissistic abuse IMPACTS how you show up in intimate relationships ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1790097079740
+      "lastCheckedAt": 1790108670599
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
