@@ -10,16 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Room database schema version 37 with `MIGRATION_36_37` adding `unsubscribedAt`, `isDirty`, and `syncedAt` to podcasts, `likedAt` to listening history, and new `queue_metadata` table. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Monotonic sequence versioning and tombstone tracking in `QueueDao` and `QueueRepository` to resolve the empty queue deletion bug. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - introduce Firebase Authentication and redesign account settings ([#1069](https://github.com/boxcreate/boxlore/pull/1069)) <!-- impact:user-impact-medium -->
 ### Changed
 - Removed deprecated remote auto-transcription polling and AI chapter generation triggers from the player interface. ([#1071](https://github.com/boxcreate/boxlore/pull/1071)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 ### Fixed
+- Decoupled episode like timestamps from playback progress so playback updates do not clobber user likes. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Fixed `PlaybackQueueCoordinator` to delete removed queue items directly instead of replacing the entire table. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - resolve account authentication and settings refinements ([#1070](https://github.com/boxcreate/boxlore/pull/1070)) <!-- impact:user-impact-medium -->
 
 <!-- readme-copy:start pr=1071
 ### Fixes
 - Streamlined player chapter and transcript controls by removing deprecated background generation prompts.
 readme-copy:end pr=1071 -->
+
+<!-- readme-copy:start pr=1072
+### Improvements
+- Added multi-device sync data foundation to protect your playlist queues, subscriptions, and favorites from sync conflicts.
+readme-copy:end pr=1072 -->
 ## [v0.0.25] - 2026-09-08
 
 ### Added

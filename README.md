@@ -126,6 +126,10 @@ and listen without paywalls, subscriptions, or ads.
 <ul align="left">
 <li>introduce Firebase Authentication and redesign account settings <a href="https://github.com/boxcreate/boxlore/pull... ([#1069](https://github.com/boxcreate/boxlore/pull/1069"><img src="https://img.shields.io/badge/PR-1069-6750A4?style=flat-square" alt="PR #1069" height="18"/></a></li>
 </ul>
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>Added multi-device sync data foundation to protect your playlist queues, subscriptions, and favorites from sync conflicts. <a href="https://github.com/boxcreate/boxlore/pull/1072"><img src="https://img.shields.io/badge/PR-1072-6750A4?style=flat-square" alt="PR #1072" height="18"/></a></li>
+</ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
 <li>Streamlined player chapter and transcript controls by removing deprecated background generation prompts. <a href="https://github.com/boxcreate/boxlore/pull/1071"><img src="https://img.shields.io/badge/PR-1071-6750A4?style=flat-square" alt="PR #1071" height="18"/></a></li>
