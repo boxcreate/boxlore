@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-22T12:22:16.524Z",
+  "lastRun": "2026-09-22T17:08:46.341Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "68a5783e-f906-490c-8db6-538143d55f22",
-      "lastEpisodeTitle": "NPR News: 09-22-2026 8AM EDT",
+      "lastRssKey": "130f899b-2d58-45e8-8b7a-af99a67732a8",
+      "lastEpisodeTitle": "NPR News: 09-22-2026 12PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790079743170
+      "lastCheckedAt": 1790096932376
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75284732",
@@ -147,10 +147,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "693ECB70-E246-4567-9928-EA84D771D535",
-      "lastEpisodeTitle": "Polymarket’s Rush to Grow at All Costs",
-      "lastEpisodeId": "60692256945",
-      "lastCheckedAt": 1790079765100
+      "lastRssKey": "FFE735B6-6948-4302-8D39-34033F5FA0C7",
+      "lastEpisodeTitle": "TNB Tech Minute: Alibaba Unveils New AI Chip",
+      "lastEpisodeId": "60702854290",
+      "lastCheckedAt": 1790096949665
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -171,10 +171,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "75404fbe-b67e-11f1-b5a3-97840edd4e6a",
-      "lastEpisodeTitle": "8AM ET 09/22/2026 Newscast",
-      "lastEpisodeId": "60682711535",
-      "lastCheckedAt": 1790079767870
+      "lastRssKey": "ffee16fc-b69f-11f1-8246-bbc395dd8f1e",
+      "lastEpisodeTitle": "12PM ET 09/22/2026 Newscast",
+      "lastEpisodeId": "60704675523",
+      "lastCheckedAt": 1790096951621
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -225,10 +225,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M34ETCGG84KWAYVDWSY8GPQT",
-      "lastEpisodeTitle": "For many, higher costs to stay warm this winter",
+      "lastRssKey": "01M34QMYYH9YCY3S81SYKKTRVY",
+      "lastEpisodeTitle": "Clearing the way for a Paramount-Warner Bros. merger",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790079775342
+      "lastCheckedAt": 1790096957230
     },
     "432535": {
       "lastRssKey": "2ea05913-2cf8-4111-8baa-c9a881ad7e9d",
@@ -394,10 +394,10 @@
       "lastCheckedAt": 1789640223991
     },
     "577105": {
-      "lastRssKey": "prx_7057_82aaba05-80c9-4d2e-8069-3c20f2b7dbc8",
-      "lastEpisodeTitle": "179: The Courthouse - Revisited",
-      "lastEpisodeId": "59785260638",
-      "lastCheckedAt": 1788265368898
+      "lastRssKey": "prx_7057_4148b4aa-8576-4a4a-b936-b39ed087e1eb",
+      "lastEpisodeTitle": "LOW - Now Available",
+      "lastEpisodeId": "60701823054",
+      "lastCheckedAt": 1790096979010
     },
     "585994": {
       "lastRssKey": "gid://art19-episode-locator/V0/Hl3lxVH1SYC6ADJIHm6z1LAgILoOGqwxApm6Ulw06I0",
@@ -507,9 +507,10 @@
       "lastCheckedAt": 1789508291765
     },
     "827592": {
-      "lastRssKey": "01a42f07-7277-43f5-91f1-b4c8012fd1c7",
-      "lastEpisodeTitle": "Selects: Fallout Shelters: Probably Useless (Let’s Never Find Out)",
-      "lastCheckedAt": 1789828793574
+      "lastEpisodeId": "60700708189",
+      "lastEpisodeTitle": "Our Big Fat Dream Episode",
+      "lastRssKey": "36c5b3c7-10ea-4e3d-a762-b4cc011ba2f6",
+      "lastCheckedAt": 1790096989755
     },
     "837535": {
       "lastRssKey": "d32b06f0-b33b-11f1-8113-f3d8476f0e95",
@@ -572,10 +573,10 @@
       "lastCheckedAt": 1789913082308
     },
     "980370": {
-      "lastRssKey": "6ab144561faf37ef045db6c9",
-      "lastEpisodeTitle": "How to clean up the world's dirtiest industry | Joojin Kim",
+      "lastRssKey": "6ab2943d93749e4c0b45afec",
+      "lastEpisodeTitle": "What makes a good game? | Eric Zimmerman",
       "lastEpisodeId": "60252776187",
-      "lastCheckedAt": 1790014641043
+      "lastCheckedAt": 1790096997652
     },
     "998969": {
       "lastRssKey": "audioboom-01a0bf89-f8d4-7dfc-abfc-d25dafbb37a6",
@@ -600,9 +601,9 @@
       "lastCheckedAt": 1789913087292
     },
     "1035900": {
-      "lastRssKey": "34f0facb-686a-453b-89ac-a3b19662986a",
-      "lastEpisodeTitle": "Diablo 4 ist tot, lang lebe Diablo 5! | mit Jessirocks",
-      "lastCheckedAt": 1789898362482
+      "lastRssKey": "b3bf679e-b6f6-4c69-a945-4e73a3cb8d69",
+      "lastEpisodeTitle": "WoW Forever Beta: Wird es dem Hype gerecht? | mit AresLPs & FalganWoW",
+      "lastCheckedAt": 1790097003096
     },
     "1047718": {
       "lastRssKey": "6ab221808f0833b2aaa720a1",
@@ -634,16 +635,16 @@
       "lastCheckedAt": 1789765674545
     },
     "1106580": {
-      "lastRssKey": "cmu9l2bd119hs01z52exn3nbw",
-      "lastEpisodeTitle": "百靈果NEWS｜花錢可以跟川普政府買特赦、紅髮艾德演唱會大炎上、Hyrox賽道的土石流💩",
+      "lastRssKey": "cmu6fqgzl0b8n010bcc9x4s4b",
+      "lastEpisodeTitle": "The KK Show 379 - 從恐怖份子救出人質的特種部隊 余靖",
       "lastEpisodeId": "59827465254",
-      "lastCheckedAt": 1789913095556
+      "lastCheckedAt": 1790097010529
     },
     "1116485": {
-      "lastRssKey": "6ab24c30b20888375a235ca9",
-      "lastEpisodeTitle": "Alexis Mac Allister SPEAKS OUT On Liverpool Contract Situation | Daily News Update",
+      "lastRssKey": "6ab2922229ffffcf588462b4",
+      "lastEpisodeTitle": "THIS is How Liverpool Move to the NEXT LEVEL!",
       "lastEpisodeId": "60461626103",
-      "lastCheckedAt": 1790079840288
+      "lastCheckedAt": 1790097011173
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -657,10 +658,10 @@
       "lastCheckedAt": 1789709713170
     },
     "1193286": {
-      "lastRssKey": "9b3f7bfc-b635-11f1-a7ec-4352e47ef056",
-      "lastEpisodeTitle": "Many Questions Answered In Habs OT Win! | The Sick Podcast with Tony Marinaro September 21 2026",
+      "lastRssKey": "3e50ccc4-b69f-11f1-b4e5-97a93512bf0c",
+      "lastEpisodeTitle": "Des Décisions Difficiles À Venir Pour Le Canadien | Le Sick Podcast Avec Tony Marinaro 22/09/26",
       "lastEpisodeId": "60583563884",
-      "lastCheckedAt": 1790058974006
+      "lastCheckedAt": 1790097012850
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -704,10 +705,10 @@
       "lastCheckedAt": 1789992483455
     },
     "1366771": {
-      "lastRssKey": "6ab2552035231e4f550a1bad",
-      "lastEpisodeTitle": "Afternoon Briefing Tuesday 22nd September",
+      "lastRssKey": "6ab2a9d693749e4c0b4eb20c",
+      "lastEpisodeTitle": "Evening Briefing Tuesday 22nd September",
       "lastEpisodeId": "60663473400",
-      "lastCheckedAt": 1790079847311
+      "lastCheckedAt": 1790097016065
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19791953",
@@ -1268,10 +1269,10 @@
       "lastCheckedAt": 1789621758356
     },
     "7437277": {
-      "lastRssKey": "dad91e0b-48e8-4423-ae8e-3a0c3ff76538",
-      "lastEpisodeTitle": "Why did he drink it?",
+      "lastRssKey": "3f056c83-72d8-40f6-8e7e-f7d9302b0c1f",
+      "lastEpisodeTitle": "We finally called them...",
       "lastEpisodeId": "59911806400",
-      "lastCheckedAt": 1789496642813
+      "lastCheckedAt": 1790097073311
     },
     "7447848": {
       "lastRssKey": "89b411f5-f8d4-4ce7-bfcd-cdec15d5c4aa",
@@ -1369,10 +1370,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/11226f12-b464-58d8-afb2-906c04d32097",
-      "lastEpisodeTitle": "Why narcissists dont like SICK PEOPLE ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/f5b6d009-a303-5bb5-8c95-9bd2bc8a2a28",
+      "lastEpisodeTitle": "Surviving Thanksgiving with a Narcissist ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1790079927380
+      "lastCheckedAt": 1790097079740
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
