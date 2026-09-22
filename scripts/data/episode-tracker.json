@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-22T06:34:45.038Z",
+  "lastRun": "2026-09-22T12:22:16.524Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "aabcb64a-052a-4f5a-a20d-11e8f346a2af",
-      "lastEpisodeTitle": "NPR News: 09-22-2026 2AM EDT",
+      "lastRssKey": "68a5783e-f906-490c-8db6-538143d55f22",
+      "lastEpisodeTitle": "NPR News: 09-22-2026 8AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790058890588
+      "lastCheckedAt": 1790079743170
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75284732",
@@ -147,10 +147,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "C2858695-D0DE-48D9-9EBE-62EFCF74238A",
-      "lastEpisodeTitle": "TNB Tech Minute: Meta’s Stock Soars as New AI Agent Gathers Steam",
-      "lastEpisodeId": "60676277766",
-      "lastCheckedAt": 1790028454836
+      "lastRssKey": "693ECB70-E246-4567-9928-EA84D771D535",
+      "lastEpisodeTitle": "Polymarket’s Rush to Grow at All Costs",
+      "lastEpisodeId": "60692256945",
+      "lastCheckedAt": 1790079765100
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -171,10 +171,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "2a805e60-b64c-11f1-8643-830ec44d2875",
-      "lastEpisodeTitle": "2AM ET 09/22/2026 Newscast",
+      "lastRssKey": "75404fbe-b67e-11f1-b5a3-97840edd4e6a",
+      "lastEpisodeTitle": "8AM ET 09/22/2026 Newscast",
       "lastEpisodeId": "60682711535",
-      "lastCheckedAt": 1790058905782
+      "lastCheckedAt": 1790079767870
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -189,10 +189,10 @@
       "lastCheckedAt": 1790058906834
     },
     "398589": {
-      "lastRssKey": "gid://art19-episode-locator/V0/brT9nS4OtXXItVUn-nGn2tS9i0ApXWyGLoRRDR-BZx0",
-      "lastEpisodeTitle": "Varsity Blues | The Side Door | 2",
+      "lastRssKey": "gid://art19-episode-locator/V0/pKqX_1DJ0_hsRs0nqesAmtxo13AjVA6beUoKY9ZFzic",
+      "lastEpisodeTitle": "Varsity Blues | Setting the Standard | 3",
       "lastEpisodeId": "60413630821",
-      "lastCheckedAt": 1789913038984
+      "lastCheckedAt": 1790079769912
     },
     "399669": {
       "lastRssKey": "dfeb7579-4a4f-4c6c-baab-543b3c2a6480",
@@ -225,10 +225,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M32KXTSG6HDB7HEN55AMD4AP",
-      "lastEpisodeTitle": "The state of U.S.-China trade",
+      "lastRssKey": "01M34ETCGG84KWAYVDWSY8GPQT",
+      "lastEpisodeTitle": "For many, higher costs to stay warm this winter",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790038884034
+      "lastCheckedAt": 1790079775342
     },
     "432535": {
       "lastRssKey": "2ea05913-2cf8-4111-8baa-c9a881ad7e9d",
@@ -237,10 +237,10 @@
       "lastCheckedAt": 1789404444446
     },
     "437685": {
-      "lastRssKey": "8711aedc-8d60-11f1-adef-e3d5f2460a35",
-      "lastEpisodeTitle": "How DNA Solves Crimes",
-      "lastEpisodeId": "60661789452",
-      "lastCheckedAt": 1789992434091
+      "lastRssKey": "86b91b50-8d60-11f1-adef-47c9590e042d",
+      "lastEpisodeTitle": "Machu Picchu",
+      "lastEpisodeId": "60696636821",
+      "lastCheckedAt": 1790079778625
     },
     "438184": {
       "lastRssKey": "42535506-b5b1-11f1-909d-f75037fc309d",
@@ -329,10 +329,10 @@
       "lastCheckedAt": 1789970161197
     },
     "509873": {
-      "lastRssKey": "c8796bd5-f78b-4bb0-90f0-9338588757a9",
-      "lastEpisodeTitle": "Maddow reacts to report of Russian oligarch paying for Trump Jr.'s lavish wedding weekend",
+      "lastRssKey": "c013a0b0-41e5-4e45-80a9-b239eb49e9c2",
+      "lastEpisodeTitle": "Maddow: Why the Constitution and the American spirit are against Trump's war on the free press",
       "lastEpisodeId": "59517346400",
-      "lastCheckedAt": 1789463616511
+      "lastCheckedAt": 1790079790675
     },
     "511104": {
       "lastRssKey": "https://www.archive.org/download/interpretationofdreams_1401_librivox/interpretationofdreams_00_freud_64kb.mp3",
@@ -376,10 +376,10 @@
       "lastCheckedAt": 1782585870863
     },
     "561991": {
-      "lastRssKey": "flightcast:01M2HKDFR5F7FEC62G65EBMZNA",
-      "lastEpisodeTitle": "The Dating Advice Making Us Worse at Love with Relationship Expert Amy Chan",
+      "lastRssKey": "flightcast:01M330K9Y4A28T2M9YPXJSSGKE",
+      "lastEpisodeTitle": "What Mentally Strong People Do on Their Worst Days with Psychotherapist Amy Morin",
       "lastEpisodeId": "60199213754",
-      "lastCheckedAt": 1789463619459
+      "lastCheckedAt": 1790079798432
     },
     "570903": {
       "lastRssKey": "urn:bbc:podcast:m00310mr",
@@ -430,10 +430,10 @@
       "lastCheckedAt": 1790014628618
     },
     "724143": {
-      "lastRssKey": "3899bfcc-b607-11f1-8e52-cf0a118cf619",
-      "lastEpisodeTitle": "Lula e Flávio empatados, boicote de emissoras à Casa Branca e pausa na carreira de João Fonseca",
+      "lastRssKey": "9aecd242-b66e-11f1-910f-7348ebcc9621",
+      "lastEpisodeTitle": "Buscas por helicóptero com cantor Rick; Lula na ONU; mortes e estragos no RS",
       "lastEpisodeId": "60409761274",
-      "lastCheckedAt": 1790028491310
+      "lastCheckedAt": 1790079803939
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/w-0oGFd2IzhFS0QEXBKFFS5ISPi0tChyH9JjnpZM9NI",
@@ -448,10 +448,10 @@
       "lastCheckedAt": 1789856681689
     },
     "743229": {
-      "lastRssKey": "e84a1455-bf13-4d7e-b178-e2f7b285850d",
-      "lastEpisodeTitle": "The Trump Administration Defangs the Endangered Species Act",
-      "lastEpisodeId": "60633627522",
-      "lastCheckedAt": 1789992459245
+      "lastRssKey": "e8457907-7885-4f02-bcb4-f2a213d743cf",
+      "lastEpisodeTitle": "Trump Banned the Media. This Time, the Media Struck Back.",
+      "lastEpisodeId": "60697727838",
+      "lastCheckedAt": 1790079808231
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -542,10 +542,10 @@
       "lastCheckedAt": 1789840129026
     },
     "906591": {
-      "lastRssKey": "8569548e-b26a-11f1-976a-6721ea2ce419",
-      "lastEpisodeTitle": "Ed Sheeran, Macklemore, and Robert Kraft Controversy EXPLAINED",
+      "lastRssKey": "0802f146-b650-11f1-bb2f-13d87f595845",
+      "lastEpisodeTitle": "A.I. Told U.S. Military to Attack China; Trump Bans the Press",
       "lastEpisodeId": "59632175482",
-      "lastCheckedAt": 1789640232640
+      "lastCheckedAt": 1790079818855
     },
     "928708": {
       "lastRssKey": "0cb4d724-b4e1-11f1-8dbd-a723dfed57a5",
@@ -583,10 +583,10 @@
       "lastCheckedAt": 1789925728317
     },
     "1015378": {
-      "lastRssKey": "053073fc-e856-48e9-9312-74082d4761ee",
-      "lastEpisodeTitle": "Naveen Rao: 4D Computing, AI's Energy Wall & Beating Biology",
-      "lastEpisodeId": "60678061138",
-      "lastCheckedAt": 1790028507310
+      "lastRssKey": "ebe0e737-5995-476f-8d20-673400e3ec13",
+      "lastEpisodeTitle": "Blake Scholl: Why Plane Speed Stalled, Supersonic Commercial Flight, & Revolutionizing the Engine",
+      "lastEpisodeId": "60695759097",
+      "lastCheckedAt": 1790079825360
     },
     "1021803": {
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
@@ -605,10 +605,10 @@
       "lastCheckedAt": 1789898362482
     },
     "1047718": {
-      "lastRssKey": "6ab0d9368f08c4af80ed870c",
-      "lastEpisodeTitle": "Arsenal battered in Brighton as Manchester City go clear: Football Weekly",
+      "lastRssKey": "6ab221808f0833b2aaa720a1",
+      "lastEpisodeTitle": "Dockers derby delivers and England squad upheaval – Football Weekly podcast",
       "lastEpisodeId": "58884055225",
-      "lastCheckedAt": 1790014644709
+      "lastCheckedAt": 1790079831407
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-people-disturb-you-allah-calms-you",
@@ -640,10 +640,10 @@
       "lastCheckedAt": 1789913095556
     },
     "1116485": {
-      "lastRssKey": "6ab14c6d72641c596b5d4b27",
-      "lastEpisodeTitle": "Michael Carrick Is Out Of His Depth At Man United.",
+      "lastRssKey": "6ab24c30b20888375a235ca9",
+      "lastEpisodeTitle": "Alexis Mac Allister SPEAKS OUT On Liverpool Contract Situation | Daily News Update",
       "lastEpisodeId": "60461626103",
-      "lastCheckedAt": 1790014650199
+      "lastCheckedAt": 1790079840288
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -669,10 +669,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6aad4cdb0a12e917742e3c95",
-      "lastEpisodeTitle": "Is the FIA right to help Alonso and Honda?",
+      "lastRssKey": "6ab258fe9def0199cced4f58",
+      "lastEpisodeTitle": "What's gone wrong for Piastri in 2026?",
       "lastEpisodeId": "60422102044",
-      "lastCheckedAt": 1789817181733
+      "lastCheckedAt": 1790079843930
     },
     "1258562": {
       "lastRssKey": "6aafb8a146fd9745ea5b6ee9",
@@ -704,10 +704,10 @@
       "lastCheckedAt": 1789992483455
     },
     "1366771": {
-      "lastRssKey": "6ab1e8e91f5b87e5351d2c49",
-      "lastEpisodeTitle": "Morning briefing Tuesday 22nd September",
+      "lastRssKey": "6ab2552035231e4f550a1bad",
+      "lastEpisodeTitle": "Afternoon Briefing Tuesday 22nd September",
       "lastEpisodeId": "60663473400",
-      "lastCheckedAt": 1790058977118
+      "lastCheckedAt": 1790079847311
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19791953",
@@ -739,10 +739,10 @@
       "lastCheckedAt": 1788730441194
     },
     "2136580": {
-      "lastRssKey": "69c8a0a7-9c5b-472b-8b9c-f644098866d8",
-      "lastEpisodeTitle": "Episode 386: CANADIENS SWEEP LEAFS IN SPLIT SQUAD PRE SEASON! Post Game Show",
+      "lastRssKey": "6e13c536-0fab-4069-bdfa-d984070cb12c",
+      "lastEpisodeTitle": "Episode 387: FLORIAN XHEKAJ & DAVID REINBACHER ARE FORCING THE CANADIENS TO TAKE NOTICE!",
       "lastEpisodeId": "58874707637",
-      "lastCheckedAt": 1789881189724
+      "lastCheckedAt": 1790079851633
     },
     "2136949": {
       "lastRssKey": "6aa83ca42469d1a3b3cb1d35",
@@ -897,9 +897,9 @@
       "lastCheckedAt": 1789992497785
     },
     "4898105": {
-      "lastRssKey": "a90103c4-b571-11f1-a2ca-5b6dc59da74c",
-      "lastEpisodeTitle": "New GTA 5 Leak Suggests Rockstar Had Ambitious DLC Plans",
-      "lastCheckedAt": 1789992498274
+      "lastRssKey": "27942572-b635-11f1-aca7-7761abbbc31b",
+      "lastEpisodeTitle": "Resident Evil Defies Expectations With $108 Million Opening Weekend",
+      "lastCheckedAt": 1790079868759
     },
     "5107672": {
       "lastRssKey": "6c5e5764-f024-4308-843f-a925142939b4",
@@ -959,10 +959,10 @@
       "lastCheckedAt": 1789709731384
     },
     "5731394": {
-      "lastRssKey": "1b7c312e-b22c-11f1-991b-6b038e44a2f9",
-      "lastEpisodeTitle": "Atlantic Division Predictions For The 2026-27 NHL Season",
+      "lastRssKey": "a08cfa02-b64a-11f1-8902-ab6cafd04961",
+      "lastEpisodeTitle": "Metro Division Predictions For The 2026-27 NHL Season w/ Jackson Blake",
       "lastEpisodeId": "60007884583",
-      "lastCheckedAt": 1789640266368
+      "lastCheckedAt": 1790079875207
     },
     "5815838": {
       "lastRssKey": "3dad0e5f-32c5-4c51-b0fc-6e86a81aeaac",
@@ -989,10 +989,10 @@
       "lastCheckedAt": 1789584032330
     },
     "5972153": {
-      "lastRssKey": "ddde2c84-b5f8-11f1-978c-fb41d7d021a7",
-      "lastEpisodeTitle": "Paramount deal, Germany elections, AI at the UN (Updated)",
+      "lastRssKey": "9d462896-b659-11f1-ab4b-bbb17cec7e32",
+      "lastEpisodeTitle": "Trump at UN, Greenland, ICC sanctions and LGBTQ+ arrests in Turkey",
       "lastEpisodeId": "60634460811",
-      "lastCheckedAt": 1790028544347
+      "lastCheckedAt": 1790079882701
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1018,10 +1018,10 @@
       "lastCheckedAt": 1790028546324
     },
     "6413946": {
-      "lastRssKey": "76abee76-48bf-4865-9619-6e890cc7cabe",
-      "lastEpisodeTitle": "EP 826: ¿Se equivocó la Fiscalía con presunto huachicol? Atacan la casa de diseñadora de vestido de Sheinbaum y El PAN ya también tiene a sus “defensores”",
+      "lastRssKey": "9a87a693-a043-446b-80b8-2d75a7a94164",
+      "lastEpisodeTitle": "EP 827 Celulares fuera del salón, a partir de noviembre, Hacienda aumenta subsidios al diesel y Mueren 5 recién nacidos en hospital del Seguro Social en Durango",
       "lastEpisodeId": "60198639919",
-      "lastCheckedAt": 1789992506608
+      "lastCheckedAt": 1790079885939
     },
     "6456494": {
       "lastRssKey": "6aaa01ab79ba7f1eccfc55fb",
@@ -1142,10 +1142,10 @@
       "lastCheckedAt": 1789728019057
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779878",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - Milford Brooks III",
+      "lastRssKey": "https://api.spreaker.com/episode/59779880",
+      "lastEpisodeTitle": "Campbell Playhouse - Escape",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1789992515669
+      "lastCheckedAt": 1790079910370
     },
     "6912659": {
       "lastRssKey": "9273275b-ec2a-4d98-97f7-249fdaa9fbee",
@@ -1190,9 +1190,10 @@
       "lastCheckedAt": 1786559335991
     },
     "7064213": {
-      "lastRssKey": "21e4b324-dd23-45d4-88ef-95d457068689",
-      "lastEpisodeTitle": "200. Dr. Will Cole:How to Heal Your Cells—Mitochondria, Peptides & the Science of Aging",
-      "lastCheckedAt": 1789640282140
+      "lastRssKey": "6963a47e-1a85-4182-832b-2283b08e1968",
+      "lastEpisodeTitle": "201: Joey Munoz: The Truth About Nutrition, Protein, Weight Loss & Muscle",
+      "lastEpisodeId": "60696385666",
+      "lastCheckedAt": 1790079915860
     },
     "7098500": {
       "lastRssKey": "66bb84b96ceb55ab6dbacb631fecaac54ddbcff7",
@@ -1219,10 +1220,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7239415": {
-      "lastRssKey": "08a74fa2-b542-11f1-990d-7731a5091a46",
-      "lastEpisodeTitle": "This just made things WAY more difficult...",
+      "lastRssKey": "1b42ed9c-b655-11f1-952a-3fc96db2862b",
+      "lastEpisodeTitle": "It was worth it...",
       "lastEpisodeId": "60132290764",
-      "lastCheckedAt": 1789943935661
+      "lastCheckedAt": 1790079919142
     },
     "7248222": {
       "lastRssKey": "ce9f04a4-b5fe-11f1-acd7-4f2531c9160d",
@@ -1350,10 +1351,10 @@
       "lastCheckedAt": 1790038991940
     },
     "7837137": {
-      "lastRssKey": "https://api.spreaker.com/episode/71692638",
-      "lastEpisodeTitle": "Oficial detém Sara na rua e a leva à morte",
+      "lastRssKey": "https://api.spreaker.com/episode/71692639",
+      "lastEpisodeTitle": "A esposa chora no velório enquanto seu amante foge com a faca",
       "lastEpisodeId": "57875815786",
-      "lastCheckedAt": 1789463694641
+      "lastCheckedAt": 1790079926535
     },
     "7901923": {
       "lastRssKey": "7e0ddec8-ca3d-11f0-a082-377ee4edaeb2",
@@ -1368,16 +1369,16 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/8940d532-3f28-5329-998a-58737b451a4e",
-      "lastEpisodeTitle": "How being in a narcissistic relationship changes you ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/11226f12-b464-58d8-afb2-906c04d32097",
+      "lastEpisodeTitle": "Why narcissists dont like SICK PEOPLE ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1790059033291
+      "lastCheckedAt": 1790079927380
     },
     "7935877": {
-      "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
-      "lastEpisodeTitle": "They Were Skeptical Until Things Changed",
+      "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
+      "lastEpisodeTitle": "Retrain Your Mind and Change Your Life - 3 Real Client Transformations",
       "lastEpisodeId": "60116322367",
-      "lastCheckedAt": 1789463696738
+      "lastCheckedAt": 1790079928124
     },
     "7954192": {
       "lastEpisodeId": "59218201194",
