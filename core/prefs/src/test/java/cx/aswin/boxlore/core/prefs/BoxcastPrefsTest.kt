@@ -127,4 +127,24 @@ class BoxcastPrefsTest {
         prefs.setLearnerLogEnabled(false)
         assertFalse(prefs.resolveLearnerLogEnabled(isDebugBuild = true))
     }
+
+    @Test
+    fun getOrCreateSyncDeviceId_concurrentAccess_returnsSameId() {
+        val threadCount = 8
+        val executor = java.util.concurrent.Executors.newFixedThreadPool(threadCount)
+        val barrier = java.util.concurrent.CyclicBarrier(threadCount)
+        val futures = (0 until threadCount).map {
+            executor.submit<String> {
+                barrier.await()
+                prefs.getOrCreateSyncDeviceId()
+            }
+        }
+        val results = futures.map { it.get() }.toSet()
+        executor.shutdown()
+        executor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)
+
+        assertEquals(1, results.size)
+        assertTrue(results.first().isNotBlank())
+        assertEquals(results.first(), prefs.getOrCreateSyncDeviceId())
+    }
 }

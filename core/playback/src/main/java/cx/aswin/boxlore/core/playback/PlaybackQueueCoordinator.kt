@@ -666,7 +666,7 @@ internal class PlaybackQueueCoordinator(
         if (existsInLocalQueue || !removedFromController) {
             val newQueue = currentQueue.filter { it.id != episodeId }
             playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
-            syncQueueToDb()
+            queueRepository.removeFromQueue(episodeId)
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
                 action = "remove",
                 episodeId = episodeId,

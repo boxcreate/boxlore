@@ -55,18 +55,23 @@ interface PodcastDao {
         """
         UPDATE podcasts
         SET isSubscribed = :isSubscribed,
+            subscribedAt = CASE WHEN :isSubscribed = 1 THEN :now ELSE 0 END,
+            unsubscribedAt = CASE WHEN :isSubscribed = 0 THEN :now ELSE 0 END,
+            isDirty = 1,
             customGenre = CASE WHEN :isSubscribed = 0 THEN NULL ELSE customGenre END,
             customGenreIcon = CASE WHEN :isSubscribed = 0 THEN NULL ELSE customGenreIcon END
         WHERE podcastId = :id
         """,
     )
-    suspend fun setSubscribed(id: String, isSubscribed: Boolean)
+    suspend fun setSubscribed(id: String, isSubscribed: Boolean, now: Long = System.currentTimeMillis())
 
     @Query(
         """
         UPDATE podcasts
         SET isSubscribed = 0,
             subscribedAt = 0,
+            unsubscribedAt = :now,
+            isDirty = 1,
             notificationsEnabled = 0,
             autoDownloadEnabled = 0,
             customGenre = NULL,
@@ -74,7 +79,7 @@ interface PodcastDao {
         WHERE podcastId = :id
         """,
     )
-    suspend fun retireLinkedPodcastIndexSubscription(id: String)
+    suspend fun retireLinkedPodcastIndexSubscription(id: String, now: Long = System.currentTimeMillis())
 
     @Query("DELETE FROM rss_episodes WHERE podcastId = :podcastId")
     suspend fun deleteRssEpisodes(podcastId: String)
@@ -82,20 +87,21 @@ interface PodcastDao {
     @Query("UPDATE podcasts SET latestEpisode = :episode WHERE podcastId = :id")
     suspend fun updateLatestEpisode(id: String, episode: cx.aswin.boxlore.core.model.Episode?)
 
-    @Query("UPDATE podcasts SET preferredSort = :sort, type = :type WHERE podcastId = :id")
+    @Query("UPDATE podcasts SET preferredSort = :sort, type = :type, isDirty = 1 WHERE podcastId = :id")
     suspend fun updatePreferredSortAndType(id: String, sort: String?, type: String)
 
-    @Query("UPDATE podcasts SET notificationsEnabled = :enabled WHERE podcastId = :id")
+    @Query("UPDATE podcasts SET notificationsEnabled = :enabled, isDirty = 1 WHERE podcastId = :id")
     suspend fun setNotificationsEnabled(id: String, enabled: Boolean)
 
-    @Query("UPDATE podcasts SET autoDownloadEnabled = :enabled WHERE podcastId = :id")
+    @Query("UPDATE podcasts SET autoDownloadEnabled = :enabled, isDirty = 1 WHERE podcastId = :id")
     suspend fun setAutoDownloadEnabled(id: String, enabled: Boolean)
 
     @Query(
         """
         UPDATE podcasts
         SET skipBeginningOverrideMs = :skipBeginningMs,
-            skipEndingOverrideMs = :skipEndingMs
+            skipEndingOverrideMs = :skipEndingMs,
+            isDirty = 1
         WHERE podcastId = :id
         """,
     )
@@ -123,9 +129,15 @@ interface PodcastDao {
     @Query("UPDATE podcasts SET feedUrl = :feedUrl WHERE podcastId = :id")
     suspend fun setFeedUrl(id: String, feedUrl: String,)
 
-    @Query("UPDATE podcasts SET customGenre = :customGenre, customGenreIcon = :customGenreIcon WHERE podcastId = :id")
+    @Query("UPDATE podcasts SET customGenre = :customGenre, customGenreIcon = :customGenreIcon, isDirty = 1 WHERE podcastId = :id")
     suspend fun updateCustomGenre(id: String, customGenre: String?, customGenreIcon: String?)
 
-    @Query("UPDATE podcasts SET customGenre = NULL, customGenreIcon = NULL WHERE podcastId = :id")
+    @Query("UPDATE podcasts SET customGenre = NULL, customGenreIcon = NULL, isDirty = 1 WHERE podcastId = :id")
     suspend fun clearCustomGenre(id: String)
+
+    @Query("SELECT * FROM podcasts WHERE isDirty = 1")
+    suspend fun getDirtyPodcasts(): List<PodcastEntity>
+
+    @Query("UPDATE podcasts SET isDirty = 0, syncedAt = :timestamp WHERE podcastId IN (:ids)")
+    suspend fun markPodcastsSynced(ids: List<String>, timestamp: Long)
 }

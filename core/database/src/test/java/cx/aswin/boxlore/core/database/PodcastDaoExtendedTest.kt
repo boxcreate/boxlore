@@ -266,4 +266,34 @@ class PodcastDaoExtendedTest {
         )
         assertEquals("Technology", entity.effectiveGenre)
     }
+
+    @Test
+    fun retireLinkedPodcastIndexSubscriptionSetsUnsubscribedAtAndIsDirty() = runTest {
+        dao.upsert(podcast("1", isSubscribed = true).copy(isDirty = false))
+        dao.retireLinkedPodcastIndexSubscription("1", now = 54321L)
+
+        val retired = dao.getPodcast("1")!!
+        assertFalse(retired.isSubscribed)
+        assertEquals(0L, retired.subscribedAt)
+        assertEquals(54321L, retired.unsubscribedAt)
+        assertTrue(retired.isDirty)
+    }
+
+    @Test
+    fun dirtyTrackingAndMarkSyncedOnSettingsUpdates() = runTest {
+        dao.upsert(podcast("1", isSubscribed = true).copy(isDirty = false))
+        assertTrue(dao.getDirtyPodcasts().isEmpty())
+
+        dao.setNotificationsEnabled("1", true)
+        val dirtyList = dao.getDirtyPodcasts()
+        assertEquals(1, dirtyList.size)
+        assertEquals("1", dirtyList.first().podcastId)
+        assertTrue(dirtyList.first().isDirty)
+
+        dao.markPodcastsSynced(listOf("1"), timestamp = 8888L)
+        assertTrue(dao.getDirtyPodcasts().isEmpty())
+        val synced = dao.getPodcast("1")!!
+        assertFalse(synced.isDirty)
+        assertEquals(8888L, synced.syncedAt)
+    }
 }

@@ -75,6 +75,8 @@ class SubscriptionRepositoryTest {
         val stored = podcastDao.getPodcast("pod-1")!!
         assertTrue(stored.isSubscribed)
         assertTrue(stored.subscribedAt > 0L)
+        assertEquals(0L, stored.unsubscribedAt)
+        assertTrue(stored.isDirty)
         assertEquals("Show", stored.title)
         assertTrue(repository.isSubscribed("pod-1"))
     }
@@ -150,12 +152,59 @@ class SubscriptionRepositoryTest {
     @Test
     fun toggleSubscriptionSubscribesThenUnsubscribes() = runTest {
         repository.toggleSubscription(podcast())
-        assertTrue(podcastDao.getPodcast("pod-1")!!.isSubscribed)
+        val subscribed = podcastDao.getPodcast("pod-1")!!
+        assertTrue(subscribed.isSubscribed)
+        assertEquals(0L, subscribed.unsubscribedAt)
+        assertTrue(subscribed.isDirty)
 
         repository.toggleSubscription(podcast())
         val after = podcastDao.getPodcast("pod-1")!!
         assertFalse(after.isSubscribed)
         assertEquals(0L, after.subscribedAt)
+        assertTrue(after.unsubscribedAt > 0L)
+        assertTrue(after.isDirty)
+    }
+
+    @Test
+    fun subscribeAfterUnsubscribeResetsTombstone() = runTest {
+        repository.subscribe(podcast())
+        repository.toggleSubscription(podcast()) // unsubscribe
+        val unsubscribed = podcastDao.getPodcast("pod-1")!!
+        assertFalse(unsubscribed.isSubscribed)
+        assertTrue(unsubscribed.unsubscribedAt > 0L)
+
+        // Subscribe again
+        repository.subscribe(podcast())
+        val resubscribed = podcastDao.getPodcast("pod-1")!!
+        assertTrue(resubscribed.isSubscribed)
+        assertEquals(0L, resubscribed.unsubscribedAt)
+        assertTrue(resubscribed.isDirty)
+    }
+
+    @Test
+    fun settingsUpdatesMarkRowDirty() = runTest {
+        repository.subscribe(podcast())
+        podcastDao.markPodcastsSynced(listOf("pod-1"), timestamp = 1000L)
+        assertFalse(podcastDao.getPodcast("pod-1")!!.isDirty)
+
+        repository.setNotificationsEnabled(podcast(), true)
+        assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
+
+        podcastDao.markPodcastsSynced(listOf("pod-1"), timestamp = 2000L)
+        repository.setAutoDownloadEnabled("pod-1", true)
+        assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
+
+        podcastDao.markPodcastsSynced(listOf("pod-1"), timestamp = 3000L)
+        repository.updatePreferredSort("pod-1", "oldest")
+        assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
+
+        podcastDao.markPodcastsSynced(listOf("pod-1"), timestamp = 4000L)
+        repository.setPlaybackSkipOverrides("pod-1", 15000L, 30000L)
+        assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
+
+        podcastDao.markPodcastsSynced(listOf("pod-1"), timestamp = 5000L)
+        repository.updateCustomGenre("pod-1", "Tech Overrides", "cpu")
+        assertTrue(podcastDao.getPodcast("pod-1")!!.isDirty)
     }
 
     @Test

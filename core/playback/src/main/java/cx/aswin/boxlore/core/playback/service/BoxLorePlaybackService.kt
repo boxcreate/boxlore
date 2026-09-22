@@ -114,7 +114,7 @@ open class BoxLorePlaybackService :
     }
     override val queueRepository by lazy {
         cx.aswin.boxlore.core.playback
-            .QueueRepository(database, podcastRepository)
+            .QueueRepository(database, podcastRepository, sharedDeps.deviceIdentityPort)
     }
     override var isRefilling = false
     private val queueMaxSize = 50

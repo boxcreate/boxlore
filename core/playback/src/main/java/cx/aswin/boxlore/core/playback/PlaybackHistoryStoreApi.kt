@@ -62,8 +62,9 @@ internal suspend fun PlaybackHistoryStore.toggleLike(episode: Episode, podcastId
         stateFlow.value = stateFlow.value.copy(isLiked = newStatus)
     }
 
+    val now = System.currentTimeMillis()
     if (existing != null) {
-        dao.setLikeStatus(episode.id, newStatus)
+        dao.setLikeStatus(episode.id, newStatus, now)
     } else {
         val entity =
             ListeningHistoryEntity(
@@ -78,7 +79,8 @@ internal suspend fun PlaybackHistoryStore.toggleLike(episode: Episode, podcastId
                 durationMs = episode.duration * 1000L,
                 isCompleted = false,
                 isLiked = newStatus,
-                lastPlayedAt = System.currentTimeMillis(),
+                likedAt = if (newStatus) now else 0L,
+                lastPlayedAt = 0L,
                 isDirty = true,
                 enclosureType = episode.enclosureType,
                 episodeDescription = episode.description,

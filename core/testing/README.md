@@ -9,6 +9,7 @@ Owns shared JVM test fixtures, dispatcher helpers, and architecture guards used 
 - `MainDispatcherExtension` installs a test main dispatcher for a test scope.
 - `TestFixtures` provides minimal podcast and episode builders.
 - `fakes.FakeLocalEpisodeCatalogPort` pages/sorts/searches in memory and returns null from `findByCatalogKey` when guid and enclosure are both blank.
+- `fakes.FakeDeviceIdentityPort` provides a deterministic or mutable device ID fake for sync tests.
 - Test dependencies such as JUnit Jupiter, coroutines-test, Turbine, and MockWebServer are exposed for modules that declare `testImplementation(projects.core.testing)`.
 - Architecture guards under `src/test` validate project structure and dependency rules.
 

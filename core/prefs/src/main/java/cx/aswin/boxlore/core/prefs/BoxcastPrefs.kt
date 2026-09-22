@@ -153,6 +153,8 @@ class BoxcastPrefs(context: Context) {
     }
 
     companion object {
+        private val syncDeviceIdLock = Any()
+
         /** Canonical SharedPreferences file name (migrated from `boxcast_prefs`). */
         const val PREFS_NAME = PrefsFileMigrator.Files.PREFS
 
@@ -169,6 +171,7 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LEARN_CURIOSITY_HISTORY = "learn_curiosity_history"
         const val KEY_LEARNER_LOG_ENABLED = "learner_log_enabled"
         const val KEY_PENDING_AUTH_EMAIL = "pending_auth_email"
+        const val KEY_SYNC_DEVICE_ID = "sync_device_id"
     }
 
     // ── Auth / Magic Link ───────────────────────────────────────────────────
@@ -181,5 +184,15 @@ class BoxcastPrefs(context: Context) {
         } else {
             prefs.edit().putString(KEY_PENDING_AUTH_EMAIL, email).apply()
         }
+    }
+
+    // ── Sync / Device Identity ──────────────────────────────────────────────
+
+    fun getOrCreateSyncDeviceId(): String = synchronized(syncDeviceIdLock) {
+        val existing = prefs.getString(KEY_SYNC_DEVICE_ID, null)
+        if (!existing.isNullOrBlank()) return@synchronized existing
+        val newId = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_SYNC_DEVICE_ID, newId).apply()
+        newId
     }
 }

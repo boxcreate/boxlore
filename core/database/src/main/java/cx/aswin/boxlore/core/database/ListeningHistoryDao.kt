@@ -51,7 +51,7 @@ interface ListeningHistoryDao {
         """
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
-               isLiked, lastPlayedAt, isDirty, syncedAt, enclosureType, 
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
                isManualCompletion, isBulkCompletion, NULL as episodeDescription 
         FROM listening_history 
         WHERE isCompleted = 0 AND progressMs > 0 
@@ -69,7 +69,7 @@ interface ListeningHistoryDao {
         """
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
-               isLiked, lastPlayedAt, isDirty, syncedAt, enclosureType, 
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
                isManualCompletion, isBulkCompletion, NULL as episodeDescription 
         FROM listening_history 
         ORDER BY lastPlayedAt DESC
@@ -112,7 +112,7 @@ interface ListeningHistoryDao {
         """
         SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl, 
                episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted, 
-               isLiked, lastPlayedAt, isDirty, syncedAt, enclosureType, 
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType, 
                isManualCompletion, isBulkCompletion, NULL as episodeDescription 
         FROM listening_history 
         WHERE isLiked = 1 
@@ -124,8 +124,8 @@ interface ListeningHistoryDao {
     @Query("SELECT * FROM listening_history WHERE isLiked = 1 ORDER BY lastPlayedAt DESC LIMIT :limit")
     suspend fun getLikedEpisodesList(limit: Int = 50): List<ListeningHistoryEntity>
 
-    @Query("UPDATE listening_history SET isLiked = :isLiked WHERE episodeId = :episodeId")
-    suspend fun setLikeStatus(episodeId: String, isLiked: Boolean,)
+    @Query("UPDATE listening_history SET isLiked = :isLiked, likedAt = :now, isDirty = 1 WHERE episodeId = :episodeId")
+    suspend fun setLikeStatus(episodeId: String, isLiked: Boolean, now: Long = System.currentTimeMillis())
 
     @Query(
         """
@@ -177,7 +177,7 @@ interface ListeningHistoryDao {
     )
     suspend fun completeFromPlayback(episodeId: String, durationMs: Long, lastPlayedAt: Long, isManualCompletion: Boolean,)
 
-    @Query("UPDATE listening_history SET isCompleted = :isCompleted WHERE episodeId = :episodeId")
+    @Query("UPDATE listening_history SET isCompleted = :isCompleted, isDirty = 1 WHERE episodeId = :episodeId")
     suspend fun setCompletionStatus(episodeId: String, isCompleted: Boolean,)
 
     // Get all episode IDs that have been fully played (for "unplayed" filtering in queue)
@@ -193,4 +193,10 @@ interface ListeningHistoryDao {
 
     @Query("SELECT * FROM listening_history ORDER BY lastPlayedAt DESC LIMIT :limit")
     suspend fun getRecentHistoryList(limit: Int): List<ListeningHistoryEntity>
+
+    @Query("SELECT * FROM listening_history WHERE isDirty = 1")
+    suspend fun getDirtyListeningHistory(): List<ListeningHistoryEntity>
+
+    @Query("UPDATE listening_history SET isDirty = 0, syncedAt = :timestamp WHERE episodeId IN (:ids)")
+    suspend fun markListeningHistorySynced(ids: List<String>, timestamp: Long)
 }

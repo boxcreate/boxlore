@@ -15,6 +15,7 @@ Owns thin domain ports and small result types used by ViewModels, repositories, 
 - `LocalEpisodeCatalogPort` for the first-class subscribed-PI episode catalog (ready gate, paged windows, sticky refresh). Not an RSS subscription and not Missing-episodes extras.
 - `EpisodeOfflineLookupPort` and `OfflineEpisodeSnapshot` for episode-detail download/history hydration.
 - `ConnectivityStatusPort` and connectivity status types.
+- `DeviceIdentityPort` for cross-device sync attribution.
 
 ## Internal structure
 
