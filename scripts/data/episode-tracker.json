@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-21T22:07:18.801Z",
+  "lastRun": "2026-09-22T01:00:55.864Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "46df52a7-ce18-4958-952f-cbcd70511443",
-      "lastEpisodeTitle": "NPR News: 09-21-2026 5PM EDT",
+      "lastRssKey": "56fd98b4-383d-4287-90e4-17a334342294",
+      "lastEpisodeTitle": "NPR News: 09-21-2026 8PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790028442746
+      "lastCheckedAt": 1790038861338
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75282380",
-      "lastEpisodeTitle": "The Catch Up: Rishi Sunak’s warning over race, identity (21 September)",
-      "lastEpisodeId": "60670199326",
-      "lastCheckedAt": 1790014595747
+      "lastRssKey": "https://api.spreaker.com/episode/75284732",
+      "lastEpisodeTitle": "CCTVs at medical stores, Kamathipura’s redevelopment, and protests at IIT Bombay",
+      "lastEpisodeId": "60683473307",
+      "lastCheckedAt": 1790038862898
     },
     "78573": {
       "lastRssKey": "c1eff3ee-c9d0-44e4-9629-ac758b5d51c4",
@@ -171,10 +171,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "ba27f2f4-b600-11f1-984e-873e2c2e20fc",
-      "lastEpisodeTitle": "5PM ET 09/21/2026 Newscast",
-      "lastEpisodeId": "60678451178",
-      "lastCheckedAt": 1790028456082
+      "lastRssKey": "e0980db6-b619-11f1-8b35-7783e1786439",
+      "lastEpisodeTitle": "8PM ET 09/21/2026 Newscast",
+      "lastEpisodeId": "60682711535",
+      "lastCheckedAt": 1790038878071
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -225,10 +225,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3294AM29TJM4CK412ZCH60M",
-      "lastEpisodeTitle": "A potential U.S.-China AI agreement?",
+      "lastRssKey": "01M32KXTSG6HDB7HEN55AMD4AP",
+      "lastEpisodeTitle": "The state of U.S.-China trade",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790014613020
+      "lastCheckedAt": 1790038884034
     },
     "432535": {
       "lastRssKey": "2ea05913-2cf8-4111-8baa-c9a881ad7e9d",
@@ -272,10 +272,10 @@
       "lastCheckedAt": 1789935792381
     },
     "462634": {
-      "lastRssKey": "gid://art19-episode-locator/V0/m4ZKo2l9LpYlEZYq8rGeH3eKoJ7oxlHOlE1sgu8TJdI",
-      "lastEpisodeTitle": "Prosecutors After Dark: Costco",
+      "lastRssKey": "gid://art19-episode-locator/V0/lvdq4fTNssFjbku9mm0JPCbUoFX1MM9y-SEtbOVef4M",
+      "lastEpisodeTitle": "396. Leo Frank and the Murder of Mary Phagan Part 3",
       "lastEpisodeId": "60190468112",
-      "lastCheckedAt": 1789754752190
+      "lastCheckedAt": 1790038889315
     },
     "466583": {
       "lastRssKey": "55939a98-a7e9-11f1-9a1e-1f716d74f2ad",
@@ -709,6 +709,12 @@
       "lastEpisodeId": "60663473400",
       "lastCheckedAt": 1790014653775
     },
+    "1380325": {
+      "lastRssKey": "Buzzsprout-19791953",
+      "lastEpisodeTitle": "5000 to 1 Gamble - James Zobel - 2025 Incheon Symposium",
+      "lastEpisodeId": "60322395865",
+      "lastCheckedAt": 1790038937841
+    },
     "1388001": {
       "lastRssKey": "1b203325-f811-4744-8193-745b6e052a20",
       "lastEpisodeTitle": "La puissance américaine entravée : le pari de Donald Trump sur la force a échoué",
@@ -779,10 +785,10 @@
       "lastCheckedAt": 1790014657924
     },
     "3353685": {
+      "lastRssKey": "86fc7b98-b61e-11f1-9b52-8fd4a902a5f6",
+      "lastEpisodeTitle": "Googlebooks Launch, macOS 27 Breaks Mission Control, AI Hallucination Misleads US Military + more!",
       "lastEpisodeId": "60586969768",
-      "lastEpisodeTitle": "Meta One Plans Reach $499 a Month, Microsoft Exec Called AI Scraping Labor Theft, AI Songs Hit Spotify Artist Pages + more!",
-      "lastRssKey": "1d92390c-b3c3-11f1-ad0a-1b60b818b65a",
-      "lastCheckedAt": 1789817191642
+      "lastCheckedAt": 1790038945626
     },
     "3423895": {
       "lastEpisodeId": "60583452250",
@@ -1070,10 +1076,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "fcffef3c-b1b4-11f1-895c-879690145f6e",
-      "lastEpisodeTitle": "Is X Factor Back From The Dead?",
+      "lastRssKey": "7bb55b5e-b5da-11f1-b741-0f2dd8a8357c",
+      "lastEpisodeTitle": "Ed Sheeran: The Fallout",
       "lastEpisodeId": "58885847730",
-      "lastCheckedAt": 1789603719170
+      "lastCheckedAt": 1790038969101
     },
     "6725294": {
       "lastRssKey": "cmu70s7w102h301w6fvdg7c42",
@@ -1338,10 +1344,10 @@
       "lastCheckedAt": 1786543013085
     },
     "7756959": {
-      "lastRssKey": "7399515c-b3bc-11f1-a7f2-cb2890645e46",
-      "lastEpisodeTitle": "‘Detrás del telón’: Eréndira Ibarra y las mujeres detrás de cámaras | VA VA VA",
+      "lastRssKey": "b6a399e6-b617-11f1-b9a5-9bc8861bc75c",
+      "lastEpisodeTitle": "Lunes de jarling: entrevista con Love Ghost | VA VA VA",
       "lastEpisodeId": "60132395912",
-      "lastCheckedAt": 1789781447710
+      "lastCheckedAt": 1790038991940
     },
     "7837137": {
       "lastRssKey": "https://api.spreaker.com/episode/71692638",
@@ -1362,10 +1368,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/5f901eda-5bad-528e-b810-73bb391208eb",
-      "lastEpisodeTitle": "EXPECT THIS when narcissists COP TO bad behavior ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/2baf21d5-628f-5f1a-8687-f37c5de8d193",
+      "lastEpisodeTitle": "An EPIC tale of GASLIGHTING ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1790028576215
+      "lastCheckedAt": 1790038993570
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2DX6XMGTB2MSVJ3T9K2BADF",
