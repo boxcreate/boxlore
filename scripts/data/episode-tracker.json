@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-23T17:42:56.210Z",
+  "lastRun": "2026-09-23T21:07:51.056Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "2d73d162-75e0-404b-80a2-811e37e4c2e3",
-      "lastEpisodeTitle": "NPR News: 09-23-2026 1PM EDT",
+      "lastRssKey": "1e218abd-1161-4aca-a9a3-0656025e1670",
+      "lastEpisodeTitle": "NPR News: 09-23-2026 4PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790185381821
+      "lastCheckedAt": 1790197673921
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75306320",
-      "lastEpisodeTitle": "XLRI: Why working professionals can't stop learning",
-      "lastEpisodeId": "60722857147",
-      "lastCheckedAt": 1790148193898
+      "lastRssKey": "https://api.spreaker.com/episode/75321583",
+      "lastEpisodeTitle": "The Catch Up: 2 Election Commissioners objected to poll panel steps (23 September)",
+      "lastEpisodeId": "60744642137",
+      "lastCheckedAt": 1790197676066
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -147,10 +147,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "44AB814E-03CF-463D-99AF-C5A05262D549",
-      "lastEpisodeTitle": "TNB Tech Minute: Meta’s Hit New AI Agent Is Facing Backlash",
-      "lastEpisodeId": "60737060289",
-      "lastCheckedAt": 1790185396131
+      "lastRssKey": "5741A54C-E77A-4ABF-B6AD-994962E4085A",
+      "lastEpisodeTitle": "TNB Tech Minute: Flock Details New Search Guardrails Amid Congressional Scrutiny",
+      "lastEpisodeId": "60744578578",
+      "lastCheckedAt": 1790197686357
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -159,10 +159,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "83329416-a890-11f1-95c4-3ff6a676cf5c",
-      "lastEpisodeTitle": "Meta Finally Has An AI Hit",
+      "lastRssKey": "8363adee-a890-11f1-95c4-87a4f2cbf090",
+      "lastEpisodeTitle": "AI Models Just Got Cheaper?",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1790108539418
+      "lastCheckedAt": 1790197687342
     },
     "353744": {
       "lastRssKey": "flightcast:01M2X1DGXZZDMDGGVKCB1GKN0M",
@@ -171,10 +171,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "8c20e48e-b771-11f1-ad6d-07a09363eac8",
-      "lastEpisodeTitle": "1PM ET 09/23/2026 Newscast",
-      "lastEpisodeId": "60740914583",
-      "lastCheckedAt": 1790185397603
+      "lastRssKey": "adcbcb4e-b78a-11f1-9b2c-1337437864cb",
+      "lastEpisodeTitle": "4PM ET 09/23/2026 Newscast",
+      "lastEpisodeId": "60745013278",
+      "lastCheckedAt": 1790197688040
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -201,10 +201,10 @@
       "lastCheckedAt": 1790185399693
     },
     "415434": {
-      "lastRssKey": "c975b2e0-c3c7-11f0-8340-4b2676a25c90",
-      "lastEpisodeTitle": "DLSS5 Explained with Linus Tech Tips",
+      "lastRssKey": "496421ae-6e7b-11f1-94bf-bb4e35af9626",
+      "lastEpisodeTitle": "Hotline: Folding phones in cars, EVs in Mexico",
       "lastEpisodeId": "60427690690",
-      "lastCheckedAt": 1790108543490
+      "lastCheckedAt": 1790197690336
     },
     "419624": {
       "lastRssKey": "d30adff8-d3dc-4ae2-bcde-9f9ba3a0f0ff",
@@ -213,10 +213,10 @@
       "lastCheckedAt": 1789925693884
     },
     "431205": {
-      "lastRssKey": "a8bca6bd-2be5-4119-934d-1a3c1adb9ef0",
-      "lastEpisodeTitle": "Inspiring the AI Trade, Peloton Product Launch, and Muni Bonds to the Rescue? 9/22/26",
+      "lastRssKey": "c6bd49c0-09b3-4b7b-89e5-3d853c413fea",
+      "lastEpisodeTitle": "Yields Jump, A High-Stakes Visit, and Lefrak’s Real Estate Warning 9/23/26",
       "lastEpisodeId": "60571577178",
-      "lastCheckedAt": 1790108546650
+      "lastCheckedAt": 1790197693222
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -507,10 +507,10 @@
       "lastCheckedAt": 1790108581873
     },
     "827592": {
-      "lastEpisodeId": "60700708189",
-      "lastEpisodeTitle": "Our Big Fat Dream Episode",
-      "lastRssKey": "36c5b3c7-10ea-4e3d-a762-b4cc011ba2f6",
-      "lastCheckedAt": 1790096989755
+      "lastEpisodeId": "60745181740",
+      "lastEpisodeTitle": "Short Stuff: Mabon",
+      "lastRssKey": "129204ba-0422-4ccc-8c91-b4cd01501379",
+      "lastCheckedAt": 1790197730982
     },
     "837535": {
       "lastRssKey": "d32b06f0-b33b-11f1-8113-f3d8476f0e95",
@@ -670,10 +670,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6ab258fe9def0199cced4f58",
-      "lastEpisodeTitle": "What's gone wrong for Piastri in 2026?",
+      "lastRssKey": "6ab4179f59a98735e1fe727a",
+      "lastEpisodeTitle": "In-Car Insights: Ocon's impending Haas exit & more Baku talking points",
       "lastEpisodeId": "60422102044",
-      "lastCheckedAt": 1790079843930
+      "lastCheckedAt": 1790197758548
     },
     "1258562": {
       "lastRssKey": "6aafb8a146fd9745ea5b6ee9",
@@ -752,10 +752,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6ab2b93dc6f2e6cbf7baf62d",
-      "lastEpisodeTitle": "(Pop) Une vingtaine de pays veut réguler l’IA, mais pas la France… HugoDécrypte",
+      "lastRssKey": "6ab40b91c79ce65f7d84cb55",
+      "lastEpisodeTitle": "La France peut-elle réellement manquer d’essence ? (23/09)",
       "lastEpisodeId": "60605909711",
-      "lastCheckedAt": 1790168150663
+      "lastCheckedAt": 1790197764353
     },
     "2574026": {
       "lastRssKey": "dfef7122-b2b0-11f1-993d-8b6b2c5fd3f2",
@@ -834,9 +834,9 @@
       "lastCheckedAt": 1787712428218
     },
     "4068658": {
-      "lastRssKey": "fe94653a-b1f0-11f1-896e-9f4e69da550b",
-      "lastEpisodeTitle": "Ep. 268 - Slime Challenges Ludwig",
-      "lastCheckedAt": 1789584026548
+      "lastRssKey": "7e8e7cfc-b779-11f1-b432-5791853d019c",
+      "lastEpisodeTitle": "Ep. 269 - Ranking Every Fast Food Fries",
+      "lastCheckedAt": 1790197773287
     },
     "4112681": {
       "lastRssKey": "Buzzsprout-19829064",
@@ -873,6 +873,12 @@
       "lastEpisodeTitle": "235 - Amanda Orson: Privacy and Homesteading",
       "lastEpisodeId": "59615847309",
       "lastCheckedAt": 1789935860026
+    },
+    "4534957": {
+      "lastRssKey": "6aa161e2647921ed602e03a1",
+      "lastEpisodeTitle": "Hans Christian Andersen: Smutný král pohádek, pro kterého se vlastní úspěch stal hořkým prokletím",
+      "lastEpisodeId": "60655230024",
+      "lastCheckedAt": 1790197777029
     },
     "4622987": {
       "lastRssKey": "0f01f5bf-4a5f-4198-b1a4-333e1c4a83f9",
@@ -1013,10 +1019,10 @@
       "lastCheckedAt": 1789584033549
     },
     "6280366": {
-      "lastRssKey": "0914d398-764a-4604-b62a-c47c1245a38c",
-      "lastEpisodeTitle": "Agent Wars!",
+      "lastRssKey": "64f9f039-08bd-4e38-81fc-4e73bc398745",
+      "lastEpisodeTitle": "Opus 5.5 vs GPT-6 Sol and Luna",
       "lastEpisodeId": "60592860794",
-      "lastCheckedAt": 1790108640799
+      "lastCheckedAt": 1790197789530
     },
     "6413946": {
       "lastRssKey": "36486d71-95bf-4c97-930e-2d0dd85bd991",
@@ -1149,10 +1155,10 @@
       "lastCheckedAt": 1790168196684
     },
     "6912659": {
-      "lastRssKey": "9273275b-ec2a-4d98-97f7-249fdaa9fbee",
-      "lastEpisodeTitle": "#109 - O desaparecimento de Amy Lynn Bradley - Curaçao",
+      "lastRssKey": "5006a53e-2698-4778-9f17-d5bff15a2c58",
+      "lastEpisodeTitle": "#110 - Zheng Yi Sao: a pirata que desafiou a China - Guangdong | China",
       "lastEpisodeId": "60495183776",
-      "lastCheckedAt": 1790185501319
+      "lastCheckedAt": 1790197797845
     },
     "6926108": {
       "lastRssKey": "ad35d4f0-b3a6-11f1-ae9a-e3ddbc68e0f1",
@@ -1375,10 +1381,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/a8924ecd-98b2-52fc-b34e-34ab30702cc0",
-      "lastEpisodeTitle": "Folk wisdom about narcissism you NEED to know ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/219cdb6f-a36d-5fa6-936c-8258587dc47a",
+      "lastEpisodeTitle": "What Childhood Verbal Abe DID TO YOU ~ Dr. Ramani",
       "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1790185520190
+      "lastCheckedAt": 1790197814258
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
