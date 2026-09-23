@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-23T21:07:51.056Z",
+  "lastRun": "2026-09-23T23:51:40.484Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "1e218abd-1161-4aca-a9a3-0656025e1670",
-      "lastEpisodeTitle": "NPR News: 09-23-2026 4PM EDT",
+      "lastRssKey": "b511a41c-663b-42d8-a2b6-c521db93719f",
+      "lastEpisodeTitle": "NPR News: 09-23-2026 7PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790197673921
+      "lastCheckedAt": 1790207507084
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75321583",
@@ -98,9 +98,9 @@
       "lastCheckedAt": 1790058896744
     },
     "204808": {
-      "lastRssKey": "4425e1a6-6565-4ba5-83f9-5f88399ef0e1",
-      "lastEpisodeTitle": "Sind die Chiefs zurück? Caleb Williams und Jayden Daniels verletzt! MONTALK WEEK 2",
-      "lastCheckedAt": 1790014602472
+      "lastRssKey": "f54d377c-1b0f-458f-8c54-9c23a5c5f304",
+      "lastEpisodeTitle": "NFL WEEK 3 PREVIEW",
+      "lastCheckedAt": 1790207515336
     },
     "212882": {
       "lastRssKey": "44e3d466-a7f8-11f0-954a-df6ad4d325f0",
@@ -171,10 +171,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "adcbcb4e-b78a-11f1-9b2c-1337437864cb",
-      "lastEpisodeTitle": "4PM ET 09/23/2026 Newscast",
-      "lastEpisodeId": "60745013278",
-      "lastCheckedAt": 1790197688040
+      "lastRssKey": "d651b6d2-b7a3-11f1-8667-13b8569a3780",
+      "lastEpisodeTitle": "7PM ET 09/23/2026 Newscast",
+      "lastEpisodeId": "60749421152",
+      "lastCheckedAt": 1790207522464
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -225,10 +225,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M378N042SE477DF88DZJYAAS",
-      "lastEpisodeTitle": "The Ukraine war is pushing up diesel prices",
+      "lastRssKey": "01M37XTFCAHYPVCDVWH3PDAFCW",
+      "lastEpisodeTitle": "Tension grows in the housing market",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790185403561
+      "lastCheckedAt": 1790207529372
     },
     "432535": {
       "lastRssKey": "df581185-7631-4f5a-949b-daf47fd2b3e8",
@@ -430,10 +430,10 @@
       "lastCheckedAt": 1790014628618
     },
     "724143": {
-      "lastRssKey": "f942c4f4-b737-11f1-bc5a-0b64efe13924",
-      "lastEpisodeTitle": "Investigação da queda de helicóptero com Rick; mensagens de Vorcaro sobre Lula; novidade no caso Isabelle",
+      "lastRssKey": "a2c22ed6-b79a-11f1-a5bf-5760c84d3f91",
+      "lastEpisodeTitle": "CNJ manda devolver precatórios do Master, Alexandre Pires é investigado e STF decide sobre licença-maternidade adotiva",
       "lastEpisodeId": "60409761274",
-      "lastCheckedAt": 1790168112385
+      "lastCheckedAt": 1790207554600
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/w-0oGFd2IzhFS0QEXBKFFS5ISPi0tChyH9JjnpZM9NI",
@@ -531,10 +531,10 @@
       "lastCheckedAt": 1790014636798
     },
     "889671": {
-      "lastRssKey": "9302437a-0b20-4d35-b765-026940b3820f",
-      "lastEpisodeTitle": "Valve's new VR Headset Is NEAT!",
+      "lastRssKey": "e395e429-e122-4098-8481-8b1b89705fac",
+      "lastEpisodeTitle": "Raspberry Pi Blocks RAM Upgrades",
       "lastEpisodeId": "59241576400",
-      "lastCheckedAt": 1789603680763
+      "lastCheckedAt": 1790207564670
     },
     "902798": {
       "lastRssKey": "e686d499-0cb3-4f5f-8b5b-a82f5c2ce7d8",
@@ -584,10 +584,10 @@
       "lastCheckedAt": 1790185441747
     },
     "1015378": {
-      "lastRssKey": "5f8aeed3-a44e-46ce-8d55-244a1c95e602",
-      "lastEpisodeTitle": "Steve Hilton & Spencer Pratt: Fixing California, Cheaper Gas, Ballot Fraud & CA Republicans",
-      "lastEpisodeId": "60719048028",
-      "lastCheckedAt": 1790148248658
+      "lastRssKey": "cbcb6353-9937-4c25-9f83-93e1f096d3e6",
+      "lastEpisodeTitle": "Luca Ferrari, Bending Spoons CEO: The $40K Origin Story, Buying Product-Market Fit & Why Private Equity Can't Compete",
+      "lastEpisodeId": "60749590348",
+      "lastCheckedAt": 1790207570434
     },
     "1021803": {
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
@@ -1013,10 +1013,10 @@
       "lastCheckedAt": 1789781429517
     },
     "6264274": {
-      "lastRssKey": "e213b604-7657-497c-b768-8fb6ec53f8f5",
-      "lastEpisodeTitle": "Another X-Man Cast, Godzilla Returns, and the Emmys Crown Their Winners",
+      "lastRssKey": "6d6e08c6-e999-4c0f-9416-a4ba51d01ee1",
+      "lastEpisodeTitle": "Daredevil Cancelled, First Look at Greta Gerwig’s Narnia, Puppet Dynamic Duo Casting",
       "lastEpisodeId": "60466953955",
-      "lastCheckedAt": 1789584033549
+      "lastCheckedAt": 1790207606978
     },
     "6280366": {
       "lastRssKey": "64f9f039-08bd-4e38-81fc-4e73bc398745",
@@ -1083,10 +1083,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "33354586-b695-11f1-a08e-8772955d8843",
-      "lastEpisodeTitle": "Inside Big Brother: Nasty Nick (Ep 1)",
+      "lastRssKey": "c37e5376-b5d7-11f1-9da7-0ff4e07486a7",
+      "lastEpisodeTitle": "Richard’s Top 3 Music Videos Of All Time",
       "lastEpisodeId": "58885847730",
-      "lastCheckedAt": 1790118646267
+      "lastCheckedAt": 1790207611307
     },
     "6725294": {
       "lastRssKey": "cmu70s7w102h301w6fvdg7c42",
@@ -1209,10 +1209,10 @@
       "lastCheckedAt": 1787841002583
     },
     "7131280": {
-      "lastRssKey": "dc6250a0-a21c-11f1-b768-cbeac7d6a8c6",
-      "lastEpisodeTitle": "A Study in Scarlet: Part Two",
+      "lastRssKey": "887c43a8-adeb-11f1-b5ac-57c0b3889c16",
+      "lastEpisodeTitle": "A Study in Scarlet: Part Three",
       "lastEpisodeId": "59867913217",
-      "lastCheckedAt": 1789952038405
+      "lastCheckedAt": 1790207632843
     },
     "7183032": {
       "lastRssKey": "173ad9ec-e103-4bd2-a508-0e0e88f74315",
@@ -1227,16 +1227,16 @@
       "lastCheckedAt": 1786559336271
     },
     "7239415": {
-      "lastRssKey": "18bd4e54-b6d3-11f1-8b24-7330ddce11fe",
-      "lastEpisodeTitle": "There is some SERIOUS noise around this...",
+      "lastRssKey": "3c240598-b798-11f1-973b-d34c4a658841",
+      "lastEpisodeTitle": "Montreal reveals roster finalists... - This just got SPICY",
       "lastEpisodeId": "60132290764",
-      "lastCheckedAt": 1790118671027
+      "lastCheckedAt": 1790207634032
     },
     "7248222": {
-      "lastRssKey": "9741c56e-b6cb-11f1-b26e-2f23e70991a5",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Martes 22 de septiembre de 2026",
+      "lastRssKey": "931aca68-b79c-11f1-b4a3-bb5d3adfb772",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Miércoles 23 de septiembre de 2026",
       "lastEpisodeId": "60571384940",
-      "lastCheckedAt": 1790118671468
+      "lastCheckedAt": 1790207634550
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1322,10 +1322,10 @@
       "lastCheckedAt": 1789418813409
     },
     "7587315": {
-      "lastRssKey": "9406f0b4-b373-11f1-b027-5784095f6c20",
-      "lastEpisodeTitle": "Dying In Space, Trapped Water, and What's Hidden In Pi?",
+      "lastRssKey": "3d5bd8fe-b744-11f1-b8b5-97e6eb1f3287",
+      "lastEpisodeTitle": "The Fluid Dynamics of Fountain Pens",
       "lastEpisodeId": "58798183213",
-      "lastCheckedAt": 1789943938985
+      "lastCheckedAt": 1790207640118
     },
     "7606603": {
       "lastRssKey": "51051648-b657-4085-a131-c9d20e285b2d",
@@ -1381,10 +1381,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/219cdb6f-a36d-5fa6-936c-8258587dc47a",
-      "lastEpisodeTitle": "What Childhood Verbal Abe DID TO YOU ~ Dr. Ramani",
-      "lastEpisodeId": "60476707252",
-      "lastCheckedAt": 1790197814258
+      "lastRssKey": "mnbg87vgfd.podbean.com/d1518f97-4cb7-5859-ac9e-950081c1f6be",
+      "lastEpisodeTitle": "Do YOU feel like THE BAD ONE for leaving a narcissist ~ Dr. Ramani",
+      "lastEpisodeId": "60749655562",
+      "lastCheckedAt": 1790207642600
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
