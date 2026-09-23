@@ -42,6 +42,13 @@ object NetworkModule {
         chain.proceed(builder.build())
     }
 
+    /**
+     * Optional Authenticator (e.g. FirebaseAuthAuthenticator) for handling HTTP 401
+     * token refreshes. Set by application wiring at startup.
+     */
+    @Volatile
+    var authenticator: okhttp3.Authenticator? = null
+
     private val loggingInterceptor = HttpLoggingInterceptor { message ->
         Log.d("BoxCastAPI", message)
     }.apply {
@@ -52,11 +59,17 @@ object NetworkModule {
         }
         redactHeader("X-Firebase-AppCheck")
         redactHeader("X-App-Key")
+        redactHeader("Authorization")
     }
 
     private val okHttpClient = OkHttpClient.Builder().apply {
         addInterceptor(appCheckInterceptor)
         addInterceptor(loggingInterceptor)
+        authenticator(
+            okhttp3.Authenticator { route, response ->
+            authenticator?.authenticate(route, response)
+        }
+        )
         connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
