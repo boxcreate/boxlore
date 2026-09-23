@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Room database schema version 37 with `MIGRATION_36_37` adding `unsubscribedAt`, `isDirty`, and `syncedAt` to podcasts, `likedAt` to listening history, and new `queue_metadata` table. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Monotonic sequence versioning and tombstone tracking in `QueueDao` and `QueueRepository` to resolve the empty queue deletion bug. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - introduce Firebase Authentication and redesign account settings ([#1069](https://github.com/boxcreate/boxlore/pull/1069)) <!-- impact:user-impact-medium -->
+- add cloud sync contracts and token authenticator ([#1075](https://github.com/boxcreate/boxlore/pull/1075)) <!-- impact:no-user-impact+backend-change -->
 ### Changed
 - Removed deprecated remote auto-transcription polling and AI chapter generation triggers from the player interface. ([#1071](https://github.com/boxcreate/boxlore/pull/1071)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 ### Fixed
