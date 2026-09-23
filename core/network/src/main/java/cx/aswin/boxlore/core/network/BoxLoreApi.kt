@@ -24,10 +24,16 @@ import cx.aswin.boxlore.core.network.model.RecommendationsV2Request
 import cx.aswin.boxlore.core.network.model.RecommendationsV2Response
 import cx.aswin.boxlore.core.network.model.SearchResponse
 import cx.aswin.boxlore.core.network.model.SingleEpisodeResponse
+import cx.aswin.boxlore.core.network.model.SyncDeleteAccountResponse
+import cx.aswin.boxlore.core.network.model.SyncPullRequest
+import cx.aswin.boxlore.core.network.model.SyncPullResponse
+import cx.aswin.boxlore.core.network.model.SyncPushRequest
+import cx.aswin.boxlore.core.network.model.SyncPushResponse
 import cx.aswin.boxlore.core.network.model.SyncRequest
 import cx.aswin.boxlore.core.network.model.SyncResponse
 import cx.aswin.boxlore.core.network.model.TrendingResponse
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -216,4 +222,26 @@ interface BoxLoreApi {
         @Header("X-App-Key") publicKey: String,
         @retrofit2.http.Query("country") country: String
     ): retrofit2.Call<BootstrapResponse>
+
+    // --- USER CLOUD SYNC ---
+
+    @POST("user/sync/push")
+    fun syncPush(
+        @Header("X-App-Key") publicKey: String,
+        @Header("Authorization") authorization: String? = null,
+        @Body request: SyncPushRequest,
+    ): retrofit2.Call<SyncPushResponse>
+
+    @POST("user/sync/pull")
+    fun syncPull(
+        @Header("X-App-Key") publicKey: String,
+        @Header("Authorization") authorization: String? = null,
+        @Body request: SyncPullRequest,
+    ): retrofit2.Call<SyncPullResponse>
+
+    @DELETE("user/sync/account")
+    fun deleteSyncAccount(
+        @Header("X-App-Key") publicKey: String,
+        @Header("Authorization") authorization: String? = null,
+    ): retrofit2.Call<SyncDeleteAccountResponse>
 }
