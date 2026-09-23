@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 
 class FirebaseAuthAuthenticatorTest {
 
-    private class FakeAuthRepository(
+    private open class FakeAuthRepository(
         var cachedToken: String? = "stale-token",
         var freshToken: String? = "fresh-refreshed-token",
     ) : AuthRepository {
@@ -145,6 +145,25 @@ class FirebaseAuthAuthenticatorTest {
         val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = null)
         fakeRepo.throwOnRefresh = true
         val authenticator = FirebaseAuthAuthenticator(fakeRepo)
+
+        val response = create401Response(authorizationHeader = "Bearer stale-token")
+        val authenticatedRequest = authenticator.authenticate(null, response)
+
+        assertNull(authenticatedRequest)
+    }
+
+    @Test
+    fun `returns null when token retrieval times out`() {
+        val fakeRepo = object : FakeAuthRepository() {
+            override suspend fun getIdToken(forceRefresh: Boolean): String? {
+                kotlinx.coroutines.delay(1_000L)
+                return "never-reached"
+            }
+        }
+        val authenticator = FirebaseAuthAuthenticator(
+            authRepositoryProvider = { fakeRepo },
+            tokenTimeoutMs = 100L,
+        )
 
         val response = create401Response(authorizationHeader = "Bearer stale-token")
         val authenticatedRequest = authenticator.authenticate(null, response)

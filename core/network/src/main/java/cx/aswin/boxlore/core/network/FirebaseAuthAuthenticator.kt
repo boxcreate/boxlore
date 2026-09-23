@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.network
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
@@ -19,57 +20,73 @@ import okhttp3.Route
  */
 class FirebaseAuthAuthenticator(
     private val authRepositoryProvider: () -> AuthRepository?,
+    private val tokenTimeoutMs: Long = DEFAULT_TOKEN_TIMEOUT_MS,
 ) : Authenticator {
 
-    constructor(authRepository: AuthRepository) : this({ authRepository })
+    constructor(authRepositoryProvider: () -> AuthRepository?) :
+        this(authRepositoryProvider, DEFAULT_TOKEN_TIMEOUT_MS)
+
+    constructor(authRepository: AuthRepository) :
+        this({ authRepository }, DEFAULT_TOKEN_TIMEOUT_MS)
+
+    constructor(authRepository: AuthRepository, tokenTimeoutMs: Long) :
+        this({ authRepository }, tokenTimeoutMs)
 
     private val mutex = Mutex()
 
+    /**
+     * Authenticates an HTTP 401 response by resolving a fresh ID token.
+     */
     override fun authenticate(route: Route?, response: Response): Request? {
-        // Prevent infinite retry loops
         if (responseCount(response) >= MAX_RETRY_COUNT) {
             return null
         }
 
-        val originalHeader = response.request.header("Authorization")
-        val failedToken = originalHeader?.removePrefix("Bearer ")?.trim()
+        val failedToken = extractFailedToken(response)
 
-        return try {
+        val refreshedToken = try {
             runBlocking {
-                mutex.withLock {
-                    val authRepo = authRepositoryProvider() ?: return@withLock null
-
-                    // 1. Check if another concurrent thread already refreshed the token
-                    val cachedToken = try {
-                        authRepo.getIdToken(forceRefresh = false)
-                    } catch (e: Exception) {
-                        null
-                    }
-
-                    val effectiveToken = if (!cachedToken.isNullOrEmpty() && cachedToken != failedToken) {
-                        cachedToken
-                    } else {
-                        // 2. Token is still stale; perform a force-refresh via Firebase Auth
-                        try {
-                            authRepo.getIdToken(forceRefresh = true)
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
-
-                    if (effectiveToken.isNullOrEmpty()) {
-                        null
-                    } else {
-                        response.request.newBuilder()
-                            .header("Authorization", "Bearer $effectiveToken")
-                            .build()
+                withTimeoutOrNull(tokenTimeoutMs) {
+                    mutex.withLock {
+                        resolveRefreshedToken(failedToken)
                     }
                 }
             }
         } catch (e: Exception) {
             null
         }
+
+        return refreshedToken?.let { token ->
+            response.request.newBuilder()
+                .header("Authorization", "Bearer $token")
+                .build()
+        }
     }
+
+    private fun extractFailedToken(response: Response): String? {
+        val header = response.request.header("Authorization") ?: return null
+        return header.removePrefix("Bearer ").trim()
+    }
+
+    private suspend fun resolveRefreshedToken(failedToken: String?): String? {
+        val authRepo = authRepositoryProvider() ?: return null
+
+        // 1. Check if another concurrent thread already refreshed the token
+        val cachedToken = fetchTokenSafe(authRepo, forceRefresh = false)
+        if (!cachedToken.isNullOrEmpty() && cachedToken != failedToken) {
+            return cachedToken
+        }
+
+        // 2. Token is still stale; perform a force-refresh via Firebase Auth
+        return fetchTokenSafe(authRepo, forceRefresh = true)
+    }
+
+    private suspend fun fetchTokenSafe(authRepo: AuthRepository, forceRefresh: Boolean): String? =
+        try {
+            authRepo.getIdToken(forceRefresh = forceRefresh)
+        } catch (e: Exception) {
+            null
+        }
 
     private fun responseCount(response: Response): Int {
         var count = 1
@@ -83,5 +100,6 @@ class FirebaseAuthAuthenticator(
 
     companion object {
         private const val MAX_RETRY_COUNT = 3
+        const val DEFAULT_TOKEN_TIMEOUT_MS = 10_000L
     }
 }
