@@ -77,7 +77,7 @@ internal class AutoCollagePrewarmer(
         val resumeItems = database.listeningHistoryDao().getResumeItemsList()
         val subscriptions = database.podcastDao().getSubscribedPodcastsList()
         val downloads = database.downloadedEpisodeDao().getCompletedDownloads(8)
-        val queue = queueRepository.getQueueSnapshot()
+        val queue = queueRepository.getQueueEpisodeSnapshot()
         return PrewarmSnapshot(
             history = history,
             resumeItems = resumeItems,

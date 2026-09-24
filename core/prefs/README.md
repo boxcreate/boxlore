@@ -16,7 +16,7 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 - `SubscriptionsTabStyle` defines and sanitizes Subscriptions tab layout choices: `top` (default) vs `floating` (FAB style).
 - `BoxcastPrefs` stores the permanent Home video-showcase dismissal in the canonical `boxlore_prefs` file (`featured_video_showcase_dismissed`). The showcase asks for confirmation before writing it and does not reappear afterward.
 - `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
-- `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, time-of-day rotation slot keys (`cached_byl_slot`), Learn history, learner-log gates, pending magic link authentication email (`pending_auth_email`), and the stable sync installation ID (`sync_device_id` via `getOrCreateSyncDeviceId()`). `clearBylCacheIfPodcastId` invalidates a Because-you-like cache (including its cached slot key) when its seed show adopts a new catalog id.
+- `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, time-of-day rotation slot keys (`cached_byl_slot`), Learn history, learner-log gates, pending magic link authentication email (`pending_auth_email`), the stable sync installation ID (`sync_device_id` via `getOrCreateSyncDeviceId()`), and sync cursor state (`last_sync_timestamp`, `last_synced_user_id`). `clearBylCacheIfPodcastId` invalidates a Because-you-like cache (including its cached slot key) when its seed show adopts a new catalog id.
 - `resolveLearnerLogEnabled(isDebugBuild)`: debug defaults on when unset; **release is always off** unless the user explicitly persisted `true` via the debug-screen toggle.
 - `UserPreferenceKeys` centralizes DataStore preference keys.
 - `PrefsFileMigrator` opens canonical SharedPreferences files and migrates from legacy file names.
@@ -64,7 +64,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 ## Testing notes
 
 - Unit tests live under `core/prefs/src/test`.
-- `BoxcastPrefsTest` covers facade behavior, including targeted Because-you-like cache invalidation, time-of-day rotation slot persistence, and permanent featured-video showcase dismissal.
+- `BoxcastPrefsTest` covers facade behavior, including targeted Because-you-like cache invalidation, time-of-day rotation slot persistence, permanent featured-video showcase dismissal, and sync state cursors.
 - `PrefsFileMigratorTest` covers legacy-to-canonical file migration behavior.
 - `PreferenceIdListTest` and `HomePinnedShowsTest` cover id-list encoding, pin cap/toggle, and the at-capacity snackbar copy.
 - `UserPreferencesRepositoryTest` round-trips Manual order and Home pins, including atomic pin toggle, unsubscribe cleanup, and journaled podcast-id replacement.

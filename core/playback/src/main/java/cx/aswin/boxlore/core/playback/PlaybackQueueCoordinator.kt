@@ -168,7 +168,7 @@ internal class PlaybackQueueCoordinator(
 
     suspend fun loadPersistedQueueById(fallback: Map<String, Episode> = emptyMap()): Map<String, Episode> =
         try {
-            queueRepository.getQueueSnapshot().associateBy { it.id }
+            queueRepository.getQueueEpisodeSnapshot().associateBy { it.id }
         } catch (exception: kotlinx.coroutines.CancellationException) {
             throw exception
         } catch (exception: Exception) {
@@ -868,7 +868,7 @@ internal class PlaybackQueueCoordinator(
         }
         val snapshot =
             try {
-                queueRepository.getQueueSnapshot()
+                queueRepository.getQueueEpisodeSnapshot()
             } catch (e: Exception) {
                 emptyList()
             }

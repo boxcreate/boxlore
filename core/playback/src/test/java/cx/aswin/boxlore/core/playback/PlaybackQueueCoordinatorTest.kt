@@ -121,7 +121,7 @@ class PlaybackQueueCoordinatorTest {
         val dbQueue = queueRepository.queue.first()
         assertEquals(listOf("1", "3"), dbQueue.map { it.id.toString() })
 
-        val snapshot = queueRepository.getQueueSnapshot()
+        val snapshot = queueRepository.getQueueEpisodeSnapshot()
         assertEquals(listOf("1", "3"), snapshot.map { it.id })
 
         assertNotNull(queueRepository.getQueueItemByEpisodeId("1"))

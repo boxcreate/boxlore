@@ -147,4 +147,20 @@ class BoxcastPrefsTest {
         assertTrue(results.first().isNotBlank())
         assertEquals(results.first(), prefs.getOrCreateSyncDeviceId())
     }
+
+    @Test
+    fun syncTimestamp_defaultsToZeroAndRoundTrips() {
+        assertEquals(0L, prefs.getLastSyncTimestamp())
+        prefs.setLastSyncTimestamp(123456789L)
+        assertEquals(123456789L, prefs.getLastSyncTimestamp())
+    }
+
+    @Test
+    fun lastSyncedUserId_defaultsToNullAndRoundTrips() {
+        assertNull(prefs.getLastSyncedUserId())
+        prefs.setLastSyncedUserId("user_test_abc")
+        assertEquals("user_test_abc", prefs.getLastSyncedUserId())
+        prefs.setLastSyncedUserId(null)
+        assertNull(prefs.getLastSyncedUserId())
+    }
 }

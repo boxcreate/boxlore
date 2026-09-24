@@ -221,7 +221,7 @@ internal class AutoBrowseLibraryCallback(
     }
 
     private suspend fun addEpisodeToQueue(episodeId: String, player: Player,): Boolean {
-        val existingQueue = host.queueRepository.getQueueSnapshot()
+        val existingQueue = host.queueRepository.getQueueEpisodeSnapshot()
         val queuedEpisode = existingQueue.firstOrNull { it.id == episodeId }
         val episode = queuedEpisode ?: mediaResolver.resolveDomainEpisode(episodeId) ?: return false
         val playerHasEpisode =

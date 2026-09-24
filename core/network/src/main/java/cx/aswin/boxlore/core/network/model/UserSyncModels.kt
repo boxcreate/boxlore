@@ -16,6 +16,7 @@ data class UserSubscriptionSyncDto(
     @SerialName("customGenre") val customGenre: String? = null,
     @SerialName("autoDownloadEnabled") val autoDownloadEnabled: Boolean = false,
     @SerialName("notificationsEnabled") val notificationsEnabled: Boolean = false,
+    @SerialName("feedUrl") val feedUrl: String? = null,
     @SerialName("updatedAt") val updatedAt: Long,
 )
 
@@ -37,10 +38,10 @@ data class QueueItemSyncDto(
     @SerialName("episodeId") val episodeId: String,
     @SerialName("podcastId") val podcastId: String,
     @SerialName("position") val position: Int,
-    @SerialName("addedAt") val addedAt: Long,
+    @SerialName("addedAt") val addedAt: Long = 0L,
     @SerialName("contextType") val contextType: String? = "MANUAL",
     @SerialName("contextSourceId") val contextSourceId: String? = null,
-    @SerialName("updatedAt") val updatedAt: Long,
+    @SerialName("updatedAt") val updatedAt: Long = 0L,
 )
 
 @Serializable

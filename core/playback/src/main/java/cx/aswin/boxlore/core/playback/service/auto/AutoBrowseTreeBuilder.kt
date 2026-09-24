@@ -449,7 +449,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         return items
     }
 
-    suspend fun getQueueChildren(): List<MediaItem> = host.queueRepository.getQueueSnapshot().take(50).map { episode ->
+    suspend fun getQueueChildren(): List<MediaItem> = host.queueRepository.getQueueEpisodeSnapshot().take(50).map { episode ->
         AutoMediaItemFactory.fromEpisode(
             episode = episode,
             source = AutoBrowseContract.SOURCE_QUEUE,

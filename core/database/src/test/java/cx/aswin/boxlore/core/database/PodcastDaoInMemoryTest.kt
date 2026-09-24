@@ -61,4 +61,135 @@ class PodcastDaoInMemoryTest {
         assertEquals("The New York Times", loaded?.author)
         assertNull(dao.getPodcast("missing"))
     }
+
+    @Suppress("LongParameterList")
+    private fun createPodcast(
+        podcastId: String,
+        title: String = "Podcast $podcastId",
+        author: String = "Author",
+        imageUrl: String = "https://example.com/art.jpg",
+        description: String? = "Desc",
+        isSubscribed: Boolean = false,
+        subscribedAt: Long = 0L,
+        unsubscribedAt: Long = 0L,
+        autoDownloadEnabled: Boolean = false,
+        notificationsEnabled: Boolean = false,
+        customGenre: String? = null,
+        feedUrl: String? = null,
+        isDirty: Boolean = false,
+        syncedAt: Long = 0L,
+    ) = PodcastEntity(
+        podcastId = podcastId,
+        title = title,
+        author = author,
+        imageUrl = imageUrl,
+        description = description,
+        isSubscribed = isSubscribed,
+        subscribedAt = subscribedAt,
+        unsubscribedAt = unsubscribedAt,
+        autoDownloadEnabled = autoDownloadEnabled,
+        notificationsEnabled = notificationsEnabled,
+        customGenre = customGenre,
+        feedUrl = feedUrl,
+        isDirty = isDirty,
+        syncedAt = syncedAt,
+    )
+
+    @Test
+    fun markPodcastSyncedIfUnchanged_clearsDirtyWhenSnapshotMatches() = runTest {
+        val entity = createPodcast(
+            podcastId = "pod_1",
+            title = "Podcast 1",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+            unsubscribedAt = 0L,
+            autoDownloadEnabled = true,
+            notificationsEnabled = false,
+            customGenre = "Tech",
+            feedUrl = "https://example.com/feed.xml",
+            isDirty = true,
+            syncedAt = 0L,
+        )
+        dao.upsert(entity)
+
+        val updated = dao.markPodcastSyncedIfUnchanged(
+            id = "pod_1",
+            snapshotIsSubscribed = true,
+            snapshotSubscribedAt = 1000L,
+            snapshotUnsubscribedAt = 0L,
+            snapshotAutoDownload = true,
+            snapshotNotifications = false,
+            snapshotCustomGenre = "Tech",
+            snapshotFeedUrl = "https://example.com/feed.xml",
+            syncedAt = 5000L,
+        )
+
+        assertEquals(1, updated)
+        val stored = dao.getPodcast("pod_1")!!
+        assertEquals(false, stored.isDirty)
+        assertEquals(5000L, stored.syncedAt)
+    }
+
+    @Test
+    fun markPodcastSyncedIfUnchanged_doesNotClearWhenSnapshotDiffers() = runTest {
+        val entity = createPodcast(
+            podcastId = "pod_2",
+            title = "Podcast 2",
+            isSubscribed = true,
+            subscribedAt = 2000L,
+            unsubscribedAt = 0L,
+            autoDownloadEnabled = false,
+            notificationsEnabled = true,
+            customGenre = null,
+            feedUrl = null,
+            isDirty = true,
+            syncedAt = 0L,
+        )
+        dao.upsert(entity)
+
+        // Snapshot isSubscribed was false, but entity has true
+        val updated = dao.markPodcastSyncedIfUnchanged(
+            id = "pod_2",
+            snapshotIsSubscribed = false,
+            snapshotSubscribedAt = 2000L,
+            snapshotUnsubscribedAt = 0L,
+            snapshotAutoDownload = false,
+            snapshotNotifications = true,
+            snapshotCustomGenre = null,
+            snapshotFeedUrl = null,
+            syncedAt = 5000L,
+        )
+
+        assertEquals(0, updated)
+        val stored = dao.getPodcast("pod_2")!!
+        assertEquals(true, stored.isDirty)
+        assertEquals(0L, stored.syncedAt)
+    }
+
+    @Test
+    fun clearAllSubscriptionsForAccountSwitch_resetsSubscriptionsAndDirty() = runTest {
+        dao.upsert(
+            createPodcast(
+                podcastId = "pod_sub",
+                title = "Subscribed Show",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                autoDownloadEnabled = true,
+                notificationsEnabled = true,
+                customGenre = "News",
+                isDirty = true,
+            )
+        )
+
+        dao.clearAllSubscriptionsForAccountSwitch()
+
+        val stored = dao.getPodcast("pod_sub")!!
+        assertEquals(false, stored.isSubscribed)
+        assertEquals(0L, stored.subscribedAt)
+        assertEquals(0L, stored.unsubscribedAt)
+        assertEquals(false, stored.isDirty)
+        assertEquals(false, stored.autoDownloadEnabled)
+        assertEquals(false, stored.notificationsEnabled)
+        assertNull(stored.customGenre)
+    }
 }

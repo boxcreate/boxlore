@@ -199,4 +199,26 @@ interface ListeningHistoryDao {
 
     @Query("UPDATE listening_history SET isDirty = 0, syncedAt = :timestamp WHERE episodeId IN (:ids)")
     suspend fun markListeningHistorySynced(ids: List<String>, timestamp: Long)
+
+    @Query(
+        """
+        UPDATE listening_history 
+        SET isDirty = 0, syncedAt = :syncedAt 
+        WHERE episodeId = :episodeId 
+          AND lastPlayedAt = :snapshotLastPlayedAt 
+          AND likedAt = :snapshotLikedAt
+          AND progressMs = :snapshotProgressMs
+          AND isCompleted = :snapshotIsCompleted
+          AND isLiked = :snapshotIsLiked
+        """,
+    )
+    suspend fun markHistorySyncedIfUnchanged(
+        episodeId: String,
+        snapshotLastPlayedAt: Long,
+        snapshotLikedAt: Long,
+        snapshotProgressMs: Long,
+        snapshotIsCompleted: Boolean,
+        snapshotIsLiked: Boolean,
+        syncedAt: Long,
+    ): Int
 }

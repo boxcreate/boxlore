@@ -279,7 +279,7 @@ internal class PlaybackMediaControllerBridge(
                     "PlaybackRepo",
                     "onMediaItemTransition: Episode $episodeId NOT found in local queue. Attempting recovery from DB...",
                 )
-                val dbQueue = queueRepository.getQueueSnapshot()
+                val dbQueue = queueRepository.getQueueEpisodeSnapshot()
                 val dbSlotIndex = dbQueue.indexOfFirst { it.id == episodeId }
                 android.util.Log.d(
                     "PlaybackRepo",

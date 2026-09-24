@@ -9,6 +9,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
+import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.AutoTranscriptState
@@ -113,7 +114,8 @@ class PlaybackRepository internal constructor(
     internal val userPreferencesRepository: UserPreferencesRepository,
     internal val historyStore: PlaybackHistoryStore,
 ) : ListeningHistoryBackupPort by historyStore,
-    ListeningHistoryPort by historyStore {
+    ListeningHistoryPort by historyStore,
+    ActivePlaybackSyncPort {
     /** Nested alias so existing `PlaybackRepository.RemovedQueueItem` call sites keep compiling. */
     typealias RemovedQueueItem = cx.aswin.boxlore.core.playback.RemovedQueueItem
 
@@ -171,6 +173,8 @@ class PlaybackRepository internal constructor(
     internal val repositoryScope = historyStore.playerDeps.scope
     internal val playerStateFlow: MutableStateFlow<PlayerState> = historyStore.playerDeps.playerStateFlow
     val playerState = playerStateFlow.asStateFlow()
+
+    override fun getActivePlayingEpisodeId(): String? = playerStateFlow.value.currentEpisode?.id
 
     fun setUiForeground(isForeground: Boolean) {
         if (PlaybackUiVisibility.isForeground.value == isForeground) return
@@ -652,7 +656,7 @@ class PlaybackRepository internal constructor(
             val controller = mediaHandle.controller
             val controllerItem = controller?.currentMediaItem
             val targetEpisodeId = controllerItem?.mediaId?.stripEpisodePrefix()
-            val savedQueue = queueRepository.getQueueSnapshot()
+            val savedQueue = queueRepository.getQueueEpisodeSnapshot()
 
             val restored =
                 PlaybackSessionRestoreHelper.resolveRestoredSession(

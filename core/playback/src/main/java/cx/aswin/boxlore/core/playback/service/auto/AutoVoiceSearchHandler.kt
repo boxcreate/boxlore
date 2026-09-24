@@ -421,7 +421,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
     }
 
     suspend fun handlePlayFromQueue(episodeId: String): MutableList<MediaItem> {
-        val queue = host.queueRepository.getQueueSnapshot()
+        val queue = host.queueRepository.getQueueEpisodeSnapshot()
         val selectedIndex = queue.indexOfFirst { it.id == episodeId }
         if (selectedIndex < 0) {
             android.util.Log.w("AutoBrowse", "Ignoring stale queue selection: $episodeId")

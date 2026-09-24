@@ -139,7 +139,7 @@ internal class AutoPlaybackResumptionHandler(
             return AutoResumptionCandidate.from(candidateEntity)
         }
 
-        val firstQueue = queueRepository.getQueueSnapshot().firstOrNull()
+        val firstQueue = queueRepository.getQueueEpisodeSnapshot().firstOrNull()
         return firstQueue?.let {
             AutoResumptionCandidate(
                 episodeId = it.id,
@@ -152,7 +152,7 @@ internal class AutoPlaybackResumptionHandler(
 
     private suspend fun resolvePlaylistForTarget(targetEpisodeId: String): Pair<List<MediaItem>, Int> {
         val cleanTargetId = targetEpisodeId.stripEpisodePrefix()
-        val savedQueue = queueRepository.getQueueSnapshot()
+        val savedQueue = queueRepository.getQueueEpisodeSnapshot()
         val targetEpisode = mediaResolver.resolveDomainEpisode(cleanTargetId)
 
         val aligned = if (targetEpisode != null) {

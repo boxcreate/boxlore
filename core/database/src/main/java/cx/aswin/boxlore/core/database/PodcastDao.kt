@@ -140,4 +140,46 @@ interface PodcastDao {
 
     @Query("UPDATE podcasts SET isDirty = 0, syncedAt = :timestamp WHERE podcastId IN (:ids)")
     suspend fun markPodcastsSynced(ids: List<String>, timestamp: Long)
+
+    @Query(
+        """
+        UPDATE podcasts 
+        SET isDirty = 0, syncedAt = :syncedAt 
+        WHERE podcastId = :id 
+          AND isSubscribed = :snapshotIsSubscribed
+          AND subscribedAt = :snapshotSubscribedAt 
+          AND unsubscribedAt = :snapshotUnsubscribedAt
+          AND autoDownloadEnabled = :snapshotAutoDownload
+          AND notificationsEnabled = :snapshotNotifications
+          AND (customGenre = :snapshotCustomGenre OR (customGenre IS NULL AND :snapshotCustomGenre IS NULL))
+          AND (feedUrl = :snapshotFeedUrl OR (feedUrl IS NULL AND :snapshotFeedUrl IS NULL))
+        """,
+    )
+    @Suppress("LongParameterList")
+    suspend fun markPodcastSyncedIfUnchanged(
+        id: String,
+        snapshotIsSubscribed: Boolean,
+        snapshotSubscribedAt: Long,
+        snapshotUnsubscribedAt: Long,
+        snapshotAutoDownload: Boolean,
+        snapshotNotifications: Boolean,
+        snapshotCustomGenre: String?,
+        snapshotFeedUrl: String?,
+        syncedAt: Long,
+    ): Int
+
+    @Query(
+        """
+        UPDATE podcasts
+        SET isSubscribed = 0,
+            subscribedAt = 0,
+            unsubscribedAt = 0,
+            isDirty = 0,
+            notificationsEnabled = 0,
+            autoDownloadEnabled = 0,
+            customGenre = NULL,
+            customGenreIcon = NULL
+        """,
+    )
+    suspend fun clearAllSubscriptionsForAccountSwitch(): Int
 }
