@@ -42,7 +42,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -407,9 +406,9 @@ private fun SyncNowButton(
     isSyncing: Boolean,
     onSyncNow: () -> Unit,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "SyncRotation")
-    val rotation by if (isSyncing) {
-        infiniteTransition.animateFloat(
+    val rotation = if (isSyncing) {
+        val infiniteTransition = rememberInfiniteTransition(label = "SyncRotation")
+        val animatedRotation by infiniteTransition.animateFloat(
             initialValue = 0f,
             targetValue = 360f,
             animationSpec = infiniteRepeatable(
@@ -418,8 +417,9 @@ private fun SyncNowButton(
             ),
             label = "SyncSpin",
         )
+        animatedRotation
     } else {
-        remember { mutableFloatStateOf(0f) }
+        0f
     }
 
     val hapticFeedback = LocalHapticFeedback.current

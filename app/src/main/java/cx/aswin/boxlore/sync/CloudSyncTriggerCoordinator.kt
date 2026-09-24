@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Event-driven lifecycle and interaction coordinator for Boxlore Realtime Cloud Sync.
@@ -119,16 +120,22 @@ class CloudSyncTriggerCoordinator(
         if (authRepository.currentUserId == null) return
         applicationScope.launch(ioDispatcher) {
             try {
-                val isOnline = runCatching { isOnlineFlow.first() }.getOrDefault(true)
+                val isOnline = runCatching {
+                    withTimeoutOrNull(1_000L) { isOnlineFlow.first() }
+                }.getOrNull() ?: true
+
                 if (!isOnline) {
                     Log.i(TAG, "Process stopped while offline; enqueuing flush worker")
                     CloudSyncWorker.enqueueOneShotSync(context)
                     return@launch
                 }
 
-                val pushResult = userSyncCoordinator.executePush()
-                if (pushResult.isFailure) {
-                    Log.w(TAG, "Background push failed on process stop; enqueuing flush worker")
+                val pushResult = withTimeoutOrNull(BACKGROUND_PUSH_TIMEOUT_MS) {
+                    userSyncCoordinator.executePush()
+                }
+
+                if (pushResult == null || pushResult.isFailure) {
+                    Log.w(TAG, "Background push timed out or failed on process stop; enqueuing flush worker")
                     CloudSyncWorker.enqueueOneShotSync(context)
                 } else {
                     pushResult.getOrNull()?.let { summary ->
@@ -158,6 +165,7 @@ class CloudSyncTriggerCoordinator(
         val result = userSyncCoordinator.syncNow()
         when (result) {
             is SyncResult.Success -> {
+                lastForegroundSyncTimestamp = clock()
                 _syncStatusFlow.value = CloudSyncUiStatus.Success(result.syncedAt)
             }
             is SyncResult.Failure -> {
@@ -203,9 +211,8 @@ class CloudSyncTriggerCoordinator(
                     // Sign-in or account claim
                     syncNowInternal()
                 } else if (previousUser != null && currentUser == null) {
-                    // Sign-out
+                    // Sign-out: reset sync timestamps and status (preserve lastSyncedUserId for switch detection)
                     boxcastPrefs.setLastSyncTimestamp(0L)
-                    boxcastPrefs.setLastSyncedUserId(null)
                     _syncStatusFlow.value = CloudSyncUiStatus.Idle
                 } else if (previousUser != null && currentUser != null && previousUser!!.uid != currentUser.uid) {
                     // Direct account swap
@@ -295,6 +302,7 @@ class CloudSyncTriggerCoordinator(
     companion object {
         private const val TAG = "CloudSyncTriggerCoordinator"
         const val FOREGROUND_THROTTLE_MS = 15_000L
+        const val BACKGROUND_PUSH_TIMEOUT_MS = 3_000L
         const val QUEUE_MUTATION_DEBOUNCE_MS = 2_000L
         const val LIBRARY_MUTATION_DEBOUNCE_MS = 1_500L
     }

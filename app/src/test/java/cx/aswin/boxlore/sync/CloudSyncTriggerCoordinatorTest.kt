@@ -187,8 +187,33 @@ class CloudSyncTriggerCoordinatorTest {
         advanceUntilIdle()
 
         assertEquals(0L, prefs.getLastSyncTimestamp())
-        assertEquals(null, prefs.getLastSyncedUserId())
+        assertEquals("user-1", prefs.getLastSyncedUserId())
         assertEquals(CloudSyncUiStatus.Idle, coordinator.syncStatusFlow.value)
+    }
+
+    @Test
+    fun authSignIn_afterSignOutWithDifferentUser_preservesPreviousUserForAccountSwitch() = runTest {
+        prefs.setLastSyncTimestamp(99_000L)
+        prefs.setLastSyncedUserId("user-1")
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+
+        val coordinator = createCoordinator(this)
+        coordinator.start()
+        advanceUntilIdle()
+
+        // User 1 signs out
+        fakeAuthRepository.currentUser.value = null
+        advanceUntilIdle()
+
+        assertEquals(0L, prefs.getLastSyncTimestamp())
+        // Crucial: lastSyncedUserId must not be erased on sign-out so the next login detects the account switch
+        assertEquals("user-1", prefs.getLastSyncedUserId())
+
+        // User 2 signs in
+        fakeAuthRepository.currentUser.value = testUser("user-2")
+        advanceUntilIdle()
+
+        assertEquals(2, fakeCoordinator.syncNowCalls)
     }
 
     @Test
@@ -278,6 +303,24 @@ class CloudSyncTriggerCoordinatorTest {
         advanceUntilIdle()
 
         coordinator.onStop(testLifecycleOwner)
+        advanceUntilIdle()
+
+        assertEquals(1, fakeCoordinator.executePushCalls)
+    }
+
+    @Test
+    fun onStop_pushTimesOut_enqueuesWorkManager() = runTest {
+        fakeAuthRepository.currentUser.value = testUser("user-1")
+        // Simulates a stalled/hanging network call that exceeds the 3s background timeout
+        fakeCoordinator.executePushDelayMs = 5_000L
+
+        val coordinator = createCoordinator(this)
+        coordinator.start()
+        advanceUntilIdle()
+
+        coordinator.onStop(testLifecycleOwner)
+        // Advance past the 3,000ms timeout
+        advanceTimeBy(3_100L)
         advanceUntilIdle()
 
         assertEquals(1, fakeCoordinator.executePushCalls)
@@ -502,6 +545,7 @@ class CloudSyncTriggerCoordinatorTest {
     private class FakeUserSyncCoordinator : UserSyncCoordinator() {
         var syncNowCalls = 0
         var executePushCalls = 0
+        var executePushDelayMs = 0L
         var syncNowResult: SyncResult = SyncResult.Success(0, 0, false, 0, 0, false, 12345L)
         var executePushResult: Result<PushBatchSummary> = Result.success(PushBatchSummary(0, 0, false, 77_000L))
 
@@ -512,6 +556,9 @@ class CloudSyncTriggerCoordinatorTest {
 
         override suspend fun executePush(token: String?): Result<PushBatchSummary> {
             executePushCalls++
+            if (executePushDelayMs > 0) {
+                kotlinx.coroutines.delay(executePushDelayMs)
+            }
             return executePushResult
         }
     }

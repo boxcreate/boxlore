@@ -23,7 +23,7 @@ class CloudSyncWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            val deps = SharedAppDependenciesHolder.instance
+            val deps = runCatching { SharedAppDependenciesHolder.require() }.getOrNull()
             val coordinator = deps?.userSyncCoordinator
             if (coordinator == null) {
                 Log.w(TAG, "userSyncCoordinator unavailable; completing CloudSyncWorker")
