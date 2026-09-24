@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-23T23:51:40.484Z",
+  "lastRun": "2026-09-24T03:19:23.945Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "b511a41c-663b-42d8-a2b6-c521db93719f",
-      "lastEpisodeTitle": "NPR News: 09-23-2026 7PM EDT",
+      "lastRssKey": "5f5bbdb2-4200-4cf9-b804-854ab6153730",
+      "lastEpisodeTitle": "NPR News: 09-23-2026 11PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790207507084
+      "lastCheckedAt": 1790219972676
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75321583",
-      "lastEpisodeTitle": "The Catch Up: 2 Election Commissioners objected to poll panel steps (23 September)",
-      "lastEpisodeId": "60744642137",
-      "lastCheckedAt": 1790197676066
+      "lastRssKey": "https://api.spreaker.com/episode/75321606",
+      "lastEpisodeTitle": "IIT-B student death, march for Konkan’s future, and 5,500 kids go without milk",
+      "lastEpisodeId": "60751524314",
+      "lastCheckedAt": 1790219973730
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -171,10 +171,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "d651b6d2-b7a3-11f1-8667-13b8569a3780",
-      "lastEpisodeTitle": "7PM ET 09/23/2026 Newscast",
-      "lastEpisodeId": "60749421152",
-      "lastCheckedAt": 1790207522464
+      "lastRssKey": "5d1f42e4-b7c5-11f1-96f6-7756b3d6b890",
+      "lastEpisodeTitle": "11PM ET 09/23/2026 Newscast",
+      "lastEpisodeId": "60755115015",
+      "lastCheckedAt": 1790219982603
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -359,10 +359,10 @@
       "lastCheckedAt": 1790168104299
     },
     "545784": {
-      "lastRssKey": "0667e6cde21ef00d4fad53fa38188fa9",
-      "lastEpisodeTitle": "Hochferat! (mit Anke Myrrhe)",
-      "lastEpisodeId": "60720400178",
-      "lastCheckedAt": 1790148226299
+      "lastRssKey": "87cff21548ea4ac6e77894567cc36b7f",
+      "lastEpisodeTitle": "Nichtdabeisein ist alles  (mit Ann-Kathrin Hipp)",
+      "lastEpisodeId": "60754904283",
+      "lastCheckedAt": 1790220010060
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/megaphone/twit_1102/ARML7990110102.mp3",
@@ -705,10 +705,10 @@
       "lastCheckedAt": 1789992483455
     },
     "1366771": {
-      "lastRssKey": "6ab3fa76079b46c819765654",
-      "lastEpisodeTitle": "Evening Briefing Wednesday 23rd September",
+      "lastRssKey": "6ab4765762a47b6bec950c94",
+      "lastEpisodeTitle": "Morning briefing Thursday 24th September",
       "lastEpisodeId": "60663473400",
-      "lastCheckedAt": 1790185456489
+      "lastCheckedAt": 1790220062282
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19791953",
@@ -786,10 +786,10 @@
       "lastCheckedAt": 1790014657924
     },
     "3353685": {
-      "lastRssKey": "86fc7b98-b61e-11f1-9b52-8fd4a902a5f6",
-      "lastEpisodeTitle": "Googlebooks Launch, macOS 27 Breaks Mission Control, AI Hallucination Misleads US Military + more!",
+      "lastRssKey": "8010b566-b7b2-11f1-8711-071328943bb6",
+      "lastEpisodeTitle": "Discord Age Verification Hits All Users, ShinyHunters Claim FBI Hack, Apple Solders M6 Mac Mini Storage + more!",
       "lastEpisodeId": "60586969768",
-      "lastCheckedAt": 1790038945626
+      "lastCheckedAt": 1790220073169
     },
     "3423895": {
       "lastEpisodeId": "60583452250",
@@ -1125,10 +1125,10 @@
       "lastCheckedAt": 1789913140618
     },
     "6852067": {
-      "lastRssKey": "6ba0f9f2-b649-11f1-86d6-63882cd4f099",
-      "lastEpisodeTitle": "On: los tenis que hicieron billonario a Federer",
+      "lastRssKey": "2dc799cc-b7a9-11f1-822b-7b7e610e6edb",
+      "lastEpisodeTitle": "Emprender en México: SIENDO MAMÁ - Chispa Experience",
       "lastEpisodeId": "60114499389",
-      "lastCheckedAt": 1790059015461
+      "lastCheckedAt": 1790220099056
     },
     "6866470": {
       "lastRssKey": "https://api.spreaker.com/episode/75261819",
@@ -1167,10 +1167,10 @@
       "lastCheckedAt": 1789774227252
     },
     "6956562": {
-      "lastRssKey": "8a9fa67b-6703-416a-82d3-b90f2fad7362",
-      "lastEpisodeTitle": "A not-so-festive season for electronic appliances",
+      "lastRssKey": "e8e01300-5dfc-4da8-b3fd-de4fc6306f21",
+      "lastEpisodeTitle": "Sunday joys, Monday blues for the hotel business",
       "lastEpisodeId": "60685530583",
-      "lastCheckedAt": 1790148297211
+      "lastCheckedAt": 1790220104378
     },
     "6959250": {
       "lastRssKey": "99f92a05-76b6-4edd-b507-b1ad2cda5d61",
@@ -1263,10 +1263,10 @@
       "lastCheckedAt": 1789992521809
     },
     "7376606": {
-      "lastRssKey": "540479ba-5e10-43bb-b866-14a00773b76d",
-      "lastEpisodeTitle": "America’s Biggest Mysteries That Still Have No Answer 🇺🇸🔎 | Strange Stories from American History | Boring History for Sleep",
+      "lastRssKey": "783751e4-12fd-4d5d-8443-9d941b3593af",
+      "lastEpisodeTitle": "The History of the Potato 🥔🌎 | The Humble Crop That Changed the World | Boring History for Sleep",
       "lastEpisodeId": "60631240276",
-      "lastCheckedAt": 1790127659571
+      "lastCheckedAt": 1790220110747
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031886",
@@ -1357,10 +1357,10 @@
       "lastCheckedAt": 1786543013085
     },
     "7756959": {
-      "lastRssKey": "d1946306-b6d6-11f1-9435-43d66d83e681",
-      "lastEpisodeTitle": "Extrañamos la música imperfecta + sesión con Arath Erce | VA VA VA",
+      "lastRssKey": "48d14766-b7ab-11f1-9196-6f2ba5230b98",
+      "lastEpisodeTitle": "Javiera Mena: 20 años de un disco atemporal | VA VA VA",
       "lastEpisodeId": "60132395912",
-      "lastCheckedAt": 1790118680017
+      "lastCheckedAt": 1790220115690
     },
     "7837137": {
       "lastRssKey": "https://api.spreaker.com/episode/71692639",
@@ -1381,10 +1381,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/d1518f97-4cb7-5859-ac9e-950081c1f6be",
-      "lastEpisodeTitle": "Do YOU feel like THE BAD ONE for leaving a narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/2a171519-6779-5219-bd55-e8100afaaad5",
+      "lastEpisodeTitle": "Boundaries Setting Without Being An AHOLE ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790207642600
+      "lastCheckedAt": 1790220116349
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
