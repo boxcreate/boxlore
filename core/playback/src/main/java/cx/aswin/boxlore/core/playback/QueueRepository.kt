@@ -392,11 +392,7 @@ class QueueRepository(
                 }
                 queueDao.insertQueueItems(reindexed)
             }
-            queueDao.upsertQueueMetadata(
-                metadata.copy(
-                    isDirty = false,
-                ),
-            )
+            queueDao.upsertQueueMetadata(metadata)
         }
     }
 

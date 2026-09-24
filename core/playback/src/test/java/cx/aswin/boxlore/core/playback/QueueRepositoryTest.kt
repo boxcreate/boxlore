@@ -396,6 +396,24 @@ class QueueRepositoryTest {
         assertFalse(failed)
     }
 
+    @Test
+    fun queueSyncPort_applyRemoteQueueState_preservesDirtyFlagWhenTrue() = runTest {
+        val metadata = cx.aswin.boxlore.core.database.entities.QueueMetadataEntity(
+            id = 1,
+            queueSequence = 15L,
+            queueUpdatedAt = 6000L,
+            lastModifiedDeviceId = "device-1",
+            isDirty = true,
+            syncedAt = 6000L,
+        )
+
+        repository.applyRemoteQueueState(emptyList(), metadata)
+
+        val storedMeta = repository.getQueueMetadata()!!
+        assertEquals(15L, storedMeta.queueSequence)
+        assertTrue(storedMeta.isDirty)
+    }
+
     private fun domainEpisode(id: String) = Episode(
         id = id,
         title = "Episode $id",

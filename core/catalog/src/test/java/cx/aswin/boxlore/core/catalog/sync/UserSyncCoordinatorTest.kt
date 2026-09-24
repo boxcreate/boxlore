@@ -412,6 +412,107 @@ class UserSyncCoordinatorTest {
         assertEquals(5000L, prefs.getLastSyncTimestamp())
     }
 
+    @Test
+    fun syncNow_accountSwitch_purgesLocalDataAndPullsWithoutPushingOldData() = runTest(testDispatcher) {
+        // User A was synced previously
+        prefs.setLastSyncedUserId("user-A")
+        prefs.setLastSyncTimestamp(5000L)
+
+        // Local data from User A exists in DB
+        podcastDao.upsert(
+            createTestPodcastEntity(
+                podcastId = "user-a-pod",
+                title = "User A Podcast",
+                isSubscribed = true,
+                isDirty = true,
+            ),
+        )
+        listeningHistoryDao.upsert(
+            createTestHistoryEntity(
+                episodeId = "user-a-ep",
+                podcastId = "user-a-pod",
+                progressMs = 12345L,
+                isDirty = true,
+            ),
+        )
+        fakeQueueSyncPort.items = mutableListOf(
+            QueueItem(
+                episodeId = "user-a-ep",
+                title = "User A Ep",
+                podcastId = "user-a-pod",
+                podcastTitle = "User A Podcast",
+                imageUrl = null,
+                audioUrl = "",
+                duration = 100,
+                pubDate = 0L,
+                description = null,
+                position = 0,
+            ),
+        )
+        fakeQueueSyncPort.metadata = QueueMetadataEntity(id = 1, queueSequence = 5L, isDirty = true)
+
+        // Now User B is logged in
+        currentUserId = "user-B"
+        currentToken = "user-b-token"
+
+        var pushCalled = false
+        syncPushHandler = { _, _, _ ->
+            pushCalled = true
+            FakeCall(Response.success(SyncPushResponse(status = "ok", syncedAt = 6000L)))
+        }
+
+        var pullSince: Long? = null
+        syncPullHandler = { _, _, req ->
+            pullSince = req.since
+            FakeCall(
+                Response.success(
+                    SyncPullResponse(
+                        subscriptions = listOf(
+                            UserSubscriptionSyncDto(
+                                podcastId = "user-b-pod",
+                                isSubscribed = true,
+                                subscribedAt = 1000L,
+                                unsubscribedAt = 0L,
+                                updatedAt = 1000L,
+                            ),
+                        ),
+                        history = emptyList(),
+                        queue = null,
+                        syncedAt = 8000L,
+                    ),
+                ),
+            )
+        }
+
+        val result = coordinator.syncNow()
+        assertTrue(result is SyncResult.Success)
+
+        // Push MUST NOT have been called with User A's data!
+        assertFalse("Push must not be called on account switch", pushCalled)
+
+        // Pull MUST have been called with since = 0L
+        assertEquals(0L, pullSince)
+
+        // User A's history must be completely purged
+        val historyA = listeningHistoryDao.getHistoryItem("user-a-ep")
+        org.junit.Assert.assertNull(historyA)
+
+        // User A's podcast subscription must be reset
+        val podA = podcastDao.getPodcast("user-a-pod")
+        assertNotNull(podA)
+        assertFalse(podA!!.isSubscribed)
+        assertFalse(podA.isDirty)
+
+        // User B's podcast subscription must be present
+        val podB = podcastDao.getPodcast("user-b-pod")
+        assertNotNull(podB)
+        assertTrue(podB!!.isSubscribed)
+
+        // Prefs must be updated to User B
+        assertEquals("user-B", prefs.getLastSyncedUserId())
+        assertEquals(8000L, prefs.getLastSyncTimestamp())
+    }
+
     @Suppress("LongParameterList")
     private fun createTestPodcastEntity(
         podcastId: String,

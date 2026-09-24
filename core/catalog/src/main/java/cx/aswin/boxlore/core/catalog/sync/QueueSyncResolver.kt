@@ -70,9 +70,8 @@ class QueueSyncResolver(
         // Active playing episode guard: retain active episode if missing from remote
         if (activePlayingEpisodeId != null && hydrated.none { it.episodeId == activePlayingEpisodeId }) {
             val activeItem = existingItemsMap[activePlayingEpisodeId]
-            if (activeItem != null) {
-                hydrated.add(0, activeItem)
-            }
+                ?: hydrateQueueItem(QueueItemSyncDto(episodeId = activePlayingEpisodeId, podcastId = "", position = 0), existingItemsMap)
+            hydrated.add(0, activeItem)
         }
 
         val reindexed = hydrated.mapIndexed { index, item -> item.copy(position = index) }
@@ -138,7 +137,7 @@ class QueueSyncResolver(
         queueSyncPort.applyRemoteQueueState(reindexed, updatedMeta)
     }
 
-    private fun positionActiveEpisodeAtHead(
+    private suspend fun positionActiveEpisodeAtHead(
         mergedList: MutableList<QueueItem>,
         existingItemsMap: Map<String, QueueItem>,
         activePlayingEpisodeId: String?,
@@ -150,9 +149,8 @@ class QueueSyncResolver(
             mergedList.add(0, activeItem)
         } else if (activeIdx == -1) {
             val activeItem = existingItemsMap[activePlayingEpisodeId]
-            if (activeItem != null) {
-                mergedList.add(0, activeItem)
-            }
+                ?: hydrateQueueItem(QueueItemSyncDto(episodeId = activePlayingEpisodeId, podcastId = "", position = 0), existingItemsMap)
+            mergedList.add(0, activeItem)
         }
     }
 

@@ -287,6 +287,60 @@ class SubscriptionSyncResolverTest {
     }
 
     @Test
+    fun resolveSubscription_podcastIndexWithFeedUrl_isNotClassifiedAsRss() = runTest {
+        val remoteDto = UserSubscriptionSyncDto(
+            podcastId = "12345",
+            isSubscribed = true,
+            subscribedAt = 1500L,
+            unsubscribedAt = 0L,
+            feedUrl = "https://example.com/feed.xml",
+            updatedAt = 1500L,
+        )
+
+        resolver.resolveSubscription(remoteDto, syncedAt = 3000L)
+
+        val created = podcastDao.getPodcast("12345")
+        assertNotNull(created)
+        assertTrue(created!!.isSubscribed)
+        assertEquals("Loading...", created.title)
+        assertEquals(PodcastEntity.SOURCE_PODCAST_INDEX, created.sourceType)
+        assertEquals("https://example.com/feed.xml", created.feedUrl)
+        assertFalse(created.isDirty)
+    }
+
+    @Test
+    fun resolveSubscription_customGenreRemoved_clearsCustomGenreIcon() = runTest {
+        podcastDao.upsert(
+            createPodcast(
+                podcastId = "pod-genre",
+                title = "Show with Genre",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                unsubscribedAt = 0L,
+                isDirty = false,
+                syncedAt = 1000L,
+                customGenre = "Tech",
+            ).copy(customGenreIcon = "icon_tech"),
+        )
+
+        val remoteDto = UserSubscriptionSyncDto(
+            podcastId = "pod-genre",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+            unsubscribedAt = 0L,
+            customGenre = null,
+            updatedAt = 2000L,
+        )
+
+        resolver.resolveSubscription(remoteDto, syncedAt = 3000L)
+
+        val updated = podcastDao.getPodcast("pod-genre")
+        assertNotNull(updated)
+        org.junit.Assert.assertNull(updated!!.customGenre)
+        org.junit.Assert.assertNull(updated.customGenreIcon)
+    }
+
+    @Test
     fun resolveSubscription_bothSubscribed_doesNotOverwriteSettingsWhenLocalDirty() = runTest {
         podcastDao.upsert(
             createPodcast(

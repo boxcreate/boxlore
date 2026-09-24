@@ -167,6 +167,41 @@ class PodcastDaoInMemoryTest {
     }
 
     @Test
+    fun markPodcastSyncedIfUnchanged_clearsDirtyWhenCustomGenreAndFeedUrlAreNullAndMatch() = runTest {
+        val entity = createPodcast(
+            podcastId = "pod_nulls",
+            title = "Podcast Nulls",
+            isSubscribed = true,
+            subscribedAt = 3000L,
+            unsubscribedAt = 0L,
+            autoDownloadEnabled = false,
+            notificationsEnabled = false,
+            customGenre = null,
+            feedUrl = null,
+            isDirty = true,
+            syncedAt = 0L,
+        )
+        dao.upsert(entity)
+
+        val updated = dao.markPodcastSyncedIfUnchanged(
+            id = "pod_nulls",
+            snapshotIsSubscribed = true,
+            snapshotSubscribedAt = 3000L,
+            snapshotUnsubscribedAt = 0L,
+            snapshotAutoDownload = false,
+            snapshotNotifications = false,
+            snapshotCustomGenre = null,
+            snapshotFeedUrl = null,
+            syncedAt = 6000L,
+        )
+
+        assertEquals(1, updated)
+        val stored = dao.getPodcast("pod_nulls")!!
+        assertEquals(false, stored.isDirty)
+        assertEquals(6000L, stored.syncedAt)
+    }
+
+    @Test
     fun clearAllSubscriptionsForAccountSwitch_resetsSubscriptionsAndDirty() = runTest {
         dao.upsert(
             createPodcast(

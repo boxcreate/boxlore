@@ -56,6 +56,31 @@ class UserSyncCoordinator(
             val token = tokenProvider()
                 ?: return SyncResult.Failure(IllegalStateException("No auth token available"))
 
+            val lastSyncedUser = boxcastPrefs.getLastSyncedUserId()
+            if (lastSyncedUser != null && lastSyncedUser != userId) {
+                // Account mismatch detected! Purge previous user data to prevent cross-contamination
+                purgeLocalDataForAccountSwitch()
+                boxcastPrefs.setLastSyncTimestamp(0L)
+                boxcastPrefs.setLastSyncedUserId(userId)
+                val pullResult = executePull(since = 0L, token)
+                return pullResult.fold(
+                    onSuccess = { res ->
+                        SyncResult.Success(
+                            pushedSubscriptions = 0,
+                            pushedHistory = 0,
+                            pushedQueue = false,
+                            pulledSubscriptions = res.subscriptions.size,
+                            pulledHistory = res.history.size,
+                            pulledQueue = res.queue != null,
+                            syncedAt = res.syncedAt,
+                        )
+                    },
+                    onFailure = { err ->
+                        SyncResult.Failure(err)
+                    },
+                )
+            }
+
             // 1. Push local dirty deltas
             var totalPushedSubs = 0
             var totalPushedHist = 0
@@ -88,6 +113,8 @@ class UserSyncCoordinator(
                 return SyncResult.Failure(err, partialSyncedAt = latestSyncedAt.takeIf { it > 0 })
             }
 
+            boxcastPrefs.setLastSyncedUserId(userId)
+
             SyncResult.Success(
                 pushedSubscriptions = totalPushedSubs,
                 pushedHistory = totalPushedHist,
@@ -100,6 +127,23 @@ class UserSyncCoordinator(
         } catch (e: Exception) {
             SyncResult.Failure(e)
         }
+    }
+
+    private suspend fun purgeLocalDataForAccountSwitch() = withContext(ioDispatcher) {
+        listeningHistoryDao.deleteAll()
+        podcastDao.clearAllSubscriptionsForAccountSwitch()
+        queueSyncPort.applyRemoteQueueState(
+            items = emptyList(),
+            metadata = QueueMetadataEntity(
+                id = 1,
+                queueSequence = 0L,
+                queueUpdatedAt = 0L,
+                lastModifiedDeviceId = null,
+                recentRemovedEpisodeIds = null,
+                isDirty = false,
+                syncedAt = 0L,
+            ),
+        )
     }
 
     suspend fun executePush(token: String? = null): Result<PushBatchSummary> = withContext(ioDispatcher) {

@@ -39,29 +39,9 @@ class SubscriptionSyncResolver(
     ) {
         if (!remote.isSubscribed) return
 
-        val isRss = remote.podcastId.startsWith("rss:") || remote.feedUrl != null
-        val rssRepo = rssPodcastRepository
-        val feedUrl = remote.feedUrl
-        if (isRss && !feedUrl.isNullOrBlank() && rssRepo != null) {
-            val result = runCatching { rssRepo.addSubscription(feedUrl) }.getOrNull()
-            if (result != null) {
-                val ingested = podcastDao.getPodcast(remote.podcastId)
-                if (ingested != null) {
-                    podcastDao.upsert(
-                        ingested.copy(
-                            subscribedAt = remoteSubTime,
-                            unsubscribedAt = 0L,
-                            isSubscribed = true,
-                            autoDownloadEnabled = remote.autoDownloadEnabled,
-                            notificationsEnabled = remote.notificationsEnabled,
-                            customGenre = remote.customGenre,
-                            isDirty = false,
-                            syncedAt = syncedAt,
-                        ),
-                    )
-                }
-                return
-            }
+        val isRss = remote.podcastId.startsWith("rss:")
+        if (isRss && tryIngestRssSubscription(remote, remoteSubTime, syncedAt)) {
+            return
         }
 
         val stubEntity = PodcastEntity(
@@ -75,7 +55,7 @@ class SubscriptionSyncResolver(
             unsubscribedAt = 0L,
             isDirty = false,
             syncedAt = syncedAt,
-            sourceType = if (isRss) "rss" else "podcast_index",
+            sourceType = if (isRss) PodcastEntity.SOURCE_RSS else PodcastEntity.SOURCE_PODCAST_INDEX,
             feedUrl = remote.feedUrl,
             autoDownloadEnabled = remote.autoDownloadEnabled,
             notificationsEnabled = remote.notificationsEnabled,
@@ -83,10 +63,54 @@ class SubscriptionSyncResolver(
         )
         podcastDao.upsert(stubEntity)
 
-        val podRepo = podcastRepository
-        if (!isRss && podRepo != null) {
-            runCatching { podRepo.getPodcastDetails(remote.podcastId) }
+        if (!isRss) {
+            enrichPodcastIndexDetails(remote.podcastId)
         }
+    }
+
+    private suspend fun tryIngestRssSubscription(
+        remote: UserSubscriptionSyncDto,
+        remoteSubTime: Long,
+        syncedAt: Long,
+    ): Boolean {
+        val rssRepo = rssPodcastRepository ?: return false
+        val feedUrl = remote.feedUrl?.takeIf { it.isNotBlank() } ?: return false
+
+        val result = runCatching { rssRepo.addSubscription(feedUrl) }.getOrNull() ?: return false
+        val ingestedId = result.podcast.id
+        val ingested = podcastDao.getPodcast(ingestedId) ?: podcastDao.getPodcast(remote.podcastId) ?: return true
+
+        podcastDao.upsert(
+            ingested.copy(
+                subscribedAt = remoteSubTime,
+                unsubscribedAt = 0L,
+                isSubscribed = true,
+                autoDownloadEnabled = remote.autoDownloadEnabled,
+                notificationsEnabled = remote.notificationsEnabled,
+                customGenre = remote.customGenre,
+                customGenreIcon = if (remote.customGenre == null) null else ingested.customGenreIcon,
+                isDirty = false,
+                syncedAt = syncedAt,
+            ),
+        )
+        return true
+    }
+
+    private suspend fun enrichPodcastIndexDetails(podcastId: String) {
+        val podRepo = podcastRepository ?: return
+        val details = runCatching { podRepo.getPodcastDetails(podcastId) }.getOrNull() ?: return
+        val current = podcastDao.getPodcast(podcastId) ?: return
+
+        podcastDao.upsert(
+            current.copy(
+                title = details.title.takeIf { it.isNotBlank() } ?: current.title,
+                author = details.artist.takeIf { it.isNotBlank() } ?: current.author,
+                imageUrl = details.imageUrl.takeIf { it.isNotBlank() } ?: current.imageUrl,
+                description = details.description ?: current.description,
+                genre = details.genre.takeIf { it.isNotBlank() } ?: current.genre,
+                feedUrl = current.feedUrl ?: details.feedUrl,
+            ),
+        )
     }
 
     private suspend fun handleRemoteTombstone(
@@ -143,6 +167,7 @@ class SubscriptionSyncResolver(
                     autoDownloadEnabled = remote.autoDownloadEnabled,
                     notificationsEnabled = remote.notificationsEnabled,
                     customGenre = remote.customGenre,
+                    customGenreIcon = if (remote.customGenre == null) null else local.customGenreIcon,
                     feedUrl = remote.feedUrl ?: local.feedUrl,
                 )
                 podcastDao.upsert(updated)
@@ -150,8 +175,14 @@ class SubscriptionSyncResolver(
                 podcastDao.upsert(local.copy(isDirty = true))
             }
         } else if (remote.updatedAt > local.syncedAt && !local.isDirty) {
+            val genreIcon = if (remote.customGenre == null || remote.customGenre != local.customGenre) {
+                null
+            } else {
+                local.customGenreIcon
+            }
             val updated = local.copy(
                 customGenre = remote.customGenre,
+                customGenreIcon = genreIcon,
                 autoDownloadEnabled = remote.autoDownloadEnabled,
                 notificationsEnabled = remote.notificationsEnabled,
                 feedUrl = remote.feedUrl ?: local.feedUrl,

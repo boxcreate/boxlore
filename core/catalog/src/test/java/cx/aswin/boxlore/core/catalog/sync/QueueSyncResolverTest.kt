@@ -156,6 +156,58 @@ class QueueSyncResolverTest {
     }
 
     @Test
+    fun resolveQueue_activeEpisodeNotInQueueCache_hydratedAndRetainedAtHead() = runTest {
+        val remoteItem = createQueueItem(episodeId = "ep-remote-1", position = 0)
+        fakeQueueSyncPort.items = mutableListOf(remoteItem)
+        fakeQueueSyncPort.metadata = QueueMetadataEntity(id = 1, queueSequence = 1L, isDirty = false)
+
+        fakeActivePlaybackSyncPort.activeEpisodeId = "ep-playing-external"
+
+        database.localEpisodeCatalogDao().upsertEpisodes(
+            listOf(
+                LocalEpisodeEntity(
+                    episodeId = "ep-playing-external",
+                    podcastId = "pod-ext",
+                    guid = "guid-ext",
+                    title = "External Playing Title",
+                    description = "Desc",
+                    audioUrl = "https://example.com/audio.mp3",
+                    imageUrl = "https://example.com/img.jpg",
+                    duration = 300,
+                    publishedDate = 2000L,
+                    chaptersUrl = null,
+                    transcriptUrl = null,
+                    transcripts = null,
+                    persons = null,
+                    seasonNumber = null,
+                    episodeNumber = null,
+                    episodeType = null,
+                    enclosureType = null,
+                ),
+            ),
+        )
+
+        val remoteQueue = QueueSyncDto(
+            queueSequence = 2L,
+            queueUpdatedAt = 3000L,
+            items = listOf(
+                QueueItemSyncDto(episodeId = "ep-remote-1", podcastId = "pod-1", position = 0),
+            ),
+        )
+
+        resolver.resolveQueue(remoteQueue, syncedAt = 4000L)
+
+        val applied = fakeQueueSyncPort.appliedItems
+        assertNotNull(applied)
+        assertEquals(2, applied!!.size)
+        assertEquals("ep-playing-external", applied[0].episodeId)
+        assertEquals(0, applied[0].position)
+        assertEquals("External Playing Title", applied[0].title)
+        assertEquals("ep-remote-1", applied[1].episodeId)
+        assertEquals(1, applied[1].position)
+    }
+
+    @Test
     fun resolveQueue_case2_divergedBranches_3wayTombstoneMergeAndActiveHeadRetention() = runTest {
         val activeItem = createQueueItem(episodeId = "ep-active", position = 0)
         val localOnlyItem = createQueueItem(episodeId = "ep-local-survivor", position = 1)
