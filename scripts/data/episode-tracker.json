@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-09-24T08:39:52.382Z",
+  "lastRun": "2026-09-24T14:02:17.105Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
-      "lastEpisodeTitle": "Can CEO John Ternus find Apple's next big thing?",
+      "lastRssKey": "efe4c226-cfc6-11f0-83c5-0f782a2af401",
+      "lastEpisodeTitle": "I have some questions for Mark Zuckerberg",
       "lastEpisodeId": "60596669928",
-      "lastCheckedAt": 1789992406940
+      "lastCheckedAt": 1790258537680
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7g",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "c2368506-860c-446e-b9bf-346694d10748",
-      "lastEpisodeTitle": "NPR News: 09-24-2026 4AM EDT",
+      "lastRssKey": "ababce7b-a3cc-4292-9e9f-6cbb7c130d9b",
+      "lastEpisodeTitle": "NPR News: 09-24-2026 9AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790239196651
+      "lastCheckedAt": 1790258541085
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75321606",
-      "lastEpisodeTitle": "IIT-B student death, march for Konkan’s future, and 5,500 kids go without milk",
-      "lastEpisodeId": "60751524314",
-      "lastCheckedAt": 1790219973730
+      "lastRssKey": "https://api.spreaker.com/episode/75331248",
+      "lastEpisodeTitle": "The Catch Up: EC’s flawed system leaves valid Goa voters out of SIR (24 September)",
+      "lastEpisodeId": "60769765978",
+      "lastCheckedAt": 1790258541703
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "4325f49e-b7ef-11f1-b127-6780df14b0c0",
-      "lastEpisodeTitle": "4AM ET 09/24/2026 Newscast",
-      "lastEpisodeId": "60755115015",
-      "lastCheckedAt": 1790239210871
+      "lastRssKey": "2c253ed8-b819-11f1-8504-2ff60323f4e4",
+      "lastEpisodeTitle": "9AM ET 09/24/2026 Newscast",
+      "lastEpisodeId": "60769426413",
+      "lastCheckedAt": 1790258556421
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -231,10 +231,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M37XTFCAHYPVCDVWH3PDAFCW",
-      "lastEpisodeTitle": "Tension grows in the housing market",
+      "lastRssKey": "01M39M319B819QXYVG5MGGE7TN",
+      "lastEpisodeTitle": "Opting for riskier mortgages",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790207529372
+      "lastCheckedAt": 1790258561287
     },
     "432535": {
       "lastRssKey": "df581185-7631-4f5a-949b-daf47fd2b3e8",
@@ -243,10 +243,10 @@
       "lastCheckedAt": 1790108549383
     },
     "437685": {
-      "lastRssKey": "869def88-8d60-11f1-adef-d7ebff3ff29b",
-      "lastEpisodeTitle": "The New Madrid Earthquakes",
-      "lastEpisodeId": "60729953856",
-      "lastCheckedAt": 1790168089348
+      "lastRssKey": "867e9804-8d60-11f1-adef-d7bfd3a1021c",
+      "lastEpisodeTitle": "Chief Joseph",
+      "lastEpisodeId": "60764659198",
+      "lastCheckedAt": 1790258562866
     },
     "438184": {
       "lastRssKey": "42535506-b5b1-11f1-909d-f75037fc309d",
@@ -436,10 +436,10 @@
       "lastCheckedAt": 1790014628618
     },
     "724143": {
-      "lastRssKey": "a2c22ed6-b79a-11f1-a5bf-5760c84d3f91",
-      "lastEpisodeTitle": "CNJ manda devolver precatórios do Master, Alexandre Pires é investigado e STF decide sobre licença-maternidade adotiva",
+      "lastRssKey": "113009b4-b800-11f1-aa33-731ff81ea96c",
+      "lastEpisodeTitle": "Lula prepara MP para fim das bets; Dino julga interferência estrangeira na eleição; EUA e China estendem trégua",
       "lastEpisodeId": "60409761274",
-      "lastCheckedAt": 1790207554600
+      "lastCheckedAt": 1790258580284
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/w-0oGFd2IzhFS0QEXBKFFS5ISPi0tChyH9JjnpZM9NI",
@@ -454,10 +454,10 @@
       "lastCheckedAt": 1789856681689
     },
     "743229": {
-      "lastRssKey": "d996026e-5911-457a-b63a-da9fac3ab5c1",
-      "lastEpisodeTitle": "Health Trackers Are Everywhere. Do Babies Need Them, Too?",
+      "lastRssKey": "0dcb75ec-ecb0-43b2-946f-447a52790176",
+      "lastEpisodeTitle": "What Safeguarding Nukes Can Teach Us About Safeguarding A.I.",
       "lastEpisodeId": "60730420969",
-      "lastCheckedAt": 1790168117454
+      "lastCheckedAt": 1790258584052
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -502,10 +502,10 @@
       "lastCheckedAt": 1789318929535
     },
     "771813": {
-      "lastRssKey": "56901d28-494c-4668-9159-070848c75dbd",
-      "lastEpisodeTitle": "Lost in Space Game Night",
-      "lastEpisodeId": "60095652951",
-      "lastCheckedAt": 1790058947626
+      "lastEpisodeId": "60630493896",
+      "lastEpisodeTitle": "Cosmic Queries – The Fractal Universe with Charles Liu",
+      "lastRssKey": "ccee1bdc-a442-4345-b34a-beedb0f4aec8",
+      "lastCheckedAt": 1790258586712
     },
     "790970": {
       "lastRssKey": "49fbe622-b59a-11f1-890a-c3cf0fa68f14",
@@ -525,10 +525,10 @@
       "lastCheckedAt": 1790197730982
     },
     "837535": {
-      "lastRssKey": "30d63cb6-b7e7-11f1-9de1-f38bd7278d3e",
-      "lastEpisodeTitle": "Lohnt sich ein (weiterer) Tankrabatt?",
+      "lastRssKey": "66a81b36-b75e-11f1-847a-0b3a668f0876",
+      "lastEpisodeTitle": "Welche Alternativen gibt es zum Tankrabatt? (#743)",
       "lastEpisodeId": "60653657394",
-      "lastCheckedAt": 1790239257330
+      "lastCheckedAt": 1790258589256
     },
     "838740": {
       "lastRssKey": "03be9642-b6fc-11f1-9a55-27d6c4944fc2",
@@ -618,10 +618,10 @@
       "lastCheckedAt": 1790097003096
     },
     "1047718": {
-      "lastRssKey": "6ab221808f0833b2aaa720a1",
-      "lastEpisodeTitle": "Dockers derby delivers and England squad upheaval – Football Weekly podcast",
+      "lastRssKey": "6ab4cd2d8f08b60496b8e885",
+      "lastEpisodeTitle": "England face world champions Spain as international break commences – Football Weekly – Football Weekly podcast",
       "lastEpisodeId": "58884055225",
-      "lastCheckedAt": 1790079831407
+      "lastCheckedAt": 1790258599204
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-the-pursuit-of-happiness-quran-edition-qa",
@@ -653,10 +653,10 @@
       "lastCheckedAt": 1790097010529
     },
     "1116485": {
-      "lastRssKey": "6ab39fc96dd30f2b10742626",
-      "lastEpisodeTitle": "Liverpool Set To Appoint Julian Ward | Daily News Update",
+      "lastRssKey": "6ab4f31eaef152926f7d70d1",
+      "lastEpisodeTitle": "Liverpool Get Lamine Camara Encouragement | Daily News Update",
       "lastEpisodeId": "60461626103",
-      "lastCheckedAt": 1790168142240
+      "lastCheckedAt": 1790258604925
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -717,10 +717,10 @@
       "lastCheckedAt": 1790239275981
     },
     "1366771": {
-      "lastRssKey": "6ab4765762a47b6bec950c94",
-      "lastEpisodeTitle": "Morning briefing Thursday 24th September",
+      "lastRssKey": "6ab4f74359a98735e13918bb",
+      "lastEpisodeTitle": "Afternoon briefing Thursday 24th September",
       "lastEpisodeId": "60663473400",
-      "lastCheckedAt": 1790220062282
+      "lastCheckedAt": 1790258609472
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19791953",
@@ -792,10 +792,10 @@
       "lastCheckedAt": 1789135539229
     },
     "3237767": {
-      "lastRssKey": "cb83d5bf-2528-4f93-b85b-edd7f0f883f8",
-      "lastEpisodeTitle": "NFL Week 2 Recap: Vintage Chiefs Steal a Win From the Colts in Overtime",
-      "lastEpisodeId": "60195569988",
-      "lastCheckedAt": 1790014657924
+      "lastRssKey": "08b60067-1d35-495a-a118-9c4ef39b3f0b",
+      "lastEpisodeTitle": "Should You Worry About the Philadelphia Eagles? - NFL Week 2 Recap Cont.",
+      "lastEpisodeId": "60768719108",
+      "lastCheckedAt": 1790258615686
     },
     "3353685": {
       "lastRssKey": "8010b566-b7b2-11f1-8711-071328943bb6",
@@ -916,9 +916,9 @@
       "lastCheckedAt": 1790239288930
     },
     "4898105": {
-      "lastRssKey": "6e447800-b6fd-11f1-a3f8-b764b1d4a43e",
-      "lastEpisodeTitle": "Sega Planned to Kill Sonic the Hedgehog Before Movie Success",
-      "lastCheckedAt": 1790168163108
+      "lastRssKey": "d107f45c-b7cb-11f1-9970-036697e3fa11",
+      "lastEpisodeTitle": "Grand Theft Auto 6's Miami Takeover Begins",
+      "lastCheckedAt": 1790258624079
     },
     "5107672": {
       "lastRssKey": "6c5e5764-f024-4308-843f-a925142939b4",
@@ -979,10 +979,10 @@
       "lastCheckedAt": 1789709731384
     },
     "5731394": {
-      "lastRssKey": "ace0537e-b714-11f1-b5d6-9b4d510d739c",
-      "lastEpisodeTitle": "Sci Fi Section Ep 9: Golden Son Chapters 7-11",
+      "lastRssKey": "09a5452e-b7b0-11f1-afef-1b7dc1241854",
+      "lastEpisodeTitle": "Central Division Predictions For The 2026/27 NHL Season",
       "lastEpisodeId": "60007884583",
-      "lastCheckedAt": 1790168168803
+      "lastCheckedAt": 1790258629866
     },
     "5815838": {
       "lastRssKey": "6e9e774b-ca53-49e0-857f-4961da64682a",
@@ -1009,10 +1009,10 @@
       "lastCheckedAt": 1790185480873
     },
     "5972153": {
-      "lastRssKey": "441115c8-b71d-11f1-b29b-83d4aa6faeb3",
-      "lastEpisodeTitle": "US-Iran talks at UN, Trump-Zelenskiy meet and Nigeria deaths",
+      "lastRssKey": "411e307e-b7e2-11f1-a545-3396d505a276",
+      "lastEpisodeTitle": "OpenAI agent hack, Trump-Xi talks and Tigray",
       "lastEpisodeId": "60634460811",
-      "lastCheckedAt": 1790168171996
+      "lastCheckedAt": 1790258633159
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1038,10 +1038,10 @@
       "lastCheckedAt": 1790197789530
     },
     "6413946": {
-      "lastRssKey": "36486d71-95bf-4c97-930e-2d0dd85bd991",
-      "lastEpisodeTitle": "EP 828: En la ONU, Trump se lanza contra México, PT fractura alianza con Morena y El decálogo de los celulares en las escuelas",
+      "lastRssKey": "c57ce5c4-2ef3-41b4-bdff-f6352fb01bdc",
+      "lastEpisodeTitle": "EP 829: Violencia desplaza a más de un millón y medio de personas, La polémica por las reformas antimemes y Quieren obligar a dueños del futbol a regresar el ascenso a la Liga Mx",
       "lastEpisodeId": "60198639919",
-      "lastCheckedAt": 1790168174529
+      "lastCheckedAt": 1790258634936
     },
     "6456494": {
       "lastRssKey": "6ab28a1cf161207303f67c36",
@@ -1119,6 +1119,12 @@
       "lastEpisodeId": "60576383650",
       "lastCheckedAt": 1789781434460
     },
+    "6763230": {
+      "lastRssKey": "ee259d76-b4f3-11f1-8e93-1b7db27b5797",
+      "lastEpisodeTitle": "I Work For A Private Museum | CreepCast",
+      "lastEpisodeId": "60655943057",
+      "lastCheckedAt": 1790258640059
+    },
     "6764080": {
       "lastRssKey": "b981b0f6-d3ef-477b-9b4e-b4cc004a765b",
       "lastEpisodeTitle": "Life Hacks (Stuff Wot I Done Learned)",
@@ -1162,10 +1168,10 @@
       "lastCheckedAt": 1789728019057
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779883",
-      "lastEpisodeTitle": "Gang Busters - Incorrigible Killer",
+      "lastRssKey": "https://api.spreaker.com/episode/59779885",
+      "lastEpisodeTitle": "Lives Of Harry Lime - Voodoo",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1790168196684
+      "lastCheckedAt": 1790258642184
     },
     "6912659": {
       "lastRssKey": "5006a53e-2698-4778-9f17-d5bff15a2c58",
@@ -1210,10 +1216,10 @@
       "lastCheckedAt": 1786559335991
     },
     "7064213": {
-      "lastRssKey": "6963a47e-1a85-4182-832b-2283b08e1968",
-      "lastEpisodeTitle": "201: Joey Munoz: The Truth About Nutrition, Protein, Weight Loss & Muscle",
+      "lastRssKey": "6befcdd3-858a-4061-af9e-0b48ad2a59cb",
+      "lastEpisodeTitle": "202. Dr. Colleen Cutcliffe: The Fiber-Gut Connection: How to Improve Your Microbiome, Blood Sugar & Cholesterol",
       "lastEpisodeId": "60696385666",
-      "lastCheckedAt": 1790079915860
+      "lastCheckedAt": 1790258647153
     },
     "7098500": {
       "lastRssKey": "66bb84b96ceb55ab6dbacb631fecaac54ddbcff7",
@@ -1222,10 +1228,10 @@
       "lastCheckedAt": 1787841002583
     },
     "7131280": {
+      "lastRssKey": "887c43a8-adeb-11f1-b5ac-57c0b3889c16",
+      "lastEpisodeTitle": "A Study in Scarlet: Part Three",
       "lastEpisodeId": "60511350052",
-      "lastEpisodeTitle": "A Study in Scarlet: Part One",
-      "lastRssKey": "41fc3662-a090-11f1-866f-8bb095051603",
-      "lastCheckedAt": 1790239312801
+      "lastCheckedAt": 1790258647896
     },
     "7183032": {
       "lastRssKey": "173ad9ec-e103-4bd2-a508-0e0e88f74315",
@@ -1380,6 +1386,12 @@
       "lastEpisodeTitle": "Scientists Discuss the Future of Extreme Weather",
       "lastCheckedAt": 1786543013085
     },
+    "7679624": {
+      "lastEpisodeId": "60684324212",
+      "lastEpisodeTitle": "Forensic Files - - Til Death Do Us Part - Full Episode",
+      "lastRssKey": "https://api.spreaker.com/episode/75045285",
+      "lastCheckedAt": 1790258655107
+    },
     "7756959": {
       "lastRssKey": "48d14766-b7ab-11f1-9196-6f2ba5230b98",
       "lastEpisodeTitle": "Javiera Mena: 20 años de un disco atemporal | VA VA VA",
@@ -1405,10 +1417,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/0b3b782a-3a1d-5e14-adff-75680147eb22",
-      "lastEpisodeTitle": "4 SUBTLE signs you’re dating a narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/871b77ec-9a97-5658-83ac-ae9f6373395a",
+      "lastEpisodeTitle": "4 ways narcissists may sabotage you ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790239319196
+      "lastCheckedAt": 1790258656022
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
