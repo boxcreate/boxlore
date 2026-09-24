@@ -74,6 +74,9 @@ interface QueueDao {
     )
     suspend fun markQueueSynced(timestamp: Long)
 
+    @Query("UPDATE queue_metadata SET isDirty = 1 WHERE id = 1")
+    suspend fun markQueueDirty(): Int
+
     @Query(
         """
         UPDATE queue_metadata 

@@ -402,6 +402,10 @@ class QueueSyncResolverTest {
                 false
             }
         }
+
+        override suspend fun markQueueDirty() {
+            metadata = metadata.copy(isDirty = true)
+        }
     }
 
     private class FakeActivePlaybackSyncPort(

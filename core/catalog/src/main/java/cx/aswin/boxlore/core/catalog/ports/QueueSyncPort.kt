@@ -14,4 +14,5 @@ interface QueueSyncPort {
         metadata: QueueMetadataEntity,
     )
     suspend fun markQueueSynced(expectedSequence: Long, syncedAt: Long): Boolean
+    suspend fun markQueueDirty()
 }

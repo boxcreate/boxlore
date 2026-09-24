@@ -255,6 +255,82 @@ class UserSyncCoordinatorTest {
     }
 
     @Test
+    fun executePush_marksAndPushesUnsyncedLocalGuestData() = runTest(testDispatcher) {
+        podcastDao.upsert(
+            createTestPodcastEntity(
+                podcastId = "pod-guest-offline",
+                title = "Guest Offline Podcast",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                isDirty = false,
+                syncedAt = 0L,
+            ),
+        )
+
+        listeningHistoryDao.upsert(
+            createTestHistoryEntity(
+                episodeId = "ep-guest-offline",
+                podcastId = "pod-guest-offline",
+                progressMs = 42000L,
+                lastPlayedAt = 1000L,
+                isDirty = false,
+                syncedAt = 0L,
+            ),
+        )
+
+        fakeQueueSyncPort.items = mutableListOf(
+            QueueItem(
+                episodeId = "ep-guest-offline",
+                podcastId = "pod-guest-offline",
+                title = "Guest Episode",
+                podcastTitle = "Guest Podcast",
+                audioUrl = "https://example.com/audio.mp3",
+                imageUrl = null,
+                duration = 60,
+                pubDate = 1000L,
+                description = "Guest Description",
+                position = 0,
+            ),
+        )
+        fakeQueueSyncPort.metadata = QueueMetadataEntity(
+            id = 1,
+            queueSequence = 1L,
+            isDirty = false,
+            syncedAt = 0L,
+        )
+
+        var capturedRequest: SyncPushRequest? = null
+        syncPushHandler = { _, _, request ->
+            capturedRequest = request
+            FakeCall(Response.success(SyncPushResponse(status = "ok", syncedAt = 8000L)))
+        }
+
+        val pushResult = coordinator.executePush()
+        assertTrue(pushResult.isSuccess)
+
+        val request = checkNotNull(capturedRequest)
+        assertEquals(1, request.subscriptions.size)
+        assertEquals("pod-guest-offline", request.subscriptions[0].podcastId)
+        assertEquals(1, request.history.size)
+        assertEquals("ep-guest-offline", request.history[0].episodeId)
+        assertNotNull(request.queue)
+        assertEquals(1, request.queue!!.items.size)
+
+        val podcast = podcastDao.getPodcast("pod-guest-offline")
+        assertNotNull(podcast)
+        assertFalse(podcast!!.isDirty)
+        assertEquals(8000L, podcast.syncedAt)
+
+        val history = listeningHistoryDao.getHistoryItem("ep-guest-offline")
+        assertNotNull(history)
+        assertFalse(history!!.isDirty)
+        assertEquals(8000L, history.syncedAt)
+
+        assertFalse(fakeQueueSyncPort.metadata.isDirty)
+        assertEquals(8000L, fakeQueueSyncPort.metadata.syncedAt)
+    }
+
+    @Test
     fun executePush_preservesDirtyFlagWhenEntityModifiedConcurrently() = runTest(testDispatcher) {
         podcastDao.upsert(
             createTestPodcastEntity(
@@ -606,5 +682,8 @@ class UserSyncCoordinatorTest {
             } else {
                 false
             }
+        override suspend fun markQueueDirty() {
+            metadata = metadata.copy(isDirty = true)
+        }
     }
 }

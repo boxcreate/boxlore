@@ -380,6 +380,10 @@ class QueueRepository(
     override suspend fun markQueueSynced(expectedSequence: Long, syncedAt: Long): Boolean =
         queueDao.markQueueSyncedIfSequenceMatches(expectedSequence, syncedAt) > 0
 
+    override suspend fun markQueueDirty() {
+        queueDao.markQueueDirty()
+    }
+
     override suspend fun applyRemoteQueueState(
         items: List<QueueItem>,
         metadata: QueueMetadataEntity,
