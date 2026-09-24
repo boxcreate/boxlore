@@ -90,6 +90,13 @@ open class UserSyncCoordinator(
                 )
             }
 
+            val metadataVersion = requireBoxcastPrefs.getSyncMetadataVersion()
+            if (metadataVersion < 1) {
+                // If this device holds rich metadata, mark dirty so they sync to cloud
+                requireListeningHistoryDao.markAllHistoryWithTitlesDirty()
+                requireBoxcastPrefs.setSyncMetadataVersion(1)
+            }
+
             // 1. Push local dirty deltas
             var totalPushedSubs = 0
             var totalPushedHist = 0
@@ -106,8 +113,9 @@ open class UserSyncCoordinator(
                 return SyncResult.Failure(err)
             }
 
-            // 2. Pull remote deltas since lastSyncTimestamp
-            val since = requireBoxcastPrefs.getLastSyncTimestamp()
+            // 2. Pull remote deltas since lastSyncTimestamp (or from 0 if local history has blank titles)
+            val hasBlankTitles = requireListeningHistoryDao.hasAnyHistoryWithBlankTitle()
+            val since = if (hasBlankTitles) 0L else requireBoxcastPrefs.getLastSyncTimestamp()
             val pullResult = executePull(since, token)
             var pulledSubs = 0
             var pulledHist = 0
@@ -244,6 +252,11 @@ open class UserSyncCoordinator(
         ListeningHistorySyncDto(
             episodeId = h.episodeId,
             podcastId = h.podcastId,
+            episodeTitle = h.episodeTitle.takeIf { it.isNotBlank() },
+            episodeImageUrl = h.episodeImageUrl?.takeIf { it.isNotBlank() },
+            podcastImageUrl = h.podcastImageUrl?.takeIf { it.isNotBlank() },
+            podcastName = h.podcastName.takeIf { it.isNotBlank() },
+            episodeAudioUrl = h.episodeAudioUrl?.takeIf { it.isNotBlank() },
             progressMs = h.progressMs,
             durationMs = h.durationMs,
             isCompleted = h.isCompleted,
@@ -265,6 +278,14 @@ open class UserSyncCoordinator(
                 QueueItemSyncDto(
                     episodeId = q.episodeId,
                     podcastId = q.podcastId,
+                    title = q.title.takeIf { it.isNotBlank() },
+                    podcastTitle = q.podcastTitle.takeIf { it.isNotBlank() },
+                    imageUrl = q.imageUrl?.takeIf { it.isNotBlank() },
+                    podcastImageUrl = q.podcastImageUrl?.takeIf { it.isNotBlank() },
+                    audioUrl = q.audioUrl.takeIf { it.isNotBlank() },
+                    duration = q.duration,
+                    pubDate = q.pubDate,
+                    description = q.description?.takeIf { it.isNotBlank() },
                     position = q.position,
                     addedAt = q.addedAt,
                     contextType = q.contextType,

@@ -174,6 +174,7 @@ class BoxcastPrefs(context: Context) {
         const val KEY_SYNC_DEVICE_ID = "sync_device_id"
         const val KEY_LAST_SYNC_TIMESTAMP = "sync_last_timestamp"
         const val KEY_LAST_SYNCED_USER_ID = "sync_last_user_id"
+        const val KEY_SYNC_METADATA_VERSION = "sync_metadata_version"
     }
 
     // ── Auth / Magic Link ───────────────────────────────────────────────────
@@ -212,5 +213,11 @@ class BoxcastPrefs(context: Context) {
         } else {
             prefs.edit().putString(KEY_LAST_SYNCED_USER_ID, userId).apply()
         }
+    }
+
+    fun getSyncMetadataVersion(): Int = prefs.getInt(KEY_SYNC_METADATA_VERSION, 0)
+
+    fun setSyncMetadataVersion(version: Int) {
+        prefs.edit().putInt(KEY_SYNC_METADATA_VERSION, version).apply()
     }
 }

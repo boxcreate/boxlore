@@ -293,6 +293,113 @@ class HistorySyncResolverTest {
         assertEquals(3000L, created.syncedAt)
     }
 
+    @Test
+    fun resolveHistoryItem_newRemoteItem_populatesMetadata() = runTest {
+        val remoteDto = ListeningHistorySyncDto(
+            episodeId = "ep-new-meta",
+            podcastId = "pod-99",
+            episodeTitle = "Rich Episode Title",
+            podcastName = "Rich Podcast Name",
+            episodeImageUrl = "https://example.com/ep.png",
+            podcastImageUrl = "https://example.com/pod.png",
+            episodeAudioUrl = "https://example.com/audio.mp3",
+            progressMs = 5000L,
+            durationMs = 60000L,
+            isCompleted = false,
+            isLiked = false,
+            likedAt = 0L,
+            lastPlayedAt = 2000L,
+            updatedAt = 2000L,
+        )
+
+        resolver.resolveHistoryItem(remoteDto, syncedAt = 2000L)
+
+        val created = listeningHistoryDao.getHistoryItem("ep-new-meta")
+        assertNotNull(created)
+        assertEquals("Rich Episode Title", created!!.episodeTitle)
+        assertEquals("Rich Podcast Name", created.podcastName)
+        assertEquals("https://example.com/ep.png", created.episodeImageUrl)
+        assertEquals("https://example.com/pod.png", created.podcastImageUrl)
+        assertEquals("https://example.com/audio.mp3", created.episodeAudioUrl)
+    }
+
+    @Test
+    fun resolveHistoryItem_existingItemWithBlankTitle_backfillsMetadata() = runTest {
+        listeningHistoryDao.upsert(
+            createHistory(
+                episodeId = "ep-blank-title",
+                podcastId = "pod-1",
+                episodeTitle = "",
+                podcastName = "",
+                episodeImageUrl = null,
+                episodeAudioUrl = null,
+                progressMs = 12000L,
+                durationMs = 60000L,
+                lastPlayedAt = 1000L,
+            ),
+        )
+
+        val remoteDto = ListeningHistorySyncDto(
+            episodeId = "ep-blank-title",
+            podcastId = "pod-1",
+            episodeTitle = "Recovered Title",
+            podcastName = "Recovered Podcast",
+            episodeImageUrl = "https://example.com/recovered.jpg",
+            episodeAudioUrl = "https://example.com/recovered.mp3",
+            progressMs = 12000L,
+            durationMs = 60000L,
+            lastPlayedAt = 1000L,
+            updatedAt = 1000L,
+        )
+
+        resolver.resolveHistoryItem(remoteDto, syncedAt = 2000L)
+
+        val updated = listeningHistoryDao.getHistoryItem("ep-blank-title")
+        assertNotNull(updated)
+        assertEquals("Recovered Title", updated!!.episodeTitle)
+        assertEquals("Recovered Podcast", updated.podcastName)
+        assertEquals("https://example.com/recovered.jpg", updated.episodeImageUrl)
+        assertEquals("https://example.com/recovered.mp3", updated.episodeAudioUrl)
+    }
+
+    @Test
+    fun resolveHistoryItem_existingItemWithLocalTitle_preservesLocalMetadata() = runTest {
+        listeningHistoryDao.upsert(
+            createHistory(
+                episodeId = "ep-local-title",
+                podcastId = "pod-1",
+                episodeTitle = "Original Local Title",
+                podcastName = "Original Local Podcast",
+                episodeImageUrl = "https://example.com/original.jpg",
+                progressMs = 10000L,
+                durationMs = 60000L,
+                lastPlayedAt = 500L,
+            ),
+        )
+
+        val remoteDto = ListeningHistorySyncDto(
+            episodeId = "ep-local-title",
+            podcastId = "pod-1",
+            episodeTitle = "Remote Title Attempt",
+            podcastName = "Remote Podcast Attempt",
+            progressMs = 20000L,
+            durationMs = 60000L,
+            lastPlayedAt = 1500L, // Newer progress
+            updatedAt = 1500L,
+        )
+
+        resolver.resolveHistoryItem(remoteDto, syncedAt = 2000L)
+
+        val updated = listeningHistoryDao.getHistoryItem("ep-local-title")
+        assertNotNull(updated)
+        // Progress updated because remote lastPlayedAt is newer:
+        assertEquals(20000L, updated!!.progressMs)
+        // But local metadata is strictly preserved:
+        assertEquals("Original Local Title", updated.episodeTitle)
+        assertEquals("Original Local Podcast", updated.podcastName)
+        assertEquals("https://example.com/original.jpg", updated.episodeImageUrl)
+    }
+
     @Suppress("LongParameterList")
     private fun createHistory(
         episodeId: String,

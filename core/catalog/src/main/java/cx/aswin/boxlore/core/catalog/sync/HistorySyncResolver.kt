@@ -15,45 +15,58 @@ class HistorySyncResolver(
     private val activePlaybackSyncPort: ActivePlaybackSyncPort? = null,
 ) {
     suspend fun resolveHistoryItem(remote: ListeningHistorySyncDto, syncedAt: Long) {
-        val activePlayingEpisodeId = activePlaybackSyncPort?.getActivePlayingEpisodeId()
         val local = listeningHistoryDao.getHistoryItem(remote.episodeId)
-
         if (local == null) {
-            // New history row from cloud
-            val newEntity = ListeningHistoryEntity(
-                episodeId = remote.episodeId,
-                podcastId = remote.podcastId,
-                episodeTitle = "",
-                episodeImageUrl = null,
-                podcastImageUrl = null,
-                episodeAudioUrl = "",
-                podcastName = "",
-                progressMs = remote.progressMs,
-                durationMs = remote.durationMs,
-                isCompleted = remote.isCompleted,
-                isLiked = remote.isLiked,
-                likedAt = remote.likedAt,
-                lastPlayedAt = remote.lastPlayedAt,
-                isDirty = false,
-                syncedAt = syncedAt,
-            )
-            listeningHistoryDao.upsert(newEntity)
+            insertNewRemoteItem(remote, syncedAt)
             return
         }
 
+        val activePlayingEpisodeId = activePlaybackSyncPort?.getActivePlayingEpisodeId()
         val isActive = remote.episodeId == activePlayingEpisodeId
+        resolveExistingItem(local, remote, isActive, syncedAt)
+    }
 
-        // 1. Independent like status LWW
+    private suspend fun insertNewRemoteItem(remote: ListeningHistorySyncDto, syncedAt: Long) {
+        val newEntity = ListeningHistoryEntity(
+            episodeId = remote.episodeId,
+            podcastId = remote.podcastId,
+            episodeTitle = remote.episodeTitle ?: "",
+            episodeImageUrl = remote.episodeImageUrl,
+            podcastImageUrl = remote.podcastImageUrl,
+            episodeAudioUrl = remote.episodeAudioUrl ?: "",
+            podcastName = remote.podcastName ?: "",
+            progressMs = remote.progressMs,
+            durationMs = remote.durationMs,
+            isCompleted = remote.isCompleted,
+            isLiked = remote.isLiked,
+            likedAt = remote.likedAt,
+            lastPlayedAt = remote.lastPlayedAt,
+            isDirty = false,
+            syncedAt = syncedAt,
+        )
+        listeningHistoryDao.upsert(newEntity)
+    }
+
+    private suspend fun resolveExistingItem(
+        local: ListeningHistoryEntity,
+        remote: ListeningHistorySyncDto,
+        isActive: Boolean,
+        syncedAt: Long,
+    ) {
+        val meta = mergeMetadata(local, remote)
         val (finalIsLiked, finalLikedAt) = if (remote.likedAt > local.likedAt) {
             remote.isLiked to remote.likedAt
         } else {
             local.isLiked to local.likedAt
         }
 
-        // 2. Playback progress and completion merge
         if (isActive) {
-            // Active playing episode shield: never overwrite local playback progress
             val updated = local.copy(
+                episodeTitle = meta.episodeTitle,
+                episodeImageUrl = meta.episodeImageUrl,
+                podcastImageUrl = meta.podcastImageUrl,
+                podcastName = meta.podcastName,
+                episodeAudioUrl = meta.episodeAudioUrl,
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
                 syncedAt = syncedAt,
@@ -63,8 +76,12 @@ class HistorySyncResolver(
         }
 
         val updated = if (remote.lastPlayedAt > local.lastPlayedAt) {
-            // Remote was listened to more recently
             local.copy(
+                episodeTitle = meta.episodeTitle,
+                episodeImageUrl = meta.episodeImageUrl,
+                podcastImageUrl = meta.podcastImageUrl,
+                podcastName = meta.podcastName,
+                episodeAudioUrl = meta.episodeAudioUrl,
                 progressMs = remote.progressMs,
                 durationMs = if (remote.durationMs > 0) remote.durationMs else local.durationMs,
                 isCompleted = remote.isCompleted,
@@ -75,8 +92,12 @@ class HistorySyncResolver(
                 syncedAt = syncedAt,
             )
         } else {
-            // Local is newer or equal
             local.copy(
+                episodeTitle = meta.episodeTitle,
+                episodeImageUrl = meta.episodeImageUrl,
+                podcastImageUrl = meta.podcastImageUrl,
+                podcastName = meta.podcastName,
+                episodeAudioUrl = meta.episodeAudioUrl,
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
                 syncedAt = syncedAt,
@@ -84,4 +105,29 @@ class HistorySyncResolver(
         }
         listeningHistoryDao.upsert(updated)
     }
+
+    private fun mergeMetadata(
+        local: ListeningHistoryEntity,
+        remote: ListeningHistorySyncDto,
+    ): HistoryMetadata = HistoryMetadata(
+        episodeTitle = remote.episodeTitle?.takeIf { it.isNotBlank() && local.episodeTitle.isBlank() }
+            ?: local.episodeTitle,
+        podcastName = remote.podcastName?.takeIf { it.isNotBlank() && local.podcastName.isBlank() }
+            ?: local.podcastName,
+        episodeImageUrl = local.episodeImageUrl ?: remote.episodeImageUrl,
+        podcastImageUrl = local.podcastImageUrl ?: remote.podcastImageUrl,
+        episodeAudioUrl = if (local.episodeAudioUrl.isNullOrBlank() && !remote.episodeAudioUrl.isNullOrBlank()) {
+            remote.episodeAudioUrl
+        } else {
+            local.episodeAudioUrl
+        },
+    )
+
+    private data class HistoryMetadata(
+        val episodeTitle: String,
+        val podcastName: String,
+        val episodeImageUrl: String?,
+        val podcastImageUrl: String?,
+        val episodeAudioUrl: String?,
+    )
 }

@@ -230,4 +230,10 @@ interface ListeningHistoryDao {
         snapshotIsLiked: Boolean,
         syncedAt: Long,
     ): Int
+
+    @Query("UPDATE listening_history SET isDirty = 1 WHERE episodeTitle IS NOT NULL AND episodeTitle != ''")
+    suspend fun markAllHistoryWithTitlesDirty(): Int
+
+    @Query("SELECT EXISTS(SELECT 1 FROM listening_history WHERE episodeTitle = '' OR episodeTitle IS NULL LIMIT 1)")
+    suspend fun hasAnyHistoryWithBlankTitle(): Boolean
 }

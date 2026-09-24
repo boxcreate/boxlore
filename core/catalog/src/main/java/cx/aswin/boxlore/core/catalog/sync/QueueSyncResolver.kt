@@ -168,6 +168,26 @@ class QueueSyncResolver(
             )
         }
 
+        // Tier 2: Remote DTO Rich Metadata (if provided by peer device)
+        val remoteTitle = dto.title
+        if (!remoteTitle.isNullOrBlank()) {
+            return QueueItem(
+                episodeId = dto.episodeId,
+                title = remoteTitle,
+                podcastId = dto.podcastId,
+                podcastTitle = dto.podcastTitle ?: "",
+                imageUrl = dto.imageUrl,
+                podcastImageUrl = dto.podcastImageUrl,
+                audioUrl = dto.audioUrl ?: "",
+                duration = dto.duration ?: 0,
+                pubDate = dto.pubDate ?: 0L,
+                description = dto.description,
+                position = dto.position,
+                contextType = dto.contextType ?: "MANUAL",
+                contextSourceId = dto.contextSourceId,
+            )
+        }
+
         return hydrateFromCatalogOrRss(dto)
             ?: hydrateFromHistory(dto)
             ?: hydrateFromNetwork(dto)
