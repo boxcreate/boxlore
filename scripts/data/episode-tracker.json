@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-24T03:19:23.945Z",
+  "lastRun": "2026-09-24T08:39:52.382Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef42bb20-cfc6-11f0-83c5-0b3cacd889fa",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "5f5bbdb2-4200-4cf9-b804-854ab6153730",
-      "lastEpisodeTitle": "NPR News: 09-23-2026 11PM EDT",
+      "lastRssKey": "c2368506-860c-446e-b9bf-346694d10748",
+      "lastEpisodeTitle": "NPR News: 09-24-2026 4AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790219972676
+      "lastCheckedAt": 1790239196651
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75321606",
@@ -102,6 +102,12 @@
       "lastEpisodeTitle": "NFL WEEK 3 PREVIEW",
       "lastCheckedAt": 1790207515336
     },
+    "207877": {
+      "lastRssKey": "suKbHzKDo586w0EsyuHF0RKfnuBj0785",
+      "lastEpisodeTitle": "Rewind: Episode 06",
+      "lastEpisodeId": "59619511465",
+      "lastCheckedAt": 1790239203594
+    },
     "212882": {
       "lastRssKey": "44e3d466-a7f8-11f0-954a-df6ad4d325f0",
       "lastEpisodeTitle": "Uncovering Our Family Lore | Trash Taste #326",
@@ -121,10 +127,10 @@
       "lastCheckedAt": 1789516722197
     },
     "229239": {
-      "lastRssKey": "0609ba8e-2c74-11f1-b1fd-5be8ffc83263",
-      "lastEpisodeTitle": "The New Way For Ordinary People To Build Wealth - Tony Robbins - #1153",
+      "lastRssKey": "243c5f98-2c74-11f1-919d-4f1dc5d54662",
+      "lastEpisodeTitle": "Democrats vs Republicans: Who Is Actually More Violent? - Robert Pape #1154",
       "lastEpisodeId": "60196429938",
-      "lastCheckedAt": 1789970144496
+      "lastCheckedAt": 1790239206531
     },
     "230598": {
       "lastRssKey": "b817c402-a54a-11f0-b1fc-138388e887fc",
@@ -171,10 +177,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "5d1f42e4-b7c5-11f1-96f6-7756b3d6b890",
-      "lastEpisodeTitle": "11PM ET 09/23/2026 Newscast",
+      "lastRssKey": "4325f49e-b7ef-11f1-b127-6780df14b0c0",
+      "lastEpisodeTitle": "4AM ET 09/24/2026 Newscast",
       "lastEpisodeId": "60755115015",
-      "lastCheckedAt": 1790219982603
+      "lastCheckedAt": 1790239210871
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -183,10 +189,10 @@
       "lastCheckedAt": 1789765623301
     },
     "388141": {
-      "lastRssKey": "6a8c97d92fe0b9d0781a6eb8",
-      "lastEpisodeTitle": "The human cell is wildly complex. Can AI decode it? | Silvana Konermann",
+      "lastRssKey": "6aa84dbcff74edfd004b27e1",
+      "lastEpisodeTitle": "The Myth of Normal (1/5): The brain science of obesity | Mads Tang-Christensen",
       "lastEpisodeId": "60145641127",
-      "lastCheckedAt": 1790058906834
+      "lastCheckedAt": 1790239212712
     },
     "398589": {
       "lastRssKey": "gid://art19-episode-locator/V0/pKqX_1DJ0_hsRs0nqesAmtxo13AjVA6beUoKY9ZFzic",
@@ -255,10 +261,10 @@
       "lastCheckedAt": 1789848378558
     },
     "444785": {
-      "lastRssKey": "30f2e23e-924b-402b-92c1-8d22bc57f03e",
-      "lastEpisodeTitle": "POSITIONAL SPOTLIGHT: Montreal Canadiens PLAN to SUPPORT Jakub Dobes + Defense RISING?",
-      "lastEpisodeId": "60722399334",
-      "lastCheckedAt": 1790148214449
+      "lastRssKey": "5eaa52ab-a8e5-498e-8f2c-61ce1e4f7c91",
+      "lastEpisodeTitle": "Montreal Canadiens’ David Reinbacher and Florian Xhekaj BATTLE for roster spots | Habs Rumour Roundup | NHL Top 100cas",
+      "lastEpisodeId": "60756390685",
+      "lastCheckedAt": 1790239220502
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -317,16 +323,16 @@
       "lastCheckedAt": 1789925703769
     },
     "499394": {
-      "lastRssKey": "flightcast:01M2RHNG0S1MZ1VD7AG18AGCZ7",
-      "lastEpisodeTitle": "Rick Rubin: What Jay-Z Did in 30 Minutes Left Me Speechless!",
-      "lastEpisodeId": "60656162319",
-      "lastCheckedAt": 1789970160579
+      "lastRssKey": "flightcast:01M26CBRW55X2EMED8438W3PW7",
+      "lastEpisodeTitle": "Druski: This Viral Skit Got Trump&#39;s Attention, And He Told Erika Kirk To Sue!",
+      "lastEpisodeId": "60759385308",
+      "lastCheckedAt": 1790239227021
     },
     "503644": {
-      "lastRssKey": "002c26c7-e453-48d2-9483-22ed9c4a2523",
-      "lastEpisodeTitle": "Joel McHale Returns",
+      "lastRssKey": "f9ff6778-fdf7-4261-97db-f0cc913b8262",
+      "lastEpisodeTitle": "The Body Politic Part II",
       "lastEpisodeId": "60502443374",
-      "lastCheckedAt": 1789970161197
+      "lastCheckedAt": 1790239227321
     },
     "509873": {
       "lastRssKey": "c013a0b0-41e5-4e45-80a9-b239eb49e9c2",
@@ -412,10 +418,10 @@
       "lastCheckedAt": 1789288166149
     },
     "628250": {
-      "lastRssKey": "41d84141-68bd-48fd-a7e7-9b58d3cd0c3e",
-      "lastEpisodeTitle": "Big_Want",
+      "lastRssKey": "191a1c43-e7fd-4ad5-8437-050119642c71",
+      "lastEpisodeTitle": "Big_Laugh",
       "lastEpisodeId": "60656264093",
-      "lastCheckedAt": 1790028490008
+      "lastCheckedAt": 1790239246910
     },
     "640518": {
       "lastRssKey": "6aab8dc05d36baebf12f6d3b",
@@ -458,6 +464,12 @@
       "lastEpisodeTitle": "Goshawk | Ep. 30",
       "lastRssKey": "9c39ba2a-1c63-11f1-b26d-b3f48439fc7f",
       "lastCheckedAt": 1787801220675
+    },
+    "743411": {
+      "lastRssKey": "c3c285c3-0e8a-43ff-8962-b891695c7b4e",
+      "lastEpisodeTitle": "MURDERED: Marina Ramos",
+      "lastEpisodeId": "60658326619",
+      "lastCheckedAt": 1790239252877
     },
     "744119": {
       "lastRssKey": "92fefc13-5346-42ea-b63e-b4c8018a46e3",
@@ -513,10 +525,10 @@
       "lastCheckedAt": 1790197730982
     },
     "837535": {
-      "lastRssKey": "d32b06f0-b33b-11f1-8113-f3d8476f0e95",
-      "lastEpisodeTitle": "Warum du bei größerer Auswahl mehr Geld ausgibst! (#742)",
+      "lastRssKey": "30d63cb6-b7e7-11f1-9de1-f38bd7278d3e",
+      "lastEpisodeTitle": "Lohnt sich ein (weiterer) Tankrabatt?",
       "lastEpisodeId": "60653657394",
-      "lastCheckedAt": 1789970179347
+      "lastCheckedAt": 1790239257330
     },
     "838740": {
       "lastRssKey": "03be9642-b6fc-11f1-9a55-27d6c4944fc2",
@@ -543,16 +555,16 @@
       "lastCheckedAt": 1790108585568
     },
     "906591": {
-      "lastRssKey": "0802f146-b650-11f1-bb2f-13d87f595845",
-      "lastEpisodeTitle": "A.I. Told U.S. Military to Attack China; Trump Bans the Press",
+      "lastRssKey": "18154318-b7ea-11f1-9693-9ff90bd3a4c3",
+      "lastEpisodeTitle": "TRUMP TV is Here and Already a Massive Failure",
       "lastEpisodeId": "59632175482",
-      "lastCheckedAt": 1790079818855
+      "lastCheckedAt": 1790239260461
     },
     "928708": {
-      "lastRssKey": "0c9d87e8-b5d3-11f1-9b8d-2b0323959c06",
-      "lastEpisodeTitle": "This Day in History - September 23, 2026",
+      "lastRssKey": "0cd6532a-b736-11f1-b70b-bf54f9474cf0",
+      "lastEpisodeTitle": "This Day in History - September 24, 2026",
       "lastEpisodeId": "60629683212",
-      "lastCheckedAt": 1790148244875
+      "lastCheckedAt": 1790239261398
     },
     "946758": {
       "lastRssKey": "10cc122e-77b5-11f0-8752-0bb04facbe23",
@@ -612,9 +624,9 @@
       "lastCheckedAt": 1790079831407
     },
     "1047865": {
-      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-why-allah-doesnt-tell-us-everything-surah-al-jinn",
-      "lastEpisodeTitle": "Why Allah Doesn’t Tell Us Everything - Surah Al-Jinn",
-      "lastCheckedAt": 1790148252360
+      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-the-pursuit-of-happiness-quran-edition-qa",
+      "lastEpisodeTitle": "The Pursuit of Happiness - Quran Edition - Q&A",
+      "lastCheckedAt": 1790239267544
     },
     "1065434": {
       "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1120",
@@ -658,10 +670,10 @@
       "lastCheckedAt": 1790148259224
     },
     "1193286": {
-      "lastRssKey": "431a318c-b76c-11f1-a6e3-9b959c3d97b5",
-      "lastEpisodeTitle": "Nouveaux Groupes À Brossard & Nos Trios Pour Débuter L'Année | Le Sick Podcast Avec Tony Marinaro 23/09/26",
+      "lastRssKey": "58850532-b79a-11f1-8aa3-2fde01eabd49",
+      "lastEpisodeTitle": "Are The Habs Big Enough To Be Contenders? | The Sick Podcast with Tony Marinaro September 23 2026",
       "lastEpisodeId": "60583563884",
-      "lastCheckedAt": 1790185453575
+      "lastCheckedAt": 1790239273891
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -670,10 +682,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6ab4179f59a98735e1fe727a",
-      "lastEpisodeTitle": "In-Car Insights: Ocon's impending Haas exit & more Baku talking points",
+      "lastRssKey": "6ab3f94a864264ef3e4aad7f",
+      "lastEpisodeTitle": "F1 Rewind: The F1 driver who was Alonso before Alonso",
       "lastEpisodeId": "60422102044",
-      "lastCheckedAt": 1790197758548
+      "lastCheckedAt": 1790239274540
     },
     "1258562": {
       "lastRssKey": "6aafb8a146fd9745ea5b6ee9",
@@ -699,10 +711,10 @@
       "lastCheckedAt": 1790058976106
     },
     "1365758": {
-      "lastRssKey": "e3e1190e-b57e-11f1-9a2b-0fd85f8c12f8",
-      "lastEpisodeTitle": "Best Tools for Gut Health & Weight Loss | Dr. Chris Thompson",
+      "lastRssKey": "3214407a-b7e5-11f1-a48a-3f6aff694931",
+      "lastEpisodeTitle": "Essentials: Optimal Protocols to Build Strength & Grow Muscles | Dr. Andy Galpin",
       "lastEpisodeId": "60661458183",
-      "lastCheckedAt": 1789992483455
+      "lastCheckedAt": 1790239275981
     },
     "1366771": {
       "lastRssKey": "6ab4765762a47b6bec950c94",
@@ -717,10 +729,10 @@
       "lastCheckedAt": 1790038937841
     },
     "1388001": {
-      "lastRssKey": "abce66bf-508a-45df-a36c-c9c3e4d9fdab",
-      "lastEpisodeTitle": "A Washington, Donald Trump et Xi Jinping jouent la stabilité pour mieux rivaliser",
+      "lastRssKey": "2d3681b3-1669-42af-90fa-29cf037cea0e",
+      "lastEpisodeTitle": "L’hiver sera terrible, a prévenu Zelensky, mais cela ne fera pas céder les Ukrainiens",
       "lastEpisodeId": "60539654196",
-      "lastCheckedAt": 1790148265936
+      "lastCheckedAt": 1790239276819
     },
     "1545709": {
       "lastRssKey": "audioboom-01a0bf41-50f1-7590-9889-f898b8d0b36a",
@@ -752,10 +764,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6ab40b91c79ce65f7d84cb55",
-      "lastEpisodeTitle": "La France peut-elle réellement manquer d’essence ? (23/09)",
-      "lastEpisodeId": "60605909711",
-      "lastCheckedAt": 1790197764353
+      "lastRssKey": "6ab4066f2b86fdded33eb7dc",
+      "lastEpisodeTitle": "(Pop) Ce roman à succès de la rentrée littéraire a-t-il été écrit par une IA ? … HugoDécrypte",
+      "lastEpisodeId": "60759774430",
+      "lastCheckedAt": 1790239278958
     },
     "2574026": {
       "lastRssKey": "dfef7122-b2b0-11f1-993d-8b6b2c5fd3f2",
@@ -845,10 +857,10 @@
       "lastCheckedAt": 1789992494132
     },
     "4150268": {
-      "lastRssKey": "gid://art19-episode-locator/V0/Ya9YvfO8vj68NKL6z2kccY0KiSARF-uYwqupHs4A_18",
-      "lastEpisodeTitle": "Listen Now: Audible True Crime",
+      "lastRssKey": "gid://art19-episode-locator/V0/V81pE5FZMu4WgUfS6Fj-hTYMZYhUj3axwmTm6irPVW0",
+      "lastEpisodeTitle": "Five Shots in the Dark |  Escape in the Song | S3-E10",
       "lastEpisodeId": "42575210570",
-      "lastCheckedAt": 1787558289534
+      "lastCheckedAt": 1790239285579
     },
     "4179651": {
       "lastRssKey": "6904b9053906f8011ab86270",
@@ -898,10 +910,10 @@
       "lastCheckedAt": 1789992497301
     },
     "4894842": {
-      "lastRssKey": "c91f654a-31bd-4251-a48a-8127eec0f751",
-      "lastEpisodeTitle": "Warnings (PODCAST EXCLUSIVE EPISODE)",
+      "lastRssKey": "9dfc5151-5dcf-4a26-90d8-01ae5d87e5ea",
+      "lastEpisodeTitle": "No Way Out Vol. XII",
       "lastEpisodeId": "60490150210",
-      "lastCheckedAt": 1790148276931
+      "lastCheckedAt": 1790239288930
     },
     "4898105": {
       "lastRssKey": "6e447800-b6fd-11f1-a3f8-b764b1d4a43e",
@@ -937,15 +949,16 @@
       "lastCheckedAt": 1788730449372
     },
     "5650484": {
-      "lastRssKey": "b7f9c8ee-db06-45b7-969b-a6ac20baddb4",
-      "lastEpisodeTitle": "112: Life in Exclusion Zones & Every Single Character",
+      "lastRssKey": "40b8efe3-752d-43e3-a889-0e99638603ed",
+      "lastEpisodeTitle": "113: Rediscovered Organs & Bird Watching",
       "lastEpisodeId": "59561995429",
-      "lastCheckedAt": 1789028445701
+      "lastCheckedAt": 1790239290221
     },
     "5698881": {
-      "lastRssKey": "d20b9dc3-f44a-405e-8da2-0edf01ac1790",
-      "lastEpisodeTitle": "Let Them: How to Handle Difficult People & Take Back Your Peace and Power",
-      "lastCheckedAt": 1789970211199
+      "lastRssKey": "c6056494-80c8-4c98-a98e-4998feabca4e",
+      "lastEpisodeTitle": "The Ultimate Guide to Divorce (For You & The People You Love)",
+      "lastEpisodeId": "60757360212",
+      "lastCheckedAt": 1790239290781
     },
     "5716308": {
       "lastRssKey": "urn:bbc:podcast:p0pbqy71",
@@ -984,10 +997,10 @@
       "lastCheckedAt": 1789672314996
     },
     "5930143": {
-      "lastRssKey": "abce66bf-508a-45df-a36c-c9c3e4d9fdab",
-      "lastEpisodeTitle": "A Washington, Donald Trump et Xi Jinping jouent la stabilité pour mieux rivaliser",
+      "lastRssKey": "2d3681b3-1669-42af-90fa-29cf037cea0e",
+      "lastEpisodeTitle": "L’hiver sera terrible, a prévenu Zelensky, mais cela ne fera pas céder les Ukrainiens",
       "lastEpisodeId": "60664995918",
-      "lastCheckedAt": 1790148283627
+      "lastCheckedAt": 1790239296749
     },
     "5945547": {
       "lastRssKey": "6ad40538-0f09-40d3-b107-7c8ef5805678",
@@ -1209,10 +1222,10 @@
       "lastCheckedAt": 1787841002583
     },
     "7131280": {
-      "lastRssKey": "887c43a8-adeb-11f1-b5ac-57c0b3889c16",
-      "lastEpisodeTitle": "A Study in Scarlet: Part Three",
-      "lastEpisodeId": "59867913217",
-      "lastCheckedAt": 1790207632843
+      "lastEpisodeId": "60511350052",
+      "lastEpisodeTitle": "A Study in Scarlet: Part One",
+      "lastRssKey": "41fc3662-a090-11f1-866f-8bb095051603",
+      "lastCheckedAt": 1790239312801
     },
     "7183032": {
       "lastRssKey": "173ad9ec-e103-4bd2-a508-0e0e88f74315",
@@ -1262,6 +1275,11 @@
       "lastEpisodeId": "60661947962",
       "lastCheckedAt": 1789992521809
     },
+    "7348627": {
+      "lastRssKey": "cd2706c3-318e-44e6-9edf-b9ac8d0fdac7",
+      "lastEpisodeTitle": "2 Hours of Jane Doe Cases That Need To Be Solved | True Crime Compilation | 317",
+      "lastCheckedAt": 1790239314862
+    },
     "7376606": {
       "lastRssKey": "783751e4-12fd-4d5d-8443-9d941b3593af",
       "lastEpisodeTitle": "The History of the Potato 🥔🌎 | The Humble Crop That Changed the World | Boring History for Sleep",
@@ -1269,10 +1287,10 @@
       "lastCheckedAt": 1790220110747
     },
     "7424167": {
-      "lastRssKey": "urn:bbc:podcast:m0031886",
-      "lastEpisodeTitle": "Mobile Handset Fraud",
+      "lastRssKey": "urn:bbc:podcast:m0031jzh",
+      "lastEpisodeTitle": "The 'Money Back' Scam",
       "lastEpisodeId": "59659286509",
-      "lastCheckedAt": 1789621758356
+      "lastCheckedAt": 1790239315290
     },
     "7437277": {
       "lastRssKey": "3f056c83-72d8-40f6-8e7e-f7d9302b0c1f",
@@ -1351,6 +1369,12 @@
       "lastEpisodeId": "60497696148",
       "lastCheckedAt": 1789640289064
     },
+    "7641673": {
+      "lastRssKey": "3237498e-c5ad-4314-8c13-57a7a10b45bc",
+      "lastEpisodeTitle": "Historical Mysteries That Will Make You Question Reality",
+      "lastEpisodeId": "60721626247",
+      "lastCheckedAt": 1790239318475
+    },
     "7662230": {
       "lastEpisodeId": "48800123551",
       "lastEpisodeTitle": "Scientists Discuss the Future of Extreme Weather",
@@ -1381,10 +1405,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/2a171519-6779-5219-bd55-e8100afaaad5",
-      "lastEpisodeTitle": "Boundaries Setting Without Being An AHOLE ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/0b3b782a-3a1d-5e14-adff-75680147eb22",
+      "lastEpisodeTitle": "4 SUBTLE signs you’re dating a narcissist ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790220116349
+      "lastCheckedAt": 1790239319196
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
