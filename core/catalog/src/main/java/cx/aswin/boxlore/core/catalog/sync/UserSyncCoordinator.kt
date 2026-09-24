@@ -160,11 +160,20 @@ open class UserSyncCoordinator(
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
 
-            requirePodcastDao.markAllUnsyncedSubscribedPodcastsDirty()
-            requireListeningHistoryDao.markAllUnsyncedHistoryDirty()
-            val initialQueueMeta = requireQueueSyncPort.getQueueMetadata()
-            if (initialQueueMeta?.syncedAt == 0L && requireQueueSyncPort.getQueueSnapshot().isNotEmpty()) {
-                requireQueueSyncPort.markQueueDirty()
+            val isFirstSyncForDevice = requireBoxcastPrefs.getLastSyncTimestamp() == 0L
+            if (isFirstSyncForDevice) {
+                requirePodcastDao.markAllSubscribedPodcastsDirty()
+                requireListeningHistoryDao.markAllHistoryDirty()
+                if (requireQueueSyncPort.getQueueSnapshot().isNotEmpty()) {
+                    requireQueueSyncPort.markQueueDirty()
+                }
+            } else {
+                requirePodcastDao.markAllUnsyncedSubscribedPodcastsDirty()
+                requireListeningHistoryDao.markAllUnsyncedHistoryDirty()
+                val initialQueueMeta = requireQueueSyncPort.getQueueMetadata()
+                if (initialQueueMeta?.syncedAt == 0L && requireQueueSyncPort.getQueueSnapshot().isNotEmpty()) {
+                    requireQueueSyncPort.markQueueDirty()
+                }
             }
 
             val dirtyPodcasts = requirePodcastDao.getDirtyPodcasts().take(MAX_SUBSCRIPTION_BATCH_SIZE)

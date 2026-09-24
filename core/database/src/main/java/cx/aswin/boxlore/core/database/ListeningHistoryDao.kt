@@ -200,6 +200,9 @@ interface ListeningHistoryDao {
     @Query("SELECT * FROM listening_history WHERE isDirty = 1")
     suspend fun getDirtyListeningHistory(): List<ListeningHistoryEntity>
 
+    @Query("UPDATE listening_history SET isDirty = 1")
+    suspend fun markAllHistoryDirty(): Int
+
     @Query("UPDATE listening_history SET isDirty = 1 WHERE syncedAt = 0")
     suspend fun markAllUnsyncedHistoryDirty(): Int
 

@@ -331,6 +331,46 @@ class UserSyncCoordinatorTest {
     }
 
     @Test
+    fun executePush_subsequentSync_onlyPushesUnsyncedOrDirtyItems() = runTest(testDispatcher) {
+        prefs.setLastSyncTimestamp(5000L)
+
+        // Already synced, clean show -> should NOT be pushed
+        podcastDao.upsert(
+            createTestPodcastEntity(
+                podcastId = "pod-already-synced",
+                title = "Already Synced",
+                isSubscribed = true,
+                isDirty = false,
+                syncedAt = 5000L,
+            ),
+        )
+
+        // New offline show with syncedAt = 0 -> should be claimed and pushed
+        podcastDao.upsert(
+            createTestPodcastEntity(
+                podcastId = "pod-new-offline",
+                title = "New Offline",
+                isSubscribed = true,
+                isDirty = false,
+                syncedAt = 0L,
+            ),
+        )
+
+        var capturedRequest: SyncPushRequest? = null
+        syncPushHandler = { _, _, request ->
+            capturedRequest = request
+            FakeCall(Response.success(SyncPushResponse(status = "ok", syncedAt = 9000L)))
+        }
+
+        val pushResult = coordinator.executePush()
+        assertTrue(pushResult.isSuccess)
+
+        val request = checkNotNull(capturedRequest)
+        assertEquals(1, request.subscriptions.size)
+        assertEquals("pod-new-offline", request.subscriptions[0].podcastId)
+    }
+
+    @Test
     fun executePush_preservesDirtyFlagWhenEntityModifiedConcurrently() = runTest(testDispatcher) {
         podcastDao.upsert(
             createTestPodcastEntity(
