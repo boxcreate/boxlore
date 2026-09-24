@@ -30,23 +30,32 @@ import kotlinx.coroutines.withContext
  * remote deltas through Last-Write-Wins (LWW) conflict resolvers.
  */
 @Suppress("LongParameterList")
-class UserSyncCoordinator(
-    private val boxLoreApi: BoxLoreApi,
-    private val publicKey: String,
-    private val authUserIdProvider: () -> String?,
-    private val tokenProvider: suspend () -> String?,
-    private val podcastDao: PodcastDao,
-    private val listeningHistoryDao: ListeningHistoryDao,
-    private val queueSyncPort: QueueSyncPort,
-    private val subscriptionSyncResolver: SubscriptionSyncResolver,
-    private val historySyncResolver: HistorySyncResolver,
-    private val queueSyncResolver: QueueSyncResolver,
-    private val boxcastPrefs: BoxcastPrefs,
+open class UserSyncCoordinator(
+    private val boxLoreApi: BoxLoreApi? = null,
+    private val publicKey: String = "",
+    private val authUserIdProvider: () -> String? = { null },
+    private val tokenProvider: suspend () -> String? = { null },
+    private val podcastDao: PodcastDao? = null,
+    private val listeningHistoryDao: ListeningHistoryDao? = null,
+    private val queueSyncPort: QueueSyncPort? = null,
+    private val subscriptionSyncResolver: SubscriptionSyncResolver? = null,
+    private val historySyncResolver: HistorySyncResolver? = null,
+    private val queueSyncResolver: QueueSyncResolver? = null,
+    private val boxcastPrefs: BoxcastPrefs? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val syncMutex = Mutex()
 
-    suspend fun syncNow(): SyncResult = syncMutex.withLock {
+    private val requireBoxLoreApi get() = checkNotNull(boxLoreApi) { "boxLoreApi required" }
+    private val requirePodcastDao get() = checkNotNull(podcastDao) { "podcastDao required" }
+    private val requireListeningHistoryDao get() = checkNotNull(listeningHistoryDao) { "listeningHistoryDao required" }
+    private val requireQueueSyncPort get() = checkNotNull(queueSyncPort) { "queueSyncPort required" }
+    private val requireSubscriptionSyncResolver get() = checkNotNull(subscriptionSyncResolver) { "subscriptionSyncResolver required" }
+    private val requireHistorySyncResolver get() = checkNotNull(historySyncResolver) { "historySyncResolver required" }
+    private val requireQueueSyncResolver get() = checkNotNull(queueSyncResolver) { "queueSyncResolver required" }
+    private val requireBoxcastPrefs get() = checkNotNull(boxcastPrefs) { "boxcastPrefs required" }
+
+    open suspend fun syncNow(): SyncResult = syncMutex.withLock {
         val userId = authUserIdProvider()
         if (userId.isNullOrBlank()) {
             return SyncResult.SkippedNoAuth
@@ -56,12 +65,12 @@ class UserSyncCoordinator(
             val token = tokenProvider()
                 ?: return SyncResult.Failure(IllegalStateException("No auth token available"))
 
-            val lastSyncedUser = boxcastPrefs.getLastSyncedUserId()
+            val lastSyncedUser = requireBoxcastPrefs.getLastSyncedUserId()
             if (lastSyncedUser != null && lastSyncedUser != userId) {
                 // Account mismatch detected! Purge previous user data to prevent cross-contamination
                 purgeLocalDataForAccountSwitch()
-                boxcastPrefs.setLastSyncTimestamp(0L)
-                boxcastPrefs.setLastSyncedUserId(userId)
+                requireBoxcastPrefs.setLastSyncTimestamp(0L)
+                requireBoxcastPrefs.setLastSyncedUserId(userId)
                 val pullResult = executePull(since = 0L, token)
                 return pullResult.fold(
                     onSuccess = { res ->
@@ -98,7 +107,7 @@ class UserSyncCoordinator(
             }
 
             // 2. Pull remote deltas since lastSyncTimestamp
-            val since = boxcastPrefs.getLastSyncTimestamp()
+            val since = requireBoxcastPrefs.getLastSyncTimestamp()
             val pullResult = executePull(since, token)
             var pulledSubs = 0
             var pulledHist = 0
@@ -113,7 +122,7 @@ class UserSyncCoordinator(
                 return SyncResult.Failure(err, partialSyncedAt = latestSyncedAt.takeIf { it > 0 })
             }
 
-            boxcastPrefs.setLastSyncedUserId(userId)
+            requireBoxcastPrefs.setLastSyncedUserId(userId)
 
             SyncResult.Success(
                 pushedSubscriptions = totalPushedSubs,
@@ -130,9 +139,9 @@ class UserSyncCoordinator(
     }
 
     private suspend fun purgeLocalDataForAccountSwitch() = withContext(ioDispatcher) {
-        listeningHistoryDao.deleteAll()
-        podcastDao.clearAllSubscriptionsForAccountSwitch()
-        queueSyncPort.applyRemoteQueueState(
+        requireListeningHistoryDao.deleteAll()
+        requirePodcastDao.clearAllSubscriptionsForAccountSwitch()
+        requireQueueSyncPort.applyRemoteQueueState(
             items = emptyList(),
             metadata = QueueMetadataEntity(
                 id = 1,
@@ -146,19 +155,19 @@ class UserSyncCoordinator(
         )
     }
 
-    suspend fun executePush(token: String? = null): Result<PushBatchSummary> = withContext(ioDispatcher) {
+    open suspend fun executePush(token: String? = null): Result<PushBatchSummary> = withContext(ioDispatcher) {
         runCatching {
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
 
-            val dirtyPodcasts = podcastDao.getDirtyPodcasts().take(MAX_SUBSCRIPTION_BATCH_SIZE)
-            val dirtyHistory = listeningHistoryDao.getDirtyListeningHistory().take(MAX_HISTORY_BATCH_SIZE)
-            val queueMeta = queueSyncPort.getQueueMetadata()
+            val dirtyPodcasts = requirePodcastDao.getDirtyPodcasts().take(MAX_SUBSCRIPTION_BATCH_SIZE)
+            val dirtyHistory = requireListeningHistoryDao.getDirtyListeningHistory().take(MAX_HISTORY_BATCH_SIZE)
+            val queueMeta = requireQueueSyncPort.getQueueMetadata()
             val queueDirty = queueMeta?.isDirty == true
-            val queueItems = if (queueDirty) queueSyncPort.getQueueSnapshot() else emptyList()
+            val queueItems = if (queueDirty) requireQueueSyncPort.getQueueSnapshot() else emptyList()
 
             if (dirtyPodcasts.isEmpty() && dirtyHistory.isEmpty() && !queueDirty) {
-                return@runCatching PushBatchSummary(0, 0, false, boxcastPrefs.getLastSyncTimestamp())
+                return@runCatching PushBatchSummary(0, 0, false, requireBoxcastPrefs.getLastSyncTimestamp())
             }
 
             val now = System.currentTimeMillis()
@@ -173,7 +182,7 @@ class UserSyncCoordinator(
                 clientTimestamp = now,
             )
 
-            val call = boxLoreApi.syncPush(
+            val call = requireBoxLoreApi.syncPush(
                 publicKey = publicKey,
                 authorization = "Bearer $resolvedToken",
                 request = pushReq,
@@ -261,7 +270,7 @@ class UserSyncCoordinator(
         syncedAt: Long,
     ) {
         for (p in dirtyPodcasts) {
-            podcastDao.markPodcastSyncedIfUnchanged(
+            requirePodcastDao.markPodcastSyncedIfUnchanged(
                 id = p.podcastId,
                 snapshotIsSubscribed = p.isSubscribed,
                 snapshotSubscribedAt = p.subscribedAt,
@@ -275,7 +284,7 @@ class UserSyncCoordinator(
         }
 
         for (h in dirtyHistory) {
-            listeningHistoryDao.markHistorySyncedIfUnchanged(
+            requireListeningHistoryDao.markHistorySyncedIfUnchanged(
                 episodeId = h.episodeId,
                 snapshotLastPlayedAt = h.lastPlayedAt,
                 snapshotLikedAt = h.likedAt,
@@ -287,7 +296,7 @@ class UserSyncCoordinator(
         }
 
         if (queueMeta != null && queueMeta.isDirty) {
-            queueSyncPort.markQueueSynced(queueMeta.queueSequence, syncedAt)
+            requireQueueSyncPort.markQueueSynced(queueMeta.queueSequence, syncedAt)
         }
     }
 
@@ -296,7 +305,7 @@ class UserSyncCoordinator(
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
 
-            val call = boxLoreApi.syncPull(
+            val call = requireBoxLoreApi.syncPull(
                 publicKey = publicKey,
                 authorization = "Bearer $resolvedToken",
                 request = SyncPullRequest(since = since),
@@ -311,20 +320,20 @@ class UserSyncCoordinator(
 
             // 1. Resolve subscriptions
             for (sub in body.subscriptions) {
-                subscriptionSyncResolver.resolveSubscription(sub, syncedAt)
+                requireSubscriptionSyncResolver.resolveSubscription(sub, syncedAt)
             }
 
             // 2. Resolve history
             for (item in body.history) {
-                historySyncResolver.resolveHistoryItem(item, syncedAt)
+                requireHistorySyncResolver.resolveHistoryItem(item, syncedAt)
             }
 
             // 3. Resolve queue
             body.queue?.let { q ->
-                queueSyncResolver.resolveQueue(q, syncedAt)
+                requireQueueSyncResolver.resolveQueue(q, syncedAt)
             }
 
-            boxcastPrefs.setLastSyncTimestamp(syncedAt)
+            requireBoxcastPrefs.setLastSyncTimestamp(syncedAt)
             body
         }
     }

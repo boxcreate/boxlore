@@ -81,6 +81,9 @@ interface ListeningHistoryDao {
     @Query("SELECT * FROM listening_history WHERE isDirty = 1")
     suspend fun getDirtyItems(): List<ListeningHistoryEntity>
 
+    @Query("SELECT COUNT(*) FROM listening_history WHERE isDirty = 1")
+    fun getDirtyCountFlow(): Flow<Int>
+
     @Query("UPDATE listening_history SET isDirty = 0, syncedAt = :timestamp WHERE episodeId IN (:ids)")
     suspend fun markAsSynced(ids: List<String>, timestamp: Long,)
 

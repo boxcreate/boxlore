@@ -2,6 +2,12 @@ package cx.aswin.boxlore.feature.home.settings.pages
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -18,13 +24,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDone
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -32,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,9 +50,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.core.network.AuthRepository
@@ -57,6 +74,8 @@ import kotlinx.coroutines.launch
 internal fun AccountSettingsPage(
     authRepository: AuthRepository?,
     onBack: () -> Unit,
+    syncStatus: CloudSyncUiStatus = CloudSyncUiStatus.Idle,
+    onSyncNow: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -83,6 +102,8 @@ internal fun AccountSettingsPage(
                     Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
                 },
                 onDeleteAccountClick = { showDeleteConfirmation = true },
+                syncStatus = syncStatus,
+                onSyncNow = onSyncNow,
             )
         } else {
             SignedOutContent(
@@ -239,9 +260,14 @@ private fun ColumnScope.SignedInContent(
     user: BoxLoreUser,
     onSignOut: () -> Unit,
     onDeleteAccountClick: () -> Unit,
+    syncStatus: CloudSyncUiStatus,
+    onSyncNow: () -> Unit,
 ) {
     UserProfileCard(user = user)
-    CloudSyncInfoGroup()
+    CloudSyncInfoGroup(
+        syncStatus = syncStatus,
+        onSyncNow = onSyncNow,
+    )
     AccountManagementGroup(
         onSignOut = onSignOut,
         onDeleteAccountClick = onDeleteAccountClick,
@@ -329,8 +355,105 @@ private fun UserProfileCard(user: BoxLoreUser) {
     }
 }
 
+private data class SyncDisplayState(
+    val title: String,
+    val subtitle: String,
+    val icon: ImageVector,
+    val containerColor: Color,
+    val tintColor: Color,
+)
+
 @Composable
-private fun CloudSyncInfoGroup() {
+private fun resolveSyncDisplayState(syncStatus: CloudSyncUiStatus): SyncDisplayState {
+    val errorContainer = MaterialTheme.colorScheme.errorContainer
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val onErrorContainer = MaterialTheme.colorScheme.onErrorContainer
+    val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
+
+    return when (syncStatus) {
+        is CloudSyncUiStatus.Syncing -> SyncDisplayState(
+            title = "Synchronizing...",
+            subtitle = "Uploading local changes and fetching updates...",
+            icon = Icons.Rounded.CloudSync,
+            containerColor = primaryContainer,
+            tintColor = onPrimaryContainer,
+        )
+        is CloudSyncUiStatus.Success -> SyncDisplayState(
+            title = "Library Synchronized",
+            subtitle = formatRelativeSyncTime(syncStatus.syncedAt),
+            icon = Icons.Rounded.CloudDone,
+            containerColor = primaryContainer,
+            tintColor = onPrimaryContainer,
+        )
+        is CloudSyncUiStatus.Error -> SyncDisplayState(
+            title = "Sync Issue",
+            subtitle = syncStatus.message,
+            icon = Icons.Rounded.CloudOff,
+            containerColor = errorContainer,
+            tintColor = onErrorContainer,
+        )
+        CloudSyncUiStatus.Idle -> SyncDisplayState(
+            title = "Library Sync Ready",
+            subtitle = "Connected and ready to synchronize changes.",
+            icon = Icons.Rounded.CloudDone,
+            containerColor = primaryContainer,
+            tintColor = onPrimaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun SyncNowButton(
+    isSyncing: Boolean,
+    onSyncNow: () -> Unit,
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "SyncRotation")
+    val rotation by if (isSyncing) {
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "SyncSpin",
+        )
+    } else {
+        remember { mutableFloatStateOf(0f) }
+    }
+
+    val hapticFeedback = LocalHapticFeedback.current
+
+    IconButton(
+        onClick = {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            onSyncNow()
+        },
+        enabled = !isSyncing,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Sync,
+            contentDescription = "Sync now",
+            modifier = Modifier
+                .size(24.dp)
+                .rotate(rotation),
+            tint = if (isSyncing) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        )
+    }
+}
+
+@Composable
+private fun CloudSyncInfoGroup(
+    syncStatus: CloudSyncUiStatus,
+    onSyncNow: () -> Unit,
+) {
+    val isSyncing = syncStatus is CloudSyncUiStatus.Syncing
+    val displayState = resolveSyncDisplayState(syncStatus)
+
     SettingsGroup(
         title = "Cloud Synchronization",
         footer = "Your subscriptions, queue, and playback progress stay backed up and synchronized across your devices.",
@@ -342,14 +465,14 @@ private fun CloudSyncInfoGroup() {
             ) {
                 Surface(
                     shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = displayState.containerColor,
                     modifier = Modifier.size(40.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Rounded.CloudDone,
+                            imageVector = displayState.icon,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            tint = displayState.tintColor,
                             modifier = Modifier.size(22.dp),
                         )
                     }
@@ -357,19 +480,48 @@ private fun CloudSyncInfoGroup() {
                 Spacer(Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Library Sync Ready",
+                        text = displayState.title,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = GoogleSansWeight.bold,
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "Connected and synchronizing changes across all your devices.",
+                        text = displayState.subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (syncStatus is CloudSyncUiStatus.Error) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                 }
+                Spacer(Modifier.width(8.dp))
+                SyncNowButton(
+                    isSyncing = isSyncing,
+                    onSyncNow = onSyncNow,
+                )
             }
         }
+    }
+}
+
+internal fun formatRelativeSyncTime(timestamp: Long, now: Long = System.currentTimeMillis()): String {
+    if (timestamp <= 0L) return "Never synced"
+    val diff = (now - timestamp).coerceAtLeast(0L)
+    val seconds = diff / 1000
+    val minutes = seconds / 60
+    val hours = minutes / 60
+    val days = hours / 24
+
+    return when {
+        seconds < 30 -> "Synced just now"
+        minutes < 1 -> "Synced less than a minute ago"
+        minutes == 1L -> "Synced 1m ago"
+        minutes < 60 -> "Synced ${minutes}m ago"
+        hours == 1L -> "Synced 1h ago"
+        hours < 24 -> "Synced ${hours}h ago"
+        days == 1L -> "Synced 1d ago"
+        else -> "Synced ${days}d ago"
     }
 }
 

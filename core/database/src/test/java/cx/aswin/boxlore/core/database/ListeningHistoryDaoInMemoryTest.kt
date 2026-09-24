@@ -433,4 +433,18 @@ class ListeningHistoryDaoInMemoryTest {
         assertEquals(true, stored.isDirty)
         assertEquals(0L, stored.syncedAt)
     }
+
+    @Test
+    fun getDirtyCountFlow_emitsCorrectCount() = runTest {
+        assertEquals(0, dao.getDirtyCountFlow().first())
+
+        dao.upsert(history("ep-1", isDirty = true))
+        assertEquals(1, dao.getDirtyCountFlow().first())
+
+        dao.upsert(history("ep-2", isDirty = true))
+        assertEquals(2, dao.getDirtyCountFlow().first())
+
+        dao.markListeningHistorySynced(listOf("ep-1", "ep-2"), 1000L)
+        assertEquals(0, dao.getDirtyCountFlow().first())
+    }
 }

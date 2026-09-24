@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.database
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -226,5 +227,19 @@ class PodcastDaoInMemoryTest {
         assertEquals(false, stored.autoDownloadEnabled)
         assertEquals(false, stored.notificationsEnabled)
         assertNull(stored.customGenre)
+    }
+
+    @Test
+    fun getDirtyCountFlow_emitsCorrectCount() = runTest {
+        assertEquals(0, dao.getDirtyCountFlow().first())
+
+        dao.upsert(createPodcast("p1", isDirty = true))
+        assertEquals(1, dao.getDirtyCountFlow().first())
+
+        dao.upsert(createPodcast("p2", isDirty = true))
+        assertEquals(2, dao.getDirtyCountFlow().first())
+
+        dao.markPodcastsSynced(listOf("p1", "p2"), 1000L)
+        assertEquals(0, dao.getDirtyCountFlow().first())
     }
 }

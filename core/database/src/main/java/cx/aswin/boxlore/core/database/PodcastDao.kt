@@ -138,6 +138,9 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE isDirty = 1")
     suspend fun getDirtyPodcasts(): List<PodcastEntity>
 
+    @Query("SELECT COUNT(*) FROM podcasts WHERE isDirty = 1")
+    fun getDirtyCountFlow(): Flow<Int>
+
     @Query("UPDATE podcasts SET isDirty = 0, syncedAt = :timestamp WHERE podcastId IN (:ids)")
     suspend fun markPodcastsSynced(ids: List<String>, timestamp: Long)
 

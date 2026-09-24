@@ -17,6 +17,10 @@ import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.SmartDownloadSyncPort
 import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
+import cx.aswin.boxlore.core.catalog.sync.HistorySyncResolver
+import cx.aswin.boxlore.core.catalog.sync.QueueSyncResolver
+import cx.aswin.boxlore.core.catalog.sync.SubscriptionSyncResolver
+import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
@@ -42,6 +46,7 @@ import cx.aswin.boxlore.core.rss.EpisodeSupplementRepository
 import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
+import cx.aswin.boxlore.sync.CloudSyncTriggerCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -69,6 +74,7 @@ class AppContainer(
     sharedUserPreferences: UserPreferencesRepository? = null,
     /** Process-scoped scope from [BoxLoreApplication] for foreground subscription sync. */
     applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    authRepositoryOverride: cx.aswin.boxlore.core.network.AuthRepository? = null,
 ) : SharedAppDependencies,
     DownloadsDependencies {
     private val appContext = context.applicationContext
@@ -326,13 +332,87 @@ class AppContainer(
     }
 
     val authRepository: cx.aswin.boxlore.core.network.AuthRepository by lazy {
-        cx.aswin.boxlore.core.network.FirebaseAuthRepository(
-            auth = com.google.firebase.auth.FirebaseAuth.getInstance(),
-            pendingEmailStore = object : cx.aswin.boxlore.core.network.PendingEmailStore {
-                private val prefs = BoxcastPrefs(appContext)
-                override fun getPendingEmail(): String? = prefs.getPendingAuthEmail()
-                override fun setPendingEmail(email: String?) = prefs.setPendingAuthEmail(email)
-            },
+        authRepositoryOverride ?: runCatching {
+            cx.aswin.boxlore.core.network.FirebaseAuthRepository(
+                auth = com.google.firebase.auth.FirebaseAuth.getInstance(),
+                pendingEmailStore = object : cx.aswin.boxlore.core.network.PendingEmailStore {
+                    private val prefs = BoxcastPrefs(appContext)
+                    override fun getPendingEmail(): String? = prefs.getPendingAuthEmail()
+                    override fun setPendingEmail(email: String?) = prefs.setPendingAuthEmail(email)
+                },
+            )
+        }.getOrElse {
+            object : cx.aswin.boxlore.core.network.AuthRepository {
+                override val currentUser =
+                    kotlinx.coroutines.flow.MutableStateFlow<cx.aswin.boxlore.core.model.BoxLoreUser?>(null)
+                override val currentUserId: String? = null
+                override suspend fun signInWithGoogle(idToken: String) =
+                    Result.failure<cx.aswin.boxlore.core.model.BoxLoreUser>(UnsupportedOperationException())
+                override suspend fun signInWithEmailPassword(email: String, password: String) =
+                    Result.failure<cx.aswin.boxlore.core.model.BoxLoreUser>(UnsupportedOperationException())
+                override suspend fun signUpWithEmailPassword(email: String, password: String) =
+                    Result.failure<cx.aswin.boxlore.core.model.BoxLoreUser>(UnsupportedOperationException())
+                override suspend fun sendMagicLink(email: String) =
+                    Result.failure<Unit>(UnsupportedOperationException())
+                override suspend fun signInWithEmailLink(email: String, emailLink: String) =
+                    Result.failure<cx.aswin.boxlore.core.model.BoxLoreUser>(UnsupportedOperationException())
+                override fun isSignInWithEmailLink(link: String) = false
+                override suspend fun sendPasswordReset(email: String) =
+                    Result.failure<Unit>(UnsupportedOperationException())
+                override fun signOut() {}
+                override suspend fun deleteAccount() =
+                    Result.failure<Unit>(UnsupportedOperationException())
+                override suspend fun getIdToken(forceRefresh: Boolean) = null
+            }
+        }
+    }
+
+    override val userSyncCoordinator: UserSyncCoordinator by lazy {
+        val queuePort = queueRepository
+        val subResolver = SubscriptionSyncResolver(
+            podcastDao = database.podcastDao(),
+            folderRepository = folderRepository,
+            podcastRepository = podcastRepository,
+            rssPodcastRepository = rssPodcastRepository,
+        )
+        val historyResolver = HistorySyncResolver(
+            listeningHistoryDao = database.listeningHistoryDao(),
+            activePlaybackSyncPort = playbackRepository,
+        )
+        val queueResolver = QueueSyncResolver(
+            queueSyncPort = queuePort,
+            database = database,
+            activePlaybackSyncPort = playbackRepository,
+            podcastRepository = podcastRepository,
+        )
+        UserSyncCoordinator(
+            boxLoreApi = podcastRepository.api,
+            publicKey = publicKey,
+            authUserIdProvider = { authRepository.currentUserId },
+            tokenProvider = { authRepository.getIdToken(forceRefresh = false) },
+            podcastDao = database.podcastDao(),
+            listeningHistoryDao = database.listeningHistoryDao(),
+            queueSyncPort = queuePort,
+            subscriptionSyncResolver = subResolver,
+            historySyncResolver = historyResolver,
+            queueSyncResolver = queueResolver,
+            boxcastPrefs = boxcastPrefs,
+        )
+    }
+
+    val cloudSyncTriggerCoordinator: CloudSyncTriggerCoordinator by lazy {
+        CloudSyncTriggerCoordinator(
+            context = appContext,
+            applicationScope = syncScope,
+            userSyncCoordinator = userSyncCoordinator,
+            authRepository = authRepository,
+            boxcastPrefs = boxcastPrefs,
+            podcastDao = database.podcastDao(),
+            listeningHistoryDao = database.listeningHistoryDao(),
+            queueDao = database.queueDao(),
+            playbackRepository = playbackRepository,
+            playerStateFlow = playbackRepository.playerState,
+            isOnlineFlow = connectivityObserver.isOnlineFlow,
         )
     }
 }

@@ -17,6 +17,9 @@ import androidx.work.WorkerParameters
  */
 class LegacyWorkerFactory : WorkerFactory() {
     override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
+        if (workerClassName == cx.aswin.boxlore.sync.CloudSyncWorker::class.java.name) {
+            return cx.aswin.boxlore.sync.CloudSyncWorker(appContext, workerParameters)
+        }
         val resolvedClassName = LEGACY_WORKER_ALIASES[workerClassName] ?: return null
         return try {
             val clazz = Class.forName(resolvedClassName).asSubclass(ListenableWorker::class.java)

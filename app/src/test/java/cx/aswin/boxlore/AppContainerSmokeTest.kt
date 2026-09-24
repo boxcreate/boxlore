@@ -69,4 +69,24 @@ class AppContainerSmokeTest {
         val feedback2 = container.rankingFeedbackRepository
         assertSame(feedback1, feedback2)
     }
+
+    @Test
+    fun syncCoordinatorsAreStableSingletonsWithinContainer() {
+        val prefs = UserPreferencesRepository(context)
+        val container =
+            AppContainer(
+                context = context,
+                apiBaseUrl = "https://example.test",
+                publicKey = "test-key",
+                sharedUserPreferences = prefs,
+            )
+
+        val sync1 = container.userSyncCoordinator
+        val sync2 = container.userSyncCoordinator
+        assertSame(sync1, sync2)
+
+        val trigger1 = container.cloudSyncTriggerCoordinator
+        val trigger2 = container.cloudSyncTriggerCoordinator
+        assertSame(trigger1, trigger2)
+    }
 }

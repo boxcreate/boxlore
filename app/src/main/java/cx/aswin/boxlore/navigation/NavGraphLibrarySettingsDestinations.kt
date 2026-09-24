@@ -54,6 +54,12 @@ internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGr
                 rssPodcastRepository = container.rssPodcastRepository,
                 rankingFeedbackRepository = container.rankingFeedbackRepository,
                 authRepository = container.authRepository,
+                syncStatusFlow = container.cloudSyncTriggerCoordinator.syncStatusFlow,
+                onSyncNow = {
+                    scope.launch {
+                        container.cloudSyncTriggerCoordinator.triggerManualSync()
+                    }
+                },
             ),
             config =
             cx.aswin.boxlore.feature.home.settings.SettingsScreenConfig(

@@ -34,6 +34,7 @@ interface SharedAppDependencies {
     val subscriptionForegroundSync: SubscriptionForegroundSync
     val folderRepository: FolderRepository
     val deviceIdentityPort: cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort? get() = null
+    val userSyncCoordinator: cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator? get() = null
 }
 
 /**
