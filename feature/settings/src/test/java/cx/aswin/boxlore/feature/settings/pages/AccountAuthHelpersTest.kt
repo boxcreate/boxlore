@@ -687,4 +687,32 @@ class AccountAuthHelpersTest {
     fun boxlorePrivacyPolicyUrl_isCorrectEndpoint() {
         assertEquals("https://aswin.cx/boxlore/privacy/", BOXLORE_PRIVACY_POLICY_URL)
     }
+
+    @Test
+    fun accountAuthState_init_whenPrefIsTrueAndCurrentUserIsNull_awaitsVerification() {
+        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockPrefs = org.mockito.Mockito.mock(android.content.SharedPreferences::class.java)
+        org.mockito.Mockito.`when`(mockContext.getSharedPreferences("boxlore_prefs", android.content.Context.MODE_PRIVATE))
+            .thenReturn(mockPrefs)
+        org.mockito.Mockito.`when`(mockPrefs.getBoolean("awaiting_email_verification", false))
+            .thenReturn(true)
+
+        val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+
+        val fakeRepo = TestAuthRepository(initialUser = null)
+
+        val state = AccountAuthState(
+            authRepository = fakeRepo,
+            context = mockContext,
+            activity = null,
+            focusManager = mockFocusManager,
+            scope = scope,
+        )
+
+        org.junit.Assert.assertTrue(
+            "Must await verification on cold start when pref is true even if user hasn't loaded yet",
+            state.isAwaitingVerification,
+        )
+    }
 }

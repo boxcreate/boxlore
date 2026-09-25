@@ -249,9 +249,10 @@ internal fun PrivacyPolicyNotice(
     privacyUrl: String = BOXLORE_PRIVACY_POLICY_URL,
 ) {
     val uriHandler = LocalUriHandler.current
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val annotatedText = buildAnnotatedString {
-        append("By creating an account, you agree to our ")
+        append("Please read our ")
         val link = LinkAnnotation.Url(
             url = privacyUrl,
             styles = TextLinkStyles(
@@ -262,12 +263,29 @@ internal fun PrivacyPolicyNotice(
                 ),
             ),
         ) {
-            runCatching { uriHandler.openUri(privacyUrl) }
+            val opened = runCatching {
+                uriHandler.openUri(privacyUrl)
+                true
+            }.getOrDefault(false)
+
+            if (!opened) {
+                val fallbackOpened = runCatching {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(privacyUrl)).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                    true
+                }.getOrDefault(false)
+
+                if (!fallbackOpened) {
+                    showAccountToast(context, "Could not open browser")
+                }
+            }
         }
         withLink(link) {
             append("Privacy Policy")
         }
-        append(". Proceeding will accept it.")
+        append(". Proceeding to create an account will accept it.")
     }
 
     Text(

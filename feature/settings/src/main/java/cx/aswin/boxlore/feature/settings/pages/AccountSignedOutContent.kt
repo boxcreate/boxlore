@@ -1,5 +1,10 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -69,7 +74,6 @@ internal fun ColumnScope.SignedOutContent(
     state: AccountAuthState = rememberAccountAuthState(
         authRepository = authRepository,
     ),
-    scrollState: androidx.compose.foundation.ScrollState? = null,
 ) {
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
@@ -81,42 +85,47 @@ internal fun ColumnScope.SignedOutContent(
         if (state.isAwaitingVerification) {
             focusManager.clearFocus()
             state.isAnyInputFocused = false
-            scrollState?.animateScrollTo(0)
         }
     }
 
     LaunchedEffect(imeBottom, state.isAnyInputFocused) {
         if (imeBottom > 0 && state.isAnyInputFocused && !state.isAwaitingVerification) {
-            actionButtonRequester.bringIntoView()
+            runCatching { actionButtonRequester.bringIntoView() }
         }
     }
 
-    if (!state.isAwaitingVerification) {
-        // 1. Ultra-Light Header
-        Text(
-            text = "Sign in to sync your library, queue, and playback across devices.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 2.dp),
-        )
+    AnimatedVisibility(
+        visible = !state.isAwaitingVerification,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 1. Ultra-Light Header
+            Text(
+                text = "Sign in to sync your library, queue, and playback across devices.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+            )
 
-        Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(10.dp))
 
-        // 2. Continue with Google Button
-        GoogleSignInButton(
-            isLoading = state.isGoogleLoading,
-            enabled = !state.isAnyLoading,
-            onClick = state::handleGoogleSignIn,
-        )
+            // 2. Continue with Google Button
+            GoogleSignInButton(
+                isLoading = state.isGoogleLoading,
+                enabled = !state.isAnyLoading,
+                onClick = state::handleGoogleSignIn,
+            )
 
-        Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(6.dp))
 
-        // 3. Divider
-        AuthDivider()
+            // 3. Divider
+            AuthDivider()
 
-        Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(6.dp))
+        }
     }
 
     // 4. Stable Primary Auth Card Container
@@ -133,17 +142,23 @@ internal fun ColumnScope.SignedOutContent(
                 .fillMaxWidth()
                 .padding(20.dp),
         ) {
-            if (!state.isAwaitingVerification) {
-                ConnectedOptionSelector(
-                    options = listOf(
-                        AuthMode.SIGN_IN to "Sign In",
-                        AuthMode.SIGN_UP to "Sign Up",
-                    ),
-                    selected = state.activeAuthMode,
-                    onSelect = state::selectAuthMode,
-                )
+            AnimatedVisibility(
+                visible = !state.isAwaitingVerification,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    ConnectedOptionSelector(
+                        options = listOf(
+                            AuthMode.SIGN_IN to "Sign In",
+                            AuthMode.SIGN_UP to "Sign Up",
+                        ),
+                        selected = state.activeAuthMode,
+                        onSelect = state::selectAuthMode,
+                    )
 
-                Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(18.dp))
+                }
             }
 
             PrimaryAuthCardBody(

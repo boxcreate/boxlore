@@ -252,7 +252,10 @@ internal class AccountAuthState(
 
     var isAwaitingVerification by mutableStateOf(
         initialState.isAwaitingVerification ||
-            (AccountVerificationStorage.getPref(context) && authRepository?.currentUser?.value?.isEmailVerified == false),
+            (
+                AccountVerificationStorage.getPref(context) &&
+                (authRepository?.currentUser?.value == null || authRepository?.currentUser?.value?.isEmailVerified == false)
+            ),
     )
     var resendCooldownSeconds by mutableStateOf(initialState.resendCooldownSeconds)
     var isCheckingVerification by mutableStateOf(false)
@@ -589,7 +592,7 @@ internal fun AccountAuthState.toEmailInputActions(actionButtonRequester: BringIn
     },
     onInputFocused = {
         isAnyInputFocused = true
-        scope.launch { actionButtonRequester.bringIntoView() }
+        scope.launch { runCatching { actionButtonRequester.bringIntoView() } }
     },
 )
 
@@ -630,7 +633,7 @@ internal fun AccountAuthState.toPasswordInputActions(
     },
     onInputFocused = {
         isAnyInputFocused = true
-        scope.launch { actionButtonRequester.bringIntoView() }
+        scope.launch { runCatching { actionButtonRequester.bringIntoView() } }
     },
     onNextField = onNextField,
 )

@@ -38,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,13 +92,23 @@ internal fun AccountSettingsPage(
         scope = scope,
     )
 
+    LaunchedEffect(currentUser?.isEmailVerified) {
+        if (currentUser?.isEmailVerified == true) {
+            authState.isAwaitingVerification = false
+            AccountVerificationStorage.setPref(context, false)
+        }
+    }
+
     SettingsScaffold(
         title = "Account",
         onBack = onBack,
         scrollState = scrollState,
     ) {
         val user = currentUser
-        if (user != null && !authState.isAwaitingVerification) {
+        val isAwaiting = authState.isAwaitingVerification ||
+            (user != null && !user.isEmailVerified && AccountVerificationStorage.getPref(context))
+
+        if (user != null && !isAwaiting) {
             SignedInContent(
                 user = user,
                 onResetPassword = {
@@ -129,7 +140,6 @@ internal fun AccountSettingsPage(
             SignedOutContent(
                 authRepository = authRepository,
                 state = authState,
-                scrollState = scrollState,
             )
         }
     }
@@ -283,7 +293,7 @@ private fun UserProfileCard(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedBlobAvatar(
-                modifier = Modifier.size(76.dp),
+                size = 76.dp,
             )
 
             Spacer(Modifier.height(14.dp))

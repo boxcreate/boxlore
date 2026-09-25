@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -29,26 +30,26 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 internal data class BlobAvatarAnimationState(
-    val floatY: State<Float>,
+    val floatProgress: State<Float>,
     val breatheScaleX: State<Float>,
     val breatheScaleY: State<Float>,
     val eyeOpenScale: State<Float>,
-    val pupilOffsetX: State<Float>,
-    val pupilOffsetY: State<Float>,
+    val pupilLookRatioX: State<Float>,
+    val pupilLookRatioY: State<Float>,
 )
 
 @Composable
 internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
     val infiniteTransition = rememberInfiniteTransition(label = "BlobAvatarTransition")
 
-    val floatY = infiniteTransition.animateFloat(
-        initialValue = -3f,
-        targetValue = 3f,
+    val floatProgress = infiniteTransition.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
-        label = "BlobFloatY",
+        label = "BlobFloatProgress",
     )
 
     val breatheScaleX = infiniteTransition.animateFloat(
@@ -89,7 +90,7 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
         label = "BlobEyeOpen",
     )
 
-    val pupilOffsetX = infiniteTransition.animateFloat(
+    val pupilLookRatioX = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
@@ -97,18 +98,18 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
                 durationMillis = 6000
                 0f at 0
                 0f at 1800
-                3.5f at 2400
-                3.5f at 3400
+                1f at 2400
+                1f at 3400
                 0f at 4000
-                -3.5f at 4600
-                -3.5f at 5400
+                -1f at 4600
+                -1f at 5400
                 0f at 6000
             },
             repeatMode = RepeatMode.Restart,
         ),
-        label = "BlobPupilOffsetX",
+        label = "BlobPupilLookRatioX",
     )
-    val pupilOffsetY = infiniteTransition.animateFloat(
+    val pupilLookRatioY = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
@@ -116,25 +117,25 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
                 durationMillis = 6000
                 0f at 0
                 0f at 1800
-                -1.5f at 2400
-                -1.5f at 3400
+                -0.6f at 2400
+                -0.6f at 3400
                 0f at 4000
-                1.5f at 4600
-                1.5f at 5400
+                0.6f at 4600
+                0.6f at 5400
                 0f at 6000
             },
             repeatMode = RepeatMode.Restart,
         ),
-        label = "BlobPupilOffsetY",
+        label = "BlobPupilLookRatioY",
     )
 
     return BlobAvatarAnimationState(
-        floatY = floatY,
+        floatProgress = floatProgress,
         breatheScaleX = breatheScaleX,
         breatheScaleY = breatheScaleY,
         eyeOpenScale = eyeOpenScale,
-        pupilOffsetX = pupilOffsetX,
-        pupilOffsetY = pupilOffsetY,
+        pupilLookRatioX = pupilLookRatioX,
+        pupilLookRatioY = pupilLookRatioY,
     )
 }
 
@@ -146,7 +147,7 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
 @Composable
 internal fun AnimatedBlobAvatar(
     modifier: Modifier = Modifier,
-    size: Dp = 80.dp,
+    size: Dp = 76.dp,
 ) {
     val animState = rememberBlobAvatarAnimationState()
 
@@ -158,17 +159,29 @@ internal fun AnimatedBlobAvatar(
         modifier = modifier.size(size),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(size)) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
             val w = this.size.width
             val h = this.size.height
-            val center = Offset(w / 2f, (h / 2f) + animState.floatY.value)
+            val maxFloatPx = h * 0.045f
+            val center = Offset(w / 2f, (h / 2f) + (maxFloatPx * animState.floatProgress.value))
 
             val bodyWidth = w * 0.88f * animState.breatheScaleX.value
             val bodyHeight = h * 0.82f * animState.breatheScaleY.value
 
-            drawBlobBody(center = center, bodyWidth = bodyWidth, bodyHeight = bodyHeight, bodyColor = bodyColor)
+            drawBlobBody(
+                center = center,
+                bodyWidth = bodyWidth,
+                bodyHeight = bodyHeight,
+                bodyColor = bodyColor,
+            )
 
-            drawBlush(center = center, bodyWidth = bodyWidth, bodyHeight = bodyHeight, blushRadius = w * 0.08f, blushColor = blushColor)
+            drawBlush(
+                center = center,
+                bodyWidth = bodyWidth,
+                bodyHeight = bodyHeight,
+                blushRadius = w * 0.08f,
+                blushColor = blushColor,
+            )
 
             val eyeSpacing = bodyWidth * 0.18f
             val eyeCenterY = center.y - (bodyHeight * 0.04f)
@@ -176,14 +189,18 @@ internal fun AnimatedBlobAvatar(
                 Offset(center.x - eyeSpacing, eyeCenterY),
                 Offset(center.x + eyeSpacing, eyeCenterY),
             )
+            val eyeRadius = w * 0.105f
+            val maxPupilShiftX = eyeRadius * 0.35f
+            val maxPupilShiftY = eyeRadius * 0.22f
+
             drawEyes(
                 eyes = eyes,
                 eyeOpenScale = animState.eyeOpenScale.value,
-                pupilOffsetX = animState.pupilOffsetX.value,
-                pupilOffsetY = animState.pupilOffsetY.value,
-                eyeRadius = w * 0.105f,
+                pupilOffsetX = maxPupilShiftX * animState.pupilLookRatioX.value,
+                pupilOffsetY = maxPupilShiftY * animState.pupilLookRatioY.value,
+                eyeRadius = eyeRadius,
                 onBodyColor = onBodyColor,
-                strokeWidth = 2.4.dp.toPx(),
+                strokeWidth = (w * 0.032f).coerceAtLeast(1.5f),
             )
 
             drawSmile(
@@ -192,7 +209,7 @@ internal fun AnimatedBlobAvatar(
                 smileHeight = h * 0.09f,
                 bodyHeight = bodyHeight,
                 onBodyColor = onBodyColor,
-                strokeWidth = 2.4.dp.toPx(),
+                strokeWidth = (w * 0.032f).coerceAtLeast(1.5f),
             )
         }
     }
@@ -220,7 +237,7 @@ private fun DrawScope.drawBlobBody(
     val highlightHeight = bodyHeight * 0.22f
     drawOval(
         color = Color.White.copy(alpha = 0.16f),
-        topLeft = Offset(center.x - (highlightWidth / 2f), center.y - (bodyHeight / 2f) + 4.dp.toPx()),
+        topLeft = Offset(center.x - (highlightWidth / 2f), center.y - (bodyHeight / 2f) + (bodyHeight * 0.05f)),
         size = Size(highlightWidth, highlightHeight),
     )
 }
