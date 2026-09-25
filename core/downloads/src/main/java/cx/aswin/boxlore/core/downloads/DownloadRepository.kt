@@ -448,6 +448,16 @@ open class DownloadRepository(
             } catch (ignored: Exception) {
                 Log.d("DownloadRepo", RELEASE_FAILED_MESSAGE, ignored)
             }
+            try {
+                (databaseProvider as? androidx.media3.database.StandaloneDatabaseProvider)?.close()
+            } catch (ignored: Exception) {
+                Log.d("DownloadRepo", RELEASE_FAILED_MESSAGE, ignored)
+            }
+            try {
+                (streamDatabaseProvider as? androidx.media3.database.StandaloneDatabaseProvider)?.close()
+            } catch (ignored: Exception) {
+                Log.d("DownloadRepo", RELEASE_FAILED_MESSAGE, ignored)
+            }
             downloadManager = null
             cache = null
             streamCache = null
