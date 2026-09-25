@@ -70,6 +70,7 @@ internal fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphW
             if (shouldRequestNotificationPermission(showFeatureDialog, context)) {
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper
                     .trackNotificationPermissionRequested()
+                cx.aswin.boxlore.core.prefs.BoxcastPrefs(context).setHasRequestedNotificationPermission(true)
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }

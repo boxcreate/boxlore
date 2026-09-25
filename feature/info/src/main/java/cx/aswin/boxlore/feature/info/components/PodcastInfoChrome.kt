@@ -1,6 +1,9 @@
 package cx.aswin.boxlore.feature.info.components
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
@@ -62,23 +65,53 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.NotificationToggleAction
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
+import cx.aswin.boxlore.feature.info.logic.canPromptNotificationPermission
 import cx.aswin.boxlore.feature.info.logic.resolveNotificationToggleAction
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningActionText
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningMessage
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningTitle
 
+internal tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+internal fun canPromptRuntimeNotificationPermission(context: Context): Boolean {
+    val activity = context.findActivity()
+    val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    } else {
+        false
+    }
+    val prefs = BoxcastPrefs(context)
+    val hasPromptedBefore = prefs.hasRequestedNotificationPermission()
+    val shouldShowRationale = activity != null &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
+
+    return canPromptNotificationPermission(
+        sdkInt = Build.VERSION.SDK_INT,
+        isPostNotificationsGranted = hasPermission,
+        hasPromptedBefore = hasPromptedBefore,
+        shouldShowRationale = shouldShowRationale,
+    )
+}
+
 internal fun handleNotificationsToggle(
-    context: android.content.Context,
+    context: Context,
     podcastNotificationsEnabled: Boolean,
     isWarningVisible: Boolean = false,
     onRequestPermission: () -> Unit,
@@ -98,7 +131,13 @@ internal fun handleNotificationsToggle(
             isWarningVisible = isWarningVisible,
         )
     ) {
-        NotificationToggleAction.REQUEST_PERMISSION -> onRequestPermission()
+        NotificationToggleAction.REQUEST_PERMISSION -> {
+            if (canPromptRuntimeNotificationPermission(context)) {
+                onRequestPermission()
+            } else {
+                onShowPermissionBlockedWarning()
+            }
+        }
         NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING -> onShowPermissionBlockedWarning()
         NotificationToggleAction.TOGGLE_NOTIFICATIONS -> onToggleNotifications()
     }
@@ -125,7 +164,7 @@ internal fun handleAutoDownloadToggle(
 
 internal fun handleToolbarWarningAction(
     warning: ToolbarWarning,
-    context: android.content.Context,
+    context: Context,
     viewModel: PodcastInfoViewModel,
     onRequestNotificationPermission: () -> Unit,
     onShowPermissionBlockedWarning: () -> Unit,
@@ -134,15 +173,19 @@ internal fun handleToolbarWarningAction(
         ToolbarWarning.NOTIFICATIONS_REQUIRED -> {
             if (areAppNotificationsEnabled(context)) {
                 viewModel.enableBothNotificationsAndAutoDownload()
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) {
+            } else if (canPromptRuntimeNotificationPermission(context)) {
                 onRequestNotificationPermission()
             } else {
                 onShowPermissionBlockedWarning()
             }
         }
-        ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> openAppNotificationSettings(context)
+        ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> {
+            if (canPromptRuntimeNotificationPermission(context)) {
+                onRequestNotificationPermission()
+            } else {
+                openAppNotificationSettings(context)
+            }
+        }
         else -> {}
     }
 }

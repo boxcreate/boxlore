@@ -175,6 +175,7 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LAST_SYNC_TIMESTAMP = "sync_last_timestamp"
         const val KEY_LAST_SYNCED_USER_ID = "sync_last_user_id"
         const val KEY_SYNC_METADATA_VERSION = "sync_metadata_version"
+        const val KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION = "has_requested_notification_permission"
     }
 
     // ── Auth / Magic Link ───────────────────────────────────────────────────
@@ -219,5 +220,13 @@ class BoxcastPrefs(context: Context) {
 
     fun setSyncMetadataVersion(version: Int) {
         prefs.edit().putInt(KEY_SYNC_METADATA_VERSION, version).apply()
+    }
+
+    // ── Notifications ───────────────────────────────────────────────────────
+
+    fun hasRequestedNotificationPermission(): Boolean = prefs.getBoolean(KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION, false)
+
+    fun setHasRequestedNotificationPermission(requested: Boolean = true) {
+        prefs.edit().putBoolean(KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION, requested).apply()
     }
 }

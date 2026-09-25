@@ -20,7 +20,7 @@ fun toolbarWarningMessage(warning: ToolbarWarning): String = when (warning) {
 
 fun toolbarWarningActionText(warning: ToolbarWarning): String = when (warning) {
     ToolbarWarning.NOTIFICATIONS_REQUIRED -> "Enable Both"
-    ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Go to Settings"
+    ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Turn On"
     else -> ""
 }
 
@@ -53,4 +53,32 @@ fun resolveNotificationToggleAction(
             NotificationToggleAction.TOGGLE_NOTIFICATIONS
         }
     }
+}
+
+enum class SystemBlockedResolutionAction {
+    PROMPT_SYSTEM_PERMISSION,
+    OPEN_SETTINGS,
+}
+
+fun canPromptNotificationPermission(
+    sdkInt: Int,
+    isPostNotificationsGranted: Boolean,
+    hasPromptedBefore: Boolean,
+    shouldShowRationale: Boolean,
+): Boolean {
+    if (sdkInt < 33) return false
+    if (isPostNotificationsGranted) return false
+    return if (hasPromptedBefore) {
+        shouldShowRationale
+    } else {
+        true
+    }
+}
+
+fun resolveSystemBlockedAction(
+    canPrompt: Boolean,
+): SystemBlockedResolutionAction = if (canPrompt) {
+    SystemBlockedResolutionAction.PROMPT_SYSTEM_PERMISSION
+} else {
+    SystemBlockedResolutionAction.OPEN_SETTINGS
 }

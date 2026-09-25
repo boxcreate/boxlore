@@ -163,4 +163,13 @@ class BoxcastPrefsTest {
         prefs.setLastSyncedUserId(null)
         assertNull(prefs.getLastSyncedUserId())
     }
+
+    @Test
+    fun hasRequestedNotificationPermission_defaultsToFalseAndRoundTrips() {
+        assertFalse(prefs.hasRequestedNotificationPermission())
+        prefs.setHasRequestedNotificationPermission(true)
+        assertTrue(prefs.hasRequestedNotificationPermission())
+        prefs.setHasRequestedNotificationPermission(false)
+        assertFalse(prefs.hasRequestedNotificationPermission())
+    }
 }

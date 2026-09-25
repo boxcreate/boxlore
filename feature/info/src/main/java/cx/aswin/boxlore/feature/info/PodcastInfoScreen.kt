@@ -65,11 +65,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
+import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
 import cx.aswin.boxlore.feature.info.components.EpisodeFeedRowUi
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
@@ -82,7 +82,7 @@ import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesConfirmDialog
 import cx.aswin.boxlore.feature.info.components.PodcastGenreEditSheet
 import cx.aswin.boxlore.feature.info.components.PodcastInfoBackgroundHeader
-import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPill
+import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPillOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
 import cx.aswin.boxlore.feature.info.components.PodcastInfoSearchOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
@@ -147,10 +147,19 @@ fun PodcastInfoScreen(
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var isSystemNotificationsBlocked by remember { mutableStateOf(!areAppNotificationsEnabled(context)) }
+    var pendingPermissionAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                isSystemNotificationsBlocked = !areAppNotificationsEnabled(context)
+                val blocked = !areAppNotificationsEnabled(context)
+                isSystemNotificationsBlocked = blocked
+                if (!blocked) {
+                    if (toolbarWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED) {
+                        toolbarWarning = ToolbarWarning.NONE
+                    }
+                    pendingPermissionAction?.invoke()
+                    pendingPermissionAction = null
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -162,13 +171,16 @@ fun PodcastInfoScreen(
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
         ) { isGranted ->
+            BoxcastPrefs(context).setHasRequestedNotificationPermission(true)
             if (isGranted) {
                 isSystemNotificationsBlocked = false
-                viewModel.enableBothNotificationsAndAutoDownload()
                 toolbarWarning = ToolbarWarning.NONE
+                pendingPermissionAction?.invoke()
+                pendingPermissionAction = null
             } else {
                 isSystemNotificationsBlocked = true
                 toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED
+                pendingPermissionAction = null
             }
         }
 
@@ -509,7 +521,10 @@ fun PodcastInfoScreen(
                                         context = context,
                                         podcastNotificationsEnabled = state.podcast.notificationsEnabled,
                                         isWarningVisible = toolbarWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED,
-                                        onRequestPermission = { notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                                        onRequestPermission = {
+                                            pendingPermissionAction = { viewModel.toggleNotifications() }
+                                            notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        },
                                         onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
                                         onToggleNotifications = { viewModel.toggleNotifications() },
                                     )
@@ -542,6 +557,13 @@ fun PodcastInfoScreen(
                                             context = context,
                                             viewModel = viewModel,
                                             onRequestNotificationPermission = {
+                                                if (currentWarning == ToolbarWarning.NOTIFICATIONS_REQUIRED) {
+                                                    pendingPermissionAction = { viewModel.enableBothNotificationsAndAutoDownload() }
+                                                } else if (!state.podcast.notificationsEnabled) {
+                                                    pendingPermissionAction = { viewModel.toggleNotifications() }
+                                                } else {
+                                                    pendingPermissionAction = null
+                                                }
                                                 notifPermissionLauncher.launch(
                                                     Manifest.permission.POST_NOTIFICATIONS,
                                                 )
@@ -901,37 +923,17 @@ fun PodcastInfoScreen(
 
                 // Floating Jump-To Pill overlay
                 val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(bottom = systemBottomPadding + bottomContentPadding + 16.dp),
-                    contentAlignment = Alignment.BottomCenter,
-                ) {
-                    AnimatedVisibility(
-                        visible = jumpPillVisible,
-                        enter =
-                        slideInVertically(
-                            initialOffsetY = { it },
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
-                        ) + fadeIn(),
-                        exit =
-                        slideOutVertically(
-                            targetOffsetY = { it },
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
-                        ) + fadeOut(),
-                    ) {
-                        PodcastInfoJumpPill(
-                            isOngoing = isTargetOngoing,
-                            episodeTitle = targetJumpEpisode?.title ?: "",
-                            onClick = {
-                                coroutineScope.launch {
-                                    listState.animateScrollToItem(targetJumpIndex + 2)
-                                }
-                            },
-                        )
-                    }
-                }
+                PodcastInfoJumpPillOverlay(
+                    visible = jumpPillVisible,
+                    isOngoing = isTargetOngoing,
+                    episodeTitle = targetJumpEpisode?.title ?: "",
+                    bottomPadding = systemBottomPadding + bottomContentPadding + 16.dp,
+                    onClick = {
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(targetJumpIndex + 2)
+                        }
+                    },
+                )
 
                 // SEARCH OVERLAY (Nested inside Success)
                 AnimatedVisibility(
@@ -981,14 +983,7 @@ fun PodcastInfoScreen(
             onDismissPlayed = { showMarkAllPlayedDialog = false },
             onDismissUnplayed = { showMarkAllUnplayedDialog = false },
             viewModel = viewModel,
+            episodePendingDownloadRemoval = episodePendingDownloadRemoval,
         )
-
-        if (episodePendingDownloadRemoval != null) {
-            RemoveDownloadConfirmationDialog(
-                episodeTitle = episodePendingDownloadRemoval?.title,
-                onConfirm = viewModel::confirmDownloadRemoval,
-                onDismiss = viewModel::dismissDownloadRemoval,
-            )
-        }
     }
 }

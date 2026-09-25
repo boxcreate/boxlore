@@ -15,7 +15,7 @@ class PodcastInfoToolbarLogicTest {
     @Test
     fun `toolbar warning copy for system permission blocked`() {
         assertEquals("Notifications Disabled", toolbarWarningTitle(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED))
-        assertEquals("Go to Settings", toolbarWarningActionText(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED))
+        assertEquals("Turn On", toolbarWarningActionText(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED))
         assertTrue(toolbarWarningMessage(ToolbarWarning.SYSTEM_PERMISSION_BLOCKED).contains("system settings"))
     }
 
@@ -86,5 +86,76 @@ class PodcastInfoToolbarLogicTest {
             isWarningVisible = true,
         )
         assertEquals(NotificationToggleAction.TOGGLE_NOTIFICATIONS, action)
+    }
+
+    @Test
+    fun `canPromptNotificationPermission on API less than 33 returns false`() {
+        val canPrompt = canPromptNotificationPermission(
+            sdkInt = 32,
+            isPostNotificationsGranted = false,
+            hasPromptedBefore = false,
+            shouldShowRationale = false,
+        )
+        assertEquals(false, canPrompt)
+    }
+
+    @Test
+    fun `canPromptNotificationPermission when permission already granted returns false`() {
+        val canPrompt = canPromptNotificationPermission(
+            sdkInt = 34,
+            isPostNotificationsGranted = true,
+            hasPromptedBefore = true,
+            shouldShowRationale = false,
+        )
+        assertEquals(false, canPrompt)
+    }
+
+    @Test
+    fun `canPromptNotificationPermission on API 33 when not prompted before returns true`() {
+        val canPrompt = canPromptNotificationPermission(
+            sdkInt = 33,
+            isPostNotificationsGranted = false,
+            hasPromptedBefore = false,
+            shouldShowRationale = false,
+        )
+        assertEquals(true, canPrompt)
+    }
+
+    @Test
+    fun `canPromptNotificationPermission on API 33 when prompted before and rationale true returns true`() {
+        val canPrompt = canPromptNotificationPermission(
+            sdkInt = 33,
+            isPostNotificationsGranted = false,
+            hasPromptedBefore = true,
+            shouldShowRationale = true,
+        )
+        assertEquals(true, canPrompt)
+    }
+
+    @Test
+    fun `canPromptNotificationPermission on API 33 when prompted before and rationale false returns false`() {
+        val canPrompt = canPromptNotificationPermission(
+            sdkInt = 33,
+            isPostNotificationsGranted = false,
+            hasPromptedBefore = true,
+            shouldShowRationale = false,
+        )
+        assertEquals(false, canPrompt)
+    }
+
+    @Test
+    fun `resolveSystemBlockedAction returns prompt when can prompt`() {
+        assertEquals(
+            SystemBlockedResolutionAction.PROMPT_SYSTEM_PERMISSION,
+            resolveSystemBlockedAction(canPrompt = true),
+        )
+    }
+
+    @Test
+    fun `resolveSystemBlockedAction returns open settings when cannot prompt`() {
+        assertEquals(
+            SystemBlockedResolutionAction.OPEN_SETTINGS,
+            resolveSystemBlockedAction(canPrompt = false),
+        )
     }
 }
