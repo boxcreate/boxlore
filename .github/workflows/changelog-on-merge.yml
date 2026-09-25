@@ -379,12 +379,19 @@ jobs:
       group: publish-release
       cancel-in-progress: false
     steps:
+      - name: Generate boxlore pusher token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.BOXLORE_PUSHER_APP_ID }}
+          private-key: ${{ secrets.BOXLORE_PUSHER_PRIVATE_KEY }}
+
       - name: Checkout master with release history
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: master
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           persist-credentials: false
 
       - name: Set up Java 17
@@ -417,7 +424,7 @@ jobs:
       - name: Validate existing tag and release state
         id: state
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TAG: ${{ steps.release.outputs.tag }}
           MERGE_SHA: ${{ steps.release.outputs.merge_sha }}
         run: |
@@ -719,7 +726,7 @@ jobs:
 
       - name: Create or repair GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TAG: ${{ steps.release.outputs.tag }}
           MERGE_SHA: ${{ steps.release.outputs.merge_sha }}
           RELEASE_EXISTS: ${{ steps.state.outputs.release_exists }}
@@ -789,7 +796,7 @@ jobs:
 
       - name: Delete release branch after publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           TAG: ${{ steps.release.outputs.tag }}
         run: python3 .github/scripts/prepare_release.py delete-release-branch --tag "$TAG"
 
