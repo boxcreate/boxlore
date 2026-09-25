@@ -159,12 +159,6 @@ fun OpmlImportDialog(
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            if (canDismiss) {
-                ImportCloseButton(
-                    onClick = actions.onDismissRequest,
-                    modifier = Modifier.align(Alignment.TopEnd),
-                )
-            }
             ImportDialogBody(
                 state = state,
                 actions = actions,
@@ -173,6 +167,15 @@ fun OpmlImportDialog(
                 },
                 onPickOpml = { importOpmlLauncher.launch(arrayOf("*/*")) },
             )
+            if (canDismiss) {
+                ImportCloseButton(
+                    onClick = actions.onDismissRequest,
+                    modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .zIndex(10f),
+                )
+            }
         }
     }
 }
@@ -183,7 +186,7 @@ private fun ImportCloseButton(onClick: () -> Unit, modifier: Modifier = Modifier
         onClick = onClick,
         modifier =
         modifier
-            .size(44.dp)
+            .size(48.dp)
             .background(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = CircleShape,
