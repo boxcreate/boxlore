@@ -578,6 +578,8 @@ class CloudSyncTriggerCoordinatorTest {
         override suspend fun signInWithEmailLink(email: String, emailLink: String): Result<BoxLoreUser> = error("unused")
         override fun isSignInWithEmailLink(link: String): Boolean = false
         override suspend fun sendPasswordReset(email: String): Result<Unit> = error("unused")
+        override suspend fun sendEmailVerification(): Result<Unit> = Result.success(Unit)
+        override suspend fun reloadUser(): Result<BoxLoreUser?> = Result.success(currentUser.value)
         override fun signOut() {
             currentUser.value = null
         }

@@ -32,10 +32,12 @@ src/main/java/cx/aswin/boxlore/feature/settings/
   pages/
     AboutSettingsPage.kt
     AccountAuthHelpers.kt
+    AccountAuthUiComponents.kt
     AccountSettingsPage.kt
     AccountSignedOutContent.kt
     AppearanceSettingsPage.kt
     DownloadsSettingsPage.kt
+    EmailVerificationPendingSection.kt
     LibrarySettingsPage.kt
     PlaybackSettingsPage.kt
     PrivacySettingsPage.kt

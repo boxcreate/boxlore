@@ -77,6 +77,19 @@ class FirebaseAuthRepository(
         auth.sendPasswordResetEmail(email).awaitTask()
     }
 
+    override suspend fun sendEmailVerification(): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("No authenticated user to verify")
+        user.sendEmailVerification().awaitTask()
+    }.map { }
+
+    override suspend fun reloadUser(): Result<BoxLoreUser?> = runCatching {
+        val user = auth.currentUser ?: return@runCatching null
+        user.reload().awaitTask()
+        val updatedUser = auth.currentUser.toBoxLoreUser()
+        _currentUser.value = updatedUser
+        updatedUser
+    }
+
     override fun signOut() {
         auth.signOut()
         pendingEmailStore?.setPendingEmail(null)

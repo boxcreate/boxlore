@@ -359,6 +359,10 @@ class AppContainer(
                 override fun isSignInWithEmailLink(link: String) = false
                 override suspend fun sendPasswordReset(email: String) =
                     Result.failure<Unit>(UnsupportedOperationException())
+                override suspend fun sendEmailVerification() =
+                    Result.failure<Unit>(UnsupportedOperationException())
+                override suspend fun reloadUser() =
+                    Result.success<cx.aswin.boxlore.core.model.BoxLoreUser?>(null)
                 override fun signOut() {
                     // No-op fallback when authRepository is not available
                 }

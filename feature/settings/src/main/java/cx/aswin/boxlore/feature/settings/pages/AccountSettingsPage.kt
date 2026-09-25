@@ -87,13 +87,19 @@ internal fun AccountSettingsPage(
     var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
     var showReauthRequiredDialog by rememberSaveable { mutableStateOf(false) }
 
+    val authState = rememberAccountAuthState(
+        authRepository = authRepository,
+        context = context,
+        scope = scope,
+    )
+
     SettingsScaffold(
         title = "Account",
         onBack = onBack,
         scrollState = scrollState,
     ) {
         val user = currentUser
-        if (user != null) {
+        if (user != null && !authState.isAwaitingVerification) {
             SignedInContent(
                 user = user,
                 onSignOut = {
@@ -107,6 +113,7 @@ internal fun AccountSettingsPage(
         } else {
             SignedOutContent(
                 authRepository = authRepository,
+                state = authState,
             )
         }
     }

@@ -42,13 +42,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -68,28 +66,44 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 @Composable
 internal fun ColumnScope.SignedOutContent(
     authRepository: AuthRepository?,
+    state: AccountAuthState = rememberAccountAuthState(
+        authRepository = authRepository,
+    ),
 ) {
-    val context = LocalContext.current
-    val activity = remember(context) { context.findActivity() }
     val focusManager = LocalFocusManager.current
-    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
     val actionButtonRequester = remember { BringIntoViewRequester() }
     val imeBottom = WindowInsets.ime.getBottom(density)
 
-    val state = rememberAccountAuthState(
-        authRepository = authRepository,
-        context = context,
-        activity = activity,
-        focusManager = focusManager,
-        scope = scope,
-    )
-
     LaunchedEffect(imeBottom, state.isAnyInputFocused) {
         if (imeBottom > 0 && state.isAnyInputFocused) {
             actionButtonRequester.bringIntoView()
         }
+    }
+
+    if (state.isAwaitingVerification) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+            ) {
+                EmailVerificationPendingSection(
+                    state = state,
+                )
+            }
+        }
+
+        AccountPrivacyCard()
+        return
     }
 
     // 1. Ultra-Light Header
@@ -156,12 +170,17 @@ private fun PrimaryAuthCardBody(
     focusManager: FocusManager,
 ) {
     when {
+        state.isAwaitingVerification -> {
+            EmailVerificationPendingSection(
+                state = state,
+            )
+        }
         state.magicLinkSent && !state.usePasswordAuth -> {
             EmailLinkSentSection(
                 email = state.email,
                 isSignUp = state.activeAuthMode == AuthMode.SIGN_UP,
                 isAnyLoading = state.isAnyLoading,
-                onOpenEmail = { openGmailOrEmailApp(state.context) },
+                onOpenEmail = { openGmailOrEmailApp(state.context, state.email) },
                 onUseDifferentEmail = state::resetToNewEmail,
                 onResendLink = state::submitEmailLink,
             )

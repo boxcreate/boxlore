@@ -2,28 +2,7 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Security
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,13 +12,9 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.credentials.Credential
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -51,7 +26,6 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -64,12 +38,6 @@ internal const val GOOGLE_SIGN_IN_TIMEOUT_MS = 15_000L
 internal enum class AuthMode {
     SIGN_IN,
     SIGN_UP,
-}
-
-internal tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }
 
 private val RECENT_LOGIN_KEYWORDS = listOf(
@@ -93,6 +61,10 @@ private val ACCOUNT_ERROR_MAPPINGS = listOf(
         "Password is too weak. Please use at least 6 characters.",
     listOf("invalid-email") to
         "Please enter a valid email address.",
+    listOf("too-many-requests") to
+        "Too many attempts. Please wait a few minutes before trying again.",
+    listOf("user-disabled") to
+        "This account has been disabled. Please contact support.",
     RECENT_LOGIN_KEYWORDS to
         "For security, please sign out and sign in again before deleting your account.",
     listOf("network") to
@@ -130,40 +102,6 @@ internal fun isValidEmail(email: String): Boolean {
         android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }.getOrElse {
         EMAIL_REGEX.matches(email)
-    }
-}
-
-internal fun openGmailOrEmailApp(context: Context) {
-    try {
-        val gmailIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.gm")
-        if (gmailIntent != null) {
-            gmailIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(gmailIntent)
-        } else {
-            val emailIntent = Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_APP_EMAIL)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            if (emailIntent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(emailIntent)
-            } else {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    },
-                )
-            }
-        }
-    } catch (_: Exception) {
-        try {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse("https://mail.google.com")).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                },
-            )
-        } catch (_: Exception) {
-            Toast.makeText(context, "Could not open email app", Toast.LENGTH_SHORT).show()
-        }
     }
 }
 
@@ -283,6 +221,8 @@ internal data class SavedAccountAuthState(
     val confirmPasswordVisible: Boolean = false,
     val magicLinkSent: Boolean = false,
     val errorMessage: String? = null,
+    val isAwaitingVerification: Boolean = false,
+    val resendCooldownSeconds: Int = 0,
 )
 
 internal class AccountAuthState(
@@ -310,14 +250,50 @@ internal class AccountAuthState(
     var magicLinkSent by mutableStateOf(initialState.magicLinkSent)
     var errorMessage by mutableStateOf<String?>(initialState.errorMessage)
 
+    var isAwaitingVerification by mutableStateOf(
+        initialState.isAwaitingVerification ||
+            (AccountVerificationStorage.getPref(context) && authRepository?.currentUser?.value?.isEmailVerified == false),
+    )
+    var resendCooldownSeconds by mutableStateOf(initialState.resendCooldownSeconds)
+    var isCheckingVerification by mutableStateOf(false)
+    private var cooldownJob: kotlinx.coroutines.Job? = null
+
+    init {
+        if (isAwaitingVerification) {
+            if (email.isBlank()) {
+                email = authRepository?.currentUser?.value?.email.orEmpty()
+            }
+            if (resendCooldownSeconds > 0) {
+                startResendCooldownTimer(resendCooldownSeconds)
+            }
+        }
+    }
+
+    fun startResendCooldownTimer(seconds: Int = 30) {
+        cooldownJob?.cancel()
+        resendCooldownSeconds = seconds
+        cooldownJob = scope.launch {
+            while (resendCooldownSeconds > 0) {
+                kotlinx.coroutines.delay(1000L)
+                resendCooldownSeconds--
+            }
+        }
+    }
+
     fun selectAuthMode(mode: AuthMode) {
         activeAuthMode = mode
         errorMessage = null
         magicLinkSent = false
+        isAwaitingVerification = false
+        AccountVerificationStorage.setPref(context, false)
         confirmPassword = ""
     }
 
     fun resetToNewEmail() {
+        cooldownJob?.cancel()
+        resendCooldownSeconds = 0
+        isAwaitingVerification = false
+        AccountVerificationStorage.setPref(context, false)
         magicLinkSent = false
         email = ""
         password = ""
@@ -326,6 +302,7 @@ internal class AccountAuthState(
 
     fun submitEmailLink() {
         val trimmedEmail = email.trim()
+        email = trimmedEmail
         if (trimmedEmail.isBlank()) {
             errorMessage = "Please enter your email address"
             return
@@ -350,6 +327,7 @@ internal class AccountAuthState(
 
     fun submitPasswordAuth() {
         val trimmedEmail = email.trim()
+        email = trimmedEmail
         val isSignUp = activeAuthMode == AuthMode.SIGN_UP
 
         val validationError = validatePasswordInputs(trimmedEmail, password, isSignUp, confirmPassword)
@@ -363,34 +341,98 @@ internal class AccountAuthState(
         errorMessage = null
 
         scope.launch {
-            val result = executePasswordAuth(trimmedEmail, password, isSignUp)
-            isEmailLoading = false
-            handlePasswordAuthResult(result, isSignUp)
+            val result = executePasswordAuth(authRepository, trimmedEmail, password, isSignUp)
+            if (result?.isSuccess == true) {
+                password = ""
+                confirmPassword = ""
+                if (isSignUp) {
+                    isAwaitingVerification = true
+                    AccountVerificationStorage.setPref(context, true)
+                    val verifyResult = authRepository?.sendEmailVerification()
+                    isEmailLoading = false
+                    if (verifyResult?.isSuccess == true) {
+                        startResendCooldownTimer(30)
+                    } else {
+                        errorMessage = cleanAccountError(verifyResult?.exceptionOrNull()?.localizedMessage)
+                    }
+                } else {
+                    isEmailLoading = false
+                    isAwaitingVerification = false
+                    AccountVerificationStorage.setPref(context, false)
+                    showAccountToast(context, "Signed in!")
+                }
+            } else {
+                isEmailLoading = false
+                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
+            }
         }
     }
 
-    private suspend fun executePasswordAuth(
-        email: String,
-        password: String,
-        isSignUp: Boolean,
-    ): Result<*>? = if (isSignUp) {
-        authRepository?.signUpWithEmailPassword(email, password)
-    } else {
-        authRepository?.signInWithEmailPassword(email, password)
-    }
-
-    private fun handlePasswordAuthResult(
-        result: Result<*>?,
-        isSignUp: Boolean,
+    fun checkVerificationStatus(
+        silentOnFailure: Boolean = false,
+        onSuccess: () -> Unit = {},
     ) {
-        if (result?.isSuccess == true) {
-            password = ""
-            confirmPassword = ""
-            val successMessage = if (isSignUp) "Account created!" else "Signed in!"
-            Toast.makeText(context, successMessage, Toast.LENGTH_SHORT).show()
-        } else {
-            errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
+        if (isCheckingVerification) return
+        isCheckingVerification = true
+        if (!silentOnFailure) {
+            errorMessage = null
         }
+        scope.launch {
+            try {
+                val result = authRepository?.reloadUser()
+                val user = result?.getOrNull()
+                if (user?.isEmailVerified == true) {
+                    isAwaitingVerification = false
+                    AccountVerificationStorage.setPref(context, false)
+                    cooldownJob?.cancel()
+                    resendCooldownSeconds = 0
+                    errorMessage = null
+                    showAccountToast(context, "Email verified! Welcome to boxlore.")
+                    onSuccess()
+                } else if (!silentOnFailure) {
+                    val error = result?.exceptionOrNull()
+                    if (error != null) {
+                        errorMessage = cleanAccountError(error.localizedMessage)
+                    } else {
+                        errorMessage = "We haven't received verification yet. Please tap the link in your email and try again."
+                    }
+                }
+            } finally {
+                isCheckingVerification = false
+            }
+        }
+    }
+
+    fun resendVerificationEmail() {
+        if (resendCooldownSeconds > 0 || isEmailLoading) return
+        isEmailLoading = true
+        errorMessage = null
+        scope.launch {
+            val result = authRepository?.sendEmailVerification()
+            isEmailLoading = false
+            if (result?.isSuccess == true) {
+                startResendCooldownTimer(30)
+                showAccountToast(context, "Verification email resent")
+            } else {
+                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
+            }
+        }
+    }
+
+    fun signOutAndResetToSignUp() {
+        cooldownJob?.cancel()
+        resendCooldownSeconds = 0
+        isAwaitingVerification = false
+        AccountVerificationStorage.setPref(context, false)
+        activeAuthMode = AuthMode.SIGN_UP
+        usePasswordAuth = true
+        if (email.isBlank()) {
+            email = authRepository?.currentUser?.value?.email.orEmpty()
+        }
+        password = ""
+        confirmPassword = ""
+        errorMessage = null
+        authRepository?.signOut()
     }
 
     fun handleGoogleSignIn() {
@@ -402,7 +444,9 @@ internal class AccountAuthState(
             val targetContext = activity ?: context
             when (val outcome = performGoogleSignIn(targetContext, authRepository)) {
                 GoogleAuthOutcome.Success -> {
-                    Toast.makeText(context, "Signed in with Google!", Toast.LENGTH_SHORT).show()
+                    isAwaitingVerification = false
+                    AccountVerificationStorage.setPref(context, false)
+                    showAccountToast(context, "Signed in with Google!")
                 }
                 GoogleAuthOutcome.Cancelled -> Unit
                 is GoogleAuthOutcome.Failure -> {
@@ -415,6 +459,7 @@ internal class AccountAuthState(
 
     fun handleForgotPassword() {
         val trimmedEmail = email.trim()
+        email = trimmedEmail
         if (trimmedEmail.isBlank()) {
             errorMessage = "Enter your email address above to reset password"
             return
@@ -427,77 +472,12 @@ internal class AccountAuthState(
         scope.launch {
             val result = authRepository?.sendPasswordReset(trimmedEmail)
             if (result?.isSuccess == true) {
-                Toast.makeText(context, "Password reset email sent", Toast.LENGTH_SHORT).show()
+                showAccountToast(context, "Password reset email sent")
             } else {
                 errorMessage = result?.exceptionOrNull()?.localizedMessage ?: "Failed to send reset email"
             }
         }
     }
-
-    fun toEmailInputState() = EmailInputState(
-        email = email,
-        isSignUp = activeAuthMode == AuthMode.SIGN_UP,
-        isLoading = isEmailLoading,
-        errorMessage = errorMessage,
-    )
-
-    fun toEmailInputActions(actionButtonRequester: BringIntoViewRequester) = EmailInputActions(
-        onEmailChange = {
-            email = it
-            errorMessage = null
-        },
-        onSendLink = ::submitEmailLink,
-        onSwitchToPassword = {
-            usePasswordAuth = true
-            errorMessage = null
-        },
-        onInputFocused = {
-            isAnyInputFocused = true
-            scope.launch { actionButtonRequester.bringIntoView() }
-        },
-    )
-
-    fun toPasswordInputState() = PasswordInputState(
-        email = email,
-        password = password,
-        confirmPassword = confirmPassword,
-        passwordVisible = passwordVisible,
-        confirmPasswordVisible = confirmPasswordVisible,
-        isSignUp = activeAuthMode == AuthMode.SIGN_UP,
-        isLoading = isEmailLoading,
-        errorMessage = errorMessage,
-    )
-
-    fun toPasswordInputActions(
-        actionButtonRequester: BringIntoViewRequester,
-        onNextField: () -> Unit,
-    ) = PasswordInputActions(
-        onEmailChange = {
-            email = it
-            errorMessage = null
-        },
-        onPasswordChange = {
-            password = it
-            errorMessage = null
-        },
-        onConfirmPasswordChange = {
-            confirmPassword = it
-            errorMessage = null
-        },
-        onTogglePasswordVisible = { passwordVisible = !passwordVisible },
-        onToggleConfirmPasswordVisible = { confirmPasswordVisible = !confirmPasswordVisible },
-        onForgotPassword = ::handleForgotPassword,
-        onSubmit = ::submitPasswordAuth,
-        onSwitchToEmailLink = {
-            usePasswordAuth = false
-            errorMessage = null
-        },
-        onInputFocused = {
-            isAnyInputFocused = true
-            scope.launch { actionButtonRequester.bringIntoView() }
-        },
-        onNextField = onNextField,
-    )
 
     companion object {
         fun saver(
@@ -516,41 +496,138 @@ internal class AccountAuthState(
                     state.confirmPasswordVisible,
                     state.magicLinkSent,
                     state.errorMessage,
+                    state.isAwaitingVerification,
+                    state.resendCooldownSeconds,
                 )
             },
             restore = { list ->
-                val activeAuthMode = (list.getOrNull(0) as? String)?.let {
-                    runCatching { AuthMode.valueOf(it) }.getOrNull()
-                } ?: AuthMode.SIGN_IN
-                val usePasswordAuth = list.getOrNull(1) as? Boolean ?: false
-                val email = (list.getOrNull(2) as? String).orEmpty()
-                val isLegacy = list.size >= 9
-                val passwordVisible = (if (isLegacy) list.getOrNull(5) else list.getOrNull(3)) as? Boolean ?: false
-                val confirmPasswordVisible = (if (isLegacy) list.getOrNull(6) else list.getOrNull(4)) as? Boolean ?: false
-                val magicLinkSent = (if (isLegacy) list.getOrNull(7) else list.getOrNull(5)) as? Boolean ?: false
-                val errorMessage = (if (isLegacy) list.getOrNull(8) else list.getOrNull(6)) as? String
                 AccountAuthState(
                     authRepository = authRepository,
                     context = context,
                     activity = activity,
                     focusManager = focusManager,
                     scope = scope,
-                    initialState = SavedAccountAuthState(
-                        activeAuthMode = activeAuthMode,
-                        usePasswordAuth = usePasswordAuth,
-                        email = email,
-                        password = "",
-                        confirmPassword = "",
-                        passwordVisible = passwordVisible,
-                        confirmPasswordVisible = confirmPasswordVisible,
-                        magicLinkSent = magicLinkSent,
-                        errorMessage = errorMessage,
-                    ),
+                    initialState = restoreSavedAccountAuthState(list),
                 )
             },
         )
     }
 }
+
+private fun restoreSavedAccountAuthState(list: List<*>): SavedAccountAuthState {
+    val activeAuthMode = (list.getOrNull(0) as? String)?.let {
+        runCatching { AuthMode.valueOf(it) }.getOrNull()
+    } ?: AuthMode.SIGN_IN
+    val usePasswordAuth = list.getOrNull(1) as? Boolean ?: false
+    val email = (list.getOrNull(2) as? String).orEmpty()
+    val isLegacyNineItem = list.size >= 9 && list.getOrNull(3) is String
+
+    return if (isLegacyNineItem) {
+        SavedAccountAuthState(
+            activeAuthMode = activeAuthMode,
+            usePasswordAuth = usePasswordAuth,
+            email = email,
+            password = "",
+            confirmPassword = "",
+            passwordVisible = list.getOrNull(5) as? Boolean ?: false,
+            confirmPasswordVisible = list.getOrNull(6) as? Boolean ?: false,
+            magicLinkSent = list.getOrNull(7) as? Boolean ?: false,
+            errorMessage = list.getOrNull(8) as? String,
+            isAwaitingVerification = false,
+            resendCooldownSeconds = 0,
+        )
+    } else {
+        SavedAccountAuthState(
+            activeAuthMode = activeAuthMode,
+            usePasswordAuth = usePasswordAuth,
+            email = email,
+            password = "",
+            confirmPassword = "",
+            passwordVisible = list.getOrNull(3) as? Boolean ?: false,
+            confirmPasswordVisible = list.getOrNull(4) as? Boolean ?: false,
+            magicLinkSent = list.getOrNull(5) as? Boolean ?: false,
+            errorMessage = list.getOrNull(6) as? String,
+            isAwaitingVerification = list.getOrNull(7) as? Boolean ?: false,
+            resendCooldownSeconds = (list.getOrNull(8) as? Number)?.toInt() ?: 0,
+        )
+    }
+}
+
+private suspend fun executePasswordAuth(
+    authRepository: AuthRepository?,
+    email: String,
+    password: String,
+    isSignUp: Boolean,
+): Result<*>? = if (isSignUp) {
+    authRepository?.signUpWithEmailPassword(email, password)
+} else {
+    authRepository?.signInWithEmailPassword(email, password)
+}
+
+internal fun AccountAuthState.toEmailInputState() = EmailInputState(
+    email = email,
+    isSignUp = activeAuthMode == AuthMode.SIGN_UP,
+    isLoading = isEmailLoading,
+    errorMessage = errorMessage,
+)
+
+internal fun AccountAuthState.toEmailInputActions(actionButtonRequester: BringIntoViewRequester) = EmailInputActions(
+    onEmailChange = {
+        email = it
+        errorMessage = null
+    },
+    onSendLink = ::submitEmailLink,
+    onSwitchToPassword = {
+        usePasswordAuth = true
+        errorMessage = null
+    },
+    onInputFocused = {
+        isAnyInputFocused = true
+        scope.launch { actionButtonRequester.bringIntoView() }
+    },
+)
+
+internal fun AccountAuthState.toPasswordInputState() = PasswordInputState(
+    email = email,
+    password = password,
+    confirmPassword = confirmPassword,
+    passwordVisible = passwordVisible,
+    confirmPasswordVisible = confirmPasswordVisible,
+    isSignUp = activeAuthMode == AuthMode.SIGN_UP,
+    isLoading = isEmailLoading,
+    errorMessage = errorMessage,
+)
+
+internal fun AccountAuthState.toPasswordInputActions(
+    actionButtonRequester: BringIntoViewRequester,
+    onNextField: () -> Unit,
+) = PasswordInputActions(
+    onEmailChange = {
+        email = it
+        errorMessage = null
+    },
+    onPasswordChange = {
+        password = it
+        errorMessage = null
+    },
+    onConfirmPasswordChange = {
+        confirmPassword = it
+        errorMessage = null
+    },
+    onTogglePasswordVisible = { passwordVisible = !passwordVisible },
+    onToggleConfirmPasswordVisible = { confirmPasswordVisible = !confirmPasswordVisible },
+    onForgotPassword = ::handleForgotPassword,
+    onSubmit = ::submitPasswordAuth,
+    onSwitchToEmailLink = {
+        usePasswordAuth = false
+        errorMessage = null
+    },
+    onInputFocused = {
+        isAnyInputFocused = true
+        scope.launch { actionButtonRequester.bringIntoView() }
+    },
+    onNextField = onNextField,
+)
 
 @Composable
 internal fun rememberAccountAuthState(
@@ -570,112 +647,8 @@ internal fun rememberAccountAuthState(
     state.activity = activity
     state.focusManager = focusManager
     state.scope = scope
+    if (state.isAwaitingVerification && state.email.isBlank()) {
+        state.email = authRepository?.currentUser?.value?.email.orEmpty()
+    }
     return state
-}
-
-@Composable
-internal fun AuthDivider() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        HorizontalDivider(
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
-        Text(
-            text = "or",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 14.dp),
-        )
-        HorizontalDivider(
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
-    }
-}
-
-@Composable
-internal fun AuthErrorBanner(message: String) {
-    Spacer(Modifier.height(12.dp))
-    Surface(
-        color = MaterialTheme.colorScheme.errorContainer,
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-internal fun AccountPrivacyCard(modifier: Modifier = Modifier) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Security,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "Privacy & Data Protection",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            Text(
-                text = "Your account is used strictly to sync your library, queue, and playback history across devices. It is completely isolated and never linked to app usage or analytics data.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 18.sp,
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "Authentication is handled directly by Firebase (Google). Your email address is never stored on our servers.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 18.sp,
-            )
-        }
-    }
 }
