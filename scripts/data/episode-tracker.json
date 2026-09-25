@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-24T21:59:13.226Z",
+  "lastRun": "2026-09-25T00:26:18.704Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "efe4c226-cfc6-11f0-83c5-0f782a2af401",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "aed66fd3-4a6c-4466-899e-c9a75351499a",
-      "lastEpisodeTitle": "NPR News: 09-24-2026 5PM EDT",
+      "lastRssKey": "a4dc4fea-7d20-4a7c-bc65-4df050bd1e29",
+      "lastEpisodeTitle": "NPR News: 09-24-2026 8PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790287157028
+      "lastCheckedAt": 1790295983477
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75331248",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "3e1747f6-b85c-11f1-9ef2-d3a3912542ac",
-      "lastEpisodeTitle": "5PM ET 09/24/2026 Newscast",
+      "lastRssKey": "63402a16-b875-11f1-b213-4f23e1e25130",
+      "lastEpisodeTitle": "8PM ET 09/24/2026 Newscast",
       "lastEpisodeId": "60769426413",
-      "lastCheckedAt": 1790287167262
+      "lastCheckedAt": 1790295997488
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -231,10 +231,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M39WPEN52ZYA5ZT7MZ0TF8PD",
-      "lastEpisodeTitle": "Sin City tourism and data center discourse",
+      "lastRssKey": "01M3AFCM1717FRS1TCW66W8WMW",
+      "lastEpisodeTitle": "Fed officials speak up on inflation",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790274794807
+      "lastCheckedAt": 1790296003105
     },
     "432535": {
       "lastRssKey": "df581185-7631-4f5a-949b-daf47fd2b3e8",
@@ -424,10 +424,10 @@
       "lastCheckedAt": 1790239246910
     },
     "640518": {
-      "lastRssKey": "6aab8dc05d36baebf12f6d3b",
-      "lastEpisodeTitle": "#378: Das sauteure Shirt",
-      "lastEpisodeId": "60218523536",
-      "lastCheckedAt": 1789683653364
+      "lastRssKey": "6ab4d4dd62a47b6becab199f",
+      "lastEpisodeTitle": "Koksende Erstklässler",
+      "lastEpisodeId": "60793415595",
+      "lastCheckedAt": 1790296024012
     },
     "665403": {
       "lastRssKey": "b9a84e4c-fb88-4d83-ba29-aad8df1a5959",
@@ -436,10 +436,10 @@
       "lastCheckedAt": 1790014628618
     },
     "724143": {
-      "lastRssKey": "113009b4-b800-11f1-aa33-731ff81ea96c",
-      "lastEpisodeTitle": "Lula prepara MP para fim das bets; Dino julga interferência estrangeira na eleição; EUA e China estendem trégua",
-      "lastEpisodeId": "60409761274",
-      "lastCheckedAt": 1790258580284
+      "lastRssKey": "801cc29a-b864-11f1-91c7-5333f2db0495",
+      "lastEpisodeTitle": "Números da pesquisa Datafolha, comunicação de Flávio com Vorcaro e ação contra desembargador da 'Turma do KN'",
+      "lastEpisodeId": "60793274542",
+      "lastCheckedAt": 1790296025449
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/mbdm7FqApWkMF1leES32j8BmnIVkghmms67B1O_PMMg",
@@ -508,9 +508,9 @@
       "lastCheckedAt": 1790258586712
     },
     "790970": {
-      "lastRssKey": "49fbe622-b59a-11f1-890a-c3cf0fa68f14",
-      "lastEpisodeTitle": "Protect Your Brain, Extend Your Life: 7 Mistakes to Avoid for Better Cognitive Health with Dr Tommy Wood #681",
-      "lastCheckedAt": 1790118585540
+      "lastRssKey": "a8d87878-b75b-11f1-b099-2b2fa066703a",
+      "lastEpisodeTitle": "BITESIZE | The Truth About Stress: How to Reduce Overwhelm & Feel Calmer Every Day | Dr Rangan Chatterjee #682",
+      "lastCheckedAt": 1790296032556
     },
     "808826": {
       "lastRssKey": "6aacb3fabafe1ba456473e96",
@@ -629,16 +629,16 @@
       "lastCheckedAt": 1790239267544
     },
     "1065434": {
-      "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1120",
-      "lastEpisodeTitle": "PodQuiz 1120",
+      "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1121",
+      "lastEpisodeTitle": "PodQuiz 1121",
       "lastEpisodeId": "59615769287",
-      "lastCheckedAt": 1789691904379
+      "lastCheckedAt": 1790296047902
     },
     "1070334": {
-      "lastRssKey": "4b22a37c-b687-11f1-be6b-e7f38170af54",
-      "lastEpisodeTitle": "Frank Skinner's Radio Days: Pilkunviilaaja",
+      "lastRssKey": "5f0860ba-b818-11f1-abb1-7fda03d5bad1",
+      "lastEpisodeTitle": "Spotted: Frank Skinner!",
       "lastEpisodeId": "60436867156",
-      "lastCheckedAt": 1790127605185
+      "lastCheckedAt": 1790296048438
     },
     "1076260": {
       "lastRssKey": "285d3822-69fd-4d3e-bb34-b4c9011155e1",
@@ -1032,10 +1032,10 @@
       "lastCheckedAt": 1790207606978
     },
     "6280366": {
-      "lastRssKey": "64f9f039-08bd-4e38-81fc-4e73bc398745",
-      "lastEpisodeTitle": "Opus 5.5 vs GPT-6 Sol and Luna",
-      "lastEpisodeId": "60592860794",
-      "lastCheckedAt": 1790197789530
+      "lastRssKey": "ac815790-a040-4ef8-9804-c63ab32a03c5",
+      "lastEpisodeTitle": "AI Agents Are Moving Into the Real World",
+      "lastEpisodeId": "60788745078",
+      "lastCheckedAt": 1790296087045
     },
     "6413946": {
       "lastRssKey": "c57ce5c4-2ef3-41b4-bdff-f6352fb01bdc",
@@ -1096,10 +1096,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "c37e5376-b5d7-11f1-9da7-0ff4e07486a7",
-      "lastEpisodeTitle": "Richard’s Top 3 Music Videos Of All Time",
-      "lastEpisodeId": "58885847730",
-      "lastCheckedAt": 1790207611307
+      "lastRssKey": "4de9e8b4-b802-11f1-bcfb-e3b95b38ae2b",
+      "lastEpisodeTitle": "What A Time To Be Alive! - Marina Hyde [EXCLUSIVE EXTRACT]",
+      "lastEpisodeId": "60795701953",
+      "lastCheckedAt": 1790296090140
     },
     "6725294": {
       "lastRssKey": "cmu70s7w102h301w6fvdg7c42",
@@ -1246,10 +1246,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7239415": {
-      "lastRssKey": "3c240598-b798-11f1-973b-d34c4a658841",
-      "lastEpisodeTitle": "Montreal reveals roster finalists... - This just got SPICY",
+      "lastRssKey": "d48c7312-b863-11f1-a24b-4feb172926d6",
+      "lastEpisodeTitle": "Just when you thought it couldn't get crazier...",
       "lastEpisodeId": "60132290764",
-      "lastCheckedAt": 1790207634032
+      "lastCheckedAt": 1790296117626
     },
     "7248222": {
       "lastRssKey": "9cc18230-b861-11f1-bfdc-2363c707f7ba",
@@ -1393,10 +1393,10 @@
       "lastCheckedAt": 1790258655107
     },
     "7756959": {
-      "lastRssKey": "48d14766-b7ab-11f1-9196-6f2ba5230b98",
-      "lastEpisodeTitle": "Javiera Mena: 20 años de un disco atemporal | VA VA VA",
+      "lastRssKey": "391000e0-b870-11f1-b41d-530f7dafaaab",
+      "lastEpisodeTitle": "Austin TV: el nuevo concepto detrás de sus máscaras y su nuevo álbum | VA VA VA",
       "lastEpisodeId": "60132395912",
-      "lastCheckedAt": 1790220115690
+      "lastCheckedAt": 1790296125995
     },
     "7837137": {
       "lastRssKey": "https://api.spreaker.com/episode/71692639",
@@ -1417,10 +1417,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/9a759689-7198-5ac9-83e4-733565d82f1e",
-      "lastEpisodeTitle": "Have you made your B&B list ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/6214fa70-a6a1-5c32-9a78-09b2248cd07c",
+      "lastEpisodeTitle": "Narcissism math is ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790287276202
+      "lastCheckedAt": 1790296127297
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
