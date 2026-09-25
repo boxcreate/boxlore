@@ -4,6 +4,14 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+kover {
+    currentProject {
+        createVariant("merged") {
+            add("debug")
+        }
+    }
+}
+
 android {
     namespace = "cx.aswin.boxlore.feature.history"
     compileSdk = 36
