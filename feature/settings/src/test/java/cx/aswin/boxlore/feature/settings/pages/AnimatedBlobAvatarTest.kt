@@ -89,4 +89,35 @@ class AnimatedBlobAvatarTest {
         assertTrue(largeStroke > standardStroke)
         assertTrue(standardStroke > smallStroke)
     }
+
+    @Test
+    fun blobAvatar_headphones_remainWithinCanvasBounds() {
+        val width = 200f
+        val height = 200f
+        val maxPulse = 1.06f
+        val maxBreatheX = 1.02f
+        val maxBreatheY = 1.02f
+
+        val bodyWidth = width * 0.72f * maxBreatheX
+        val bodyHeight = height * 0.68f * maxBreatheY
+
+        val cupSpacingX = bodyWidth * 0.49f
+        val cupWidth = width * 0.15f * maxPulse
+        val outerEarcupExtent = cupSpacingX + (cupWidth * 0.50f)
+
+        // Outer earcup edge must remain safely within half the canvas width
+        assertTrue(
+            "Outer earcup ($outerEarcupExtent) must stay within half canvas width (${width / 2f})",
+            outerEarcupExtent < (width / 2f),
+        )
+
+        val maxFloatPx = height * 0.04f
+        val minCenterY = (height / 2f) - maxFloatPx
+        val bandTopY = minCenterY - (bodyHeight * 0.54f)
+        val bandStroke = (width * 0.065f).coerceAtLeast(3f)
+        val topBandEdge = bandTopY - (bandStroke / 2f)
+
+        // Headband top must stay above zero (not clipped at top)
+        assertTrue("Top edge of headband ($topBandEdge) must stay above 0", topBandEdge > 0f)
+    }
 }
