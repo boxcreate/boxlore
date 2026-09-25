@@ -97,6 +97,7 @@ data class SettingsScreenConfig(
     val appInstanceId: String? = null,
     /** Optional deep-link page: "library", "appearance", etc. */
     val initialPage: String? = null,
+    val isOnboarding: Boolean = false,
 )
 
 /** Appearance sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -209,16 +210,20 @@ fun SettingsScreen(
         }
     }
 
-    BackHandler(enabled = destination != ProfileSettingsDestination.Hub) {
-        val prev = previousDestination
-        previousDestination = null
-        destination = prev ?: ProfileSettingsDestination.Hub
-    }
-
     val returnToHub = {
         val prev = previousDestination
         previousDestination = null
-        destination = prev ?: ProfileSettingsDestination.Hub
+        if (prev != null) {
+            destination = prev
+        } else if (initialPage != null && initialPage != "hub") {
+            config.onBack()
+        } else {
+            destination = ProfileSettingsDestination.Hub
+        }
+    }
+
+    BackHandler(enabled = destination != ProfileSettingsDestination.Hub) {
+        returnToHub()
     }
 
     val contentBundle = SettingsPagesContentBundle(
@@ -337,6 +342,7 @@ private fun SettingsAnimatedPages(
                     onBack = actions.onReturnToHub,
                     syncStatus = syncStatus,
                     onSyncNow = repositories.onSyncNow ?: {},
+                    isOnboarding = config.isOnboarding,
                 )
             }
 

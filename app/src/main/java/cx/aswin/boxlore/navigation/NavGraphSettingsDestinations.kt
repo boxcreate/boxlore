@@ -5,6 +5,7 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
 import cx.aswin.boxlore.feature.settings.AppearanceSettings
 import cx.aswin.boxlore.feature.settings.DownloadsNavigation
 import cx.aswin.boxlore.feature.settings.LibraryBackupWriters
@@ -61,7 +62,19 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 },
             ),
             config = SettingsScreenConfig(
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    val user = container.authRepository.currentUser.value
+                    if (!w.session.onboardingCompleted && user != null && user.isEmailVerified) {
+                        w.session.onOnboardingCompleted()
+                        w.session.onboardingViewModel.markOnboardingCompletedSilent {
+                            navController.navigate("home") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                        }
+                    } else {
+                        navController.popBackStack()
+                    }
+                },
                 onResetAnalytics = {
                     try {
                         cx.aswin.boxlore.core.analytics.AnalyticsHelper.resetIdentity()
@@ -71,6 +84,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 },
                 appInstanceId = appInstanceId,
                 initialPage = settingsPage,
+                isOnboarding = !w.session.onboardingCompleted,
             ),
             regionSettings = RegionSettings(
                 currentRegion = settingsState.currentRegion,

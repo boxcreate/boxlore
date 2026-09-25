@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.ui
 
+import android.net.Uri
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -89,6 +90,7 @@ import cx.aswin.boxlore.ui.announcement.FeatureAnnouncementOverlay
 import cx.aswin.boxlore.ui.announcement.InAppAnnouncementDialog
 import cx.aswin.boxlore.ui.announcement.shouldSuppressWhatsNewOnPlay
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialog
+import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialogActions
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportEffects
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import cx.aswin.boxlore.ui.libraryimport.performJsonLibraryImport
@@ -228,12 +230,26 @@ fun BoxLoreAppRoot(
 
     val currentIntent = intentState.value
     val hasDeepLink = currentIntent?.data != null
+    val initialUser = container.authRepository.currentUser.value
     var onboardingCompleted by remember {
-        mutableStateOf(onboardingViewModel.isOnboardingCompleted() || hasDeepLink)
+        mutableStateOf(
+            onboardingViewModel.isOnboardingCompleted() ||
+                hasDeepLink ||
+                (initialUser != null && initialUser.isEmailVerified),
+        )
     }
 
     LaunchedEffect(hasDeepLink) {
         if (hasDeepLink) {
+            onboardingViewModel.markOnboardingCompletedSilent {
+                onboardingCompleted = true
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val user = container.authRepository.currentUser.value
+        if (user != null && user.isEmailVerified && !onboardingViewModel.isOnboardingCompleted()) {
             onboardingViewModel.markOnboardingCompletedSilent {
                 onboardingCompleted = true
             }
@@ -788,54 +804,78 @@ fun BoxLoreAppRoot(
 
             OpmlImportDialog(
                 state = opmlImportState,
-                onDismissRequest = {
-                    val currentState = opmlImportState
-                    if (currentState is OpmlImportState.Success) {
-                        if (currentState.isJson) {
-                            if (currentRoute == "onboarding") {
-                                onboardingCompleted = true
-                                navController.navigate("home") {
-                                    popUpTo("onboarding") { inclusive = true }
+                actions = OpmlImportDialogActions(
+                    onDismissRequest = {
+                        val currentState = opmlImportState
+                        if (currentState is OpmlImportState.Success) {
+                            if (currentState.isJson) {
+                                if (currentRoute == "onboarding") {
+                                    onboardingCompleted = true
+                                    navController.navigate("home") {
+                                        popUpTo("onboarding") { inclusive = true }
+                                    }
+                                }
+                                onboardingViewModel.markOnboardingCompletedSilent {
+                                    activity.recreate()
+                                }
+                            } else {
+                                if (currentRoute == "onboarding") {
+                                    AnalyticsHelper.trackOnboardingImportCompleted(
+                                        importType = "opml",
+                                        importedPodcastCount = currentState.importedCount,
+                                        importedPodcastsList = currentState.importedPodcasts.map { it.title },
+                                        totalOnboardingTimeSeconds = onboardingViewModel.getTotalOnboardingTime(),
+                                        entryPoint = opmlImportSource,
+                                    )
+                                    onboardingViewModel.generateRecommendationsFromOpml(currentState.importedPodcasts)
+                                } else if (opmlImportSource == "home_import_banner") {
+                                    AnalyticsHelper.trackOnboardingImportCompleted(
+                                        importType = "opml",
+                                        importedPodcastCount = currentState.importedCount,
+                                        importedPodcastsList = currentState.importedPodcasts.map { it.title },
+                                        totalOnboardingTimeSeconds = 0f,
+                                        entryPoint = "home_import_banner",
+                                    )
                                 }
                             }
-                            onboardingViewModel.markOnboardingCompletedSilent {
-                                activity.recreate()
-                            }
-                        } else {
-                            if (currentRoute == "onboarding") {
-                                AnalyticsHelper.trackOnboardingImportCompleted(
-                                    importType = "opml",
-                                    importedPodcastCount = currentState.importedCount,
-                                    importedPodcastsList = currentState.importedPodcasts.map { it.title },
-                                    totalOnboardingTimeSeconds = onboardingViewModel.getTotalOnboardingTime(),
-                                    entryPoint = opmlImportSource,
-                                )
-                                onboardingViewModel.generateRecommendationsFromOpml(currentState.importedPodcasts)
-                            } else if (opmlImportSource == "home_import_banner") {
-                                AnalyticsHelper.trackOnboardingImportCompleted(
-                                    importType = "opml",
-                                    importedPodcastCount = currentState.importedCount,
-                                    importedPodcastsList = currentState.importedPodcasts.map { it.title },
-                                    totalOnboardingTimeSeconds = 0f,
-                                    entryPoint = "home_import_banner",
-                                )
+                        }
+                        opmlImportState = OpmlImportState.Idle
+                    },
+                    onSelectionChanged = { newSelection ->
+                        val currentState = opmlImportState
+                        if (currentState is OpmlImportState.AskCompleted) {
+                            opmlImportState = currentState.copy(selectedIds = newSelection)
+                        }
+                    },
+                    onConfirmCompleted = {
+                        val currentState = opmlImportState
+                        if (currentState is OpmlImportState.AskCompleted) {
+                            val selectedIds = currentState.selectedIds
+                            val podcastsToMark = currentState.importedPodcasts.filter { it.id in selectedIds }
+                            if (podcastsToMark.isEmpty()) {
+                                opmlImportState =
+                                    OpmlImportState.Success(
+                                        importedCount = currentState.importedPodcasts.size,
+                                        completedCount = 0,
+                                        isJson = false,
+                                        importedPodcasts = currentState.importedPodcasts,
+                                    )
+                            } else {
+                                opmlImportState =
+                                    OpmlImportState.Completing(
+                                        progress = 0f,
+                                        currentShowTitle = podcastsToMark.first().title,
+                                        podcastsToMark = podcastsToMark,
+                                        totalImportedCount = currentState.importedPodcasts.size,
+                                        importedPodcasts = currentState.importedPodcasts,
+                                    )
+                                importTriggerKey = System.currentTimeMillis()
                             }
                         }
-                    }
-                    opmlImportState = OpmlImportState.Idle
-                },
-                onSelectionChanged = { newSelection ->
-                    val currentState = opmlImportState
-                    if (currentState is OpmlImportState.AskCompleted) {
-                        opmlImportState = currentState.copy(selectedIds = newSelection)
-                    }
-                },
-                onConfirmCompleted = {
-                    val currentState = opmlImportState
-                    if (currentState is OpmlImportState.AskCompleted) {
-                        val selectedIds = currentState.selectedIds
-                        val podcastsToMark = currentState.importedPodcasts.filter { it.id in selectedIds }
-                        if (podcastsToMark.isEmpty()) {
+                    },
+                    onSkipCompleted = {
+                        val currentState = opmlImportState
+                        if (currentState is OpmlImportState.AskCompleted) {
                             opmlImportState =
                                 OpmlImportState.Success(
                                     importedCount = currentState.importedPodcasts.size,
@@ -843,36 +883,18 @@ fun BoxLoreAppRoot(
                                     isJson = false,
                                     importedPodcasts = currentState.importedPodcasts,
                                 )
-                        } else {
-                            opmlImportState =
-                                OpmlImportState.Completing(
-                                    progress = 0f,
-                                    currentShowTitle = podcastsToMark.first().title,
-                                    podcastsToMark = podcastsToMark,
-                                    totalImportedCount = currentState.importedPodcasts.size,
-                                    importedPodcasts = currentState.importedPodcasts,
-                                )
-                            importTriggerKey = System.currentTimeMillis()
                         }
-                    }
-                },
-                onSkipCompleted = {
-                    val currentState = opmlImportState
-                    if (currentState is OpmlImportState.AskCompleted) {
-                        opmlImportState =
-                            OpmlImportState.Success(
-                                importedCount = currentState.importedPodcasts.size,
-                                completedCount = 0,
-                                isJson = false,
-                                importedPodcasts = currentState.importedPodcasts,
-                            )
-                    }
-                },
-                onImportJsonSelected = { uri -> performJsonImport(uri) },
-                onImportOpmlSelected = { uri ->
-                    opmlImportState = OpmlImportState.Parsing(uri)
-                    importTriggerKey = System.currentTimeMillis()
-                },
+                    },
+                    onImportJsonSelected = { uri -> performJsonImport(uri) },
+                    onImportOpmlSelected = { uri ->
+                        opmlImportState = OpmlImportState.Parsing(uri)
+                        importTriggerKey = System.currentTimeMillis()
+                    },
+                    onSyncAccountSelected = {
+                        opmlImportState = OpmlImportState.Idle
+                        navController.navigate("settings?page=account")
+                    },
+                ),
             )
 
             if (showFeedbackSheet) {

@@ -18,10 +18,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.ImportExport
 import androidx.compose.material.icons.rounded.SettingsBackupRestore
 import androidx.compose.material3.Button
@@ -195,12 +198,17 @@ internal fun ProgressCopy(title: String, subtitle: String, detail: String? = nul
 }
 
 @Composable
-internal fun SelectorContent(onJson: () -> Unit, onOpml: () -> Unit,) {
+internal fun SelectorContent(
+    onJson: () -> Unit,
+    onOpml: () -> Unit,
+    onSyncAccount: () -> Unit = {},
+) {
     Column(
         modifier =
         Modifier
             .fillMaxSize()
-            .padding(top = 40.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -222,7 +230,7 @@ internal fun SelectorContent(onJson: () -> Unit, onOpml: () -> Unit,) {
             )
         }
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Text(
             text = "Import library",
@@ -233,15 +241,23 @@ internal fun SelectorContent(onJson: () -> Unit, onOpml: () -> Unit,) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Restore a boxlore backup, or migrate shows from another podcast app.",
+            text = "Sync your account, restore a backup, or migrate shows from another app.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = 8.dp),
         )
 
-        Spacer(modifier = Modifier.height(36.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
+        ImportOptionCard(
+            icon = Icons.Rounded.CloudSync,
+            title = "boxlore cloud sync",
+            subtitle = "Sign in to your account to restore subscriptions, queue, and history",
+            badge = "cloud",
+            onClick = onSyncAccount,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         ImportOptionCard(
             icon = Icons.Rounded.SettingsBackupRestore,
             title = "boxlore backup",

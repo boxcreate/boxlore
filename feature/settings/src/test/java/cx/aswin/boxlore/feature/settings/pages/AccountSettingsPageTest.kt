@@ -136,4 +136,23 @@ class AccountSettingsPageTest {
         assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Idle))
         assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Success(1000L)))
     }
+
+    @Test
+    fun settingsScreenConfig_isOnboardingDefault_isFalse() {
+        val config = cx.aswin.boxlore.feature.settings.SettingsScreenConfig(
+            onBack = {},
+            onResetAnalytics = {},
+        )
+        org.junit.Assert.assertFalse(config.isOnboarding)
+    }
+
+    @Test
+    fun settingsScreenConfig_isOnboardingCustom_isPreserved() {
+        val config = cx.aswin.boxlore.feature.settings.SettingsScreenConfig(
+            onBack = {},
+            onResetAnalytics = {},
+            isOnboarding = true,
+        )
+        org.junit.Assert.assertTrue(config.isOnboarding)
+    }
 }

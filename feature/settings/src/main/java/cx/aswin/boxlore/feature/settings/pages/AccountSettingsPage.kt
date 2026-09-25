@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDone
@@ -31,6 +33,8 @@ import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -75,6 +79,7 @@ internal fun AccountSettingsPage(
     onBack: () -> Unit,
     syncStatus: CloudSyncUiStatus = CloudSyncUiStatus.Idle,
     onSyncNow: () -> Unit = {},
+    isOnboarding: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -121,31 +126,35 @@ internal fun AccountSettingsPage(
         if (user != null && !isAwaiting) {
             SignedInContent(
                 user = user,
-                onResetPassword = {
-                    val email = user.email
-                    if (!email.isNullOrBlank()) {
-                        scope.launch {
-                            val res = authRepository?.sendPasswordReset(email)
-                            if (res?.isSuccess == true) {
-                                Toast.makeText(context, "Password reset email sent to $email", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    res?.exceptionOrNull()?.localizedMessage ?: "Failed to send reset email",
-                                    Toast.LENGTH_LONG,
-                                ).show()
+                syncStatus = syncStatus,
+                actions = SignedInActions(
+                    onResetPassword = {
+                        val email = user.email
+                        if (!email.isNullOrBlank()) {
+                            scope.launch {
+                                val res = authRepository?.sendPasswordReset(email)
+                                if (res?.isSuccess == true) {
+                                    Toast.makeText(context, "Password reset email sent to $email", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        res?.exceptionOrNull()?.localizedMessage ?: "Failed to send reset email",
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                }
                             }
                         }
-                    }
-                },
-                onSignOut = {
-                    authRepository?.signOut()
-                    authState.resetToNewEmail()
-                    Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
-                },
-                onDeleteAccountClick = { showDeleteConfirmation = true },
-                syncStatus = syncStatus,
-                onSyncNow = onSyncNow,
+                    },
+                    onSignOut = {
+                        authRepository?.signOut()
+                        authState.resetToNewEmail()
+                        Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
+                    },
+                    onDeleteAccountClick = { showDeleteConfirmation = true },
+                    onSyncNow = onSyncNow,
+                    onContinueToHome = onBack,
+                ),
+                isOnboarding = isOnboarding,
             )
         } else {
             SignedOutContent(
@@ -178,25 +187,56 @@ internal fun AccountSettingsPage(
     )
 }
 
+private data class SignedInActions(
+    val onResetPassword: () -> Unit,
+    val onSignOut: () -> Unit,
+    val onDeleteAccountClick: () -> Unit,
+    val onSyncNow: () -> Unit,
+    val onContinueToHome: () -> Unit = {},
+)
+
 @Composable
 private fun ColumnScope.SignedInContent(
     user: BoxLoreUser,
-    onResetPassword: () -> Unit,
-    onSignOut: () -> Unit,
-    onDeleteAccountClick: () -> Unit,
     syncStatus: CloudSyncUiStatus,
-    onSyncNow: () -> Unit,
+    actions: SignedInActions,
+    isOnboarding: Boolean = false,
 ) {
     UserProfileCard(user = user, syncStatus = syncStatus)
     CloudSyncInfoGroup(
         syncStatus = syncStatus,
-        onSyncNow = onSyncNow,
+        onSyncNow = actions.onSyncNow,
     )
+    if (isOnboarding) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = actions.onContinueToHome,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
+        ) {
+            Text(
+                text = "Continue to boxlore",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = GoogleSansWeight.bold,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
     AccountManagementGroup(
         user = user,
-        onResetPassword = onResetPassword,
-        onSignOut = onSignOut,
-        onDeleteAccountClick = onDeleteAccountClick,
+        onResetPassword = actions.onResetPassword,
+        onSignOut = actions.onSignOut,
+        onDeleteAccountClick = actions.onDeleteAccountClick,
     )
 }
 

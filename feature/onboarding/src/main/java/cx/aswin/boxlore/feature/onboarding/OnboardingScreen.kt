@@ -645,7 +645,7 @@ private fun WelcomeForeground(
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Upload,
+                            imageVector = Icons.Rounded.Download,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp),
