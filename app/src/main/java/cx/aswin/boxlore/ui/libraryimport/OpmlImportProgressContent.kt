@@ -277,7 +277,13 @@ internal fun SelectorContent(
 }
 
 @Composable
-internal fun ImportOptionCard(icon: ImageVector, title: String, subtitle: String, badge: String, onClick: () -> Unit,) {
+internal fun ImportOptionCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    badge: String,
+    onClick: () -> Unit,
+) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -291,16 +297,16 @@ internal fun ImportOptionCard(icon: ImageVector, title: String, subtitle: String
             modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier =
                 Modifier
-                    .size(52.dp)
+                    .size(48.dp)
                     .background(
                         color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -308,29 +314,38 @@ internal fun ImportOptionCard(icon: ImageVector, title: String, subtitle: String
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(26.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = badge,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.medium,
                         color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier =
                         Modifier
                             .background(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(8.dp),
-                            ).padding(horizontal = 8.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(6.dp),
+                            ).padding(horizontal = 7.dp, vertical = 2.dp),
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))

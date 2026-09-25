@@ -203,7 +203,6 @@ fun BoxLoreAppRoot(
             .apply()
     }
 
-    val showBottomNav = !currentRoute.startsWith("player") && currentRoute != "onboarding"
     val openedToLandingOnLaunch = remember { mutableStateOf(false) }
     val canGoBack =
         navController.previousBackStackEntry != null ||
@@ -238,6 +237,8 @@ fun BoxLoreAppRoot(
                 (initialUser != null && initialUser.isEmailVerified),
         )
     }
+    val showBottomNav =
+        onboardingCompleted && !currentRoute.startsWith("player") && currentRoute != "onboarding"
 
     LaunchedEffect(hasDeepLink) {
         if (hasDeepLink) {
