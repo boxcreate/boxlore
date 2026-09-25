@@ -119,4 +119,22 @@ class AccountSettingsPageTest {
         assertEquals("password", passwordUser.providerId)
         org.junit.Assert.assertNull(defaultUser.providerId)
     }
+
+    @Test
+    fun resolveProviderLabel_returnsExpectedLabels() {
+        assertEquals("Google", resolveProviderLabel("google.com"))
+        assertEquals("Email Link", resolveProviderLabel("emailLink"))
+        assertEquals("Password", resolveProviderLabel("password"))
+        assertEquals("Password", resolveProviderLabel(null))
+        assertEquals("Password", resolveProviderLabel("custom"))
+    }
+
+    @Test
+    fun resolveSyncPillText_returnsExpectedStrings() {
+        assertEquals("Syncing...", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Syncing))
+        assertEquals("Sync issue", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Error("Failed")))
+        assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Idle))
+        assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Success(1000L)))
+    }
 }
+

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Sync
@@ -188,86 +189,113 @@ private fun ColumnScope.SignedInContent(
     )
 }
 
+internal fun resolveProviderLabel(providerId: String?): String = when (providerId) {
+    "google.com" -> "Google"
+    "emailLink" -> "Email Link"
+    else -> "Password"
+}
+
+internal fun resolveSyncPillText(syncStatus: CloudSyncUiStatus): String = when (syncStatus) {
+    is CloudSyncUiStatus.Syncing -> "Syncing..."
+    is CloudSyncUiStatus.Error -> "Sync issue"
+    else -> "Cloud sync active"
+}
+
+internal fun resolveSyncPillIcon(syncStatus: CloudSyncUiStatus): ImageVector = when (syncStatus) {
+    is CloudSyncUiStatus.Error -> Icons.Rounded.CloudOff
+    is CloudSyncUiStatus.Syncing -> Icons.Rounded.CloudSync
+    else -> Icons.Rounded.CheckCircle
+}
+
 @Composable
-private fun AccountProviderChip(providerId: String?) {
-    val isGoogle = providerId == "google.com"
-    Surface(
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (isGoogle) {
-                Image(
-                    painter = painterResource(cx.aswin.boxlore.core.designsystem.R.drawable.ic_google_logo),
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Rounded.Lock,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(14.dp),
-                )
-            }
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = if (isGoogle) "Google Account" else "Password Account",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = GoogleSansWeight.medium,
-            )
-        }
+private fun ProviderIcon(providerId: String?) {
+    when (providerId) {
+        "google.com" -> Image(
+            painter = painterResource(cx.aswin.boxlore.core.designsystem.R.drawable.ic_google_logo),
+            contentDescription = null,
+            modifier = Modifier.size(13.dp),
+        )
+        "emailLink" -> Icon(
+            imageVector = Icons.Rounded.Email,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(13.dp),
+        )
+        else -> Icon(
+            imageVector = Icons.Rounded.Lock,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(13.dp),
+        )
     }
 }
 
 @Composable
-private fun LiveSyncStatusPill(syncStatus: CloudSyncUiStatus) {
-    val syncText = when (syncStatus) {
-        is CloudSyncUiStatus.Syncing -> "Syncing..."
-        is CloudSyncUiStatus.Error -> "Sync issue"
-        else -> "Cloud sync active"
+private fun AccountStatusPill(
+    providerId: String?,
+    syncStatus: CloudSyncUiStatus,
+    modifier: Modifier = Modifier,
+) {
+    val isError = syncStatus is CloudSyncUiStatus.Error
+    val providerLabel = resolveProviderLabel(providerId)
+    val syncText = resolveSyncPillText(syncStatus)
+    val syncIcon = resolveSyncPillIcon(syncStatus)
+    val containerColor = if (isError) {
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
     }
-    val syncIcon = when (syncStatus) {
-        is CloudSyncUiStatus.Syncing -> Icons.Rounded.CloudSync
-        is CloudSyncUiStatus.Error -> Icons.Rounded.CloudOff
-        else -> Icons.Rounded.CheckCircle
+    val syncColor = if (isError) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.primary
     }
+
     Surface(
+        modifier = modifier,
         shape = MaterialTheme.shapes.small,
-        color = if (syncStatus is CloudSyncUiStatus.Error) {
-            MaterialTheme.colorScheme.errorContainer
-        } else {
-            MaterialTheme.colorScheme.secondaryContainer
-        },
+        color = containerColor,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
         ) {
-            Icon(
-                imageVector = syncIcon,
-                contentDescription = null,
-                tint = if (syncStatus is CloudSyncUiStatus.Error) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                modifier = Modifier.size(14.dp),
+            ProviderIcon(providerId = providerId)
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = providerLabel,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = GoogleSansWeight.medium,
+                maxLines = 1,
+                softWrap = false,
             )
             Spacer(Modifier.width(6.dp))
             Text(
+                text = "•",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+            Spacer(Modifier.width(6.dp))
+            Icon(
+                imageVector = syncIcon,
+                contentDescription = null,
+                tint = syncColor,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
                 text = syncText,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (syncStatus is CloudSyncUiStatus.Error) {
+                color = if (isError) {
                     MaterialTheme.colorScheme.onErrorContainer
                 } else {
-                    MaterialTheme.colorScheme.onSecondaryContainer
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 },
                 fontWeight = GoogleSansWeight.medium,
+                maxLines = 1,
+                softWrap = false,
             )
         }
     }
@@ -319,13 +347,10 @@ private fun UserProfileCard(
 
             Spacer(Modifier.height(16.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AccountProviderChip(providerId = user.providerId)
-                LiveSyncStatusPill(syncStatus = syncStatus)
-            }
+            AccountStatusPill(
+                providerId = user.providerId,
+                syncStatus = syncStatus,
+            )
         }
     }
 }

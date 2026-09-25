@@ -119,6 +119,12 @@ internal fun ColumnScope.SignedOutContent(
                 onClick = state::handleGoogleSignIn,
             )
 
+            Spacer(Modifier.height(8.dp))
+
+            PrivacyPolicyNotice(
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
+
             Spacer(Modifier.height(6.dp))
 
             // 3. Divider
@@ -529,7 +535,11 @@ private fun EmailLinkInputSection(
         AuthErrorBanner(message = state.errorMessage)
     }
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(14.dp))
+
+    PrivacyPolicyNotice()
+
+    Spacer(Modifier.height(12.dp))
 
     Button(
         onClick = actions.onSendLink,

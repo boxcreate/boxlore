@@ -246,13 +246,15 @@ internal const val BOXLORE_PRIVACY_POLICY_URL = "https://aswin.cx/boxlore/privac
 @Composable
 internal fun PrivacyPolicyNotice(
     modifier: Modifier = Modifier,
+    prefix: String = "By continuing, you agree to our ",
+    suffix: String = ".",
     privacyUrl: String = BOXLORE_PRIVACY_POLICY_URL,
 ) {
     val uriHandler = LocalUriHandler.current
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val annotatedText = buildAnnotatedString {
-        append("Please read our ")
+        append(prefix)
         val link = LinkAnnotation.Url(
             url = privacyUrl,
             styles = TextLinkStyles(
@@ -285,7 +287,7 @@ internal fun PrivacyPolicyNotice(
         withLink(link) {
             append("Privacy Policy")
         }
-        append(". Proceeding to create an account will accept it.")
+        append(suffix)
     }
 
     Text(
