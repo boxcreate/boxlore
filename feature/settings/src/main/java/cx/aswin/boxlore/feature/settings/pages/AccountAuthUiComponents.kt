@@ -26,10 +26,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -248,6 +250,8 @@ internal fun PrivacyPolicyNotice(
     modifier: Modifier = Modifier,
     prefix: String = "By continuing, you agree to our ",
     suffix: String = ".",
+    style: TextStyle = MaterialTheme.typography.bodyMedium,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     textAlign: TextAlign = TextAlign.Start,
     privacyUrl: String = BOXLORE_PRIVACY_POLICY_URL,
 ) {
@@ -293,8 +297,8 @@ internal fun PrivacyPolicyNotice(
 
     Text(
         text = annotatedText,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = style,
+        color = color,
         textAlign = textAlign,
         modifier = modifier.fillMaxWidth(),
     )

@@ -100,22 +100,13 @@ internal fun ColumnScope.SignedOutContent(
         exit = fadeOut() + shrinkVertically(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 1. Ultra-Light Header
-            Text(
-                text = "Sign in to sync your library, queue, and playback across devices.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // 1. Ultra-Light Header Subtext with Privacy Policy
+            PrivacyPolicyNotice(
+                prefix = "Sign in to sync your library, queue, and playback across devices. By signing in or signing up, you agree to our ",
+                suffix = ".",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp, vertical = 2.dp),
-            )
-
-            Spacer(Modifier.height(4.dp))
-
-            PrivacyPolicyNotice(
-                prefix = "By signing in or signing up, you agree to our ",
-                suffix = ".",
-                modifier = Modifier.padding(horizontal = 4.dp),
             )
 
             Spacer(Modifier.height(14.dp))
