@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog.sync
 
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.ports.PodcastNotificationSyncPort
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
@@ -17,6 +18,7 @@ class SubscriptionSyncResolver(
     private val folderRepository: FolderRepository? = null,
     private val podcastRepository: PodcastRepository? = null,
     private val rssPodcastRepository: RssPodcastRepository? = null,
+    private val notificationSyncPort: PodcastNotificationSyncPort? = null,
 ) {
     suspend fun resolveSubscription(remote: UserSubscriptionSyncDto, syncedAt: Long) {
         val local = podcastDao.getPodcast(remote.podcastId)
@@ -64,6 +66,9 @@ class SubscriptionSyncResolver(
         podcastDao.upsert(stubEntity)
 
         if (!isRss) {
+            if (remote.notificationsEnabled) {
+                notificationSyncPort?.setNotificationTopicSubscribed(remote.podcastId, true)
+            }
             enrichPodcastIndexDetails(remote.podcastId)
         }
     }
@@ -111,6 +116,9 @@ class SubscriptionSyncResolver(
                 feedUrl = current.feedUrl ?: details.feedUrl,
             ),
         )
+        if (current.notificationsEnabled) {
+            notificationSyncPort?.setNotificationTopicSubscribed(podcastId, true)
+        }
     }
 
     private suspend fun handleRemoteTombstone(
@@ -135,6 +143,8 @@ class SubscriptionSyncResolver(
                 folderRepository?.removePodcastFromAllFolders(local.podcastId)
                 if (local.isRss) {
                     podcastDao.deleteRssEpisodes(local.podcastId)
+                } else if (local.notificationsEnabled) {
+                    notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, false)
                 }
             } else {
                 podcastDao.upsert(local.copy(isDirty = true))
@@ -157,40 +167,68 @@ class SubscriptionSyncResolver(
         syncedAt: Long,
     ) {
         if (!local.isSubscribed) {
-            if (remoteSubTime > local.unsubscribedAt) {
-                val updated = local.copy(
-                    isSubscribed = true,
-                    subscribedAt = remoteSubTime,
-                    unsubscribedAt = 0L,
-                    isDirty = false,
-                    syncedAt = syncedAt,
-                    autoDownloadEnabled = remote.autoDownloadEnabled,
-                    notificationsEnabled = remote.notificationsEnabled,
-                    customGenre = remote.customGenre,
-                    customGenreIcon = if (remote.customGenre == null) null else local.customGenreIcon,
-                    feedUrl = remote.feedUrl ?: local.feedUrl,
-                )
-                podcastDao.upsert(updated)
-            } else {
-                podcastDao.upsert(local.copy(isDirty = true))
+            handleLocalUnsubscribedState(local, remote, remoteSubTime, syncedAt)
+        } else if (!local.isDirty) {
+            handleLocalCleanSubscribedState(local, remote, remoteSubTime, syncedAt)
+        }
+    }
+
+    private suspend fun handleLocalUnsubscribedState(
+        local: PodcastEntity,
+        remote: UserSubscriptionSyncDto,
+        remoteSubTime: Long,
+        syncedAt: Long,
+    ) {
+        if (remoteSubTime <= local.unsubscribedAt) {
+            podcastDao.upsert(local.copy(isDirty = true))
+            return
+        }
+        val updated = local.copy(
+            isSubscribed = true,
+            subscribedAt = remoteSubTime,
+            unsubscribedAt = 0L,
+            isDirty = false,
+            syncedAt = syncedAt,
+            autoDownloadEnabled = remote.autoDownloadEnabled,
+            notificationsEnabled = remote.notificationsEnabled,
+            customGenre = remote.customGenre,
+            customGenreIcon = if (remote.customGenre == null) null else local.customGenreIcon,
+            feedUrl = remote.feedUrl ?: local.feedUrl,
+        )
+        podcastDao.upsert(updated)
+        if (!local.isRss) {
+            if (remote.notificationsEnabled) {
+                notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, true)
+            } else if (local.notificationsEnabled) {
+                notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, false)
             }
-        } else if (remote.updatedAt > local.syncedAt && !local.isDirty) {
-            val genreIcon = if (remote.customGenre == null || remote.customGenre != local.customGenre) {
-                null
-            } else {
-                local.customGenreIcon
-            }
-            val updated = local.copy(
-                customGenre = remote.customGenre,
-                customGenreIcon = genreIcon,
-                autoDownloadEnabled = remote.autoDownloadEnabled,
-                notificationsEnabled = remote.notificationsEnabled,
-                feedUrl = remote.feedUrl ?: local.feedUrl,
-                subscribedAt = if (remoteSubTime > local.subscribedAt) remoteSubTime else local.subscribedAt,
-                isDirty = false,
-                syncedAt = syncedAt,
-            )
-            podcastDao.upsert(updated)
+        }
+    }
+
+    private suspend fun handleLocalCleanSubscribedState(
+        local: PodcastEntity,
+        remote: UserSubscriptionSyncDto,
+        remoteSubTime: Long,
+        syncedAt: Long,
+    ) {
+        val genreIcon = if (remote.customGenre == null || remote.customGenre != local.customGenre) {
+            null
+        } else {
+            local.customGenreIcon
+        }
+        val updated = local.copy(
+            customGenre = remote.customGenre,
+            customGenreIcon = genreIcon,
+            autoDownloadEnabled = remote.autoDownloadEnabled,
+            notificationsEnabled = remote.notificationsEnabled,
+            feedUrl = remote.feedUrl ?: local.feedUrl,
+            subscribedAt = if (remoteSubTime > local.subscribedAt) remoteSubTime else local.subscribedAt,
+            isDirty = false,
+            syncedAt = syncedAt,
+        )
+        podcastDao.upsert(updated)
+        if (!local.isRss && remote.notificationsEnabled != local.notificationsEnabled) {
+            notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, remote.notificationsEnabled)
         }
     }
 }

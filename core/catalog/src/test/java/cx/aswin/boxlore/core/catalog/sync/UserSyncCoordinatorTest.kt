@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.catalog.sync
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
@@ -725,5 +726,75 @@ class UserSyncCoordinatorTest {
         override suspend fun markQueueDirty() {
             metadata = metadata.copy(isDirty = true)
         }
+    }
+
+    private class FakeActivePlaybackSyncPort : ActivePlaybackSyncPort {
+        var activeEpisodeId: String? = null
+        var lastHandoffEpisodeId: String? = null
+        var lastHandoffPositionMs: Long? = null
+        var lastHandoffPlayedAt: Long? = null
+
+        override fun getActivePlayingEpisodeId(): String? = activeEpisodeId
+
+        override fun updateIdlePlaybackSession(episodeId: String, positionMs: Long, lastPlayedAt: Long) {
+            lastHandoffEpisodeId = episodeId
+            lastHandoffPositionMs = positionMs
+            lastHandoffPlayedAt = lastPlayedAt
+        }
+    }
+
+    @Test
+    fun executePull_handoffsNewestRemoteSessionToIdlePlaybackPort() = runTest(testDispatcher) {
+        val fakePlayback = FakeActivePlaybackSyncPort()
+        val customCoordinator = UserSyncCoordinator(
+            boxLoreApi = fakeBoxLoreApi,
+            publicKey = "test-public-key",
+            authUserIdProvider = { currentUserId },
+            tokenProvider = { currentToken },
+            podcastDao = podcastDao,
+            listeningHistoryDao = listeningHistoryDao,
+            queueSyncPort = fakeQueueSyncPort,
+            subscriptionSyncResolver = subscriptionSyncResolver,
+            historySyncResolver = historySyncResolver,
+            queueSyncResolver = queueSyncResolver,
+            boxcastPrefs = prefs,
+            activePlaybackSyncPort = fakePlayback,
+            ioDispatcher = testDispatcher,
+        )
+
+        syncPullHandler = { _, _, _ ->
+            FakeCall(
+                Response.success(
+                    SyncPullResponse(
+                        subscriptions = emptyList(),
+                        history = listOf(
+                            ListeningHistorySyncDto(
+                                episodeId = "ep-older",
+                                podcastId = "pod-1",
+                                progressMs = 1000L,
+                                lastPlayedAt = 5000L,
+                                updatedAt = 5000L,
+                            ),
+                            ListeningHistorySyncDto(
+                                episodeId = "ep-newest",
+                                podcastId = "pod-1",
+                                progressMs = 35000L,
+                                lastPlayedAt = 9000L,
+                                updatedAt = 9000L,
+                            ),
+                        ),
+                        queue = null,
+                        syncedAt = 9000L,
+                    ),
+                ),
+            )
+        }
+
+        val result = customCoordinator.executePull(since = 0L)
+        assertTrue(result.isSuccess)
+
+        assertEquals("ep-newest", fakePlayback.lastHandoffEpisodeId)
+        assertEquals(35000L, fakePlayback.lastHandoffPositionMs)
+        assertEquals(9000L, fakePlayback.lastHandoffPlayedAt)
     }
 }

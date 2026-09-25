@@ -70,7 +70,9 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
 import cx.aswin.boxlore.feature.info.logic.FeedItem
+import cx.aswin.boxlore.feature.info.logic.NotificationToggleAction
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
+import cx.aswin.boxlore.feature.info.logic.resolveNotificationToggleAction
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningActionText
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningMessage
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningTitle
@@ -78,26 +80,27 @@ import cx.aswin.boxlore.feature.info.logic.toolbarWarningTitle
 internal fun handleNotificationsToggle(
     context: android.content.Context,
     podcastNotificationsEnabled: Boolean,
+    isWarningVisible: Boolean = false,
     onRequestPermission: () -> Unit,
     onShowPermissionBlockedWarning: () -> Unit,
     onToggleNotifications: () -> Unit,
 ) {
-    if (!podcastNotificationsEnabled) {
-        // Turning notifications ON
-        if (!areAppNotificationsEnabled(context)) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-            ) {
-                onRequestPermission()
-            } else {
-                onShowPermissionBlockedWarning()
-            }
-        } else {
-            onToggleNotifications()
-        }
+    val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     } else {
-        // Turning notifications OFF
-        onToggleNotifications()
+        true
+    }
+    when (
+        resolveNotificationToggleAction(
+            podcastNotificationsEnabled = podcastNotificationsEnabled,
+            areAppNotificationsEnabled = areAppNotificationsEnabled(context),
+            hasPostNotificationPermission = hasPermission,
+            isWarningVisible = isWarningVisible,
+        )
+    ) {
+        NotificationToggleAction.REQUEST_PERMISSION -> onRequestPermission()
+        NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING -> onShowPermissionBlockedWarning()
+        NotificationToggleAction.TOGGLE_NOTIFICATIONS -> onToggleNotifications()
     }
 }
 

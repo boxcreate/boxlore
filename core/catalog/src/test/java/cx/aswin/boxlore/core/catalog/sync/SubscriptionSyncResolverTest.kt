@@ -31,6 +31,7 @@ class SubscriptionSyncResolverTest {
     private lateinit var database: BoxLoreDatabase
     private lateinit var podcastDao: PodcastDao
     private lateinit var fakeFolderRepository: FakeFolderRepository
+    private lateinit var fakeNotificationPort: FakePodcastNotificationSyncPort
     private lateinit var resolver: SubscriptionSyncResolver
 
     @Before
@@ -41,11 +42,13 @@ class SubscriptionSyncResolverTest {
             .build()
         podcastDao = database.podcastDao()
         fakeFolderRepository = FakeFolderRepository()
+        fakeNotificationPort = FakePodcastNotificationSyncPort()
         resolver = SubscriptionSyncResolver(
             podcastDao = podcastDao,
             folderRepository = fakeFolderRepository,
             podcastRepository = null,
             rssPodcastRepository = null,
+            notificationSyncPort = fakeNotificationPort,
         )
     }
 
@@ -287,6 +290,43 @@ class SubscriptionSyncResolverTest {
     }
 
     @Test
+    fun resolveSubscription_bothSubscribed_mergesSettingsEvenWhenRemoteUpdatedAtLessThanOrEqualSyncedAt() = runTest {
+        // Simulates Device B having syncedAt from a later sync, while Device A's edit had a slightly earlier timestamp
+        podcastDao.upsert(
+            createPodcast(
+                podcastId = "pod-drift",
+                title = "Drift Show",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                unsubscribedAt = 0L,
+                isDirty = false,
+                syncedAt = 5000L, // Phone synced later
+                autoDownloadEnabled = false,
+                notificationsEnabled = false,
+            ),
+        )
+
+        val remoteDto = UserSubscriptionSyncDto(
+            podcastId = "pod-drift",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+            unsubscribedAt = 0L,
+            autoDownloadEnabled = true,
+            notificationsEnabled = true,
+            updatedAt = 4000L, // Remote timestamp is 4000L <= local syncedAt 5000L
+        )
+
+        resolver.resolveSubscription(remoteDto, syncedAt = 6000L)
+
+        val updated = podcastDao.getPodcast("pod-drift")
+        assertNotNull(updated)
+        assertTrue(updated!!.autoDownloadEnabled)
+        assertTrue(updated.notificationsEnabled)
+        assertFalse(updated.isDirty)
+        assertEquals(6000L, updated.syncedAt)
+    }
+
+    @Test
     fun resolveSubscription_podcastIndexWithFeedUrl_isNotClassifiedAsRss() = runTest {
         val remoteDto = UserSubscriptionSyncDto(
             podcastId = "12345",
@@ -407,6 +447,93 @@ class SubscriptionSyncResolverTest {
         customGenre = customGenre,
         feedUrl = feedUrl,
     )
+
+    @Test
+    fun resolveSubscription_newSubscription_withNotificationsEnabled_notifiesTopicPort() = runTest {
+        val remoteDto = UserSubscriptionSyncDto(
+            podcastId = "pod-new",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+            notificationsEnabled = true,
+            updatedAt = 1000L,
+        )
+
+        resolver.resolveSubscription(remoteDto, syncedAt = 2000L)
+
+        assertEquals(listOf("pod-new" to true), fakeNotificationPort.topicUpdates)
+    }
+
+    @Test
+    fun resolveSubscription_remoteTombstone_withNotificationsEnabled_unsubscribesTopicPort() = runTest {
+        podcastDao.upsert(
+            createPodcast(
+                podcastId = "pod-tomb",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                notificationsEnabled = true,
+            ),
+        )
+
+        val remoteDto = UserSubscriptionSyncDto(
+            podcastId = "pod-tomb",
+            isSubscribed = false,
+            subscribedAt = 1000L,
+            unsubscribedAt = 2000L,
+            updatedAt = 2000L,
+        )
+
+        resolver.resolveSubscription(remoteDto, syncedAt = 3000L)
+
+        assertEquals(listOf("pod-tomb" to false), fakeNotificationPort.topicUpdates)
+    }
+
+    @Test
+    fun resolveSubscription_bothSubscribed_notificationChanged_notifiesTopicPort() = runTest {
+        podcastDao.upsert(
+            createPodcast(
+                podcastId = "pod-toggle",
+                isSubscribed = true,
+                subscribedAt = 1000L,
+                notificationsEnabled = false,
+                isDirty = false,
+            ),
+        )
+
+        val remoteDto = UserSubscriptionSyncDto(
+            podcastId = "pod-toggle",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+            notificationsEnabled = true,
+            updatedAt = 2000L,
+        )
+
+        resolver.resolveSubscription(remoteDto, syncedAt = 3000L)
+
+        assertEquals(listOf("pod-toggle" to true), fakeNotificationPort.topicUpdates)
+    }
+
+    @Test
+    fun resolveSubscription_rssPodcast_doesNotNotifyTopicPort() = runTest {
+        val remoteDto = UserSubscriptionSyncDto(
+            podcastId = "rss:custom-feed",
+            isSubscribed = true,
+            subscribedAt = 1000L,
+            notificationsEnabled = true,
+            updatedAt = 1000L,
+        )
+
+        resolver.resolveSubscription(remoteDto, syncedAt = 2000L)
+
+        assertTrue(fakeNotificationPort.topicUpdates.isEmpty())
+    }
+
+    private class FakePodcastNotificationSyncPort : cx.aswin.boxlore.core.catalog.ports.PodcastNotificationSyncPort {
+        val topicUpdates = mutableListOf<Pair<String, Boolean>>()
+
+        override suspend fun setNotificationTopicSubscribed(podcastId: String, subscribed: Boolean) {
+            topicUpdates.add(podcastId to subscribed)
+        }
+    }
 
     private class FakeFolderRepository : FolderRepository {
         val removedFromAllFolders = mutableListOf<String>()

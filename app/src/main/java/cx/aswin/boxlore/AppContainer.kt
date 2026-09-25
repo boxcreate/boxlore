@@ -374,6 +374,7 @@ class AppContainer(
             folderRepository = folderRepository,
             podcastRepository = podcastRepository,
             rssPodcastRepository = rssPodcastRepository,
+            notificationSyncPort = subscriptionRepository,
         )
         val historyResolver = HistorySyncResolver(
             listeningHistoryDao = database.listeningHistoryDao(),
@@ -397,6 +398,7 @@ class AppContainer(
             historySyncResolver = historyResolver,
             queueSyncResolver = queueResolver,
             boxcastPrefs = boxcastPrefs,
+            activePlaybackSyncPort = playbackRepository,
         )
     }
 

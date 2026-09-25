@@ -23,3 +23,34 @@ fun toolbarWarningActionText(warning: ToolbarWarning): String = when (warning) {
     ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Go to Settings"
     else -> ""
 }
+
+enum class NotificationToggleAction {
+    REQUEST_PERMISSION,
+    SHOW_PERMISSION_BLOCKED_WARNING,
+    TOGGLE_NOTIFICATIONS,
+}
+
+fun resolveNotificationToggleAction(
+    podcastNotificationsEnabled: Boolean,
+    areAppNotificationsEnabled: Boolean,
+    hasPostNotificationPermission: Boolean,
+    isWarningVisible: Boolean = false,
+): NotificationToggleAction {
+    if (!podcastNotificationsEnabled) {
+        return if (!areAppNotificationsEnabled) {
+            if (!hasPostNotificationPermission) {
+                NotificationToggleAction.REQUEST_PERMISSION
+            } else {
+                NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING
+            }
+        } else {
+            NotificationToggleAction.TOGGLE_NOTIFICATIONS
+        }
+    } else {
+        return if (!areAppNotificationsEnabled && !isWarningVisible) {
+            NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING
+        } else {
+            NotificationToggleAction.TOGGLE_NOTIFICATIONS
+        }
+    }
+}

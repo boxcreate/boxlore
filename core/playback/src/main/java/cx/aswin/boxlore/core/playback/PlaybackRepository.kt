@@ -174,7 +174,53 @@ class PlaybackRepository internal constructor(
     internal val playerStateFlow: MutableStateFlow<PlayerState> = historyStore.playerDeps.playerStateFlow
     val playerState = playerStateFlow.asStateFlow()
 
-    override fun getActivePlayingEpisodeId(): String? = playerStateFlow.value.currentEpisode?.id
+    override fun getActivePlayingEpisodeId(): String? =
+        if (playerStateFlow.value.isPlaying) playerStateFlow.value.currentEpisode?.id else null
+
+    override fun updateIdlePlaybackSession(episodeId: String, positionMs: Long, lastPlayedAt: Long) {
+        if (playerStateFlow.value.isPlaying) return
+
+        val currentId = playerStateFlow.value.currentEpisode?.id
+        if (currentId == episodeId && playerStateFlow.value.position == positionMs) {
+            return
+        }
+
+        repositoryScope.launch {
+            val currentLocalLastPlayed = currentId?.let {
+                listeningHistoryDao.getHistoryItem(it)?.lastPlayedAt
+            } ?: 0L
+
+            if (lastPlayedAt < currentLocalLastPlayed) {
+                return@launch
+            }
+
+            val savedQueue = queueRepository.getQueueEpisodeSnapshot()
+            val restored = PlaybackSessionRestoreHelper.resolveRestoredSession(
+                targetEpisodeId = episodeId,
+                currentItem = null,
+                listeningHistoryDao = listeningHistoryDao,
+                podcastRepository = podcastRepository,
+                savedQueue = savedQueue,
+            ) ?: return@launch
+
+            withContext(PlaybackThreadPolicy.mainDispatcher) {
+                if (playerStateFlow.value.isPlaying) return@withContext
+
+                val refreshedQueue = queueRepository.getQueueEpisodeSnapshot()
+                val restoredQueue = if (refreshedQueue.isEmpty()) listOf(restored.episode) else refreshedQueue
+
+                playerStateFlow.value = playerStateFlow.value.copy(
+                    currentEpisode = restored.episode,
+                    currentPodcast = restored.podcast,
+                    position = positionMs.takeIf { it > 0L } ?: restored.lastSession.progressMs,
+                    duration = if (restored.lastSession.durationMs > 0) restored.lastSession.durationMs else playerStateFlow.value.duration,
+                    isLiked = restored.lastSession.isLiked,
+                    queue = restoredQueue,
+                )
+                mediaHandle.controller?.clearMediaItems()
+            }
+        }
+    }
 
     fun setUiForeground(isForeground: Boolean) {
         if (PlaybackUiVisibility.isForeground.value == isForeground) return

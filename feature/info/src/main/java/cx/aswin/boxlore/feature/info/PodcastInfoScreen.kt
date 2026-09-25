@@ -88,6 +88,7 @@ import cx.aswin.boxlore.feature.info.components.PodcastInfoSearchOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlayActions
 import cx.aswin.boxlore.feature.info.components.ToolbarWarningBanner
+import cx.aswin.boxlore.feature.info.components.areAppNotificationsEnabled
 import cx.aswin.boxlore.feature.info.components.handleAutoDownloadToggle
 import cx.aswin.boxlore.feature.info.components.handleNotificationsToggle
 import cx.aswin.boxlore.feature.info.components.handleToolbarWarningAction
@@ -144,15 +145,29 @@ fun PodcastInfoScreen(
     val selectionActive = selectedEpisodeIds.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    var isSystemNotificationsBlocked by remember { mutableStateOf(!areAppNotificationsEnabled(context)) }
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                isSystemNotificationsBlocked = !areAppNotificationsEnabled(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // Permission Launcher for Android 13+ Notification Permission
     val notifPermissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
         ) { isGranted ->
             if (isGranted) {
+                isSystemNotificationsBlocked = false
                 viewModel.enableBothNotificationsAndAutoDownload()
                 toolbarWarning = ToolbarWarning.NONE
             } else {
+                isSystemNotificationsBlocked = true
                 toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED
             }
         }
@@ -488,10 +503,12 @@ fun PodcastInfoScreen(
                                 accentColor = accentColor,
                                 supportsReleaseAutomation = !state.podcast.isRss,
                                 notificationsEnabled = state.podcast.notificationsEnabled,
+                                isSystemNotificationsBlocked = isSystemNotificationsBlocked,
                                 onNotificationsToggle = {
                                     handleNotificationsToggle(
                                         context = context,
                                         podcastNotificationsEnabled = state.podcast.notificationsEnabled,
+                                        isWarningVisible = toolbarWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED,
                                         onRequestPermission = { notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
                                         onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
                                         onToggleNotifications = { viewModel.toggleNotifications() },

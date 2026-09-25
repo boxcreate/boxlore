@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog.sync
 
+import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
@@ -42,6 +43,7 @@ open class UserSyncCoordinator(
     private val historySyncResolver: HistorySyncResolver? = null,
     private val queueSyncResolver: QueueSyncResolver? = null,
     private val boxcastPrefs: BoxcastPrefs? = null,
+    private val activePlaybackSyncPort: ActivePlaybackSyncPort? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val syncMutex = Mutex()
@@ -368,6 +370,16 @@ open class UserSyncCoordinator(
             // 3. Resolve queue
             body.queue?.let { q ->
                 requireQueueSyncResolver.resolveQueue(q, syncedAt)
+            }
+
+            // 4. Idle Miniplayer Handoff: if remote history updated, hand off newest session to idle miniplayer
+            val newestRemoteHistory = body.history.maxByOrNull { it.lastPlayedAt }
+            if (newestRemoteHistory != null && newestRemoteHistory.lastPlayedAt > 0L) {
+                activePlaybackSyncPort?.updateIdlePlaybackSession(
+                    episodeId = newestRemoteHistory.episodeId,
+                    positionMs = newestRemoteHistory.progressMs,
+                    lastPlayedAt = newestRemoteHistory.lastPlayedAt,
+                )
             }
 
             requireBoxcastPrefs.setLastSyncTimestamp(syncedAt)

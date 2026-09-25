@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.catalog.ports.PodcastNotificationSyncPort
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
@@ -13,13 +14,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
+@Suppress("TooManyFunctions")
 class SubscriptionRepository(
     private val podcastDao: PodcastDao,
     private val localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
     private val lookupHttpsFeedUrl: (suspend (String) -> String?)? = null,
     private val folderRepository: FolderRepository? = null,
     private val userPreferencesRepository: UserPreferencesRepository? = null,
-) {
+) : PodcastNotificationSyncPort {
     val subscribedPodcastIds: Flow<Set<String>> =
         podcastDao
             .getSubscribedPodcasts()
@@ -310,6 +312,46 @@ class SubscriptionRepository(
             title = entity.title,
             imageUrl = entity.imageUrl,
             isSubscribed = true,
+            feedUrl = feedUrl,
+        )
+    }
+
+    override suspend fun setNotificationTopicSubscribed(podcastId: String, subscribed: Boolean) {
+        if (podcastId.startsWith("rss:")) return
+        val entity = podcastDao.getPodcast(podcastId)
+        val hasValidDetails = entity != null && entity.title.isNotBlank() && entity.title != "Loading..."
+        if (subscribed && !hasValidDetails) {
+            try {
+                com.google.firebase.messaging.FirebaseMessaging
+                    .getInstance()
+                    .subscribeToTopic("new_ep_$podcastId")
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            android.util.Log.d("FCM_Topic", "Sync subscribed to topic: new_ep_$podcastId")
+                        } else {
+                            android.util.Log.e("FCM_Topic", "Sync failed to subscribe to topic: new_ep_$podcastId", task.exception)
+                        }
+                    }
+            } catch (e: Exception) {
+                android.util.Log.e("FCM_Topic", "Failed to subscribe to topic: new_ep_$podcastId", e)
+            }
+            return
+        }
+
+        val feedUrl =
+            if (subscribed) {
+                TrackedPodcastRtdbLogic.attachableFeedUrl(
+                    feedUrl = entity?.feedUrl,
+                    latestEpisodeId = entity?.latestEpisode?.id,
+                )
+            } else {
+                null
+            }
+        updateFirebaseSubscription(
+            podcastId = podcastId,
+            title = entity?.title.orEmpty(),
+            imageUrl = entity?.imageUrl.orEmpty(),
+            isSubscribed = subscribed,
             feedUrl = feedUrl,
         )
     }

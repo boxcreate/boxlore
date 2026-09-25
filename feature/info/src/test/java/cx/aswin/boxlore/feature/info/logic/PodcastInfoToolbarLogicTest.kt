@@ -25,4 +25,66 @@ class PodcastInfoToolbarLogicTest {
         assertEquals("", toolbarWarningMessage(ToolbarWarning.NONE))
         assertEquals("", toolbarWarningActionText(ToolbarWarning.NONE))
     }
+
+    @Test
+    fun `toggle action when notifications off and app notifications allowed`() {
+        val action = resolveNotificationToggleAction(
+            podcastNotificationsEnabled = false,
+            areAppNotificationsEnabled = true,
+            hasPostNotificationPermission = true,
+        )
+        assertEquals(NotificationToggleAction.TOGGLE_NOTIFICATIONS, action)
+    }
+
+    @Test
+    fun `toggle action when notifications off and permission not granted`() {
+        val action = resolveNotificationToggleAction(
+            podcastNotificationsEnabled = false,
+            areAppNotificationsEnabled = false,
+            hasPostNotificationPermission = false,
+        )
+        assertEquals(NotificationToggleAction.REQUEST_PERMISSION, action)
+    }
+
+    @Test
+    fun `toggle action when notifications off and system blocked with permission granted`() {
+        val action = resolveNotificationToggleAction(
+            podcastNotificationsEnabled = false,
+            areAppNotificationsEnabled = false,
+            hasPostNotificationPermission = true,
+        )
+        assertEquals(NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING, action)
+    }
+
+    @Test
+    fun `toggle action when notifications on and system notifications allowed`() {
+        val action = resolveNotificationToggleAction(
+            podcastNotificationsEnabled = true,
+            areAppNotificationsEnabled = true,
+            hasPostNotificationPermission = true,
+        )
+        assertEquals(NotificationToggleAction.TOGGLE_NOTIFICATIONS, action)
+    }
+
+    @Test
+    fun `toggle action when notifications on and system blocked shows warning if not visible`() {
+        val action = resolveNotificationToggleAction(
+            podcastNotificationsEnabled = true,
+            areAppNotificationsEnabled = false,
+            hasPostNotificationPermission = true,
+            isWarningVisible = false,
+        )
+        assertEquals(NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING, action)
+    }
+
+    @Test
+    fun `toggle action when notifications on and system blocked toggles off if warning already visible`() {
+        val action = resolveNotificationToggleAction(
+            podcastNotificationsEnabled = true,
+            areAppNotificationsEnabled = false,
+            hasPostNotificationPermission = true,
+            isWarningVisible = true,
+        )
+        assertEquals(NotificationToggleAction.TOGGLE_NOTIFICATIONS, action)
+    }
 }
