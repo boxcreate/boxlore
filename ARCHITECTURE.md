@@ -8,6 +8,10 @@ Boxlore is a multi-module Gradle project. `:app` is the application shell. Share
 
 The graph is layered so playback and features depend inward on catalog and lower cores. Features do not depend on other features. Catalog does not depend on the design system. Feature modules never talk to PostHog directly; they use `:core:analytics`.
 
+### Decoupling and module granularity
+
+When a domain, presentation flow, or capability is significant enough to form a cohesive domain (such as the settings hub, listening history timeline, or authentication SDK), **keep it decoupled in its own standalone module**. Avoid co-locating unrelated subsystems inside general-purpose modules (e.g., settings inside `:feature:home`, history inside `:feature:library`, or auth credentials inside `:core:network`). If something is significant enough and makes architectural sense to decouple, keep it separate.
+
 ## Identity and storage
 
 These values are part of the shipping product. Renames or recreations break upgrades, WorkManager, Media3, and deep links.

@@ -16,6 +16,7 @@ Full reference: [`ARCHITECTURE.md`](../../ARCHITECTURE.md). **ARCHITECTURE wins*
 ## Module boundaries
 
 - `:feature:*` → `:core:*` only. **No feature→feature** Gradle deps or package imports (Konsist).
+- **Decouple significant domains**: If a subsystem, presentation flow, or capability is significant enough and makes architectural sense to decouple (e.g., settings, history, auth), keep it separate in its own dedicated module rather than bloating general-purpose modules.
 - Features never talk to PostHog directly — use `:core:analytics`.
 - `:core:playback` may depend on `:core:catalog`; catalog must not depend on playback.
 - Catalog must not depend on `:core:designsystem`.

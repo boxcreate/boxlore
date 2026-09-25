@@ -7,6 +7,7 @@ Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays
 - Read [`ARCHITECTURE.md`](ARCHITECTURE.md) + the touched module `README.md` before editing; **ARCHITECTURE wins** on conflicts.
 - Before editing `scripts/sync/` (catalog pipeline): read [`scripts/README.md`](scripts/README.md) **and** the **Catalog sync** section below. Sync **does not** run on GitHub Actions — only on the Netcup VPS. A `git push` alone does **not** update the live runner.
 - No feature→feature deps/imports; no PostHog in features (use `:core:analytics`); no Hilt/Koin/MockK.
+- **Decoupling principle**: If a domain, flow, or subsystem is significant enough and makes architectural sense to decouple (e.g. settings, history, auth), keep it separate in its own focused module rather than bloating general-purpose modules.
 - Never break identity/storage contracts (`applicationId`, DataStore `user_preferences`, Room names, `rss:` IDs, single `PlaybackRepository`, smart-queue refill ownership). See ARCHITECTURE identity table.
 - Update the touched module README in the same change (template: [`docs/MODULE_README_TEMPLATE.md`](docs/MODULE_README_TEMPLATE.md)).
 - Extend JVM `src/test` for touched logic; **bug fix ⇒ regression test** (same failure mode app-wide when shared). No Compose `androidTest` / emulator CI.
