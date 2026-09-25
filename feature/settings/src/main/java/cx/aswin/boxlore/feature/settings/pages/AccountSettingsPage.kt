@@ -471,70 +471,47 @@ private fun CloudSyncInfoGroup(
         footer = "Your subscriptions, queue, and playback progress stay backed up and synchronized across your devices.",
     ) {
         SettingsContent {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = displayState.containerColor,
+                    modifier = Modifier.size(40.dp),
                 ) {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = displayState.containerColor,
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = displayState.icon,
-                                contentDescription = null,
-                                tint = displayState.tintColor,
-                                modifier = Modifier.size(22.dp),
-                            )
-                        }
-                    }
-                    Spacer(Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = displayState.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = GoogleSansWeight.bold,
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = displayState.subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (syncStatus is CloudSyncUiStatus.Error) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = displayState.icon,
+                            contentDescription = null,
+                            tint = displayState.tintColor,
+                            modifier = Modifier.size(22.dp),
                         )
                     }
-                    Spacer(Modifier.width(8.dp))
-                    SyncNowButton(
-                        isSyncing = isSyncing,
-                        onSyncNow = onSyncNow,
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = displayState.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = GoogleSansWeight.bold,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = displayState.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (syncStatus is CloudSyncUiStatus.Error) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                 }
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    listOf("Subscriptions", "Queue", "Progress").forEach { scopeTag ->
-                        Surface(
-                            shape = MaterialTheme.shapes.extraSmall,
-                            color = MaterialTheme.colorScheme.surfaceContainer,
-                        ) {
-                            Text(
-                                text = scopeTag,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
-                        }
-                    }
-                }
+                Spacer(Modifier.width(8.dp))
+                SyncNowButton(
+                    isSyncing = isSyncing,
+                    onSyncNow = onSyncNow,
+                )
             }
         }
     }
