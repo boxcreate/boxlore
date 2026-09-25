@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.network
 
+import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

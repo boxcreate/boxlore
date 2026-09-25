@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library.history
+package cx.aswin.boxlore.feature.history
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +27,7 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningPeriod
-import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.history.R
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 

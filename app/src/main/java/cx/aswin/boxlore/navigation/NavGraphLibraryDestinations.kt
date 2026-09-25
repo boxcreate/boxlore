@@ -81,16 +81,16 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
 
     composable("library/history") {
         val viewModel =
-            androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.library.HistoryViewModel>(
+            androidx.lifecycle.viewmodel.compose.viewModel<cx.aswin.boxlore.feature.history.HistoryViewModel>(
                 factory =
                 object : androidx.lifecycle.ViewModelProvider.Factory {
                     @Suppress("UNCHECKED_CAST")
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = cx.aswin.boxlore.feature.library.HistoryViewModel(
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = cx.aswin.boxlore.feature.history.HistoryViewModel(
                         playbackRepository,
                     ) as T
                 },
             )
-        cx.aswin.boxlore.feature.library.HistoryScreen(
+        cx.aswin.boxlore.feature.history.HistoryScreen(
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
             onEpisodeClick = { item ->

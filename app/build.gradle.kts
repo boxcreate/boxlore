@@ -219,6 +219,9 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.work:work-testing:${libs.versions.work.get()}")
+    implementation(projects.feature.history)
+    implementation(projects.core.auth)
+
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.core.network
+package cx.aswin.boxlore.core.auth
 
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.ActionCodeSettings

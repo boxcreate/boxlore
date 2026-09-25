@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library.history
+package cx.aswin.boxlore.feature.history
 
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -7,9 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
-import cx.aswin.boxlore.feature.library.HistoryUiEvent
-import cx.aswin.boxlore.feature.library.HistoryViewModel
-import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.history.HistoryUiEvent
+import cx.aswin.boxlore.feature.history.HistoryViewModel
+import cx.aswin.boxlore.feature.history.R
 
 @Composable
 internal fun HistoryScreenEffects(

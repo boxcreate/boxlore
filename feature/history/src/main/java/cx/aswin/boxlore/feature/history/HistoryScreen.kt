@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library
+package cx.aswin.boxlore.feature.history
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,12 +18,12 @@ import androidx.compose.ui.text.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
-import cx.aswin.boxlore.feature.library.history.HistoryScreenBody
-import cx.aswin.boxlore.feature.library.history.HistoryScreenDialogs
-import cx.aswin.boxlore.feature.library.history.HistoryScreenEffects
-import cx.aswin.boxlore.feature.library.history.HistoryTopBar
-import cx.aswin.boxlore.feature.library.history.HistoryTopBarCallbacks
-import cx.aswin.boxlore.feature.library.history.HistoryTopBarState
+import cx.aswin.boxlore.feature.history.HistoryScreenBody
+import cx.aswin.boxlore.feature.history.HistoryScreenDialogs
+import cx.aswin.boxlore.feature.history.HistoryScreenEffects
+import cx.aswin.boxlore.feature.history.HistoryTopBar
+import cx.aswin.boxlore.feature.history.HistoryTopBarCallbacks
+import cx.aswin.boxlore.feature.history.HistoryTopBarState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

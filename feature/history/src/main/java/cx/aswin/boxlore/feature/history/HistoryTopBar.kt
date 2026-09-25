@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library.history
+package cx.aswin.boxlore.feature.history
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
-import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.history.R
 
 internal data class HistoryTopBarState(
     val showOverflowAction: Boolean,

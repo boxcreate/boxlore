@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library
+package cx.aswin.boxlore.feature.history
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue

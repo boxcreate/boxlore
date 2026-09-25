@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library
+package cx.aswin.boxlore.feature.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

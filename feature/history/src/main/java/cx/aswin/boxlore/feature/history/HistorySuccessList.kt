@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library.history
+package cx.aswin.boxlore.feature.history
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -24,9 +24,9 @@ import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPaddin
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
-import cx.aswin.boxlore.feature.library.HistorySuccessState
-import cx.aswin.boxlore.feature.library.HistoryViewModel
-import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.history.HistorySuccessState
+import cx.aswin.boxlore.feature.history.HistoryViewModel
+import cx.aswin.boxlore.feature.history.R
 
 @Composable
 internal fun HistorySuccessList(

@@ -8,6 +8,7 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
+import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.catalog.sync.SyncResult
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
@@ -20,7 +21,6 @@ import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.network.AuthRepository
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import kotlinx.coroutines.ExperimentalCoroutinesApi

@@ -7,10 +7,7 @@ Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and respon
 ## Public API
 
 - `BoxLoreApi` defines the Retrofit service surface, including additive `GET search/typeahead` (Meili show typeahead), cloud sync endpoints (`POST user/sync/push`, `POST user/sync/pull`, `DELETE user/sync/account`), and legacy routes. Legacy `GET search` and `POST sync` are unchanged.
-- `AuthRepository` defines the core authentication contract (Google One Tap, email/password, passwordless email link sign-in, account deletion, and user state flow) with `RecentLoginRequiredException` for sensitive operations.
-- `FirebaseAuthRepository` provides the Firebase Auth implementation for `AuthRepository`, ensuring pending email state is cleaned up on completion or failure, and mapping recent-login requirement errors on account deletion.
-- `FirebaseAuthAuthenticator` provides an OkHttp `Authenticator` handling HTTP 401 Unauthorized responses with Kotlin `Mutex` refresh serialization to prevent token refresh stampedes.
-- `PendingEmailStore` interface for saving/retrieving the pending email during email link sign-in.
+- `FirebaseAuthAuthenticator` provides an OkHttp `Authenticator` handling HTTP 401 Unauthorized responses with Kotlin `Mutex` refresh serialization to prevent token refresh stampedes (consuming `AuthRepository` from `:core:auth`).
 - `NetworkModule` creates OkHttp, Retrofit, and related network clients, with automatic header redaction for `Authorization`, `X-App-Key`, and `X-Firebase-AppCheck`.
 - `StreamingJsonConverterFactory` streams response deserialization directly from OkHttp's `ResponseBody.byteStream()` via `Json.decodeFromStream` without monolithic string buffering.
 - DTOs under `cx.aswin.boxlore.core.network.model`, including recommendation, bootstrap, content catalog/v3, history, sync, user cloud sync (`UserSyncModels.kt` with `feedUrl` support on `UserSubscriptionSyncDto`), and request payload models. Onboarding curriculum / genre-synth / similar-shows requests accept optional `languages` (chip codes; proxy expands and defaults from country).
@@ -20,10 +17,7 @@ Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and respon
 
 ```text
 src/main/java/cx/aswin/boxlore/core/network/
-  AuthRepository.kt
-  FirebaseAuthRepository.kt
   FirebaseAuthAuthenticator.kt
-  PendingEmailStore.kt
   BoxLoreApi.kt
   NetworkModule.kt
   StreamingJsonConverterFactory.kt
@@ -33,7 +27,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 
 ## Dependencies
 
-- Project dependencies: `:core:model`.
+- Project dependencies: `:core:model`, `:core:auth`.
 - Libraries: Retrofit, Kotlinx serialization, OkHttp, OkHttp logging interceptor, Gson, AndroidX annotation, and coroutines.
 - Reverse-edge rule: network must not depend on catalog, database, playback, downloads, designsystem, or feature modules.
 

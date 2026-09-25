@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library.history
+package cx.aswin.boxlore.feature.history
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +36,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningDayActivity
 import cx.aswin.boxlore.core.model.ListeningInsightSummary
 import cx.aswin.boxlore.core.model.ListeningTimeBucket
-import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.history.R
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

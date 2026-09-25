@@ -61,7 +61,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun isRecentLoginRequired_matchesExceptionAndMessages() {
-        org.junit.Assert.assertTrue(cx.aswin.boxlore.core.network.RecentLoginRequiredException().isRecentLoginRequired())
+        org.junit.Assert.assertTrue(cx.aswin.boxlore.core.auth.RecentLoginRequiredException().isRecentLoginRequired())
         org.junit.Assert.assertTrue(RuntimeException("requires-recent-login").isRecentLoginRequired())
         org.junit.Assert.assertTrue(RuntimeException("ERROR_REQUIRES_RECENT_LOGIN").isRecentLoginRequired())
         org.junit.Assert.assertTrue(RuntimeException("CREDENTIAL_TOO_OLD_LOGIN_AGAIN").isRecentLoginRequired())
@@ -71,7 +71,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun isRecentLoginRequired_matchesWrappedCause() {
-        val wrapped = java.lang.RuntimeException("Operation failed", cx.aswin.boxlore.core.network.RecentLoginRequiredException())
+        val wrapped = java.lang.RuntimeException("Operation failed", cx.aswin.boxlore.core.auth.RecentLoginRequiredException())
         org.junit.Assert.assertTrue(wrapped.isRecentLoginRequired())
 
         val deeplyWrapped = java.lang.IllegalStateException(

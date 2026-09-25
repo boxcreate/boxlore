@@ -85,7 +85,7 @@ data class RegionSettings(
 data class SettingsRepositories(
     val rssPodcastRepository: cx.aswin.boxlore.core.rss.RssPodcastRepository,
     val rankingFeedbackRepository: cx.aswin.boxlore.core.ranking.RankingFeedbackRepository,
-    val authRepository: cx.aswin.boxlore.core.network.AuthRepository? = null,
+    val authRepository: cx.aswin.boxlore.core.auth.AuthRepository? = null,
     val syncStatusFlow: StateFlow<CloudSyncUiStatus>? = null,
     val onSyncNow: (() -> Unit)? = null,
 )

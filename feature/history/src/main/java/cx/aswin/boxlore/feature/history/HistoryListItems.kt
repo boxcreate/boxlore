@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library.history
+package cx.aswin.boxlore.feature.history
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -38,8 +38,8 @@ import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
-import cx.aswin.boxlore.feature.library.HistoryFilter
-import cx.aswin.boxlore.feature.library.R
+import cx.aswin.boxlore.feature.history.HistoryFilter
+import cx.aswin.boxlore.feature.history.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 

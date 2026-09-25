@@ -32,10 +32,10 @@ These values are part of the shipping product. Renames or recreations break upgr
 
 ```text
 :app
-:core:model | :core:network | :core:domain | :core:database | :core:prefs
+:core:model | :core:auth | :core:network | :core:domain | :core:database | :core:prefs
 :core:analytics | :core:catalog | :core:rss | :core:downloads | :core:playback | :core:ranking
 :core:designsystem | :core:testing
-:feature:home | :feature:settings | :feature:player | :feature:info | :feature:explore
+:feature:home | :feature:settings | :feature:history | :feature:player | :feature:info | :feature:explore
 :feature:library | :feature:onboarding | :feature:briefing | :feature:widgets
 ```
 
@@ -47,6 +47,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | :--- | :--- | :--- |
 | `:app` | `Application`, `AppContainer`, navigation host, FCM, `WorkerFactory` | [`app/README.md`](app/README.md) |
 | `:core:model` | Shared models and enums | [`core/model/README.md`](core/model/README.md) |
+| `:core:auth` | Authentication domain, `AuthRepository`, and Firebase Auth implementation | [`core/auth/README.md`](core/auth/README.md) |
 | `:core:network` | HTTP client (`BoxLoreApi` / `NetworkModule`) and network DTOs | [`core/network/README.md`](core/network/README.md) |
 | `:core:domain` | Thin ports and small result types (no Room or repositories) | [`core/domain/README.md`](core/domain/README.md) |
 | `:core:database` | Main Room database, entities, DAOs, migrations | [`core/database/README.md`](core/database/README.md) |
@@ -61,10 +62,11 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:core:testing` | Shared fixtures, dispatcher helpers, architecture guards | [`core/testing/README.md`](core/testing/README.md) |
 | `:feature:home` | Home feed presentation, Daily/Offline mix, and local Debug | [`feature/home/README.md`](feature/home/README.md) |
 | `:feature:settings` | Unified Settings hub, Account & Cloud Sync, Appearance, Privacy, Playback, and Download policies | [`feature/settings/README.md`](feature/settings/README.md) |
+| `:feature:history` | Listening history timeline, activity charts, pattern insights, and streak cards | [`feature/history/README.md`](feature/history/README.md) |
 | `:feature:player` | Player overlay (`PlayerSheetScaffold`); not a NavHost destination | [`feature/player/README.md`](feature/player/README.md) |
 | `:feature:info` | Podcast and episode detail, including deep links | [`feature/info/README.md`](feature/info/README.md) |
 | `:feature:explore` | Explore plus Learn / LearnHistory | [`feature/explore/README.md`](feature/explore/README.md) |
-| `:feature:library` | Library hub, subscriptions, downloads, history, liked | [`feature/library/README.md`](feature/library/README.md) |
+| `:feature:library` | Library hub, subscriptions, downloads, liked | [`feature/library/README.md`](feature/library/README.md) |
 | `:feature:onboarding` | First-run flows (AI, genre, search, import) | [`feature/onboarding/README.md`](feature/onboarding/README.md) |
 | `:feature:briefing` | Daily briefing screen | [`feature/briefing/README.md`](feature/briefing/README.md) |
 | `:feature:widgets` | Home-screen Now Playing, compact bar, playback-control, subscriptions, and new-episodes widgets (RemoteViews) | [`feature/widgets/README.md`](feature/widgets/README.md) |

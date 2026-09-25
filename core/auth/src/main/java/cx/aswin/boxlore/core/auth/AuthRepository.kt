@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.core.network
+package cx.aswin.boxlore.core.auth
 
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import kotlinx.coroutines.flow.StateFlow

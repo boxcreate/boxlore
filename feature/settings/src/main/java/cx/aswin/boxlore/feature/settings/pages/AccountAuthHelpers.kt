@@ -49,9 +49,9 @@ import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import cx.aswin.boxlore.core.auth.AuthRepository
+import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.network.AuthRepository
-import cx.aswin.boxlore.core.network.RecentLoginRequiredException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout

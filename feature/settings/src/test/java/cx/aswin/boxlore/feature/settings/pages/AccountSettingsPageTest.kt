@@ -1,6 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
-import cx.aswin.boxlore.core.network.RecentLoginRequiredException
+import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

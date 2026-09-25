@@ -1,4 +1,4 @@
-package cx.aswin.boxlore.feature.library.history
+package cx.aswin.boxlore.feature.history
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,8 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
-import cx.aswin.boxlore.feature.library.HistoryUiState
-import cx.aswin.boxlore.feature.library.HistoryViewModel
+import cx.aswin.boxlore.feature.history.HistoryUiState
+import cx.aswin.boxlore.feature.history.HistoryViewModel
 
 @Composable
 internal fun HistoryScreenBody(

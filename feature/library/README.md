@@ -2,18 +2,16 @@
 
 ## Purpose
 
-Owns Library presentation: hub, history, subscriptions, liked episodes, downloaded episodes, and show details. It does not own download settings (decoupled into `:feature:settings`), download workers, playback services, ranking storage, catalog persistence, or app route registration.
+Owns Library presentation: hub, subscriptions, liked episodes, downloaded episodes, and show details. It does not own history presentation (decoupled into `:feature:history`), download settings (decoupled into `:feature:settings`), download workers, playback services, ranking storage, catalog persistence, or app route registration.
 
 ## Public API
 
 - `LibraryScreen` and `LibraryViewModel`. When Appearance **Cleaner Home** is on, the hub top bar shows Settings and Feedback (the same shortcuts Home normally owns).
-- `HistoryScreen` and `HistoryViewModel`. History uses a compact period-first hierarchy: a full-width listening-time hero, content-sized highlights, listening-pattern cards, then the filtered episode timeline. Highlights use a compact top-show row and explicit two-column metric grid instead of fixed-height carousel pages; paired cards match the tallest cell in their row, while an odd final metric spans the row as a featured card with a large tonal icon. The hero flows vertically so narrow phones do not sacrifice labels or leave split-column dead space; timeline rows allow longer episode/show copy. The one-time tracking-reset notice no longer appears.
 - `SubscriptionsScreen`, `LikedEpisodesScreen`, and `DownloadedEpisodesScreen`. `downloads/DownloadModels.kt` maps downloaded episode entities to domain episodes (including `chaptersUrl` and `transcriptUrl` for offline chapter/transcript display). Downloaded show episode 3-dots menu uses `RemoveDownloadConfirmationDialog` to protect against accidental file deletion.
 - `AutoOrganizeConfirmationDialogs`: Confirmation dialogs for enabling/disabling auto-organize into folders. The enable dialog allows users to choose their preferred folder display size (default 3×1 Shelf), conditionally pick 1×1 cover style (Folder Icon vs Podcast Grid), and reminds users how to edit show genres using the genre pill. The disable dialog explains that existing folders and contents remain safe and intact.
 - `FolderEditSheet` and `FolderEditComponents`: Subscription folder creation and edit sheet featuring a streamlined hierarchy, slim actionable auto-organize library nudge (`AutoOrganizeSlimNudge`) for instant creation-time grouping, prominent name input with real-time keyword suggestions, preset icons (prioritizing subscribed library genres), automatic icon switching on typing exact genre/topic matches, visual size selector cards for display sizes (`1×1 Compact`, `3×1 Shelf`, `3×2 Panel`, `3×3 Showcase`), contextual 1×1 cover display selector (`[ Folder Icon ]` vs `[ Podcast Grid ]`), compact optional icon picker row, LazyRow-powered horizontal scrolling with crisp edge stops, auto-sync with genre tags, and quiet beta feedback footnote.
 - Downloads multi-select: checklist in the top bar, or long-press a show (hub) / episode (show list) to enter selection with that row checked, then delete several at once.
 - `PlayAllFab` and library UI helpers.
-- History list bottom spacing uses designsystem’s shared navigation-style / mini-player padding contract.
 - Library UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 
 ## Internal structure
@@ -23,24 +21,11 @@ src/main/java/cx/aswin/boxlore/feature/library/
   DownloadedEpisodesScreen.kt
   FolderEditComponents.kt
   FolderEditSheet.kt
-  HistoryScreen.kt
-  HistoryViewModel.kt
   LibraryScreen.kt
   LibraryViewModel.kt
   LikedEpisodesScreen.kt
   PlayAllFab.kt
   SubscriptionsScreen.kt
-  history/
-    HistoryActivityGraphs.kt      — weekly activity + time-of-day charts, day filter chips
-    HistoryDialogs.kt           — clear-all and date-picker dialogs
-    HistoryEmptyState.kt          — zero-history empty state
-    HistoryInsightCarousel.kt     — compact top-show highlight + two-column metric grid
-    HistoryListItems.kt           — timeline rows, status filter (`ConnectedOptionSelector`), date headers
-    HistoryScreenBody.kt          — loading / empty / success body switch
-    HistoryScreenEffects.kt       — lifecycle, analytics, undo snackbar
-    HistoryStatsCards.kt          — period selector (`ConnectedOptionSelector`), vertically flowing listening-time hero
-    HistorySuccessList.kt         — success-state LazyColumn (stats + timeline)
-    HistoryTopBar.kt              — collapsible top app bar + overflow menu
   subscriptions/
     AutoOrganizeConfirmationDialogs.kt — Confirmation dialogs for enabling/disabling auto-organize with size selection and tips
     FolderShowsSelectionSheet.kt  — Multi-select bottom sheet with search and pre-checked members for adding shows to folders
