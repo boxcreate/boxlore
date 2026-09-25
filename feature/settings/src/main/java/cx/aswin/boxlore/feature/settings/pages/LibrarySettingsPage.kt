@@ -5,13 +5,21 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.CloudDone
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
@@ -20,6 +28,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.RssFeed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,7 +37,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.components.ContentRegionLanguagePicker
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -67,6 +79,7 @@ internal fun LibrarySettingsPage(
     onBack: () -> Unit,
     onAccountClick: () -> Unit,
     accountStatus: String? = null,
+    syncStatus: CloudSyncUiStatus = CloudSyncUiStatus.Idle,
 ) {
     var isCountryFaqExpanded by rememberSaveable { mutableStateOf(false) }
     val collapseCountryFaq = { isCountryFaqExpanded = false }
@@ -78,6 +91,7 @@ internal fun LibrarySettingsPage(
     ) {
         LibraryAccountSyncGroup(
             accountStatus = accountStatus,
+            syncStatus = syncStatus,
             onAccountClick = {
                 collapseCountryFaq()
                 onAccountClick()
@@ -128,19 +142,171 @@ internal fun LibrarySettingsPage(
 @Composable
 private fun LibraryAccountSyncGroup(
     accountStatus: String?,
+    syncStatus: CloudSyncUiStatus,
     onAccountClick: () -> Unit,
 ) {
     SettingsGroup(title = "Account & Cloud Sync") {
-        SettingsNavigationRow(
-            title = "Cloud sync with account",
-            supportingText = if (accountStatus != null) {
-                "Signed in as $accountStatus"
-            } else {
-                "Sign in to backup and sync your library across devices"
-            },
-            icon = Icons.Rounded.CloudSync,
+        LibraryAccountSyncButton(
+            accountStatus = accountStatus,
+            syncStatus = syncStatus,
             onClick = onAccountClick,
         )
+    }
+}
+
+private data class LibrarySyncVisualState(
+    val icon: ImageVector,
+    val iconTint: Color,
+    val iconBackground: Color,
+)
+
+@Composable
+private fun resolveLibrarySyncVisual(
+    isSignedIn: Boolean,
+    syncStatus: CloudSyncUiStatus,
+): LibrarySyncVisualState {
+    val isSyncError = syncStatus is CloudSyncUiStatus.Error
+    val isSyncing = syncStatus is CloudSyncUiStatus.Syncing
+
+    return when {
+        !isSignedIn -> LibrarySyncVisualState(
+            icon = Icons.Rounded.CloudSync,
+            iconTint = MaterialTheme.colorScheme.primary,
+            iconBackground = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        )
+        isSyncError -> LibrarySyncVisualState(
+            icon = Icons.Rounded.CloudOff,
+            iconTint = MaterialTheme.colorScheme.error,
+            iconBackground = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+        )
+        isSyncing -> LibrarySyncVisualState(
+            icon = Icons.Rounded.CloudSync,
+            iconTint = MaterialTheme.colorScheme.primary,
+            iconBackground = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        )
+        else -> LibrarySyncVisualState(
+            icon = Icons.Rounded.CloudDone,
+            iconTint = MaterialTheme.colorScheme.primary,
+            iconBackground = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        )
+    }
+}
+
+@Composable
+private fun LibrarySyncStatusBadge(
+    syncStatus: CloudSyncUiStatus,
+    modifier: Modifier = Modifier,
+) {
+    val isSyncError = syncStatus is CloudSyncUiStatus.Error
+    val isSyncing = syncStatus is CloudSyncUiStatus.Syncing
+
+    val statusDotColor = if (isSyncError) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val statusText = when {
+        isSyncError -> "Sync issue"
+        isSyncing -> "Syncing..."
+        else -> "Cloud sync active"
+    }
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(statusDotColor, CircleShape),
+        )
+        Text(
+            text = statusText,
+            style = MaterialTheme.typography.labelSmall,
+            color = statusDotColor,
+            fontWeight = GoogleSansWeight.medium,
+        )
+    }
+}
+
+@Composable
+private fun LibraryAccountSyncButton(
+    accountStatus: String?,
+    syncStatus: CloudSyncUiStatus,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isSignedIn = accountStatus != null
+    val visual = resolveLibrarySyncVisual(isSignedIn, syncStatus)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .expressiveClickable(
+                shape = MaterialTheme.shapes.large,
+                onClick = onClick,
+            )
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Surface(
+            modifier = Modifier.size(44.dp),
+            shape = MaterialTheme.shapes.medium,
+            color = visual.iconBackground,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = visual.icon,
+                    contentDescription = null,
+                    tint = visual.iconTint,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Text(
+                text = "Cloud sync with account",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = GoogleSansWeight.bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Text(
+                text = if (isSignedIn) {
+                    "Signed in as $accountStatus"
+                } else {
+                    "Sign in to backup and sync across devices"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (isSignedIn) {
+                Spacer(Modifier.height(1.dp))
+                LibrarySyncStatusBadge(syncStatus = syncStatus)
+            }
+        }
+
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            modifier = Modifier.size(32.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = "Open account settings",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

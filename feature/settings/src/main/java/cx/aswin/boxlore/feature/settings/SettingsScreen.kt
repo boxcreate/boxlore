@@ -319,6 +319,11 @@ private fun SettingsAnimatedPages(
         transitionSpec = { settingsDestinationTransitionSpec() },
         label = "settings_destination",
     ) { currentDestination ->
+        val syncStatus by (
+            repositories.syncStatusFlow?.collectAsStateWithLifecycle()
+                ?: remember { mutableStateOf(CloudSyncUiStatus.Idle) }
+        )
+
         when (currentDestination) {
             ProfileSettingsDestination.Hub ->
                 SettingsHub(
@@ -327,10 +332,6 @@ private fun SettingsAnimatedPages(
                 )
 
             ProfileSettingsDestination.Account -> {
-                val syncStatus by (
-                    repositories.syncStatusFlow?.collectAsStateWithLifecycle()
-                        ?: remember { mutableStateOf(CloudSyncUiStatus.Idle) }
-                )
                 AccountSettingsPage(
                     authRepository = repositories.authRepository,
                     onBack = actions.onReturnToHub,
@@ -361,6 +362,7 @@ private fun SettingsAnimatedPages(
                     onBack = actions.onReturnToHub,
                     onAccountClick = actions.onNavigateToAccountFromLibrary,
                     accountStatus = uiData.accountStatus,
+                    syncStatus = syncStatus,
                 )
 
             ProfileSettingsDestination.Appearance ->
