@@ -1,5 +1,10 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -42,13 +47,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -68,51 +71,63 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 @Composable
 internal fun ColumnScope.SignedOutContent(
     authRepository: AuthRepository?,
+    state: AccountAuthState = rememberAccountAuthState(
+        authRepository = authRepository,
+    ),
 ) {
-    val context = LocalContext.current
-    val activity = remember(context) { context.findActivity() }
     val focusManager = LocalFocusManager.current
-    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
     val actionButtonRequester = remember { BringIntoViewRequester() }
     val imeBottom = WindowInsets.ime.getBottom(density)
 
-    val state = rememberAccountAuthState(
-        authRepository = authRepository,
-        context = context,
-        activity = activity,
-        focusManager = focusManager,
-        scope = scope,
-    )
-
-    LaunchedEffect(imeBottom, state.isAnyInputFocused) {
-        if (imeBottom > 0 && state.isAnyInputFocused) {
-            actionButtonRequester.bringIntoView()
+    LaunchedEffect(state.isAwaitingVerification) {
+        if (state.isAwaitingVerification) {
+            focusManager.clearFocus()
+            state.isAnyInputFocused = false
         }
     }
 
-    // 1. Ultra-Light Header
-    Text(
-        text = "Sign in to sync your library, queue, and playback across devices.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-    )
+    LaunchedEffect(imeBottom, state.isAnyInputFocused) {
+        if (imeBottom > 0 && state.isAnyInputFocused && !state.isAwaitingVerification) {
+            runCatching { actionButtonRequester.bringIntoView() }
+        }
+    }
 
-    // 2. Continue with Google Button
-    GoogleSignInButton(
-        isLoading = state.isGoogleLoading,
-        enabled = !state.isAnyLoading,
-        onClick = state::handleGoogleSignIn,
-    )
+    AnimatedVisibility(
+        visible = !state.isAwaitingVerification,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 1. Ultra-Light Header Subtext with Privacy Policy
+            PrivacyPolicyNotice(
+                prefix = "Sign in to sync your library, queue, and playback across devices. By signing in or signing up, you agree to our ",
+                suffix = ".",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+            )
 
-    // 3. Divider
-    AuthDivider()
+            Spacer(Modifier.height(14.dp))
 
-    // 4. Primary Auth Card
+            // 2. Continue with Google Button
+            GoogleSignInButton(
+                isLoading = state.isGoogleLoading,
+                enabled = !state.isAnyLoading,
+                onClick = state::handleGoogleSignIn,
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            // 3. Divider
+            AuthDivider()
+
+            Spacer(Modifier.height(6.dp))
+        }
+    }
+
+    // 4. Stable Primary Auth Card Container
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -126,16 +141,24 @@ internal fun ColumnScope.SignedOutContent(
                 .fillMaxWidth()
                 .padding(20.dp),
         ) {
-            ConnectedOptionSelector(
-                options = listOf(
-                    AuthMode.SIGN_IN to "Sign In",
-                    AuthMode.SIGN_UP to "Sign Up",
-                ),
-                selected = state.activeAuthMode,
-                onSelect = state::selectAuthMode,
-            )
+            AnimatedVisibility(
+                visible = !state.isAwaitingVerification,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    ConnectedOptionSelector(
+                        options = listOf(
+                            AuthMode.SIGN_IN to "Sign In",
+                            AuthMode.SIGN_UP to "Sign Up",
+                        ),
+                        selected = state.activeAuthMode,
+                        onSelect = state::selectAuthMode,
+                    )
 
-            Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(18.dp))
+                }
+            }
 
             PrimaryAuthCardBody(
                 state = state,
@@ -144,6 +167,8 @@ internal fun ColumnScope.SignedOutContent(
             )
         }
     }
+
+    Spacer(Modifier.height(16.dp))
 
     // 5. Privacy & Data Callout
     AccountPrivacyCard()
@@ -156,17 +181,22 @@ private fun PrimaryAuthCardBody(
     focusManager: FocusManager,
 ) {
     when {
+        state.isAwaitingVerification -> {
+            EmailVerificationPendingSection(
+                state = state,
+            )
+        }
         state.magicLinkSent && !state.usePasswordAuth -> {
             EmailLinkSentSection(
                 email = state.email,
-                isSignUp = state.activeAuthMode == AuthMode.SIGN_UP,
+                isSignUp = false,
                 isAnyLoading = state.isAnyLoading,
-                onOpenEmail = { openGmailOrEmailApp(state.context) },
+                onOpenEmail = { openGmailOrEmailApp(state.context, state.email) },
                 onUseDifferentEmail = state::resetToNewEmail,
                 onResendLink = state::submitEmailLink,
             )
         }
-        !state.usePasswordAuth -> {
+        !state.usePasswordAuth && state.activeAuthMode == AuthMode.SIGN_IN -> {
             EmailLinkInputSection(
                 state = state.toEmailInputState(),
                 actions = state.toEmailInputActions(actionButtonRequester),
@@ -635,40 +665,24 @@ private fun EmailTextField(
 }
 
 @Composable
-private fun PasswordHelperRow(
-    isSignUp: Boolean,
+private fun PasswordForgotPasswordRow(
     isLoading: Boolean,
     onForgotPassword: () -> Unit,
 ) {
-    if (!isSignUp) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(
-                onClick = onForgotPassword,
-                enabled = !isLoading,
-            ) {
-                Text(
-                    text = "Forgot password?",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp, start = 4.dp, bottom = 4.dp),
-            contentAlignment = Alignment.CenterStart,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 2.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(
+            onClick = onForgotPassword,
+            enabled = !isLoading,
         ) {
             Text(
-                text = "Must be at least 6 characters",
+                text = "Forgot password?",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -699,7 +713,7 @@ private fun PasswordSubmitButton(
             )
         } else {
             Text(
-                text = if (isSignUp) "Sign Up" else "Sign In",
+                text = if (isSignUp) "Create Account" else "Sign In",
                 fontWeight = GoogleSansWeight.bold,
             )
         }
@@ -714,7 +728,7 @@ private fun PasswordAuthSection(
 ) {
     Text(
         text = if (state.isSignUp) {
-            "Choose a password (minimum 6 characters) to create your account."
+            "Enter your email and create a password to set up your account."
         } else {
             "Enter your email and password to access your account."
         },
@@ -747,7 +761,15 @@ private fun PasswordAuthSection(
     )
 
     if (state.isSignUp) {
-        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Must be at least 6 characters",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 12.dp, top = 4.dp),
+        )
+
+        Spacer(Modifier.height(10.dp))
+
         PasswordTextField(
             state = PasswordFieldState(
                 value = state.confirmPassword,
@@ -762,17 +784,18 @@ private fun PasswordAuthSection(
         )
     }
 
-    PasswordHelperRow(
-        isSignUp = state.isSignUp,
-        isLoading = state.isLoading,
-        onForgotPassword = actions.onForgotPassword,
-    )
+    if (!state.isSignUp) {
+        PasswordForgotPasswordRow(
+            isLoading = state.isLoading,
+            onForgotPassword = actions.onForgotPassword,
+        )
+    }
 
     if (state.errorMessage != null) {
         AuthErrorBanner(message = state.errorMessage)
     }
 
-    Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(16.dp))
 
     val isSubmitEnabled = !state.isLoading &&
         state.email.isNotBlank() &&
@@ -786,26 +809,28 @@ private fun PasswordAuthSection(
         actionButtonRequester = actionButtonRequester,
     )
 
-    Spacer(Modifier.height(14.dp))
+    if (!state.isSignUp) {
+        Spacer(Modifier.height(14.dp))
 
-    OutlinedButton(
-        onClick = actions.onSwitchToEmailLink,
-        shape = MaterialTheme.shapes.large,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Email,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = "Email me a link instead",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = GoogleSansWeight.medium,
-        )
+        OutlinedButton(
+            onClick = actions.onSwitchToEmailLink,
+            shape = MaterialTheme.shapes.large,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Email,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Email me a sign-in link instead",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = GoogleSansWeight.medium,
+            )
+        }
     }
 }

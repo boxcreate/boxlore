@@ -17,6 +17,8 @@ interface AuthRepository {
     suspend fun signInWithEmailLink(email: String, emailLink: String): Result<BoxLoreUser>
     fun isSignInWithEmailLink(link: String): Boolean
     suspend fun sendPasswordReset(email: String): Result<Unit>
+    suspend fun sendEmailVerification(): Result<Unit>
+    suspend fun reloadUser(): Result<BoxLoreUser?>
     fun signOut()
     suspend fun deleteAccount(): Result<Unit>
     suspend fun getIdToken(forceRefresh: Boolean = false): String?

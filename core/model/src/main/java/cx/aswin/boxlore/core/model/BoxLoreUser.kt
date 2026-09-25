@@ -9,4 +9,5 @@ data class BoxLoreUser(
     val displayName: String?,
     val isEmailVerified: Boolean = false,
     val isAnonymous: Boolean = false,
+    val providerId: String? = null,
 )

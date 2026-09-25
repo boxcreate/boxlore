@@ -171,6 +171,7 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LEARN_CURIOSITY_HISTORY = "learn_curiosity_history"
         const val KEY_LEARNER_LOG_ENABLED = "learner_log_enabled"
         const val KEY_PENDING_AUTH_EMAIL = "pending_auth_email"
+        const val KEY_AWAITING_EMAIL_VERIFICATION = "awaiting_email_verification"
         const val KEY_SYNC_DEVICE_ID = "sync_device_id"
         const val KEY_LAST_SYNC_TIMESTAMP = "sync_last_timestamp"
         const val KEY_LAST_SYNCED_USER_ID = "sync_last_user_id"
@@ -188,6 +189,12 @@ class BoxcastPrefs(context: Context) {
         } else {
             prefs.edit().putString(KEY_PENDING_AUTH_EMAIL, email).apply()
         }
+    }
+
+    fun isAwaitingEmailVerification(): Boolean = prefs.getBoolean(KEY_AWAITING_EMAIL_VERIFICATION, false)
+
+    fun setAwaitingEmailVerification(awaiting: Boolean) {
+        prefs.edit().putBoolean(KEY_AWAITING_EMAIL_VERIFICATION, awaiting).apply()
     }
 
     // ── Sync / Device Identity ──────────────────────────────────────────────

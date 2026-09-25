@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,7 +27,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxlore.core.designsystem.theme.rememberCondensedGoogleSansFamily
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -324,7 +322,6 @@ private fun WelcomeScreen(
     onSkip: () -> Unit,
     onImportClick: () -> Unit,
 ) {
-    val condensedFamily = rememberCondensedGoogleSansFamily()
     val entranceProgress = remember { Animatable(0f) }
     val driftProgress = remember { Animatable(0f) }
     // Buttons stay inert until entrance completes — avoids per-frame enabled recomposition.
@@ -386,7 +383,6 @@ private fun WelcomeScreen(
             WelcomeForeground(
                 entranceProgress = entranceProgress,
                 chromeInteractive = chromeInteractive,
-                condensedFamily = condensedFamily,
                 actions =
                 WelcomeActions(
                     onHelpMeFind = onHelpMeFind,
@@ -415,7 +411,6 @@ private data class WelcomeActions(
 private fun WelcomeForeground(
     entranceProgress: Animatable<Float, AnimationVector1D>,
     chromeInteractive: Boolean,
-    condensedFamily: FontFamily,
     actions: WelcomeActions,
     modifier: Modifier = Modifier,
 ) {
@@ -475,7 +470,6 @@ private fun WelcomeForeground(
                     text = "Podcasts, done right.",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = GoogleSansWeight.medium,
-                    fontFamily = condensedFamily,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 14.dp),
                 )
@@ -645,7 +639,7 @@ private fun WelcomeForeground(
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Upload,
+                            imageVector = Icons.Rounded.Download,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp),

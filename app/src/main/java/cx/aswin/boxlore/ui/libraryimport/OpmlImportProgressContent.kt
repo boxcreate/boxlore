@@ -18,10 +18,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.ImportExport
 import androidx.compose.material.icons.rounded.SettingsBackupRestore
 import androidx.compose.material3.Button
@@ -195,12 +198,17 @@ internal fun ProgressCopy(title: String, subtitle: String, detail: String? = nul
 }
 
 @Composable
-internal fun SelectorContent(onJson: () -> Unit, onOpml: () -> Unit,) {
+internal fun SelectorContent(
+    onJson: () -> Unit,
+    onOpml: () -> Unit,
+    onSyncAccount: () -> Unit = {},
+) {
     Column(
         modifier =
         Modifier
             .fillMaxSize()
-            .padding(top = 40.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(top = 28.dp, bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -222,7 +230,7 @@ internal fun SelectorContent(onJson: () -> Unit, onOpml: () -> Unit,) {
             )
         }
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Text(
             text = "Import library",
@@ -233,15 +241,23 @@ internal fun SelectorContent(onJson: () -> Unit, onOpml: () -> Unit,) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Restore a boxlore backup, or migrate shows from another podcast app.",
+            text = "Sync your account, restore a backup, or migrate shows from another app.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = 8.dp),
         )
 
-        Spacer(modifier = Modifier.height(36.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
+        ImportOptionCard(
+            icon = Icons.Rounded.CloudSync,
+            title = "boxlore cloud sync",
+            subtitle = "Sign in to your account to restore subscriptions, queue, and history",
+            badge = "cloud",
+            onClick = onSyncAccount,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         ImportOptionCard(
             icon = Icons.Rounded.SettingsBackupRestore,
             title = "boxlore backup",
@@ -261,7 +277,13 @@ internal fun SelectorContent(onJson: () -> Unit, onOpml: () -> Unit,) {
 }
 
 @Composable
-internal fun ImportOptionCard(icon: ImageVector, title: String, subtitle: String, badge: String, onClick: () -> Unit,) {
+internal fun ImportOptionCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    badge: String,
+    onClick: () -> Unit,
+) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -281,10 +303,10 @@ internal fun ImportOptionCard(icon: ImageVector, title: String, subtitle: String
             Box(
                 modifier =
                 Modifier
-                    .size(52.dp)
+                    .size(48.dp)
                     .background(
                         color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -292,29 +314,38 @@ internal fun ImportOptionCard(icon: ImageVector, title: String, subtitle: String
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(26.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = GoogleSansWeight.bold,
                         color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = badge,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.medium,
                         color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        softWrap = false,
                         modifier =
                         Modifier
                             .background(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(8.dp),
-                            ).padding(horizontal = 8.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(6.dp),
+                            ).padding(horizontal = 7.dp, vertical = 2.dp),
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))

@@ -44,6 +44,10 @@ class FirebaseAuthAuthenticatorTest {
         override suspend fun sendPasswordReset(email: String): Result<Unit> =
             Result.failure(NotImplementedError())
 
+        override suspend fun sendEmailVerification(): Result<Unit> = Result.success(Unit)
+
+        override suspend fun reloadUser(): Result<BoxLoreUser?> = Result.success(currentUser.value)
+
         var throwOnRefresh: Boolean = false
 
         override fun signOut() {}

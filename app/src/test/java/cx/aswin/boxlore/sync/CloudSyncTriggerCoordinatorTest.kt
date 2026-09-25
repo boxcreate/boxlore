@@ -91,10 +91,16 @@ class CloudSyncTriggerCoordinatorTest {
         database.close()
     }
 
-    private fun testUser(uid: String = "user-1") = BoxLoreUser(
+    private fun testUser(
+        uid: String = "user-1",
+        isEmailVerified: Boolean = true,
+        providerId: String? = "password",
+    ) = BoxLoreUser(
         uid = uid,
         email = "test@example.com",
         displayName = "Test User",
+        isEmailVerified = isEmailVerified,
+        providerId = providerId,
     )
 
     private fun testPodcast(id: String, isDirty: Boolean = true) = PodcastEntity(
@@ -218,6 +224,49 @@ class CloudSyncTriggerCoordinatorTest {
         advanceUntilIdle()
 
         assertEquals(2, fakeCoordinator.syncNowCalls)
+    }
+
+    @Test
+    fun unverifiedPasswordUser_doesNotTriggerSync() = runTest {
+        val coordinator = createCoordinator(this)
+        coordinator.start()
+        advanceUntilIdle()
+
+        fakeAuthRepository.currentUser.value = testUser("user-unverified", isEmailVerified = false, providerId = "password")
+        advanceUntilIdle()
+
+        assertEquals(0, fakeCoordinator.syncNowCalls)
+        assertEquals(CloudSyncUiStatus.Idle, coordinator.syncStatusFlow.value)
+    }
+
+    @Test
+    fun unverifiedPasswordUser_triggersSync_whenEmailVerifiedFlips() = runTest {
+        val coordinator = createCoordinator(this)
+        coordinator.start()
+        advanceUntilIdle()
+
+        fakeAuthRepository.currentUser.value = testUser("user-1", isEmailVerified = false, providerId = "password")
+        advanceUntilIdle()
+        assertEquals(0, fakeCoordinator.syncNowCalls)
+
+        // Email verified!
+        fakeAuthRepository.currentUser.value = testUser("user-1", isEmailVerified = true, providerId = "password")
+        advanceUntilIdle()
+
+        assertEquals(1, fakeCoordinator.syncNowCalls)
+        assertTrue(coordinator.syncStatusFlow.value is CloudSyncUiStatus.Success)
+    }
+
+    @Test
+    fun googleUser_triggersSync_withoutExplicitPasswordVerification() = runTest {
+        val coordinator = createCoordinator(this)
+        coordinator.start()
+        advanceUntilIdle()
+
+        fakeAuthRepository.currentUser.value = testUser("user-google", isEmailVerified = true, providerId = "google.com")
+        advanceUntilIdle()
+
+        assertEquals(1, fakeCoordinator.syncNowCalls)
     }
 
     @Test
@@ -578,6 +627,8 @@ class CloudSyncTriggerCoordinatorTest {
         override suspend fun signInWithEmailLink(email: String, emailLink: String): Result<BoxLoreUser> = error("unused")
         override fun isSignInWithEmailLink(link: String): Boolean = false
         override suspend fun sendPasswordReset(email: String): Result<Unit> = error("unused")
+        override suspend fun sendEmailVerification(): Result<Unit> = Result.success(Unit)
+        override suspend fun reloadUser(): Result<BoxLoreUser?> = Result.success(currentUser.value)
         override fun signOut() {
             currentUser.value = null
         }

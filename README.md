@@ -122,23 +122,19 @@ and listen without paywalls, subscriptions, or ads.
 ### Upcoming
 
 <!-- release-upcoming:start -->
-<b>🆕 New features:</b>
+<b>🆕 New features & Cloud Sync:</b>
 <ul align="left">
-<li>introduce Firebase Authentication and redesign account settings <a href="https://github.com/boxcreate/boxlore/pull... ([#1069](https://github.com/boxcreate/boxlore/pull/1069"><img src="https://img.shields.io/badge/PR-1069-6750A4?style=flat-square" alt="PR #1069" height="18"/></a></li>
+<li><b>**Realtime Cloud Sync**</b>: Keep subscriptions, playback progress, and queues in sync across your devices with conflict-resolved multi-device synchronization. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
+<li><b>**Secure Accounts & Email Verification**</b>: Sign up with email and password featuring verified inbox confirmation, or sign in instantly with Google. <a href="https://github.com/boxcreate/boxlore/pull/1084"><img src="https://img.shields.io/badge/PR-1084-6750A4?style=flat-square" alt="PR #1084" height="18"/></a></li>
+<li><b>**Instant Playback Handoff**</b>: Pause an episode on your phone and resume listening seamlessly right where you left off on another device. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
+<li><b>**Onboarding & Import Sync**</b>: Connect your account directly from welcome onboarding or library import sheets to restore shows immediately. <a href="https://github.com/boxcreate/boxlore/pull/1084"><img src="https://img.shields.io/badge/PR-1084-6750A4?style=flat-square" alt="PR #1084" height="18"/></a></li>
 </ul>
-<b>⚡ Improvements:</b>
+<b>⚡ Improvements & Polish:</b>
 <ul align="left">
-<li>Realtime cloud sync across your devices: keep your subscriptions, playback progress, and queue in sync wherever you listen. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
-<li>Instant playback handoff: pause on one device and resume seamlessly on another. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
-<li>Enhanced Account Settings with live sync status and a one-tap manual sync button. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
-<li>Added multi-device sync data foundation to protect your playlist queues, subscriptions, and favorites from sync conflicts. <a href="https://github.com/boxcreate/boxlore/pull/1072"><img src="https://img.shields.io/badge/PR-1072-6750A4?style=flat-square" alt="PR #1072" height="18"/></a></li>
+<li><b>**Modular Architecture**</b>: Decoupled settings, listening history, and auth into dedicated, focused feature and core modules. <a href="https://github.com/boxcreate/boxlore/pull/1083"><img src="https://img.shields.io/badge/PR-1083-6750A4?style=flat-square" alt="PR #1083" height="18"/></a></li>
+<li><b>**Library & Import Polish**</b>: Wider import option cards, responsive dialog dismissals, and enhanced account sync controls. <a href="https://github.com/boxcreate/boxlore/pull/1084"><img src="https://img.shields.io/badge/PR-1084-6750A4?style=flat-square" alt="PR #1084" height="18"/></a></li>
+<li><b>**Notice on Upcoming Fixes**</b>: We apologize that a few promised bug fixes couldn't make this build—they are queued and will ship in an update by next weekend!</li>
 </ul>
-<b>🐛 Fixes:</b>
-<ul align="left">
-<li>Streamlined player chapter and transcript controls by removing deprecated background generation prompts. <a href="https://github.com/boxcreate/boxlore/pull/1071"><img src="https://img.shields.io/badge/PR-1071-6750A4?style=flat-square" alt="PR #1071" height="18"/></a></li>
-<li>resolve account authentication and settings refinements <a href="https://github.com/boxcreate/boxlore/pull/1070"><img src="https://img.shields.io/badge/PR-1070-6750A4?style=flat-square" alt="PR #1070" height="18"/></a></li>
-</ul>
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
 <!-- release-upcoming:end -->
 
 

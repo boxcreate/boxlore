@@ -94,4 +94,65 @@ class AccountSettingsPageTest {
         // Multiple days
         assertEquals("Synced 4d ago", formatRelativeSyncTime(now - 4 * oneDay, now = now))
     }
+
+    @Test
+    fun boxLoreUser_providerId_differentiatesGoogleAndPasswordAccounts() {
+        val googleUser = cx.aswin.boxlore.core.model.BoxLoreUser(
+            uid = "google-uid",
+            email = "user@gmail.com",
+            displayName = "Google User",
+            providerId = "google.com",
+        )
+        val passwordUser = cx.aswin.boxlore.core.model.BoxLoreUser(
+            uid = "pass-uid",
+            email = "user@example.com",
+            displayName = null,
+            providerId = "password",
+        )
+        val defaultUser = cx.aswin.boxlore.core.model.BoxLoreUser(
+            uid = "default-uid",
+            email = "default@example.com",
+            displayName = null,
+        )
+
+        assertEquals("google.com", googleUser.providerId)
+        assertEquals("password", passwordUser.providerId)
+        org.junit.Assert.assertNull(defaultUser.providerId)
+    }
+
+    @Test
+    fun resolveProviderLabel_returnsExpectedLabels() {
+        assertEquals("Google", resolveProviderLabel("google.com"))
+        assertEquals("Email Link", resolveProviderLabel("emailLink"))
+        assertEquals("Password", resolveProviderLabel("password"))
+        assertEquals("Password", resolveProviderLabel(null))
+        assertEquals("Password", resolveProviderLabel("custom"))
+    }
+
+    @Test
+    fun resolveSyncPillText_returnsExpectedStrings() {
+        assertEquals("Syncing...", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Syncing))
+        assertEquals("Sync issue", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Error("Failed")))
+        assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Idle))
+        assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Success(1000L)))
+    }
+
+    @Test
+    fun settingsScreenConfig_isOnboardingDefault_isFalse() {
+        val config = cx.aswin.boxlore.feature.settings.SettingsScreenConfig(
+            onBack = {},
+            onResetAnalytics = {},
+        )
+        org.junit.Assert.assertFalse(config.isOnboarding)
+    }
+
+    @Test
+    fun settingsScreenConfig_isOnboardingCustom_isPreserved() {
+        val config = cx.aswin.boxlore.feature.settings.SettingsScreenConfig(
+            onBack = {},
+            onResetAnalytics = {},
+            isOnboarding = true,
+        )
+        org.junit.Assert.assertTrue(config.isOnboarding)
+    }
 }

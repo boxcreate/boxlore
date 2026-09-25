@@ -98,31 +98,36 @@ private fun canDismissImportState(state: OpmlImportState): Boolean = when (state
     else -> false
 }
 
+data class OpmlImportDialogActions(
+    val onDismissRequest: () -> Unit,
+    val onSelectionChanged: (selectedIds: Set<String>) -> Unit = {},
+    val onConfirmCompleted: () -> Unit = {},
+    val onSkipCompleted: () -> Unit = {},
+    val onImportJsonSelected: (android.net.Uri) -> Unit = {},
+    val onImportOpmlSelected: (android.net.Uri) -> Unit = {},
+    val onSyncAccountSelected: () -> Unit = {},
+)
+
 @Composable
 fun OpmlImportDialog(
     state: OpmlImportState,
-    onDismissRequest: () -> Unit,
-    onSelectionChanged: (selectedIds: Set<String>) -> Unit,
-    onConfirmCompleted: () -> Unit,
-    onSkipCompleted: () -> Unit,
-    onImportJsonSelected: (android.net.Uri) -> Unit,
-    onImportOpmlSelected: (android.net.Uri) -> Unit,
+    actions: OpmlImportDialogActions,
 ) {
     if (state is OpmlImportState.Idle) return
 
     val importJsonLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.OpenDocument(),
-            onResult = { uri -> uri?.let { onImportJsonSelected(it) } },
+            onResult = { uri -> uri?.let { actions.onImportJsonSelected(it) } },
         )
     val importOpmlLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.OpenDocument(),
-            onResult = { uri -> uri?.let { onImportOpmlSelected(it) } },
+            onResult = { uri -> uri?.let { actions.onImportOpmlSelected(it) } },
         )
     val canDismiss = canDismissImportState(state)
     BackHandler {
-        if (canDismiss) onDismissRequest()
+        if (canDismiss) actions.onDismissRequest()
     }
 
     // Draw in the Activity window (not a Dialog) so JSON and OPML share the same
@@ -152,25 +157,25 @@ fun OpmlImportDialog(
             Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            if (canDismiss) {
-                ImportCloseButton(
-                    onClick = onDismissRequest,
-                    modifier = Modifier.align(Alignment.TopEnd),
-                )
-            }
             ImportDialogBody(
                 state = state,
-                onDismissRequest = onDismissRequest,
-                onSelectionChanged = onSelectionChanged,
-                onConfirmCompleted = onConfirmCompleted,
-                onSkipCompleted = onSkipCompleted,
+                actions = actions,
                 onPickJson = {
                     importJsonLauncher.launch(arrayOf("application/json"))
                 },
                 onPickOpml = { importOpmlLauncher.launch(arrayOf("*/*")) },
             )
+            if (canDismiss) {
+                ImportCloseButton(
+                    onClick = actions.onDismissRequest,
+                    modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .zIndex(10f),
+                )
+            }
         }
     }
 }
@@ -181,7 +186,7 @@ private fun ImportCloseButton(onClick: () -> Unit, modifier: Modifier = Modifier
         onClick = onClick,
         modifier =
         modifier
-            .size(44.dp)
+            .size(48.dp)
             .background(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = CircleShape,
@@ -198,10 +203,7 @@ private fun ImportCloseButton(onClick: () -> Unit, modifier: Modifier = Modifier
 @Composable
 private fun ImportDialogBody(
     state: OpmlImportState,
-    onDismissRequest: () -> Unit,
-    onSelectionChanged: (selectedIds: Set<String>) -> Unit,
-    onConfirmCompleted: () -> Unit,
-    onSkipCompleted: () -> Unit,
+    actions: OpmlImportDialogActions,
     onPickJson: () -> Unit,
     onPickOpml: () -> Unit,
 ) {
@@ -211,7 +213,7 @@ private fun ImportDialogBody(
         ProgressFlowScaffold(
             hero = progressHeroVisual,
             state = state,
-            onDone = onDismissRequest,
+            onDone = actions.onDismissRequest,
         )
         return
     }
@@ -237,10 +239,7 @@ private fun ImportDialogBody(
     ) { current ->
         ImportInteractiveContent(
             state = current,
-            onDismissRequest = onDismissRequest,
-            onSelectionChanged = onSelectionChanged,
-            onConfirmCompleted = onConfirmCompleted,
-            onSkipCompleted = onSkipCompleted,
+            actions = actions,
             onPickJson = onPickJson,
             onPickOpml = onPickOpml,
         )
@@ -250,10 +249,7 @@ private fun ImportDialogBody(
 @Composable
 private fun ImportInteractiveContent(
     state: OpmlImportState,
-    onDismissRequest: () -> Unit,
-    onSelectionChanged: (selectedIds: Set<String>) -> Unit,
-    onConfirmCompleted: () -> Unit,
-    onSkipCompleted: () -> Unit,
+    actions: OpmlImportDialogActions,
     onPickJson: () -> Unit,
     onPickOpml: () -> Unit,
 ) {
@@ -262,20 +258,21 @@ private fun ImportInteractiveContent(
             SelectorContent(
                 onJson = onPickJson,
                 onOpml = onPickOpml,
+                onSyncAccount = actions.onSyncAccountSelected,
             )
 
         is OpmlImportState.AskCompleted ->
             AskCompletedContent(
                 state = state,
-                onSelectionChanged = onSelectionChanged,
-                onConfirmCompleted = onConfirmCompleted,
-                onSkipCompleted = onSkipCompleted,
+                onSelectionChanged = actions.onSelectionChanged,
+                onConfirmCompleted = actions.onConfirmCompleted,
+                onSkipCompleted = actions.onSkipCompleted,
             )
 
         is OpmlImportState.Error ->
             ErrorContent(
                 message = state.message,
-                onClose = onDismissRequest,
+                onClose = actions.onDismissRequest,
             )
 
         else -> Unit

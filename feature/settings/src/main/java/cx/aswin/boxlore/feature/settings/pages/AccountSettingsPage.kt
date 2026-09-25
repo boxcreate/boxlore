@@ -2,12 +2,9 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -20,26 +17,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.CloudDone
-import androidx.compose.material.icons.rounded.CloudOff
-import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DeleteForever
-import androidx.compose.material.icons.rounded.Sync
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.rounded.Email
+import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,12 +45,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.AuthRepository
@@ -62,12 +54,14 @@ import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import cx.aswin.boxlore.feature.settings.components.SettingsActionRow
-import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+
+private const val PROVIDER_GOOGLE = "google.com"
+private const val PROVIDER_EMAIL_LINK = "emailLink"
 
 @Composable
 internal fun AccountSettingsPage(
@@ -75,6 +69,7 @@ internal fun AccountSettingsPage(
     onBack: () -> Unit,
     syncStatus: CloudSyncUiStatus = CloudSyncUiStatus.Idle,
     onSyncNow: () -> Unit = {},
+    isOnboarding: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -87,26 +82,60 @@ internal fun AccountSettingsPage(
     var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
     var showReauthRequiredDialog by rememberSaveable { mutableStateOf(false) }
 
+    val authState = rememberAccountAuthState(
+        authRepository = authRepository,
+        context = context,
+        scope = scope,
+    )
+
+    var previousUser by remember { mutableStateOf<BoxLoreUser?>(null) }
+    LaunchedEffect(currentUser) {
+        val user = currentUser
+        val prev = previousUser
+        previousUser = user
+        if (prev != null && user == null) {
+            authState.resetToNewEmail()
+        } else if (user?.isEmailVerified == true) {
+            authState.isAwaitingVerification = false
+            AccountVerificationStorage.setPref(context, false)
+        }
+    }
+
+    LaunchedEffect(authState.isAwaitingVerification, authState.magicLinkSent) {
+        if (authState.isAwaitingVerification || authState.magicLinkSent) {
+            scrollState.animateScrollTo(0)
+        }
+    }
+
     SettingsScaffold(
         title = "Account",
         onBack = onBack,
         scrollState = scrollState,
     ) {
         val user = currentUser
-        if (user != null) {
+        val isAwaiting = isAwaitingVerificationState(authState, user, context)
+
+        if (user != null && !isAwaiting) {
             SignedInContent(
                 user = user,
-                onSignOut = {
-                    authRepository?.signOut()
-                    Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
-                },
-                onDeleteAccountClick = { showDeleteConfirmation = true },
                 syncStatus = syncStatus,
-                onSyncNow = onSyncNow,
+                actions = SignedInActions(
+                    onResetPassword = {
+                        sendResetPasswordEmail(scope, authRepository, user.email, context)
+                    },
+                    onSignOut = {
+                        handleSignOut(authRepository, authState, context)
+                    },
+                    onDeleteAccountClick = { showDeleteConfirmation = true },
+                    onSyncNow = onSyncNow,
+                    onContinueToHome = onBack,
+                ),
+                isOnboarding = isOnboarding,
             )
         } else {
             SignedOutContent(
                 authRepository = authRepository,
+                state = authState,
             )
         }
     }
@@ -127,154 +156,261 @@ internal fun AccountSettingsPage(
         onDismissReauthRequired = { showReauthRequiredDialog = false },
         onSignOutToReauth = {
             showReauthRequiredDialog = false
-            authRepository?.signOut()
-            Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
+            handleSignOut(authRepository, authState, context)
         },
     )
 }
 
-internal sealed interface AccountDeletionOutcome {
-    data object Success : AccountDeletionOutcome
-    data object ReauthRequired : AccountDeletionOutcome
-    data class Failure(val message: String) : AccountDeletionOutcome
-}
-
-internal fun resolveAccountDeletionOutcome(result: Result<*>?): AccountDeletionOutcome {
-    if (result?.isSuccess == true) {
-        return AccountDeletionOutcome.Success
-    }
-    val error = result?.exceptionOrNull()
-    return if (error.isRecentLoginRequired()) {
-        AccountDeletionOutcome.ReauthRequired
-    } else {
-        AccountDeletionOutcome.Failure(cleanAccountError(error?.localizedMessage))
-    }
-}
-
-private fun handleDeleteAccount(
-    scope: CoroutineScope,
+private fun isAwaitingVerificationState(
+    authState: AccountAuthState,
+    user: BoxLoreUser?,
     context: Context,
+): Boolean = authState.isAwaitingVerification ||
+    (user != null && !user.isEmailVerified && AccountVerificationStorage.getPref(context))
+
+private fun sendResetPasswordEmail(
+    scope: CoroutineScope,
     authRepository: AuthRepository?,
-    onReauthRequired: () -> Unit,
+    email: String?,
+    context: Context,
 ) {
+    if (email.isNullOrBlank()) return
     scope.launch {
-        when (val outcome = resolveAccountDeletionOutcome(authRepository?.deleteAccount())) {
-            AccountDeletionOutcome.Success -> {
-                Toast.makeText(context, "Account deleted", Toast.LENGTH_SHORT).show()
+        val res = authRepository?.sendPasswordReset(email)
+        val message = if (res?.isSuccess == true) {
+            "Password reset email sent to $email"
+        } else {
+            res?.exceptionOrNull()?.localizedMessage ?: "Failed to send reset email"
+        }
+        val duration = if (res?.isSuccess == true) Toast.LENGTH_SHORT else Toast.LENGTH_LONG
+        Toast.makeText(context, message, duration).show()
+    }
+}
+
+private fun handleSignOut(
+    authRepository: AuthRepository?,
+    authState: AccountAuthState,
+    context: Context,
+) {
+    authRepository?.signOut()
+    authState.resetToNewEmail()
+    Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
+}
+
+private data class SignedInActions(
+    val onResetPassword: () -> Unit,
+    val onSignOut: () -> Unit,
+    val onDeleteAccountClick: () -> Unit,
+    val onSyncNow: () -> Unit,
+    val onContinueToHome: () -> Unit = {},
+)
+
+@Composable
+private fun ColumnScope.SignedInContent(
+    user: BoxLoreUser,
+    syncStatus: CloudSyncUiStatus,
+    actions: SignedInActions,
+    isOnboarding: Boolean = false,
+) {
+    UserProfileCard(user = user, syncStatus = syncStatus)
+    if (isOnboarding) {
+        OnboardingContinueHero(onContinue = actions.onContinueToHome)
+    }
+    CloudSyncInfoGroup(
+        syncStatus = syncStatus,
+        onSyncNow = actions.onSyncNow,
+    )
+    AccountManagementGroup(
+        user = user,
+        onResetPassword = actions.onResetPassword,
+        onSignOut = actions.onSignOut,
+        onDeleteAccountClick = actions.onDeleteAccountClick,
+    )
+}
+
+@Composable
+private fun OnboardingContinueHero(
+    onContinue: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Account connected",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = GoogleSansWeight.bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "You're all set to start listening.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    )
+                }
             }
-            AccountDeletionOutcome.ReauthRequired -> {
-                onReauthRequired()
-            }
-            is AccountDeletionOutcome.Failure -> {
-                Toast.makeText(context, outcome.message, Toast.LENGTH_LONG).show()
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onContinue,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            ) {
+                Text(
+                    text = "Continue to boxlore",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = GoogleSansWeight.bold,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
             }
         }
     }
 }
 
+internal fun resolveProviderLabel(providerId: String?): String = when (providerId) {
+    PROVIDER_GOOGLE -> "Google"
+    PROVIDER_EMAIL_LINK -> "Email Link"
+    else -> "Password"
+}
+
 @Composable
-private fun AccountSettingsDialogs(
-    showDeleteConfirmation: Boolean,
-    showReauthRequiredDialog: Boolean,
-    onDismissDeleteConfirmation: () -> Unit,
-    onConfirmDelete: () -> Unit,
-    onDismissReauthRequired: () -> Unit,
-    onSignOutToReauth: () -> Unit,
-) {
-    if (showDeleteConfirmation) {
-        DeleteAccountConfirmationDialog(
-            onDismiss = onDismissDeleteConfirmation,
-            onConfirmDelete = onConfirmDelete,
+private fun ProviderIcon(providerId: String?) {
+    when (providerId) {
+        PROVIDER_GOOGLE -> Image(
+            painter = painterResource(cx.aswin.boxlore.core.designsystem.R.drawable.ic_google_logo),
+            contentDescription = null,
+            modifier = Modifier.size(13.dp),
+        )
+        PROVIDER_EMAIL_LINK -> Icon(
+            imageVector = Icons.Rounded.Email,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(13.dp),
+        )
+        else -> Icon(
+            imageVector = Icons.Rounded.Lock,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(13.dp),
         )
     }
-
-    if (showReauthRequiredDialog) {
-        ReauthRequiredDialog(
-            onDismiss = onDismissReauthRequired,
-            onSignOutToReauth = onSignOutToReauth,
-        )
-    }
 }
 
 @Composable
-private fun DeleteAccountConfirmationDialog(
-    onDismiss: () -> Unit,
-    onConfirmDelete: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Delete Account", fontWeight = GoogleSansWeight.bold) },
-        text = {
-            Text(
-                "Are you sure you want to delete your boxlore account? " +
-                    "This permanently removes your cloud profile and cross-device sync data. " +
-                    "Your local downloads and podcast catalog on this device will not be erased.",
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirmDelete,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-            ) {
-                Text("Delete Permanently")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-    )
-}
-
-@Composable
-private fun ReauthRequiredDialog(
-    onDismiss: () -> Unit,
-    onSignOutToReauth: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Recent Sign-In Required", fontWeight = GoogleSansWeight.bold) },
-        text = {
-            Text(
-                "For your security, deleting your account requires recent authentication. " +
-                    "Please sign out and sign back in, then try deleting your account again.",
-            )
-        },
-        confirmButton = {
-            Button(onClick = onSignOutToReauth) {
-                Text("Sign Out to Re-authenticate")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-    )
-}
-
-@Composable
-private fun ColumnScope.SignedInContent(
-    user: BoxLoreUser,
-    onSignOut: () -> Unit,
-    onDeleteAccountClick: () -> Unit,
+private fun AccountStatusPill(
+    providerId: String?,
     syncStatus: CloudSyncUiStatus,
-    onSyncNow: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    UserProfileCard(user = user)
-    CloudSyncInfoGroup(
-        syncStatus = syncStatus,
-        onSyncNow = onSyncNow,
-    )
-    AccountManagementGroup(
-        onSignOut = onSignOut,
-        onDeleteAccountClick = onDeleteAccountClick,
-    )
+    val isError = syncStatus is CloudSyncUiStatus.Error
+    val providerLabel = resolveProviderLabel(providerId)
+    val syncText = resolveSyncPillText(syncStatus)
+    val syncIcon = resolveSyncPillIcon(syncStatus)
+    val containerColor = if (isError) {
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
+    }
+    val syncColor = if (isError) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.small,
+        color = containerColor,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            ProviderIcon(providerId = providerId)
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = providerLabel,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = GoogleSansWeight.medium,
+                maxLines = 1,
+                softWrap = false,
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "•",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+            Spacer(Modifier.width(6.dp))
+            Icon(
+                imageVector = syncIcon,
+                contentDescription = null,
+                tint = syncColor,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = syncText,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (isError) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                fontWeight = GoogleSansWeight.medium,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
+    }
 }
 
 @Composable
-private fun UserProfileCard(user: BoxLoreUser) {
+private fun UserProfileCard(
+    user: BoxLoreUser,
+    syncStatus: CloudSyncUiStatus,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -289,26 +425,15 @@ private fun UserProfileCard(user: BoxLoreUser) {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(68.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    val initial = (user.displayName ?: user.email)?.take(1)?.uppercase() ?: "B"
-                    Text(
-                        text = initial,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = GoogleSansWeight.bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
+            AnimatedBlobAvatar(
+                size = 76.dp,
+            )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(14.dp))
 
+            val displayName = user.displayName ?: user.email ?: "boxlore listener"
             Text(
-                text = user.displayName ?: user.email ?: "boxlore listener",
+                text = displayName,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = GoogleSansWeight.bold,
                 textAlign = TextAlign.Center,
@@ -325,212 +450,34 @@ private fun UserProfileCard(user: BoxLoreUser) {
                 )
             }
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(16.dp))
 
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = "Cloud sync active",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        fontWeight = GoogleSansWeight.medium,
-                    )
-                }
-            }
+            AccountStatusPill(
+                providerId = user.providerId,
+                syncStatus = syncStatus,
+            )
         }
-    }
-}
-
-private data class SyncDisplayState(
-    val title: String,
-    val subtitle: String,
-    val icon: ImageVector,
-    val containerColor: Color,
-    val tintColor: Color,
-)
-
-@Composable
-private fun resolveSyncDisplayState(syncStatus: CloudSyncUiStatus): SyncDisplayState {
-    val errorContainer = MaterialTheme.colorScheme.errorContainer
-    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
-    val onErrorContainer = MaterialTheme.colorScheme.onErrorContainer
-    val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
-
-    return when (syncStatus) {
-        is CloudSyncUiStatus.Syncing -> SyncDisplayState(
-            title = "Synchronizing...",
-            subtitle = "Uploading local changes and fetching updates...",
-            icon = Icons.Rounded.CloudSync,
-            containerColor = primaryContainer,
-            tintColor = onPrimaryContainer,
-        )
-        is CloudSyncUiStatus.Success -> SyncDisplayState(
-            title = "Library Synchronized",
-            subtitle = formatRelativeSyncTime(syncStatus.syncedAt),
-            icon = Icons.Rounded.CloudDone,
-            containerColor = primaryContainer,
-            tintColor = onPrimaryContainer,
-        )
-        is CloudSyncUiStatus.Error -> SyncDisplayState(
-            title = "Sync Issue",
-            subtitle = syncStatus.message,
-            icon = Icons.Rounded.CloudOff,
-            containerColor = errorContainer,
-            tintColor = onErrorContainer,
-        )
-        CloudSyncUiStatus.Idle -> SyncDisplayState(
-            title = "Library Sync Ready",
-            subtitle = "Connected and ready to synchronize changes.",
-            icon = Icons.Rounded.CloudDone,
-            containerColor = primaryContainer,
-            tintColor = onPrimaryContainer,
-        )
-    }
-}
-
-@Composable
-private fun SyncNowButton(
-    isSyncing: Boolean,
-    onSyncNow: () -> Unit,
-) {
-    val rotation = if (isSyncing) {
-        val infiniteTransition = rememberInfiniteTransition(label = "SyncRotation")
-        val animatedRotation by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-            label = "SyncSpin",
-        )
-        animatedRotation
-    } else {
-        0f
-    }
-
-    val hapticFeedback = LocalHapticFeedback.current
-
-    IconButton(
-        onClick = {
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-            onSyncNow()
-        },
-        enabled = !isSyncing,
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Sync,
-            contentDescription = "Sync now",
-            modifier = Modifier
-                .size(24.dp)
-                .rotate(rotation),
-            tint = if (isSyncing) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
-        )
-    }
-}
-
-@Composable
-private fun CloudSyncInfoGroup(
-    syncStatus: CloudSyncUiStatus,
-    onSyncNow: () -> Unit,
-) {
-    val isSyncing = syncStatus is CloudSyncUiStatus.Syncing
-    val displayState = resolveSyncDisplayState(syncStatus)
-
-    SettingsGroup(
-        title = "Cloud Synchronization",
-        footer = "Your subscriptions, queue, and playback progress stay backed up and synchronized across your devices.",
-    ) {
-        SettingsContent {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = displayState.containerColor,
-                    modifier = Modifier.size(40.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = displayState.icon,
-                            contentDescription = null,
-                            tint = displayState.tintColor,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
-                }
-                Spacer(Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = displayState.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = GoogleSansWeight.bold,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = displayState.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (syncStatus is CloudSyncUiStatus.Error) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                SyncNowButton(
-                    isSyncing = isSyncing,
-                    onSyncNow = onSyncNow,
-                )
-            }
-        }
-    }
-}
-
-internal fun formatRelativeSyncTime(timestamp: Long, now: Long = System.currentTimeMillis()): String {
-    if (timestamp <= 0L) return "Never synced"
-    val diff = (now - timestamp).coerceAtLeast(0L)
-    val seconds = diff / 1000
-    val minutes = seconds / 60
-    val hours = minutes / 60
-    val days = hours / 24
-
-    return when {
-        seconds < 30 -> "Synced just now"
-        minutes < 1 -> "Synced less than a minute ago"
-        minutes == 1L -> "Synced 1m ago"
-        minutes < 60 -> "Synced ${minutes}m ago"
-        hours == 1L -> "Synced 1h ago"
-        hours < 24 -> "Synced ${hours}h ago"
-        days == 1L -> "Synced 1d ago"
-        else -> "Synced ${days}d ago"
     }
 }
 
 @Composable
 private fun AccountManagementGroup(
+    user: BoxLoreUser,
+    onResetPassword: () -> Unit,
     onSignOut: () -> Unit,
     onDeleteAccountClick: () -> Unit,
 ) {
+    val isPasswordAccount = user.providerId != PROVIDER_GOOGLE && !user.email.isNullOrBlank()
     SettingsGroup(title = "Account Management") {
+        if (isPasswordAccount) {
+            SettingsActionRow(
+                title = "Reset Password",
+                supportingText = "Send password reset instructions to ${user.email}",
+                icon = Icons.Rounded.Key,
+                onClick = onResetPassword,
+            )
+            SettingsDivider()
+        }
         SettingsActionRow(
             title = "Sign Out",
             supportingText = "Disconnect this device from your cloud account",
