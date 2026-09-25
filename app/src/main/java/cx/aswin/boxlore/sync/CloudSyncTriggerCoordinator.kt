@@ -40,7 +40,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * playback milestones, and database mutations without mid-play polling.
  */
 @OptIn(FlowPreview::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class CloudSyncTriggerCoordinator(
     private val context: Context,
     private val applicationScope: CoroutineScope,
@@ -121,9 +121,7 @@ class CloudSyncTriggerCoordinator(
         if (authRepository.currentUserId == null) return
         applicationScope.launch(ioDispatcher) {
             try {
-                val isOnline = runCatching {
-                    withTimeoutOrNull(1_000L) { isOnlineFlow.first() }
-                }.getOrNull() ?: true
+                val isOnline = withTimeoutOrNull(1_000L) { isOnlineFlow.first() } ?: true
 
                 if (!isOnline) {
                     Log.i(TAG, "Process stopped while offline; enqueuing flush worker")
@@ -145,6 +143,8 @@ class CloudSyncTriggerCoordinator(
                         }
                     }
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Error executing background push on process stop", e)
                 CloudSyncWorker.enqueueOneShotSync(context)
@@ -163,7 +163,14 @@ class CloudSyncTriggerCoordinator(
         }
 
         _syncStatusFlow.value = CloudSyncUiStatus.Syncing
-        val result = userSyncCoordinator.syncNow()
+        val result = try {
+            userSyncCoordinator.syncNow()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            _syncStatusFlow.value = lastSettledStatus()
+            throw e
+        } catch (e: Exception) {
+            SyncResult.Failure(e)
+        }
         when (result) {
             is SyncResult.Success -> {
                 lastForegroundSyncTimestamp = clock()
@@ -180,6 +187,15 @@ class CloudSyncTriggerCoordinator(
             }
         }
         return result
+    }
+
+    private fun lastSettledStatus(): CloudSyncUiStatus {
+        val lastSync = boxcastPrefs.getLastSyncTimestamp()
+        return if (lastSync > 0L) {
+            CloudSyncUiStatus.Success(lastSync)
+        } else {
+            CloudSyncUiStatus.Idle
+        }
     }
 
     private suspend fun executePushInternal() {
@@ -208,18 +224,23 @@ class CloudSyncTriggerCoordinator(
                     return@collect
                 }
 
-                if (previousUser == null && currentUser != null) {
-                    // Sign-in or account claim
-                    syncNowInternal()
-                } else if (previousUser != null && currentUser == null) {
-                    // Sign-out: reset sync timestamps and status (preserve lastSyncedUserId for switch detection)
-                    boxcastPrefs.setLastSyncTimestamp(0L)
-                    _syncStatusFlow.value = CloudSyncUiStatus.Idle
-                    playbackRepository?.clearSession()
-                    onSignOutAction?.invoke()
-                } else if (previousUser != null && currentUser != null && previousUser!!.uid != currentUser.uid) {
-                    // Direct account swap
-                    syncNowInternal()
+                val prev = previousUser
+                when {
+                    prev == null && currentUser != null -> {
+                        // Sign-in or account claim
+                        syncNowInternal()
+                    }
+                    prev != null && currentUser == null -> {
+                        // Sign-out: reset sync timestamps and status (preserve lastSyncedUserId for switch detection)
+                        boxcastPrefs.setLastSyncTimestamp(0L)
+                        _syncStatusFlow.value = CloudSyncUiStatus.Idle
+                        playbackRepository?.clearSession()
+                        onSignOutAction?.invoke()
+                    }
+                    prev != null && currentUser != null && prev.uid != currentUser.uid -> {
+                        // Direct account swap
+                        syncNowInternal()
+                    }
                 }
                 previousUser = currentUser
             }
@@ -232,14 +253,15 @@ class CloudSyncTriggerCoordinator(
             isOnlineFlow.collect { isOnline ->
                 val prev = wasOnline
                 wasOnline = isOnline
-                if (prev == false && isOnline) {
-                    if (authRepository.currentUserId != null && hasDirtyItems()) {
-                        syncNowInternal()
-                    }
+                if (shouldSyncOnReconnect(prev, isOnline) && hasDirtyItems()) {
+                    syncNowInternal()
                 }
             }
         }
     }
+
+    private fun shouldSyncOnReconnect(wasOffline: Boolean?, isOnline: Boolean): Boolean =
+        wasOffline == false && isOnline && authRepository.currentUserId != null
 
     private suspend fun hasDirtyItems(): Boolean {
         if (podcastDao.getDirtyPodcasts().isNotEmpty()) return true

@@ -181,7 +181,7 @@ class PlaybackRepository internal constructor(
         if (playerStateFlow.value.isPlaying) return
 
         val currentId = playerStateFlow.value.currentEpisode?.id
-        if (currentId == episodeId && playerStateFlow.value.position == positionMs) {
+        if (currentId == episodeId) {
             return
         }
 
@@ -190,7 +190,7 @@ class PlaybackRepository internal constructor(
                 listeningHistoryDao.getHistoryItem(it)?.lastPlayedAt
             } ?: 0L
 
-            if (lastPlayedAt < currentLocalLastPlayed) {
+            if (lastPlayedAt <= currentLocalLastPlayed) {
                 return@launch
             }
 
@@ -393,6 +393,11 @@ class PlaybackRepository internal constructor(
         historyStore.monitorLikeState()
         chaptersController.monitorChaptersAndTranscripts()
         continuationCoordinator.startMonitoring()
+        queueRepository.onRemoteQueueAppliedListener = { newQueue ->
+            withContext(PlaybackThreadPolicy.mainDispatcher) {
+                queueCoordinator.applyRemoteQueueToPlayer(newQueue)
+            }
+        }
         repositoryScope.launch {
             userPreferencesRepository.skipBehaviorStream.collect {
                 currentSkipBehavior = it

@@ -35,24 +35,17 @@ fun resolveNotificationToggleAction(
     areAppNotificationsEnabled: Boolean,
     hasPostNotificationPermission: Boolean,
     isWarningVisible: Boolean = false,
-): NotificationToggleAction {
-    if (!podcastNotificationsEnabled) {
-        return if (!areAppNotificationsEnabled) {
-            if (!hasPostNotificationPermission) {
-                NotificationToggleAction.REQUEST_PERMISSION
-            } else {
-                NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING
-            }
-        } else {
-            NotificationToggleAction.TOGGLE_NOTIFICATIONS
-        }
-    } else {
-        return if (!areAppNotificationsEnabled && !isWarningVisible) {
-            NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING
-        } else {
-            NotificationToggleAction.TOGGLE_NOTIFICATIONS
-        }
-    }
+): NotificationToggleAction = when {
+    !podcastNotificationsEnabled && !areAppNotificationsEnabled && !hasPostNotificationPermission ->
+        NotificationToggleAction.REQUEST_PERMISSION
+    !podcastNotificationsEnabled && !areAppNotificationsEnabled ->
+        NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING
+    !podcastNotificationsEnabled ->
+        NotificationToggleAction.TOGGLE_NOTIFICATIONS
+    !areAppNotificationsEnabled && !isWarningVisible ->
+        NotificationToggleAction.SHOW_PERMISSION_BLOCKED_WARNING
+    else ->
+        NotificationToggleAction.TOGGLE_NOTIFICATIONS
 }
 
 enum class SystemBlockedResolutionAction {

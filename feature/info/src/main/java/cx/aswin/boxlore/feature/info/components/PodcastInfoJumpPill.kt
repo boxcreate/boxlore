@@ -106,7 +106,7 @@ internal fun PodcastInfoJumpPill(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isOngoing) "Resume: " else "Jump to: ",
+                text = resolveJumpPillPrefix(isOngoing),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.medium),
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
             )
@@ -123,3 +123,6 @@ internal fun PodcastInfoJumpPill(
         }
     }
 }
+
+internal fun resolveJumpPillPrefix(isOngoing: Boolean): String =
+    if (isOngoing) "Resume: " else "Jump to: "

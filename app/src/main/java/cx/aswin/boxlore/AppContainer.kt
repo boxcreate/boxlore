@@ -359,7 +359,9 @@ class AppContainer(
                 override fun isSignInWithEmailLink(link: String) = false
                 override suspend fun sendPasswordReset(email: String) =
                     Result.failure<Unit>(UnsupportedOperationException())
-                override fun signOut() {}
+                override fun signOut() {
+                    // No-op fallback when authRepository is not available
+                }
                 override suspend fun deleteAccount() =
                     Result.failure<Unit>(UnsupportedOperationException())
                 override suspend fun getIdToken(forceRefresh: Boolean) = null
@@ -399,6 +401,10 @@ class AppContainer(
             queueSyncResolver = queueResolver,
             boxcastPrefs = boxcastPrefs,
             activePlaybackSyncPort = playbackRepository,
+            folderDao = database.folderDao(),
+            listeningSessionDao = database.listeningSessionDao(),
+            listeningRollupDao = database.listeningRollupDao(),
+            userPreferencesRepository = userPreferencesRepository,
         )
     }
 

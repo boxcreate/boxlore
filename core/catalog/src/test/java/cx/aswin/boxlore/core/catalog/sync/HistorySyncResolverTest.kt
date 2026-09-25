@@ -400,6 +400,41 @@ class HistorySyncResolverTest {
         assertEquals("https://example.com/original.jpg", updated.episodeImageUrl)
     }
 
+    @Test
+    fun resolveHistoryItem_newerRemoteProgress_preservesDirtyWhenLocalLikeWins() = runTest {
+        listeningHistoryDao.upsert(
+            createHistory(
+                episodeId = "ep-like-dirty",
+                podcastId = "pod-1",
+                progressMs = 10000L,
+                lastPlayedAt = 1000L,
+                isLiked = true,
+                likedAt = 5000L,
+                isDirty = true,
+            ),
+        )
+
+        val remoteDto = ListeningHistorySyncDto(
+            episodeId = "ep-like-dirty",
+            podcastId = "pod-1",
+            progressMs = 30000L,
+            lastPlayedAt = 4000L,
+            isLiked = false,
+            likedAt = 2000L,
+            updatedAt = 4000L,
+        )
+
+        resolver.resolveHistoryItem(remoteDto, syncedAt = 6000L)
+
+        val updated = listeningHistoryDao.getHistoryItem("ep-like-dirty")
+        assertNotNull(updated)
+        assertEquals(30000L, updated!!.progressMs)
+        assertEquals(4000L, updated.lastPlayedAt)
+        assertTrue(updated.isLiked)
+        assertEquals(5000L, updated.likedAt)
+        assertTrue(updated.isDirty)
+    }
+
     @Suppress("LongParameterList")
     private fun createHistory(
         episodeId: String,

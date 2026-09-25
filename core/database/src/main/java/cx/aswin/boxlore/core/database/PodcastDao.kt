@@ -164,7 +164,7 @@ interface PodcastDao {
           AND (feedUrl = :snapshotFeedUrl OR (feedUrl IS NULL AND :snapshotFeedUrl IS NULL))
         """,
     )
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "kotlin:S107")
     suspend fun markPodcastSyncedIfUnchanged(
         id: String,
         snapshotIsSubscribed: Boolean,

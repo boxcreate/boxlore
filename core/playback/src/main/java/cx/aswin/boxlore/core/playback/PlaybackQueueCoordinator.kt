@@ -67,6 +67,19 @@ internal class PlaybackQueueCoordinator(
         }
     }
 
+    fun applyRemoteQueueToPlayer(newQueue: List<Episode>) {
+        val currentIds = playerStateFlow.value.queue.map { it.id }
+        val newIds = newQueue.map { it.id }
+        if (currentIds == newIds) return
+        val currentEpisode = playerStateFlow.value.currentEpisode
+        val finalQueue = if (currentEpisode != null && newQueue.none { it.id == currentEpisode.id }) {
+            listOf(currentEpisode) + newQueue
+        } else {
+            newQueue
+        }
+        playerStateFlow.value = playerStateFlow.value.copy(queue = finalQueue)
+    }
+
     /**
      * Rebuilds PlayerState.queue from the controller's playlist when the two diverge —
      * e.g. after the playback service auto-refilled the queue or Android Auto appended

@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Transcript
 import cx.aswin.boxlore.core.network.model.EpisodeItem
@@ -384,6 +385,8 @@ class QueueRepository(
         queueDao.markQueueDirty()
     }
 
+    var onRemoteQueueAppliedListener: (suspend (List<Episode>) -> Unit)? = null
+
     override suspend fun applyRemoteQueueState(
         items: List<QueueItem>,
         metadata: QueueMetadataEntity,
@@ -398,6 +401,8 @@ class QueueRepository(
             }
             queueDao.upsertQueueMetadata(metadata)
         }
+        val snapshot = getQueueEpisodeSnapshot()
+        onRemoteQueueAppliedListener?.invoke(snapshot)
     }
 
     suspend fun bumpQueueVersion(

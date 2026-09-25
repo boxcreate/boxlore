@@ -2,8 +2,11 @@ package cx.aswin.boxlore.core.catalog.sync
 
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
+import cx.aswin.boxlore.core.database.FolderDao
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.ListeningRollupDao
+import cx.aswin.boxlore.core.database.ListeningSessionDao
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.dao.QueueDao
@@ -18,6 +21,8 @@ import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.network.model.SyncPushRequest
 import cx.aswin.boxlore.core.network.model.UserSubscriptionSyncDto
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -30,7 +35,7 @@ import kotlinx.coroutines.withContext
  * performs multi-column optimistic concurrency flag clearing, and pulls
  * remote deltas through Last-Write-Wins (LWW) conflict resolvers.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions", "kotlin:S107")
 open class UserSyncCoordinator(
     private val boxLoreApi: BoxLoreApi? = null,
     private val publicKey: String = "",
@@ -44,6 +49,10 @@ open class UserSyncCoordinator(
     private val queueSyncResolver: QueueSyncResolver? = null,
     private val boxcastPrefs: BoxcastPrefs? = null,
     private val activePlaybackSyncPort: ActivePlaybackSyncPort? = null,
+    private val folderDao: FolderDao? = null,
+    private val listeningSessionDao: ListeningSessionDao? = null,
+    private val listeningRollupDao: ListeningRollupDao? = null,
+    private val userPreferencesRepository: UserPreferencesRepository? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val syncMutex = Mutex()
@@ -91,6 +100,9 @@ open class UserSyncCoordinator(
                     },
                 )
             }
+            if (lastSyncedUser == null) {
+                requireBoxcastPrefs.setLastSyncedUserId(userId)
+            }
 
             val metadataVersion = requireBoxcastPrefs.getSyncMetadataVersion()
             if (metadataVersion < 1) {
@@ -115,9 +127,10 @@ open class UserSyncCoordinator(
                 return SyncResult.Failure(err)
             }
 
-            // 2. Pull remote deltas since lastSyncTimestamp (or from 0 if local history has blank titles)
-            val hasBlankTitles = requireListeningHistoryDao.hasAnyHistoryWithBlankTitle()
-            val since = if (hasBlankTitles) 0L else requireBoxcastPrefs.getLastSyncTimestamp()
+            // 2. Pull remote deltas since lastSyncTimestamp (or from 0 if local history has blank titles and version < 2)
+            val needsBackfill = requireBoxcastPrefs.getSyncMetadataVersion() < 2 &&
+                requireListeningHistoryDao.hasAnyHistoryWithBlankTitle()
+            val since = if (needsBackfill) 0L else requireBoxcastPrefs.getLastSyncTimestamp()
             val pullResult = executePull(since, token)
             var pulledSubs = 0
             var pulledHist = 0
@@ -128,6 +141,9 @@ open class UserSyncCoordinator(
                 pulledHist = pullResponse.history.size
                 pulledQueue = pullResponse.queue != null
                 latestSyncedAt = maxOf(latestSyncedAt, pullResponse.syncedAt)
+                if (needsBackfill) {
+                    requireBoxcastPrefs.setSyncMetadataVersion(2)
+                }
             }.onFailure { err ->
                 return SyncResult.Failure(err, partialSyncedAt = latestSyncedAt.takeIf { it > 0 })
             }
@@ -143,14 +159,33 @@ open class UserSyncCoordinator(
                 pulledQueue = pulledQueue,
                 syncedAt = latestSyncedAt,
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SyncResult.Failure(e)
         }
     }
 
     private suspend fun purgeLocalDataForAccountSwitch() = withContext(ioDispatcher) {
-        requireListeningHistoryDao.deleteAll()
+        purgeSubscriptions()
+        purgeHistory()
+        purgeQueue()
+        purgeAccountMetadata()
+    }
+
+    private suspend fun purgeSubscriptions() {
         requirePodcastDao.clearAllSubscriptionsForAccountSwitch()
+        folderDao?.deleteAllCrossRefs()
+        folderDao?.deleteAllFolders()
+    }
+
+    private suspend fun purgeHistory() {
+        requireListeningHistoryDao.deleteAll()
+        listeningSessionDao?.deleteAllSessions()
+        listeningRollupDao?.deleteAllRollups()
+    }
+
+    private suspend fun purgeQueue() {
         requireQueueSyncPort.applyRemoteQueueState(
             items = emptyList(),
             metadata = QueueMetadataEntity(
@@ -166,26 +201,17 @@ open class UserSyncCoordinator(
         activePlaybackSyncPort?.stopAndClearActiveSession()
     }
 
+    private suspend fun purgeAccountMetadata() {
+        userPreferencesRepository?.setSubscriptionManualOrder(emptyList())
+        userPreferencesRepository?.setHomePinnedPodcastIds(emptyList())
+    }
+
     open suspend fun executePush(token: String? = null): Result<PushBatchSummary> = withContext(ioDispatcher) {
         runCatching {
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
 
-            val isFirstSyncForDevice = requireBoxcastPrefs.getLastSyncTimestamp() == 0L
-            if (isFirstSyncForDevice) {
-                requirePodcastDao.markAllSubscribedPodcastsDirty()
-                requireListeningHistoryDao.markAllHistoryDirty()
-                if (requireQueueSyncPort.getQueueSnapshot().isNotEmpty()) {
-                    requireQueueSyncPort.markQueueDirty()
-                }
-            } else {
-                requirePodcastDao.markAllUnsyncedSubscribedPodcastsDirty()
-                requireListeningHistoryDao.markAllUnsyncedHistoryDirty()
-                val initialQueueMeta = requireQueueSyncPort.getQueueMetadata()
-                if (initialQueueMeta?.syncedAt == 0L && requireQueueSyncPort.getQueueSnapshot().isNotEmpty()) {
-                    requireQueueSyncPort.markQueueDirty()
-                }
-            }
+            ensureDirtyFlagsForSyncState()
 
             val dirtyPodcasts = requirePodcastDao.getDirtyPodcasts().take(MAX_SUBSCRIPTION_BATCH_SIZE)
             val dirtyHistory = requireListeningHistoryDao.getDirtyListeningHistory().take(MAX_HISTORY_BATCH_SIZE)
@@ -228,6 +254,32 @@ open class UserSyncCoordinator(
                 pushedQueue = queueDto != null,
                 syncedAt = syncedAt,
             )
+        }.onFailure { if (it is CancellationException) throw it }
+    }
+
+    private suspend fun ensureDirtyFlagsForSyncState() {
+        val isFirstSyncForDevice = requireBoxcastPrefs.getLastSyncTimestamp() == 0L
+        if (isFirstSyncForDevice) {
+            markAllDirtyForFirstSync()
+        } else {
+            markAllDirtyForSubsequentSync()
+        }
+    }
+
+    private suspend fun markAllDirtyForFirstSync() {
+        requirePodcastDao.markAllSubscribedPodcastsDirty()
+        requireListeningHistoryDao.markAllHistoryDirty()
+        if (requireQueueSyncPort.getQueueSnapshot().isNotEmpty()) {
+            requireQueueSyncPort.markQueueDirty()
+        }
+    }
+
+    private suspend fun markAllDirtyForSubsequentSync() {
+        requirePodcastDao.markAllUnsyncedSubscribedPodcastsDirty()
+        requireListeningHistoryDao.markAllUnsyncedHistoryDirty()
+        val initialQueueMeta = requireQueueSyncPort.getQueueMetadata()
+        if (initialQueueMeta?.syncedAt == 0L && requireQueueSyncPort.getQueueSnapshot().isNotEmpty()) {
+            requireQueueSyncPort.markQueueDirty()
         }
     }
 
@@ -385,7 +437,7 @@ open class UserSyncCoordinator(
 
             requireBoxcastPrefs.setLastSyncTimestamp(syncedAt)
             body
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     data class PushBatchSummary(

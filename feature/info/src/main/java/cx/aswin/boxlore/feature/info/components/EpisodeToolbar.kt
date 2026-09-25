@@ -82,7 +82,7 @@ import kotlinx.coroutines.launch
 /**
  * A custom non-overlapping icon button for the toolbar to bypass minimum touch target overlap.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "kotlin:S107")
 @Composable
 internal fun ToolbarIconButton(
     icon: ImageVector,

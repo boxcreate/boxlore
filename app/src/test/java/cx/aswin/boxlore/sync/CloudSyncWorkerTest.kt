@@ -137,8 +137,16 @@ class CloudSyncWorkerTest {
 
     @Test
     fun staticEnqueueMethods_executeWithoutCrashing() {
+        androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(context)
         CloudSyncWorker.enqueueOneShotSync(context)
         CloudSyncWorker.schedulePeriodicSync(context)
+
+        val workManager = androidx.work.WorkManager.getInstance(context)
+        val flushWork = workManager.getWorkInfosForUniqueWork(CloudSyncWorker.WORK_NAME_FLUSH).get()
+        assertEquals(1, flushWork.size)
+
+        val periodicWork = workManager.getWorkInfosForUniqueWork(CloudSyncWorker.WORK_NAME_PERIODIC).get()
+        assertEquals(1, periodicWork.size)
     }
 
     private class FakeUserSyncCoordinator(

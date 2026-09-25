@@ -88,7 +88,7 @@ class HistorySyncResolver(
                 lastPlayedAt = remote.lastPlayedAt,
                 isLiked = finalIsLiked,
                 likedAt = finalLikedAt,
-                isDirty = false,
+                isDirty = local.isDirty && local.likedAt > remote.likedAt,
                 syncedAt = syncedAt,
             )
         } else {
