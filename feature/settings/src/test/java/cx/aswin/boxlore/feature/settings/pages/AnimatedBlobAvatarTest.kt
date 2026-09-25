@@ -13,14 +13,14 @@ class AnimatedBlobAvatarTest {
 
         val maxBreatheX = 1.03f
         val maxBreatheY = 1.03f
-        val maxBodyWidth = width * 0.88f * maxBreatheX
-        val maxBodyHeight = height * 0.82f * maxBreatheY
+        val maxBodyWidth = BlobAvatarGeometry.computeBodyWidth(width, maxBreatheX)
+        val maxBodyHeight = BlobAvatarGeometry.computeBodyHeight(height, maxBreatheY)
 
         // Maximum body dimensions must not exceed outer canvas bounds
         assertTrue("Max body width must be within canvas width", maxBodyWidth < width)
         assertTrue("Max body height must be within canvas height", maxBodyHeight < height)
 
-        val maxFloatPx = height * 0.045f
+        val maxFloatPx = BlobAvatarGeometry.computeFloatOffset(height, 1f)
         val maxCenterY = (height / 2f) + maxFloatPx
         val minCenterY = (height / 2f) - maxFloatPx
 
@@ -34,35 +34,34 @@ class AnimatedBlobAvatarTest {
     @Test
     fun blobAvatar_pupilOffset_neverEscapesEyeBoundary() {
         val width = 200f
-        val eyeRadius = width * 0.105f
-        val pupilRadius = eyeRadius * 0.58f
+        val (eyeWidth, eyeHeight) = BlobAvatarGeometry.computeEyeDimensions(width)
+        val (maxShiftX, maxShiftY) = BlobAvatarGeometry.computeEyeMaxShifts(eyeWidth, eyeHeight)
 
-        val maxShiftRatioX = 0.35f
-        val maxShiftRatioY = 0.22f
-
-        val maxPupilShiftX = eyeRadius * maxShiftRatioX
-        val maxPupilShiftY = eyeRadius * maxShiftRatioY
-
-        // Even at maximum look shift (ratio = 1.0), the pupil outer edge must stay inside the eye
-        val maxPupilExtentX = maxPupilShiftX + pupilRadius
-        val maxPupilExtentY = maxPupilShiftY + pupilRadius
-
+        // Eye shift must stay strictly within the half dimensions of the eye
         assertTrue(
-            "Pupil X extent ($maxPupilExtentX) must not exceed eye radius ($eyeRadius)",
-            maxPupilExtentX <= eyeRadius,
+            "Max shift X ($maxShiftX) must not exceed half eye width (${eyeWidth / 2f})",
+            maxShiftX < eyeWidth / 2f,
         )
         assertTrue(
-            "Pupil Y extent ($maxPupilExtentY) must not exceed eye radius ($eyeRadius)",
-            maxPupilExtentY <= eyeRadius,
+            "Max shift Y ($maxShiftY) must not exceed half eye height (${eyeHeight / 2f})",
+            maxShiftY < eyeHeight / 2f,
+        )
+        assertTrue(
+            "Shift X ratio must be <= 0.5f",
+            BlobAvatarGeometry.EYE_MAX_SHIFT_X_RATIO <= 0.5f,
+        )
+        assertTrue(
+            "Shift Y ratio must be <= 0.5f",
+            BlobAvatarGeometry.EYE_MAX_SHIFT_Y_RATIO <= 0.5f,
         )
     }
 
     @Test
     fun blobAvatar_blushSpacing_staysWithinBodyWidth() {
         val width = 250f
-        val bodyWidth = width * 0.88f
-        val blushSpacing = bodyWidth * 0.32f
-        val blushRadius = width * 0.08f
+        val bodyWidth = BlobAvatarGeometry.computeBodyWidth(width)
+        val blushSpacing = BlobAvatarGeometry.computeBlushSpacing(bodyWidth)
+        val blushRadius = BlobAvatarGeometry.computeBlushRadius(width)
 
         val blushOuterEdge = blushSpacing + blushRadius
         val bodyHalfWidth = bodyWidth / 2f
@@ -79,9 +78,9 @@ class AnimatedBlobAvatarTest {
         val standardSize = 200f
         val largeSize = 400f
 
-        val smallStroke = (smallSize * 0.032f).coerceAtLeast(1.5f)
-        val standardStroke = (standardSize * 0.032f).coerceAtLeast(1.5f)
-        val largeStroke = (largeSize * 0.032f).coerceAtLeast(1.5f)
+        val smallStroke = BlobAvatarGeometry.computeStrokeWidth(smallSize)
+        val standardStroke = BlobAvatarGeometry.computeStrokeWidth(standardSize)
+        val largeStroke = BlobAvatarGeometry.computeStrokeWidth(largeSize)
 
         assertEquals(1.5f, smallStroke, 0.001f)
         assertEquals(6.4f, standardStroke, 0.001f)
@@ -98,12 +97,10 @@ class AnimatedBlobAvatarTest {
         val maxBreatheX = 1.02f
         val maxBreatheY = 1.02f
 
-        val bodyWidth = width * 0.72f * maxBreatheX
-        val bodyHeight = height * 0.68f * maxBreatheY
+        val bodyWidth = BlobAvatarGeometry.computeBodyWidth(width, maxBreatheX)
+        val bodyHeight = BlobAvatarGeometry.computeBodyHeight(height, maxBreatheY)
 
-        val cupSpacingX = bodyWidth * 0.49f
-        val cupWidth = width * 0.15f * maxPulse
-        val outerEarcupExtent = cupSpacingX + (cupWidth * 0.50f)
+        val outerEarcupExtent = BlobAvatarGeometry.computeOuterEarCupExtent(width, bodyWidth, maxPulse)
 
         // Outer earcup edge must remain safely within half the canvas width
         assertTrue(
@@ -111,10 +108,10 @@ class AnimatedBlobAvatarTest {
             outerEarcupExtent < (width / 2f),
         )
 
-        val maxFloatPx = height * 0.04f
+        val maxFloatPx = BlobAvatarGeometry.computeFloatOffset(height, 1f)
         val minCenterY = (height / 2f) - maxFloatPx
-        val bandTopY = minCenterY - (bodyHeight * 0.54f)
-        val bandStroke = (width * 0.065f).coerceAtLeast(3f)
+        val bandTopY = BlobAvatarGeometry.computeHeadbandTopY(minCenterY, bodyHeight)
+        val bandStroke = BlobAvatarGeometry.computeHeadbandStroke(width)
         val topBandEdge = bandTopY - (bandStroke / 2f)
 
         // Headband top must stay above zero (not clipped at top)

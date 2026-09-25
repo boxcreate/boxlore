@@ -218,7 +218,7 @@ internal fun AnimatedBlobAvatar(
             val w = this.size.width
             val h = this.size.height
 
-            val floatOffsetPx = h * 0.035f * animState.floatProgress.value
+            val floatOffsetPx = BlobAvatarGeometry.computeFloatOffset(h, animState.floatProgress.value)
             val center = Offset(w / 2f, (h / 2f) + floatOffsetPx)
 
             // 1. Soft 3D Ground Drop Shadow
@@ -232,8 +232,8 @@ internal fun AnimatedBlobAvatar(
 
             // 2. Groovy Head-Bobbing Container
             rotate(degrees = animState.headBobAngle.value, pivot = center) {
-                val bodyWidth = w * 0.72f * animState.breatheScaleX.value
-                val bodyHeight = h * 0.68f * animState.breatheScaleY.value
+                val bodyWidth = BlobAvatarGeometry.computeBodyWidth(w, animState.breatheScaleX.value)
+                val bodyHeight = BlobAvatarGeometry.computeBodyHeight(h, animState.breatheScaleY.value)
 
                 // 2A. Headband Arch Over the Head
                 drawHeadband(
@@ -388,7 +388,7 @@ private fun DrawScope.drawHeadband(
     bandColor: Color,
     w: Float,
 ) {
-    val bandTopY = center.y - (bodyHeight * 0.54f)
+    val bandTopY = BlobAvatarGeometry.computeHeadbandTopY(center.y, bodyHeight)
     val bandLeftX = center.x - (bodyWidth * 0.44f)
     val bandRightX = center.x + (bodyWidth * 0.44f)
     val bandStartY = center.y - (bodyHeight * 0.10f)
@@ -405,7 +405,7 @@ private fun DrawScope.drawHeadband(
         )
     }
 
-    val bandStroke = (w * 0.058f).coerceAtLeast(3f)
+    val bandStroke = BlobAvatarGeometry.computeHeadbandStroke(w)
 
     drawPath(
         path = bandPath,
@@ -438,10 +438,10 @@ private fun DrawScope.drawCozyHeadphones(
     w: Float,
 ) {
     val cupCenterY = center.y - (bodyHeight * 0.02f)
-    val cupSpacingX = bodyWidth * 0.48f
+    val cupSpacingX = BlobAvatarGeometry.computeCupSpacing(bodyWidth)
 
-    val cupWidth = w * 0.14f
-    val cupHeight = w * 0.30f
+    val cupWidth = BlobAvatarGeometry.computeCupWidth(w)
+    val cupHeight = w * BlobAvatarGeometry.CUP_HEIGHT_RATIO
 
     val ears = listOf(
         Pair(center.x - cupSpacingX, -4f),
@@ -522,8 +522,8 @@ private fun DrawScope.drawRosyBlush(
     w: Float,
 ) {
     val blushY = center.y + (bodyHeight * 0.10f)
-    val blushSpacing = bodyWidth * 0.28f
-    val blushRadius = w * 0.075f
+    val blushSpacing = BlobAvatarGeometry.computeBlushSpacing(bodyWidth)
+    val blushRadius = BlobAvatarGeometry.computeBlushRadius(w)
 
     for (sign in listOf(-1f, 1f)) {
         val blushCenter = Offset(center.x + (sign * blushSpacing), blushY)
@@ -547,15 +547,13 @@ private fun DrawScope.drawKawaiiEyes(
     eyeColor: Color,
     w: Float,
 ) {
-    val eyeSpacing = bodyWidth * 0.18f
+    val eyeSpacing = bodyWidth * BlobAvatarGeometry.EYE_SPACING_RATIO
     val eyeCenterY = center.y - (bodyHeight * 0.02f)
-    val eyeWidth = w * 0.072f
-    val eyeHeight = w * 0.105f
-    val strokeWidth = (w * 0.032f).coerceAtLeast(1.5f)
+    val (eyeWidth, eyeHeight) = BlobAvatarGeometry.computeEyeDimensions(w)
+    val strokeWidth = BlobAvatarGeometry.computeStrokeWidth(w)
     val eyeOpenScale = animState.eyeOpenScale.value
 
-    val maxShiftX = eyeWidth * 0.28f
-    val maxShiftY = eyeHeight * 0.18f
+    val (maxShiftX, maxShiftY) = BlobAvatarGeometry.computeEyeMaxShifts(eyeWidth, eyeHeight)
     val shiftX = maxShiftX * animState.pupilLookRatioX.value
     val shiftY = maxShiftY * animState.pupilLookRatioY.value
 

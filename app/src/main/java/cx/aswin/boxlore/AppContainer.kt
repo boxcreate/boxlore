@@ -395,7 +395,10 @@ class AppContainer(
         UserSyncCoordinator(
             boxLoreApi = podcastRepository.api,
             publicKey = publicKey,
-            authUserIdProvider = { authRepository.currentUserId },
+            authUserIdProvider = {
+                val user = authRepository.currentUser.value
+                if (cx.aswin.boxlore.sync.canSyncUser(user)) user?.uid else null
+            },
             tokenProvider = { authRepository.getIdToken(forceRefresh = false) },
             podcastDao = database.podcastDao(),
             listeningHistoryDao = database.listeningHistoryDao(),
@@ -428,6 +431,9 @@ class AppContainer(
             onSignOutAction = {
                 try {
                     com.google.firebase.messaging.FirebaseMessaging.getInstance().deleteToken()
+                        .addOnFailureListener { e ->
+                            android.util.Log.e("FcmSignOut", "Failed to delete FCM token on sign-out", e)
+                        }
                 } catch (e: Exception) {
                     android.util.Log.e("FcmSignOut", "Failed to delete FCM token on sign-out", e)
                 }

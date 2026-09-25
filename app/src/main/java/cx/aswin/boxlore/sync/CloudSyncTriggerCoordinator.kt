@@ -110,7 +110,7 @@ class CloudSyncTriggerCoordinator(
         if (now - lastForegroundSyncTimestamp >= FOREGROUND_THROTTLE_MS) {
             lastForegroundSyncTimestamp = now
             applicationScope.launch(ioDispatcher) {
-                if (authRepository.currentUserId != null) {
+                if (canSyncUser(authRepository.currentUser.value)) {
                     syncNowInternal()
                 }
             }
@@ -118,7 +118,7 @@ class CloudSyncTriggerCoordinator(
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        if (authRepository.currentUserId == null) return
+        if (!canSyncUser(authRepository.currentUser.value)) return
         applicationScope.launch(ioDispatcher) {
             try {
                 val isOnline = withTimeoutOrNull(1_000L) { isOnlineFlow.first() } ?: true
@@ -157,7 +157,7 @@ class CloudSyncTriggerCoordinator(
     }
 
     private suspend fun syncNowInternal(): SyncResult {
-        if (authRepository.currentUserId == null) {
+        if (!canSyncUser(authRepository.currentUser.value)) {
             _syncStatusFlow.value = CloudSyncUiStatus.Idle
             return SyncResult.SkippedNoAuth
         }
@@ -199,7 +199,7 @@ class CloudSyncTriggerCoordinator(
     }
 
     private suspend fun executePushInternal() {
-        if (authRepository.currentUserId == null) return
+        if (!canSyncUser(authRepository.currentUser.value)) return
         val pushResult = userSyncCoordinator.executePush()
         pushResult.onSuccess { summary ->
             if (summary.syncedAt > 0L) {
@@ -218,16 +218,19 @@ class CloudSyncTriggerCoordinator(
                 if (isFirstEmission) {
                     isFirstEmission = false
                     previousUser = currentUser
-                    if (currentUser != null) {
+                    if (canSyncUser(currentUser)) {
                         syncNowInternal()
                     }
                     return@collect
                 }
 
                 val prev = previousUser
+                val prevCanSync = canSyncUser(prev)
+                val currentCanSync = canSyncUser(currentUser)
+
                 when {
-                    prev == null && currentUser != null -> {
-                        // Sign-in or account claim
+                    !prevCanSync && currentCanSync -> {
+                        // Sign-in, account claim, or email verification transition
                         syncNowInternal()
                     }
                     prev != null && currentUser == null -> {
@@ -239,7 +242,9 @@ class CloudSyncTriggerCoordinator(
                     }
                     prev != null && currentUser != null && prev.uid != currentUser.uid -> {
                         // Direct account swap
-                        syncNowInternal()
+                        if (currentCanSync) {
+                            syncNowInternal()
+                        }
                     }
                 }
                 previousUser = currentUser
@@ -331,4 +336,13 @@ class CloudSyncTriggerCoordinator(
         const val QUEUE_MUTATION_DEBOUNCE_MS = 2_000L
         const val LIBRARY_MUTATION_DEBOUNCE_MS = 1_500L
     }
+}
+
+internal fun canSyncUser(user: BoxLoreUser?): Boolean {
+    if (user == null) return false
+    val isPassword = user.providerId == "password" || user.providerId == null
+    if (isPassword && !user.isEmailVerified) {
+        return false
+    }
+    return true
 }

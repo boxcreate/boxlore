@@ -169,7 +169,7 @@ private fun resolveLibrarySyncVisual(
     val isSyncing = syncStatus is CloudSyncUiStatus.Syncing
 
     return when {
-        !isSignedIn -> LibrarySyncVisualState(
+        !isSignedIn || isSyncing -> LibrarySyncVisualState(
             icon = Icons.Rounded.CloudSync,
             iconTint = MaterialTheme.colorScheme.primary,
             iconBackground = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
@@ -178,11 +178,6 @@ private fun resolveLibrarySyncVisual(
             icon = Icons.Rounded.CloudOff,
             iconTint = MaterialTheme.colorScheme.error,
             iconBackground = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
-        )
-        isSyncing -> LibrarySyncVisualState(
-            icon = Icons.Rounded.CloudSync,
-            iconTint = MaterialTheme.colorScheme.primary,
-            iconBackground = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
         )
         else -> LibrarySyncVisualState(
             icon = Icons.Rounded.CloudDone,

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,7 +26,6 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import cx.aswin.boxlore.core.auth.AuthRepository
-import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -38,71 +38,6 @@ internal const val GOOGLE_SIGN_IN_TIMEOUT_MS = 15_000L
 internal enum class AuthMode {
     SIGN_IN,
     SIGN_UP,
-}
-
-private val RECENT_LOGIN_KEYWORDS = listOf(
-    "recent-login",
-    "recent login",
-    "recent_login",
-    "recentlogin",
-    "recent authentication",
-    "requires-recent-login",
-    "credential_too_old",
-)
-
-private val ACCOUNT_ERROR_MAPPINGS = listOf(
-    listOf("user-not-found", "no user") to
-        "No account found with this email. Try signing up instead.",
-    listOf("wrong-password", "invalid-credential") to
-        "Incorrect password or credentials. Please try again.",
-    listOf("email-already-in-use", "already registered", "already in use") to
-        "This email is already registered. Try signing in instead.",
-    listOf("weak-password") to
-        "Password is too weak. Please use at least 6 characters.",
-    listOf("invalid-email") to
-        "Please enter a valid email address.",
-    listOf("too-many-requests") to
-        "Too many attempts. Please wait a few minutes before trying again.",
-    listOf("user-disabled") to
-        "This account has been disabled. Please contact support.",
-    RECENT_LOGIN_KEYWORDS to
-        "For security, please sign out and sign in again before deleting your account.",
-    listOf("network") to
-        "Network error. Check your connection and try again.",
-)
-
-internal fun cleanAccountError(raw: String?): String {
-    if (raw == null) return "An unexpected error occurred"
-    for ((keywords, message) in ACCOUNT_ERROR_MAPPINGS) {
-        if (keywords.any { raw.contains(it, ignoreCase = true) }) {
-            return message
-        }
-    }
-    return raw
-}
-
-internal fun Throwable?.isRecentLoginRequired(): Boolean {
-    if (this == null) return false
-    var current: Throwable? = this
-    while (current != null) {
-        if (current is RecentLoginRequiredException) return true
-        if (current.javaClass.simpleName.contains("RecentLoginRequired", ignoreCase = true)) return true
-        val msg = current.message.orEmpty()
-        if (RECENT_LOGIN_KEYWORDS.any { msg.contains(it, ignoreCase = true) }) return true
-        current = current.cause
-    }
-    return false
-}
-
-private val EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
-
-internal fun isValidEmail(email: String): Boolean {
-    if (email.isBlank()) return false
-    return runCatching {
-        android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    }.getOrElse {
-        EMAIL_REGEX.matches(email)
-    }
 }
 
 internal data class EmailInputState(
@@ -142,23 +77,6 @@ internal data class PasswordInputActions(
     val onInputFocused: () -> Unit,
     val onNextField: () -> Unit,
 )
-
-internal const val ERROR_INVALID_EMAIL = "Please enter a valid email address"
-
-internal fun validatePasswordInputs(
-    email: String,
-    password: String,
-    isSignUp: Boolean,
-    confirmPassword: String = "",
-): String? = when {
-    email.isBlank() -> "Please enter your email address"
-    !isValidEmail(email) -> ERROR_INVALID_EMAIL
-    password.isBlank() -> "Please enter your password"
-    isSignUp && password.length < 6 -> "Password must be at least 6 characters"
-    isSignUp && confirmPassword.isBlank() -> "Please confirm your password"
-    isSignUp && password != confirmPassword -> "Passwords do not match"
-    else -> null
-}
 
 internal sealed interface GoogleAuthOutcome {
     data object Success : GoogleAuthOutcome
@@ -310,9 +228,8 @@ internal class AccountAuthState(
             val repo = authRepository ?: return@launch
             val user = repo.currentUser.value
             if (user != null && !user.isEmailVerified) {
-                try {
-                    repo.deleteAccount()
-                } catch (e: Exception) {
+                val deleteResult = repo.deleteAccount()
+                if (deleteResult.isFailure) {
                     repo.signOut()
                 }
             }
@@ -356,60 +273,91 @@ internal class AccountAuthState(
             return
         }
 
+        val pass = password
         focusManager.clearFocus()
         isAnyInputFocused = false
         isEmailLoading = true
         errorMessage = null
 
         scope.launch {
-            val result = executePasswordAuth(authRepository, trimmedEmail, password, isSignUp)
+            val repo = authRepository
+            val result = executePasswordAuth(repo, trimmedEmail, pass, isSignUp)
             if (result?.isSuccess == true) {
-                password = ""
-                confirmPassword = ""
-                if (isSignUp) {
-                    isAwaitingVerification = true
-                    AccountVerificationStorage.setPref(context, true)
-                    val verifyResult = authRepository?.sendEmailVerification()
-                    isEmailLoading = false
-                    if (verifyResult?.isSuccess == true) {
-                        startResendCooldownTimer(30)
-                    } else {
-                        errorMessage = cleanAccountError(verifyResult?.exceptionOrNull()?.localizedMessage)
-                    }
-                } else {
-                    isEmailLoading = false
-                    isAwaitingVerification = false
-                    AccountVerificationStorage.setPref(context, false)
-                    showAccountToast(context, "Signed in!")
-                }
+                handlePasswordAuthSuccess(repo, isSignUp)
             } else {
-                val errorMsg = result?.exceptionOrNull()?.localizedMessage.orEmpty()
-                val isCollision = errorMsg.contains("email-already-in-use", ignoreCase = true) ||
-                    errorMsg.contains("already in use", ignoreCase = true) ||
-                    errorMsg.contains("already registered", ignoreCase = true)
-
-                if (isSignUp && isCollision) {
-                    val repo = authRepository
-                    val signInAttempt = repo?.signInWithEmailPassword(trimmedEmail, password)
-                    if (signInAttempt?.isSuccess == true) {
-                        val user = repo.currentUser.value
-                        if (user != null && !user.isEmailVerified) {
-                            password = ""
-                            confirmPassword = ""
-                            isAwaitingVerification = true
-                            AccountVerificationStorage.setPref(context, true)
-                            repo.sendEmailVerification()
-                            startResendCooldownTimer(30)
-                            isEmailLoading = false
-                            return@launch
-                        }
-                    }
-                }
-
-                isEmailLoading = false
-                errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
+                handlePasswordAuthFailure(repo, result, trimmedEmail, pass, isSignUp)
             }
         }
+    }
+
+    private suspend fun handlePasswordAuthSuccess(
+        repo: AuthRepository?,
+        isSignUp: Boolean,
+    ) {
+        password = ""
+        confirmPassword = ""
+        if (isSignUp) {
+            isAwaitingVerification = true
+            AccountVerificationStorage.setPref(context, true)
+            val verifyResult = repo?.sendEmailVerification()
+            isEmailLoading = false
+            if (verifyResult?.isSuccess == true) {
+                startResendCooldownTimer(30)
+            } else {
+                errorMessage = cleanAccountError(verifyResult?.exceptionOrNull()?.localizedMessage)
+            }
+        } else {
+            isEmailLoading = false
+            isAwaitingVerification = false
+            AccountVerificationStorage.setPref(context, false)
+            showAccountToast(context, "Signed in!")
+        }
+    }
+
+    private suspend fun tryUnverifiedExistingAccount(
+        repo: AuthRepository,
+        trimmedEmail: String,
+        pass: String,
+    ): Boolean {
+        val signInAttempt = repo.signInWithEmailPassword(trimmedEmail, pass)
+        if (signInAttempt.isSuccess) {
+            val user = repo.currentUser.value
+            if (user != null && !user.isEmailVerified) {
+                password = ""
+                confirmPassword = ""
+                isAwaitingVerification = true
+                AccountVerificationStorage.setPref(context, true)
+                val verifyResult = repo.sendEmailVerification()
+                if (verifyResult.isSuccess) {
+                    startResendCooldownTimer(30)
+                } else {
+                    errorMessage = cleanAccountError(verifyResult.exceptionOrNull()?.localizedMessage)
+                }
+                isEmailLoading = false
+                return true
+            }
+        }
+        return false
+    }
+
+    private suspend fun handlePasswordAuthFailure(
+        repo: AuthRepository?,
+        result: Result<*>?,
+        trimmedEmail: String,
+        pass: String,
+        isSignUp: Boolean,
+    ) {
+        val errorMsg = result?.exceptionOrNull()?.localizedMessage.orEmpty()
+        val isCollision = isEmailCollisionError(errorMsg)
+
+        if (isSignUp && isCollision && repo != null) {
+            if (tryUnverifiedExistingAccount(repo, trimmedEmail, pass)) {
+                return
+            }
+        }
+
+        isEmailLoading = false
+        errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
     }
 
     fun checkVerificationStatus(
@@ -691,8 +639,10 @@ internal fun rememberAccountAuthState(
     state.activity = activity
     state.focusManager = focusManager
     state.scope = scope
-    if (state.isAwaitingVerification && state.email.isBlank()) {
-        state.email = authRepository?.currentUser?.value?.email.orEmpty()
+    LaunchedEffect(state.isAwaitingVerification) {
+        if (state.isAwaitingVerification && state.email.isBlank()) {
+            state.email = authRepository?.currentUser?.value?.email.orEmpty()
+        }
     }
     return state
 }

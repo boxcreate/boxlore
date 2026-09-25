@@ -229,12 +229,12 @@ fun BoxLoreAppRoot(
 
     val currentIntent = intentState.value
     val hasDeepLink = currentIntent?.data != null
-    val initialUser = container.authRepository.currentUser.value
+    val currentUser by container.authRepository.currentUser.collectAsStateWithLifecycle()
     var onboardingCompleted by remember {
         mutableStateOf(
             onboardingViewModel.isOnboardingCompleted() ||
                 hasDeepLink ||
-                (initialUser != null && initialUser.isEmailVerified),
+                (currentUser != null && currentUser?.isEmailVerified == true),
         )
     }
     val showBottomNav =
@@ -248,9 +248,9 @@ fun BoxLoreAppRoot(
         }
     }
 
-    LaunchedEffect(Unit) {
-        val user = container.authRepository.currentUser.value
-        if (user != null && user.isEmailVerified && !onboardingViewModel.isOnboardingCompleted()) {
+    LaunchedEffect(currentUser) {
+        val user = currentUser
+        if (user != null && user.isEmailVerified && !onboardingCompleted) {
             onboardingViewModel.markOnboardingCompletedSilent {
                 onboardingCompleted = true
             }

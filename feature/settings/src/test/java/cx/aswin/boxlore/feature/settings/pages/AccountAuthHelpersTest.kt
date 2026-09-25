@@ -698,10 +698,15 @@ class AccountAuthHelpersTest {
     fun accountAuthState_init_whenPrefIsTrueAndCurrentUserIsNull_awaitsVerification() {
         val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
         val mockPrefs = org.mockito.Mockito.mock(android.content.SharedPreferences::class.java)
-        org.mockito.Mockito.`when`(mockContext.getSharedPreferences("boxlore_prefs", android.content.Context.MODE_PRIVATE))
+        org.mockito.Mockito.`when`(mockContext.applicationContext).thenReturn(mockContext)
+        org.mockito.Mockito.`when`(mockContext.getSharedPreferences(org.mockito.Mockito.anyString(), org.mockito.Mockito.anyInt()))
             .thenReturn(mockPrefs)
         org.mockito.Mockito.`when`(mockPrefs.getBoolean("awaiting_email_verification", false))
             .thenReturn(true)
+        org.mockito.Mockito.`when`(mockPrefs.contains("awaiting_email_verification"))
+            .thenReturn(true)
+        org.mockito.Mockito.`when`(mockPrefs.all)
+            .thenReturn(mapOf("awaiting_email_verification" to true))
 
         val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
         val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)

@@ -53,19 +53,13 @@ internal fun showAccountToast(context: Context, message: String) {
 }
 
 internal object AccountVerificationStorage {
-    private const val PREF_AWAITING_EMAIL_VERIFICATION = "awaiting_email_verification"
-
     fun getPref(context: Context): Boolean = runCatching {
-        context.getSharedPreferences("boxlore_prefs", Context.MODE_PRIVATE)
-            .getBoolean(PREF_AWAITING_EMAIL_VERIFICATION, false)
+        cx.aswin.boxlore.core.prefs.BoxcastPrefs(context).isAwaitingEmailVerification()
     }.getOrDefault(false)
 
     fun setPref(context: Context, awaiting: Boolean) {
         runCatching {
-            context.getSharedPreferences("boxlore_prefs", Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(PREF_AWAITING_EMAIL_VERIFICATION, awaiting)
-                .apply()
+            cx.aswin.boxlore.core.prefs.BoxcastPrefs(context).setAwaitingEmailVerification(awaiting)
         }
     }
 }
