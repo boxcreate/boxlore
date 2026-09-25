@@ -46,6 +46,7 @@ import retrofit2.Response
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
+@Suppress("LargeClass")
 class UserSyncCoordinatorTest {
 
     private lateinit var database: BoxLoreDatabase
@@ -733,6 +734,7 @@ class UserSyncCoordinatorTest {
         var lastHandoffEpisodeId: String? = null
         var lastHandoffPositionMs: Long? = null
         var lastHandoffPlayedAt: Long? = null
+        var stopAndClearActiveSessionCalled = false
 
         override fun getActivePlayingEpisodeId(): String? = activeEpisodeId
 
@@ -740,6 +742,10 @@ class UserSyncCoordinatorTest {
             lastHandoffEpisodeId = episodeId
             lastHandoffPositionMs = positionMs
             lastHandoffPlayedAt = lastPlayedAt
+        }
+
+        override suspend fun stopAndClearActiveSession() {
+            stopAndClearActiveSessionCalled = true
         }
     }
 
@@ -796,5 +802,77 @@ class UserSyncCoordinatorTest {
         assertEquals("ep-newest", fakePlayback.lastHandoffEpisodeId)
         assertEquals(35000L, fakePlayback.lastHandoffPositionMs)
         assertEquals(9000L, fakePlayback.lastHandoffPlayedAt)
+    }
+
+    @Test
+    fun syncNow_onAccountSwitch_purgesLocalDataAndClearsActivePlaybackSession() = runTest(testDispatcher) {
+        val fakePlayback = FakeActivePlaybackSyncPort()
+        val customCoordinator = UserSyncCoordinator(
+            boxLoreApi = fakeBoxLoreApi,
+            publicKey = "test-public-key",
+            authUserIdProvider = { currentUserId },
+            tokenProvider = { currentToken },
+            podcastDao = podcastDao,
+            listeningHistoryDao = listeningHistoryDao,
+            queueSyncPort = fakeQueueSyncPort,
+            subscriptionSyncResolver = subscriptionSyncResolver,
+            historySyncResolver = historySyncResolver,
+            queueSyncResolver = queueSyncResolver,
+            boxcastPrefs = prefs,
+            activePlaybackSyncPort = fakePlayback,
+            ioDispatcher = testDispatcher,
+        )
+
+        // Seed data belonging to Account A
+        podcastDao.upsert(createTestPodcastEntity("pod-account-a", "Account A Show", isSubscribed = true))
+        listeningHistoryDao.upsert(createTestHistoryEntity("ep-account-a", "pod-account-a"))
+        fakeQueueSyncPort.applyRemoteQueueState(
+            items = listOf(
+                QueueItem(
+                    episodeId = "ep-account-a",
+                    podcastId = "pod-account-a",
+                    title = "Account A Episode",
+                    podcastTitle = "Account A Show",
+                    audioUrl = "https://example.com/audio.mp3",
+                    imageUrl = null,
+                    duration = 60,
+                    pubDate = 1000L,
+                    description = "Account A Desc",
+                    position = 0,
+                ),
+            ),
+            metadata = QueueMetadataEntity(id = 1, queueSequence = 1L),
+        )
+
+        prefs.setLastSyncedUserId("account-a")
+        prefs.setLastSyncTimestamp(1000L)
+
+        // Now switch to Account B
+        currentUserId = "account-b"
+        currentToken = "token-b"
+
+        syncPullHandler = { _, _, _ ->
+            FakeCall(
+                Response.success(
+                    SyncPullResponse(
+                        subscriptions = emptyList(),
+                        history = emptyList(),
+                        queue = null,
+                        syncedAt = 2000L,
+                    ),
+                ),
+            )
+        }
+
+        val result = customCoordinator.syncNow()
+        assertTrue(result is SyncResult.Success)
+
+        // Assert local data was completely purged and playback session was torn down
+        assertTrue(podcastDao.getPodcast("pod-account-a")?.isSubscribed != true)
+        assertTrue(listeningHistoryDao.getHistoryItem("ep-account-a") == null)
+        assertTrue(fakeQueueSyncPort.getQueueSnapshot().isEmpty())
+        assertTrue(fakePlayback.stopAndClearActiveSessionCalled)
+        assertEquals("account-b", prefs.getLastSyncedUserId())
+        assertEquals(2000L, prefs.getLastSyncTimestamp())
     }
 }

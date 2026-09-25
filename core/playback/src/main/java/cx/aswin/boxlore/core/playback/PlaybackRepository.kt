@@ -222,6 +222,12 @@ class PlaybackRepository internal constructor(
         }
     }
 
+    override suspend fun stopAndClearActiveSession() {
+        withContext(PlaybackThreadPolicy.mainDispatcher) {
+            clearSession()
+        }
+    }
+
     fun setUiForeground(isForeground: Boolean) {
         if (PlaybackUiVisibility.isForeground.value == isForeground) return
         PlaybackUiVisibility.setForeground(isForeground)

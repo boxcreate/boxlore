@@ -56,6 +56,7 @@ class CloudSyncTriggerCoordinator(
     private val processLifecycle: Lifecycle? = null,
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val onSignOutAction: (() -> Unit)? = null,
 ) : DefaultLifecycleObserver {
 
     private val _syncStatusFlow = MutableStateFlow<CloudSyncUiStatus>(
@@ -214,6 +215,8 @@ class CloudSyncTriggerCoordinator(
                     // Sign-out: reset sync timestamps and status (preserve lastSyncedUserId for switch detection)
                     boxcastPrefs.setLastSyncTimestamp(0L)
                     _syncStatusFlow.value = CloudSyncUiStatus.Idle
+                    playbackRepository?.clearSession()
+                    onSignOutAction?.invoke()
                 } else if (previousUser != null && currentUser != null && previousUser!!.uid != currentUser.uid) {
                     // Direct account swap
                     syncNowInternal()

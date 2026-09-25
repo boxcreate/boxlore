@@ -124,6 +124,7 @@ class CloudSyncTriggerCoordinatorTest {
 
     private fun createCoordinator(
         testScope: TestScope,
+        onSignOutAction: (() -> Unit)? = null,
     ): CloudSyncTriggerCoordinator {
         val coordinator = CloudSyncTriggerCoordinator(
             context = context,
@@ -140,6 +141,7 @@ class CloudSyncTriggerCoordinatorTest {
             processLifecycle = testLifecycleOwner.lifecycle,
             clock = { currentTime },
             ioDispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScope.testScheduler),
+            onSignOutAction = onSignOutAction,
         )
         currentCoordinator = coordinator
         return coordinator
@@ -179,7 +181,8 @@ class CloudSyncTriggerCoordinatorTest {
         prefs.setLastSyncedUserId("user-1")
         fakeAuthRepository.currentUser.value = testUser("user-1")
 
-        val coordinator = createCoordinator(this)
+        var signOutActionCalled = false
+        val coordinator = createCoordinator(this, onSignOutAction = { signOutActionCalled = true })
         coordinator.start()
         advanceUntilIdle()
 
@@ -189,6 +192,7 @@ class CloudSyncTriggerCoordinatorTest {
         assertEquals(0L, prefs.getLastSyncTimestamp())
         assertEquals("user-1", prefs.getLastSyncedUserId())
         assertEquals(CloudSyncUiStatus.Idle, coordinator.syncStatusFlow.value)
+        assertTrue(signOutActionCalled)
     }
 
     @Test

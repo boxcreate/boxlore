@@ -163,6 +163,7 @@ open class UserSyncCoordinator(
                 syncedAt = 0L,
             ),
         )
+        activePlaybackSyncPort?.stopAndClearActiveSession()
     }
 
     open suspend fun executePush(token: String? = null): Result<PushBatchSummary> = withContext(ioDispatcher) {

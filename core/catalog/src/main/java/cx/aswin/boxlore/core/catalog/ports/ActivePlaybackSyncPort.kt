@@ -7,4 +7,5 @@ package cx.aswin.boxlore.core.catalog.ports
 interface ActivePlaybackSyncPort {
     fun getActivePlayingEpisodeId(): String?
     fun updateIdlePlaybackSession(episodeId: String, positionMs: Long, lastPlayedAt: Long) {}
+    suspend fun stopAndClearActiveSession() {}
 }
