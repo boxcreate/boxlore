@@ -128,6 +128,9 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Realtime cloud sync across your devices: keep your subscriptions, playback progress, and queue in sync wherever you listen. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
+<li>Instant playback handoff: pause on one device and resume seamlessly on another. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
+<li>Enhanced Account Settings with live sync status and a one-tap manual sync button. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
 <li>Added multi-device sync data foundation to protect your playlist queues, subscriptions, and favorites from sync conflicts. <a href="https://github.com/boxcreate/boxlore/pull/1072"><img src="https://img.shields.io/badge/PR-1072-6750A4?style=flat-square" alt="PR #1072" height="18"/></a></li>
 </ul>
 <b>🐛 Fixes:</b>

@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Realtime cloud sync engine supporting subscriptions, listening history, and monotonic queue synchronization across devices. ([#1082](https://github.com/boxcreate/boxlore/pull/1082)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- Lifecycle and milestone-driven sync triggers in `CloudSyncTriggerCoordinator` with guaranteed background flushes via `CloudSyncWorker`. ([#1082](https://github.com/boxcreate/boxlore/pull/1082)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- Account switch isolation, active session teardown, and rich metadata transport with automatic local backfill. ([#1082](https://github.com/boxcreate/boxlore/pull/1082)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- Live sync status indicators and interactive manual "Sync Now" control in Account Settings. ([#1082](https://github.com/boxcreate/boxlore/pull/1082)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Room database schema version 37 with `MIGRATION_36_37` adding `unsubscribedAt`, `isDirty`, and `syncedAt` to podcasts, `likedAt` to listening history, and new `queue_metadata` table. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Monotonic sequence versioning and tombstone tracking in `QueueDao` and `QueueRepository` to resolve the empty queue deletion bug. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - introduce Firebase Authentication and redesign account settings ([#1069](https://github.com/boxcreate/boxlore/pull/1069)) <!-- impact:user-impact-medium -->
@@ -30,6 +34,13 @@ readme-copy:end pr=1071 -->
 ### Improvements
 - Added multi-device sync data foundation to protect your playlist queues, subscriptions, and favorites from sync conflicts.
 readme-copy:end pr=1072 -->
+
+<!-- readme-copy:start pr=1082
+### Improvements
+- Realtime cloud sync across your devices: keep your subscriptions, playback progress, and queue in sync wherever you listen.
+- Instant playback handoff: pause on one device and resume seamlessly on another.
+- Enhanced Account Settings with live sync status and a one-tap manual sync button.
+readme-copy:end pr=1082 -->
 ## [v0.0.25] - 2026-09-08
 
 ### Added
