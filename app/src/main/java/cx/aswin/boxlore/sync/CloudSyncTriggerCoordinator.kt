@@ -6,6 +6,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.catalog.sync.SyncResult
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
@@ -13,7 +14,6 @@ import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.model.BoxLoreUser
-import cx.aswin.boxlore.core.network.AuthRepository
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs

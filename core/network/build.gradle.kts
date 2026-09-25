@@ -49,13 +49,13 @@ dependencies {
     implementation("androidx.annotation:annotation:1.7.1")
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    testImplementation(projects.core.testing)
+            testImplementation(projects.core.testing)
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.vintage.engine)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    implementation(projects.core.auth)
 }

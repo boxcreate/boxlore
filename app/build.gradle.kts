@@ -140,6 +140,7 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(projects.core.rss)
     implementation(projects.feature.home)
+    implementation(projects.feature.settings)
     implementation(project(":feature:player"))
     implementation(project(":feature:info"))
     implementation(project(":feature:explore"))
@@ -218,6 +219,9 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.work:work-testing:${libs.versions.work.get()}")
+    implementation(projects.feature.history)
+    implementation(projects.core.auth)
+
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

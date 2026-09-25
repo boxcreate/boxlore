@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.network
 
+import cx.aswin.boxlore.core.auth.AuthRepository
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

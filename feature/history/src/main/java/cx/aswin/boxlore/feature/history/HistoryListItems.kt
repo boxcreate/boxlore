@@ -1,0 +1,220 @@
+package cx.aswin.boxlore.feature.history
+
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.model.ListeningHistoryItem
+import cx.aswin.boxlore.feature.history.HistoryFilter
+import cx.aswin.boxlore.feature.history.R
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+@Composable
+fun HistoryStatusFilterSelector(
+    selected: HistoryFilter,
+    onSelect: (HistoryFilter) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val options =
+        listOf(
+            HistoryFilter.ALL to stringResource(R.string.history_filter_all),
+            HistoryFilter.IN_PROGRESS to stringResource(R.string.history_filter_in_progress),
+            HistoryFilter.COMPLETED to stringResource(R.string.history_filter_completed),
+        )
+    ConnectedOptionSelector(
+        options = options,
+        selected = selected,
+        onSelect = onSelect,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun DateHeaderRow(
+    date: LocalDate,
+    isExpanded: Boolean,
+    onClick: () -> Unit,
+) {
+    val formatter = DateTimeFormatter.ofPattern("EEEE, MMM d")
+    val today = LocalDate.now()
+    val yesterday = today.minusDays(1)
+    val dateText =
+        when (date) {
+            today -> "Today"
+            yesterday -> "Yesterday"
+            else -> date.format(formatter)
+        }
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isExpanded) 90f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "Caret Rotation",
+    )
+
+    Row(
+        modifier =
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.rotate(rotationAngle),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = dateText,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = GoogleSansWeight.semiBold,
+        )
+    }
+}
+
+@Composable
+fun HistoryTimelineItem(
+    item: ListeningHistoryItem,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val dismissState =
+        rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+                if (value == SwipeToDismissBoxValue.EndToStart) {
+                    onDelete()
+                    true
+                } else {
+                    false
+                }
+            },
+        )
+    val progress =
+        if (item.durationMs > 0) {
+            (item.progressMs.toFloat() / item.durationMs.toFloat()).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+    val status =
+        if (item.isCompleted) {
+            stringResource(R.string.history_status_completed)
+        } else {
+            stringResource(R.string.history_status_in_progress)
+        }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Row(
+                modifier =
+                Modifier
+                    .fillMaxSize()
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OptimizedImage(
+                    url = item.episodeImageUrl ?: item.podcastImageUrl,
+                    proxyWidth = 128,
+                    contentDescription = null,
+                    modifier =
+                    Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(14.dp)),
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = item.episodeTitle,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 3,
+                        fontWeight = GoogleSansWeight.semiBold,
+                    )
+                    Text(
+                        text = item.podcastName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                    if (!item.isCompleted && item.durationMs > 0) {
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.semiBold,
+                        color =
+                        if (item.isCompleted) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+            }
+        }
+    }
+}

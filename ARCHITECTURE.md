@@ -8,6 +8,10 @@ Boxlore is a multi-module Gradle project. `:app` is the application shell. Share
 
 The graph is layered so playback and features depend inward on catalog and lower cores. Features do not depend on other features. Catalog does not depend on the design system. Feature modules never talk to PostHog directly; they use `:core:analytics`.
 
+### Decoupling and module granularity
+
+When a domain, presentation flow, or capability is significant enough to form a cohesive domain (such as the settings hub, listening history timeline, or authentication SDK), **keep it decoupled in its own standalone module**. Avoid co-locating unrelated subsystems inside general-purpose modules (e.g., settings inside `:feature:home`, history inside `:feature:library`, or auth credentials inside `:core:network`). If something is significant enough and makes architectural sense to decouple, keep it separate. Any module extractions or architectural decoupling must strictly be executed **only post explicit confirmation and approval from the user**.
+
 ## Identity and storage
 
 These values are part of the shipping product. Renames or recreations break upgrades, WorkManager, Media3, and deep links.
@@ -32,10 +36,10 @@ These values are part of the shipping product. Renames or recreations break upgr
 
 ```text
 :app
-:core:model | :core:network | :core:domain | :core:database | :core:prefs
+:core:model | :core:auth | :core:network | :core:domain | :core:database | :core:prefs
 :core:analytics | :core:catalog | :core:rss | :core:downloads | :core:playback | :core:ranking
 :core:designsystem | :core:testing
-:feature:home | :feature:player | :feature:info | :feature:explore
+:feature:home | :feature:settings | :feature:history | :feature:player | :feature:info | :feature:explore
 :feature:library | :feature:onboarding | :feature:briefing | :feature:widgets
 ```
 
@@ -47,6 +51,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | :--- | :--- | :--- |
 | `:app` | `Application`, `AppContainer`, navigation host, FCM, `WorkerFactory` | [`app/README.md`](app/README.md) |
 | `:core:model` | Shared models and enums | [`core/model/README.md`](core/model/README.md) |
+| `:core:auth` | Authentication domain, `AuthRepository`, and Firebase Auth implementation | [`core/auth/README.md`](core/auth/README.md) |
 | `:core:network` | HTTP client (`BoxLoreApi` / `NetworkModule`) and network DTOs | [`core/network/README.md`](core/network/README.md) |
 | `:core:domain` | Thin ports and small result types (no Room or repositories) | [`core/domain/README.md`](core/domain/README.md) |
 | `:core:database` | Main Room database, entities, DAOs, migrations | [`core/database/README.md`](core/database/README.md) |
@@ -59,11 +64,13 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:core:playback` | `PlaybackRepository`, queue, Media3 services, smart-queue helpers | [`core/playback/README.md`](core/playback/README.md) |
 | `:core:designsystem` | Theme and shared composables; no data or network ownership | [`core/designsystem/README.md`](core/designsystem/README.md) |
 | `:core:testing` | Shared fixtures, dispatcher helpers, architecture guards | [`core/testing/README.md`](core/testing/README.md) |
-| `:feature:home` | Home, Settings hub, Add RSS, Debug | [`feature/home/README.md`](feature/home/README.md) |
+| `:feature:home` | Home feed presentation, Daily/Offline mix, and local Debug | [`feature/home/README.md`](feature/home/README.md) |
+| `:feature:settings` | Unified Settings hub, Account & Cloud Sync, Appearance, Privacy, Playback, and Download policies | [`feature/settings/README.md`](feature/settings/README.md) |
+| `:feature:history` | Listening history timeline, activity charts, pattern insights, and streak cards | [`feature/history/README.md`](feature/history/README.md) |
 | `:feature:player` | Player overlay (`PlayerSheetScaffold`); not a NavHost destination | [`feature/player/README.md`](feature/player/README.md) |
 | `:feature:info` | Podcast and episode detail, including deep links | [`feature/info/README.md`](feature/info/README.md) |
 | `:feature:explore` | Explore plus Learn / LearnHistory | [`feature/explore/README.md`](feature/explore/README.md) |
-| `:feature:library` | Library hub, subscriptions, downloads, history, liked | [`feature/library/README.md`](feature/library/README.md) |
+| `:feature:library` | Library hub, subscriptions, downloads, liked | [`feature/library/README.md`](feature/library/README.md) |
 | `:feature:onboarding` | First-run flows (AI, genre, search, import) | [`feature/onboarding/README.md`](feature/onboarding/README.md) |
 | `:feature:briefing` | Daily briefing screen | [`feature/briefing/README.md`](feature/briefing/README.md) |
 | `:feature:widgets` | Home-screen Now Playing, compact bar, playback-control, subscriptions, and new-episodes widgets (RemoteViews) | [`feature/widgets/README.md`](feature/widgets/README.md) |

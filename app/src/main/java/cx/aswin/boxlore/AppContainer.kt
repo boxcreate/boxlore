@@ -74,7 +74,7 @@ class AppContainer(
     sharedUserPreferences: UserPreferencesRepository? = null,
     /** Process-scoped scope from [BoxLoreApplication] for foreground subscription sync. */
     applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    authRepositoryOverride: cx.aswin.boxlore.core.network.AuthRepository? = null,
+    authRepositoryOverride: cx.aswin.boxlore.core.auth.AuthRepository? = null,
 ) : SharedAppDependencies,
     DownloadsDependencies {
     private val appContext = context.applicationContext
@@ -331,18 +331,18 @@ class AppContainer(
         }
     }
 
-    val authRepository: cx.aswin.boxlore.core.network.AuthRepository by lazy {
+    val authRepository: cx.aswin.boxlore.core.auth.AuthRepository by lazy {
         authRepositoryOverride ?: runCatching {
-            cx.aswin.boxlore.core.network.FirebaseAuthRepository(
+            cx.aswin.boxlore.core.auth.FirebaseAuthRepository(
                 auth = com.google.firebase.auth.FirebaseAuth.getInstance(),
-                pendingEmailStore = object : cx.aswin.boxlore.core.network.PendingEmailStore {
+                pendingEmailStore = object : cx.aswin.boxlore.core.auth.PendingEmailStore {
                     private val prefs = BoxcastPrefs(appContext)
                     override fun getPendingEmail(): String? = prefs.getPendingAuthEmail()
                     override fun setPendingEmail(email: String?) = prefs.setPendingAuthEmail(email)
                 },
             )
         }.getOrElse {
-            object : cx.aswin.boxlore.core.network.AuthRepository {
+            object : cx.aswin.boxlore.core.auth.AuthRepository {
                 override val currentUser =
                     kotlinx.coroutines.flow.MutableStateFlow<cx.aswin.boxlore.core.model.BoxLoreUser?>(null)
                 override val currentUserId: String? = null

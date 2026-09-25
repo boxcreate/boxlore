@@ -1,5 +1,8 @@
 package cx.aswin.boxlore.core.network
 
+import cx.aswin.boxlore.core.auth.AuthException
+import cx.aswin.boxlore.core.auth.PendingEmailStore
+import cx.aswin.boxlore.core.auth.RecentLoginRequiredException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
