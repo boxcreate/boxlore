@@ -350,10 +350,9 @@ internal class AccountAuthState(
         val errorMsg = result?.exceptionOrNull()?.localizedMessage.orEmpty()
         val isCollision = isEmailCollisionError(errorMsg)
 
-        if (isSignUp && isCollision && repo != null) {
-            if (tryUnverifiedExistingAccount(repo, trimmedEmail, pass)) {
-                return
-            }
+        val canAttemptRecovery = isSignUp && isCollision && repo != null
+        if (canAttemptRecovery && tryUnverifiedExistingAccount(repo, trimmedEmail, pass)) {
+            return
         }
 
         isEmailLoading = false

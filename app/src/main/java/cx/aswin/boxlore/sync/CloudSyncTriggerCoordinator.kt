@@ -224,30 +224,31 @@ class CloudSyncTriggerCoordinator(
                     return@collect
                 }
 
-                val prev = previousUser
-                val prevCanSync = canSyncUser(prev)
-                val currentCanSync = canSyncUser(currentUser)
-
-                when {
-                    !prevCanSync && currentCanSync -> {
-                        // Sign-in, account claim, or email verification transition
-                        syncNowInternal()
-                    }
-                    prev != null && currentUser == null -> {
-                        // Sign-out: reset sync timestamps and status (preserve lastSyncedUserId for switch detection)
-                        boxcastPrefs.setLastSyncTimestamp(0L)
-                        _syncStatusFlow.value = CloudSyncUiStatus.Idle
-                        playbackRepository?.clearSession()
-                        onSignOutAction?.invoke()
-                    }
-                    prev != null && currentUser != null && prev.uid != currentUser.uid -> {
-                        // Direct account swap
-                        if (currentCanSync) {
-                            syncNowInternal()
-                        }
-                    }
-                }
+                handleAuthStateTransition(previousUser, currentUser)
                 previousUser = currentUser
+            }
+        }
+    }
+
+    private suspend fun handleAuthStateTransition(prev: BoxLoreUser?, current: BoxLoreUser?) {
+        val prevCanSync = canSyncUser(prev)
+        val currentCanSync = canSyncUser(current)
+
+        when {
+            !prevCanSync && currentCanSync -> {
+                // Sign-in, account claim, or email verification transition
+                syncNowInternal()
+            }
+            prev != null && current == null -> {
+                // Sign-out: reset sync timestamps and status (preserve lastSyncedUserId for switch detection)
+                boxcastPrefs.setLastSyncTimestamp(0L)
+                _syncStatusFlow.value = CloudSyncUiStatus.Idle
+                playbackRepository?.clearSession()
+                onSignOutAction?.invoke()
+            }
+            prev != null && current != null && prev.uid != current.uid && currentCanSync -> {
+                // Direct account swap
+                syncNowInternal()
             }
         }
     }
