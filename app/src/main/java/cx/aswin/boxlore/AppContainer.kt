@@ -425,6 +425,13 @@ class AppContainer(
             playbackRepository = playbackRepository,
             playerStateFlow = playbackRepository.playerState,
             isOnlineFlow = connectivityObserver.isOnlineFlow,
+            onSignOutAction = {
+                try {
+                    com.google.firebase.messaging.FirebaseMessaging.getInstance().deleteToken()
+                } catch (e: Exception) {
+                    android.util.Log.e("FcmSignOut", "Failed to delete FCM token on sign-out", e)
+                }
+            },
         )
     }
 }

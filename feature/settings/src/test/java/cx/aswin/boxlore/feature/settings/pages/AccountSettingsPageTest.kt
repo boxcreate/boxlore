@@ -137,4 +137,3 @@ class AccountSettingsPageTest {
         assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Success(1000L)))
     }
 }
-

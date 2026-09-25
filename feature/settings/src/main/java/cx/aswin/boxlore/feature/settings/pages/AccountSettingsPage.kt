@@ -93,10 +93,19 @@ internal fun AccountSettingsPage(
         scope = scope,
     )
 
-    LaunchedEffect(currentUser?.isEmailVerified) {
-        if (currentUser?.isEmailVerified == true) {
+    LaunchedEffect(currentUser) {
+        val user = currentUser
+        if (user == null) {
+            authState.resetToNewEmail()
+        } else if (user.isEmailVerified) {
             authState.isAwaitingVerification = false
             AccountVerificationStorage.setPref(context, false)
+        }
+    }
+
+    LaunchedEffect(authState.isAwaitingVerification, authState.magicLinkSent) {
+        if (authState.isAwaitingVerification || authState.magicLinkSent) {
+            scrollState.animateScrollTo(0)
         }
     }
 
@@ -131,6 +140,7 @@ internal fun AccountSettingsPage(
                 },
                 onSignOut = {
                     authRepository?.signOut()
+                    authState.resetToNewEmail()
                     Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
                 },
                 onDeleteAccountClick = { showDeleteConfirmation = true },
@@ -162,6 +172,7 @@ internal fun AccountSettingsPage(
         onSignOutToReauth = {
             showReauthRequiredDialog = false
             authRepository?.signOut()
+            authState.resetToNewEmail()
             Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
         },
     )

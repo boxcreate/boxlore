@@ -55,7 +55,7 @@ private val ACCOUNT_ERROR_MAPPINGS = listOf(
         "No account found with this email. Try signing up instead.",
     listOf("wrong-password", "invalid-credential") to
         "Incorrect password or credentials. Please try again.",
-    listOf("email-already-in-use", "already registered") to
+    listOf("email-already-in-use", "already registered", "already in use") to
         "This email is already registered. Try signing in instead.",
     listOf("weak-password") to
         "Password is too weak. Please use at least 6 characters.",
@@ -305,6 +305,18 @@ internal class AccountAuthState(
         email = ""
         password = ""
         confirmPassword = ""
+        errorMessage = null
+        scope.launch {
+            val repo = authRepository ?: return@launch
+            val user = repo.currentUser.value
+            if (user != null && !user.isEmailVerified) {
+                try {
+                    repo.deleteAccount()
+                } catch (e: Exception) {
+                    repo.signOut()
+                }
+            }
+        }
     }
 
     fun submitEmailLink() {
@@ -371,6 +383,29 @@ internal class AccountAuthState(
                     showAccountToast(context, "Signed in!")
                 }
             } else {
+                val errorMsg = result?.exceptionOrNull()?.localizedMessage.orEmpty()
+                val isCollision = errorMsg.contains("email-already-in-use", ignoreCase = true) ||
+                    errorMsg.contains("already in use", ignoreCase = true) ||
+                    errorMsg.contains("already registered", ignoreCase = true)
+
+                if (isSignUp && isCollision) {
+                    val repo = authRepository
+                    val signInAttempt = repo?.signInWithEmailPassword(trimmedEmail, password)
+                    if (signInAttempt?.isSuccess == true) {
+                        val user = repo.currentUser.value
+                        if (user != null && !user.isEmailVerified) {
+                            password = ""
+                            confirmPassword = ""
+                            isAwaitingVerification = true
+                            AccountVerificationStorage.setPref(context, true)
+                            repo.sendEmailVerification()
+                            startResendCooldownTimer(30)
+                            isEmailLoading = false
+                            return@launch
+                        }
+                    }
+                }
+
                 isEmailLoading = false
                 errorMessage = cleanAccountError(result?.exceptionOrNull()?.localizedMessage)
             }

@@ -30,6 +30,12 @@ class AccountAuthHelpersTest {
     }
 
     @Test
+    fun cleanAccountError_alreadyInUseMessage_returnsSignInPrompt() {
+        val result = cleanAccountError("The email address is already in use by another account.")
+        assertEquals("This email is already registered. Try signing in instead.", result)
+    }
+
+    @Test
     fun cleanAccountError_weakPassword_returnsPasswordRequirement() {
         val result = cleanAccountError("weak-password")
         assertEquals("Password is too weak. Please use at least 6 characters.", result)

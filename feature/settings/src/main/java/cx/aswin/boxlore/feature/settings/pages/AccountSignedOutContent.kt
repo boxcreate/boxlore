@@ -110,7 +110,15 @@ internal fun ColumnScope.SignedOutContent(
                     .padding(horizontal = 4.dp, vertical = 2.dp),
             )
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(4.dp))
+
+            PrivacyPolicyNotice(
+                prefix = "By signing in or signing up, you agree to our ",
+                suffix = ".",
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+
+            Spacer(Modifier.height(14.dp))
 
             // 2. Continue with Google Button
             GoogleSignInButton(
@@ -119,13 +127,7 @@ internal fun ColumnScope.SignedOutContent(
                 onClick = state::handleGoogleSignIn,
             )
 
-            Spacer(Modifier.height(8.dp))
-
-            PrivacyPolicyNotice(
-                modifier = Modifier.padding(horizontal = 8.dp),
-            )
-
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(14.dp))
 
             // 3. Divider
             AuthDivider()
@@ -535,11 +537,7 @@ private fun EmailLinkInputSection(
         AuthErrorBanner(message = state.errorMessage)
     }
 
-    Spacer(Modifier.height(14.dp))
-
-    PrivacyPolicyNotice()
-
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(16.dp))
 
     Button(
         onClick = actions.onSendLink,
@@ -676,40 +674,24 @@ private fun EmailTextField(
 }
 
 @Composable
-private fun PasswordHelperRow(
-    isSignUp: Boolean,
+private fun PasswordForgotPasswordRow(
     isLoading: Boolean,
     onForgotPassword: () -> Unit,
 ) {
-    if (!isSignUp) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(
-                onClick = onForgotPassword,
-                enabled = !isLoading,
-            ) {
-                Text(
-                    text = "Forgot password?",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp, start = 4.dp, bottom = 4.dp),
-            contentAlignment = Alignment.CenterStart,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 2.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(
+            onClick = onForgotPassword,
+            enabled = !isLoading,
         ) {
             Text(
-                text = "Must be at least 6 characters",
+                text = "Forgot password?",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -755,7 +737,7 @@ private fun PasswordAuthSection(
 ) {
     Text(
         text = if (state.isSignUp) {
-            "Choose a password (minimum 6 characters) to create your account."
+            "Enter your email and create a password to set up your account."
         } else {
             "Enter your email and password to access your account."
         },
@@ -788,7 +770,15 @@ private fun PasswordAuthSection(
     )
 
     if (state.isSignUp) {
-        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Must be at least 6 characters",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 12.dp, top = 4.dp),
+        )
+
+        Spacer(Modifier.height(10.dp))
+
         PasswordTextField(
             state = PasswordFieldState(
                 value = state.confirmPassword,
@@ -803,22 +793,18 @@ private fun PasswordAuthSection(
         )
     }
 
-    PasswordHelperRow(
-        isSignUp = state.isSignUp,
-        isLoading = state.isLoading,
-        onForgotPassword = actions.onForgotPassword,
-    )
+    if (!state.isSignUp) {
+        PasswordForgotPasswordRow(
+            isLoading = state.isLoading,
+            onForgotPassword = actions.onForgotPassword,
+        )
+    }
 
     if (state.errorMessage != null) {
         AuthErrorBanner(message = state.errorMessage)
     }
 
-    if (state.isSignUp) {
-        Spacer(Modifier.height(14.dp))
-        PrivacyPolicyNotice()
-    }
-
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(16.dp))
 
     val isSubmitEnabled = !state.isLoading &&
         state.email.isNotBlank() &&
