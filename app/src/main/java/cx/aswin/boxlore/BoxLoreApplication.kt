@@ -24,11 +24,13 @@ import com.posthog.android.PostHogAndroidConfig
 import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
+import cx.aswin.boxlore.core.network.FirebaseAuthAuthenticator
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.playback.synchronizeCastSession
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
+import cx.aswin.boxlore.sync.CloudSyncWorker
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
@@ -158,6 +160,10 @@ class BoxLoreApplication :
         setupCastSessionTracking()
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container
+        NetworkModule.authenticator =
+            FirebaseAuthAuthenticator(container.authRepository)
+        container.cloudSyncTriggerCoordinator.start()
+        CloudSyncWorker.schedulePeriodicSync(this)
         HomeScreenWidgetsInstaller.install(
             context = this,
             scope = applicationScope,

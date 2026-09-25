@@ -49,8 +49,8 @@ class RoomLocalCatalog(private val database: BoxLoreDatabase,) : LocalCatalogPor
                     license = podcast.license ?: existing.license,
                     isLocked = podcast.isLocked || existing.isLocked,
                     preferredSort = preferredSort,
-                    notificationsEnabled = podcast.notificationsEnabled,
-                    autoDownloadEnabled = podcast.autoDownloadEnabled,
+                    notificationsEnabled = existing.notificationsEnabled,
+                    autoDownloadEnabled = existing.autoDownloadEnabled,
                     skipBeginningOverrideMs = podcast.skipBeginningOverrideMs
                         ?: existing.skipBeginningOverrideMs,
                     skipEndingOverrideMs = podcast.skipEndingOverrideMs
@@ -69,6 +69,9 @@ class RoomLocalCatalog(private val database: BoxLoreDatabase,) : LocalCatalogPor
                         ?: podcast.linkedPodcastIndexId,
                     customGenre = existing.customGenre,
                     customGenreIcon = existing.customGenreIcon,
+                    isDirty = existing.isDirty,
+                    syncedAt = existing.syncedAt,
+                    unsubscribedAt = existing.unsubscribedAt,
                 ),
             )
         }

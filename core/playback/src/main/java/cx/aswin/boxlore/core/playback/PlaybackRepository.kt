@@ -9,6 +9,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
+import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.AutoTranscriptState
@@ -113,7 +114,8 @@ class PlaybackRepository internal constructor(
     internal val userPreferencesRepository: UserPreferencesRepository,
     internal val historyStore: PlaybackHistoryStore,
 ) : ListeningHistoryBackupPort by historyStore,
-    ListeningHistoryPort by historyStore {
+    ListeningHistoryPort by historyStore,
+    ActivePlaybackSyncPort {
     /** Nested alias so existing `PlaybackRepository.RemovedQueueItem` call sites keep compiling. */
     typealias RemovedQueueItem = cx.aswin.boxlore.core.playback.RemovedQueueItem
 
@@ -171,6 +173,60 @@ class PlaybackRepository internal constructor(
     internal val repositoryScope = historyStore.playerDeps.scope
     internal val playerStateFlow: MutableStateFlow<PlayerState> = historyStore.playerDeps.playerStateFlow
     val playerState = playerStateFlow.asStateFlow()
+
+    override fun getActivePlayingEpisodeId(): String? =
+        if (playerStateFlow.value.isPlaying) playerStateFlow.value.currentEpisode?.id else null
+
+    override fun updateIdlePlaybackSession(episodeId: String, positionMs: Long, lastPlayedAt: Long) {
+        if (playerStateFlow.value.isPlaying) return
+
+        val currentId = playerStateFlow.value.currentEpisode?.id
+        if (currentId == episodeId) {
+            return
+        }
+
+        repositoryScope.launch {
+            val currentLocalLastPlayed = currentId?.let {
+                listeningHistoryDao.getHistoryItem(it)?.lastPlayedAt
+            } ?: 0L
+
+            if (lastPlayedAt <= currentLocalLastPlayed) {
+                return@launch
+            }
+
+            val savedQueue = queueRepository.getQueueEpisodeSnapshot()
+            val restored = PlaybackSessionRestoreHelper.resolveRestoredSession(
+                targetEpisodeId = episodeId,
+                currentItem = null,
+                listeningHistoryDao = listeningHistoryDao,
+                podcastRepository = podcastRepository,
+                savedQueue = savedQueue,
+            ) ?: return@launch
+
+            withContext(PlaybackThreadPolicy.mainDispatcher) {
+                if (playerStateFlow.value.isPlaying) return@withContext
+
+                val refreshedQueue = queueRepository.getQueueEpisodeSnapshot()
+                val restoredQueue = if (refreshedQueue.isEmpty()) listOf(restored.episode) else refreshedQueue
+
+                playerStateFlow.value = playerStateFlow.value.copy(
+                    currentEpisode = restored.episode,
+                    currentPodcast = restored.podcast,
+                    position = positionMs.takeIf { it > 0L } ?: restored.lastSession.progressMs,
+                    duration = if (restored.lastSession.durationMs > 0) restored.lastSession.durationMs else playerStateFlow.value.duration,
+                    isLiked = restored.lastSession.isLiked,
+                    queue = restoredQueue,
+                )
+                mediaHandle.controller?.clearMediaItems()
+            }
+        }
+    }
+
+    override suspend fun stopAndClearActiveSession() {
+        withContext(PlaybackThreadPolicy.mainDispatcher) {
+            clearSession()
+        }
+    }
 
     fun setUiForeground(isForeground: Boolean) {
         if (PlaybackUiVisibility.isForeground.value == isForeground) return
@@ -337,6 +393,11 @@ class PlaybackRepository internal constructor(
         historyStore.monitorLikeState()
         chaptersController.monitorChaptersAndTranscripts()
         continuationCoordinator.startMonitoring()
+        queueRepository.onRemoteQueueAppliedListener = { newQueue ->
+            withContext(PlaybackThreadPolicy.mainDispatcher) {
+                queueCoordinator.applyRemoteQueueToPlayer(newQueue)
+            }
+        }
         repositoryScope.launch {
             userPreferencesRepository.skipBehaviorStream.collect {
                 currentSkipBehavior = it
@@ -652,7 +713,7 @@ class PlaybackRepository internal constructor(
             val controller = mediaHandle.controller
             val controllerItem = controller?.currentMediaItem
             val targetEpisodeId = controllerItem?.mediaId?.stripEpisodePrefix()
-            val savedQueue = queueRepository.getQueueSnapshot()
+            val savedQueue = queueRepository.getQueueEpisodeSnapshot()
 
             val restored =
                 PlaybackSessionRestoreHelper.resolveRestoredSession(

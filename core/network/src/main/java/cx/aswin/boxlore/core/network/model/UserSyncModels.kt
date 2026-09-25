@@ -16,6 +16,7 @@ data class UserSubscriptionSyncDto(
     @SerialName("customGenre") val customGenre: String? = null,
     @SerialName("autoDownloadEnabled") val autoDownloadEnabled: Boolean = false,
     @SerialName("notificationsEnabled") val notificationsEnabled: Boolean = false,
+    @SerialName("feedUrl") val feedUrl: String? = null,
     @SerialName("updatedAt") val updatedAt: Long,
 )
 
@@ -23,6 +24,11 @@ data class UserSubscriptionSyncDto(
 data class ListeningHistorySyncDto(
     @SerialName("episodeId") val episodeId: String,
     @SerialName("podcastId") val podcastId: String,
+    @SerialName("episodeTitle") val episodeTitle: String? = null,
+    @SerialName("episodeImageUrl") val episodeImageUrl: String? = null,
+    @SerialName("podcastImageUrl") val podcastImageUrl: String? = null,
+    @SerialName("podcastName") val podcastName: String? = null,
+    @SerialName("episodeAudioUrl") val episodeAudioUrl: String? = null,
     @SerialName("progressMs") val progressMs: Long = 0L,
     @SerialName("durationMs") val durationMs: Long = 0L,
     @SerialName("isCompleted") val isCompleted: Boolean = false,
@@ -36,11 +42,19 @@ data class ListeningHistorySyncDto(
 data class QueueItemSyncDto(
     @SerialName("episodeId") val episodeId: String,
     @SerialName("podcastId") val podcastId: String,
+    @SerialName("title") val title: String? = null,
+    @SerialName("podcastTitle") val podcastTitle: String? = null,
+    @SerialName("imageUrl") val imageUrl: String? = null,
+    @SerialName("podcastImageUrl") val podcastImageUrl: String? = null,
+    @SerialName("audioUrl") val audioUrl: String? = null,
+    @SerialName("duration") val duration: Int? = null,
+    @SerialName("pubDate") val pubDate: Long? = null,
+    @SerialName("description") val description: String? = null,
     @SerialName("position") val position: Int,
-    @SerialName("addedAt") val addedAt: Long,
+    @SerialName("addedAt") val addedAt: Long = 0L,
     @SerialName("contextType") val contextType: String? = "MANUAL",
     @SerialName("contextSourceId") val contextSourceId: String? = null,
-    @SerialName("updatedAt") val updatedAt: Long,
+    @SerialName("updatedAt") val updatedAt: Long = 0L,
 )
 
 @Serializable

@@ -2,9 +2,12 @@ package cx.aswin.boxlore.core.playback
 
 import androidx.room.withTransaction
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.entities.QueueItem
+import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Transcript
 import cx.aswin.boxlore.core.network.model.EpisodeItem
@@ -22,7 +25,7 @@ class QueueRepository(
     private val database: BoxLoreDatabase,
     private val podcastRepository: PodcastRepository,
     private val deviceIdentityPort: DeviceIdentityPort? = null,
-) {
+) : QueueSyncPort {
     private val TAG = "QueueRepository"
     private val queueDao = database.queueDao()
 
@@ -213,16 +216,19 @@ class QueueRepository(
         }
     }
 
-    suspend fun getQueueSnapshot(): List<cx.aswin.boxlore.core.model.Episode> = database.withTransaction {
-        android.util.Log.d(TAG, "getQueueSnapshot: Fetching sync")
+    override suspend fun getQueueSnapshot(): List<QueueItem> =
+        queueDao.getAllQueueItemsSync()
+
+    suspend fun getQueueEpisodeSnapshot(): List<cx.aswin.boxlore.core.model.Episode> = database.withTransaction {
+        android.util.Log.d(TAG, "getQueueEpisodeSnapshot: Fetching sync")
         val items = queueDao.getAllQueueItemsSync()
-        android.util.Log.d(TAG, "getQueueSnapshot: Got ${items.size} items")
+        android.util.Log.d(TAG, "getQueueEpisodeSnapshot: Got ${items.size} items")
         val episodes = items.map { it.toDomainEpisode() }
         val uniqueEpisodes = episodes.distinctBy { it.id }
         if (uniqueEpisodes.size != episodes.size) {
             android.util.Log.w(
                 TAG,
-                "getQueueSnapshot: Repairing ${episodes.size - uniqueEpisodes.size} duplicate queue rows",
+                "getQueueEpisodeSnapshot: Repairing ${episodes.size - uniqueEpisodes.size} duplicate queue rows",
             )
             replaceQueueItems(uniqueEpisodes)
         }
@@ -362,14 +368,41 @@ class QueueRepository(
         }
     }
 
-    suspend fun getQueueMetadata(): cx.aswin.boxlore.core.database.entities.QueueMetadataEntity? =
+    override suspend fun getQueueMetadata(): QueueMetadataEntity? =
         queueDao.getQueueMetadata()
 
-    val queueMetadataFlow: Flow<cx.aswin.boxlore.core.database.entities.QueueMetadataEntity?> =
+    val queueMetadataFlow: Flow<QueueMetadataEntity?> =
         queueDao.getQueueMetadataFlow()
 
     suspend fun markQueueSynced(timestamp: Long) {
         queueDao.markQueueSynced(timestamp)
+    }
+
+    override suspend fun markQueueSynced(expectedSequence: Long, syncedAt: Long): Boolean =
+        queueDao.markQueueSyncedIfSequenceMatches(expectedSequence, syncedAt) > 0
+
+    override suspend fun markQueueDirty() {
+        queueDao.markQueueDirty()
+    }
+
+    var onRemoteQueueAppliedListener: (suspend (List<Episode>) -> Unit)? = null
+
+    override suspend fun applyRemoteQueueState(
+        items: List<QueueItem>,
+        metadata: QueueMetadataEntity,
+    ) {
+        database.withTransaction {
+            queueDao.clearQueue()
+            if (items.isNotEmpty()) {
+                val reindexed = items.mapIndexed { index, item ->
+                    item.copy(position = index)
+                }
+                queueDao.insertQueueItems(reindexed)
+            }
+            queueDao.upsertQueueMetadata(metadata)
+        }
+        val snapshot = getQueueEpisodeSnapshot()
+        onRemoteQueueAppliedListener?.invoke(snapshot)
     }
 
     suspend fun bumpQueueVersion(

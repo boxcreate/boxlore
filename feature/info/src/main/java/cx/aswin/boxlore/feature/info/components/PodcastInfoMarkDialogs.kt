@@ -12,6 +12,7 @@ internal fun PodcastInfoMarkDialogs(
     onDismissPlayed: () -> Unit,
     onDismissUnplayed: () -> Unit,
     viewModel: PodcastInfoViewModel,
+    episodePendingDownloadRemoval: cx.aswin.boxlore.core.model.Episode? = null,
 ) {
     val currentState = uiState as? PodcastInfoUiState.Success ?: return
     if (showMarkAllPlayedDialog) {
@@ -34,6 +35,13 @@ internal fun PodcastInfoMarkDialogs(
                 onDismissUnplayed()
                 viewModel.markAllAsUncompleted()
             },
+        )
+    }
+    if (episodePendingDownloadRemoval != null) {
+        cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog(
+            episodeTitle = episodePendingDownloadRemoval.title,
+            onConfirm = viewModel::confirmDownloadRemoval,
+            onDismiss = viewModel::dismissDownloadRemoval,
         )
     }
 }

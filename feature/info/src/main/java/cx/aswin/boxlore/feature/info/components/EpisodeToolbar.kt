@@ -82,6 +82,7 @@ import kotlinx.coroutines.launch
 /**
  * A custom non-overlapping icon button for the toolbar to bypass minimum touch target overlap.
  */
+@Suppress("LongParameterList", "kotlin:S107")
 @Composable
 internal fun ToolbarIconButton(
     icon: ImageVector,
@@ -91,6 +92,8 @@ internal fun ToolbarIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     iconSize: Dp = 20.dp,
+    showBadge: Boolean = false,
+    badgeColor: Color = MaterialTheme.colorScheme.error,
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -105,6 +108,16 @@ internal fun ToolbarIconButton(
             tint = contentColor,
             modifier = Modifier.size(iconSize),
         )
+        if (showBadge) {
+            Box(
+                modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 7.dp, end = 7.dp)
+                    .size(8.dp)
+                    .background(badgeColor, androidx.compose.foundation.shape.CircleShape),
+            )
+        }
     }
 }
 
@@ -112,6 +125,7 @@ internal fun ToolbarIconButton(
  * Episode Toolbar - M3 Expressive
  * Contains: Search, Sort Toggle, Subscribe Button
  */
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun EpisodeToolbar(
@@ -125,6 +139,7 @@ internal fun EpisodeToolbar(
     accentColor: Color,
     supportsReleaseAutomation: Boolean = true,
     notificationsEnabled: Boolean = false,
+    isSystemNotificationsBlocked: Boolean = false,
     onNotificationsToggle: () -> Unit = {},
     autoDownloadEnabled: Boolean = false,
     onAutoDownloadToggle: () -> Unit = {},
@@ -403,7 +418,11 @@ internal fun EpisodeToolbar(
                     val bellContainerColor by animateColorAsState(
                         targetValue =
                         if (notificationsEnabled) {
-                            MaterialTheme.colorScheme.primaryContainer
+                            if (isSystemNotificationsBlocked) {
+                                MaterialTheme.colorScheme.errorContainer
+                            } else {
+                                MaterialTheme.colorScheme.primaryContainer
+                            }
                         } else {
                             MaterialTheme.colorScheme.surfaceContainerLow
                         },
@@ -414,7 +433,11 @@ internal fun EpisodeToolbar(
                     val bellContentColor by animateColorAsState(
                         targetValue =
                         if (notificationsEnabled) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
+                            if (isSystemNotificationsBlocked) {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            } else {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            }
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
@@ -428,6 +451,8 @@ internal fun EpisodeToolbar(
                         containerColor = bellContainerColor,
                         contentColor = bellContentColor,
                         onClick = onNotificationsToggle,
+                        showBadge = notificationsEnabled && isSystemNotificationsBlocked,
+                        badgeColor = MaterialTheme.colorScheme.error,
                         modifier =
                         Modifier
                             .size(buttonSize)

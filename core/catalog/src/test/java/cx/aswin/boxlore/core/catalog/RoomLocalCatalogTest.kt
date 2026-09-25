@@ -246,4 +246,34 @@ class RoomLocalCatalogTest {
         assertEquals("Personal Tech", stored.customGenre)
         assertEquals("code", stored.customGenreIcon)
     }
+
+    @Test
+    fun upsertSubscribedPodcastPreservesNotificationAndSyncFlags() = runTest {
+        podcastDao.upsert(
+            entity("pod-flags", title = "Original").copy(
+                notificationsEnabled = true,
+                autoDownloadEnabled = true,
+                isDirty = true,
+                syncedAt = 5000L,
+            ),
+        )
+
+        catalog.upsertSubscribedPodcast(
+            Podcast(
+                id = "pod-flags",
+                title = "Refreshed Title",
+                artist = "Artist",
+                imageUrl = "https://example.com/new.jpg",
+                notificationsEnabled = false,
+                autoDownloadEnabled = false,
+            ),
+        )
+
+        val stored = podcastDao.getPodcast("pod-flags")!!
+        assertEquals("Refreshed Title", stored.title)
+        assertTrue(stored.notificationsEnabled)
+        assertTrue(stored.autoDownloadEnabled)
+        assertTrue(stored.isDirty)
+        assertEquals(5000L, stored.syncedAt)
+    }
 }

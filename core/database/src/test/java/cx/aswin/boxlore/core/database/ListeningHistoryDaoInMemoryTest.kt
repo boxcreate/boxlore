@@ -374,4 +374,77 @@ class ListeningHistoryDaoInMemoryTest {
         assertEquals(100L, stored.progressMs)
         assertEquals(true, stored.isDirty)
     }
+
+    @Test
+    fun markHistorySyncedIfUnchanged_clearsDirtyWhenSnapshotMatches() = runTest {
+        dao.upsert(
+            history(
+                episodeId = "ep-sync-1",
+                progressMs = 5000L,
+                isCompleted = false,
+                isLiked = true,
+                lastPlayedAt = 1000L,
+                isDirty = true,
+            ).copy(likedAt = 800L)
+        )
+
+        val updated = dao.markHistorySyncedIfUnchanged(
+            episodeId = "ep-sync-1",
+            snapshotLastPlayedAt = 1000L,
+            snapshotLikedAt = 800L,
+            snapshotProgressMs = 5000L,
+            snapshotIsCompleted = false,
+            snapshotIsLiked = true,
+            syncedAt = 9999L,
+        )
+
+        assertEquals(1, updated)
+        val stored = dao.getHistoryItem("ep-sync-1")!!
+        assertEquals(false, stored.isDirty)
+        assertEquals(9999L, stored.syncedAt)
+    }
+
+    @Test
+    fun markHistorySyncedIfUnchanged_doesNotClearWhenProgressChanged() = runTest {
+        dao.upsert(
+            history(
+                episodeId = "ep-sync-2",
+                progressMs = 15000L, // user listened further
+                isCompleted = false,
+                isLiked = false,
+                lastPlayedAt = 2000L,
+                isDirty = true,
+            )
+        )
+
+        // Snapshot had older progressMs 10000L
+        val updated = dao.markHistorySyncedIfUnchanged(
+            episodeId = "ep-sync-2",
+            snapshotLastPlayedAt = 2000L,
+            snapshotLikedAt = 0L,
+            snapshotProgressMs = 10000L,
+            snapshotIsCompleted = false,
+            snapshotIsLiked = false,
+            syncedAt = 9999L,
+        )
+
+        assertEquals(0, updated)
+        val stored = dao.getHistoryItem("ep-sync-2")!!
+        assertEquals(true, stored.isDirty)
+        assertEquals(0L, stored.syncedAt)
+    }
+
+    @Test
+    fun getDirtyCountFlow_emitsCorrectCount() = runTest {
+        assertEquals(0, dao.getDirtyCountFlow().first())
+
+        dao.upsert(history("ep-1", isDirty = true))
+        assertEquals(1, dao.getDirtyCountFlow().first())
+
+        dao.upsert(history("ep-2", isDirty = true))
+        assertEquals(2, dao.getDirtyCountFlow().first())
+
+        dao.markListeningHistorySynced(listOf("ep-1", "ep-2"), 1000L)
+        assertEquals(0, dao.getDirtyCountFlow().first())
+    }
 }

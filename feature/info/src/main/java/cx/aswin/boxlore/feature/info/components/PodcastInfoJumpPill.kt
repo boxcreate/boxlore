@@ -1,7 +1,15 @@
 package cx.aswin.boxlore.feature.info.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,8 +29,47 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+
+@Composable
+internal fun PodcastInfoJumpPillOverlay(
+    visible: Boolean,
+    isOngoing: Boolean,
+    episodeTitle: String,
+    bottomPadding: Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+        modifier
+            .fillMaxSize()
+            .padding(bottom = bottomPadding),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        AnimatedVisibility(
+            visible = visible,
+            enter =
+            slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
+            ) + fadeIn(),
+            exit =
+            slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
+            ) + fadeOut(),
+        ) {
+            PodcastInfoJumpPill(
+                isOngoing = isOngoing,
+                episodeTitle = episodeTitle,
+                onClick = onClick,
+            )
+        }
+    }
+}
 
 @Composable
 internal fun PodcastInfoJumpPill(
@@ -59,7 +106,7 @@ internal fun PodcastInfoJumpPill(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isOngoing) "Resume: " else "Jump to: ",
+                text = resolveJumpPillPrefix(isOngoing),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.medium),
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
             )
@@ -76,3 +123,6 @@ internal fun PodcastInfoJumpPill(
         }
     }
 }
+
+internal fun resolveJumpPillPrefix(isOngoing: Boolean): String =
+    if (isOngoing) "Resume: " else "Jump to: "

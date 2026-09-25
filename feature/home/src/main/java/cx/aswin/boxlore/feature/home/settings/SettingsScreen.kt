@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.feature.home.settings.dialogs.AddRssFeedDialog
 import cx.aswin.boxlore.feature.home.settings.dialogs.ResetAnalyticsDialog
 import cx.aswin.boxlore.feature.home.settings.dialogs.RssMatchConfirmationDialog
@@ -52,6 +53,7 @@ import cx.aswin.boxlore.feature.home.settings.pages.PlaybackUiState
 import cx.aswin.boxlore.feature.home.settings.pages.PrivacySettingsActions
 import cx.aswin.boxlore.feature.home.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.home.settings.pages.SettingsHub
+import kotlinx.coroutines.flow.StateFlow
 
 /** Where to send the user for the two Downloads settings sub-screens. */
 data class DownloadsNavigation(
@@ -84,6 +86,8 @@ data class SettingsRepositories(
     val rssPodcastRepository: cx.aswin.boxlore.core.rss.RssPodcastRepository,
     val rankingFeedbackRepository: cx.aswin.boxlore.core.ranking.RankingFeedbackRepository,
     val authRepository: cx.aswin.boxlore.core.network.AuthRepository? = null,
+    val syncStatusFlow: StateFlow<CloudSyncUiStatus>? = null,
+    val onSyncNow: (() -> Unit)? = null,
 )
 
 /** [SettingsScreen]'s top-level identifiers/callbacks that aren't tied to a specific sub-page. */
@@ -322,11 +326,18 @@ private fun SettingsAnimatedPages(
                     onNavigate = actions.onNavigate,
                 )
 
-            ProfileSettingsDestination.Account ->
+            ProfileSettingsDestination.Account -> {
+                val syncStatus by (
+                    repositories.syncStatusFlow?.collectAsStateWithLifecycle()
+                        ?: remember { mutableStateOf(CloudSyncUiStatus.Idle) }
+                )
                 AccountSettingsPage(
                     authRepository = repositories.authRepository,
                     onBack = actions.onReturnToHub,
+                    syncStatus = syncStatus,
+                    onSyncNow = repositories.onSyncNow ?: {},
                 )
+            }
 
             ProfileSettingsDestination.Library ->
                 LibrarySettingsPage(

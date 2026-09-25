@@ -246,7 +246,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
 
     suspend fun resolveDomainEpisode(episodeId: String): cx.aswin.boxlore.core.model.Episode? {
         host.queueRepository
-            .getQueueSnapshot()
+            .getQueueEpisodeSnapshot()
             .firstOrNull { it.id == episodeId }
             ?.let { return it }
         val history = host.database.listeningHistoryDao().getHistoryItem(episodeId)

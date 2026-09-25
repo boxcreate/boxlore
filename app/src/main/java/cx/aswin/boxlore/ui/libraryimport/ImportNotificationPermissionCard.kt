@@ -92,6 +92,7 @@ internal fun ImportNotificationPermissionCard(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { granted ->
             promptAttempted = true
+            cx.aswin.boxlore.core.prefs.BoxcastPrefs(context).setHasRequestedNotificationPermission(true)
             AnalyticsHelper.trackNotificationPermissionDecided(granted)
             onPermissionChanged(areAppNotificationsEnabled(context))
         },

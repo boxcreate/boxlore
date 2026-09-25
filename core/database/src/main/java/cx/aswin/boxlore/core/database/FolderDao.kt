@@ -9,6 +9,7 @@ import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions")
 interface FolderDao {
 
     @Upsert
@@ -58,4 +59,10 @@ interface FolderDao {
             insertCrossRefs(refs)
         }
     }
+
+    @Query("DELETE FROM folders")
+    suspend fun deleteAllFolders()
+
+    @Query("DELETE FROM podcast_folder_cross_ref")
+    suspend fun deleteAllCrossRefs()
 }

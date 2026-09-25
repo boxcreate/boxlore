@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,8 +28,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -65,29 +62,25 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
-import cx.aswin.boxlore.feature.info.components.EpisodeFeedItemRow
-import cx.aswin.boxlore.feature.info.components.EpisodeFeedRowUi
+import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbar
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarActions
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarState
-import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
-import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesConfirmDialog
 import cx.aswin.boxlore.feature.info.components.PodcastGenreEditSheet
 import cx.aswin.boxlore.feature.info.components.PodcastInfoBackgroundHeader
-import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPill
+import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPillOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
 import cx.aswin.boxlore.feature.info.components.PodcastInfoSearchOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlayActions
-import cx.aswin.boxlore.feature.info.components.ToolbarWarningBanner
+import cx.aswin.boxlore.feature.info.components.areAppNotificationsEnabled
 import cx.aswin.boxlore.feature.info.components.handleAutoDownloadToggle
 import cx.aswin.boxlore.feature.info.components.handleNotificationsToggle
 import cx.aswin.boxlore.feature.info.components.handleToolbarWarningAction
@@ -96,7 +89,6 @@ import cx.aswin.boxlore.feature.info.logic.PodcastEpisodeSelectionLogic
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
 import cx.aswin.boxlore.feature.info.logic.resolveAutoScrollTarget
-import cx.aswin.boxlore.feature.info.sections.PodcastInfoHeroSection
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -144,16 +136,42 @@ fun PodcastInfoScreen(
     val selectionActive = selectedEpisodeIds.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    var isSystemNotificationsBlocked by remember { mutableStateOf(!areAppNotificationsEnabled(context)) }
+    var pendingPermissionAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                val blocked = !areAppNotificationsEnabled(context)
+                isSystemNotificationsBlocked = blocked
+                if (!blocked) {
+                    if (toolbarWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED) {
+                        toolbarWarning = ToolbarWarning.NONE
+                    }
+                    pendingPermissionAction?.invoke()
+                    pendingPermissionAction = null
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // Permission Launcher for Android 13+ Notification Permission
     val notifPermissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
         ) { isGranted ->
+            BoxcastPrefs(context).setHasRequestedNotificationPermission(true)
             if (isGranted) {
-                viewModel.enableBothNotificationsAndAutoDownload()
+                isSystemNotificationsBlocked = false
                 toolbarWarning = ToolbarWarning.NONE
+                pendingPermissionAction?.invoke()
+                pendingPermissionAction = null
             } else {
+                isSystemNotificationsBlocked = true
                 toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED
+                pendingPermissionAction = null
             }
         }
 
@@ -446,180 +464,100 @@ fun PodcastInfoScreen(
                         )
                     }
 
-                @Composable
-                fun EpisodeLazyColumn() {
-                    LazyColumn(
-                        state = listState,
-                        modifier = episodeListModifier,
-                        contentPadding =
-                        PaddingValues(
-                            top = collapsedHeaderHeight + 16.dp,
-                            bottom =
-                            WindowInsets.navigationBars
-                                .asPaddingValues()
-                                .calculateBottomPadding() + bottomContentPadding +
-                                if (selectionActive) 92.dp else 16.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        // HERO SECTION: Centered Layout
-                        item {
-                            PodcastInfoHeroSection(
-                                state = state,
-                                sortedPersons = sortedPersons,
-                                isDescExpanded = isDescExpanded,
-                                onDescExpandedChange = { isDescExpanded = it },
-                                onPlayEpisode = { viewModel.onPlayClick(it) },
-                                onPodcastClick = onPodcastClick,
-                                onEditGenre = handleEditGenreClick,
-                            )
-                        }
+                val contentState = EpisodeListContentState(
+                    listState = listState,
+                    modifier = episodeListModifier,
+                    contentPadding = PaddingValues(
+                        top = collapsedHeaderHeight + 16.dp,
+                        bottom = WindowInsets.navigationBars
+                            .asPaddingValues()
+                            .calculateBottomPadding() + bottomContentPadding +
+                            if (selectionActive) 92.dp else 16.dp,
+                    ),
+                    state = state,
+                    sortedPersons = sortedPersons,
+                    isDescExpanded = isDescExpanded,
+                    accentColor = accentColor,
+                    isSystemNotificationsBlocked = isSystemNotificationsBlocked,
+                    toolbarWarning = toolbarWarning,
+                    feedItems = feedItems,
+                    episodeListIndicators = episodeListIndicators,
+                    autoScrolledEpisodeId = autoScrolledEpisodeId,
+                    selectedEpisodeIdSet = selectedEpisodeIdSet,
+                    selectionActive = selectionActive,
+                )
 
-                        // EPISODE TOOLBAR
-                        item(key = "toolbar") {
-                            EpisodeToolbar(
-                                searchQuery = state.searchQuery,
-                                onSearchChange = { viewModel.searchEpisodes(it) },
-                                isSearching = state.isSearching,
-                                currentSort = state.currentSort,
-                                onSortToggle = { viewModel.toggleSort() },
-                                isSubscribed = state.isSubscribed,
-                                onSubscribeClick = { viewModel.toggleSubscription() },
-                                accentColor = accentColor,
-                                supportsReleaseAutomation = !state.podcast.isRss,
-                                notificationsEnabled = state.podcast.notificationsEnabled,
-                                onNotificationsToggle = {
-                                    handleNotificationsToggle(
-                                        context = context,
-                                        podcastNotificationsEnabled = state.podcast.notificationsEnabled,
-                                        onRequestPermission = { notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                                        onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
-                                        onToggleNotifications = { viewModel.toggleNotifications() },
-                                    )
-                                },
-                                autoDownloadEnabled = state.podcast.autoDownloadEnabled,
-                                onAutoDownloadToggle = {
-                                    handleAutoDownloadToggle(
-                                        podcastAutoDownloadEnabled = state.podcast.autoDownloadEnabled,
-                                        podcastNotificationsEnabled = state.podcast.notificationsEnabled,
-                                        onShowNotificationsRequiredWarning = { toolbarWarning = ToolbarWarning.NOTIFICATIONS_REQUIRED },
-                                        onToggleAutoDownload = { viewModel.toggleAutoDownload() },
-                                    )
-                                },
-                                genre = state.podcast.genre,
-                                onSearchFocused = { isSearchActive = true },
-                            )
-                        }
-
-                        // TOOLBAR WARNING BANNER (Space Reveal)
-                        if (toolbarWarning != ToolbarWarning.NONE) {
-                            item(key = "toolbar_warning") {
-                                ToolbarWarningBanner(
-                                    warning = toolbarWarning,
-                                    onDismiss = { toolbarWarning = ToolbarWarning.NONE },
-                                    onAction = {
-                                        val currentWarning = toolbarWarning
-                                        toolbarWarning = ToolbarWarning.NONE
-                                        handleToolbarWarningAction(
-                                            warning = currentWarning,
-                                            context = context,
-                                            viewModel = viewModel,
-                                            onRequestNotificationPermission = {
-                                                notifPermissionLauncher.launch(
-                                                    Manifest.permission.POST_NOTIFICATIONS,
-                                                )
-                                            },
-                                            onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
-                                        )
-                                    },
+                val contentCallbacks = EpisodeListContentCallbacks(
+                    onDescExpandedChange = { isDescExpanded = it },
+                    onPlayEpisode = { viewModel.onPlayClick(it) },
+                    onPodcastClick = onPodcastClick,
+                    onEditGenre = handleEditGenreClick,
+                    onSearchChange = { viewModel.searchEpisodes(it) },
+                    onSortToggle = { viewModel.toggleSort() },
+                    onSubscribeClick = { viewModel.toggleSubscription() },
+                    onNotificationsToggle = {
+                        handleNotificationsToggle(
+                            context = context,
+                            podcastNotificationsEnabled = state.podcast.notificationsEnabled,
+                            isWarningVisible = toolbarWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED,
+                            onRequestPermission = {
+                                pendingPermissionAction = { viewModel.toggleNotifications() }
+                                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            },
+                            onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
+                            onToggleNotifications = { viewModel.toggleNotifications() },
+                        )
+                    },
+                    onAutoDownloadToggle = {
+                        handleAutoDownloadToggle(
+                            podcastAutoDownloadEnabled = state.podcast.autoDownloadEnabled,
+                            podcastNotificationsEnabled = state.podcast.notificationsEnabled,
+                            onShowNotificationsRequiredWarning = { toolbarWarning = ToolbarWarning.NOTIFICATIONS_REQUIRED },
+                            onToggleAutoDownload = { viewModel.toggleAutoDownload() },
+                        )
+                    },
+                    onSearchFocused = { isSearchActive = true },
+                    onDismissWarning = { toolbarWarning = ToolbarWarning.NONE },
+                    onWarningAction = {
+                        val currentWarning = toolbarWarning
+                        toolbarWarning = ToolbarWarning.NONE
+                        handleToolbarWarningAction(
+                            warning = currentWarning,
+                            context = context,
+                            viewModel = viewModel,
+                            onRequestNotificationPermission = {
+                                if (currentWarning == ToolbarWarning.NOTIFICATIONS_REQUIRED) {
+                                    pendingPermissionAction = { viewModel.enableBothNotificationsAndAutoDownload() }
+                                } else if (!state.podcast.notificationsEnabled) {
+                                    pendingPermissionAction = { viewModel.toggleNotifications() }
+                                } else {
+                                    pendingPermissionAction = null
+                                }
+                                notifPermissionLauncher.launch(
+                                    Manifest.permission.POST_NOTIFICATIONS,
                                 )
-                            }
-                        }
-
-                        // Episodes
-                        itemsIndexed(feedItems, key = { _, item -> item.id }) { itemIndex, feedItem ->
-                            EpisodeFeedItemRow(
-                                feedItem = feedItem,
-                                viewModel = viewModel,
-                                ui =
-                                EpisodeFeedRowUi(
-                                    accentColor = accentColor,
-                                    indicators = episodeListIndicators,
-                                    autoScrolledEpisodeId = autoScrolledEpisodeId,
-                                    podcastImageUrl =
-                                    state.podcast.imageUrl.takeIf { it.isNotEmpty() }
-                                        ?: state.podcast.fallbackImageUrl,
-                                ),
-                                onEpisodeClick = onEpisodeClick,
-                                selection =
-                                EpisodeSelectionUi(
-                                    selectedEpisodeIds = selectedEpisodeIdSet,
-                                    isActive = selectionActive,
-                                    onToggle = { episode ->
-                                        val updated =
-                                            PodcastEpisodeSelectionLogic.toggle(
-                                                selectedIds = selectedEpisodeIdSet,
-                                                episodeId = episode.id,
-                                            )
-                                        selectedEpisodeIds = updated.toList()
-                                        selectionAnchorEpisodeId = episode.id.takeIf { updated.isNotEmpty() }
-                                    },
-                                    onLongPress = { episode ->
-                                        selectedEpisodeIds =
-                                            PodcastEpisodeSelectionLogic
-                                                .toggle(
-                                                    selectedIds = selectedEpisodeIdSet,
-                                                    episodeId = episode.id,
-                                                ).toList()
-                                        selectionAnchorEpisodeId = episode.id
-                                    },
-                                ),
-                            )
-
-                            if (state.searchResults == null &&
-                                itemIndex == feedItems.lastIndex &&
-                                state.hasMoreEpisodes &&
-                                !state.isLoadingMore
-                            ) {
-                                LaunchedEffect(displayEpisodes.size) {
-                                    viewModel.loadMoreEpisodes()
-                                }
-                            }
-                        }
-
-                        if (state.isLoadingMore && !state.isRssRefreshing) {
-                            item {
-                                Box(
-                                    modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(24.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    BoxLoreLoader.CircularWavy(size = 32.dp)
-                                }
-                            }
-                        }
-
-                        if (state.searchResults?.isEmpty() == true) {
-                            item {
-                                Box(
-                                    modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(48.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        text = "No episodes found",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                            },
+                            onShowPermissionBlockedWarning = { toolbarWarning = ToolbarWarning.SYSTEM_PERMISSION_BLOCKED },
+                        )
+                    },
+                    onEpisodeClick = onEpisodeClick,
+                    onToggleSelection = { episode ->
+                        val updated = PodcastEpisodeSelectionLogic.toggle(
+                            selectedIds = selectedEpisodeIdSet,
+                            episodeId = episode.id,
+                        )
+                        selectedEpisodeIds = updated.toList()
+                        selectionAnchorEpisodeId = episode.id.takeIf { updated.isNotEmpty() }
+                    },
+                    onLongPressSelection = { episode ->
+                        selectedEpisodeIds = PodcastEpisodeSelectionLogic.toggle(
+                            selectedIds = selectedEpisodeIdSet,
+                            episodeId = episode.id,
+                        ).toList()
+                        selectionAnchorEpisodeId = episode.id
+                    },
+                    onLoadMore = { viewModel.loadMoreEpisodes() },
+                )
 
                 PullToRefreshBox(
                     isRefreshing = state.isRssRefreshing,
@@ -637,7 +575,11 @@ fun PodcastInfoScreen(
                         )
                     },
                 ) {
-                    EpisodeLazyColumn()
+                    PodcastInfoEpisodeList(
+                        contentState = contentState,
+                        callbacks = contentCallbacks,
+                        viewModel = viewModel,
+                    )
                 }
 
                 // FIXED HEADER
@@ -884,37 +826,17 @@ fun PodcastInfoScreen(
 
                 // Floating Jump-To Pill overlay
                 val systemBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                Box(
-                    modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(bottom = systemBottomPadding + bottomContentPadding + 16.dp),
-                    contentAlignment = Alignment.BottomCenter,
-                ) {
-                    AnimatedVisibility(
-                        visible = jumpPillVisible,
-                        enter =
-                        slideInVertically(
-                            initialOffsetY = { it },
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
-                        ) + fadeIn(),
-                        exit =
-                        slideOutVertically(
-                            targetOffsetY = { it },
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
-                        ) + fadeOut(),
-                    ) {
-                        PodcastInfoJumpPill(
-                            isOngoing = isTargetOngoing,
-                            episodeTitle = targetJumpEpisode?.title ?: "",
-                            onClick = {
-                                coroutineScope.launch {
-                                    listState.animateScrollToItem(targetJumpIndex + 2)
-                                }
-                            },
-                        )
-                    }
-                }
+                PodcastInfoJumpPillOverlay(
+                    visible = jumpPillVisible,
+                    isOngoing = isTargetOngoing,
+                    episodeTitle = targetJumpEpisode?.title ?: "",
+                    bottomPadding = systemBottomPadding + bottomContentPadding + 16.dp,
+                    onClick = {
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(targetJumpIndex + 2)
+                        }
+                    },
+                )
 
                 // SEARCH OVERLAY (Nested inside Success)
                 AnimatedVisibility(
@@ -964,14 +886,7 @@ fun PodcastInfoScreen(
             onDismissPlayed = { showMarkAllPlayedDialog = false },
             onDismissUnplayed = { showMarkAllUnplayedDialog = false },
             viewModel = viewModel,
+            episodePendingDownloadRemoval = episodePendingDownloadRemoval,
         )
-
-        if (episodePendingDownloadRemoval != null) {
-            RemoveDownloadConfirmationDialog(
-                episodeTitle = episodePendingDownloadRemoval?.title,
-                onConfirm = viewModel::confirmDownloadRemoval,
-                onDismiss = viewModel::dismissDownloadRemoval,
-            )
-        }
     }
 }

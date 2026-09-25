@@ -51,6 +51,7 @@ dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.analytics)
     implementation(projects.core.rss)
+    implementation(projects.core.prefs)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

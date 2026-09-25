@@ -6,7 +6,7 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 
 ## Public API
 
-- `PodcastInfoScreen` and `PodcastInfoViewModel`. Long-pressing an episode enters multi-selection; the floating toolbar can download, mark completed (or mark unplayed when every selected episode is already complete), play, or append selected episodes to the queue. Its overflow can select only cards currently visible on screen, or fetch up to 100 show episodes for Select all / Select older / Select newer; fetched episode metadata is retained only while selection is active. Episode sorting remains available. Subscribed shows expose **Pin to Home screen** / **Unpin from Home screen** and **Change tag / genre** in the overflow menu (or by tapping the genre chip directly) to open `PodcastGenreEditSheet` with IME keyboard support, real-time genre search pairing names with their icons, cross-suggestions from existing subscription folder names, and a 31-icon Material Rounded palette. Unsubscribing clears custom genre tags and icons back to default. Tapping the download action on an already-downloaded episode prompts with a Material 3 confirmation dialog (`RemoveDownloadConfirmationDialog`) before removing the download. Episode play taps and multi-selection play pass `podcast_detail` as the playback entry point context (allowing same-show continuation in Smart Queue) while preserving any spotlight route for video telemetry.
+- `PodcastInfoScreen` and `PodcastInfoViewModel`. Long-pressing an episode enters multi-selection; the floating toolbar can download, mark completed (or mark unplayed when every selected episode is already complete), play, or append selected episodes to the queue. Its overflow can select only cards currently visible on screen, or fetch up to 100 show episodes for Select all / Select older / Select newer; fetched episode metadata is retained only while selection is active. Episode sorting remains available. Subscribed shows expose **Pin to Home screen** / **Unpin from Home screen** and **Change tag / genre** in the overflow menu (or by tapping the genre chip directly) to open `PodcastGenreEditSheet` with IME keyboard support, real-time genre search pairing names with their icons, cross-suggestions from existing subscription folder names, and a 31-icon Material Rounded palette. Unsubscribing clears custom genre tags and icons back to default. Tapping the download action on an already-downloaded episode prompts with a Material 3 confirmation dialog (`RemoveDownloadConfirmationDialog`) before removing the download. Episode play taps and multi-selection play pass `podcast_detail` as the playback entry point context (allowing same-show continuation in Smart Queue) while preserving any spotlight route for video telemetry. Show notification toggles feature system permission awareness: when show notifications are active but device notifications are disabled, `EpisodeToolbar` renders the active bell icon in an error-container red accent with a red badge dot; tapping the icon reveals `ToolbarWarning.SYSTEM_PERMISSION_BLOCKED` explaining the status; the "Turn On" action prompts for `POST_NOTIFICATIONS` runtime permission when available, and otherwise opens system settings.
 - `EpisodeInfoScreen` and `EpisodeInfoViewModel` (similar episodes use prefs `content_languages` + region). Tapping download on a downloaded episode prompts for confirmation before removing local media.
 - `InfoViewModelAssembler` for podcast and episode ViewModel factories.
 - `InfoListeningProgressItem` and supporting components/sections for detail UI. Recommendation rails (`EpisodeRecommendationSection`) and episode search overlay (`PodcastInfoSearchOverlay`) protect item lists against duplicate keys using `LazyListKeyPolicy`.
@@ -35,7 +35,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 ## Dependencies
 
-- Project dependencies: `:core:model`, `:core:domain`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:network`, `:core:designsystem`, `:core:analytics`, and `:core:rss`.
+- Project dependencies: `:core:model`, `:core:domain`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:network`, `:core:designsystem`, `:core:analytics`, `:core:rss`, and `:core:prefs`.
 - Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Coil, Palette, smooth corner rect, coroutines, Kotlin serialization, Turbine, and Compose Material.
 - Reverse-edge rule: feature modules must not depend on other feature modules. ViewModels and assemblers must use ports rather than direct `BoxLoreDatabase` access.
 
@@ -49,7 +49,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 ## Persistence & identity
 
 - This module owns no storage files or stable keys.
-- Pin reads and writes `home_pinned_podcast_ids` through `:core:prefs` (`toggleHomePinnedPodcastId`). At-capacity copy comes from `HomePinnedShows.capacityUserMessage()`.
+- Pin reads and writes `home_pinned_podcast_ids` through `:core:prefs` (`toggleHomePinnedPodcastId`). At-capacity copy comes from `HomePinnedShows.capacityUserMessage()`. Notification permission prompt history is tracked via `has_requested_notification_permission` in `BoxcastPrefs`.
 - Podcast, episode, RSS, download, and listening-progress identities come from core modules.
 - App navigation owns route patterns and deep links.
 

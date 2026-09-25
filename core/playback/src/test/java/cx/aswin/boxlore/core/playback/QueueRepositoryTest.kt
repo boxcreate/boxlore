@@ -131,7 +131,7 @@ class QueueRepositoryTest {
             ),
         )
 
-        val snapshot = repository.getQueueSnapshot()
+        val snapshot = repository.getQueueEpisodeSnapshot()
         assertEquals(listOf("1", "2"), snapshot.map { it.id })
     }
 
@@ -145,7 +145,7 @@ class QueueRepositoryTest {
 
         repository.replaceQueue(listOf(episode))
 
-        val restored = repository.getQueueSnapshot().single()
+        val restored = repository.getQueueEpisodeSnapshot().single()
         assertEquals("Host", restored.persons?.single()?.name)
         assertEquals("host", restored.persons?.single()?.role)
         assertEquals("https://t.vtt", restored.transcripts?.single()?.url)
@@ -153,13 +153,13 @@ class QueueRepositoryTest {
     }
 
     @Test
-    fun getQueueSnapshotRepairsDuplicateRows() = runTest {
+    fun getQueueEpisodeSnapshotRepairsDuplicateRows() = runTest {
         // Insert duplicate episodeIds directly (bypassing addToQueue's dedup guard).
         database.queueDao().insertQueueItem(rawItem("dup", position = 0))
         database.queueDao().insertQueueItem(rawItem("dup", position = 1))
         database.queueDao().insertQueueItem(rawItem("unique", position = 2))
 
-        val snapshot = repository.getQueueSnapshot()
+        val snapshot = repository.getQueueEpisodeSnapshot()
 
         assertEquals(setOf("dup", "unique"), snapshot.map { it.id }.toSet())
         assertEquals(2, database.queueDao().getAllQueueItemsSync().size)
@@ -349,6 +349,69 @@ class QueueRepositoryTest {
         customRepo.removeFromQueue("10")
         val metaRemove = customRepo.getQueueMetadata()!!
         assertEquals("phone-beta", metaRemove.lastModifiedDeviceId)
+    }
+
+    @Test
+    fun queueSyncPort_applyRemoteQueueState_setsItemsAndMetadataWithoutDirty() = runTest {
+        val items = listOf(
+            rawItem("remote-1", position = 0),
+            rawItem("remote-2", position = 1),
+        )
+        val metadata = cx.aswin.boxlore.core.database.entities.QueueMetadataEntity(
+            id = 1,
+            queueSequence = 10L,
+            queueUpdatedAt = 5000L,
+            lastModifiedDeviceId = "device-remote",
+            isDirty = false,
+            syncedAt = 5000L,
+        )
+
+        repository.applyRemoteQueueState(items, metadata)
+
+        val rawQueue = repository.getQueueSnapshot()
+        assertEquals(2, rawQueue.size)
+        assertEquals("remote-1", rawQueue[0].episodeId)
+        assertEquals("remote-2", rawQueue[1].episodeId)
+
+        val storedMeta = repository.getQueueMetadata()!!
+        assertEquals(10L, storedMeta.queueSequence)
+        assertEquals(false, storedMeta.isDirty)
+    }
+
+    @Test
+    fun queueSyncPort_markQueueSynced_returnsTrueOnSequenceMatch() = runTest {
+        repository.applyRemoteQueueState(
+            emptyList(),
+            cx.aswin.boxlore.core.database.entities.QueueMetadataEntity(
+                id = 1,
+                queueSequence = 42L,
+                isDirty = true,
+            ),
+        )
+
+        val success = repository.markQueueSynced(expectedSequence = 42L, syncedAt = 9999L)
+        assertTrue(success)
+
+        val failed = repository.markQueueSynced(expectedSequence = 43L, syncedAt = 10000L)
+        assertFalse(failed)
+    }
+
+    @Test
+    fun queueSyncPort_applyRemoteQueueState_preservesDirtyFlagWhenTrue() = runTest {
+        val metadata = cx.aswin.boxlore.core.database.entities.QueueMetadataEntity(
+            id = 1,
+            queueSequence = 15L,
+            queueUpdatedAt = 6000L,
+            lastModifiedDeviceId = "device-1",
+            isDirty = true,
+            syncedAt = 6000L,
+        )
+
+        repository.applyRemoteQueueState(emptyList(), metadata)
+
+        val storedMeta = repository.getQueueMetadata()!!
+        assertEquals(15L, storedMeta.queueSequence)
+        assertTrue(storedMeta.isDirty)
     }
 
     private fun domainEpisode(id: String) = Episode(

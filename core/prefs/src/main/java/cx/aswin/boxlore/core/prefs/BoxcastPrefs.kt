@@ -172,6 +172,10 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LEARNER_LOG_ENABLED = "learner_log_enabled"
         const val KEY_PENDING_AUTH_EMAIL = "pending_auth_email"
         const val KEY_SYNC_DEVICE_ID = "sync_device_id"
+        const val KEY_LAST_SYNC_TIMESTAMP = "sync_last_timestamp"
+        const val KEY_LAST_SYNCED_USER_ID = "sync_last_user_id"
+        const val KEY_SYNC_METADATA_VERSION = "sync_metadata_version"
+        const val KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION = "has_requested_notification_permission"
     }
 
     // ── Auth / Magic Link ───────────────────────────────────────────────────
@@ -194,5 +198,35 @@ class BoxcastPrefs(context: Context) {
         val newId = java.util.UUID.randomUUID().toString()
         prefs.edit().putString(KEY_SYNC_DEVICE_ID, newId).apply()
         newId
+    }
+
+    fun getLastSyncTimestamp(): Long = prefs.getLong(KEY_LAST_SYNC_TIMESTAMP, 0L)
+
+    fun setLastSyncTimestamp(timestamp: Long) {
+        prefs.edit().putLong(KEY_LAST_SYNC_TIMESTAMP, timestamp).apply()
+    }
+
+    fun getLastSyncedUserId(): String? = prefs.getString(KEY_LAST_SYNCED_USER_ID, null)
+
+    fun setLastSyncedUserId(userId: String?) {
+        if (userId == null) {
+            prefs.edit().remove(KEY_LAST_SYNCED_USER_ID).apply()
+        } else {
+            prefs.edit().putString(KEY_LAST_SYNCED_USER_ID, userId).apply()
+        }
+    }
+
+    fun getSyncMetadataVersion(): Int = prefs.getInt(KEY_SYNC_METADATA_VERSION, 0)
+
+    fun setSyncMetadataVersion(version: Int) {
+        prefs.edit().putInt(KEY_SYNC_METADATA_VERSION, version).apply()
+    }
+
+    // ── Notifications ───────────────────────────────────────────────────────
+
+    fun hasRequestedNotificationPermission(): Boolean = prefs.getBoolean(KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION, false)
+
+    fun setHasRequestedNotificationPermission(requested: Boolean = true) {
+        prefs.edit().putBoolean(KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION, requested).apply()
     }
 }

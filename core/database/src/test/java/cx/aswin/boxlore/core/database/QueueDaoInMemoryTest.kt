@@ -145,4 +145,47 @@ class QueueDaoInMemoryTest {
         val parsed = QueueDao.parseRecentRemovedEpisodeIds(malformedJson)
         assertEquals(listOf("[ep-1", ":invalid]"), parsed)
     }
+
+    @Test
+    fun markQueueSyncedIfSequenceMatches_clearsDirtyWhenSequenceMatches() = runTest {
+        dao.upsertQueueMetadata(
+            cx.aswin.boxlore.core.database.entities.QueueMetadataEntity(
+                id = 1,
+                queueUpdatedAt = 1000L,
+                queueSequence = 5L,
+                isDirty = true,
+                syncedAt = 0L,
+            )
+        )
+
+        val updated = dao.markQueueSyncedIfSequenceMatches(snapshotSequence = 5L, syncedAt = 8888L)
+        assertEquals(1, updated)
+
+        val stored = dao.getQueueMetadata()!!
+        assertEquals(false, stored.isDirty)
+        assertEquals(8888L, stored.syncedAt)
+        assertEquals(5L, stored.queueSequence)
+    }
+
+    @Test
+    fun markQueueSyncedIfSequenceMatches_doesNotClearWhenSequenceChanged() = runTest {
+        dao.upsertQueueMetadata(
+            cx.aswin.boxlore.core.database.entities.QueueMetadataEntity(
+                id = 1,
+                queueUpdatedAt = 2000L,
+                queueSequence = 6L, // bumped to 6 in the meantime
+                isDirty = true,
+                syncedAt = 0L,
+            )
+        )
+
+        // Snapshot was taken at sequence 5
+        val updated = dao.markQueueSyncedIfSequenceMatches(snapshotSequence = 5L, syncedAt = 8888L)
+        assertEquals(0, updated)
+
+        val stored = dao.getQueueMetadata()!!
+        assertEquals(true, stored.isDirty)
+        assertEquals(0L, stored.syncedAt)
+        assertEquals(6L, stored.queueSequence)
+    }
 }

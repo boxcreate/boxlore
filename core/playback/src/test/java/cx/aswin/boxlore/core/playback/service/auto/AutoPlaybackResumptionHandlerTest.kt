@@ -119,7 +119,7 @@ class AutoPlaybackResumptionHandlerTest {
             lastPlayedAt = 1000L,
         )
         `when`(listeningHistoryDao.getLastPlayedSessionAny()).thenReturn(historyEntity)
-        `when`(queueRepository.getQueueSnapshot()).thenReturn(emptyList())
+        `when`(queueRepository.getQueueEpisodeSnapshot()).thenReturn(emptyList())
 
         val domainEpisode = Episode(
             id = "ep-history-1",
@@ -168,7 +168,7 @@ class AutoPlaybackResumptionHandlerTest {
             lastPlayedAt = 1000L,
         )
         `when`(listeningHistoryDao.getLastPlayedSessionAny()).thenReturn(historyEntity)
-        `when`(queueRepository.getQueueSnapshot()).thenReturn(emptyList())
+        `when`(queueRepository.getQueueEpisodeSnapshot()).thenReturn(emptyList())
 
         val domainEpisode = Episode(
             id = "ep-done",
@@ -214,7 +214,7 @@ class AutoPlaybackResumptionHandlerTest {
             lastPlayedAt = 1000L,
         )
         `when`(listeningHistoryDao.getLastPlayedSession()).thenReturn(historyEntity)
-        `when`(queueRepository.getQueueSnapshot()).thenReturn(emptyList())
+        `when`(queueRepository.getQueueEpisodeSnapshot()).thenReturn(emptyList())
 
         val domainEpisode = Episode(
             id = "ep-incomplete",
@@ -288,7 +288,7 @@ class AutoPlaybackResumptionHandlerTest {
             podcastId = "pod-1",
             duration = 300,
         )
-        `when`(queueRepository.getQueueSnapshot()).thenReturn(listOf(queueEpisode))
+        `when`(queueRepository.getQueueEpisodeSnapshot()).thenReturn(listOf(queueEpisode))
         `when`(mediaResolver.resolveDomainEpisode("queue-ep-1")).thenReturn(queueEpisode)
 
         val resolvedItem = MediaItem.Builder()
@@ -310,7 +310,7 @@ class AutoPlaybackResumptionHandlerTest {
         prefs.edit().putBoolean(AutoPlaybackResumptionHandler.KEY_PLAYER_DISMISSED, false).commit()
 
         `when`(listeningHistoryDao.getLastPlayedSessionAny()).thenReturn(null)
-        `when`(queueRepository.getQueueSnapshot()).thenReturn(emptyList())
+        `when`(queueRepository.getQueueEpisodeSnapshot()).thenReturn(emptyList())
 
         try {
             handler.resolveResumption(mediaSession)
@@ -342,7 +342,7 @@ class AutoPlaybackResumptionHandlerTest {
 
         val ep1 = Episode(id = "other-ep", title = "Ep 1", description = "", audioUrl = "https://example.com/1.mp3", imageUrl = null, podcastImageUrl = null, podcastTitle = null, podcastId = null, duration = 60)
         val ep2 = Episode(id = "target-ep", title = "Target Ep", description = "", audioUrl = "https://example.com/target.mp3", imageUrl = null, podcastImageUrl = null, podcastTitle = null, podcastId = null, duration = 120)
-        `when`(queueRepository.getQueueSnapshot()).thenReturn(listOf(ep1, ep2))
+        `when`(queueRepository.getQueueEpisodeSnapshot()).thenReturn(listOf(ep1, ep2))
         `when`(mediaResolver.resolveDomainEpisode("target-ep")).thenReturn(ep2)
 
         val resolved1 = MediaItem.Builder().setMediaId("queue:other-ep").setUri(Uri.parse("https://example.com/1.mp3")).build()
@@ -378,7 +378,7 @@ class AutoPlaybackResumptionHandlerTest {
             lastPlayedAt = 1000L,
         )
         `when`(listeningHistoryDao.getLastPlayedSessionAny()).thenReturn(historyEntity)
-        `when`(queueRepository.getQueueSnapshot()).thenReturn(emptyList())
+        `when`(queueRepository.getQueueEpisodeSnapshot()).thenReturn(emptyList())
         `when`(mediaResolver.resolveDomainEpisode("unresolvable-ep")).thenReturn(null)
 
         val ungroundedItem = MediaItem.Builder().setMediaId("unresolvable-ep").build()

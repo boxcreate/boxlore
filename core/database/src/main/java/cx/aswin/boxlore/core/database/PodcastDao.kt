@@ -138,6 +138,57 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE isDirty = 1")
     suspend fun getDirtyPodcasts(): List<PodcastEntity>
 
+    @Query("SELECT COUNT(*) FROM podcasts WHERE isDirty = 1")
+    fun getDirtyCountFlow(): Flow<Int>
+
+    @Query("UPDATE podcasts SET isDirty = 1 WHERE isSubscribed = 1")
+    suspend fun markAllSubscribedPodcastsDirty(): Int
+
+    @Query("UPDATE podcasts SET isDirty = 1 WHERE isSubscribed = 1 AND syncedAt = 0")
+    suspend fun markAllUnsyncedSubscribedPodcastsDirty(): Int
+
     @Query("UPDATE podcasts SET isDirty = 0, syncedAt = :timestamp WHERE podcastId IN (:ids)")
     suspend fun markPodcastsSynced(ids: List<String>, timestamp: Long)
+
+    @Query(
+        """
+        UPDATE podcasts 
+        SET isDirty = 0, syncedAt = :syncedAt 
+        WHERE podcastId = :id 
+          AND isSubscribed = :snapshotIsSubscribed
+          AND subscribedAt = :snapshotSubscribedAt 
+          AND unsubscribedAt = :snapshotUnsubscribedAt
+          AND autoDownloadEnabled = :snapshotAutoDownload
+          AND notificationsEnabled = :snapshotNotifications
+          AND (customGenre = :snapshotCustomGenre OR (customGenre IS NULL AND :snapshotCustomGenre IS NULL))
+          AND (feedUrl = :snapshotFeedUrl OR (feedUrl IS NULL AND :snapshotFeedUrl IS NULL))
+        """,
+    )
+    @Suppress("LongParameterList", "kotlin:S107")
+    suspend fun markPodcastSyncedIfUnchanged(
+        id: String,
+        snapshotIsSubscribed: Boolean,
+        snapshotSubscribedAt: Long,
+        snapshotUnsubscribedAt: Long,
+        snapshotAutoDownload: Boolean,
+        snapshotNotifications: Boolean,
+        snapshotCustomGenre: String?,
+        snapshotFeedUrl: String?,
+        syncedAt: Long,
+    ): Int
+
+    @Query(
+        """
+        UPDATE podcasts
+        SET isSubscribed = 0,
+            subscribedAt = 0,
+            unsubscribedAt = 0,
+            isDirty = 0,
+            notificationsEnabled = 0,
+            autoDownloadEnabled = 0,
+            customGenre = NULL,
+            customGenreIcon = NULL
+        """,
+    )
+    suspend fun clearAllSubscriptionsForAccountSwitch(): Int
 }
