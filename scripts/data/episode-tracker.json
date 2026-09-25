@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-25T10:24:53.466Z",
+  "lastRun": "2026-09-25T15:25:48.122Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "efe4c226-cfc6-11f0-83c5-0f782a2af401",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "6dcf9ab0-1a2a-483a-b2a5-0dc7df867d63",
-      "lastEpisodeTitle": "NPR News: 09-25-2026 6AM EDT",
+      "lastRssKey": "39a06fa2-c90b-4aa1-b046-c624f58a2e91",
+      "lastEpisodeTitle": "NPR News: 09-25-2026 11AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790331895999
+      "lastCheckedAt": 1790349951004
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75339228",
@@ -153,10 +153,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "ED27B770-43B7-44B3-9F1A-EF5B317341AB",
-      "lastEpisodeTitle": "The Workers Keeping AI Data Centers Running",
-      "lastEpisodeId": "60771940115",
-      "lastCheckedAt": 1790331906352
+      "lastRssKey": "7C9A5C06-EE77-4D48-837D-772D94B42AAE",
+      "lastEpisodeTitle": "TNB Tech Minute: Cracks Appear in Oracle’s New Mexico Data-Center Project",
+      "lastEpisodeId": "60829982707",
+      "lastCheckedAt": 1790349960574
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "34485fb8-b8c9-11f1-9bab-3bd2d91801dd",
-      "lastEpisodeTitle": "6AM ET 09/25/2026 Newscast",
+      "lastRssKey": "1cb59e4a-b8f3-11f1-9965-2f5e9b7afe21",
+      "lastEpisodeTitle": "11AM ET 09/25/2026 Newscast",
       "lastEpisodeId": "60769426413",
-      "lastCheckedAt": 1790331913040
+      "lastCheckedAt": 1790349961216
     },
     "386911": {
       "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
@@ -231,10 +231,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3AH9PBP6877FEY3S1ZF8CDM",
-      "lastEpisodeTitle": "Meta’s new Muse AI agent gives investors the warm-'n-fuzzies",
+      "lastRssKey": "01M3CFK0EYEK0E0K1QP36ERFZ4",
+      "lastEpisodeTitle": "Day 2 of the U.S.-China summit",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790331917676
+      "lastCheckedAt": 1790349965382
     },
     "432535": {
       "lastRssKey": "df581185-7631-4f5a-949b-daf47fd2b3e8",
@@ -249,10 +249,10 @@
       "lastCheckedAt": 1790331919053
     },
     "438184": {
-      "lastRssKey": "42535506-b5b1-11f1-909d-f75037fc309d",
-      "lastEpisodeTitle": "Whatnot founder: This is the future of e-commerce",
-      "lastEpisodeId": "60366557067",
-      "lastCheckedAt": 1789992435145
+      "lastRssKey": "fe829dc6-b8cd-11f1-a2f8-b7b94f238b54",
+      "lastEpisodeTitle": "There’s 98 days until 2027...Do this and you’ll thank yourself on Jan 1st",
+      "lastEpisodeId": "60826066763",
+      "lastCheckedAt": 1790349966656
     },
     "444331": {
       "lastRssKey": "9b73ee3e-b89f-11f1-93dc-47b81452bc30",
@@ -305,10 +305,10 @@
       "lastCheckedAt": 1790274800834
     },
     "490022": {
-      "lastRssKey": "94eccd96-c916-40c8-8350-74d1671bf90b",
-      "lastEpisodeTitle": "“My Wife Is Not Bipolar” Nurse Testifies & All The Signs of Possible Hypomania Discussed in Court",
-      "lastEpisodeId": "60645087714",
-      "lastCheckedAt": 1789943855464
+      "lastRssKey": "b861df75-e53e-4c84-b6cc-2ad3736a8541",
+      "lastEpisodeTitle": "Patrick Clancy & Rachel Danis: Barry's Bootcamp Photo, Costa Rica, and the Affair Theory",
+      "lastEpisodeId": "60832449769",
+      "lastCheckedAt": 1790349969176
     },
     "491579": {
       "lastRssKey": "6ab5c526864264ef3ec48e8b",
@@ -585,10 +585,10 @@
       "lastCheckedAt": 1789913082308
     },
     "980370": {
-      "lastRssKey": "6ab2addff161207303061e85",
-      "lastEpisodeTitle": "Inside the \"play labs\" helping refugee kids heal | Erum Mariam",
+      "lastRssKey": "6aaab0b85d36baebf101ad4d",
+      "lastEpisodeTitle": "I thought I was lazy. Turns out I had a sleep disorder | Lindsay Scola",
       "lastEpisodeId": "60252776187",
-      "lastCheckedAt": 1790274826604
+      "lastCheckedAt": 1790350010756
     },
     "998969": {
       "lastRssKey": "audioboom-01a0cf0f-c683-7f3e-b7a9-bb2dc5895146",
@@ -607,10 +607,10 @@
       "lastCheckedAt": 1788643859907
     },
     "1026613": {
-      "lastRssKey": "c196b474-cd43-40c0-ab3a-2bed3756a248",
-      "lastEpisodeTitle": "A.I. Safety Goes Mainstream + a ‘Hard Fork’ Exit AMA",
+      "lastRssKey": "0270f621-aa0b-4262-90d5-b9cdc4604dee",
+      "lastEpisodeTitle": "The Ezra Klein Show: Jensen Huang Thinks A.I. Alarmism Has Gone Too Far",
       "lastEpisodeId": "60548247176",
-      "lastCheckedAt": 1789913087292
+      "lastCheckedAt": 1790350012094
     },
     "1035900": {
       "lastRssKey": "2308b2bb-f4b7-4b3b-9b75-f2f05a0c7cf3",
@@ -653,10 +653,10 @@
       "lastCheckedAt": 1790097010529
     },
     "1116485": {
-      "lastRssKey": "6ab4f2672674ef6e5022f764",
-      "lastEpisodeTitle": "HE COULD SCORE 2 OR 3 GOALS A GAME! Neil Mellor on Alexander Isak & Liverpool",
-      "lastEpisodeId": "60461626103",
-      "lastCheckedAt": 1790274836854
+      "lastRssKey": "6ab667679c4cc12a89354549",
+      "lastEpisodeTitle": "Liverpool Targeting Micky van de Ven | Daily News Update",
+      "lastEpisodeId": "60831255783",
+      "lastCheckedAt": 1790350019154
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -1021,9 +1021,9 @@
       "lastCheckedAt": 1789288205863
     },
     "6074303": {
-      "lastRssKey": "edcede58-bca9-4abe-a8a9-1191e70f2e65",
-      "lastEpisodeTitle": "Nothing Too Good or Too Bad Stays That Way For Long",
-      "lastCheckedAt": 1789781429517
+      "lastRssKey": "53425c39-13e4-4da6-94b4-e44686df2c17",
+      "lastEpisodeTitle": "An Overlooked Reason Homes Are So Expensive",
+      "lastCheckedAt": 1790350038511
     },
     "6264274": {
       "lastRssKey": "6d6e08c6-e999-4c0f-9416-a4ba51d01ee1",
@@ -1038,10 +1038,10 @@
       "lastCheckedAt": 1790296087045
     },
     "6413946": {
-      "lastRssKey": "c57ce5c4-2ef3-41b4-bdff-f6352fb01bdc",
-      "lastEpisodeTitle": "EP 829: Violencia desplaza a más de un millón y medio de personas, La polémica por las reformas antimemes y Quieren obligar a dueños del futbol a regresar el ascenso a la Liga Mx",
-      "lastEpisodeId": "60198639919",
-      "lastCheckedAt": 1790258634936
+      "lastRssKey": "ca64c71f-d61a-493b-a77e-b61f25893c59",
+      "lastEpisodeTitle": "EP 830: Población mexicana envejece y pronto dejará de crecer, Sale delegado de la Fiscalía en Guanajuato por supuesto huachicol y Una bomba de Diesel amenaza la economía",
+      "lastEpisodeId": "60831745119",
+      "lastCheckedAt": 1790350039507
     },
     "6456494": {
       "lastRssKey": "6ab28a1cf161207303f67c36",
@@ -1339,6 +1339,11 @@
       "lastEpisodeId": "46949995660",
       "lastCheckedAt": 1789657943228
     },
+    "7551349": {
+      "lastRssKey": "30b5c9da-3233-4e29-ad4c-b49b014c85d1",
+      "lastEpisodeTitle": "Paradise Prison: Chapter 3",
+      "lastCheckedAt": 1790350064972
+    },
     "7584644": {
       "lastRssKey": "6aa8307db54f356fc7b8c044",
       "lastEpisodeTitle": "Music @ Work (2000) Side A With Podcast Legend Sean McGinity",
@@ -1417,10 +1422,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/1df181c6-9212-5eee-80fc-1694b55dce8b",
-      "lastEpisodeTitle": "This COMMENT made Dr. Ramanis head EXPLODE ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/b7a043bf-f3db-5577-9a77-d2b67ce3a6fb",
+      "lastEpisodeTitle": "Vital lessons from people in narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790332001508
+      "lastCheckedAt": 1790350066939
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
