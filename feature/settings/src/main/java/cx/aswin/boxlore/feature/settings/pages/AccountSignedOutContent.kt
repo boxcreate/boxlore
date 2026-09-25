@@ -69,6 +69,7 @@ internal fun ColumnScope.SignedOutContent(
     state: AccountAuthState = rememberAccountAuthState(
         authRepository = authRepository,
     ),
+    scrollState: androidx.compose.foundation.ScrollState? = null,
 ) {
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
@@ -76,57 +77,49 @@ internal fun ColumnScope.SignedOutContent(
     val actionButtonRequester = remember { BringIntoViewRequester() }
     val imeBottom = WindowInsets.ime.getBottom(density)
 
+    LaunchedEffect(state.isAwaitingVerification) {
+        if (state.isAwaitingVerification) {
+            focusManager.clearFocus()
+            state.isAnyInputFocused = false
+            scrollState?.animateScrollTo(0)
+        }
+    }
+
     LaunchedEffect(imeBottom, state.isAnyInputFocused) {
-        if (imeBottom > 0 && state.isAnyInputFocused) {
+        if (imeBottom > 0 && state.isAnyInputFocused && !state.isAwaitingVerification) {
             actionButtonRequester.bringIntoView()
         }
     }
 
-    if (state.isAwaitingVerification) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-            ) {
-                EmailVerificationPendingSection(
-                    state = state,
-                )
-            }
-        }
+    if (!state.isAwaitingVerification) {
+        // 1. Ultra-Light Header
+        Text(
+            text = "Sign in to sync your library, queue, and playback across devices.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 2.dp),
+        )
 
-        AccountPrivacyCard()
-        return
+        Spacer(Modifier.height(10.dp))
+
+        // 2. Continue with Google Button
+        GoogleSignInButton(
+            isLoading = state.isGoogleLoading,
+            enabled = !state.isAnyLoading,
+            onClick = state::handleGoogleSignIn,
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        // 3. Divider
+        AuthDivider()
+
+        Spacer(Modifier.height(6.dp))
     }
 
-    // 1. Ultra-Light Header
-    Text(
-        text = "Sign in to sync your library, queue, and playback across devices.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-    )
-
-    // 2. Continue with Google Button
-    GoogleSignInButton(
-        isLoading = state.isGoogleLoading,
-        enabled = !state.isAnyLoading,
-        onClick = state::handleGoogleSignIn,
-    )
-
-    // 3. Divider
-    AuthDivider()
-
-    // 4. Primary Auth Card
+    // 4. Stable Primary Auth Card Container
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -140,16 +133,18 @@ internal fun ColumnScope.SignedOutContent(
                 .fillMaxWidth()
                 .padding(20.dp),
         ) {
-            ConnectedOptionSelector(
-                options = listOf(
-                    AuthMode.SIGN_IN to "Sign In",
-                    AuthMode.SIGN_UP to "Sign Up",
-                ),
-                selected = state.activeAuthMode,
-                onSelect = state::selectAuthMode,
-            )
+            if (!state.isAwaitingVerification) {
+                ConnectedOptionSelector(
+                    options = listOf(
+                        AuthMode.SIGN_IN to "Sign In",
+                        AuthMode.SIGN_UP to "Sign Up",
+                    ),
+                    selected = state.activeAuthMode,
+                    onSelect = state::selectAuthMode,
+                )
 
-            Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(18.dp))
+            }
 
             PrimaryAuthCardBody(
                 state = state,
@@ -158,6 +153,8 @@ internal fun ColumnScope.SignedOutContent(
             )
         }
     }
+
+    Spacer(Modifier.height(16.dp))
 
     // 5. Privacy & Data Callout
     AccountPrivacyCard()
@@ -178,14 +175,14 @@ private fun PrimaryAuthCardBody(
         state.magicLinkSent && !state.usePasswordAuth -> {
             EmailLinkSentSection(
                 email = state.email,
-                isSignUp = state.activeAuthMode == AuthMode.SIGN_UP,
+                isSignUp = false,
                 isAnyLoading = state.isAnyLoading,
                 onOpenEmail = { openGmailOrEmailApp(state.context, state.email) },
                 onUseDifferentEmail = state::resetToNewEmail,
                 onResendLink = state::submitEmailLink,
             )
         }
-        !state.usePasswordAuth -> {
+        !state.usePasswordAuth && state.activeAuthMode == AuthMode.SIGN_IN -> {
             EmailLinkInputSection(
                 state = state.toEmailInputState(),
                 actions = state.toEmailInputActions(actionButtonRequester),
@@ -718,7 +715,7 @@ private fun PasswordSubmitButton(
             )
         } else {
             Text(
-                text = if (isSignUp) "Sign Up" else "Sign In",
+                text = if (isSignUp) "Create Account" else "Sign In",
                 fontWeight = GoogleSansWeight.bold,
             )
         }
@@ -791,7 +788,12 @@ private fun PasswordAuthSection(
         AuthErrorBanner(message = state.errorMessage)
     }
 
-    Spacer(Modifier.height(10.dp))
+    if (state.isSignUp) {
+        Spacer(Modifier.height(14.dp))
+        PrivacyPolicyNotice()
+    }
+
+    Spacer(Modifier.height(12.dp))
 
     val isSubmitEnabled = !state.isLoading &&
         state.email.isNotBlank() &&
@@ -805,26 +807,28 @@ private fun PasswordAuthSection(
         actionButtonRequester = actionButtonRequester,
     )
 
-    Spacer(Modifier.height(14.dp))
+    if (!state.isSignUp) {
+        Spacer(Modifier.height(14.dp))
 
-    OutlinedButton(
-        onClick = actions.onSwitchToEmailLink,
-        shape = MaterialTheme.shapes.large,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Email,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = "Email me a link instead",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = GoogleSansWeight.medium,
-        )
+        OutlinedButton(
+            onClick = actions.onSwitchToEmailLink,
+            shape = MaterialTheme.shapes.large,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Email,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Email me a sign-in link instead",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = GoogleSansWeight.medium,
+            )
+        }
     }
 }

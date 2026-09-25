@@ -94,4 +94,29 @@ class AccountSettingsPageTest {
         // Multiple days
         assertEquals("Synced 4d ago", formatRelativeSyncTime(now - 4 * oneDay, now = now))
     }
+
+    @Test
+    fun boxLoreUser_providerId_differentiatesGoogleAndPasswordAccounts() {
+        val googleUser = cx.aswin.boxlore.core.model.BoxLoreUser(
+            uid = "google-uid",
+            email = "user@gmail.com",
+            displayName = "Google User",
+            providerId = "google.com",
+        )
+        val passwordUser = cx.aswin.boxlore.core.model.BoxLoreUser(
+            uid = "pass-uid",
+            email = "user@example.com",
+            displayName = null,
+            providerId = "password",
+        )
+        val defaultUser = cx.aswin.boxlore.core.model.BoxLoreUser(
+            uid = "default-uid",
+            email = "default@example.com",
+            displayName = null,
+        )
+
+        assertEquals("google.com", googleUser.providerId)
+        assertEquals("password", passwordUser.providerId)
+        org.junit.Assert.assertNull(defaultUser.providerId)
+    }
 }

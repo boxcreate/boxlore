@@ -612,4 +612,79 @@ class AccountAuthHelpersTest {
         org.junit.Assert.assertTrue(state.isAwaitingVerification)
         assertEquals("Reload failed", state.errorMessage)
     }
+
+    @Test
+    fun accountAuthState_selectAuthMode_signUpForcesPasswordAuthAndClearsInputFocus() {
+        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)
+
+        val state = AccountAuthState(
+            authRepository = null,
+            context = mockContext,
+            activity = null,
+            focusManager = mockFocusManager,
+            scope = scope,
+        )
+        state.activeAuthMode = AuthMode.SIGN_IN
+        state.usePasswordAuth = false
+        state.isAnyInputFocused = true
+
+        state.selectAuthMode(AuthMode.SIGN_UP)
+
+        assertEquals(AuthMode.SIGN_UP, state.activeAuthMode)
+        org.junit.Assert.assertTrue(state.usePasswordAuth)
+        org.junit.Assert.assertFalse(state.isAnyInputFocused)
+    }
+
+    @Test
+    fun accountAuthState_submitPasswordAuth_clearsInputFocus() = kotlinx.coroutines.test.runTest {
+        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
+        val fakeRepo = TestAuthRepository()
+
+        val state = AccountAuthState(
+            authRepository = fakeRepo,
+            context = mockContext,
+            activity = null,
+            focusManager = mockFocusManager,
+            scope = this,
+        )
+        state.activeAuthMode = AuthMode.SIGN_IN
+        state.email = "test@boxlore.example"
+        state.password = "password123"
+        state.isAnyInputFocused = true
+
+        state.submitPasswordAuth()
+        testScheduler.advanceUntilIdle()
+
+        org.junit.Assert.assertFalse(state.isAnyInputFocused)
+    }
+
+    @Test
+    fun accountAuthState_submitEmailLink_clearsInputFocus() = kotlinx.coroutines.test.runTest {
+        val mockContext = org.mockito.Mockito.mock(android.content.Context::class.java)
+        val mockFocusManager = org.mockito.Mockito.mock(androidx.compose.ui.focus.FocusManager::class.java)
+        val fakeRepo = TestAuthRepository()
+
+        val state = AccountAuthState(
+            authRepository = fakeRepo,
+            context = mockContext,
+            activity = null,
+            focusManager = mockFocusManager,
+            scope = this,
+        )
+        state.email = "test@boxlore.example"
+        state.isAnyInputFocused = true
+
+        state.submitEmailLink()
+        testScheduler.advanceUntilIdle()
+
+        org.junit.Assert.assertFalse(state.isAnyInputFocused)
+    }
+
+    @Test
+    fun boxlorePrivacyPolicyUrl_isCorrectEndpoint() {
+        assertEquals("https://aswin.cx/boxlore/privacy/", BOXLORE_PRIVACY_POLICY_URL)
+    }
 }

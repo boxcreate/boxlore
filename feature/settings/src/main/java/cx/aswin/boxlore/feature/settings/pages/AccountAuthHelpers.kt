@@ -282,6 +282,10 @@ internal class AccountAuthState(
 
     fun selectAuthMode(mode: AuthMode) {
         activeAuthMode = mode
+        if (mode == AuthMode.SIGN_UP) {
+            usePasswordAuth = true
+        }
+        isAnyInputFocused = false
         errorMessage = null
         magicLinkSent = false
         isAwaitingVerification = false
@@ -312,6 +316,7 @@ internal class AccountAuthState(
             return
         }
         focusManager.clearFocus()
+        isAnyInputFocused = false
         isEmailLoading = true
         errorMessage = null
         scope.launch {
@@ -337,6 +342,7 @@ internal class AccountAuthState(
         }
 
         focusManager.clearFocus()
+        isAnyInputFocused = false
         isEmailLoading = true
         errorMessage = null
 

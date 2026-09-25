@@ -26,6 +26,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -231,4 +239,42 @@ internal fun AccountPrivacyCard(modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+internal const val BOXLORE_PRIVACY_POLICY_URL = "https://aswin.cx/boxlore/privacy/"
+
+@Composable
+internal fun PrivacyPolicyNotice(
+    modifier: Modifier = Modifier,
+    privacyUrl: String = BOXLORE_PRIVACY_POLICY_URL,
+) {
+    val uriHandler = LocalUriHandler.current
+
+    val annotatedText = buildAnnotatedString {
+        append("By creating an account, you agree to our ")
+        val link = LinkAnnotation.Url(
+            url = privacyUrl,
+            styles = TextLinkStyles(
+                style = SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline,
+                    fontWeight = GoogleSansWeight.semiBold,
+                ),
+            ),
+        ) {
+            runCatching { uriHandler.openUri(privacyUrl) }
+        }
+        withLink(link) {
+            append("Privacy Policy")
+        }
+        append(". Proceeding will accept it.")
+    }
+
+    Text(
+        text = annotatedText,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = modifier.fillMaxWidth(),
+    )
 }
