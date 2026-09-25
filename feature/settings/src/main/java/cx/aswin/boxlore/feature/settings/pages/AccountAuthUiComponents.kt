@@ -248,6 +248,7 @@ internal fun PrivacyPolicyNotice(
     modifier: Modifier = Modifier,
     prefix: String = "By continuing, you agree to our ",
     suffix: String = ".",
+    textAlign: TextAlign = TextAlign.Start,
     privacyUrl: String = BOXLORE_PRIVACY_POLICY_URL,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -294,7 +295,7 @@ internal fun PrivacyPolicyNotice(
         text = annotatedText,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
+        textAlign = textAlign,
         modifier = modifier.fillMaxWidth(),
     )
 }
