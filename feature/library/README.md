@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns Library presentation: hub, history, subscriptions, liked episodes, downloaded episodes, show details, smart-download settings, and auto-download settings. It does not own download workers, playback services, ranking storage, catalog persistence, or app route registration.
+Owns Library presentation: hub, history, subscriptions, liked episodes, downloaded episodes, and show details. It does not own download settings (decoupled into `:feature:settings`), download workers, playback services, ranking storage, catalog persistence, or app route registration.
 
 ## Public API
 
@@ -12,7 +12,6 @@ Owns Library presentation: hub, history, subscriptions, liked episodes, download
 - `AutoOrganizeConfirmationDialogs`: Confirmation dialogs for enabling/disabling auto-organize into folders. The enable dialog allows users to choose their preferred folder display size (default 3×1 Shelf), conditionally pick 1×1 cover style (Folder Icon vs Podcast Grid), and reminds users how to edit show genres using the genre pill. The disable dialog explains that existing folders and contents remain safe and intact.
 - `FolderEditSheet` and `FolderEditComponents`: Subscription folder creation and edit sheet featuring a streamlined hierarchy, slim actionable auto-organize library nudge (`AutoOrganizeSlimNudge`) for instant creation-time grouping, prominent name input with real-time keyword suggestions, preset icons (prioritizing subscribed library genres), automatic icon switching on typing exact genre/topic matches, visual size selector cards for display sizes (`1×1 Compact`, `3×1 Shelf`, `3×2 Panel`, `3×3 Showcase`), contextual 1×1 cover display selector (`[ Folder Icon ]` vs `[ Podcast Grid ]`), compact optional icon picker row, LazyRow-powered horizontal scrolling with crisp edge stops, auto-sync with genre tags, and quiet beta feedback footnote.
 - Downloads multi-select: checklist in the top bar, or long-press a show (hub) / episode (show list) to enter selection with that row checked, then delete several at once.
-- `SmartDownloadsSettingsScreen` and `AutoDownloadSettingsScreen`.
 - `PlayAllFab` and library UI helpers.
 - History list bottom spacing uses designsystem’s shared navigation-style / mini-player padding contract.
 - Library UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
@@ -21,7 +20,6 @@ Owns Library presentation: hub, history, subscriptions, liked episodes, download
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/library/
-  AutoDownloadSettingsScreen.kt
   DownloadedEpisodesScreen.kt
   FolderEditComponents.kt
   FolderEditSheet.kt
@@ -31,7 +29,6 @@ src/main/java/cx/aswin/boxlore/feature/library/
   LibraryViewModel.kt
   LikedEpisodesScreen.kt
   PlayAllFab.kt
-  SmartDownloadsSettingsScreen.kt
   SubscriptionsScreen.kt
   history/
     HistoryActivityGraphs.kt      — weekly activity + time-of-day charts, day filter chips

@@ -50,6 +50,7 @@ dependencies {
     kover(projects.core.catalog)
     kover(projects.core.domain)
     kover(projects.feature.home)
+    kover(projects.feature.settings)
     kover(projects.core.analytics)
     kover(projects.core.rss)
     kover(projects.core.downloads)

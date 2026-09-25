@@ -45,7 +45,8 @@ src/main/java/cx/aswin/boxlore/
     BottomNavNavigation.kt
     NavGraphWiring.kt
     NavGraphTabDestinations.kt
-    NavGraphLibrarySettingsDestinations.kt
+    NavGraphSettingsDestinations.kt
+    NavGraphLibraryDestinations.kt
     LaunchSubscriptionsBack.kt
     LaunchSubscriptionsBackDecision.kt
     StartDestinationResolver.kt

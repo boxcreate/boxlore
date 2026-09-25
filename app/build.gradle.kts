@@ -140,6 +140,7 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(projects.core.rss)
     implementation(projects.feature.home)
+    implementation(projects.feature.settings)
     implementation(project(":feature:player"))
     implementation(project(":feature:info"))
     implementation(project(":feature:explore"))

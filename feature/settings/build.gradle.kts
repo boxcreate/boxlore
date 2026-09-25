@@ -14,26 +14,21 @@ kover {
     }
 }
 
-// Roborazzi goldens live at the repo root so they read as reviewable app baselines.
-// Paired with `roborazzi.record.filePathStrategy` in gradle.properties, the short
-// names passed to captureRoboImage() resolve directly under screenshots/baselines/.
 roborazzi {
     outputDir.set(rootProject.layout.projectDirectory.dir("screenshots/baselines"))
 }
 
 android {
-    namespace = "cx.aswin.boxlore.feature.home"
-    // compileSdk 36: keep AAR metadata aligned with Compose / core deps
+    namespace = "cx.aswin.boxlore.feature.settings"
     compileSdk = 36
-
     defaultConfig {
         minSdk = 31
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
     }
     buildFeatures {
         compose = true
     }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -43,17 +38,14 @@ android {
             jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
         }
     }
-
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
         }
     }
-
     packaging {
         resources {
-            // okhttp-coroutines + jspecify both ship this OSGi manifest path
             excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
     }
@@ -64,8 +56,8 @@ dependencies {
     implementation(projects.core.domain)
     implementation(projects.core.catalog)
     implementation(projects.core.downloads)
-    implementation(projects.core.playback)
     implementation(projects.core.network)
+    implementation(projects.core.prefs)
     implementation(projects.core.designsystem)
     implementation(projects.core.analytics)
     implementation(projects.core.ranking)
@@ -76,7 +68,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
 
-    // UI
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
@@ -87,12 +78,13 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
-    // Media3
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.exoplayer.hls)
-    implementation(libs.androidx.media3.session)
+    // Auth & Credentials
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     testImplementation(projects.core.testing)
+    testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.vintage.engine)
     testRuntimeOnly(libs.junit.platform.launcher)
@@ -104,6 +96,5 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.androidx.ui.test.junit4)
     testImplementation("org.mockito:mockito-core:5.14.2")
-    // Roborazzi / Compose preview host for JVM screenshot tests.
     debugImplementation(libs.androidx.ui.test.manifest)
 }

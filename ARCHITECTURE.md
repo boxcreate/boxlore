@@ -35,7 +35,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 :core:model | :core:network | :core:domain | :core:database | :core:prefs
 :core:analytics | :core:catalog | :core:rss | :core:downloads | :core:playback | :core:ranking
 :core:designsystem | :core:testing
-:feature:home | :feature:player | :feature:info | :feature:explore
+:feature:home | :feature:settings | :feature:player | :feature:info | :feature:explore
 :feature:library | :feature:onboarding | :feature:briefing | :feature:widgets
 ```
 
@@ -59,7 +59,8 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:core:playback` | `PlaybackRepository`, queue, Media3 services, smart-queue helpers | [`core/playback/README.md`](core/playback/README.md) |
 | `:core:designsystem` | Theme and shared composables; no data or network ownership | [`core/designsystem/README.md`](core/designsystem/README.md) |
 | `:core:testing` | Shared fixtures, dispatcher helpers, architecture guards | [`core/testing/README.md`](core/testing/README.md) |
-| `:feature:home` | Home, Settings hub, Add RSS, Debug | [`feature/home/README.md`](feature/home/README.md) |
+| `:feature:home` | Home feed presentation, Daily/Offline mix, and local Debug | [`feature/home/README.md`](feature/home/README.md) |
+| `:feature:settings` | Unified Settings hub, Account & Cloud Sync, Appearance, Privacy, Playback, and Download policies | [`feature/settings/README.md`](feature/settings/README.md) |
 | `:feature:player` | Player overlay (`PlayerSheetScaffold`); not a NavHost destination | [`feature/player/README.md`](feature/player/README.md) |
 | `:feature:info` | Podcast and episode detail, including deep links | [`feature/info/README.md`](feature/info/README.md) |
 | `:feature:explore` | Explore plus Learn / LearnHistory | [`feature/explore/README.md`](feature/explore/README.md) |

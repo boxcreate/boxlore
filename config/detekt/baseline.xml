@@ -284,7 +284,7 @@
     <ID>TooManyFunctions:AdaptiveLearnerDebugSection.kt$cx.aswin.boxlore.feature.home.AdaptiveLearnerDebugSection.kt</ID>
     <ID>TooManyFunctions:AdaptiveRankingDao.kt$AdaptiveRankingDao</ID>
     <ID>TooManyFunctions:AdaptiveRankingRepository.kt$AdaptiveRankingRepository</ID>
-    <ID>TooManyFunctions:AppearanceSettingsPage.kt$cx.aswin.boxlore.feature.home.settings.pages.AppearanceSettingsPage.kt</ID>
+    <ID>TooManyFunctions:AppearanceSettingsPage.kt$cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage.kt</ID>
     <ID>TooManyFunctions:AutoBrowseLibraryCallback.kt$AutoBrowseLibraryCallback : Callback</ID>
     <ID>TooManyFunctions:AutoBrowseTreeBuilder.kt$AutoBrowseTreeBuilder</ID>
     <ID>TooManyFunctions:AutoCollageProvider.kt$AutoCollageProvider : ContentProvider</ID>
