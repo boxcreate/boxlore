@@ -20,7 +20,7 @@ and listen without paywalls, subscriptions, or ads.
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.25.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.26.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
 &nbsp;&nbsp;
 <!-- download-obtainium:start -->
@@ -122,6 +122,15 @@ and listen without paywalls, subscriptions, or ads.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.26` · 2026-09-25
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.26 date=2026-09-25 -->
 <b>🆕 New features & Cloud Sync:</b>
 <ul align="left">
 <li><b>**Realtime Cloud Sync**</b>: Keep subscriptions, playback progress, and queues in sync across your devices with conflict-resolved multi-device synchronization. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
@@ -134,51 +143,6 @@ and listen without paywalls, subscriptions, or ads.
 <li><b>**Modular Architecture**</b>: Decoupled settings, listening history, and auth into dedicated, focused feature and core modules. <a href="https://github.com/boxcreate/boxlore/pull/1083"><img src="https://img.shields.io/badge/PR-1083-6750A4?style=flat-square" alt="PR #1083" height="18"/></a></li>
 <li><b>**Library & Import Polish**</b>: Wider import option cards, responsive dialog dismissals, and enhanced account sync controls. <a href="https://github.com/boxcreate/boxlore/pull/1084"><img src="https://img.shields.io/badge/PR-1084-6750A4?style=flat-square" alt="PR #1084" height="18"/></a></li>
 <li><b>**Notice on Upcoming Fixes**</b>: We apologize that a few promised bug fixes couldn't make this build—they are queued and will ship in an update by next weekend!</li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.25` · 2026-09-08
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.25 date=2026-09-08 -->
-
-
-<b>🆕 New features:</b>
-<ul align="left">
-<li><b>Subscription Folders & Custom Sizes</b>: Organize your podcast library into custom folders with adaptive layouts—from compact 1×1 tiles to full-width 3×1 shelves and expanded panels, featuring direct show playback right from the folder card. <a href="https://github.com/boxcreate/boxlore/pull/1059"><img src="https://img.shields.io/badge/PR-1059-6750A4?style=flat-square" alt="PR #1059" height="18"/></a></li>
-<li><b>Auto-Organize Library</b>: Instantly group your subscribed shows into genre-based folders with one tap, smart size presets, and automatic deduplication. <a href="https://github.com/boxcreate/boxlore/pull/1059"><img src="https://img.shields.io/badge/PR-1059-6750A4?style=flat-square" alt="PR #1059" height="18"/></a></li>
-<li><b>Custom Podcast Tags & Icons</b>: Assign custom tags and expressive icons to any subscribed show in boxlore, with live chip preview, keyword suggestions, and priority filtering in Subscriptions. <a href="https://github.com/boxcreate/boxlore/pull/1055"><img src="https://img.shields.io/badge/PR-1055-6750A4?style=flat-square" alt="PR #1055" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/1059"><img src="https://img.shields.io/badge/PR-1059-6750A4?style=flat-square" alt="PR #1059" height="18"/></a></li>
-<li><b>Offline Chapters & Transcripts</b>: Downloaded episodes now include Podcasting 2.0 chapters and synced transcripts for offline listening on planes, trains, and commutes. <a href="https://github.com/boxcreate/boxlore/pull/1065"><img src="https://img.shields.io/badge/PR-1065-6750A4?style=flat-square" alt="PR #1065" height="18"/></a></li>
-<li><b>Full Backup & Restore</b>: Export and restore your complete library configuration—including folder definitions, show memberships, sorting preferences, and custom tags—with 100% fidelity. <a href="https://github.com/boxcreate/boxlore/pull/1050"><img src="https://img.shields.io/badge/PR-1050-6750A4?style=flat-square" alt="PR #1050" height="18"/></a> <a href="https://github.com/boxcreate/boxlore/pull/1059"><img src="https://img.shields.io/badge/PR-1059-6750A4?style=flat-square" alt="PR #1059" height="18"/></a></li>
-<li><b>Recommendation Variation</b>: Time-of-day rotation and cross-day variety for the &ldquo;Because you like&rdquo; recommendation rail on the Home screen. <a href="https://github.com/boxcreate/boxlore/pull/1063"><img src="https://img.shields.io/badge/PR-1063-6750A4?style=flat-square" alt="PR #1063" height="18"/></a></li>
-<li><b>Same-Show Continuation Banner</b>: Added a convenient queue banner to preview and add upcoming forward episodes of a show when played from recommendations. <a href="https://github.com/boxcreate/boxlore/pull/1019"><img src="https://img.shields.io/badge/PR-1019-6750A4?style=flat-square" alt="PR #1019" height="18"/></a></li>
-</ul>
-<b>⚡ Enhancements to existing features:</b>
-<ul align="left">
-<li><b>Multi-Level Sorting & Drag-and-Drop</b>: Customize folder order with drag-and-drop manual arrangement, smart recency rankings, and independent intra-folder show sorting. <a href="https://github.com/boxcreate/boxlore/pull/1059"><img src="https://img.shields.io/badge/PR-1059-6750A4?style=flat-square" alt="PR #1059" height="18"/></a></li>
-<li><b>Inline Player Transcript Theming</b>: Polished inline player transcript view with theme-matching headers, dynamic controls, and calibrated text sizing. <a href="https://github.com/boxcreate/boxlore/pull/1065"><img src="https://img.shields.io/badge/PR-1065-6750A4?style=flat-square" alt="PR #1065" height="18"/></a></li>
-<li><b>Download Removal Confirmation</b>: Added a confirmation prompt before removing downloaded episodes across show details and player sheets to prevent accidental deletions. <a href="https://github.com/boxcreate/boxlore/pull/1064"><img src="https://img.shields.io/badge/PR-1064-6750A4?style=flat-square" alt="PR #1064" height="18"/></a></li>
-<li><b>Backup Restore Progress & Permissions</b>: Added real-time show progress and active animated loader when restoring library backups, plus a streamlined notification permission check. <a href="https://github.com/boxcreate/boxlore/pull/1050"><img src="https://img.shields.io/badge/PR-1050-6750A4?style=flat-square" alt="PR #1050" height="18"/></a></li>
-<li><b>Subscriptions Tab Style Preference</b>: Added tab style preference in Settings &gt; Appearance, allowing users to choose between top header tabs or a bottom floating selector in boxlore. <a href="https://github.com/boxcreate/boxlore/pull/1048"><img src="https://img.shields.io/badge/PR-1048-6750A4?style=flat-square" alt="PR #1048" height="18"/></a></li>
-<li><b>Memory & Parsing Efficiency</b>: Resolved out-of-memory errors during large podcast pagination and feed parsing by streaming responses and bounding in-memory cache sizes. <a href="https://github.com/boxcreate/boxlore/pull/1044"><img src="https://img.shields.io/badge/PR-1044-6750A4?style=flat-square" alt="PR #1044" height="18"/></a></li>
-<li><b>Background Download Reliability</b>: Improved background auto-download reliability so new episodes are ready for offline listening as soon as notifications arrive. <a href="https://github.com/boxcreate/boxlore/pull/1033"><img src="https://img.shields.io/badge/PR-1033-6750A4?style=flat-square" alt="PR #1033" height="18"/></a></li>
-<li><b>Show Refresh Integrity</b>: Pulling down to refresh on a podcast&rsquo;s page now checks for newly released episodes without resetting notification or download settings. <a href="https://github.com/boxcreate/boxlore/pull/1022"><img src="https://img.shields.io/badge/PR-1022-6750A4?style=flat-square" alt="PR #1022" height="18"/></a></li>
-</ul>
-<b>🐛 Bug fixes:</b>
-<ul align="left">
-<li><b>Android Auto Queue & Playback Resumption</b>: Android Auto now seamlessly resumes your last played podcast and queue when reconnecting in your vehicle instead of showing an error screen. <a href="https://github.com/boxcreate/boxlore/pull/1045"><img src="https://img.shields.io/badge/PR-1045-6750A4?style=flat-square" alt="PR #1045" height="18"/></a></li>
-<li><b>Android Auto Metadata</b>: Fixed an issue where episodes played from Android Auto showed missing show names and could cause playback to resume an older session on restart. <a href="https://github.com/boxcreate/boxlore/pull/1036"><img src="https://img.shields.io/badge/PR-1036-6750A4?style=flat-square" alt="PR #1036" height="18"/></a></li>
-<li><b>Android Auto Disconnect Crash</b>: Fixed an intermittent crash that could occur when disconnecting from Android Auto during artwork loading. <a href="https://github.com/boxcreate/boxlore/pull/1041"><img src="https://img.shields.io/badge/PR-1041-6750A4?style=flat-square" alt="PR #1041" height="18"/></a></li>
-<li><b>Android 14+ Auto-Download Crash</b>: Fixed an issue on Android 14 and newer where background auto-downloads could crash or fail to start when new episode notifications arrived. <a href="https://github.com/boxcreate/boxlore/pull/1033"><img src="https://img.shields.io/badge/PR-1033-6750A4?style=flat-square" alt="PR #1033" height="18"/></a></li>
-<li><b>Download Disk Storage Reclamation</b>: Fixed storage cleanup so deleting or replacing downloaded episodes properly reclaims device disk space. <a href="https://github.com/boxcreate/boxlore/pull/1033"><img src="https://img.shields.io/badge/PR-1033-6750A4?style=flat-square" alt="PR #1033" height="18"/></a></li>
-<li><b>Notification Spike Playback Block</b>: Resolved an issue where receiving many episode notifications over time could cause audio playback to fail to start. <a href="https://github.com/boxcreate/boxlore/pull/1034"><img src="https://img.shields.io/badge/PR-1034-6750A4?style=flat-square" alt="PR #1034" height="18"/></a></li>
-<li><b>Duplicate Key Crashes</b>: Fixed crashes when viewing search results and recommendation shelves with duplicate items. <a href="https://github.com/boxcreate/boxlore/pull/1043"><img src="https://img.shields.io/badge/PR-1043-6750A4?style=flat-square" alt="PR #1043" height="18"/></a></li>
-<li><b>Home Recommendation Tap Crash</b>: Fixed an issue where tapping recommended episodes from the Home screen could cause boxlore to unexpectedly close. <a href="https://github.com/boxcreate/boxlore/pull/1030"><img src="https://img.shields.io/badge/PR-1030-6750A4?style=flat-square" alt="PR #1030" height="18"/></a></li>
-<li><b>Queue Continuation Skip</b>: Fixed an issue where the queue would skip upcoming episodes of the show you were listening to. <a href="https://github.com/boxcreate/boxlore/pull/1019"><img src="https://img.shields.io/badge/PR-1019-6750A4?style=flat-square" alt="PR #1019" height="18"/></a></li>
-<li><b>Playback Restoration & Widget Crash</b>: Fixed background crashes when restoring playback sessions or updating widgets. <a href="https://github.com/boxcreate/boxlore/pull/1042"><img src="https://img.shields.io/badge/PR-1042-6750A4?style=flat-square" alt="PR #1042" height="18"/></a></li>
-<li><b>Video Spotlight Animation</b>: Fixed Video Spotlight cards on the Home screen so their dropshadow and border scale smoothly with the artwork during tap animation instead of revealing a static outer outline. <a href="https://github.com/boxcreate/boxlore/pull/1046"><img src="https://img.shields.io/badge/PR-1046-6750A4?style=flat-square" alt="PR #1046" height="18"/></a></li>
-<li><b>Player Cast Icon Theming</b>: Fixed the Cast icon in the full-screen player so it adapts to light and dark themes and matches the Share button. <a href="https://github.com/boxcreate/boxlore/pull/1039"><img src="https://img.shields.io/badge/PR-1039-6750A4?style=flat-square" alt="PR #1039" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
