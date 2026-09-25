@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.Logout
@@ -203,41 +205,97 @@ private fun ColumnScope.SignedInContent(
     isOnboarding: Boolean = false,
 ) {
     UserProfileCard(user = user, syncStatus = syncStatus)
+    if (isOnboarding) {
+        OnboardingContinueHero(onContinue = actions.onContinueToHome)
+    }
     CloudSyncInfoGroup(
         syncStatus = syncStatus,
         onSyncNow = actions.onSyncNow,
     )
-    if (isOnboarding) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = actions.onContinueToHome,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        ) {
-            Text(
-                text = "Continue to boxlore",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = GoogleSansWeight.bold,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-    }
     AccountManagementGroup(
         user = user,
         onResetPassword = actions.onResetPassword,
         onSignOut = actions.onSignOut,
         onDeleteAccountClick = actions.onDeleteAccountClick,
     )
+}
+
+@Composable
+private fun OnboardingContinueHero(
+    onContinue: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Account connected",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = GoogleSansWeight.bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "You're all set to start listening.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onContinue,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            ) {
+                Text(
+                    text = "Continue to boxlore",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = GoogleSansWeight.bold,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+    }
 }
 
 internal fun resolveProviderLabel(providerId: String?): String = when (providerId) {

@@ -157,7 +157,7 @@ fun OpmlImportDialog(
             Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             if (canDismiss) {
                 ImportCloseButton(
