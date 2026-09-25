@@ -257,6 +257,32 @@ class UserSyncCoordinatorTest {
     }
 
     @Test
+    fun executePush_abortsWhenPendingAccountSwitchDetected() = runTest(testDispatcher) {
+        prefs.setLastSyncedUserId("previous-user-uid")
+        var pushCalled = false
+        syncPushHandler = { _, _, _ ->
+            pushCalled = true
+            FakeCall(Response.success(SyncPushResponse(status = "ok", syncedAt = 8000L)))
+        }
+
+        podcastDao.upsert(
+            createTestPodcastEntity(
+                podcastId = "pod-leak-test",
+                title = "User A Private Show",
+                isSubscribed = true,
+                isDirty = true,
+            ),
+        )
+
+        val pushResult = coordinator.executePush()
+        assertTrue(pushResult.isSuccess)
+        val summary = pushResult.getOrNull()
+        assertNotNull(summary)
+        assertEquals(0, summary!!.pushedSubscriptions)
+        assertFalse(pushCalled)
+    }
+
+    @Test
     fun executePush_marksAndPushesUnsyncedLocalGuestData() = runTest(testDispatcher) {
         podcastDao.upsert(
             createTestPodcastEntity(

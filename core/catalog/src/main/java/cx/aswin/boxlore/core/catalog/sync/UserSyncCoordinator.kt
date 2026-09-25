@@ -78,92 +78,87 @@ open class UserSyncCoordinator(
 
             val lastSyncedUser = requireBoxcastPrefs.getLastSyncedUserId()
             if (lastSyncedUser != null && lastSyncedUser != userId) {
-                // Account mismatch detected! Purge previous user data to prevent cross-contamination
-                purgeLocalDataForAccountSwitch()
-                requireBoxcastPrefs.setLastSyncTimestamp(0L)
-                requireBoxcastPrefs.setLastSyncedUserId(userId)
-                val pullResult = executePull(since = 0L, token)
-                return pullResult.fold(
-                    onSuccess = { res ->
-                        SyncResult.Success(
-                            pushedSubscriptions = 0,
-                            pushedHistory = 0,
-                            pushedQueue = false,
-                            pulledSubscriptions = res.subscriptions.size,
-                            pulledHistory = res.history.size,
-                            pulledQueue = res.queue != null,
-                            syncedAt = res.syncedAt,
-                        )
-                    },
-                    onFailure = { err ->
-                        SyncResult.Failure(err)
-                    },
-                )
+                return handleAccountSwitch(userId, token)
             }
             if (lastSyncedUser == null) {
                 requireBoxcastPrefs.setLastSyncedUserId(userId)
             }
 
-            val metadataVersion = requireBoxcastPrefs.getSyncMetadataVersion()
-            if (metadataVersion < 1) {
-                // If this device holds rich metadata, mark dirty so they sync to cloud
-                requireListeningHistoryDao.markAllHistoryWithTitlesDirty()
-                requireBoxcastPrefs.setSyncMetadataVersion(1)
-            }
+            initMetadataVersionIfNeeded()
 
-            // 1. Push local dirty deltas
-            var totalPushedSubs = 0
-            var totalPushedHist = 0
-            var pushedQueue = false
-            var latestSyncedAt = 0L
-
-            val pushResult = executePush(token)
-            pushResult.onSuccess { summary ->
-                totalPushedSubs = summary.pushedSubscriptions
-                totalPushedHist = summary.pushedHistory
-                pushedQueue = summary.pushedQueue
-                latestSyncedAt = summary.syncedAt
-            }.onFailure { err ->
+            val pushSummary = executePush(token).getOrElse { err ->
                 return SyncResult.Failure(err)
             }
 
-            // 2. Pull remote deltas since lastSyncTimestamp (or from 0 if local history has blank titles and version < 2)
-            val needsBackfill = requireBoxcastPrefs.getSyncMetadataVersion() < 2 &&
-                requireListeningHistoryDao.hasAnyHistoryWithBlankTitle()
-            val since = if (needsBackfill) 0L else requireBoxcastPrefs.getLastSyncTimestamp()
-            val pullResult = executePull(since, token)
-            var pulledSubs = 0
-            var pulledHist = 0
-            var pulledQueue = false
-
-            pullResult.onSuccess { pullResponse ->
-                pulledSubs = pullResponse.subscriptions.size
-                pulledHist = pullResponse.history.size
-                pulledQueue = pullResponse.queue != null
-                latestSyncedAt = maxOf(latestSyncedAt, pullResponse.syncedAt)
-                if (needsBackfill) {
-                    requireBoxcastPrefs.setSyncMetadataVersion(2)
-                }
-            }.onFailure { err ->
-                return SyncResult.Failure(err, partialSyncedAt = latestSyncedAt.takeIf { it > 0 })
-            }
-
-            requireBoxcastPrefs.setLastSyncedUserId(userId)
-
-            SyncResult.Success(
-                pushedSubscriptions = totalPushedSubs,
-                pushedHistory = totalPushedHist,
-                pushedQueue = pushedQueue,
-                pulledSubscriptions = pulledSubs,
-                pulledHistory = pulledHist,
-                pulledQueue = pulledQueue,
-                syncedAt = latestSyncedAt,
-            )
+            executePullWithBackfill(userId, pushSummary, token)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             SyncResult.Failure(e)
         }
+    }
+
+    private suspend fun handleAccountSwitch(userId: String, token: String?): SyncResult {
+        purgeLocalDataForAccountSwitch()
+        requireBoxcastPrefs.setLastSyncTimestamp(0L)
+        requireBoxcastPrefs.setLastSyncedUserId(userId)
+        val pullResult = executePull(since = 0L, token)
+        return pullResult.fold(
+            onSuccess = { res ->
+                SyncResult.Success(
+                    pushedSubscriptions = 0,
+                    pushedHistory = 0,
+                    pushedQueue = false,
+                    pulledSubscriptions = res.subscriptions.size,
+                    pulledHistory = res.history.size,
+                    pulledQueue = res.queue != null,
+                    syncedAt = res.syncedAt,
+                )
+            },
+            onFailure = { err ->
+                SyncResult.Failure(err)
+            },
+        )
+    }
+
+    private suspend fun initMetadataVersionIfNeeded() {
+        val metadataVersion = requireBoxcastPrefs.getSyncMetadataVersion()
+        if (metadataVersion < 1) {
+            requireListeningHistoryDao.markAllHistoryWithTitlesDirty()
+            requireBoxcastPrefs.setSyncMetadataVersion(1)
+        }
+    }
+
+    private suspend fun executePullWithBackfill(
+        userId: String,
+        pushSummary: PushBatchSummary,
+        token: String?,
+    ): SyncResult {
+        val needsBackfill = requireBoxcastPrefs.getSyncMetadataVersion() < 2 &&
+            requireListeningHistoryDao.hasAnyHistoryWithBlankTitle()
+        val since = if (needsBackfill) 0L else requireBoxcastPrefs.getLastSyncTimestamp()
+        val pullResult = executePull(since, token)
+
+        return pullResult.fold(
+            onSuccess = { pullResponse ->
+                if (needsBackfill) {
+                    requireBoxcastPrefs.setSyncMetadataVersion(2)
+                }
+                requireBoxcastPrefs.setLastSyncedUserId(userId)
+                SyncResult.Success(
+                    pushedSubscriptions = pushSummary.pushedSubscriptions,
+                    pushedHistory = pushSummary.pushedHistory,
+                    pushedQueue = pushSummary.pushedQueue,
+                    pulledSubscriptions = pullResponse.subscriptions.size,
+                    pulledHistory = pullResponse.history.size,
+                    pulledQueue = pullResponse.queue != null,
+                    syncedAt = maxOf(pushSummary.syncedAt, pullResponse.syncedAt),
+                )
+            },
+            onFailure = { err ->
+                SyncResult.Failure(err, partialSyncedAt = pushSummary.syncedAt.takeIf { it > 0 })
+            },
+        )
     }
 
     private suspend fun purgeLocalDataForAccountSwitch() = withContext(ioDispatcher) {
@@ -210,6 +205,13 @@ open class UserSyncCoordinator(
         runCatching {
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
+
+            val currentUserId = authUserIdProvider()
+            val lastSyncedUser = requireBoxcastPrefs.getLastSyncedUserId()
+            if (lastSyncedUser != null && currentUserId != null && lastSyncedUser != currentUserId) {
+                // Pending account switch cleanup: abort push so previous account data is never pushed with new token
+                return@runCatching PushBatchSummary(0, 0, false, requireBoxcastPrefs.getLastSyncTimestamp())
+            }
 
             ensureDirtyFlagsForSyncState()
 
@@ -408,36 +410,35 @@ open class UserSyncCoordinator(
             }
 
             val body = response.body()!!
-            val syncedAt = body.syncedAt
-
-            // 1. Resolve subscriptions
-            for (sub in body.subscriptions) {
-                requireSubscriptionSyncResolver.resolveSubscription(sub, syncedAt)
-            }
-
-            // 2. Resolve history
-            for (item in body.history) {
-                requireHistorySyncResolver.resolveHistoryItem(item, syncedAt)
-            }
-
-            // 3. Resolve queue
-            body.queue?.let { q ->
-                requireQueueSyncResolver.resolveQueue(q, syncedAt)
-            }
-
-            // 4. Idle Miniplayer Handoff: if remote history updated, hand off newest session to idle miniplayer
-            val newestRemoteHistory = body.history.maxByOrNull { it.lastPlayedAt }
-            if (newestRemoteHistory != null && newestRemoteHistory.lastPlayedAt > 0L) {
-                activePlaybackSyncPort?.updateIdlePlaybackSession(
-                    episodeId = newestRemoteHistory.episodeId,
-                    positionMs = newestRemoteHistory.progressMs,
-                    lastPlayedAt = newestRemoteHistory.lastPlayedAt,
-                )
-            }
-
-            requireBoxcastPrefs.setLastSyncTimestamp(syncedAt)
+            applyPullResponse(body)
             body
         }.onFailure { if (it is CancellationException) throw it }
+    }
+
+    private suspend fun applyPullResponse(body: SyncPullResponse) {
+        val syncedAt = body.syncedAt
+        for (sub in body.subscriptions) {
+            requireSubscriptionSyncResolver.resolveSubscription(sub, syncedAt)
+        }
+        for (item in body.history) {
+            requireHistorySyncResolver.resolveHistoryItem(item, syncedAt)
+        }
+        body.queue?.let { q ->
+            requireQueueSyncResolver.resolveQueue(q, syncedAt)
+        }
+        handoffIdleMiniplayerIfNewer(body.history)
+        requireBoxcastPrefs.setLastSyncTimestamp(syncedAt)
+    }
+
+    private suspend fun handoffIdleMiniplayerIfNewer(history: List<ListeningHistorySyncDto>) {
+        val newestRemoteHistory = history.maxByOrNull { it.lastPlayedAt }
+        if (newestRemoteHistory != null && newestRemoteHistory.lastPlayedAt > 0L) {
+            activePlaybackSyncPort?.updateIdlePlaybackSession(
+                episodeId = newestRemoteHistory.episodeId,
+                positionMs = newestRemoteHistory.progressMs,
+                lastPlayedAt = newestRemoteHistory.lastPlayedAt,
+            )
+        }
     }
 
     data class PushBatchSummary(
