@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-25T15:25:48.122Z",
+  "lastRun": "2026-09-25T19:26:08.064Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "efe4c226-cfc6-11f0-83c5-0f782a2af401",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "39a06fa2-c90b-4aa1-b046-c624f58a2e91",
-      "lastEpisodeTitle": "NPR News: 09-25-2026 11AM EDT",
+      "lastRssKey": "b592df49-d121-49c5-8cee-be6d460c0108",
+      "lastEpisodeTitle": "NPR News: 09-25-2026 3PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790349951004
+      "lastCheckedAt": 1790364369910
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75339228",
@@ -165,10 +165,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "8394f94e-a890-11f1-95c4-9716a0cce997",
-      "lastEpisodeTitle": "Meta Made a Tamagotchi for Its AI",
+      "lastRssKey": "83c781d4-a890-11f1-95c4-bb6500cae384",
+      "lastEpisodeTitle": "Is Copilot Microsoft's Everything App?",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1790274788663
+      "lastCheckedAt": 1790364377616
     },
     "353744": {
       "lastRssKey": "flightcast:01M2X1DGXZZDMDGGVKCB1GKN0M",
@@ -177,16 +177,16 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "1cb59e4a-b8f3-11f1-9965-2f5e9b7afe21",
-      "lastEpisodeTitle": "11AM ET 09/25/2026 Newscast",
+      "lastRssKey": "a3ff7882-b914-11f1-89c3-4f2ca550850a",
+      "lastEpisodeTitle": "3PM ET 09/25/2026 Newscast",
       "lastEpisodeId": "60769426413",
-      "lastCheckedAt": 1790349961216
+      "lastCheckedAt": 1790364378030
     },
     "386911": {
-      "lastRssKey": "e0887724-b395-11f1-87fa-033716a41f07",
-      "lastEpisodeTitle": "NerdCast 1048 - O Segredo de Widow's Bay: A Melhor Série do Ano! Azaghal Cravou!",
+      "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
+      "lastEpisodeTitle": "NerdCast 1049 - NerdCon 2026: Ao Vivo, Tudo Pode Acontecer!",
       "lastEpisodeId": "59666491926",
-      "lastCheckedAt": 1789765623301
+      "lastCheckedAt": 1790364378383
     },
     "388141": {
       "lastRssKey": "6aa84dbcff74edfd004b27e1",
@@ -207,10 +207,10 @@
       "lastCheckedAt": 1790185399693
     },
     "415434": {
-      "lastRssKey": "497c2ba0-6e7b-11f1-94bf-b790e6d3c029",
-      "lastEpisodeTitle": "Meta and Snap battle for your face",
+      "lastRssKey": "ca490244-c3c7-11f0-8340-ef1cc61061e0",
+      "lastEpisodeTitle": "Phones don't have lights",
       "lastEpisodeId": "60788283787",
-      "lastCheckedAt": 1790287169250
+      "lastCheckedAt": 1790364380211
     },
     "419624": {
       "lastRssKey": "d30adff8-d3dc-4ae2-bcde-9f9ba3a0f0ff",
@@ -219,10 +219,10 @@
       "lastCheckedAt": 1789925693884
     },
     "431205": {
-      "lastRssKey": "4d0cc4b6-c482-4b19-8a16-c6bf2fe90bcb",
-      "lastEpisodeTitle": "Navigating Rising Rates and the Trump-Xi Summit 9/24/26",
+      "lastRssKey": "b95dc3af-2a9d-4952-81ad-263e60be014c",
+      "lastEpisodeTitle": "Rate Hike Regret, Iran Negotiations, and Mortgage Mayhem 9/25/26",
       "lastEpisodeId": "60571577178",
-      "lastCheckedAt": 1790274794066
+      "lastCheckedAt": 1790364381998
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -299,10 +299,10 @@
       "lastCheckedAt": 1789640214417
     },
     "483834": {
-      "lastRssKey": "6ab566584aee750ac7f70725",
-      "lastEpisodeTitle": "Brad Bird’s Ray Gunn Official Trailer, Robert Eggers to Make Romeo & Juliet Film — September 24, 2026",
-      "lastEpisodeId": "60781346776",
-      "lastCheckedAt": 1790274800834
+      "lastRssKey": "6ab6a70b59a98735e19eac57",
+      "lastEpisodeTitle": "Final Trailer for Clayface Movie, Glee Reboot Confirmed by Ryan Murphy — September 25, 2026",
+      "lastEpisodeId": "60837111726",
+      "lastCheckedAt": 1790364387815
     },
     "490022": {
       "lastRssKey": "b861df75-e53e-4c84-b6cc-2ad3736a8541",
@@ -578,6 +578,11 @@
       "lastEpisodeId": "59952426656",
       "lastCheckedAt": 1790331943889
     },
+    "952276": {
+      "lastRssKey": "audioboom-01a0d01c-6826-73df-a933-69239b08e42e",
+      "lastEpisodeTitle": "443: KJ Biermann Updates, More Siders Family News, RC Horsch New Victims, & Caleb Flynn Trial",
+      "lastCheckedAt": 1790364430745
+    },
     "959112": {
       "lastRssKey": "https://9to5google.com/?p=730937",
       "lastEpisodeTitle": "Googlebook Eve",
@@ -624,9 +629,9 @@
       "lastCheckedAt": 1790258599204
     },
     "1047865": {
-      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-the-pursuit-of-happiness-quran-edition-qa",
-      "lastEpisodeTitle": "The Pursuit of Happiness - Quran Edition - Q&A",
-      "lastCheckedAt": 1790239267544
+      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-how-gratitude-can-heal-your-trauma",
+      "lastEpisodeTitle": "How Gratitude Can Heal Your Trauma",
+      "lastCheckedAt": 1790364435817
     },
     "1065434": {
       "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1121",
@@ -670,10 +675,10 @@
       "lastCheckedAt": 1790313282410
     },
     "1193286": {
-      "lastRssKey": "5fb9b786-b86b-11f1-8c94-e7b494cf2790",
-      "lastEpisodeTitle": "Scheifele, Marchenko, Dach, What’s Next For The Habs? | The Sick Podcast with Tony Marinaro September 24 2026",
-      "lastEpisodeId": "60782465199",
-      "lastCheckedAt": 1790313283011
+      "lastRssKey": "e8630a42-b8f7-11f1-9359-af03327d8705",
+      "lastEpisodeTitle": "Propos Intéressants De Hughes : Quel Sera Le Tandem? | Le Sick Podcast Avec Tony Marinaro 25/09/26",
+      "lastEpisodeId": "60837829375",
+      "lastCheckedAt": 1790364440690
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -717,16 +722,16 @@
       "lastCheckedAt": 1790239275981
     },
     "1366771": {
-      "lastRssKey": "6ab64aa5fb182c6fb5cefa2c",
-      "lastEpisodeTitle": "Afternoon Briefing Friday 25th September",
-      "lastEpisodeId": "60663473400",
-      "lastCheckedAt": 1790331956440
+      "lastRssKey": "6ab6abcb62a47b6bec170ab0",
+      "lastEpisodeTitle": "Evening briefing Friday 25th September",
+      "lastEpisodeId": "60840063038",
+      "lastCheckedAt": 1790364443822
     },
     "1380325": {
-      "lastRssKey": "Buzzsprout-19791953",
-      "lastEpisodeTitle": "5000 to 1 Gamble - James Zobel - 2025 Incheon Symposium",
-      "lastEpisodeId": "60322395865",
-      "lastCheckedAt": 1790038937841
+      "lastRssKey": "Buzzsprout-19453613",
+      "lastEpisodeTitle": "Unit 731",
+      "lastEpisodeId": "60839110713",
+      "lastCheckedAt": 1790364444030
     },
     "1388001": {
       "lastRssKey": "734780ad-0d99-4d3a-8aa6-566151674e8e",
@@ -746,10 +751,10 @@
       "lastCheckedAt": 1789727972144
     },
     "1809220": {
-      "lastRssKey": "43ae7d14-9662-42a7-80a8-b481014b9a11",
-      "lastEpisodeTitle": "WHO ELSE COULD GET OFFER SHEETED THIS OFFSEASON?",
+      "lastRssKey": "5ec0214a-c252-4384-8e60-b4d000e90826",
+      "lastEpisodeTitle": "10 BOLD PREDICTIONS FOR THE NHL SEASON!",
       "lastEpisodeId": "57421560583",
-      "lastCheckedAt": 1788730441194
+      "lastCheckedAt": 1790364445850
     },
     "2136580": {
       "lastRssKey": "6e13c536-0fab-4069-bdfa-d984070cb12c",
@@ -764,10 +769,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6ab555bc478b0c998f7c8680",
-      "lastEpisodeTitle": "(Pop) Un média 100% fait par IA en Argentine inquiète les journalistes… HugoDécrypte",
+      "lastRssKey": "6ab6a335732d541ddd273a59",
+      "lastEpisodeTitle": "Pourquoi le Pape est en France (25/09)",
       "lastEpisodeId": "60814304043",
-      "lastCheckedAt": 1790331958885
+      "lastCheckedAt": 1790364446695
     },
     "2574026": {
       "lastRssKey": "6e346410-b838-11f1-9725-f710ffda4192",
@@ -1032,10 +1037,10 @@
       "lastCheckedAt": 1790207606978
     },
     "6280366": {
-      "lastRssKey": "ac815790-a040-4ef8-9804-c63ab32a03c5",
-      "lastEpisodeTitle": "AI Agents Are Moving Into the Real World",
+      "lastRssKey": "9e67e480-08ed-4ae1-a4ab-053885563aa6",
+      "lastEpisodeTitle": "How People Are Actually Using Jev",
       "lastEpisodeId": "60788745078",
-      "lastCheckedAt": 1790296087045
+      "lastCheckedAt": 1790364463439
     },
     "6413946": {
       "lastRssKey": "ca64c71f-d61a-493b-a77e-b61f25893c59",
@@ -1068,9 +1073,10 @@
       "lastCheckedAt": 1789584035114
     },
     "6628686": {
-      "lastRssKey": "ea0756da-a3c3-11f1-9137-5f1b7b254193",
-      "lastEpisodeTitle": "Moment: How Does Menopause Change Your Mouth—And Why Should You Care?",
-      "lastCheckedAt": 1790185485390
+      "lastRssKey": "67d6bc4c-b7ef-11f1-9461-7fe6d52ccd06",
+      "lastEpisodeTitle": "Does an Enlarged Prostate Mean You’re More Likely to Get Prostate Cancer?",
+      "lastEpisodeId": "60835585667",
+      "lastCheckedAt": 1790364464945
     },
     "6634680": {
       "lastRssKey": "cb571878-467a-49c1-bb3a-a9e6128a2f0b",
@@ -1422,10 +1428,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/b7a043bf-f3db-5577-9a77-d2b67ce3a6fb",
-      "lastEpisodeTitle": "Vital lessons from people in narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/40506eb4-6b2c-56b7-9f33-4656498d69a2",
+      "lastEpisodeTitle": "4 ways to PROTECT YOURSELF from narcissists ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790350066939
+      "lastCheckedAt": 1790364493273
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
