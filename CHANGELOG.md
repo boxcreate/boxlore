@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.26] - 2026-09-25
+
 ### Added
 - Realtime cloud sync engine supporting subscriptions, listening history, and monotonic queue synchronization across devices. ([#1082](https://github.com/boxcreate/boxlore/pull/1082)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Lifecycle and milestone-driven sync triggers in `CloudSyncTriggerCoordinator` with guaranteed background flushes via `CloudSyncWorker`. ([#1082](https://github.com/boxcreate/boxlore/pull/1082)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
@@ -26,22 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `PlaybackQueueCoordinator` to delete removed queue items directly instead of replacing the entire table. ([#1072](https://github.com/boxcreate/boxlore/pull/1072)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - resolve account authentication and settings refinements ([#1070](https://github.com/boxcreate/boxlore/pull/1070)) <!-- impact:user-impact-medium -->
 
-<!-- readme-copy:start pr=1071
-### Fixes
-- Streamlined player chapter and transcript controls by removing deprecated background generation prompts.
-readme-copy:end pr=1071 -->
-
-<!-- readme-copy:start pr=1072
-### Improvements
-- Added multi-device sync data foundation to protect your playlist queues, subscriptions, and favorites from sync conflicts.
-readme-copy:end pr=1072 -->
-
-<!-- readme-copy:start pr=1082
-### Improvements
-- Realtime cloud sync across your devices: keep your subscriptions, playback progress, and queue in sync wherever you listen.
-- Instant playback handoff: pause on one device and resume seamlessly on another.
-- Enhanced Account Settings with live sync status and a one-tap manual sync button.
-readme-copy:end pr=1082 -->
 ## [v0.0.25] - 2026-09-08
 
 ### Added
