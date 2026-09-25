@@ -206,29 +206,18 @@ open class UserSyncCoordinator(
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
 
-            val currentUserId = authUserIdProvider()
-            val lastSyncedUser = requireBoxcastPrefs.getLastSyncedUserId()
-            if (lastSyncedUser != null && currentUserId != null && lastSyncedUser != currentUserId) {
+            if (shouldAbortPushForPendingAccountSwitch()) {
                 // Pending account switch cleanup: abort push so previous account data is never pushed with new token
                 return@runCatching PushBatchSummary(0, 0, false, requireBoxcastPrefs.getLastSyncTimestamp())
             }
 
-            ensureDirtyFlagsForSyncState()
-
-            val dirtyPodcasts = requirePodcastDao.getDirtyPodcasts().take(MAX_SUBSCRIPTION_BATCH_SIZE)
-            val dirtyHistory = requireListeningHistoryDao.getDirtyListeningHistory().take(MAX_HISTORY_BATCH_SIZE)
-            val queueMeta = requireQueueSyncPort.getQueueMetadata()
-            val queueDirty = queueMeta?.isDirty == true
-            val queueItems = if (queueDirty) requireQueueSyncPort.getQueueSnapshot() else emptyList()
-
-            if (dirtyPodcasts.isEmpty() && dirtyHistory.isEmpty() && !queueDirty) {
-                return@runCatching PushBatchSummary(0, 0, false, requireBoxcastPrefs.getLastSyncTimestamp())
-            }
+            val batch = collectPushBatch()
+                ?: return@runCatching PushBatchSummary(0, 0, false, requireBoxcastPrefs.getLastSyncTimestamp())
 
             val now = System.currentTimeMillis()
-            val subDtos = buildSubscriptionDtos(dirtyPodcasts, now)
-            val histDtos = buildHistoryDtos(dirtyHistory, now)
-            val queueDto = buildQueueDto(queueDirty, queueMeta, queueItems)
+            val subDtos = buildSubscriptionDtos(batch.dirtyPodcasts, now)
+            val histDtos = buildHistoryDtos(batch.dirtyHistory, now)
+            val queueDto = buildQueueDto(batch.queueDirty, batch.queueMeta, batch.queueItems)
 
             val pushReq = SyncPushRequest(
                 subscriptions = subDtos,
@@ -237,18 +226,8 @@ open class UserSyncCoordinator(
                 clientTimestamp = now,
             )
 
-            val call = requireBoxLoreApi.syncPush(
-                publicKey = publicKey,
-                authorization = "Bearer $resolvedToken",
-                request = pushReq,
-            )
-            val response = call.execute()
-            if (!response.isSuccessful || response.body() == null) {
-                error("Sync push failed with HTTP ${response.code()}: ${response.errorBody()?.string()}")
-            }
-
-            val syncedAt = response.body()!!.syncedAt
-            clearOptimisticConcurrencyFlags(dirtyPodcasts, dirtyHistory, queueMeta, syncedAt)
+            val syncedAt = sendPushPayload(resolvedToken, pushReq)
+            clearOptimisticConcurrencyFlags(batch.dirtyPodcasts, batch.dirtyHistory, batch.queueMeta, syncedAt)
 
             PushBatchSummary(
                 pushedSubscriptions = subDtos.size,
@@ -257,6 +236,48 @@ open class UserSyncCoordinator(
                 syncedAt = syncedAt,
             )
         }.onFailure { if (it is CancellationException) throw it }
+    }
+
+    private fun shouldAbortPushForPendingAccountSwitch(): Boolean {
+        val currentUserId = authUserIdProvider()
+        val lastSyncedUser = requireBoxcastPrefs.getLastSyncedUserId()
+        return lastSyncedUser != null && currentUserId != null && lastSyncedUser != currentUserId
+    }
+
+    private suspend fun collectPushBatch(): PendingPushBatch? {
+        ensureDirtyFlagsForSyncState()
+
+        val dirtyPodcasts = requirePodcastDao.getDirtyPodcasts().take(MAX_SUBSCRIPTION_BATCH_SIZE)
+        val dirtyHistory = requireListeningHistoryDao.getDirtyListeningHistory().take(MAX_HISTORY_BATCH_SIZE)
+        val queueMeta = requireQueueSyncPort.getQueueMetadata()
+        val queueDirty = queueMeta?.isDirty == true
+        val queueItems = if (queueDirty) requireQueueSyncPort.getQueueSnapshot() else emptyList()
+
+        if (dirtyPodcasts.isEmpty() && dirtyHistory.isEmpty() && !queueDirty) {
+            return null
+        }
+
+        return PendingPushBatch(
+            dirtyPodcasts = dirtyPodcasts,
+            dirtyHistory = dirtyHistory,
+            queueMeta = queueMeta,
+            queueDirty = queueDirty,
+            queueItems = queueItems,
+        )
+    }
+
+    private fun sendPushPayload(token: String, request: SyncPushRequest): Long {
+        val call = requireBoxLoreApi.syncPush(
+            publicKey = publicKey,
+            authorization = "Bearer $token",
+            request = request,
+        )
+        val response = call.execute()
+        val body = response.body()
+        if (!response.isSuccessful || body == null) {
+            error("Sync push failed with HTTP ${response.code()}: ${response.errorBody()?.string()}")
+        }
+        return body.syncedAt
     }
 
     private suspend fun ensureDirtyFlagsForSyncState() {
@@ -440,6 +461,14 @@ open class UserSyncCoordinator(
             )
         }
     }
+
+    private data class PendingPushBatch(
+        val dirtyPodcasts: List<PodcastEntity>,
+        val dirtyHistory: List<ListeningHistoryEntity>,
+        val queueMeta: QueueMetadataEntity?,
+        val queueDirty: Boolean,
+        val queueItems: List<QueueItem>,
+    )
 
     data class PushBatchSummary(
         val pushedSubscriptions: Int,
