@@ -125,6 +125,9 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `auto_chapters_lifecycle` | Chapters request/complete/fail | stage:string | episode_id:string; error_message:string | none |
 | `auto_transcript_lifecycle` | Transcript request/complete/fail | stage:string | episode_id:string; error_message:string | none |
 | `proxy_fallback_triggered` | Image load fell back to proxy | — | reason:string | none |
+| `support_page_viewed` | Support boxlore development screen opened | — | — | none |
+| `support_tier_toggled` | Support tier artifact swiped or lore inspected | tier_title:string; codename:string; amount:string | is_lore_inspect:bool | none |
+| `support_donate_clicked` | User tapped donate CTA button for a support tier | tier_title:string; codename:string; amount:string | — | none |
 
 ## Person properties
 

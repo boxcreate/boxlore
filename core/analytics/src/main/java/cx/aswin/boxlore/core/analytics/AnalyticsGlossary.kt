@@ -80,6 +80,9 @@ object AnalyticsGlossary {
             "daily_briefing_action",
             "home_import_banner_action",
             "library_history_tracking_notice",
+            "support_page_viewed",
+            "support_tier_toggled",
+            "support_donate_clicked",
         )
 
     /** Phase C (Auto + polish) — shipped PR9. */
@@ -109,7 +112,7 @@ object AnalyticsGlossary {
             "support_donate_clicked",
         )
 
-    val ALL_ALLOWED_EVENTS: Set<String> = PHASE_A_UNION_B_UNION_C + SUPPORT_EVENTS
+    val ALL_ALLOWED_EVENTS: Set<String> = PHASE_A_UNION_B_UNION_C
 
     fun isAllowedEvent(eventName: String): Boolean = eventName == PERSON_SET_EVENT || eventName in ALL_ALLOWED_EVENTS
 
