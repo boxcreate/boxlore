@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.feature.settings.pages
 
 import android.app.Activity
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -62,6 +64,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -74,6 +77,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.view.WindowCompat
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.airbnb.lottie.compose.rememberLottieDynamicProperties
+import com.airbnb.lottie.compose.rememberLottieDynamicProperty
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
 import kotlin.math.PI
@@ -133,6 +144,14 @@ internal fun SupportDevelopmentPage(
             .fillMaxSize()
             .background(Color.Black),
     ) {
+        SupportLightningAtmosphere(
+            activeColor = activeAuraColor,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(440.dp)
+                .align(Alignment.TopCenter),
+        )
+
         CosmicAtmosphereCanvas(
             auraColor = activeAuraColor,
             pulse = plasmaPulse,
@@ -244,6 +263,37 @@ private fun SupportTopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
         ),
+    )
+}
+
+@Composable
+private fun SupportLightningAtmosphere(
+    activeColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val composition by rememberLottieComposition(
+        LottieCompositionSpec.RawRes(R.raw.lightning_ambient),
+    )
+    val progress by animateLottieCompositionAsState(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+    val dynamicProperties = rememberLottieDynamicProperties(
+        rememberLottieDynamicProperty(
+            property = LottieProperty.COLOR_FILTER,
+            value = PorterDuffColorFilter(activeColor.toArgb(), PorterDuff.Mode.SRC_ATOP),
+            keyPath = arrayOf("**"),
+        ),
+    )
+
+    LottieAnimation(
+        composition = composition,
+        progress = { progress },
+        dynamicProperties = dynamicProperties,
+        contentScale = ContentScale.Crop,
+        modifier = modifier.graphicsLayer {
+            alpha = 0.35f
+        },
     )
 }
 
