@@ -182,7 +182,7 @@ private fun SupportIntroHeader() {
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "boxlore is completely free of charge and built without advertisements. Listener contributions directly fund our cloud servers, search indexes, sync pipeline, and ongoing development so everyone enjoys an open podcast experience.",
+            text = "boxlore is completely free and ad-free. Listener contributions directly support our development and help keep it free for everyone.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 18.sp,
