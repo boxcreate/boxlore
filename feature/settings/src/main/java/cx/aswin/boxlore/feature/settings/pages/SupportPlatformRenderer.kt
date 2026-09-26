@@ -21,6 +21,7 @@ internal fun DrawScope.drawTransformingPlatform(
     rotation: Float,
     pulse: Float,
     tiers: List<SupportTierCardData>,
+    storyProgress: Float = 0f,
 ) {
     val leftPage = pagePosition.toInt().coerceIn(0, 4)
     val rightPage = (leftPage + 1).coerceAtMost(4)
@@ -30,47 +31,81 @@ internal fun DrawScope.drawTransformingPlatform(
     val centerY = size.height * 0.50f
 
     if (fraction < 0.01f) {
-        drawTierHudReticle(leftPage, 1f, 1f, centerX, centerY, rotation, pulse, tiers[leftPage].auraColor)
+        drawTierHudReticle(leftPage, 1f, 1f, centerX, centerY, rotation, pulse, tiers[leftPage].auraColor, storyProgress)
     } else if (fraction > 0.99f) {
-        drawTierHudReticle(rightPage, 1f, 1f, centerX, centerY, rotation, pulse, tiers[rightPage].auraColor)
+        drawTierHudReticle(rightPage, 1f, 1f, centerX, centerY, rotation, pulse, tiers[rightPage].auraColor, storyProgress)
     } else {
         val leftAlpha = (1f - fraction).coerceIn(0f, 1f)
         val rightAlpha = fraction.coerceIn(0f, 1f)
         val leftScale = 1f - (0.08f * fraction)
         val rightScale = 0.92f + (0.08f * fraction)
-        drawTierHudReticle(leftPage, leftAlpha, leftScale, centerX, centerY, rotation, pulse, tiers[leftPage].auraColor)
-        drawTierHudReticle(rightPage, rightAlpha, rightScale, centerX, centerY, rotation, pulse, tiers[rightPage].auraColor)
+        drawTierHudReticle(leftPage, leftAlpha, leftScale, centerX, centerY, rotation, pulse, tiers[leftPage].auraColor, storyProgress)
+        drawTierHudReticle(rightPage, rightAlpha, rightScale, centerX, centerY, rotation, pulse, tiers[rightPage].auraColor, storyProgress)
     }
 }
 
 @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 internal fun DrawScope.drawTierHudReticle(
     tierIndex: Int,
-    alpha: Float,
+    rawAlpha: Float,
     scale: Float,
     centerX: Float,
     centerY: Float,
     rotation: Float,
     pulse: Float,
     color: Color,
+    storyProgress: Float = 0f,
 ) {
-    if (alpha <= 0.01f) return
-    val baseColor = color.copy(alpha = color.alpha * alpha)
+    if (rawAlpha <= 0.01f) return
+    val bracketColor = color.copy(alpha = color.alpha * rawAlpha)
     val effectivePulse = pulse * scale
-    val hw = 104.dp.toPx() * scale
-    val hh = 96.dp.toPx() * scale
-    val arm = 20.dp.toPx() * scale
 
-    // Common tactical corner brackets framing the item
+    val defaultHw = 104.dp.toPx() * scale
+    val defaultHh = 96.dp.toPx() * scale
+    val storyHw = 160.dp.toPx() * scale
+    val storyHh = 76.dp.toPx() * scale
+
+    val hw = defaultHw + (storyHw - defaultHw) * storyProgress
+    val hh = defaultHh + (storyHh - defaultHh) * storyProgress
+    val arm = (20.dp.toPx() - (4.dp.toPx() * storyProgress)) * scale
+
+    // Common tactical corner brackets framing the item or lore card
     drawCornerBrackets(
         centerX = centerX,
         centerY = centerY,
         halfWidth = hw,
         halfHeight = hh,
         armLength = arm,
-        color = baseColor.copy(alpha = 0.50f * alpha),
+        color = bracketColor.copy(alpha = (0.50f + 0.35f * storyProgress) * rawAlpha),
         strokeWidth = 1.5.dp.toPx(),
     )
+
+    // Minimal state subtle telemetry rails framing the lore story
+    if (storyProgress > 0.02f) {
+        val frameAlpha = storyProgress * rawAlpha * 0.40f
+        val lineYTop = centerY - hh
+        val lineYBottom = centerY + hh
+        val startX = centerX - hw + arm + 6.dp.toPx()
+        val endX = centerX + hw - arm - 6.dp.toPx()
+        drawLine(
+            color = bracketColor.copy(alpha = frameAlpha),
+            start = Offset(startX, lineYTop),
+            end = Offset(endX, lineYTop),
+            strokeWidth = 1.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f),
+        )
+        drawLine(
+            color = bracketColor.copy(alpha = frameAlpha),
+            start = Offset(startX, lineYBottom),
+            end = Offset(endX, lineYBottom),
+            strokeWidth = 1.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f),
+        )
+    }
+
+    val alpha = rawAlpha * (1f - storyProgress)
+    if (alpha <= 0.01f) return
+    val baseColor = color.copy(alpha = color.alpha * alpha)
 
     when (tierIndex) {
         0 -> {

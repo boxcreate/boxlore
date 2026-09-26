@@ -3,7 +3,6 @@ package cx.aswin.boxlore.feature.settings.pages
 import android.app.Activity
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
-import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -23,6 +22,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -56,8 +58,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,7 +71,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -427,6 +433,14 @@ private fun SupportArtifactStage(
         label = "platform_pulse",
     )
 
+    val haptic = LocalHapticFeedback.current
+    var isStoryMode by remember { mutableStateOf(false) }
+    val storyProgress by animateFloatAsState(
+        targetValue = if (isStoryMode) 1f else 0f,
+        animationSpec = tween(360, easing = FastOutSlowInEasing),
+        label = "story_progress",
+    )
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -434,7 +448,14 @@ private fun SupportArtifactStage(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(190.dp),
+                .height(190.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    isStoryMode = !isStoryMode
+                },
             contentAlignment = Alignment.Center,
         ) {
             SupportLightningAtmosphere(
@@ -449,7 +470,11 @@ private fun SupportArtifactStage(
             ItemBackdropCodename(
                 pagePosition = pagePosition,
                 tiers = tiers,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = 1f - storyProgress
+                    },
             )
 
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -458,19 +483,51 @@ private fun SupportArtifactStage(
                     rotation = platformRotation,
                     pulse = platformPulse,
                     tiers = tiers,
+                    storyProgress = storyProgress,
                 )
             }
 
-            HorizontalPager(
-                state = pagerState,
+            SupportArtifactPager(
+                pagerState = pagerState,
+                tiers = tiers,
+                storyProgress = storyProgress,
+                floatOffset = floatOffset,
                 modifier = Modifier.fillMaxSize(),
-            ) { page ->
-                val tier = tiers[page]
-                val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
-                val signedOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                val clampedOffset = pageOffset.coerceIn(0f, 1f)
-                val levitationWeight = 1f - clampedOffset
+            )
+        }
 
+        Spacer(modifier = Modifier.height(4.dp))
+
+        SupportStageTierInfo(
+            selectedIndex = pagerState.currentPage,
+            tiers = tiers,
+        )
+    }
+}
+
+@Composable
+private fun SupportArtifactPager(
+    pagerState: PagerState,
+    tiers: List<SupportTierCardData>,
+    storyProgress: Float,
+    floatOffset: Float,
+    modifier: Modifier = Modifier,
+) {
+    HorizontalPager(
+        state = pagerState,
+        modifier = modifier,
+    ) { page ->
+        val tier = tiers[page]
+        val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+        val signedOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+        val clampedOffset = pageOffset.coerceIn(0f, 1f)
+        val levitationWeight = 1f - clampedOffset
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (storyProgress < 0.99f) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -483,7 +540,7 @@ private fun SupportArtifactStage(
                             val scale = lerp(1f, 0.72f, clampedOffset)
                             scaleX = scale
                             scaleY = scale
-                            alpha = lerp(1f, 0.22f, clampedOffset)
+                            alpha = lerp(1f, 0.22f, clampedOffset) * (1f - storyProgress)
                         },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -495,13 +552,88 @@ private fun SupportArtifactStage(
                     )
                 }
             }
+
+            if (storyProgress > 0.01f) {
+                ArtifactLoreStoryContent(
+                    tier = tier,
+                    storyProgress = storyProgress,
+                    clampedOffset = clampedOffset,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArtifactLoreStoryContent(
+    tier: SupportTierCardData,
+    storyProgress: Float,
+    clampedOffset: Float,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 28.dp)
+            .graphicsLayer {
+                alpha = storyProgress * (1f - clampedOffset)
+                val s = 0.93f + (0.07f * storyProgress)
+                scaleX = s
+                scaleY = s
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .background(tier.auraColor, CircleShape),
+            )
+            Text(
+                text = "${tier.codenameLine1} ${tier.codenameLine2}",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = GoogleSansWeight.bold,
+                    letterSpacing = 2.sp,
+                    fontSize = 11.sp,
+                ),
+                color = tier.auraColor,
+            )
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .background(tier.auraColor, CircleShape),
+            )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        SupportStageTierInfo(
-            selectedIndex = pagerState.currentPage,
-            tiers = tiers,
+        Text(
+            text = tier.loreDescription,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = GoogleSansWeight.medium,
+                fontSize = 14.sp,
+                lineHeight = 21.sp,
+                letterSpacing = 0.3.sp,
+            ),
+            color = Color.White.copy(alpha = 0.95f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 6.dp),
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "TAP TO RETURN",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = GoogleSansWeight.semiBold,
+                fontSize = 9.sp,
+                letterSpacing = 1.6.sp,
+            ),
+            color = Color.White.copy(alpha = 0.40f * storyProgress),
         )
     }
 }
@@ -819,75 +951,3 @@ private fun SupportMissionCard(
         }
     }
 }
-
-internal data class SupportTierCardData(
-    val title: String,
-    val shortDuration: String,
-    val powerImpact: String,
-    val energySegments: Int,
-    val cost: String,
-    @DrawableRes val iconRes: Int,
-    val auraColor: Color,
-    val isFeatured: Boolean = false,
-    val codenameLine1: String,
-    val codenameLine2: String,
-)
-
-internal val SUPPORT_TIER_CARDS = listOf(
-    SupportTierCardData(
-        title = "Micro Energy Cell",
-        powerImpact = "Powers the boxlore servers for 3 hours",
-        shortDuration = "3h",
-        energySegments = 1,
-        cost = "$0.49",
-        iconRes = R.drawable.ic_tier_1_micro_cell,
-        auraColor = Color(0xFF2979FF),
-        codenameLine1 = "WITCH",
-        codenameLine2 = "CELL",
-    ),
-    SupportTierCardData(
-        title = "Field Battery Pack",
-        powerImpact = "Powers the boxlore servers for 8 hours",
-        shortDuration = "8h",
-        energySegments = 2,
-        cost = "$0.99",
-        iconRes = R.drawable.ic_tier_2_field_battery,
-        auraColor = Color(0xFF00E676),
-        codenameLine1 = "GRAVE",
-        codenameLine2 = "PACK",
-    ),
-    SupportTierCardData(
-        title = "Power Station",
-        powerImpact = "Powers the boxlore servers for 1 full day",
-        shortDuration = "1d",
-        energySegments = 3,
-        cost = "$2.49",
-        iconRes = R.drawable.ic_tier_3_power_station,
-        auraColor = Color(0xFFFFB300),
-        codenameLine1 = "SUN",
-        codenameLine2 = "RELIC",
-    ),
-    SupportTierCardData(
-        title = "Server Tower",
-        powerImpact = "Powers the boxlore servers for 3 full days",
-        shortDuration = "3d",
-        energySegments = 4,
-        cost = "$6.99",
-        iconRes = R.drawable.ic_tier_4_server_tower,
-        auraColor = Color(0xFF8B5CF6),
-        codenameLine1 = "VOID",
-        codenameLine2 = "SPIRE",
-    ),
-    SupportTierCardData(
-        title = "Quantum Beacon",
-        powerImpact = "Powers the boxlore servers for 1 full week",
-        shortDuration = "7d",
-        energySegments = 5,
-        cost = "$17.99",
-        iconRes = R.drawable.ic_tier_5_quantum_beacon,
-        auraColor = Color(0xFFFF2D55),
-        isFeatured = true,
-        codenameLine1 = "BLOOD",
-        codenameLine2 = "ORB",
-    ),
-)

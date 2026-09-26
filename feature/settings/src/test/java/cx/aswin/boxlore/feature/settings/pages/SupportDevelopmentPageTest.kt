@@ -59,6 +59,21 @@ class SupportDevelopmentPageTest {
     }
 
     @Test
+    fun supportTierCards_loreDescriptionsAreValidAndPresent() {
+        val loreDescriptions = SUPPORT_TIER_CARDS.map { it.loreDescription }
+        assertEquals(
+            listOf(
+                "Made when a forbidden energy core was sealed inside a rune-bound casing.",
+                "Built from dead field units salvaged after the last machine war.",
+                "Forged around a shard torn from an ancient solar reactor.",
+                "Created when a server tower was rebuilt to draw power from unstable dark matter.",
+                "Born from the heart of a failed orbital weapon, still pulsing with its original charge.",
+            ),
+            loreDescriptions,
+        )
+    }
+
+    @Test
     fun supportTierCards_costsAndIconsAreValid() {
         SUPPORT_TIER_CARDS.forEach { tier ->
             assertTrue("Cost should start with USD dollar sign", tier.cost.startsWith("$"))
