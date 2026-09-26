@@ -8,6 +8,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,8 +39,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 @Composable
@@ -49,9 +53,15 @@ fun LogsPreviewDialog(
     onShare: () -> Unit,
     onEmail: () -> Unit,
     onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .widthIn(max = 520.dp)
+            .fillMaxWidth(),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         icon = {
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.Notes,
@@ -69,7 +79,7 @@ fun LogsPreviewDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
                     text = "Tokens and sensitive keys are automatically scrubbed.\nTip: Reproduce the issue first so relevant error logs appear.",
@@ -77,17 +87,16 @@ fun LogsPreviewDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 LogsTextSurface(logs = logs, isLoading = isLoading)
+                LogsActionButtons(
+                    logs = logs,
+                    diagnosticInfo = diagnosticInfo,
+                    isLoading = isLoading,
+                    onShare = onShare,
+                    onEmail = onEmail,
+                )
             }
         },
         confirmButton = {
-            LogsActionButtons(
-                logs = logs,
-                diagnosticInfo = diagnosticInfo,
-                onShare = onShare,
-                onEmail = onEmail,
-            )
-        },
-        dismissButton = {
             TextButton(onClick = onDismissRequest) {
                 Text("Close")
             }
@@ -106,13 +115,13 @@ private fun LogsTextSurface(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 160.dp, max = 320.dp),
+            .heightIn(min = 140.dp, max = 280.dp),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxWidth().height(160.dp),
+                modifier = Modifier.fillMaxWidth().height(140.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(32.dp))
@@ -145,13 +154,17 @@ private fun LogsTextSurface(
 private fun LogsActionButtons(
     logs: String?,
     diagnosticInfo: DiagnosticInfo?,
+    isLoading: Boolean,
     onShare: () -> Unit,
     onEmail: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val isActionEnabled = !isLoading
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedButton(
@@ -161,29 +174,50 @@ private fun LogsActionButtons(
                 cm.setPrimaryClip(ClipData.newPlainText("boxlore diagnostics", report))
                 Toast.makeText(context, "Copied diagnostics & logs to clipboard", Toast.LENGTH_SHORT).show()
             },
+            modifier = Modifier.weight(1f),
+            enabled = isActionEnabled,
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
             shape = MaterialTheme.shapes.medium,
         ) {
             Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(4.dp))
-            Text("Copy")
+            Text(
+                text = "Copy",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
 
         OutlinedButton(
             onClick = onEmail,
+            modifier = Modifier.weight(1f),
+            enabled = isActionEnabled,
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
             shape = MaterialTheme.shapes.medium,
         ) {
             Icon(Icons.Rounded.Email, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(4.dp))
-            Text("Email")
+            Text(
+                text = "Email",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
 
         FilledTonalButton(
             onClick = onShare,
+            modifier = Modifier.weight(1f),
+            enabled = isActionEnabled,
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
             shape = MaterialTheme.shapes.medium,
         ) {
             Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(4.dp))
-            Text("Share")
+            Text(
+                text = "Share",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
