@@ -35,6 +35,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     DiagnosticCollector.kt
     FeedbackDialogs.kt
     FeedbackScreen.kt
+    FeedbackSuccessView.kt
     FeedbackViewModel.kt
     LogcatCollector.kt
   pages/
