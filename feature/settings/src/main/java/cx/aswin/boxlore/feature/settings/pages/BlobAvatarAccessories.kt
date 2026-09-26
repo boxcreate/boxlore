@@ -8,7 +8,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -25,6 +24,9 @@ internal object BlobAvatarAccessories {
         mood: BlobAvatarGenreMood,
     ) {
         when (accessoryType) {
+            BlobAvatarGenreMood.AccessoryType.None -> {
+                // No accessory - clean headphones & mochi body
+            }
             BlobAvatarGenreMood.AccessoryType.DetectiveFedora ->
                 drawDetectiveFedora(drawScope, center, bodyWidth, bodyHeight, w)
             BlobAvatarGenreMood.AccessoryType.CyberVisor ->
@@ -33,10 +35,8 @@ internal object BlobAvatarAccessories {
                 drawAthleticSweatband(drawScope, center, bodyWidth, bodyHeight, w)
             BlobAvatarGenreMood.AccessoryType.BroadcastBoomMic ->
                 drawBroadcastBoomMic(drawScope, center, bodyWidth, bodyHeight, w)
-            BlobAvatarGenreMood.AccessoryType.CozyBeanie ->
-                drawCozyBeanie(drawScope, center, bodyWidth, bodyHeight, w, mood.keyLightColor)
-            BlobAvatarGenreMood.AccessoryType.StarSunglasses ->
-                drawStarSunglasses(drawScope, center, bodyWidth, bodyHeight, w)
+            BlobAvatarGenreMood.AccessoryType.ComedianBowtie ->
+                drawComedianBowtie(drawScope, center, bodyWidth, bodyHeight, w)
             BlobAvatarGenreMood.AccessoryType.WizardHat ->
                 drawWizardHat(drawScope, center, bodyWidth, bodyHeight, w)
         }
@@ -282,105 +282,70 @@ internal object BlobAvatarAccessories {
         )
     }
 
-    private fun drawCozyBeanie(
+    private fun drawComedianBowtie(
         drawScope: DrawScope,
         center: Offset,
         bodyWidth: Float,
         bodyHeight: Float,
         w: Float,
-        beanieColor: Color,
     ) {
-        val beanieCenterY = center.y - (bodyHeight * 0.35f)
-        val beanieWidth = bodyWidth * 0.88f
-        val beanieHeight = bodyHeight * 0.34f
+        val tieY = center.y + (bodyHeight * 0.42f)
+        val knotWidth = bodyWidth * 0.12f
+        val knotHeight = bodyHeight * 0.12f
+        val wingWidth = bodyWidth * 0.18f
+        val wingHeight = bodyHeight * 0.18f
+        val bowtieColor = Color(0xFFFF4081)
 
-        // Slouchy Dome
-        val domePath = Path().apply {
-            moveTo(center.x - (beanieWidth * 0.44f), beanieCenterY + (beanieHeight * 0.20f))
-            cubicTo(
-                center.x - (beanieWidth * 0.40f),
-                beanieCenterY - (beanieHeight * 0.85f),
-                center.x + (beanieWidth * 0.40f),
-                beanieCenterY - (beanieHeight * 0.85f),
-                center.x + (beanieWidth * 0.44f),
-                beanieCenterY + (beanieHeight * 0.20f),
-            )
+        // Left wing
+        val leftWing = Path().apply {
+            moveTo(center.x - (knotWidth * 0.40f), tieY)
+            lineTo(center.x - (knotWidth * 0.40f) - wingWidth, tieY - (wingHeight * 0.48f))
+            lineTo(center.x - (knotWidth * 0.40f) - (wingWidth * 0.85f), tieY)
+            lineTo(center.x - (knotWidth * 0.40f) - wingWidth, tieY + (wingHeight * 0.48f))
             close()
         }
+        drawScope.drawPath(path = leftWing, color = bowtieColor)
         drawScope.drawPath(
-            path = domePath,
-            brush = Brush.verticalGradient(
-                colors = listOf(beanieColor, beanieColor.copy(alpha = 0.85f)),
-            ),
+            path = leftWing,
+            color = Color.White.copy(alpha = 0.50f),
+            style = Stroke(width = (w * 0.010f).coerceAtLeast(1f)),
         )
 
-        // Folded Ribbed Brim
-        val brimRect = RoundRect(
-            left = center.x - (beanieWidth * 0.46f),
-            top = beanieCenterY + (beanieHeight * 0.10f),
-            right = center.x + (beanieWidth * 0.46f),
-            bottom = beanieCenterY + (beanieHeight * 0.36f),
-            cornerRadius = CornerRadius(beanieHeight * 0.12f, beanieHeight * 0.12f),
+        // Right wing
+        val rightWing = Path().apply {
+            moveTo(center.x + (knotWidth * 0.40f), tieY)
+            lineTo(center.x + (knotWidth * 0.40f) + wingWidth, tieY - (wingHeight * 0.48f))
+            lineTo(center.x + (knotWidth * 0.40f) + (wingWidth * 0.85f), tieY)
+            lineTo(center.x + (knotWidth * 0.40f) + wingWidth, tieY + (wingHeight * 0.48f))
+            close()
+        }
+        drawScope.drawPath(path = rightWing, color = bowtieColor)
+        drawScope.drawPath(
+            path = rightWing,
+            color = Color.White.copy(alpha = 0.50f),
+            style = Stroke(width = (w * 0.010f).coerceAtLeast(1f)),
+        )
+
+        // Center knot (soft rounded button)
+        val knotRect = RoundRect(
+            left = center.x - (knotWidth / 2f),
+            top = tieY - (knotHeight / 2f),
+            right = center.x + (knotWidth / 2f),
+            bottom = tieY + (knotHeight / 2f),
+            cornerRadius = CornerRadius(knotHeight * 0.35f, knotHeight * 0.35f),
         )
         drawScope.drawRoundRect(
-            color = beanieColor.copy(alpha = 0.95f),
-            topLeft = Offset(brimRect.left, brimRect.top),
-            size = Size(brimRect.width, brimRect.height),
-            cornerRadius = CornerRadius(beanieHeight * 0.12f, beanieHeight * 0.12f),
+            color = Color(0xFFFFD54F),
+            topLeft = Offset(knotRect.left, knotRect.top),
+            size = Size(knotRect.width, knotRect.height),
+            cornerRadius = CornerRadius(knotHeight * 0.35f, knotHeight * 0.35f),
         )
-
-        // Fluffy Pom-Pom Ball on Top
-        val pomPomCenter = Offset(center.x, beanieCenterY - (beanieHeight * 0.65f))
-        drawScope.drawCircle(color = Color.White.copy(alpha = 0.90f), radius = w * 0.065f, center = pomPomCenter)
-    }
-
-    private fun drawStarSunglasses(
-        drawScope: DrawScope,
-        center: Offset,
-        bodyWidth: Float,
-        bodyHeight: Float,
-        w: Float,
-    ) {
-        val glassY = center.y - (bodyHeight * 0.02f)
-        val eyeSpacing = bodyWidth * 0.18f
-
-        for (sign in listOf(-1f, 1f)) {
-            val starCenter = Offset(center.x + (sign * eyeSpacing), glassY)
-            val starRadius = w * 0.075f
-
-            // 5-Point Star Lens
-            val starPath = Path()
-            val points = 5
-            val angleStep = Math.PI / points
-            for (i in 0 until (2 * points)) {
-                val r = if (i % 2 == 0) starRadius else starRadius * 0.52f
-                val angle = (i * angleStep) - (Math.PI / 2.0)
-                val x = starCenter.x + (r * kotlin.math.cos(angle)).toFloat()
-                val y = starCenter.y + (r * kotlin.math.sin(angle)).toFloat()
-                if (i == 0) starPath.moveTo(x, y) else starPath.lineTo(x, y)
-            }
-            starPath.close()
-
-            drawScope.drawPath(path = starPath, color = Color(0xFF1E293B).copy(alpha = 0.90f))
-            drawScope.drawPath(
-                path = starPath,
-                color = Color(0xFFFFD700),
-                style = Stroke(width = (w * 0.016f).coerceAtLeast(1.5f), join = StrokeJoin.Round),
-            )
-            // Lens Glint
-            drawScope.drawCircle(
-                color = Color.White.copy(alpha = 0.85f),
-                radius = starRadius * 0.28f,
-                center = Offset(starCenter.x + (starRadius * 0.20f), starCenter.y - (starRadius * 0.20f)),
-            )
-        }
-
-        // Bridge connecting lenses
-        drawScope.drawLine(
-            color = Color(0xFFFFD700),
-            start = Offset(center.x - (w * 0.05f), glassY),
-            end = Offset(center.x + (w * 0.05f), glassY),
-            strokeWidth = (w * 0.016f).coerceAtLeast(1.5f),
+        drawScope.drawRoundRect(
+            color = Color.White.copy(alpha = 0.70f),
+            topLeft = Offset(knotRect.left, knotRect.top),
+            size = Size(knotRect.width, knotRect.height),
+            cornerRadius = CornerRadius(knotHeight * 0.35f, knotHeight * 0.35f),
+            style = Stroke(width = (w * 0.012f).coerceAtLeast(1f)),
         )
     }
 

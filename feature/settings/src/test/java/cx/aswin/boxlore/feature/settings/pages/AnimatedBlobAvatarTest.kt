@@ -180,4 +180,18 @@ class AnimatedBlobAvatarTest {
         assertEquals(7, BlobAvatarGenreMood.AccessoryType.entries.size)
         assertEquals(7, BlobAvatarGenreMood.EnvironmentType.entries.size)
     }
+
+    @Test
+    fun blobAvatar_randomMood_avoidsConsecutiveDuplicates() {
+        var lastMood = BlobAvatarGenreMood.random()
+        repeat(20) {
+            val nextMood = BlobAvatarGenreMood.random()
+            org.junit.Assert.assertNotEquals(
+                "Consecutive random moods must not duplicate",
+                lastMood,
+                nextMood,
+            )
+            lastMood = nextMood
+        }
+    }
 }

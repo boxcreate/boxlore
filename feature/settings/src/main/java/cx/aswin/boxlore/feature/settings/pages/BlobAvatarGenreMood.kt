@@ -24,7 +24,7 @@ internal enum class BlobAvatarGenreMood(
         keyLightColor = Color(0xFF8A5CF6), // Neon Violet
         rimLightColor = Color(0xFF00E5FF), // Electric Cyan
         particleType = ParticleType.MusicNote,
-        accessoryType = AccessoryType.CozyBeanie,
+        accessoryType = AccessoryType.None,
         environmentType = EnvironmentType.LofiBokeh,
     ),
     TrueCrime(
@@ -54,7 +54,7 @@ internal enum class BlobAvatarGenreMood(
         keyLightColor = Color(0xFFFFB300), // Warm Amber
         rimLightColor = Color(0xFFFF4081), // Candy Coral
         particleType = ParticleType.LaughSparkle,
-        accessoryType = AccessoryType.StarSunglasses,
+        accessoryType = AccessoryType.ComedianBowtie,
         environmentType = EnvironmentType.ComedyStage,
     ),
     LoreStories(
@@ -99,12 +99,12 @@ internal enum class BlobAvatarGenreMood(
     }
 
     enum class AccessoryType {
+        None,
         DetectiveFedora,
         CyberVisor,
         AthleticSweatband,
         BroadcastBoomMic,
-        CozyBeanie,
-        StarSunglasses,
+        ComedianBowtie,
         WizardHat,
     }
 
@@ -119,15 +119,26 @@ internal enum class BlobAvatarGenreMood(
     }
 
     companion object {
+        private var lastShownMood: BlobAvatarGenreMood? = null
+
         fun random(random: Random = Random): BlobAvatarGenreMood {
             val all = entries
-            return all[random.nextInt(all.size)]
+            val candidates = if (all.size > 1 && lastShownMood != null) {
+                all.filter { it != lastShownMood }
+            } else {
+                all
+            }
+            val chosen = candidates[random.nextInt(candidates.size)]
+            lastShownMood = chosen
+            return chosen
         }
 
         fun next(current: BlobAvatarGenreMood): BlobAvatarGenreMood {
             val all = entries
             val nextIndex = (current.ordinal + 1) % all.size
-            return all[nextIndex]
+            val nextMood = all[nextIndex]
+            lastShownMood = nextMood
+            return nextMood
         }
     }
 }

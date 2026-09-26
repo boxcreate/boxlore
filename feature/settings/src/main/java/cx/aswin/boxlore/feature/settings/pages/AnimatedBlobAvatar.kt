@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.settings.pages
 
-import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -39,7 +38,6 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -216,7 +214,6 @@ private fun rememberPupilLookAnimations(
 internal data class BlobAvatarPalette(
     val bodyBase: Color,
     val bodyShadow: Color,
-    val bodyBounce: Color,
     val bodyOutline: Color,
     val facialColor: Color,
     val blushColor: Color,
@@ -244,12 +241,6 @@ internal fun resolveAvatarPalette(
         Color(0xFFCBD5E1)
     }
 
-    val bodyBounce = if (isDark) {
-        genreMood.rimLightColor.copy(alpha = 0.38f)
-    } else {
-        genreMood.rimLightColor.copy(alpha = 0.34f)
-    }
-
     val bodyOutline = if (isDark) {
         Color.White.copy(alpha = 0.18f)
     } else {
@@ -268,7 +259,6 @@ internal fun resolveAvatarPalette(
     return BlobAvatarPalette(
         bodyBase = bodyBase,
         bodyShadow = bodyShadow,
-        bodyBounce = bodyBounce,
         bodyOutline = bodyOutline,
         facialColor = facialColor,
         blushColor = blushColor,
@@ -314,7 +304,6 @@ internal fun AnimatedBlobAvatar(
 
     val palette = resolveAvatarPalette(activeMood, isDark)
     val haptic = LocalHapticFeedback.current
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     val squishScaleY = remember { Animatable(1f) }
@@ -323,11 +312,6 @@ internal fun AnimatedBlobAvatar(
     val onTapAvatar = {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         activeMood = BlobAvatarGenreMood.next(activeMood)
-        Toast.makeText(
-            context,
-            "${activeMood.emoji} ${activeMood.displayName}",
-            Toast.LENGTH_SHORT,
-        ).show()
         isWinking = true
         coroutineScope.launch {
             squishScaleY.snapTo(0.80f)

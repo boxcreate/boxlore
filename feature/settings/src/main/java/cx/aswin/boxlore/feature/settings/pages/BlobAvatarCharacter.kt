@@ -75,13 +75,6 @@ internal object BlobAvatarCharacter {
         )
         drawScope.drawPath(path = bodyPath, brush = bodyBrush)
 
-        val bounceBrush = Brush.linearGradient(
-            colors = listOf(Color.Transparent, palette.bodyBounce),
-            start = Offset(center.x, center.y),
-            end = Offset(center.x, center.y + (bodyHeight / 2f)),
-        )
-        drawScope.drawPath(path = bodyPath, brush = bounceBrush)
-
         drawScope.drawPath(
             path = bodyPath,
             color = palette.bodyOutline,
@@ -260,9 +253,10 @@ internal object BlobAvatarCharacter {
         val shiftX = maxShiftX * animState.pupilLookRatioX.value
         val shiftY = maxShiftY * animState.pupilLookRatioY.value
 
+        val isClosedOrLaughing = expression.isClosed || expression.isLaughing
         val eyes = listOf(
-            Pair(Offset(center.x - eyeSpacing, eyeCenterY), expression.isClosed),
-            Pair(Offset(center.x + eyeSpacing, eyeCenterY), expression.isClosed || expression.isWinking),
+            Pair(Offset(center.x - eyeSpacing, eyeCenterY), isClosedOrLaughing),
+            Pair(Offset(center.x + eyeSpacing, eyeCenterY), isClosedOrLaughing || expression.isWinking),
         )
 
         for ((eyeCenter, isThisClosedOrWinking) in eyes) {
@@ -320,31 +314,37 @@ internal object BlobAvatarCharacter {
         val center = dimensions.center
         val bodyHeight = dimensions.bodyHeight
         val w = dimensions.w
-        val smileWidth = w * (if (isLaughing) 0.16f else 0.12f)
-        val smileHeight = w * (if (isLaughing) 0.10f else 0.065f)
+        val smileWidth = w * (if (isLaughing) 0.15f else 0.12f)
+        val smileHeight = w * (if (isLaughing) 0.08f else 0.065f)
         val strokeWidth = (w * 0.026f).coerceAtLeast(1.5f)
 
         if (isLaughing) {
             val mouthTopY = center.y + (bodyHeight * 0.09f)
             val mouthPath = Path().apply {
                 moveTo(center.x - (smileWidth / 2f), mouthTopY)
-                lineTo(center.x + (smileWidth / 2f), mouthTopY)
                 cubicTo(
+                    center.x - (smileWidth * 0.35f),
+                    mouthTopY + smileHeight,
+                    center.x + (smileWidth * 0.35f),
+                    mouthTopY + smileHeight,
                     center.x + (smileWidth / 2f),
-                    mouthTopY + smileHeight,
-                    center.x - (smileWidth / 2f),
-                    mouthTopY + smileHeight,
-                    center.x - (smileWidth / 2f),
                     mouthTopY,
                 )
                 close()
             }
-            drawScope.drawPath(path = mouthPath, color = smileColor)
-            val tongueRadius = smileWidth * 0.26f
-            drawScope.drawCircle(
-                color = Color(0xFFFF5277),
-                radius = tongueRadius,
-                center = Offset(center.x, mouthTopY + (smileHeight * 0.65f)),
+            drawScope.drawPath(path = mouthPath, color = Color(0xFFFF5277))
+            drawScope.drawPath(
+                path = mouthPath,
+                color = smileColor,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round),
+            )
+            val glintWidth = smileWidth * 0.35f
+            drawScope.drawLine(
+                color = Color.White.copy(alpha = 0.90f),
+                start = Offset(center.x - (glintWidth / 2f), mouthTopY + (strokeWidth * 0.6f)),
+                end = Offset(center.x + (glintWidth / 2f), mouthTopY + (strokeWidth * 0.6f)),
+                strokeWidth = (w * 0.014f).coerceAtLeast(1f),
+                cap = StrokeCap.Round,
             )
         } else {
             drawScope.drawArc(

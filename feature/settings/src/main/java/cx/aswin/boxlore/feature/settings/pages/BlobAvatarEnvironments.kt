@@ -317,18 +317,18 @@ internal object BlobAvatarEnvironments {
             center = center,
         )
 
-        // Top comedy curtain swag curves (Left & Right)
-        val curtainColor = Color(0xFF881337).copy(alpha = 0.85f)
+        // Top comedy curtain swag curves (Left & Right in warm golden amber)
+        val curtainColor = Color(0xFFF59E0B).copy(alpha = 0.35f)
         val leftDrape = Path().apply {
             moveTo(0f, 0f)
-            lineTo(w * 0.32f, 0f)
-            cubicTo(w * 0.22f, h * 0.18f, w * 0.06f, h * 0.16f, 0f, h * 0.12f)
+            lineTo(w * 0.30f, 0f)
+            cubicTo(w * 0.20f, h * 0.14f, w * 0.05f, h * 0.12f, 0f, h * 0.09f)
             close()
         }
         val rightDrape = Path().apply {
             moveTo(w, 0f)
-            lineTo(w * 0.68f, 0f)
-            cubicTo(w * 0.78f, h * 0.18f, w * 0.94f, h * 0.16f, w, h * 0.12f)
+            lineTo(w * 0.70f, 0f)
+            cubicTo(w * 0.80f, h * 0.14f, w * 0.95f, h * 0.12f, w, h * 0.09f)
             close()
         }
         drawScope.drawPath(path = leftDrape, color = curtainColor)
