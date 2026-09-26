@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -80,6 +79,8 @@ import cx.aswin.boxlore.feature.settings.R
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
 
+private val SUPPORT_CONTENT_BOTTOM_PADDING = 220.dp
+
 @Composable
 internal fun SupportDevelopmentPage(
     onBack: () -> Unit,
@@ -99,12 +100,6 @@ internal fun SupportDevelopmentPage(
             SupportTopAppBar(
                 onBack = onBack,
                 activeAuraColor = activeAuraColor,
-            )
-        },
-        bottomBar = {
-            SupportBottomDock(
-                tier = activeTier,
-                activeColor = activeAuraColor,
             )
         },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -141,7 +136,12 @@ internal fun SupportDevelopmentPage(
                 activeColor = activeAuraColor,
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            SupportCtaSection(
+                tier = activeTier,
+                activeColor = activeAuraColor,
+            )
+
+            Spacer(modifier = Modifier.height(SUPPORT_CONTENT_BOTTOM_PADDING))
         }
     }
 }
@@ -651,65 +651,47 @@ private fun SupportSpecCard(
 }
 
 @Composable
-private fun SupportBottomDock(
+private fun SupportCtaSection(
     tier: SupportTierCardData,
     activeColor: Color,
 ) {
     val buttonContentColor = if (activeColor.luminance() > 0.55f) Color.Black else Color.White
 
-    Surface(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-        tonalElevation = 6.dp,
-        border = BorderStroke(
-            1.dp,
-            Brush.verticalGradient(
-                listOf(
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                    Color.Transparent,
-                ),
-            ),
-        ),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
+        Button(
+            onClick = {},
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = activeColor,
+                contentColor = buttonContentColor,
+            ),
         ) {
-            Button(
-                onClick = {},
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = activeColor,
-                    contentColor = buttonContentColor,
-                ),
-            ) {
-                Icon(
-                    imageVector = if (tier.isFeatured) Icons.Rounded.Favorite else Icons.Rounded.Bolt,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Deploy ${tier.title} • ${tier.cost}",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
+            Icon(
+                imageVector = if (tier.isFeatured) Icons.Rounded.Favorite else Icons.Rounded.Bolt,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "100% listener supported • Zero ads, zero corporate tracking",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                textAlign = TextAlign.Center,
+                text = "Deploy ${tier.title} • ${tier.cost}",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
             )
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = "100% listener supported • Zero ads, zero corporate tracking",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
