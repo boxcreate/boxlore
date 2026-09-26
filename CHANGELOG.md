@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed critical bugs related to Google sign in not working and onboarding authentication flow ([#1086](https://github.com/boxcreate/boxlore/pull/1086)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+
+<!-- readme-copy:start pr=1086
+### Critical
+- Fixed critical bugs related to Google sign in not working and onboarding authentication flow
+readme-copy:end pr=1086 -->
 ## [v0.0.26] - 2026-09-25
 
 ### Added
