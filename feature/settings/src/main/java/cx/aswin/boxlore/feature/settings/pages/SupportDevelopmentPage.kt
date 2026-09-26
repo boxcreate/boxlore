@@ -5,7 +5,6 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -444,13 +443,15 @@ private fun SupportArtifactStage(
                 modifier = Modifier.requiredSize(440.dp),
             )
 
-            // Static Stalinist codename backdrop behind platform & floating items
+            val pagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 4f)
+
+            // Transforming Stalinist codename backdrop behind platform & floating items
             ItemBackdropCodename(
-                tier = tiers[pagerState.currentPage],
+                pagePosition = pagePosition,
+                tiers = tiers,
                 modifier = Modifier.fillMaxSize(),
             )
 
-            val pagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 4f)
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawTransformingPlatform(
                     pagePosition = pagePosition,
@@ -507,50 +508,98 @@ private fun SupportArtifactStage(
 
 @Composable
 private fun ItemBackdropCodename(
-    tier: SupportTierCardData,
+    pagePosition: Float,
+    tiers: List<SupportTierCardData>,
     modifier: Modifier = Modifier,
 ) {
-    Crossfade(
-        targetState = tier,
-        animationSpec = tween(180, easing = FastOutSlowInEasing),
-        label = "backdrop_codename_crossfade",
-        modifier = modifier,
-    ) { currentTier ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = currentTier.codenameLine1,
-                fontFamily = StalinistOneFontFamily,
-                fontSize = 42.sp,
-                lineHeight = 44.sp,
-                letterSpacing = 1.sp,
-                textAlign = TextAlign.Start,
-                color = currentTier.auraColor,
-                maxLines = 1,
-                softWrap = false,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 4.dp),
+    val leftIndex = pagePosition.toInt().coerceIn(0, tiers.lastIndex)
+    val rightIndex = (leftIndex + 1).coerceAtMost(tiers.lastIndex)
+    val fraction = (pagePosition - leftIndex).coerceIn(0f, 1f)
+
+    Box(modifier = modifier) {
+        if (fraction < 0.01f) {
+            SingleTierCodename(
+                tier = tiers[leftIndex],
+                alpha = 1f,
+                scale = 1f,
+                modifier = Modifier.fillMaxSize(),
             )
-            Text(
-                text = currentTier.codenameLine2,
-                fontFamily = StalinistOneFontFamily,
-                fontSize = 52.sp,
-                lineHeight = 54.sp,
-                letterSpacing = 1.5.sp,
-                textAlign = TextAlign.End,
-                color = currentTier.auraColor,
-                maxLines = 1,
-                softWrap = false,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 4.dp),
+        } else if (fraction > 0.99f) {
+            SingleTierCodename(
+                tier = tiers[rightIndex],
+                alpha = 1f,
+                scale = 1f,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            val leftAlpha = (1f - fraction).coerceIn(0f, 1f)
+            val rightAlpha = fraction.coerceIn(0f, 1f)
+            val leftScale = 1f - (0.08f * fraction)
+            val rightScale = 0.92f + (0.08f * fraction)
+
+            SingleTierCodename(
+                tier = tiers[leftIndex],
+                alpha = leftAlpha,
+                scale = leftScale,
+                modifier = Modifier.fillMaxSize(),
+            )
+            SingleTierCodename(
+                tier = tiers[rightIndex],
+                alpha = rightAlpha,
+                scale = rightScale,
+                modifier = Modifier.fillMaxSize(),
             )
         }
+    }
+}
+
+@Composable
+private fun SingleTierCodename(
+    tier: SupportTierCardData,
+    alpha: Float,
+    scale: Float,
+    modifier: Modifier = Modifier,
+) {
+    if (alpha <= 0.01f) return
+
+    Column(
+        modifier = modifier
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .graphicsLayer {
+                this.alpha = alpha
+                this.scaleX = scale
+                this.scaleY = scale
+            },
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = tier.codenameLine1,
+            fontFamily = StalinistOneFontFamily,
+            fontSize = 42.sp,
+            lineHeight = 44.sp,
+            letterSpacing = 1.sp,
+            textAlign = TextAlign.Start,
+            color = tier.auraColor,
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp),
+        )
+        Text(
+            text = tier.codenameLine2,
+            fontFamily = StalinistOneFontFamily,
+            fontSize = 52.sp,
+            lineHeight = 54.sp,
+            letterSpacing = 1.5.sp,
+            textAlign = TextAlign.End,
+            color = tier.auraColor,
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 4.dp),
+        )
     }
 }
 
@@ -793,7 +842,7 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$0.49",
         iconRes = R.drawable.ic_tier_1_micro_cell,
         auraColor = Color(0xFF2979FF),
-        codenameLine1 = "PROTOCOL",
+        codenameLine1 = "OMEGA",
         codenameLine2 = "ONE",
     ),
     SupportTierCardData(
