@@ -64,7 +64,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
@@ -254,76 +253,50 @@ private fun CosmicAtmosphereCanvas(
     modifier: Modifier = Modifier,
 ) {
     Canvas(modifier = modifier) {
-        drawAtmosphereAndStardust(
-            centerX = size.width / 2f,
-            centerY = size.height * 0.45f,
-            auraColor = auraColor,
-            pulse = pulse,
-            particleProgress = particleProgress,
+        val centerX = size.width / 2f
+        val baseRadius = size.width * 0.45f
+
+        // Smooth vertical atmospheric wash into pitch black (no circular halo)
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    auraColor.copy(alpha = 0.18f * pulse),
+                    auraColor.copy(alpha = 0.05f * pulse),
+                    Color.Transparent,
+                ),
+                startY = 0f,
+                endY = size.height * 0.70f,
+            ),
         )
-    }
-}
 
-private fun DrawScope.drawAtmosphereAndStardust(
-    centerX: Float,
-    centerY: Float,
-    auraColor: Color,
-    pulse: Float,
-    particleProgress: Float,
-) {
-    val baseRadius = size.width * 0.45f
-    val auraRadius = size.width * 1.50f
+        // Energy particles emerging from items and floating UPWARDS
+        val particleCount = 20
+        val startY = size.height * 0.65f
+        val riseDistance = size.height * 0.55f
 
-    // 1. Radiant diffuse atmospheric bloom spreading across upper display
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                auraColor.copy(alpha = 0.36f * pulse),
-                auraColor.copy(alpha = 0.18f * pulse),
-                auraColor.copy(alpha = 0.05f * pulse),
-                Color.Transparent,
-            ),
-            center = Offset(centerX, centerY),
-            radius = auraRadius * pulse,
-        ),
-    )
+        for (i in 0 until particleCount) {
+            val seed = (i * 73.17f) % 360f
+            val rad = seed * (PI.toFloat() / 180f)
+            val progress = (particleProgress + i.toFloat() / particleCount) % 1f
+            val spreadFactor = 0.35f + (0.65f * progress)
+            val spreadX = (baseRadius * 0.85f * spreadFactor) * cos(rad)
+            val wobble = sin(progress * 2.5f * PI.toFloat() + seed) * 12.dp.toPx()
+            val px = centerX + spreadX + wobble
+            val py = startY - (progress * riseDistance)
+            val alpha = sin(progress * PI.toFloat()).coerceIn(0f, 1f) * 0.85f
 
-    // 2. Vertical linear atmospheric wash fading into pitch black
-    drawRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                auraColor.copy(alpha = 0.16f * pulse),
-                auraColor.copy(alpha = 0.05f * pulse),
-                Color.Transparent,
-            ),
-            startY = 0f,
-            endY = size.height,
-        ),
-    )
-
-    // 3. Floating stardust shimmer particles drifting in the celestial void
-    val particleCount = 18
-    for (i in 0 until particleCount) {
-        val seed = (i * 73.17f) % 360f
-        val rad = seed * (PI.toFloat() / 180f)
-        val progress = (particleProgress + i.toFloat() / particleCount) % 1f
-        val spreadX = (baseRadius * 1.10f) * cos(rad)
-        val wobble = sin(progress * 2f * PI.toFloat() + seed) * 14.dp.toPx()
-        val px = centerX + spreadX + wobble
-        val py = (size.height * 0.18f) + (progress * size.height * 0.70f)
-        val alpha = sin(progress * PI.toFloat()).coerceIn(0f, 1f) * 0.75f
-
-        if (alpha > 0.02f) {
-            drawCircle(
-                color = auraColor.copy(alpha = alpha * 0.45f),
-                radius = 3.dp.toPx(),
-                center = Offset(px, py),
-            )
-            drawCircle(
-                color = Color.White.copy(alpha = alpha * 0.90f),
-                radius = 1.2.dp.toPx(),
-                center = Offset(px, py),
-            )
+            if (alpha > 0.02f) {
+                drawCircle(
+                    color = auraColor.copy(alpha = alpha * 0.50f),
+                    radius = (2.2.dp + (1.2.dp * (1f - progress))).toPx(),
+                    center = Offset(px, py),
+                )
+                drawCircle(
+                    color = Color.White.copy(alpha = alpha * 0.95f),
+                    radius = (1.0.dp + (0.4.dp * (1f - progress))).toPx(),
+                    center = Offset(px, py),
+                )
+            }
         }
     }
 }
@@ -344,6 +317,24 @@ private fun SupportArtifactStage(
         ),
         label = "unit_levitation",
     )
+    val platformRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(14000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "platform_rotation",
+    )
+    val platformPulse by infiniteTransition.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "platform_pulse",
+    )
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -355,6 +346,16 @@ private fun SupportArtifactStage(
                 .height(185.dp),
             contentAlignment = Alignment.Center,
         ) {
+            val pagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 4f)
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawTransformingPlatform(
+                    pagePosition = pagePosition,
+                    rotation = platformRotation,
+                    pulse = platformPulse,
+                    tiers = tiers,
+                )
+            }
+
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
