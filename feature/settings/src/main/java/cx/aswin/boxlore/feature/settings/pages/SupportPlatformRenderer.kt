@@ -57,9 +57,9 @@ internal fun DrawScope.drawTierHudReticle(
     if (alpha <= 0.01f) return
     val baseColor = color.copy(alpha = color.alpha * alpha)
     val effectivePulse = pulse * scale
-    val hw = 72.dp.toPx() * scale
-    val hh = 72.dp.toPx() * scale
-    val arm = 14.dp.toPx() * scale
+    val hw = 104.dp.toPx() * scale
+    val hh = 96.dp.toPx() * scale
+    val arm = 20.dp.toPx() * scale
 
     // Common tactical corner brackets framing the item
     drawCornerBrackets(
@@ -69,21 +69,21 @@ internal fun DrawScope.drawTierHudReticle(
         halfHeight = hh,
         armLength = arm,
         color = baseColor.copy(alpha = 0.50f * alpha),
-        strokeWidth = 1.3.dp.toPx(),
+        strokeWidth = 1.5.dp.toPx(),
     )
 
     when (tierIndex) {
         0 -> {
             // Tier 0: Unit Blue - Precision Rangefinder Reticle
-            val radius = 58.dp.toPx() * effectivePulse
+            val radius = 88.dp.toPx() * effectivePulse
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(baseColor.copy(alpha = 0.22f * alpha), Color.Transparent),
                     center = Offset(centerX, centerY),
-                    radius = radius * 1.35f,
+                    radius = radius * 1.30f,
                 ),
                 center = Offset(centerX, centerY),
-                radius = radius * 1.35f,
+                radius = radius * 1.30f,
             )
 
             // Segmented circular calibration ring
@@ -92,31 +92,53 @@ internal fun DrawScope.drawTierHudReticle(
                 radius = radius,
                 center = Offset(centerX, centerY),
                 style = Stroke(
-                    width = 1.2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(18f, 14f), rotation * 0.9f),
+                    width = 1.4.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 14f), rotation * 0.9f),
+                ),
+            )
+
+            // Inner subtle calibration circle
+            val innerRingRadius = radius * 0.62f
+            drawCircle(
+                color = baseColor.copy(alpha = 0.40f * alpha),
+                radius = innerRingRadius,
+                center = Offset(centerX, centerY),
+                style = Stroke(
+                    width = 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), -rotation * 0.7f),
                 ),
             )
 
             // 4 Cardinal Rangefinder Crosshairs
-            val tickIn = radius - 7.dp.toPx()
-            val tickOut = radius + 7.dp.toPx()
-            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX, centerY - tickOut), Offset(centerX, centerY - tickIn), 1.4.dp.toPx())
-            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX, centerY + tickIn), Offset(centerX, centerY + tickOut), 1.4.dp.toPx())
-            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX - tickOut, centerY), Offset(centerX - tickIn, centerY), 1.4.dp.toPx())
-            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX + tickIn, centerY), Offset(centerX + tickOut, centerY), 1.4.dp.toPx())
+            val tickIn = radius - 9.dp.toPx()
+            val tickOut = radius + 11.dp.toPx()
+            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX, centerY - tickOut), Offset(centerX, centerY - tickIn), 1.5.dp.toPx())
+            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX, centerY + tickIn), Offset(centerX, centerY + tickOut), 1.5.dp.toPx())
+            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX - tickOut, centerY), Offset(centerX - tickIn, centerY), 1.5.dp.toPx())
+            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX + tickIn, centerY), Offset(centerX + tickOut, centerY), 1.5.dp.toPx())
+
+            // 4 Corner Alignment Ticks at 45 deg
+            for (k in 0..3) {
+                val angle = (45.0 + k * 90.0) * (PI / 180.0)
+                val inX = (centerX + (radius - 5.dp.toPx()) * cos(angle)).toFloat()
+                val inY = (centerY + (radius - 5.dp.toPx()) * sin(angle)).toFloat()
+                val outX = (centerX + (radius + 5.dp.toPx()) * cos(angle)).toFloat()
+                val outY = (centerY + (radius + 5.dp.toPx()) * sin(angle)).toFloat()
+                drawLine(baseColor.copy(alpha = 0.55f * alpha), Offset(inX, inY), Offset(outX, outY), 1.dp.toPx())
+            }
 
             // 2 Orbiting Calibration Nodes
             for (k in 0..1) {
                 val angle = (rotation * 1.4 + k * 180.0) * (PI / 180.0)
                 val sx = (centerX + radius * cos(angle)).toFloat()
                 val sy = (centerY + radius * sin(angle)).toFloat()
-                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.dp.toPx(), center = Offset(sx, sy))
-                drawCircle(color = baseColor, radius = 4.5.dp.toPx(), center = Offset(sx, sy), style = Stroke(1.dp.toPx()))
+                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.5.dp.toPx(), center = Offset(sx, sy))
+                drawCircle(color = baseColor, radius = 5.dp.toPx(), center = Offset(sx, sy), style = Stroke(1.2.dp.toPx()))
             }
         }
         1 -> {
             // Tier 1: Grid Hawk - Tactical Hexagonal Flight Reticle
-            val hexRadius = 60.dp.toPx() * effectivePulse
+            val hexRadius = 88.dp.toPx() * effectivePulse
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(baseColor.copy(alpha = 0.24f * alpha), Color.Transparent),
@@ -127,7 +149,7 @@ internal fun DrawScope.drawTierHudReticle(
                 radius = hexRadius * 1.30f,
             )
 
-            // Hexagonal calibration perimeter
+            // Outer Hexagonal calibration perimeter
             drawPolygon(
                 centerX = centerX,
                 centerY = centerY,
@@ -135,30 +157,41 @@ internal fun DrawScope.drawTierHudReticle(
                 sides = 6,
                 rotation = rotation * 1.1f,
                 color = baseColor.copy(alpha = 0.70f * alpha),
-                strokeWidth = 1.3.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 8f), 0f),
+                strokeWidth = 1.4.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f), 0f),
+            )
+
+            // Inner Hexagonal Core
+            drawPolygon(
+                centerX = centerX,
+                centerY = centerY,
+                radius = hexRadius * 0.58f,
+                sides = 6,
+                rotation = -rotation * 0.8f,
+                color = baseColor.copy(alpha = 0.45f * alpha),
+                strokeWidth = 1.dp.toPx(),
             )
 
             // Lateral Vector Rangefinder Wings
-            val wingStart = 48.dp.toPx()
-            val wingEnd = 80.dp.toPx()
-            drawLine(baseColor.copy(alpha = 0.65f * alpha), Offset(centerX - wingEnd, centerY), Offset(centerX - wingStart, centerY), 1.2.dp.toPx())
-            drawLine(baseColor.copy(alpha = 0.65f * alpha), Offset(centerX + wingStart, centerY), Offset(centerX + wingEnd, centerY), 1.2.dp.toPx())
+            val wingStart = 65.dp.toPx()
+            val wingEnd = 120.dp.toPx()
+            drawLine(baseColor.copy(alpha = 0.70f * alpha), Offset(centerX - wingEnd, centerY), Offset(centerX - wingStart, centerY), 1.4.dp.toPx())
+            drawLine(baseColor.copy(alpha = 0.70f * alpha), Offset(centerX + wingStart, centerY), Offset(centerX + wingEnd, centerY), 1.4.dp.toPx())
 
-            // 3 Lateral Hash Notches on each wing
-            for (i in 0..2) {
-                val off = 58.dp.toPx() + i * 9.dp.toPx()
-                drawLine(baseColor.copy(alpha = 0.75f * alpha), Offset(centerX - off, centerY - 3.5.dp.toPx()), Offset(centerX - off, centerY + 3.5.dp.toPx()), 1.dp.toPx())
-                drawLine(baseColor.copy(alpha = 0.75f * alpha), Offset(centerX + off, centerY - 3.5.dp.toPx()), Offset(centerX + off, centerY + 3.5.dp.toPx()), 1.dp.toPx())
+            // 4 Lateral Hash Notches on each wing
+            for (i in 0..3) {
+                val off = 75.dp.toPx() + i * 12.dp.toPx()
+                drawLine(baseColor.copy(alpha = 0.75f * alpha), Offset(centerX - off, centerY - 4.dp.toPx()), Offset(centerX - off, centerY + 4.dp.toPx()), 1.1.dp.toPx())
+                drawLine(baseColor.copy(alpha = 0.75f * alpha), Offset(centerX + off, centerY - 4.dp.toPx()), Offset(centerX + off, centerY + 4.dp.toPx()), 1.1.dp.toPx())
             }
 
             // Top & Bottom Chevron Targeting Triangles
-            drawChevron(centerX, centerY - hexRadius - 6.dp.toPx(), 5.dp.toPx(), true, baseColor.copy(alpha = 0.90f * alpha))
-            drawChevron(centerX, centerY + hexRadius + 6.dp.toPx(), 5.dp.toPx(), false, baseColor.copy(alpha = 0.90f * alpha))
+            drawChevron(centerX, centerY - hexRadius - 7.dp.toPx(), 6.5.dp.toPx(), true, baseColor.copy(alpha = 0.90f * alpha))
+            drawChevron(centerX, centerY + hexRadius + 7.dp.toPx(), 6.5.dp.toPx(), false, baseColor.copy(alpha = 0.90f * alpha))
         }
         2 -> {
             // Tier 2: Vault Prime - Reinforced Octagonal Aegis
-            val octRadius = 62.dp.toPx() * effectivePulse
+            val octRadius = 92.dp.toPx() * effectivePulse
             val innerRadius = octRadius * 0.65f
             drawCircle(
                 brush = Brush.radialGradient(
@@ -178,8 +211,8 @@ internal fun DrawScope.drawTierHudReticle(
                 sides = 8,
                 rotation = rotation * 0.85f,
                 color = baseColor.copy(alpha = 0.75f * alpha),
-                strokeWidth = 1.5.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 8f), 0f),
+                strokeWidth = 1.6.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f), 0f),
             )
 
             // Inner Solid Concentric Core
@@ -194,11 +227,11 @@ internal fun DrawScope.drawTierHudReticle(
             drawCornerBrackets(
                 centerX = centerX,
                 centerY = centerY,
-                halfWidth = hw - 6.dp.toPx(),
-                halfHeight = hh - 6.dp.toPx(),
-                armLength = 7.dp.toPx(),
+                halfWidth = hw - 10.dp.toPx(),
+                halfHeight = hh - 10.dp.toPx(),
+                armLength = 9.dp.toPx(),
                 color = baseColor.copy(alpha = 0.40f * alpha),
-                strokeWidth = 1.dp.toPx(),
+                strokeWidth = 1.1.dp.toPx(),
             )
 
             // 8 Perimeter Alignment Nodes
@@ -206,12 +239,12 @@ internal fun DrawScope.drawTierHudReticle(
                 val angle = (rotation * 0.85 + k * 45.0) * (PI / 180.0)
                 val sx = (centerX + octRadius * cos(angle)).toFloat()
                 val sy = (centerY + octRadius * sin(angle)).toFloat()
-                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.dp.toPx(), center = Offset(sx, sy))
+                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.5.dp.toPx(), center = Offset(sx, sy))
             }
         }
         3 -> {
             // Tier 3: Stack Zero - High-Density Quantum Matrix
-            val boxRadius = 56.dp.toPx() * effectivePulse
+            val boxRadius = 88.dp.toPx() * effectivePulse
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(baseColor.copy(alpha = 0.28f * alpha), Color.Transparent),
@@ -230,34 +263,34 @@ internal fun DrawScope.drawTierHudReticle(
                 sides = 4,
                 rotation = 45f,
                 color = baseColor.copy(alpha = 0.60f * alpha),
-                strokeWidth = 1.3.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f),
+                strokeWidth = 1.4.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f),
             )
 
             // Counter-Rotating Gyroscopic Ring
             drawCircle(
                 color = baseColor.copy(alpha = 0.85f * alpha),
-                radius = boxRadius * 0.80f,
+                radius = boxRadius * 0.78f,
                 center = Offset(centerX, centerY),
                 style = Stroke(
-                    width = 1.2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), -rotation * 1.5f),
+                    width = 1.3.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), -rotation * 1.5f),
                 ),
             )
 
-            // Lateral Pitch Ladder Telemetry (4 micro ticks on each side)
-            for (i in -2..2) {
+            // Lateral Pitch Ladder Telemetry (6 micro ticks on each side)
+            for (i in -3..3) {
                 if (i == 0) continue
-                val ty = centerY + i * 11.dp.toPx()
-                drawLine(baseColor.copy(alpha = 0.70f * alpha), Offset(centerX - hw + 6.dp.toPx(), ty), Offset(centerX - hw + 14.dp.toPx(), ty), 1.1.dp.toPx())
-                drawLine(baseColor.copy(alpha = 0.70f * alpha), Offset(centerX + hw - 14.dp.toPx(), ty), Offset(centerX + hw - 6.dp.toPx(), ty), 1.1.dp.toPx())
+                val ty = centerY + i * 14.dp.toPx()
+                drawLine(baseColor.copy(alpha = 0.70f * alpha), Offset(centerX - hw + 6.dp.toPx(), ty), Offset(centerX - hw + 16.dp.toPx(), ty), 1.2.dp.toPx())
+                drawLine(baseColor.copy(alpha = 0.70f * alpha), Offset(centerX + hw - 16.dp.toPx(), ty), Offset(centerX + hw - 6.dp.toPx(), ty), 1.2.dp.toPx())
             }
         }
         else -> {
             // Tier 4: Orbit X - Supreme Celestial Matrix
-            val outerRadius = 68.dp.toPx() * effectivePulse
-            val midRadius = outerRadius * 0.75f
-            val coreRadius = outerRadius * 0.48f
+            val outerRadius = 96.dp.toPx() * effectivePulse
+            val midRadius = outerRadius * 0.74f
+            val coreRadius = outerRadius * 0.46f
 
             drawCircle(
                 brush = Brush.radialGradient(
@@ -267,10 +300,10 @@ internal fun DrawScope.drawTierHudReticle(
                         Color.Transparent,
                     ),
                     center = Offset(centerX, centerY),
-                    radius = outerRadius * 1.40f,
+                    radius = outerRadius * 1.35f,
                 ),
                 center = Offset(centerX, centerY),
-                radius = outerRadius * 1.40f,
+                radius = outerRadius * 1.35f,
             )
 
             // Outer Gyroscope Aperture (Dashed)
@@ -279,8 +312,8 @@ internal fun DrawScope.drawTierHudReticle(
                 radius = outerRadius,
                 center = Offset(centerX, centerY),
                 style = Stroke(
-                    width = 1.3.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f), rotation * 1.1f),
+                    width = 1.4.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(18f, 12f), rotation * 1.1f),
                 ),
             )
 
@@ -296,9 +329,9 @@ internal fun DrawScope.drawTierHudReticle(
                 val angle = (rotation * 0.9 + k * 45.0) * (PI / 180.0)
                 val inX = (centerX + midRadius * cos(angle)).toFloat()
                 val inY = (centerY + midRadius * sin(angle)).toFloat()
-                val outX = (centerX + (midRadius + 7.dp.toPx()) * cos(angle)).toFloat()
-                val outY = (centerY + (midRadius + 7.dp.toPx()) * sin(angle)).toFloat()
-                drawLine(Color.White.copy(alpha = 0.85f * alpha), Offset(inX, inY), Offset(outX, outY), 1.3.dp.toPx())
+                val outX = (centerX + (midRadius + 9.dp.toPx()) * cos(angle)).toFloat()
+                val outY = (centerY + (midRadius + 9.dp.toPx()) * sin(angle)).toFloat()
+                drawLine(Color.White.copy(alpha = 0.85f * alpha), Offset(inX, inY), Offset(outX, outY), 1.4.dp.toPx())
             }
 
             // Inner Core Aperture Ring (Counter-Rotating)
@@ -308,15 +341,15 @@ internal fun DrawScope.drawTierHudReticle(
                 center = Offset(centerX, centerY),
                 style = Stroke(
                     width = 1.3.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), -rotation * 1.6f),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), -rotation * 1.6f),
                 ),
             )
 
             // 4 Vertex Diamonds at Corner Bracket Junctions
-            drawVertexDiamond(centerX - hw, centerY - hh, 3.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
-            drawVertexDiamond(centerX + hw, centerY - hh, 3.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
-            drawVertexDiamond(centerX - hw, centerY + hh, 3.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
-            drawVertexDiamond(centerX + hw, centerY + hh, 3.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
+            drawVertexDiamond(centerX - hw, centerY - hh, 4.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
+            drawVertexDiamond(centerX + hw, centerY - hh, 4.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
+            drawVertexDiamond(centerX - hw, centerY + hh, 4.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
+            drawVertexDiamond(centerX + hw, centerY + hh, 4.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
         }
     }
 }
