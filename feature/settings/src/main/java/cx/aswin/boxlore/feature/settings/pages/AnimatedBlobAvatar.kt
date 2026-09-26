@@ -217,6 +217,7 @@ internal data class BlobAvatarPalette(
     val bodyBase: Color,
     val bodyShadow: Color,
     val bodyBounce: Color,
+    val bodyOutline: Color,
     val facialColor: Color,
     val blushColor: Color,
     val headbandColor: Color,
@@ -231,24 +232,28 @@ internal fun resolveAvatarPalette(
     genreMood: BlobAvatarGenreMood,
     isDark: Boolean,
 ): BlobAvatarPalette {
-    val primaryColor = MaterialTheme.colorScheme.primary
-
     val bodyBase = if (isDark) {
         Color(0xFFF1F5F9)
     } else {
-        Color(0xFFFFFDF8)
+        Color(0xFFF8FAFC)
     }
 
     val bodyShadow = if (isDark) {
         Color(0xFFCBD5E1)
     } else {
-        Color(0xFFE2E8F0)
+        Color(0xFFCBD5E1)
     }
 
     val bodyBounce = if (isDark) {
         genreMood.rimLightColor.copy(alpha = 0.38f)
     } else {
-        primaryColor.copy(alpha = 0.20f)
+        genreMood.rimLightColor.copy(alpha = 0.34f)
+    }
+
+    val bodyOutline = if (isDark) {
+        Color.White.copy(alpha = 0.18f)
+    } else {
+        Color(0xFF94A3B8).copy(alpha = 0.45f)
     }
 
     val facialColor = Color(0xFF0F172A)
@@ -258,12 +263,13 @@ internal fun resolveAvatarPalette(
     val cushionColor = if (isDark) Color(0xFF0F172A) else Color(0xFF1E293B)
     val headphoneCup = genreMood.keyLightColor
     val headphoneAccent = genreMood.rimLightColor
-    val shadowAlpha = if (isDark) 0.22f else 0.18f
+    val shadowAlpha = if (isDark) 0.22f else 0.26f
 
     return BlobAvatarPalette(
         bodyBase = bodyBase,
         bodyShadow = bodyShadow,
         bodyBounce = bodyBounce,
+        bodyOutline = bodyOutline,
         facialColor = facialColor,
         blushColor = blushColor,
         headbandColor = headbandColor,
@@ -438,8 +444,25 @@ private fun DrawScope.drawDualSpotlights(
     h: Float,
     isDark: Boolean,
 ) {
-    val keyAlpha = if (isDark) 0.32f else 0.16f
-    val rimAlpha = if (isDark) 0.28f else 0.14f
+    val auraAlpha = if (isDark) 0.22f else 0.38f
+    val keyAlpha = if (isDark) 0.35f else 0.42f
+    val rimAlpha = if (isDark) 0.30f else 0.38f
+
+    // Ambient backlight halo behind the mascot to create sharp contrast and luminous definition against light surfaces
+    val auraOrigin = Offset(w / 2f, h / 2f)
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                mood.keyLightColor.copy(alpha = auraAlpha),
+                mood.rimLightColor.copy(alpha = auraAlpha * 0.65f),
+                Color.Transparent,
+            ),
+            center = auraOrigin,
+            radius = w * 0.52f,
+        ),
+        radius = w * 0.52f,
+        center = auraOrigin,
+    )
 
     val keyLightOrigin = Offset(w * 0.15f, h * 0.10f)
     drawCircle(

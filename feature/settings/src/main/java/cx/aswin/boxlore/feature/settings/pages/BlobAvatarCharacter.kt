@@ -82,6 +82,12 @@ internal object BlobAvatarCharacter {
         )
         drawScope.drawPath(path = bodyPath, brush = bounceBrush)
 
+        drawScope.drawPath(
+            path = bodyPath,
+            color = palette.bodyOutline,
+            style = Stroke(width = (dimensions.w * 0.008f).coerceAtLeast(1f)),
+        )
+
         val specWidth = bodyWidth * 0.34f
         val specHeight = bodyHeight * 0.14f
         val specCenter = Offset(center.x - (bodyWidth * 0.18f), center.y - (bodyHeight * 0.26f))
