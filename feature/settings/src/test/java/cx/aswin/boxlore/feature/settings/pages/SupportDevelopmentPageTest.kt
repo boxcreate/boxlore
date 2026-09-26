@@ -45,8 +45,7 @@ class SupportDevelopmentPageTest {
     @Test
     fun supportTierCards_costsAndIconsAreValid() {
         SUPPORT_TIER_CARDS.forEach { tier ->
-            assertTrue("Cost should contain INR symbol", tier.cost.contains("\u20B9"))
-            assertTrue("Cost should contain USD symbol", tier.cost.contains("$"))
+            assertTrue("Cost should start with USD dollar sign", tier.cost.startsWith("$"))
             assertTrue("Description should not be blank", tier.description.isNotBlank())
             assertTrue("Icon resource must be non-zero", tier.iconRes != 0)
         }
