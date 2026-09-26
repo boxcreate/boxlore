@@ -213,12 +213,9 @@ fun SettingsScreen(
     val returnToHub = {
         val prev = previousDestination
         previousDestination = null
-        if (prev != null) {
-            destination = prev
-        } else if (initialPage != null && initialPage != "hub") {
-            config.onBack()
-        } else {
-            destination = ProfileSettingsDestination.Hub
+        when (val action = resolveSettingsBackAction(config.isOnboarding, prev, initialPage)) {
+            is SettingsBackAction.NavigateBack -> config.onBack()
+            is SettingsBackAction.NavigateTo -> destination = action.destination
         }
     }
 
@@ -649,3 +646,20 @@ internal fun String?.toSettingsDestination(): ProfileSettingsDestination = when 
     "about" -> ProfileSettingsDestination.About
     else -> ProfileSettingsDestination.Hub
 }
+
+internal sealed interface SettingsBackAction {
+    data object NavigateBack : SettingsBackAction
+    data class NavigateTo(val destination: ProfileSettingsDestination) : SettingsBackAction
+}
+
+internal fun resolveSettingsBackAction(
+    isOnboarding: Boolean,
+    previousDestination: ProfileSettingsDestination?,
+    initialPage: String?,
+): SettingsBackAction =
+    when {
+        isOnboarding -> SettingsBackAction.NavigateBack
+        previousDestination != null -> SettingsBackAction.NavigateTo(previousDestination)
+        initialPage != null && initialPage != "hub" -> SettingsBackAction.NavigateBack
+        else -> SettingsBackAction.NavigateTo(ProfileSettingsDestination.Hub)
+    }

@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.navigation
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
@@ -38,16 +39,24 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
     val appInstanceId = w.session.appInstanceId
 
     composable(
-        route = "settings?page={page}",
+        route = "settings?page={page}&fromOnboarding={fromOnboarding}",
         arguments = listOf(
             navArgument("page") {
                 type = NavType.StringType
                 nullable = true
                 defaultValue = null
             },
+            navArgument("fromOnboarding") {
+                type = NavType.BoolType
+                defaultValue = false
+            },
         ),
     ) { backStackEntry ->
         val settingsPage = backStackEntry.arguments?.getString("page")
+        val fromOnboardingArg = backStackEntry.arguments?.getBoolean("fromOnboarding") ?: false
+        val isFromOnboarding = rememberSaveable {
+            fromOnboardingArg || !w.session.onboardingCompleted
+        }
 
         SettingsScreen(
             repositories = SettingsRepositories(
@@ -64,16 +73,20 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
             config = SettingsScreenConfig(
                 onBack = {
                     val user = container.authRepository.currentUser.value
-                    if (!w.session.onboardingCompleted && user != null && user.isEmailVerified) {
-                        w.session.onOnboardingCompleted()
-                        w.session.onboardingViewModel.markOnboardingCompletedSilent {
+                    handleSettingsOnBack(
+                        isFromOnboarding = isFromOnboarding,
+                        isUserVerified = user?.isEmailVerified == true,
+                        onOnboardingCompleted = w.session.onOnboardingCompleted,
+                        markOnboardingCompletedSilent = { onDone ->
+                            w.session.onboardingViewModel.markOnboardingCompletedSilent(onDone)
+                        },
+                        navigateToHome = {
                             navController.navigate("home") {
                                 popUpTo("onboarding") { inclusive = true }
                             }
-                        }
-                    } else {
-                        navController.popBackStack()
-                    }
+                        },
+                        popBackStack = { navController.popBackStack() },
+                    )
                 },
                 onResetAnalytics = {
                     try {
@@ -84,7 +97,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 },
                 appInstanceId = appInstanceId,
                 initialPage = settingsPage,
-                isOnboarding = !w.session.onboardingCompleted,
+                isOnboarding = isFromOnboarding,
             ),
             regionSettings = RegionSettings(
                 currentRegion = settingsState.currentRegion,
@@ -335,5 +348,27 @@ private suspend fun runLibraryExport(
                     android.widget.Toast.LENGTH_SHORT,
                 ).show()
         }
+    }
+}
+
+internal fun handleSettingsOnBack(
+    isFromOnboarding: Boolean,
+    isUserVerified: Boolean,
+    onOnboardingCompleted: () -> Unit,
+    markOnboardingCompletedSilent: ((() -> Unit) -> Unit)?,
+    navigateToHome: () -> Unit,
+    popBackStack: () -> Unit,
+) {
+    if (isFromOnboarding && isUserVerified) {
+        onOnboardingCompleted()
+        if (markOnboardingCompletedSilent != null) {
+            markOnboardingCompletedSilent {
+                navigateToHome()
+            }
+        } else {
+            navigateToHome()
+        }
+    } else {
+        popBackStack()
     }
 }
