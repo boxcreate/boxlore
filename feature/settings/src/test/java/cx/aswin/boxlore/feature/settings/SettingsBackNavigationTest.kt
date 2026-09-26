@@ -66,4 +66,28 @@ class SettingsBackNavigationTest {
             actionNull,
         )
     }
+
+    @Test
+    fun whenNotOnboarding_withSyncAndBackupsPreviousDestination_navigatesToSyncAndBackups() {
+        val action = resolveSettingsBackAction(
+            isOnboarding = false,
+            previousDestination = ProfileSettingsDestination.SyncAndBackups,
+            initialPage = null,
+        )
+        assertEquals(
+            SettingsBackAction.NavigateTo(ProfileSettingsDestination.SyncAndBackups),
+            action,
+        )
+    }
+
+    @Test
+    fun toSettingsDestination_resolvesSyncAndBackupsVariants() {
+        assertEquals(ProfileSettingsDestination.SyncAndBackups, "sync".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.SyncAndBackups, "sync_and_backups".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.SyncAndBackups, "sync-and-backups".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.SyncAndBackups, "backups".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.Library, "library".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.Account, "account".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.Hub, "unknown".toSettingsDestination())
+    }
 }

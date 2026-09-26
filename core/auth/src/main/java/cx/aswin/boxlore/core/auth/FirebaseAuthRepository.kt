@@ -19,6 +19,7 @@ class FirebaseAuthRepository(
     private val pendingEmailStore: PendingEmailStore? = null,
     private val magicLinkUrl: String = MAGIC_LINK_DEFAULT_URL,
     private val packageName: String = PACKAGE_NAME_DEFAULT,
+    private val onPreDeleteAccount: (suspend () -> Unit)? = null,
 ) : AuthRepository {
 
     private val _currentUser = MutableStateFlow(auth.currentUser.toBoxLoreUser())
@@ -98,6 +99,7 @@ class FirebaseAuthRepository(
     override suspend fun deleteAccount(): Result<Unit> = runCatching {
         val user = auth.currentUser ?: error("No authenticated user to delete")
         try {
+            onPreDeleteAccount?.invoke()
             user.delete().awaitTask()
             pendingEmailStore?.setPendingEmail(null)
         } catch (e: Exception) {
@@ -126,6 +128,7 @@ class FirebaseAuthRepository(
             "recent-login",
             "requires-recent-login",
             "credential_too_old",
+            "ERROR_REQUIRES_RECENT_LOGIN",
         )
     }
 }

@@ -340,6 +340,9 @@ class AppContainer(
                     override fun getPendingEmail(): String? = prefs.getPendingAuthEmail()
                     override fun setPendingEmail(email: String?) = prefs.setPendingAuthEmail(email)
                 },
+                onPreDeleteAccount = {
+                    userSyncCoordinator.deleteCloudSyncData().getOrThrow()
+                },
             )
         }.getOrElse {
             object : cx.aswin.boxlore.core.auth.AuthRepository {

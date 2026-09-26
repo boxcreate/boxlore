@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import kotlin.math.sqrt
+
 internal object BlobAvatarGeometry {
     const val BODY_WIDTH_RATIO = 0.72f
     const val BODY_HEIGHT_RATIO = 0.68f
@@ -25,6 +27,9 @@ internal object BlobAvatarGeometry {
     const val EYE_MAX_SHIFT_X_RATIO = 0.28f
     const val EYE_MAX_SHIFT_Y_RATIO = 0.18f
 
+    const val SOUNDWAVE_MAX_RADIUS_RATIO = 0.20f
+    const val SPOTLIGHT_BACKDROP_RADIUS_RATIO = 0.45f
+
     fun computeBodyWidth(w: Float, breatheX: Float = 1f): Float =
         w * BODY_WIDTH_RATIO * breatheX
 
@@ -43,27 +48,24 @@ internal object BlobAvatarGeometry {
     fun computeStrokeWidth(w: Float): Float =
         (w * STROKE_WIDTH_RATIO).coerceAtLeast(MIN_STROKE_WIDTH)
 
-    fun computeCupSpacing(bodyWidth: Float): Float =
-        bodyWidth * CUP_SPACING_RATIO
+    fun computeCupParams(w: Float, bodyWidth: Float, pulse: Float = 1f): Pair<Float, Float> =
+        Pair(bodyWidth * CUP_SPACING_RATIO, w * CUP_WIDTH_RATIO * pulse)
 
-    fun computeCupWidth(w: Float, pulse: Float = 1f): Float =
-        w * CUP_WIDTH_RATIO * pulse
-
-    fun computeOuterEarCupExtent(w: Float, bodyWidth: Float, pulse: Float = 1f): Float {
-        val spacing = computeCupSpacing(bodyWidth)
-        val cupW = computeCupWidth(w, pulse)
-        return spacing + (cupW * 0.50f)
-    }
-
-    fun computeBlushSpacing(bodyWidth: Float): Float =
-        bodyWidth * BLUSH_SPACING_RATIO
-
-    fun computeBlushRadius(w: Float): Float =
-        w * BLUSH_RADIUS_RATIO
+    fun computeBlushParams(w: Float, bodyWidth: Float): Pair<Float, Float> =
+        Pair(bodyWidth * BLUSH_SPACING_RATIO, w * BLUSH_RADIUS_RATIO)
 
     fun computeEyeDimensions(w: Float): Pair<Float, Float> =
         Pair(w * EYE_WIDTH_RATIO, w * EYE_HEIGHT_RATIO)
 
     fun computeEyeMaxShifts(eyeWidth: Float, eyeHeight: Float): Pair<Float, Float> =
         Pair(eyeWidth * EYE_MAX_SHIFT_X_RATIO, eyeHeight * EYE_MAX_SHIFT_Y_RATIO)
+
+    fun computeSoundwaveRadius(w: Float, progress: Float): Float =
+        w * (0.07f + (progress.coerceIn(0f, 1f) * SOUNDWAVE_MAX_RADIUS_RATIO))
+
+    fun computeSoundwaveAlpha(progress: Float): Float =
+        ((1f - progress.coerceIn(0f, 1f)) * 0.65f).coerceIn(0f, 1f)
+
+    fun computeSquishScaleX(squishY: Float): Float =
+        if (squishY <= 0f) 1f else (1f / sqrt(squishY)).coerceIn(0.80f, 1.25f)
 }

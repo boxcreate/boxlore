@@ -17,6 +17,7 @@ import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@Suppress("LargeClass")
 internal class AutoBrowseLibraryCallback(
     private val host: AutoBrowseLibraryHost,
     mediaResolver: AutoMediaResolver? = null,
@@ -71,9 +72,14 @@ internal class AutoBrowseLibraryCallback(
             Bundle.EMPTY,
         )
 
-    override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo,): MediaSession.ConnectionResult {
-        connectedAtMs[controller] = System.currentTimeMillis()
-        AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
+    internal fun isAndroidAuto(session: MediaSession, controller: MediaSession.ControllerInfo): Boolean =
+        AutoBrowseControllerMatcher.isAndroidAuto(session, controller)
+
+    override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
+        if (isAndroidAuto(session, controller)) {
+            connectedAtMs[controller] = System.currentTimeMillis()
+            AnalyticsHelper.trackAndroidAutoConnected(sessionId = controller.packageName)
+        }
         val defaultResult = super.onConnect(session, controller)
         val sessionCommands =
             defaultResult.availableSessionCommands
@@ -93,14 +99,16 @@ internal class AutoBrowseLibraryCallback(
             .build()
     }
 
-    override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo,) {
+    override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo) {
         val started = connectedAtMs.remove(controller)
-        val durationSeconds =
-            started?.let { ((System.currentTimeMillis() - it) / 1000L).toInt().coerceAtLeast(0) }
-        AnalyticsHelper.trackAndroidAutoDisconnected(
-            sessionId = controller.packageName,
-            durationSeconds = durationSeconds,
-        )
+        if (started != null) {
+            val durationSeconds =
+                ((System.currentTimeMillis() - started) / 1000L).toInt().coerceAtLeast(0)
+            AnalyticsHelper.trackAndroidAutoDisconnected(
+                sessionId = controller.packageName,
+                durationSeconds = durationSeconds,
+            )
+        }
         rootChildLimits.remove(controller)
         super.onDisconnected(session, controller)
     }
@@ -338,7 +346,9 @@ internal class AutoBrowseLibraryCallback(
         params: LibraryParams?,
     ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
         android.util.Log.d("AutoBrowse", "onGetChildren: parentId=$parentId, page=$page")
-        AnalyticsHelper.trackAndroidAutoBrowse(node = parentId, action = "get_children")
+        if (isAndroidAuto(session, browser)) {
+            AnalyticsHelper.trackAndroidAutoBrowse(node = parentId, action = "get_children")
+        }
 
         return host.serviceScope.future {
             try {

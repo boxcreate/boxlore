@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DownloadForOffline
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Palette
@@ -23,11 +24,19 @@ internal fun SettingsHub(
         onBack = onBack,
     ) {
         SettingsCategoryCard(
-            title = "Library & Account",
-            description = "Cloud sync, region, RSS feeds, import and export",
-            icon = Icons.AutoMirrored.Rounded.LibraryBooks,
+            title = "Cloud Sync & Backups",
+            description = "Account sync, OPML feeds, and library backups",
+            icon = Icons.Rounded.CloudSync,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            onClick = { onNavigate(ProfileSettingsDestination.SyncAndBackups) },
+        )
+        SettingsCategoryCard(
+            title = "Library",
+            description = "Discovery region, content languages, and RSS feeds",
+            icon = Icons.AutoMirrored.Rounded.LibraryBooks,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.Library) },
         )
         SettingsCategoryCard(

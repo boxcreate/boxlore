@@ -8,7 +8,7 @@ Provides authentication abstractions and implementations (Firebase).
 
 - `AuthRepository` (authentication operations, Google, Magic Link, Email/Password, `sendEmailVerification()`, `reloadUser()`)
 - `AuthException`, `RecentLoginRequiredException`
-- `FirebaseAuthRepository`
+- `FirebaseAuthRepository` (supports optional `onPreDeleteAccount` callback invoked before Firebase account deletion)
 
 ## Internal structure
 

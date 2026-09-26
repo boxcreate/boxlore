@@ -190,6 +190,7 @@ fun HomeRoute(
     onNavigateToSettings: (() -> Unit)? = null,
     onNavigateToPlayStoreReview: () -> Unit = {},
     onSubmitFeedback: suspend (String, String, String, String) -> Boolean = { _, _, _, _ -> false },
+    onFeedbackClick: (() -> Unit)? = null,
     onNavigateToDebug: () -> Unit = {},
     onImportClick: () -> Unit = {},
     onAiOnboardingClick: () -> Unit = {},
@@ -312,6 +313,7 @@ fun HomeRoute(
             onImportClick,
             onAiOnboardingClick,
             onBriefingClick,
+            onFeedbackClick,
             onNavigateToLatestEpisodes,
         ) {
             HomeScreenCallbacks(
@@ -342,7 +344,7 @@ fun HomeRoute(
                     onBriefingClick = onBriefingClick,
                     onDismissBriefing = viewModel::dismissBriefingForToday,
                     onDismissBriefingForever = viewModel::dismissBriefingForever,
-                    onFeedbackClick = viewModel::triggerFeedback,
+                    onFeedbackClick = onFeedbackClick ?: viewModel::triggerFeedback,
                     onToggleHomePin = viewModel::toggleHomePin,
                     onDismissFeaturedVideoShowcaseForever = viewModel::dismissFeaturedVideoShowcaseForever,
                 ),

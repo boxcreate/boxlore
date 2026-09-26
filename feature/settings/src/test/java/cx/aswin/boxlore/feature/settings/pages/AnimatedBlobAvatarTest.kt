@@ -60,8 +60,7 @@ class AnimatedBlobAvatarTest {
     fun blobAvatar_blushSpacing_staysWithinBodyWidth() {
         val width = 250f
         val bodyWidth = BlobAvatarGeometry.computeBodyWidth(width)
-        val blushSpacing = BlobAvatarGeometry.computeBlushSpacing(bodyWidth)
-        val blushRadius = BlobAvatarGeometry.computeBlushRadius(width)
+        val (blushSpacing, blushRadius) = BlobAvatarGeometry.computeBlushParams(width, bodyWidth)
 
         val blushOuterEdge = blushSpacing + blushRadius
         val bodyHalfWidth = bodyWidth / 2f
@@ -100,7 +99,8 @@ class AnimatedBlobAvatarTest {
         val bodyWidth = BlobAvatarGeometry.computeBodyWidth(width, maxBreatheX)
         val bodyHeight = BlobAvatarGeometry.computeBodyHeight(height, maxBreatheY)
 
-        val outerEarcupExtent = BlobAvatarGeometry.computeOuterEarCupExtent(width, bodyWidth, maxPulse)
+        val (cupSpacing, cupWidth) = BlobAvatarGeometry.computeCupParams(width, bodyWidth, maxPulse)
+        val outerEarcupExtent = cupSpacing + (cupWidth * 0.50f)
 
         // Outer earcup edge must remain safely within half the canvas width
         assertTrue(
@@ -116,5 +116,85 @@ class AnimatedBlobAvatarTest {
 
         // Headband top must stay above zero (not clipped at top)
         assertTrue("Top edge of headband ($topBandEdge) must stay above 0", topBandEdge > 0f)
+    }
+
+    @Test
+    fun blobAvatar_soundwaveRadius_andAlpha_behaveDeterministically() {
+        val width = 200f
+        val r0 = BlobAvatarGeometry.computeSoundwaveRadius(width, 0f)
+        val r1 = BlobAvatarGeometry.computeSoundwaveRadius(width, 1f)
+        assertTrue("Soundwave radius at 1f ($r1) must exceed radius at 0f ($r0)", r1 > r0)
+
+        val a0 = BlobAvatarGeometry.computeSoundwaveAlpha(0f)
+        val a1 = BlobAvatarGeometry.computeSoundwaveAlpha(1f)
+        assertEquals(0.65f, a0, 0.001f)
+        assertEquals(0.0f, a1, 0.001f)
+
+        // Middle progress
+        val rMid = BlobAvatarGeometry.computeSoundwaveRadius(width, 0.5f)
+        assertTrue(rMid > r0 && rMid < r1)
+    }
+
+    @Test
+    fun blobAvatar_squishScaleX_preservesVolume() {
+        val normalX = BlobAvatarGeometry.computeSquishScaleX(1.0f)
+        assertEquals(1.0f, normalX, 0.001f)
+
+        val squishedX = BlobAvatarGeometry.computeSquishScaleX(0.80f)
+        assertTrue("When squished vertically (0.8f), scaleX must expand (> 1.0f)", squishedX > 1.0f)
+
+        val stretchedX = BlobAvatarGeometry.computeSquishScaleX(1.15f)
+        assertTrue("When stretched vertically (1.15f), scaleX must contract (< 1.0f)", stretchedX < 1.0f)
+    }
+
+    @Test
+    fun blobAvatar_genreMoods_provideDistinctPalettesAndCycleCleanly() {
+        val moods = BlobAvatarGenreMood.entries
+        assertEquals("Must support 7 distinct podcast genre moods", 7, moods.size)
+
+        for (mood in moods) {
+            assertTrue("Mood ID must not be blank", mood.id.isNotBlank())
+            assertTrue("Display name must not be blank", mood.displayName.isNotBlank())
+            assertTrue("Emoji must not be blank", mood.emoji.isNotBlank())
+            val nextMood = BlobAvatarGenreMood.next(mood)
+            assertTrue("Next mood must be valid", moods.contains(nextMood))
+        }
+
+        // Verify full cycle returns to original
+        var current = moods.first()
+        repeat(moods.size) {
+            current = BlobAvatarGenreMood.next(current)
+        }
+        assertEquals("Full cycle must return to start", moods.first(), current)
+    }
+
+    @Test
+    fun blobAvatar_moodAccessoriesAndEnvironments_areUniqueAndConfigured() {
+        val moods = BlobAvatarGenreMood.entries
+        val accessories = moods.map { it.accessoryType }.toSet()
+        val environments = moods.map { it.environmentType }.toSet()
+
+        assertEquals("Each of the 7 moods must have a unique accessory", 7, accessories.size)
+        assertEquals("Each of the 7 moods must have a unique environment backdrop", 7, environments.size)
+
+        assertEquals(7, BlobAvatarGenreMood.AccessoryType.entries.size)
+        assertEquals(7, BlobAvatarGenreMood.EnvironmentType.entries.size)
+    }
+
+    @Test
+    fun blobAvatar_randomMood_avoidsConsecutiveDuplicates() {
+        var lastMood = BlobAvatarGenreMood.random(random = kotlin.random.Random(42))
+        repeat(20) { index ->
+            val nextMood = BlobAvatarGenreMood.random(
+                exclude = lastMood,
+                random = kotlin.random.Random(42 + index),
+            )
+            org.junit.Assert.assertNotEquals(
+                "Consecutive random moods must not duplicate",
+                lastMood,
+                nextMood,
+            )
+            lastMood = nextMood
+        }
     }
 }

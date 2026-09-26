@@ -13,6 +13,10 @@ object AnalyticsHelper : Analytics {
 
     @Volatile private var activePauseReason: String = "user_voluntary"
 
+    @androidx.annotation.VisibleForTesting
+    fun installRecordingSink(recorder: MutableList<Pair<String, Map<String, Any>>>): () -> Unit =
+        AnalyticsEmit.installRecordingSink(recorder)
+
     fun setSeekSource(source: String) {
         activeSeekSource = source
     }

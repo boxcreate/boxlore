@@ -61,6 +61,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 
 - Unit tests live under `src/test/java/cx/aswin/boxlore/core/analytics`.
 - Use `RecordingAnalytics` when testing classes that accept `Analytics`.
+- Use `AnalyticsHelper.installRecordingSink(recorder)` when testing classes or callbacks that interact directly with the singleton `AnalyticsHelper`.
 - `GlossaryAllEventsEmissionTest` covers every `emission:` inventory row; `LifecycleSdkMappingTest` / `InstallChannelAttributionTest` assert no dual open/install emits.
 - Architecture guards in `:core:testing` enforce CSV ↔ allowlist ↔ inventory parity.
 

@@ -1,8 +1,11 @@
 package cx.aswin.boxlore.feature.settings.pages
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +27,7 @@ import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Email
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
@@ -46,6 +50,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -62,32 +68,15 @@ import kotlinx.coroutines.launch
 
 private const val PROVIDER_GOOGLE = "google.com"
 private const val PROVIDER_EMAIL_LINK = "emailLink"
+private const val ACCOUNT_DELETION_URL = "https://aswin.cx/boxlore/account-deletion/"
 
 @Composable
-internal fun AccountSettingsPage(
-    authRepository: AuthRepository?,
-    onBack: () -> Unit,
-    syncStatus: CloudSyncUiStatus = CloudSyncUiStatus.Idle,
-    onSyncNow: () -> Unit = {},
-    isOnboarding: Boolean = false,
+private fun AccountStateEffects(
+    currentUser: BoxLoreUser?,
+    authState: AccountAuthState,
+    context: Context,
+    scrollState: ScrollState,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
-    val currentUser by (
-        authRepository?.currentUser?.collectAsState()
-            ?: remember { mutableStateOf<BoxLoreUser?>(null) }
-    )
-
-    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
-    var showReauthRequiredDialog by rememberSaveable { mutableStateOf(false) }
-
-    val authState = rememberAccountAuthState(
-        authRepository = authRepository,
-        context = context,
-        scope = scope,
-    )
-
     var previousUser by remember { mutableStateOf<BoxLoreUser?>(null) }
     LaunchedEffect(currentUser) {
         val user = currentUser
@@ -106,6 +95,62 @@ internal fun AccountSettingsPage(
             scrollState.animateScrollTo(0)
         }
     }
+}
+
+private fun openAccountDeletionInfo(context: Context, uriHandler: UriHandler) {
+    val opened = runCatching {
+        uriHandler.openUri(ACCOUNT_DELETION_URL)
+        true
+    }.getOrDefault(false)
+    if (!opened) {
+        val fallbackOpened = runCatching {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ACCOUNT_DELETION_URL)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            true
+        }.getOrDefault(false)
+        if (!fallbackOpened) {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Account Deletion URL", ACCOUNT_DELETION_URL))
+            android.widget.Toast.makeText(context, "Link copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
+@Composable
+internal fun AccountSettingsPage(
+    authRepository: AuthRepository?,
+    onBack: () -> Unit,
+    syncStatus: CloudSyncUiStatus = CloudSyncUiStatus.Idle,
+    onSyncNow: () -> Unit = {},
+    isOnboarding: Boolean = false,
+) {
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+    val onOpenAccountDeletionInfo = { openAccountDeletionInfo(context, uriHandler) }
+    val currentUser by (
+        authRepository?.currentUser?.collectAsState()
+            ?: remember { mutableStateOf<BoxLoreUser?>(null) }
+    )
+
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
+    var showReauthRequiredDialog by rememberSaveable { mutableStateOf(false) }
+
+    val authState = rememberAccountAuthState(
+        authRepository = authRepository,
+        context = context,
+        scope = scope,
+    )
+
+    AccountStateEffects(
+        currentUser = currentUser,
+        authState = authState,
+        context = context,
+        scrollState = scrollState,
+    )
 
     SettingsScaffold(
         title = "Account",
@@ -127,6 +172,7 @@ internal fun AccountSettingsPage(
                         handleSignOut(authRepository, authState, context)
                     },
                     onDeleteAccountClick = { showDeleteConfirmation = true },
+                    onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
                     onSyncNow = onSyncNow,
                     onContinueToHome = onBack,
                 ),
@@ -158,6 +204,7 @@ internal fun AccountSettingsPage(
             showReauthRequiredDialog = false
             handleSignOut(authRepository, authState, context)
         },
+        onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
     )
 }
 
@@ -201,6 +248,7 @@ private data class SignedInActions(
     val onResetPassword: () -> Unit,
     val onSignOut: () -> Unit,
     val onDeleteAccountClick: () -> Unit,
+    val onOpenAccountDeletionInfo: () -> Unit,
     val onSyncNow: () -> Unit,
     val onContinueToHome: () -> Unit = {},
 )
@@ -225,6 +273,7 @@ private fun ColumnScope.SignedInContent(
         onResetPassword = actions.onResetPassword,
         onSignOut = actions.onSignOut,
         onDeleteAccountClick = actions.onDeleteAccountClick,
+        onOpenAccountDeletionInfo = actions.onOpenAccountDeletionInfo,
     )
 }
 
@@ -426,7 +475,7 @@ private fun UserProfileCard(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedBlobAvatar(
-                size = 76.dp,
+                size = 92.dp,
             )
 
             Spacer(Modifier.height(14.dp))
@@ -466,6 +515,7 @@ private fun AccountManagementGroup(
     onResetPassword: () -> Unit,
     onSignOut: () -> Unit,
     onDeleteAccountClick: () -> Unit,
+    onOpenAccountDeletionInfo: () -> Unit,
 ) {
     val isPasswordAccount = user.providerId != PROVIDER_GOOGLE && !user.email.isNullOrBlank()
     SettingsGroup(title = "Account Management") {
@@ -491,6 +541,13 @@ private fun AccountManagementGroup(
             icon = Icons.Rounded.DeleteForever,
             destructive = true,
             onClick = onDeleteAccountClick,
+        )
+        SettingsDivider()
+        SettingsActionRow(
+            title = "Account & Data Deletion Info",
+            supportingText = "Learn how your data is handled after deletion or request partial data removal",
+            icon = Icons.Rounded.Info,
+            onClick = onOpenAccountDeletionInfo,
         )
     }
 }

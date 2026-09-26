@@ -53,6 +53,7 @@ import cx.aswin.boxlore.feature.settings.pages.PlaybackUiState
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsActions
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
+import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
 import kotlinx.coroutines.flow.StateFlow
 
 /** Where to send the user for the two Downloads settings sub-screens. */
@@ -98,6 +99,7 @@ data class SettingsScreenConfig(
     /** Optional deep-link page: "library", "appearance", etc. */
     val initialPage: String? = null,
     val isOnboarding: Boolean = false,
+    val onSendFeedback: (() -> Unit)? = null,
 )
 
 /** Appearance sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -242,8 +244,8 @@ fun SettingsScreen(
     val actions = SettingsPagesActions(
         onNavigate = { destination = it },
         onReturnToHub = returnToHub,
-        onNavigateToAccountFromLibrary = {
-            previousDestination = ProfileSettingsDestination.Library
+        onNavigateToAccountFromSync = {
+            previousDestination = ProfileSettingsDestination.SyncAndBackups
             destination = ProfileSettingsDestination.Account
         },
         onDeletionExpandedChange = { isDeletionExpanded = it },
@@ -301,7 +303,7 @@ internal data class SettingsPagesUiData(
 internal data class SettingsPagesActions(
     val onNavigate: (ProfileSettingsDestination) -> Unit,
     val onReturnToHub: () -> Unit,
-    val onNavigateToAccountFromLibrary: () -> Unit,
+    val onNavigateToAccountFromSync: () -> Unit,
     val onDeletionExpandedChange: (Boolean) -> Unit,
     val onShowResetDialog: () -> Unit,
     val backupActions: LibraryBackupActions,
@@ -343,6 +345,15 @@ private fun SettingsAnimatedPages(
                 )
             }
 
+            ProfileSettingsDestination.SyncAndBackups ->
+                SyncAndBackupsPage(
+                    accountStatus = uiData.accountStatus,
+                    syncStatus = syncStatus,
+                    backupActions = actions.backupActions,
+                    onBack = actions.onReturnToHub,
+                    onAccountClick = actions.onNavigateToAccountFromSync,
+                )
+
             ProfileSettingsDestination.Library ->
                 LibrarySettingsPage(
                     discoveryPreferences = LibraryDiscoveryPreferences(
@@ -361,11 +372,7 @@ private fun SettingsAnimatedPages(
                         },
                     ),
                     onAddRssClick = { contentBundle.settingsViewModel.openAddRssDialog() },
-                    backupActions = actions.backupActions,
                     onBack = actions.onReturnToHub,
-                    onAccountClick = actions.onNavigateToAccountFromLibrary,
-                    accountStatus = uiData.accountStatus,
-                    syncStatus = syncStatus,
                 )
 
             ProfileSettingsDestination.Appearance ->
@@ -411,6 +418,7 @@ private fun SettingsAnimatedPages(
                     appInfo = uiData.appInfo,
                     onVisitPodcastIndex = { visitPodcastIndexHomepage(contentBundle.context) },
                     onOpenChangelog = { openChangelog(contentBundle.context) },
+                    onSendFeedback = { config.onSendFeedback?.invoke() },
                     onBack = actions.onReturnToHub,
                 )
         }
@@ -638,6 +646,7 @@ private fun openChangelog(context: Context) {
 
 internal fun String?.toSettingsDestination(): ProfileSettingsDestination = when (this?.trim()?.lowercase()) {
     "account" -> ProfileSettingsDestination.Account
+    "sync", "sync_and_backups", "sync-and-backups", "backups" -> ProfileSettingsDestination.SyncAndBackups
     "library" -> ProfileSettingsDestination.Library
     "appearance" -> ProfileSettingsDestination.Appearance
     "playback" -> ProfileSettingsDestination.Playback

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Launch
+import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.HistoryEdu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -52,6 +53,7 @@ internal fun AboutSettingsPage(
     appInfo: AppInfo,
     onVisitPodcastIndex: () -> Unit,
     onOpenChangelog: () -> Unit,
+    onSendFeedback: () -> Unit = {},
     onBack: () -> Unit,
 ) {
     SettingsScaffold(
@@ -132,6 +134,12 @@ internal fun AboutSettingsPage(
                     SpecRow(label = "Android", value = "${appInfo.androidRelease} (API ${appInfo.sdkInt})")
                 }
             }
+            SettingsNavigationRow(
+                title = "Send feedback",
+                supportingText = "Ideas, bug reports, and logs",
+                icon = Icons.Rounded.Feedback,
+                onClick = onSendFeedback,
+            )
             SettingsNavigationRow(
                 title = "Changelog",
                 supportingText = "What’s new on GitHub",

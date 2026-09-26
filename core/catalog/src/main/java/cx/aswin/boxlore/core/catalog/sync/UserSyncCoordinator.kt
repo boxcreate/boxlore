@@ -451,6 +451,29 @@ open class UserSyncCoordinator(
         requireBoxcastPrefs.setLastSyncTimestamp(syncedAt)
     }
 
+    open suspend fun deleteCloudSyncData(): Result<Unit> = withContext(ioDispatcher) {
+        syncMutex.withLock {
+            runCatching {
+                val userId = authUserIdProvider()
+                if (userId.isNullOrBlank()) {
+                    return@runCatching
+                }
+                val token = tokenProvider() ?: error("Missing authentication token for cloud sync data deletion")
+                val call = requireBoxLoreApi.deleteSyncAccount(
+                    publicKey = publicKey,
+                    authorization = "Bearer $token",
+                )
+                val response = call.execute()
+                val code = response.code()
+                if (!response.isSuccessful && code != 404) {
+                    error("Delete cloud sync data failed with HTTP $code: ${response.errorBody()?.string()}")
+                }
+                requireBoxcastPrefs.setLastSyncTimestamp(0L)
+                requireBoxcastPrefs.setLastSyncedUserId(null)
+            }
+        }
+    }
+
     private suspend fun handoffIdleMiniplayerIfNewer(history: List<ListeningHistorySyncDto>) {
         val newestRemoteHistory = history.maxByOrNull { it.lastPlayedAt }
         if (newestRemoteHistory != null && newestRemoteHistory.lastPlayedAt > 0L) {

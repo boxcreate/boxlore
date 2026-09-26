@@ -679,11 +679,24 @@ class PodcastRepository(
         }
     }
 
-    suspend fun submitFeedback(category: String, message: String, appVersion: String, email: String? = null,): Boolean = withContext(ioDispatcher) {
+    suspend fun submitFeedback(
+        category: String,
+        message: String,
+        appVersion: String,
+        email: String? = null,
+        diagnostics: String? = null,
+        logs: String? = null,
+    ): Boolean = withContext(ioDispatcher) {
         try {
             val request =
-                cx.aswin.boxlore.core.network.model
-                    .FeedbackRequest(category, message, appVersion, email)
+                cx.aswin.boxlore.core.network.model.FeedbackRequest(
+                    category = category,
+                    message = message,
+                    appVersion = appVersion,
+                    email = email,
+                    diagnostics = diagnostics,
+                    logs = logs,
+                )
             val response = api.submitFeedback(publicKey, request).execute()
             response.isSuccessful && response.body()?.success == true
         } catch (e: Exception) {

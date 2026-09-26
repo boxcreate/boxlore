@@ -1,36 +1,54 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.sin
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 internal data class BlobAvatarAnimationState(
     val floatProgress: State<Float>,
@@ -40,13 +58,15 @@ internal data class BlobAvatarAnimationState(
     val headBobAngle: State<Float>,
     val pupilLookRatioX: State<Float>,
     val pupilLookRatioY: State<Float>,
+    val soundwaveProgress: State<Float>,
+    val particleProgress: State<Float>,
+    val bassPulseScale: State<Float>,
 )
 
 @Composable
 internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
     val infiniteTransition = rememberInfiniteTransition(label = "BlobAvatarTransition")
 
-    // Gentle, calming float
     val floatProgress = infiniteTransition.animateFloat(
         initialValue = -1f,
         targetValue = 1f,
@@ -57,7 +77,6 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
         label = "BlobFloatProgress",
     )
 
-    // Soft squishy breathing
     val breatheScaleX = infiniteTransition.animateFloat(
         initialValue = 0.985f,
         targetValue = 1.015f,
@@ -77,7 +96,6 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
         label = "BlobBreatheY",
     )
 
-    // Sweet subtle head groove to the music
     val headBobAngle = infiniteTransition.animateFloat(
         initialValue = -2.5f,
         targetValue = 2.5f,
@@ -88,7 +106,6 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
         label = "BlobHeadBob",
     )
 
-    // Natural, cute blink with double-blink
     val eyeOpenScale = infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1f,
@@ -108,6 +125,36 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
         label = "BlobEyeOpen",
     )
 
+    val soundwaveProgress = infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "BlobSoundwave",
+    )
+
+    val particleProgress = infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "BlobParticles",
+    )
+
+    val bassPulseScale = infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "BlobBassPulse",
+    )
+
     val (pupilLookRatioX, pupilLookRatioY) = rememberPupilLookAnimations(infiniteTransition)
 
     return BlobAvatarAnimationState(
@@ -118,6 +165,9 @@ internal fun rememberBlobAvatarAnimationState(): BlobAvatarAnimationState {
         headBobAngle = headBobAngle,
         pupilLookRatioX = pupilLookRatioX,
         pupilLookRatioY = pupilLookRatioY,
+        soundwaveProgress = soundwaveProgress,
+        particleProgress = particleProgress,
+        bassPulseScale = bassPulseScale,
     )
 }
 
@@ -166,134 +216,269 @@ private fun rememberPupilLookAnimations(
     return Pair(pupilLookRatioX, pupilLookRatioY)
 }
 
+internal data class BlobAvatarPalette(
+    val bodyBase: Color,
+    val bodyShadow: Color,
+    val bodyOutline: Color,
+    val facialColor: Color,
+    val blushColor: Color,
+    val headbandColor: Color,
+    val cushionColor: Color,
+    val headphoneCup: Color,
+    val headphoneAccent: Color,
+    val shadowAlpha: Float,
+)
+
+@Composable
+internal fun resolveAvatarPalette(
+    genreMood: BlobAvatarGenreMood,
+    isDark: Boolean,
+): BlobAvatarPalette {
+    val bodyBase = if (isDark) {
+        Color(0xFFF1F5F9)
+    } else {
+        Color(0xFFF8FAFC)
+    }
+
+    val bodyShadow = Color(0xFFCBD5E1)
+
+    val bodyOutline = if (isDark) {
+        Color.White.copy(alpha = 0.18f)
+    } else {
+        Color(0xFF94A3B8).copy(alpha = 0.45f)
+    }
+
+    val facialColor = Color(0xFF0F172A)
+    val blushColor = Color(0xFFFF5277).copy(alpha = if (isDark) 0.50f else 0.40f)
+
+    val headbandColor = if (isDark) Color(0xFF1E293B) else Color(0xFF334155)
+    val cushionColor = if (isDark) Color(0xFF0F172A) else Color(0xFF1E293B)
+    val headphoneCup = genreMood.keyLightColor
+    val headphoneAccent = genreMood.rimLightColor
+    val shadowAlpha = if (isDark) 0.22f else 0.26f
+
+    return BlobAvatarPalette(
+        bodyBase = bodyBase,
+        bodyShadow = bodyShadow,
+        bodyOutline = bodyOutline,
+        facialColor = facialColor,
+        blushColor = blushColor,
+        headbandColor = headbandColor,
+        cushionColor = cushionColor,
+        headphoneCup = headphoneCup,
+        headphoneAccent = headphoneAccent,
+        shadowAlpha = shadowAlpha,
+    )
+}
+
+internal data class BlobFacialExpression(
+    val isWinking: Boolean,
+    val isClosed: Boolean,
+    val isLaughing: Boolean,
+)
+
+internal data class BlobAvatarRenderContext(
+    val mood: BlobAvatarGenreMood,
+    val palette: BlobAvatarPalette,
+    val animState: BlobAvatarAnimationState,
+    val expression: BlobFacialExpression,
+    val squishY: Float,
+    val isDark: Boolean,
+)
+
 /**
- * An ultra-cute, 3D clay-shaded mochi blob wearing cozy studio headphones.
- * Features warm rosy cheeks, glossy kawaii button eyes with bright catchlights,
- * a sweet delicate smile, and a gentle music groove.
+ * An ultra-expressive, tactile 3D mochi mascot avatar with dual studio spotlights,
+ * concentric headphone soundwaves, spring-physics squish on tap, and podcast genre moods.
  */
 @Composable
 internal fun AnimatedBlobAvatar(
     modifier: Modifier = Modifier,
-    size: Dp = 82.dp,
+    size: Dp = 88.dp,
+    initialMood: BlobAvatarGenreMood? = null,
 ) {
     val animState = rememberBlobAvatarAnimationState()
-
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
-    val bodyBaseColor = if (isDark) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.95f)
-    } else {
-        MaterialTheme.colorScheme.primaryContainer
-    }
-    val bodyShadowColor = if (isDark) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.70f)
-    } else {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
-    }
-    val bodyBounceColor = if (isDark) {
-        Color.White.copy(alpha = 0.22f)
-    } else {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+    var activeMood by rememberSaveable {
+        mutableStateOf(initialMood ?: BlobAvatarGenreMood.random())
     }
 
-    val facialColor = Color(0xFF1E222A)
+    val palette = resolveAvatarPalette(activeMood, isDark)
+    val haptic = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
 
-    val blushColor = if (isDark) {
-        Color(0xFFFF7597).copy(alpha = 0.45f)
-    } else {
-        Color(0xFFFF7B95).copy(alpha = 0.38f)
+    val squishScaleY = remember { Animatable(1f) }
+    var isWinking by remember { mutableStateOf(false) }
+    var winkJob by remember { mutableStateOf<Job?>(null) }
+
+    val onTapAvatar = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        activeMood = BlobAvatarGenreMood.next(activeMood)
+        coroutineScope.launch {
+            squishScaleY.snapTo(0.80f)
+            squishScaleY.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow,
+                ),
+            )
+        }
+        winkJob?.cancel()
+        winkJob = coroutineScope.launch {
+            isWinking = true
+            delay(650)
+            isWinking = false
+        }
     }
 
-    val headbandColor = if (isDark) Color(0xFF282C34) else Color(0xFF3C4048)
-    val cushionColor = if (isDark) Color(0xFF1C1F26) else Color(0xFF2E323A)
-    val headphoneCupColor = MaterialTheme.colorScheme.tertiary
-    val headphoneAccentColor = if (isDark) Color.White.copy(alpha = 0.90f) else MaterialTheme.colorScheme.primary
-    val shadowBaseAlpha = if (isDark) 0.10f else 0.18f
+    val expression = BlobFacialExpression(
+        isWinking = isWinking,
+        isClosed = activeMood == BlobAvatarGenreMood.ChillMusic,
+        isLaughing = activeMood == BlobAvatarGenreMood.ComedyTalk,
+    )
+
+    val renderContext = BlobAvatarRenderContext(
+        mood = activeMood,
+        palette = palette,
+        animState = animState,
+        expression = expression,
+        squishY = squishScaleY.value,
+        isDark = isDark,
+    )
 
     Box(
-        modifier = modifier.size(size),
+        modifier = modifier
+            .size(size)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClickLabel = "Cycle avatar mood",
+                onClick = onTapAvatar,
+            )
+            .semantics {
+                contentDescription = "Avatar mood: ${activeMood.displayName}"
+            },
         contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = this.size.width
-            val h = this.size.height
-
-            val floatOffsetPx = BlobAvatarGeometry.computeFloatOffset(h, animState.floatProgress.value)
-            val center = Offset(w / 2f, (h / 2f) + floatOffsetPx)
-
-            // 1. Soft 3D Ground Drop Shadow
-            drawGroundShadow(
-                center = center,
-                w = w,
-                h = h,
-                floatProgress = animState.floatProgress.value,
-                baseAlpha = shadowBaseAlpha,
-            )
-
-            // 2. Groovy Head-Bobbing Container
-            rotate(degrees = animState.headBobAngle.value, pivot = center) {
-                val bodyWidth = BlobAvatarGeometry.computeBodyWidth(w, animState.breatheScaleX.value)
-                val bodyHeight = BlobAvatarGeometry.computeBodyHeight(h, animState.breatheScaleY.value)
-
-                // 2A. Headband Arch Over the Head
-                drawHeadband(
-                    center = center,
-                    bodyWidth = bodyWidth,
-                    bodyHeight = bodyHeight,
-                    bandColor = headbandColor,
-                    w = w,
-                )
-
-                // 2B. 3D Volumetric Clay Mochi Body
-                drawClayMochiBody(
-                    center = center,
-                    bodyWidth = bodyWidth,
-                    bodyHeight = bodyHeight,
-                    baseColor = bodyBaseColor,
-                    shadowColor = bodyShadowColor,
-                    bounceColor = bodyBounceColor,
-                )
-
-                // 2C. Soft Rosy Blush Cheeks
-                drawRosyBlush(
-                    center = center,
-                    bodyWidth = bodyWidth,
-                    bodyHeight = bodyHeight,
-                    blushColor = blushColor,
-                    w = w,
-                )
-
-                // 2D. Kawaii Glossy Button Eyes (No creepy sclera!)
-                drawKawaiiEyes(
-                    center = center,
-                    bodyWidth = bodyWidth,
-                    bodyHeight = bodyHeight,
-                    animState = animState,
-                    eyeColor = facialColor,
-                    w = w,
-                )
-
-                // 2E. Sweet Delicate Smile
-                drawSweetSmile(
-                    center = center,
-                    bodyHeight = bodyHeight,
-                    smileColor = facialColor,
-                    w = w,
-                )
-
-                // 2F. Cozy Padded Over-Ear Headphones
-                drawCozyHeadphones(
-                    center = center,
-                    bodyWidth = bodyWidth,
-                    bodyHeight = bodyHeight,
-                    cupColor = headphoneCupColor,
-                    cushionColor = cushionColor,
-                    accentColor = headphoneAccentColor,
-                    w = w,
-                )
-            }
+            drawAvatarLayers(renderContext, this.size.width, this.size.height)
         }
     }
+}
+
+private fun DrawScope.drawAvatarLayers(
+    renderContext: BlobAvatarRenderContext,
+    w: Float,
+    h: Float,
+) {
+    val mood = renderContext.mood
+    val palette = renderContext.palette
+    val animState = renderContext.animState
+
+    val floatOffsetPx = BlobAvatarGeometry.computeFloatOffset(h, animState.floatProgress.value)
+    val center = Offset(w / 2f, (h / 2f) + floatOffsetPx)
+
+    drawDualSpotlights(mood = mood, w = w, h = h, isDark = renderContext.isDark)
+
+    BlobAvatarEnvironments.drawEnvironment(
+        drawScope = this,
+        environmentType = mood.environmentType,
+        center = center,
+        w = w,
+        h = h,
+        mood = mood,
+        progress = animState.particleProgress.value,
+    )
+
+    drawGroundShadow(
+        center = center,
+        w = w,
+        h = h,
+        floatProgress = animState.floatProgress.value,
+        baseAlpha = palette.shadowAlpha,
+    )
+
+    drawSoundwaveRipples(
+        center = center,
+        w = w,
+        h = h,
+        animProgress = animState.soundwaveProgress.value,
+        waveColor = mood.rimLightColor,
+    )
+
+    drawGenreParticles(
+        center = center,
+        w = w,
+        mood = mood,
+        progress = animState.particleProgress.value,
+    )
+
+    val squishX = BlobAvatarGeometry.computeSquishScaleX(renderContext.squishY)
+
+    scale(scaleX = squishX, scaleY = renderContext.squishY, pivot = center) {
+        rotate(degrees = animState.headBobAngle.value, pivot = center) {
+            val bodyWidth = BlobAvatarGeometry.computeBodyWidth(w, animState.breatheScaleX.value)
+            val bodyHeight = BlobAvatarGeometry.computeBodyHeight(h, animState.breatheScaleY.value)
+            val dimensions = CharacterDimensions(
+                center = center,
+                bodyWidth = bodyWidth,
+                bodyHeight = bodyHeight,
+                w = w,
+            )
+            BlobAvatarCharacter.drawCharacter(this, dimensions, renderContext)
+        }
+    }
+}
+
+private fun DrawScope.drawDualSpotlights(
+    mood: BlobAvatarGenreMood,
+    w: Float,
+    h: Float,
+    isDark: Boolean,
+) {
+    val auraAlpha = if (isDark) 0.22f else 0.38f
+    val keyAlpha = if (isDark) 0.35f else 0.42f
+    val rimAlpha = if (isDark) 0.30f else 0.38f
+
+    // Ambient backlight halo behind the mascot to create sharp contrast and luminous definition against light surfaces
+    val auraOrigin = Offset(w / 2f, h / 2f)
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                mood.keyLightColor.copy(alpha = auraAlpha),
+                mood.rimLightColor.copy(alpha = auraAlpha * 0.65f),
+                Color.Transparent,
+            ),
+            center = auraOrigin,
+            radius = w * 0.52f,
+        ),
+        radius = w * 0.52f,
+        center = auraOrigin,
+    )
+
+    val keyLightOrigin = Offset(w * 0.15f, h * 0.10f)
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(mood.keyLightColor.copy(alpha = keyAlpha), Color.Transparent),
+            center = keyLightOrigin,
+            radius = w * 0.65f,
+        ),
+        radius = w * 0.65f,
+        center = keyLightOrigin,
+    )
+
+    val rimLightOrigin = Offset(w * 0.85f, h * 0.90f)
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(mood.rimLightColor.copy(alpha = rimAlpha), Color.Transparent),
+            center = rimLightOrigin,
+            radius = w * 0.60f,
+        ),
+        radius = w * 0.60f,
+        center = rimLightOrigin,
+    )
 }
 
 private fun DrawScope.drawGroundShadow(
@@ -323,312 +508,87 @@ private fun DrawScope.drawGroundShadow(
     )
 }
 
-private fun DrawScope.drawClayMochiBody(
+private fun DrawScope.drawSoundwaveRipples(
     center: Offset,
-    bodyWidth: Float,
-    bodyHeight: Float,
-    baseColor: Color,
-    shadowColor: Color,
-    bounceColor: Color,
-) {
-    val cornerRadius = CornerRadius(bodyWidth * 0.46f, bodyHeight * 0.46f)
-    val bodyRect = RoundRect(
-        left = center.x - (bodyWidth / 2f),
-        top = center.y - (bodyHeight / 2f),
-        right = center.x + (bodyWidth / 2f),
-        bottom = center.y + (bodyHeight / 2f),
-        cornerRadius = cornerRadius,
-    )
-    val bodyPath = Path().apply { addRoundRect(bodyRect) }
-
-    // Soft 3D volumetric radial gradient (light from top-left)
-    val lightSource = Offset(center.x - (bodyWidth * 0.20f), center.y - (bodyHeight * 0.22f))
-    val bodyBrush = Brush.radialGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.50f),
-            baseColor,
-            shadowColor,
-        ),
-        center = lightSource,
-        radius = bodyWidth * 0.85f,
-    )
-    drawPath(path = bodyPath, brush = bodyBrush)
-
-    // Soft subsurface bounce light on bottom curve
-    val bounceBrush = Brush.linearGradient(
-        colors = listOf(Color.Transparent, bounceColor),
-        start = Offset(center.x, center.y),
-        end = Offset(center.x, center.y + (bodyHeight / 2f)),
-    )
-    drawPath(path = bodyPath, brush = bounceBrush)
-
-    // Gentle glossy shine on top-left
-    val specWidth = bodyWidth * 0.34f
-    val specHeight = bodyHeight * 0.14f
-    val specCenter = Offset(center.x - (bodyWidth * 0.18f), center.y - (bodyHeight * 0.26f))
-    drawOval(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color.White.copy(alpha = 0.55f),
-                Color.White.copy(alpha = 0.15f),
-                Color.Transparent,
-            ),
-            center = specCenter,
-            radius = specWidth / 2f,
-        ),
-        topLeft = Offset(specCenter.x - (specWidth / 2f), specCenter.y - (specHeight / 2f)),
-        size = Size(specWidth, specHeight),
-    )
-}
-
-private fun DrawScope.drawHeadband(
-    center: Offset,
-    bodyWidth: Float,
-    bodyHeight: Float,
-    bandColor: Color,
     w: Float,
+    h: Float,
+    animProgress: Float,
+    waveColor: Color,
 ) {
-    val bandTopY = BlobAvatarGeometry.computeHeadbandTopY(center.y, bodyHeight)
-    val bandLeftX = center.x - (bodyWidth * 0.44f)
-    val bandRightX = center.x + (bodyWidth * 0.44f)
-    val bandStartY = center.y - (bodyHeight * 0.10f)
+    val earSpacing = w * 0.42f
+    val earY = center.y - (h * 0.01f)
 
-    val bandPath = Path().apply {
-        moveTo(bandLeftX, bandStartY)
-        cubicTo(
-            bandLeftX,
-            bandTopY,
-            bandRightX,
-            bandTopY,
-            bandRightX,
-            bandStartY,
+    val waves = listOf(animProgress, (animProgress + 0.5f) % 1f)
+
+    for (p in waves) {
+        val radius = BlobAvatarGeometry.computeSoundwaveRadius(w, p)
+        val alpha = BlobAvatarGeometry.computeSoundwaveAlpha(p)
+        val stroke = (w * 0.016f * (1f - (p * 0.4f))).coerceAtLeast(1f)
+
+        // Left ear wave arc
+        drawArc(
+            color = waveColor.copy(alpha = alpha),
+            startAngle = 110f,
+            sweepAngle = 140f,
+            useCenter = false,
+            topLeft = Offset(center.x - earSpacing - radius, earY - radius),
+            size = Size(radius * 2f, radius * 2f),
+            style = Stroke(width = stroke, cap = StrokeCap.Round),
         )
-    }
 
-    val bandStroke = BlobAvatarGeometry.computeHeadbandStroke(w)
-
-    drawPath(
-        path = bandPath,
-        color = bandColor,
-        style = Stroke(
-            width = bandStroke,
-            cap = StrokeCap.Round,
-            join = StrokeJoin.Round,
-        ),
-    )
-
-    drawPath(
-        path = bandPath,
-        color = Color.White.copy(alpha = 0.30f),
-        style = Stroke(
-            width = bandStroke * 0.32f,
-            cap = StrokeCap.Round,
-            join = StrokeJoin.Round,
-        ),
-    )
-}
-
-private fun DrawScope.drawCozyHeadphones(
-    center: Offset,
-    bodyWidth: Float,
-    bodyHeight: Float,
-    cupColor: Color,
-    cushionColor: Color,
-    accentColor: Color,
-    w: Float,
-) {
-    val cupCenterY = center.y - (bodyHeight * 0.02f)
-    val cupSpacingX = BlobAvatarGeometry.computeCupSpacing(bodyWidth)
-
-    val cupWidth = BlobAvatarGeometry.computeCupWidth(w)
-    val cupHeight = w * BlobAvatarGeometry.CUP_HEIGHT_RATIO
-
-    val ears = listOf(
-        Pair(center.x - cupSpacingX, -4f),
-        Pair(center.x + cupSpacingX, 4f),
-    )
-
-    for ((cupX, tilt) in ears) {
-        rotate(degrees = tilt, pivot = Offset(cupX, cupCenterY)) {
-            // Soft inner cushion pill
-            val cushionRect = RoundRect(
-                left = cupX - (cupWidth * 0.48f),
-                top = cupCenterY - (cupHeight * 0.48f),
-                right = cupX + (cupWidth * 0.48f),
-                bottom = cupCenterY + (cupHeight * 0.48f),
-                cornerRadius = CornerRadius(cupWidth * 0.44f, cupWidth * 0.44f),
-            )
-            drawRoundRect(
-                color = cushionColor,
-                topLeft = Offset(cushionRect.left, cushionRect.top),
-                size = Size(cushionRect.width, cushionRect.height),
-                cornerRadius = CornerRadius(cupWidth * 0.44f, cupWidth * 0.44f),
-            )
-
-            // Outer pastel dome shell
-            val shellWidth = cupWidth * 0.76f
-            val shellHeight = cupHeight * 0.86f
-            val shellLeft = if (cupX < center.x) cupX - (cupWidth * 0.50f) else cupX - (shellWidth * 0.46f)
-            val shellTop = cupCenterY - (shellHeight * 0.50f)
-            val shellCenter = Offset(shellLeft + (shellWidth / 2f), shellTop + (shellHeight / 2f))
-
-            val shellBrush = Brush.radialGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.45f),
-                    cupColor,
-                    cupColor.copy(alpha = 0.80f),
-                ),
-                center = Offset(shellCenter.x - (shellWidth * 0.18f), shellCenter.y - (shellHeight * 0.18f)),
-                radius = shellWidth * 0.72f,
-            )
-
-            drawRoundRect(
-                brush = shellBrush,
-                topLeft = Offset(shellLeft, shellTop),
-                size = Size(shellWidth, shellHeight),
-                cornerRadius = CornerRadius(shellWidth * 0.44f, shellWidth * 0.44f),
-            )
-
-            // Metallic rim line
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.38f),
-                topLeft = Offset(shellLeft, shellTop),
-                size = Size(shellWidth, shellHeight),
-                cornerRadius = CornerRadius(shellWidth * 0.44f, shellWidth * 0.44f),
-                style = Stroke(width = (w * 0.014f).coerceAtLeast(1f)),
-            )
-
-            // Center audio dot
-            val dotRadius = shellWidth * 0.20f
-            drawCircle(
-                color = accentColor,
-                radius = dotRadius,
-                center = shellCenter,
-            )
-            drawCircle(
-                color = Color.White.copy(alpha = 0.65f),
-                radius = dotRadius * 0.45f,
-                center = shellCenter,
-            )
-        }
-    }
-}
-
-private fun DrawScope.drawRosyBlush(
-    center: Offset,
-    bodyWidth: Float,
-    bodyHeight: Float,
-    blushColor: Color,
-    w: Float,
-) {
-    val blushY = center.y + (bodyHeight * 0.10f)
-    val blushSpacing = BlobAvatarGeometry.computeBlushSpacing(bodyWidth)
-    val blushRadius = BlobAvatarGeometry.computeBlushRadius(w)
-
-    for (sign in listOf(-1f, 1f)) {
-        val blushCenter = Offset(center.x + (sign * blushSpacing), blushY)
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(blushColor, blushColor.copy(alpha = 0.22f), Color.Transparent),
-                center = blushCenter,
-                radius = blushRadius,
-            ),
-            radius = blushRadius,
-            center = blushCenter,
+        // Right ear wave arc
+        drawArc(
+            color = waveColor.copy(alpha = alpha),
+            startAngle = -70f,
+            sweepAngle = 140f,
+            useCenter = false,
+            topLeft = Offset(center.x + earSpacing - radius, earY - radius),
+            size = Size(radius * 2f, radius * 2f),
+            style = Stroke(width = stroke, cap = StrokeCap.Round),
         )
     }
 }
 
-private fun DrawScope.drawKawaiiEyes(
+private fun DrawScope.drawGenreParticles(
     center: Offset,
-    bodyWidth: Float,
-    bodyHeight: Float,
-    animState: BlobAvatarAnimationState,
-    eyeColor: Color,
     w: Float,
+    mood: BlobAvatarGenreMood,
+    progress: Float,
 ) {
-    val eyeSpacing = bodyWidth * BlobAvatarGeometry.EYE_SPACING_RATIO
-    val eyeCenterY = center.y - (bodyHeight * 0.02f)
-    val (eyeWidth, eyeHeight) = BlobAvatarGeometry.computeEyeDimensions(w)
-    val strokeWidth = BlobAvatarGeometry.computeStrokeWidth(w)
-    val eyeOpenScale = animState.eyeOpenScale.value
+    val color = mood.keyLightColor
+    val count = 3
+    for (i in 0 until count) {
+        val phase = (progress + (i.toFloat() / count)) % 1f
+        val particleY = center.y - (w * 0.15f) - (phase * w * 0.35f)
+        val sway = sin((phase * 2f * Math.PI) + i).toFloat() * (w * 0.08f)
+        val particleX = if (i % 2 == 0) center.x - (w * 0.30f) + sway else center.x + (w * 0.30f) + sway
+        val alpha = (sin(phase * Math.PI).toFloat() * 0.85f).coerceIn(0f, 1f)
+        val size = w * 0.040f
 
-    val (maxShiftX, maxShiftY) = BlobAvatarGeometry.computeEyeMaxShifts(eyeWidth, eyeHeight)
-    val shiftX = maxShiftX * animState.pupilLookRatioX.value
-    val shiftY = maxShiftY * animState.pupilLookRatioY.value
-
-    val eyes = listOf(
-        Offset(center.x - eyeSpacing, eyeCenterY),
-        Offset(center.x + eyeSpacing, eyeCenterY),
-    )
-
-    for (eyeCenter in eyes) {
-        if (eyeOpenScale > 0.25f) {
-            val currentEyeHeight = eyeHeight * eyeOpenScale
-            val currentEyeTop = eyeCenter.y - (currentEyeHeight / 2f) + (shiftY * eyeOpenScale)
-            val currentEyeLeft = eyeCenter.x - (eyeWidth / 2f) + shiftX
-
-            // Glossy Dark Button Eye Oval (Super friendly, like Kirby/Sanrio)
-            drawOval(
-                color = eyeColor,
-                topLeft = Offset(currentEyeLeft, currentEyeTop),
-                size = Size(eyeWidth, currentEyeHeight),
-            )
-
-            // Main Sweet White Catchlight Sparkle (top-right)
-            val mainGlintRadius = eyeWidth * 0.36f * eyeOpenScale
-            drawCircle(
-                color = Color.White,
-                radius = mainGlintRadius,
-                center = Offset(
-                    currentEyeLeft + (eyeWidth * 0.65f),
-                    currentEyeTop + (currentEyeHeight * 0.32f),
-                ),
-            )
-
-            // Secondary Tiny Sparkle (bottom-left)
-            val secGlintRadius = eyeWidth * 0.18f * eyeOpenScale
-            drawCircle(
-                color = Color.White.copy(alpha = 0.90f),
-                radius = secGlintRadius,
-                center = Offset(
-                    currentEyeLeft + (eyeWidth * 0.32f),
-                    currentEyeTop + (currentEyeHeight * 0.72f),
-                ),
-            )
-        } else {
-            // Sweet happy closed eyes (^_^) during blink
-            drawArc(
-                color = eyeColor,
-                startAngle = 200f,
-                sweepAngle = 140f,
-                useCenter = false,
-                topLeft = Offset(eyeCenter.x - (eyeWidth * 0.90f), eyeCenter.y - (eyeHeight * 0.30f)),
-                size = Size(eyeWidth * 1.8f, eyeHeight * 0.75f),
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-            )
+        when (mood.particleType) {
+            BlobAvatarGenreMood.ParticleType.MusicNote -> {
+                drawCircle(color = color.copy(alpha = alpha), radius = size * 0.5f, center = Offset(particleX, particleY))
+                drawLine(
+                    color = color.copy(alpha = alpha),
+                    start = Offset(particleX + (size * 0.5f), particleY),
+                    end = Offset(particleX + (size * 0.5f), particleY - (size * 1.4f)),
+                    strokeWidth = (w * 0.012f).coerceAtLeast(1f),
+                    cap = StrokeCap.Round,
+                )
+            }
+            BlobAvatarGenreMood.ParticleType.EqualizerBar -> {
+                val barHeight = size * (1f + sin(phase * Math.PI * 4).toFloat().coerceAtLeast(0f))
+                drawLine(
+                    color = color.copy(alpha = alpha),
+                    start = Offset(particleX, particleY - barHeight),
+                    end = Offset(particleX, particleY + barHeight),
+                    strokeWidth = (w * 0.015f).coerceAtLeast(1.5f),
+                    cap = StrokeCap.Round,
+                )
+            }
+            else -> {
+                drawCircle(color = color.copy(alpha = alpha), radius = size * 0.55f, center = Offset(particleX, particleY))
+            }
         }
     }
-}
-
-private fun DrawScope.drawSweetSmile(
-    center: Offset,
-    bodyHeight: Float,
-    smileColor: Color,
-    w: Float,
-) {
-    val smileWidth = w * 0.12f
-    val smileHeight = w * 0.065f
-    val strokeWidth = (w * 0.026f).coerceAtLeast(1.5f)
-
-    // Sweet, gentle, friendly smile arc (◡)
-    drawArc(
-        color = smileColor,
-        startAngle = 20f,
-        sweepAngle = 140f,
-        useCenter = false,
-        topLeft = Offset(center.x - (smileWidth / 2f), center.y + (bodyHeight * 0.10f)),
-        size = Size(smileWidth, smileHeight),
-        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-    )
 }
