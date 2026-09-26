@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -150,49 +151,70 @@ internal fun SupportDevelopmentPage(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                SupportArtifactStage(
-                    pagerState = pagerState,
-                    tiers = SUPPORT_TIER_CARDS,
-                    activeAuraColor = activeAuraColor,
-                )
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    SupportTierPicker(
-                        selectedIndex = pagerState.currentPage,
-                        tiers = SUPPORT_TIER_CARDS,
-                        activeColor = activeAuraColor,
-                        onSelect = { page ->
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(page)
-                            }
-                        },
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    SupportCtaSection(
-                        tier = activeTier,
-                        activeColor = activeAuraColor,
-                    )
-                }
-
-                SupportMissionCard(
-                    activeColor = activeAuraColor,
-                )
-            }
+            SupportPageContent(
+                pagerState = pagerState,
+                activeTier = activeTier,
+                activeAuraColor = activeAuraColor,
+                onSelectTier = { page ->
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(page)
+                    }
+                },
+                modifier = Modifier.padding(innerPadding),
+            )
         }
+    }
+}
+
+@Composable
+private fun SupportPageContent(
+    pagerState: PagerState,
+    activeTier: SupportTierCardData,
+    activeAuraColor: Color,
+    onSelectTier: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        SupportArtifactStage(
+            pagerState = pagerState,
+            tiers = SUPPORT_TIER_CARDS,
+            activeAuraColor = activeAuraColor,
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            SupportTierPicker(
+                selectedIndex = pagerState.currentPage,
+                tiers = SUPPORT_TIER_CARDS,
+                activeColor = activeAuraColor,
+                onSelect = onSelectTier,
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            SupportCtaSection(
+                tier = activeTier,
+                activeColor = activeAuraColor,
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1.1f))
+
+        SupportMissionCard(
+            activeColor = activeAuraColor,
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 
@@ -630,55 +652,65 @@ private fun SupportCtaSection(
             color = Color.White.copy(alpha = 0.70f),
             textAlign = TextAlign.Center,
         )
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        Text(
-            text = "Directly keeps boxlore ad-free and free of cost for everyone.",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.45f),
-            textAlign = TextAlign.Center,
-        )
     }
 }
 
 @Composable
 private fun SupportMissionCard(
     activeColor: Color,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF0C0C14),
-        border = BorderStroke(1.dp, activeColor.copy(alpha = 0.22f)),
-        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color(0xFF0E0E16),
+        border = BorderStroke(1.dp, activeColor.copy(alpha = 0.28f)),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 20.dp, vertical = 18.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.Favorite,
-                    contentDescription = null,
-                    tint = activeColor,
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(activeColor.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Favorite,
+                        contentDescription = null,
+                        tint = activeColor,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Text(
-                    text = "Keep boxlore ad-free for everyone",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
+                    text = "Keep boxlore free for everyone",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = GoogleSansWeight.bold,
+                        fontSize = 17.5.sp,
+                    ),
                     color = Color.White,
                 )
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "boxlore is completely free and ad-free. Contributions directly support our development and help keep it free for everyone.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF9E9EA8),
-                lineHeight = 18.sp,
+                text = "boxlore is completely independent, with zero ads, zero tracking, and no paywalls. Every contribution directly funds our servers and search engine, keeping podcasting free and open for everyone.",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 13.5.sp,
+                    lineHeight = 20.sp,
+                ),
+                color = Color(0xFFA6A6B4),
             )
         }
     }
