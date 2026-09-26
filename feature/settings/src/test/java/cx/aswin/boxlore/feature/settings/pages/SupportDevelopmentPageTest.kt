@@ -56,4 +56,14 @@ class SupportDevelopmentPageTest {
         val segments = SUPPORT_TIER_CARDS.map { it.energySegments }
         assertEquals(listOf(1, 2, 3, 4, 5), segments)
     }
+
+    @Test
+    fun supportTierCards_technicalBreakdownsArePopulated() {
+        SUPPORT_TIER_CARDS.forEach { tier ->
+            assertTrue("Technical breakdown must not be empty", tier.technicalBreakdown.isNotEmpty())
+            tier.technicalBreakdown.forEach { item ->
+                assertTrue("Breakdown item must not be blank", item.isNotBlank())
+            }
+        }
+    }
 }

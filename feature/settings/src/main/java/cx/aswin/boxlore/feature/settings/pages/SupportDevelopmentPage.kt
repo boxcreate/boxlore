@@ -32,7 +32,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -97,10 +96,7 @@ internal fun SupportDevelopmentPage(
 
     Scaffold(
         topBar = {
-            SupportTopAppBar(
-                onBack = onBack,
-                activeAuraColor = activeAuraColor,
-            )
+            SupportTopAppBar(onBack = onBack)
         },
         containerColor = MaterialTheme.colorScheme.surface,
     ) { innerPadding ->
@@ -112,7 +108,7 @@ internal fun SupportDevelopmentPage(
                 .padding(horizontal = 16.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SupportIntroHeader(activeAuraColor = activeAuraColor)
+            SupportIntroHeader()
 
             SupportStage(
                 pagerState = pagerState,
@@ -131,12 +127,12 @@ internal fun SupportDevelopmentPage(
                 },
             )
 
-            SupportSpecCard(
+            SupportCtaSection(
                 tier = activeTier,
                 activeColor = activeAuraColor,
             )
 
-            SupportCtaSection(
+            SupportSpecCard(
                 tier = activeTier,
                 activeColor = activeAuraColor,
             )
@@ -150,7 +146,6 @@ internal fun SupportDevelopmentPage(
 @Composable
 private fun SupportTopAppBar(
     onBack: () -> Unit,
-    activeAuraColor: Color,
 ) {
     TopAppBar(
         title = {
@@ -167,33 +162,6 @@ private fun SupportTopAppBar(
                 )
             }
         },
-        actions = {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = activeAuraColor.copy(alpha = 0.12f),
-                border = BorderStroke(1.dp, activeAuraColor.copy(alpha = 0.35f)),
-                modifier = Modifier.padding(end = 12.dp),
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(activeAuraColor),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "GRID ONLINE",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = activeAuraColor,
-                        letterSpacing = 0.5.sp,
-                    )
-                }
-            }
-        },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
@@ -201,44 +169,23 @@ private fun SupportTopAppBar(
 }
 
 @Composable
-private fun SupportIntroHeader(
-    activeAuraColor: Color,
-) {
+private fun SupportIntroHeader() {
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 4.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(CircleShape)
-                    .background(activeAuraColor),
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "COMMUNITY POWER GRID",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = activeAuraColor,
-                letterSpacing = 0.8.sp,
-            )
-        }
-
         Text(
-            text = "Keep boxlore open & ad-free",
+            text = "Keep boxlore ad-free for everyone",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "100% listener supported. Zero ads, zero corporate tracking. Deploy power units to keep our independent podcast engine humming.",
+            text = "boxlore is completely free of charge and built without advertisements. Listener contributions directly fund our cloud servers, search indexes, sync pipeline, and ongoing development so everyone enjoys an open podcast experience.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 17.sp,
+            lineHeight = 18.sp,
         )
     }
 }
@@ -603,42 +550,23 @@ private fun SupportSpecCard(
                 .fillMaxWidth()
                 .padding(14.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Rounded.Sensors,
-                        contentDescription = null,
-                        tint = activeColor,
-                        modifier = Modifier.size(15.dp),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "INFRASTRUCTURE IMPACT",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = activeColor,
-                        letterSpacing = 0.5.sp,
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = activeColor.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, activeColor.copy(alpha = 0.3f)),
-                ) {
-                    Text(
-                        text = tier.scope,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = activeColor,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Sensors,
+                    contentDescription = null,
+                    tint = activeColor,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "INFRASTRUCTURE IMPACT",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = activeColor,
+                    letterSpacing = 0.5.sp,
+                )
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = tier.description,
@@ -646,6 +574,34 @@ private fun SupportSpecCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp,
             )
+
+            if (tier.technicalBreakdown.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    tier.technicalBreakdown.forEach { item ->
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = activeColor,
+                                modifier = Modifier.padding(end = 6.dp),
+                            )
+                            Text(
+                                text = item,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 16.sp,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -684,10 +640,19 @@ private fun SupportCtaSection(
             )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "100% listener supported • Zero ads, zero corporate tracking",
+            text = "One-time contribution • No recurring subscription",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.medium),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = "Directly keeps boxlore ad-free and free of cost for everyone.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             textAlign = TextAlign.Center,
@@ -702,6 +667,7 @@ internal data class SupportTierCardData(
     val energySegments: Int,
     val scope: String,
     val description: String,
+    val technicalBreakdown: List<String> = emptyList(),
     val cost: String,
     @DrawableRes val iconRes: Int,
     val auraColor: Color,
@@ -715,7 +681,12 @@ internal val SUPPORT_TIER_CARDS = listOf(
         shortDuration = "3h",
         energySegments = 1,
         scope = "Sync & Feed Ingestion",
-        description = "A swift power boost keeping background podcast feeds, sync triggers, and catalog lookups buzzing.",
+        description = "Directly funds real-time background feed synchronization, RSS ingestion webhooks, and podcast catalog lookups across our edge network.",
+        technicalBreakdown = listOf(
+            "RSS feed polling & catalog lookups",
+            "Cloud edge worker execution & cache hits",
+            "Real-time delta sync for active listeners",
+        ),
         cost = "$0.49",
         iconRes = R.drawable.ic_tier_1_micro_cell,
         auraColor = Color(0xFF00E5FF),
@@ -726,7 +697,12 @@ internal val SUPPORT_TIER_CARDS = listOf(
         shortDuration = "8h",
         energySegments = 2,
         scope = "Catalog Caching",
-        description = "Dedicated operational power fueling an entire shift of episode metadata and search caching.",
+        description = "Covers high-frequency episode metadata indexing, fast podcast artwork delivery, and database read queries during peak listening hours.",
+        technicalBreakdown = listOf(
+            "Podcast artwork CDN delivery & edge caching",
+            "Database read queries & full-text search indexing",
+            "Continuous episode release monitoring",
+        ),
         cost = "$0.99",
         iconRes = R.drawable.ic_tier_2_field_battery,
         auraColor = Color(0xFF00E676),
@@ -737,7 +713,12 @@ internal val SUPPORT_TIER_CARDS = listOf(
         shortDuration = "1d",
         energySegments = 3,
         scope = "AI & Vector Search",
-        description = "Full 24-hour infrastructure capacity powering AI transcript models, search vectors, and streaming nodes.",
+        description = "Drives a full 24-hour computing capacity for AI semantic embeddings, semantic search queries, transcript processing, and backend streaming proxies.",
+        technicalBreakdown = listOf(
+            "AI vector embeddings & semantic episode matching",
+            "Cloudflare worker proxies & network bandwidth",
+            "Fast transcript retrieval & metadata enrichment",
+        ),
         cost = "$2.49",
         iconRes = R.drawable.ic_tier_3_power_station,
         auraColor = Color(0xFFFFB300),
@@ -748,7 +729,12 @@ internal val SUPPORT_TIER_CARDS = listOf(
         shortDuration = "3d",
         energySegments = 4,
         scope = "Database Cluster",
-        description = "High-load computational power dedicated to database cluster reliability and fast episode downloads.",
+        description = "Sustains 72 hours of multi-tenant database clusters, high-throughput cloud sync pipelines, automated database backups, and audio metadata caches.",
+        technicalBreakdown = listOf(
+            "Primary database cluster & automated failovers",
+            "Realtime multi-device cloud sync engine",
+            "Audio stream caching & high-volume downloads",
+        ),
         cost = "$6.99",
         iconRes = R.drawable.ic_tier_4_server_tower,
         auraColor = Color(0xFF8B5CF6),
@@ -759,7 +745,13 @@ internal val SUPPORT_TIER_CARDS = listOf(
         shortDuration = "7d",
         energySegments = 5,
         scope = "Global Grid",
-        description = "Supreme patron beacon: keeps the entire global boxlore infrastructure open, ad-free, and blazing fast for a full week.",
+        description = "Supreme patron beacon: keeps the entire global boxlore infrastructure fully funded for a full week, covering cloud compute, AI vector databases, global CDN caching, and continuous independent open-source development.",
+        technicalBreakdown = listOf(
+            "Full-stack server compute & database clusters",
+            "Global CDN edge distribution & high-bandwidth audio",
+            "Vector search models, AI embeddings & cloud sync",
+            "Dedicated independent development & open-source tools",
+        ),
         cost = "$17.99",
         iconRes = R.drawable.ic_tier_5_quantum_beacon,
         auraColor = Color(0xFFFF2D55),
