@@ -1,6 +1,6 @@
 <div align="center" id="top">
 
-<img src="docs/images/boxlore-2341x1024-amber.png" width="960" alt="boxlore screens showing podcast playback, home, and lore discovery"/>
+<img src="docs/images/boxlore-2341x1024-trans.png" width="960" alt="boxlore screens showing podcast playback, home, and lore discovery"/>
 
 <br/><br/>
 
