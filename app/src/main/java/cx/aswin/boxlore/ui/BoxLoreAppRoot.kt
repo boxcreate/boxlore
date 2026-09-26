@@ -240,12 +240,15 @@ fun BoxLoreAppRoot(
     val isFromOnboardingRoute =
         navBackStackEntry?.arguments?.getBoolean("fromOnboarding") == true ||
             (!onboardingCompleted && currentRoute.startsWith("settings"))
+    var isSupportPageActive by remember { mutableStateOf(false) }
+    val isSupportActive = isSupportPageActive && currentRoute.startsWith("settings")
     val showBottomNav =
         shouldShowBottomNav(
             onboardingCompleted = onboardingCompleted,
             currentRoute = currentRoute,
             isFromOnboarding = isFromOnboardingRoute,
-        )
+        ) &&
+            !isSupportActive
 
     LaunchedEffect(hasDeepLink) {
         if (hasDeepLink) {
@@ -631,6 +634,7 @@ fun BoxLoreAppRoot(
                                     queueLoreEpisode = queueLoreEpisode,
                                     onShowFeedbackSheet = { navController.navigate("feedback") },
                                     onSubmitFeedback = onSubmitFeedback,
+                                    onSupportPageVisibilityChanged = { isSupportPageActive = it },
                                 ),
                                 settingsState =
                                 NavSettingsState(
@@ -729,6 +733,7 @@ fun BoxLoreAppRoot(
                     showLateNightNudge &&
                         isPlayerActive &&
                         !isModeSwitching &&
+                        !isSupportActive &&
                         !legacyRssRepairInProgress,
                     modifier =
                     Modifier
@@ -751,7 +756,7 @@ fun BoxLoreAppRoot(
                     },
                 )
 
-                if (!isModeSwitching) {
+                if (!isModeSwitching && !isSupportActive) {
                     PlayerSheetScaffold(
                         playbackRepository = playbackRepository,
                         downloadRepository = downloadRepository,

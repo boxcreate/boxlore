@@ -18,6 +18,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -98,6 +99,7 @@ data class SettingsScreenConfig(
     val initialPage: String? = null,
     val isOnboarding: Boolean = false,
     val onSendFeedback: (() -> Unit)? = null,
+    val onSupportPageVisibilityChanged: ((Boolean) -> Unit)? = null,
 )
 
 /** Appearance sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -157,6 +159,15 @@ fun SettingsScreen(
 
     var destination by rememberSaveable {
         mutableStateOf(initialPage.toSettingsDestination())
+    }
+    DisposableEffect(destination) {
+        val isSupport = destination == ProfileSettingsDestination.Support
+        config.onSupportPageVisibilityChanged?.invoke(isSupport)
+        onDispose {
+            if (isSupport) {
+                config.onSupportPageVisibilityChanged?.invoke(false)
+            }
+        }
     }
     var previousDestination by rememberSaveable {
         mutableStateOf<ProfileSettingsDestination?>(null)

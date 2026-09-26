@@ -188,6 +188,7 @@ data class NavHostActions(
     val queueLoreEpisode: (Episode) -> Unit,
     val onShowFeedbackSheet: () -> Unit,
     val onSubmitFeedback: suspend (String, String, String, String) -> Boolean,
+    val onSupportPageVisibilityChanged: (Boolean) -> Unit = {},
 )
 
 /** Internal wiring bag shared by NavGraphBuilder destination helpers. */

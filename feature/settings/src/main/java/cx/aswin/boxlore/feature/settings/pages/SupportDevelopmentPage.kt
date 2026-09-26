@@ -26,18 +26,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bolt
@@ -61,12 +61,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
@@ -86,8 +83,6 @@ import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlinx.coroutines.launch
-
-private val SUPPORT_CONTENT_BOTTOM_PADDING = 220.dp
 
 @Composable
 internal fun SupportDevelopmentPage(
@@ -124,12 +119,31 @@ internal fun SupportDevelopmentPage(
         ),
         label = "plasma_pulse",
     )
+    val particleProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(6500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "particle_progress",
+    )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black),
     ) {
+        CosmicAtmosphereCanvas(
+            auraColor = activeAuraColor,
+            pulse = plasmaPulse,
+            particleProgress = particleProgress,
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.60f)
+                .align(Alignment.TopCenter),
+        )
+
         Scaffold(
             topBar = {
                 SupportTopAppBar(onBack = onBack)
@@ -140,38 +154,43 @@ internal fun SupportDevelopmentPage(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 2.dp),
-                verticalArrangement = Arrangement.spacedBy(13.dp),
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                SupportCardlessStage(
+                SupportArtifactStage(
                     pagerState = pagerState,
                     tiers = SUPPORT_TIER_CARDS,
                     activeAuraColor = activeAuraColor,
-                    plasmaPulse = plasmaPulse,
                 )
 
-                SupportTierPicker(
-                    selectedIndex = pagerState.currentPage,
-                    tiers = SUPPORT_TIER_CARDS,
-                    activeColor = activeAuraColor,
-                    onSelect = { page ->
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(page)
-                        }
-                    },
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    SupportTierPicker(
+                        selectedIndex = pagerState.currentPage,
+                        tiers = SUPPORT_TIER_CARDS,
+                        activeColor = activeAuraColor,
+                        onSelect = { page ->
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(page)
+                            }
+                        },
+                    )
 
-                SupportCtaSection(
-                    tier = activeTier,
-                    activeColor = activeAuraColor,
-                )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    SupportCtaSection(
+                        tier = activeTier,
+                        activeColor = activeAuraColor,
+                    )
+                }
 
                 SupportMissionCard(
                     activeColor = activeAuraColor,
                 )
-
-                Spacer(modifier = Modifier.height(SUPPORT_CONTENT_BOTTOM_PADDING))
             }
         }
     }
@@ -206,39 +225,102 @@ private fun SupportTopAppBar(
 }
 
 @Composable
-private fun SupportCardlessStage(
+private fun CosmicAtmosphereCanvas(
+    auraColor: Color,
+    pulse: Float,
+    particleProgress: Float,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        drawAtmosphereAndStardust(
+            centerX = size.width / 2f,
+            centerY = size.height * 0.45f,
+            auraColor = auraColor,
+            pulse = pulse,
+            particleProgress = particleProgress,
+        )
+    }
+}
+
+private fun DrawScope.drawAtmosphereAndStardust(
+    centerX: Float,
+    centerY: Float,
+    auraColor: Color,
+    pulse: Float,
+    particleProgress: Float,
+) {
+    val baseRadius = size.width * 0.45f
+    val auraRadius = size.width * 1.50f
+
+    // 1. Radiant diffuse atmospheric bloom spreading across upper display
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                auraColor.copy(alpha = 0.36f * pulse),
+                auraColor.copy(alpha = 0.18f * pulse),
+                auraColor.copy(alpha = 0.05f * pulse),
+                Color.Transparent,
+            ),
+            center = Offset(centerX, centerY),
+            radius = auraRadius * pulse,
+        ),
+    )
+
+    // 2. Vertical linear atmospheric wash fading into pitch black
+    drawRect(
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                auraColor.copy(alpha = 0.16f * pulse),
+                auraColor.copy(alpha = 0.05f * pulse),
+                Color.Transparent,
+            ),
+            startY = 0f,
+            endY = size.height,
+        ),
+    )
+
+    // 3. Floating stardust shimmer particles drifting in the celestial void
+    val particleCount = 18
+    for (i in 0 until particleCount) {
+        val seed = (i * 73.17f) % 360f
+        val rad = seed * (PI.toFloat() / 180f)
+        val progress = (particleProgress + i.toFloat() / particleCount) % 1f
+        val spreadX = (baseRadius * 1.10f) * cos(rad)
+        val wobble = sin(progress * 2f * PI.toFloat() + seed) * 14.dp.toPx()
+        val px = centerX + spreadX + wobble
+        val py = (size.height * 0.18f) + (progress * size.height * 0.70f)
+        val alpha = sin(progress * PI.toFloat()).coerceIn(0f, 1f) * 0.75f
+
+        if (alpha > 0.02f) {
+            drawCircle(
+                color = auraColor.copy(alpha = alpha * 0.45f),
+                radius = 3.dp.toPx(),
+                center = Offset(px, py),
+            )
+            drawCircle(
+                color = Color.White.copy(alpha = alpha * 0.90f),
+                radius = 1.2.dp.toPx(),
+                center = Offset(px, py),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SupportArtifactStage(
     pagerState: PagerState,
     tiers: List<SupportTierCardData>,
     activeAuraColor: Color,
-    plasmaPulse: Float,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "stage_atmosphere")
+    val infiniteTransition = rememberInfiniteTransition(label = "unit_levitation_transition")
     val floatOffset by infiniteTransition.animateFloat(
-        initialValue = -5f,
-        targetValue = 5f,
+        initialValue = -6f,
+        targetValue = 6f,
         animationSpec = infiniteRepeatable(
             animation = tween(2400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "unit_levitation",
-    )
-    val ringRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(16000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "ring_rotation",
-    )
-    val particleProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "particle_progress",
     )
 
     Column(
@@ -248,17 +330,9 @@ private fun SupportCardlessStage(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(215.dp),
+                .height(185.dp),
             contentAlignment = Alignment.Center,
         ) {
-            HolographicReactorBackdrop(
-                auraColor = activeAuraColor,
-                rotation = ringRotation,
-                pulse = plasmaPulse,
-                particleProgress = particleProgress,
-                modifier = Modifier.fillMaxSize(),
-            )
-
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
@@ -270,10 +344,10 @@ private fun SupportCardlessStage(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            val scale = lerp(1f, 0.8f, pageOffset.coerceIn(0f, 1f))
+                            val scale = lerp(1f, 0.78f, pageOffset.coerceIn(0f, 1f))
                             scaleX = scale
                             scaleY = scale
-                            alpha = lerp(1f, 0.25f, pageOffset.coerceIn(0f, 1f))
+                            alpha = lerp(1f, 0.20f, pageOffset.coerceIn(0f, 1f))
                         },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -282,7 +356,7 @@ private fun SupportCardlessStage(
                         contentDescription = tier.title,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .size(165.dp)
+                            .size(170.dp)
                             .graphicsLayer {
                                 if (page == pagerState.currentPage) {
                                     translationY = floatOffset.dp.toPx()
@@ -300,173 +374,6 @@ private fun SupportCardlessStage(
             activeAuraColor = activeAuraColor,
         )
     }
-}
-
-@Composable
-private fun HolographicReactorBackdrop(
-    auraColor: Color,
-    rotation: Float,
-    pulse: Float,
-    particleProgress: Float,
-    modifier: Modifier = Modifier,
-) {
-    Canvas(modifier = modifier) {
-        val centerX = size.width / 2f
-        val centerY = size.height * 0.74f
-        val baseRadius = size.width * 0.44f
-
-        drawReactorAtmosphereAndSparks(
-            centerX = centerX,
-            centerY = centerY,
-            baseRadius = baseRadius,
-            auraColor = auraColor,
-            pulse = pulse,
-            particleProgress = particleProgress,
-        )
-        drawHolographicOrbitalRings(centerX, centerY, baseRadius, auraColor, rotation)
-    }
-}
-
-private fun DrawScope.drawReactorAtmosphereAndSparks(
-    centerX: Float,
-    centerY: Float,
-    baseRadius: Float,
-    auraColor: Color,
-    pulse: Float,
-    particleProgress: Float,
-) {
-    // 1. Spreading ambient aura centered behind 3D unit (scrolls with page and moved up!)
-    val auraRadius = size.width * 1.55f
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                auraColor.copy(alpha = 0.35f * pulse),
-                auraColor.copy(alpha = 0.16f * pulse),
-                auraColor.copy(alpha = 0.05f * pulse),
-                Color.Transparent,
-            ),
-            center = Offset(centerX, size.height * 0.48f),
-            radius = auraRadius * pulse,
-        ),
-    )
-
-    // Luminous celestial circle halo directly framing the floating unit
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                auraColor.copy(alpha = 0.38f * pulse),
-                auraColor.copy(alpha = 0.18f * pulse),
-                auraColor.copy(alpha = 0.05f * pulse),
-                Color.Transparent,
-            ),
-            center = Offset(centerX, size.height * 0.48f),
-            radius = baseRadius * 1.40f * pulse,
-        ),
-    )
-
-    // 2. Focused reactor dais core glow directly beneath the asset
-    drawOval(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color.White.copy(alpha = 0.50f),
-                auraColor.copy(alpha = 0.42f * pulse),
-                Color.Transparent,
-            ),
-            center = Offset(centerX, centerY),
-            radius = baseRadius * 1.05f,
-        ),
-        topLeft = Offset(centerX - baseRadius * 1.05f, centerY - 24.dp.toPx()),
-        size = Size(baseRadius * 2.10f, 48.dp.toPx()),
-    )
-
-    // 3. Rising photon energy particles from dais up into the void
-    val particleCount = 14
-    for (i in 0 until particleCount) {
-        val seed = (i * 73.17f) % 360f
-        val rad = seed * (PI.toFloat() / 180f)
-        val progress = (particleProgress + i.toFloat() / particleCount) % 1f
-        val spreadX = (baseRadius * 0.95f) * cos(rad)
-        val wobble = sin(progress * 2f * PI.toFloat() + seed) * 12.dp.toPx()
-        val px = centerX + spreadX + wobble
-        val py = centerY - (progress * 160.dp.toPx())
-        val alpha = sin(progress * PI.toFloat()).coerceIn(0f, 1f) * 0.75f
-
-        if (alpha > 0.02f) {
-            drawCircle(
-                color = auraColor.copy(alpha = alpha * 0.45f),
-                radius = 3.5.dp.toPx(),
-                center = Offset(px, py),
-            )
-            drawCircle(
-                color = Color.White.copy(alpha = alpha * 0.90f),
-                radius = 1.2.dp.toPx(),
-                center = Offset(px, py),
-            )
-        }
-    }
-}
-
-private fun DrawScope.drawHolographicOrbitalRings(
-    centerX: Float,
-    centerY: Float,
-    baseRadius: Float,
-    auraColor: Color,
-    rotation: Float,
-) {
-    val outerWidth = baseRadius * 1.85f
-    val outerHeight = 62.dp.toPx()
-    drawOval(
-        color = auraColor.copy(alpha = 0.52f),
-        topLeft = Offset(centerX - outerWidth / 2f, centerY - outerHeight / 2f),
-        size = Size(outerWidth, outerHeight),
-        style = Stroke(
-            width = 1.6.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), rotation * 1.5f),
-        ),
-    )
-
-    val outerAngleRad = rotation * (PI / 180.0)
-    val sparkX1 = (centerX + (outerWidth / 2f) * cos(outerAngleRad)).toFloat()
-    val sparkY1 = (centerY + (outerHeight / 2f) * sin(outerAngleRad)).toFloat()
-    drawCircle(
-        color = Color.White,
-        radius = 2.8.dp.toPx(),
-        center = Offset(sparkX1, sparkY1),
-    )
-    drawCircle(
-        color = auraColor,
-        radius = 5.5.dp.toPx(),
-        center = Offset(sparkX1, sparkY1),
-        style = Stroke(width = 1.2.dp.toPx()),
-    )
-
-    val innerWidth = baseRadius * 1.38f
-    val innerHeight = 44.dp.toPx()
-    drawOval(
-        color = auraColor.copy(alpha = 0.72f),
-        topLeft = Offset(centerX - innerWidth / 2f, centerY - innerHeight / 2f),
-        size = Size(innerWidth, innerHeight),
-        style = Stroke(
-            width = 1.3.dp.toPx(),
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 10f), -rotation * 2.2f),
-        ),
-    )
-
-    val innerAngleRad = (-rotation * 2.2 + 120.0) * (PI / 180.0)
-    val sparkX2 = (centerX + (innerWidth / 2f) * cos(innerAngleRad)).toFloat()
-    val sparkY2 = (centerY + (innerHeight / 2f) * sin(innerAngleRad)).toFloat()
-    drawCircle(
-        color = Color.White.copy(alpha = 0.95f),
-        radius = 2.4.dp.toPx(),
-        center = Offset(sparkX2, sparkY2),
-    )
-
-    drawOval(
-        color = auraColor.copy(alpha = 0.95f),
-        topLeft = Offset(centerX - (baseRadius * 0.88f) / 2f, centerY - 11.dp.toPx()),
-        size = Size(baseRadius * 0.88f, 22.dp.toPx()),
-        style = Stroke(width = 1.4.dp.toPx()),
-    )
 }
 
 @Composable
@@ -674,48 +581,6 @@ private fun SupportTierPill(
     }
 }
 
-@Composable
-private fun SupportMissionCard(
-    activeColor: Color,
-) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF0C0C14),
-        border = BorderStroke(1.dp, activeColor.copy(alpha = 0.22f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.Favorite,
-                    contentDescription = null,
-                    tint = activeColor,
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Keep boxlore ad-free for everyone",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
-                    color = Color.White,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "boxlore is completely free and ad-free. Contributions directly support our development and help keep it free for everyone.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF9E9EA8),
-                lineHeight = 18.sp,
-            )
-        }
-    }
-}
-
 internal fun getSupportButtonContentColor(backgroundColor: Color): Color =
     if (backgroundColor.luminance() > 0.45f) Color.Black else Color.White
 
@@ -777,10 +642,52 @@ private fun SupportCtaSection(
     }
 }
 
+@Composable
+private fun SupportMissionCard(
+    activeColor: Color,
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFF0C0C14),
+        border = BorderStroke(1.dp, activeColor.copy(alpha = 0.22f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Favorite,
+                    contentDescription = null,
+                    tint = activeColor,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Keep boxlore ad-free for everyone",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
+                    color = Color.White,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "boxlore is completely free and ad-free. Contributions directly support our development and help keep it free for everyone.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF9E9EA8),
+                lineHeight = 18.sp,
+            )
+        }
+    }
+}
+
 internal data class SupportTierCardData(
     val title: String,
-    val powerImpact: String,
     val shortDuration: String,
+    val powerImpact: String,
     val energySegments: Int,
     val cost: String,
     @DrawableRes val iconRes: Int,

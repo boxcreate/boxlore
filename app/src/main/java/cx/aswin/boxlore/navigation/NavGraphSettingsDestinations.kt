@@ -100,6 +100,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 initialPage = settingsPage,
                 isOnboarding = isFromOnboarding,
                 onSendFeedback = { navController.navigate("feedback") },
+                onSupportPageVisibilityChanged = w.actions.onSupportPageVisibilityChanged,
             ),
             regionSettings = RegionSettings(
                 currentRegion = settingsState.currentRegion,
