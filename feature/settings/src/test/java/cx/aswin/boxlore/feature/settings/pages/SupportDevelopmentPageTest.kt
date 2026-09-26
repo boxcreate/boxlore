@@ -44,6 +44,21 @@ class SupportDevelopmentPageTest {
     }
 
     @Test
+    fun supportTierCards_containsGameCodenames() {
+        val codenames = SUPPORT_TIER_CARDS.map { "${it.codenameLine1} ${it.codenameLine2}" }
+        assertEquals(
+            listOf(
+                "PROTOCOL ONE",
+                "PROJECT FLUX",
+                "GOLDEN RELAY",
+                "DARK NEXUS",
+                "ORBIT PRIME",
+            ),
+            codenames,
+        )
+    }
+
+    @Test
     fun supportTierCards_costsAndIconsAreValid() {
         SUPPORT_TIER_CARDS.forEach { tier ->
             assertTrue("Cost should start with USD dollar sign", tier.cost.startsWith("$"))

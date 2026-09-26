@@ -72,6 +72,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
@@ -94,6 +96,10 @@ import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlinx.coroutines.launch
+
+private val StalinistOneFontFamily = FontFamily(
+    Font(R.font.stalinist_one, FontWeight.Normal),
+)
 
 @Composable
 internal fun SupportDevelopmentPage(
@@ -474,6 +480,8 @@ private fun SupportArtifactStage(
                         },
                     contentAlignment = Alignment.Center,
                 ) {
+                    ItemBackdropCodename(tier = tier)
+
                     Image(
                         painter = painterResource(id = tier.iconRes),
                         contentDescription = tier.title,
@@ -490,6 +498,43 @@ private fun SupportArtifactStage(
             selectedIndex = pagerState.currentPage,
             tiers = tiers,
             activeAuraColor = activeAuraColor,
+        )
+    }
+}
+
+@Composable
+private fun ItemBackdropCodename(
+    tier: SupportTierCardData,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                alpha = 0.35f
+            },
+    ) {
+        Text(
+            text = tier.codenameLine1,
+            fontFamily = StalinistOneFontFamily,
+            fontSize = 32.sp,
+            lineHeight = 34.sp,
+            letterSpacing = 2.5.sp,
+            textAlign = TextAlign.Center,
+            color = tier.auraColor,
+            maxLines = 1,
+        )
+        Text(
+            text = tier.codenameLine2,
+            fontFamily = StalinistOneFontFamily,
+            fontSize = 40.sp,
+            lineHeight = 42.sp,
+            letterSpacing = 3.5.sp,
+            textAlign = TextAlign.Center,
+            color = tier.auraColor,
+            maxLines = 1,
         )
     }
 }
@@ -713,6 +758,8 @@ internal data class SupportTierCardData(
     @DrawableRes val iconRes: Int,
     val auraColor: Color,
     val isFeatured: Boolean = false,
+    val codenameLine1: String,
+    val codenameLine2: String,
 )
 
 internal val SUPPORT_TIER_CARDS = listOf(
@@ -724,6 +771,8 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$0.49",
         iconRes = R.drawable.ic_tier_1_micro_cell,
         auraColor = Color(0xFF2979FF),
+        codenameLine1 = "PROTOCOL",
+        codenameLine2 = "ONE",
     ),
     SupportTierCardData(
         title = "Field Battery Pack",
@@ -733,6 +782,8 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$0.99",
         iconRes = R.drawable.ic_tier_2_field_battery,
         auraColor = Color(0xFF00E676),
+        codenameLine1 = "PROJECT",
+        codenameLine2 = "FLUX",
     ),
     SupportTierCardData(
         title = "Power Station",
@@ -742,6 +793,8 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$2.49",
         iconRes = R.drawable.ic_tier_3_power_station,
         auraColor = Color(0xFFFFB300),
+        codenameLine1 = "GOLDEN",
+        codenameLine2 = "RELAY",
     ),
     SupportTierCardData(
         title = "Server Tower",
@@ -751,6 +804,8 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$6.99",
         iconRes = R.drawable.ic_tier_4_server_tower,
         auraColor = Color(0xFF8B5CF6),
+        codenameLine1 = "DARK",
+        codenameLine2 = "NEXUS",
     ),
     SupportTierCardData(
         title = "Quantum Beacon",
@@ -761,5 +816,7 @@ internal val SUPPORT_TIER_CARDS = listOf(
         iconRes = R.drawable.ic_tier_5_quantum_beacon,
         auraColor = Color(0xFFFF2D55),
         isFeatured = true,
+        codenameLine1 = "ORBIT",
+        codenameLine2 = "PRIME",
     ),
 )
