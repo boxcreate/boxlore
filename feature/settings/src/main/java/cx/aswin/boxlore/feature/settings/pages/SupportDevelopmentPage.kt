@@ -130,12 +130,6 @@ internal fun SupportDevelopmentPage(
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        CosmicAmbientAura(
-            auraColor = activeAuraColor,
-            pulse = plasmaPulse,
-            modifier = Modifier.fillMaxSize(),
-        )
-
         Scaffold(
             topBar = {
                 SupportTopAppBar(onBack = onBack)
@@ -148,7 +142,7 @@ internal fun SupportDevelopmentPage(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 2.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 SupportCardlessStage(
                     pagerState = pagerState,
@@ -180,46 +174,6 @@ internal fun SupportDevelopmentPage(
                 Spacer(modifier = Modifier.height(SUPPORT_CONTENT_BOTTOM_PADDING))
             }
         }
-    }
-}
-
-@Composable
-private fun CosmicAmbientAura(
-    auraColor: Color,
-    pulse: Float,
-    modifier: Modifier = Modifier,
-) {
-    Canvas(modifier = modifier) {
-        val centerX = size.width / 2f
-        val auraCenterY = size.height * 0.28f
-        val auraRadius = size.width * 1.35f
-
-        // Wide non-circular diffuse nebula bleed across the upper display
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    auraColor.copy(alpha = 0.35f * pulse),
-                    auraColor.copy(alpha = 0.16f * pulse),
-                    auraColor.copy(alpha = 0.05f * pulse),
-                    Color.Transparent,
-                ),
-                center = Offset(centerX, auraCenterY),
-                radius = auraRadius * pulse,
-            ),
-        )
-
-        // Vertical linear wash extending downward into pitch black
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    auraColor.copy(alpha = 0.15f * pulse),
-                    auraColor.copy(alpha = 0.05f * pulse),
-                    Color.Transparent,
-                ),
-                startY = 0f,
-                endY = size.height * 0.65f,
-            ),
-        )
     }
 }
 
@@ -294,7 +248,7 @@ private fun SupportCardlessStage(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(260.dp),
+                .height(175.dp),
             contentAlignment = Alignment.Center,
         ) {
             HolographicReactorBackdrop(
@@ -339,7 +293,7 @@ private fun SupportCardlessStage(
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         SupportStageTierInfo(
             tier = tiers[pagerState.currentPage],
@@ -358,10 +312,10 @@ private fun HolographicReactorBackdrop(
 ) {
     Canvas(modifier = modifier) {
         val centerX = size.width / 2f
-        val centerY = size.height * 0.72f
+        val centerY = size.height * 0.78f
         val baseRadius = size.width * 0.40f
 
-        drawAnamorphicReactorCoreAndSparks(
+        drawReactorAtmosphereAndSparks(
             centerX = centerX,
             centerY = centerY,
             baseRadius = baseRadius,
@@ -373,7 +327,7 @@ private fun HolographicReactorBackdrop(
     }
 }
 
-private fun DrawScope.drawAnamorphicReactorCoreAndSparks(
+private fun DrawScope.drawReactorAtmosphereAndSparks(
     centerX: Float,
     centerY: Float,
     baseRadius: Float,
@@ -381,22 +335,22 @@ private fun DrawScope.drawAnamorphicReactorCoreAndSparks(
     pulse: Float,
     particleProgress: Float,
 ) {
-    val flareWidth = size.width * 1.8f
-    val flareHeight = 22.dp.toPx()
-    drawOval(
+    // 1. Spreading ambient aura centered behind 3D unit (scrolls with page and moved up!)
+    val auraRadius = size.width * 1.30f
+    drawCircle(
         brush = Brush.radialGradient(
             colors = listOf(
-                Color.White.copy(alpha = 0.65f * pulse),
-                auraColor.copy(alpha = 0.42f * pulse),
+                auraColor.copy(alpha = 0.35f * pulse),
+                auraColor.copy(alpha = 0.16f * pulse),
+                auraColor.copy(alpha = 0.05f * pulse),
                 Color.Transparent,
             ),
-            center = Offset(centerX, centerY),
-            radius = flareWidth / 2f,
+            center = Offset(centerX, size.height * 0.48f),
+            radius = auraRadius * pulse,
         ),
-        topLeft = Offset(centerX - flareWidth / 2f, centerY - flareHeight / 2f),
-        size = Size(flareWidth, flareHeight),
     )
 
+    // 2. Focused reactor dais core glow directly beneath the asset
     drawOval(
         brush = Brush.radialGradient(
             colors = listOf(
@@ -407,10 +361,11 @@ private fun DrawScope.drawAnamorphicReactorCoreAndSparks(
             center = Offset(centerX, centerY),
             radius = baseRadius * 0.85f,
         ),
-        topLeft = Offset(centerX - baseRadius * 0.85f, centerY - 24.dp.toPx()),
-        size = Size(baseRadius * 1.70f, 48.dp.toPx()),
+        topLeft = Offset(centerX - baseRadius * 0.85f, centerY - 20.dp.toPx()),
+        size = Size(baseRadius * 1.70f, 40.dp.toPx()),
     )
 
+    // 3. Rising photon energy particles from dais up into the void
     val particleCount = 14
     for (i in 0 until particleCount) {
         val seed = (i * 73.17f) % 360f
@@ -419,7 +374,7 @@ private fun DrawScope.drawAnamorphicReactorCoreAndSparks(
         val spreadX = (baseRadius * 0.95f) * cos(rad)
         val wobble = sin(progress * 2f * PI.toFloat() + seed) * 12.dp.toPx()
         val px = centerX + spreadX + wobble
-        val py = centerY - (progress * 190.dp.toPx())
+        val py = centerY - (progress * 150.dp.toPx())
         val alpha = sin(progress * PI.toFloat()).coerceIn(0f, 1f) * 0.75f
 
         if (alpha > 0.02f) {
@@ -444,8 +399,8 @@ private fun DrawScope.drawHolographicOrbitalRings(
     auraColor: Color,
     rotation: Float,
 ) {
-    val outerWidth = baseRadius * 1.75f
-    val outerHeight = 62.dp.toPx()
+    val outerWidth = baseRadius * 1.65f
+    val outerHeight = 48.dp.toPx()
     drawOval(
         color = auraColor.copy(alpha = 0.50f),
         topLeft = Offset(centerX - outerWidth / 2f, centerY - outerHeight / 2f),
@@ -466,13 +421,13 @@ private fun DrawScope.drawHolographicOrbitalRings(
     )
     drawCircle(
         color = auraColor,
-        radius = 5.5.dp.toPx(),
+        radius = 5.dp.toPx(),
         center = Offset(sparkX1, sparkY1),
         style = Stroke(width = 1.2.dp.toPx()),
     )
 
-    val innerWidth = baseRadius * 1.28f
-    val innerHeight = 44.dp.toPx()
+    val innerWidth = baseRadius * 1.22f
+    val innerHeight = 34.dp.toPx()
     drawOval(
         color = auraColor.copy(alpha = 0.70f),
         topLeft = Offset(centerX - innerWidth / 2f, centerY - innerHeight / 2f),
@@ -494,8 +449,8 @@ private fun DrawScope.drawHolographicOrbitalRings(
 
     drawOval(
         color = auraColor.copy(alpha = 0.95f),
-        topLeft = Offset(centerX - (baseRadius * 0.82f) / 2f, centerY - 11.dp.toPx()),
-        size = Size(baseRadius * 0.82f, 22.dp.toPx()),
+        topLeft = Offset(centerX - (baseRadius * 0.78f) / 2f, centerY - 9.dp.toPx()),
+        size = Size(baseRadius * 0.78f, 18.dp.toPx()),
         style = Stroke(width = 1.4.dp.toPx()),
     )
 }
@@ -518,7 +473,7 @@ private fun SupportStageTierInfo(
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = targetTier.auraColor,
-                    modifier = Modifier.padding(bottom = 6.dp),
+                    modifier = Modifier.padding(bottom = 4.dp),
                 ) {
                     Text(
                         text = "★ SUPREME PATRON UNIT",
@@ -536,7 +491,7 @@ private fun SupportStageTierInfo(
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -557,7 +512,7 @@ private fun SupportStageTierInfo(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
             SupportSegmentedGauge(
                 segments = targetTier.energySegments,
@@ -590,8 +545,8 @@ private fun SupportSegmentedGauge(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(1.5.dp))
                     .background(segmentColor),
             )
         }
@@ -606,9 +561,7 @@ private fun SupportTierPicker(
     onSelect: (Int) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -685,7 +638,7 @@ private fun SupportTierPill(
             .clickable(onClick = onSelect),
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 10.dp, horizontal = 2.dp),
+            modifier = Modifier.padding(vertical = 7.dp, horizontal = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -718,7 +671,7 @@ private fun SupportMissionCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(14.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -735,7 +688,7 @@ private fun SupportMissionCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
             Text(
                 text = "boxlore is completely free and ad-free. Contributions directly support our development and help keep it free for everyone.",
@@ -765,7 +718,7 @@ private fun SupportCtaSection(
             onClick = {},
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
+                .height(50.dp),
             shape = RoundedCornerShape(16.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
             colors = ButtonDefaults.buttonColors(
@@ -788,7 +741,7 @@ private fun SupportCtaSection(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         Text(
             text = "One-time contribution • No recurring subscription",
