@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-26T01:13:06.343Z",
+  "lastRun": "2026-09-26T06:25:55.432Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "efe4c226-cfc6-11f0-83c5-0f782a2af401",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "9bcf3649-a340-454e-a106-93711facb754",
-      "lastEpisodeTitle": "NPR News: 09-25-2026 9PM EDT",
+      "lastRssKey": "8ea691bb-425e-4fde-aeb2-ed64d2d38015",
+      "lastEpisodeTitle": "NPR News: 09-26-2026 2AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790385190046
+      "lastCheckedAt": 1790403959821
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75339228",
-      "lastEpisodeTitle": "Express Investigation: The unprecedented rift within the Election Commission",
-      "lastEpisodeId": "60797983585",
-      "lastCheckedAt": 1790313225749
+      "lastRssKey": "https://api.spreaker.com/episode/75369778",
+      "lastEpisodeTitle": "The Catch Up: Election Commission SIR row, and more (25 September)",
+      "lastEpisodeId": "60859831723",
+      "lastCheckedAt": 1790403960448
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -127,10 +127,10 @@
       "lastCheckedAt": 1789516722197
     },
     "229239": {
-      "lastRssKey": "243c5f98-2c74-11f1-919d-4f1dc5d54662",
-      "lastEpisodeTitle": "Democrats vs Republicans: Who Is Actually More Violent? - Robert Pape #1154",
+      "lastRssKey": "3c4aff90-2c74-11f1-b806-17be9d6a1815",
+      "lastEpisodeTitle": "How To Make Your Creativity Beat The Algorithm (w/Live Performance) - Dylan Gossett - #1155",
       "lastEpisodeId": "60196429938",
-      "lastCheckedAt": 1790239206531
+      "lastCheckedAt": 1790403965949
     },
     "230598": {
       "lastRssKey": "b817c402-a54a-11f0-b1fc-138388e887fc",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "ee8619ec-b946-11f1-9873-efc8a5bbca9f",
-      "lastEpisodeTitle": "9PM ET 09/25/2026 Newscast",
+      "lastRssKey": "d79dc93a-b970-11f1-b6dd-8f9a5fa6b356",
+      "lastEpisodeTitle": "2AM ET 09/26/2026 Newscast",
       "lastEpisodeId": "60769426413",
-      "lastCheckedAt": 1790385205162
+      "lastCheckedAt": 1790403968223
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -347,10 +347,10 @@
       "lastCheckedAt": 1786559316926
     },
     "522792": {
-      "lastRssKey": "3fc4435e-b3ea-11f1-93ea-bf02bf7a0c0d",
-      "lastEpisodeTitle": "I’m a Tesla Driver Now - WAN Show September 18, 2026",
+      "lastRssKey": "cedcff9a-b967-11f1-ba0c-f7acc8f0e3db",
+      "lastEpisodeTitle": "YouTube Is Getting Way Worse And Also Way Better - WAN Show September 25, 2026",
       "lastEpisodeId": "59973348867",
-      "lastCheckedAt": 1789840113988
+      "lastCheckedAt": 1790403987438
     },
     "522811": {
       "lastRssKey": "37c66119-fcef-4eba-8000-91ecae9ec5a6",
@@ -365,10 +365,10 @@
       "lastCheckedAt": 1790168104299
     },
     "545784": {
-      "lastRssKey": "64510fb354dd33a00e8d1a3910be3c51",
-      "lastEpisodeTitle": "Link mit dem Zaunpfahl (mit Gregor Peter Schmitz)",
-      "lastEpisodeId": "60803560785",
-      "lastCheckedAt": 1790313254219
+      "lastRssKey": "3403fb26a4cc291375daa78ece8e335c",
+      "lastEpisodeTitle": "Presseklub: Die Linke: Gut oder gefährlich?",
+      "lastEpisodeId": "60857136568",
+      "lastCheckedAt": 1790403990317
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/captivate/twit_1102/e335ec65-a2cb-4468-9b3a-ef34a2ff010f/twit1102.mp3",
@@ -484,10 +484,10 @@
       "lastCheckedAt": 1790148238614
     },
     "744587": {
-      "lastRssKey": "7e852a64-ba25-47ec-82de-69c38f84fbd4",
-      "lastEpisodeTitle": "Los 3 Casos Más Extraños de Relatos de la Noche",
-      "lastEpisodeId": "60687598531",
-      "lastCheckedAt": 1790058945860
+      "lastRssKey": "4aaad6f2-05f4-4867-958d-bfdf45d21463",
+      "lastEpisodeTitle": "La Bruja de Xalapa y otras historias de horror",
+      "lastEpisodeId": "60858816228",
+      "lastCheckedAt": 1790404000470
     },
     "745392": {
       "lastRssKey": "20ad2ce9-3088-449b-8001-2e3e739b54d8",
@@ -561,10 +561,10 @@
       "lastCheckedAt": 1790239260461
     },
     "928708": {
-      "lastRssKey": "178ff3fa-b76a-11f1-adf2-87fdd952bea4",
-      "lastEpisodeTitle": "This Day in History - September 25, 2026",
+      "lastRssKey": "e7ecc09c-b8f9-11f1-b76c-af60b416ee60",
+      "lastEpisodeTitle": "This Day in History - September 26, 2026",
       "lastEpisodeId": "60629683212",
-      "lastCheckedAt": 1790313271215
+      "lastCheckedAt": 1790404004678
     },
     "946758": {
       "lastRssKey": "10cc122e-77b5-11f0-8752-0bb04facbe23",
@@ -601,10 +601,10 @@
       "lastCheckedAt": 1790185441747
     },
     "1015378": {
-      "lastRssKey": "cbcb6353-9937-4c25-9f83-93e1f096d3e6",
-      "lastEpisodeTitle": "Luca Ferrari, Bending Spoons CEO: The $40K Origin Story, Buying Product-Market Fit & Why Private Equity Can't Compete",
-      "lastEpisodeId": "60749590348",
-      "lastCheckedAt": 1790207570434
+      "lastRssKey": "39dac85d-ab62-45b0-a587-67797ed8f0ee",
+      "lastEpisodeTitle": "Anthropic IPO at Risk, Meta's Muse Pop, Token Prices Fall, Open Source Gains Share, Alignment Fails",
+      "lastEpisodeId": "60856501003",
+      "lastCheckedAt": 1790404008343
     },
     "1021803": {
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
@@ -675,10 +675,10 @@
       "lastCheckedAt": 1790313282410
     },
     "1193286": {
-      "lastRssKey": "e8630a42-b8f7-11f1-9359-af03327d8705",
-      "lastEpisodeTitle": "Propos Intéressants De Hughes : Quel Sera Le Tandem? | Le Sick Podcast Avec Tony Marinaro 25/09/26",
+      "lastRssKey": "b45a5dc0-b935-11f1-b3b9-eb472e04ec75",
+      "lastEpisodeTitle": "Habs vs Sens; Who Has The Most At Stake? | The Sick Podcast with Tony Marinaro September 25 2026",
       "lastEpisodeId": "60837829375",
-      "lastCheckedAt": 1790364440690
+      "lastCheckedAt": 1790404017676
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -769,10 +769,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6ab6a335732d541ddd273a59",
-      "lastEpisodeTitle": "Pourquoi le Pape est en France (25/09)",
+      "lastRssKey": "6ab6a5cdaae5148d73a36a2a",
+      "lastEpisodeTitle": "(Pop) Pourquoi Donald Trump s’en prend aux médias américains ?… HugoDécrypte",
       "lastEpisodeId": "60814304043",
-      "lastCheckedAt": 1790364446695
+      "lastCheckedAt": 1790404021752
     },
     "2574026": {
       "lastRssKey": "6e346410-b838-11f1-9725-f710ffda4192",
@@ -960,10 +960,10 @@
       "lastCheckedAt": 1790239290221
     },
     "5698881": {
-      "lastRssKey": "c6056494-80c8-4c98-a98e-4998feabca4e",
-      "lastEpisodeTitle": "The Ultimate Guide to Divorce (For You & The People You Love)",
+      "lastRssKey": "1b717967-9cb6-4581-ade5-68c25448335b",
+      "lastEpisodeTitle": "Body Language Expert: 6 Psychological Tricks to Turn Awkwardness into Confidence",
       "lastEpisodeId": "60757360212",
-      "lastCheckedAt": 1790239290781
+      "lastCheckedAt": 1790404030482
     },
     "5716308": {
       "lastRssKey": "urn:bbc:podcast:p0pbqy71",
@@ -1375,10 +1375,10 @@
       "lastCheckedAt": 1789158722412
     },
     "7634730": {
-      "lastRssKey": "b0168b74-bdae-4a32-a417-328ebcdf44e3",
-      "lastEpisodeTitle": "Siegfried & Roy (Part 3)",
-      "lastEpisodeId": "60717497380",
-      "lastCheckedAt": 1790127663681
+      "lastEpisodeId": "60855244034",
+      "lastEpisodeTitle": "The Millenium Dome (Part 1)",
+      "lastRssKey": "da136347-5b55-4a7d-8f20-fe012e02b4e2",
+      "lastCheckedAt": 1790404050861
     },
     "7639797": {
       "lastRssKey": "0bd3cd59-7551-4f3e-bdab-349a17ce29b4",
@@ -1428,10 +1428,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/a6251ca5-7bd6-5276-9476-30375a14973d",
-      "lastEpisodeTitle": "5 MADDENING Things That Happen in a Narcissistic Relationship ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/3bc560e7-a3d1-5633-b4cc-12132152a057",
+      "lastEpisodeTitle": "5 Tricks Narcissists Use to Keep You Hooked ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790385345167
+      "lastCheckedAt": 1790404052202
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
