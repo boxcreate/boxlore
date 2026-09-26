@@ -53,7 +53,7 @@ internal fun SettingsHub(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Support",
+                    text = "Support us",
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
