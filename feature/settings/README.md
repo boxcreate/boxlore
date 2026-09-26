@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the unified Settings hub, category pages (Account, Appearance, Playback, Privacy, Library, Downloads, About), dialogs (Accent color, Add RSS, Reset analytics), authentication credential management (Google One Tap, Magic Link, Password), and download preference screens (`AutoDownloadSettingsScreen`, `SmartDownloadsSettingsScreen`). It presents data from injected core dependencies and does not own catalog engines, ranking persistence, playback services, download workers, or Room schemas.
+Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearance, Playback, Privacy, Library, Downloads, About), dialogs (Accent color, Add RSS, Reset analytics), authentication credential management (Google One Tap, Magic Link, Password), and download preference screens (`AutoDownloadSettingsScreen`, `SmartDownloadsSettingsScreen`). It presents data from injected core dependencies and does not own catalog engines, ranking persistence, playback services, download workers, or Room schemas.
 
 ## Public API
 
@@ -10,7 +10,7 @@ Owns the unified Settings hub, category pages (Account, Appearance, Playback, Pr
 - `SettingsScreenConfig` includes `isOnboarding: Boolean` (used by app navigation to keep onboarding mode active and bypass the hub on return), `onSendFeedback: (() -> Unit)?` to route to feedback, and `resolveSettingsBackAction` for deterministic back-handler actions.
 - `FeedbackScreen`, `FeedbackViewModel`, `DiagnosticCollector`, and `LogcatCollector` under `feedback/` for sticky draft feedback submissions, in-process sanitized logcat extraction, device diagnostics, and GitHub issue reporting.
 - `AutoDownloadSettingsScreen` and `SmartDownloadsSettingsScreen` under `downloads/` for download management.
-- `AccountSettingsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`.
+- `AccountSettingsPage`, `SyncAndBackupsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`.
 - Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
 
 ## Internal structure
@@ -53,6 +53,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     PlaybackSettingsPage.kt
     PrivacySettingsPage.kt
     SettingsHub.kt
+    SyncAndBackupsPage.kt
 ```
 
 ## Dependencies

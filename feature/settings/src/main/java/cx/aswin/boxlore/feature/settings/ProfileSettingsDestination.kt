@@ -5,6 +5,7 @@ internal enum class ProfileSettingsDestination(
 ) {
     Hub("Settings"),
     Account("Account"),
+    SyncAndBackups("Cloud Sync & Backups"),
     Library("Library"),
     Appearance("Appearance"),
     Playback("Playback"),
