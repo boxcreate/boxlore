@@ -35,7 +35,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -64,7 +63,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -112,7 +110,7 @@ internal fun SupportDevelopmentPage(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            SupportHeroHeader(activeAuraColor = activeAuraColor)
+            SupportHeroHeader()
 
             SupportCardlessStage(
                 pagerState = pagerState,
@@ -120,7 +118,7 @@ internal fun SupportDevelopmentPage(
                 activeAuraColor = activeAuraColor,
             )
 
-            CurvedPowerRailSelector(
+            SupportTierPicker(
                 selectedIndex = pagerState.currentPage,
                 tiers = SUPPORT_TIER_CARDS,
                 activeColor = activeAuraColor,
@@ -173,39 +171,10 @@ private fun SupportTopAppBar(
 }
 
 @Composable
-private fun SupportHeroHeader(
-    activeAuraColor: Color,
-) {
+private fun SupportHeroHeader() {
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = activeAuraColor.copy(alpha = 0.12f),
-            border = BorderStroke(1.dp, activeAuraColor.copy(alpha = 0.35f)),
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(activeAuraColor),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "100% LISTENER SUPPORTED",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = activeAuraColor,
-                    letterSpacing = 0.6.sp,
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
         Text(
             text = "Keep boxlore ad-free for everyone",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
@@ -215,7 +184,7 @@ private fun SupportHeroHeader(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "boxlore is completely free and ad-free. Listener contributions directly support our development and help keep it free for everyone.",
+            text = "boxlore is completely free and ad-free. Contributions directly support our development and help keep it free for everyone.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 18.sp,
@@ -484,181 +453,142 @@ private fun SupportSegmentedGauge(
 
         Spacer(modifier = Modifier.height(6.dp))
 
+        val accessibleAccent = getAccessibleAccentColor(activeColor)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Rounded.Bolt,
                 contentDescription = null,
-                tint = activeColor,
+                tint = accessibleAccent,
                 modifier = Modifier.size(15.dp),
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = powerImpact,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.bold),
-                color = activeColor,
+                color = accessibleAccent,
             )
         }
     }
 }
 
 @Composable
-private fun CurvedPowerRailSelector(
+private fun SupportTierPicker(
     selectedIndex: Int,
     tiers: List<SupportTierCardData>,
     activeColor: Color,
     onSelect: (Int) -> Unit,
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(66.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            CurvedRailTrackCanvas(
-                selectedIndex = selectedIndex,
-                totalTiers = tiers.size,
-                activeColor = activeColor,
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                tiers.forEachIndexed { index, tier ->
-                    CurvedRailNodePill(
-                        tier = tier,
-                        isSelected = index == selectedIndex,
-                        activeColor = activeColor,
-                        onSelect = { onSelect(index) },
-                    )
-                }
+        tiers.forEachIndexed { index, tier ->
+            Box(modifier = Modifier.weight(1f)) {
+                SupportTierPill(
+                    tier = tier,
+                    isSelected = index == selectedIndex,
+                    activeColor = activeColor,
+                    onSelect = { onSelect(index) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CurvedRailTrackCanvas(
-    selectedIndex: Int,
-    totalTiers: Int,
-    activeColor: Color,
-) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val startX = 26.dp.toPx()
-        val endX = size.width - 26.dp.toPx()
-        val midY = size.height * 0.5f
-        val dipY = 8.dp.toPx()
-
-        val basePath = Path().apply {
-            moveTo(startX, midY - dipY)
-            quadraticTo(size.width / 2f, midY + dipY, endX, midY - dipY)
-        }
-
-        drawPath(
-            path = basePath,
-            color = Color.White.copy(alpha = 0.12f),
-            style = Stroke(width = 2.dp.toPx()),
-        )
-
-        val progress = (selectedIndex / (totalTiers - 1).toFloat()).coerceIn(0f, 1f)
-        val activeEndX = startX + (endX - startX) * progress
-        val activeMidX = (startX + activeEndX) / 2f
-        val activeDipY = dipY * progress
-
-        val activePath = Path().apply {
-            moveTo(startX, midY - dipY)
-            quadraticTo(activeMidX, midY + activeDipY, activeEndX, midY - (dipY * (1f - progress)))
-        }
-
-        drawPath(
-            path = activePath,
-            brush = Brush.horizontalGradient(
-                colors = listOf(
-                    activeColor.copy(alpha = 0.35f),
-                    activeColor,
-                ),
-                startX = startX,
-                endX = activeEndX,
-            ),
-            style = Stroke(width = 2.5.dp.toPx()),
-        )
-    }
-}
-
-@Composable
-private fun CurvedRailNodePill(
+private fun SupportTierPill(
     tier: SupportTierCardData,
     isSelected: Boolean,
     activeColor: Color,
     onSelect: () -> Unit,
 ) {
     val elevationOffset by animateFloatAsState(
-        targetValue = if (isSelected) -4f else 0f,
-        animationSpec = tween(220, easing = FastOutSlowInEasing),
-        label = "node_elevation",
+        targetValue = if (isSelected) (-3f) else 0f,
+        animationSpec = tween(200, easing = FastOutSlowInEasing),
+        label = "pill_elevation",
     )
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) {
-            activeColor.copy(alpha = 0.22f)
+            activeColor
         } else {
-            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.65f)
+            MaterialTheme.colorScheme.surfaceContainerHigh
         },
         animationSpec = tween(200),
-        label = "dial_container",
+        label = "pill_background",
     )
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) {
             activeColor
         } else {
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         },
         animationSpec = tween(200),
-        label = "dial_border",
+        label = "pill_border",
     )
-    val contentColor by animateColorAsState(
+    val durationTextColor by animateColorAsState(
         targetValue = if (isSelected) {
-            activeColor
+            getSupportButtonContentColor(activeColor)
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        animationSpec = tween(200),
+        label = "pill_duration_color",
+    )
+    val costTextColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            getSupportButtonContentColor(activeColor).copy(alpha = 0.85f)
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
         animationSpec = tween(200),
-        label = "dial_content",
+        label = "pill_cost_color",
     )
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         color = backgroundColor,
         border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor),
         modifier = Modifier
+            .fillMaxWidth()
             .graphicsLayer { translationY = elevationOffset.dp.toPx() }
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onSelect),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = tier.shortDuration,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.bold),
-                color = contentColor,
+                color = durationTextColor,
+                maxLines = 1,
             )
-            Spacer(modifier = Modifier.height(1.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = tier.cost,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.medium),
-                color = contentColor.copy(alpha = if (isSelected) 0.95f else 0.72f),
+                color = costTextColor,
+                maxLines = 1,
             )
         }
+    }
+}
+
+@Composable
+internal fun getAccessibleAccentColor(color: Color): Color {
+    val isLightMode = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    if (!isLightMode) return color
+    return when (color) {
+        Color(0xFF00E5FF) -> Color(0xFF007A87)
+        Color(0xFF00E676) -> Color(0xFF1B5E20)
+        Color(0xFFFFB300) -> Color(0xFFB26A00)
+        Color(0xFF8B5CF6) -> Color(0xFF6D28D9)
+        Color(0xFFFF2D55) -> Color(0xFFC2185B)
+        else -> color
     }
 }
 
@@ -667,9 +597,12 @@ private fun SupportAllocationMatrix(
     tier: SupportTierCardData,
     activeColor: Color,
 ) {
+    val accessibleAccent = getAccessibleAccentColor(activeColor)
+    val isLightMode = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (isLightMode) 0.85f else 0.55f),
         border = BorderStroke(1.dp, activeColor.copy(alpha = 0.25f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -687,26 +620,26 @@ private fun SupportAllocationMatrix(
                     Icon(
                         imageVector = Icons.Rounded.Sensors,
                         contentDescription = null,
-                        tint = activeColor,
+                        tint = accessibleAccent,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "INFRASTRUCTURE IMPACT",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = activeColor,
+                        color = accessibleAccent,
                         letterSpacing = 0.6.sp,
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = activeColor.copy(alpha = 0.12f),
+                    color = activeColor.copy(alpha = if (isLightMode) 0.20f else 0.12f),
                 ) {
                     Text(
                         text = tier.powerImpact,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = activeColor,
+                        color = accessibleAccent,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
@@ -735,7 +668,7 @@ private fun SupportAllocationMatrix(
                             Text(
                                 text = "◆",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = activeColor,
+                                color = accessibleAccent,
                                 modifier = Modifier.padding(end = 8.dp, top = 1.dp),
                             )
                             Text(
