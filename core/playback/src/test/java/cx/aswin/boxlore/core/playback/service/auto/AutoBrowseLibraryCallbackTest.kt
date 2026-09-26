@@ -4,15 +4,18 @@ import android.content.Context
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
 import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -45,9 +48,13 @@ class AutoBrowseLibraryCallbackTest {
     private lateinit var treeBuilder: AutoBrowseTreeBuilder
     private lateinit var resumptionHandler: AutoPlaybackResumptionHandler
     private lateinit var callback: AutoBrowseLibraryCallback
+    private val recordedEvents = mutableListOf<Pair<String, Map<String, Any>>>()
+    private lateinit var restoreAnalytics: () -> Unit
 
     @Before
     fun setUp() = runBlocking {
+        recordedEvents.clear()
+        restoreAnalytics = AnalyticsHelper.installRecordingSink(recordedEvents)
         context = ApplicationProvider.getApplicationContext()
         host = mock(AutoBrowseLibraryHost::class.java)
         database = mock(BoxLoreDatabase::class.java)
@@ -62,6 +69,10 @@ class AutoBrowseLibraryCallbackTest {
         `when`(database.podcastDao()).thenReturn(podcastDao)
         `when`(host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_app_name)).thenReturn("boxlore")
         `when`(host.getString(cx.aswin.boxlore.core.catalog.R.string.auto_group_subscriptions)).thenReturn("Subscriptions")
+        val commandButton = mock(androidx.media3.session.CommandButton::class.java)
+        `when`(host.seekBackAction).thenReturn(commandButton)
+        `when`(host.seekForwardAction).thenReturn(commandButton)
+        `when`(host.markCompleteAction).thenReturn(commandButton)
 
         `when`(treeBuilder.getRootChildren()).thenReturn(emptyList())
         `when`(treeBuilder.getHomeChildren()).thenReturn(emptyList())
@@ -74,6 +85,11 @@ class AutoBrowseLibraryCallbackTest {
             resumptionHandler = resumptionHandler,
             treeBuilder = treeBuilder,
         )
+    }
+
+    @After
+    fun tearDown() {
+        restoreAnalytics()
     }
 
     @Test
@@ -216,5 +232,96 @@ class AutoBrowseLibraryCallbackTest {
         assertNotNull(result.value)
         assertEquals("subscription:pod-contract", result.value?.mediaId)
         assertEquals("Contract Show", result.value?.mediaMetadata?.title?.toString())
+    }
+
+    @Test
+    fun `isAndroidAuto identifies Auto and Automotive controllers correctly`() {
+        val session = mock(MediaSession::class.java)
+
+        fun createController(packageName: String): MediaSession.ControllerInfo {
+            val controller = mock(MediaSession.ControllerInfo::class.java)
+            `when`(controller.packageName).thenReturn(packageName)
+            return controller
+        }
+
+        val bluetooth = createController("com.android.bluetooth")
+        val systemUi = createController("com.android.systemui")
+        val appSelf = createController("cx.aswin.boxlore")
+        val autoCompanion = createController("com.google.android.projection.gearhead")
+        val automotiveGoogle = createController("com.google.android.apps.automotive.media")
+        val automotiveAosp = createController("com.android.car.media")
+
+        assertEquals(false, callback.isAndroidAuto(session, bluetooth))
+        assertEquals(false, callback.isAndroidAuto(session, systemUi))
+        assertEquals(false, callback.isAndroidAuto(session, appSelf))
+        assertEquals(true, callback.isAndroidAuto(session, autoCompanion))
+        assertEquals(true, callback.isAndroidAuto(session, automotiveGoogle))
+        assertEquals(true, callback.isAndroidAuto(session, automotiveAosp))
+    }
+
+    @Test
+    fun `isAndroidAuto returns true when MediaSession indicates companion or automotive`() {
+        val session = mock(MediaSession::class.java)
+        val controller = mock(MediaSession.ControllerInfo::class.java)
+        `when`(controller.packageName).thenReturn("com.custom.auto.oem")
+
+        `when`(session.isAutoCompanionController(controller)).thenReturn(true)
+        assertEquals(true, callback.isAndroidAuto(session, controller))
+
+        `when`(session.isAutoCompanionController(controller)).thenReturn(false)
+        `when`(session.isAutomotiveController(controller)).thenReturn(true)
+        assertEquals(true, callback.isAndroidAuto(session, controller))
+    }
+
+    @Test
+    fun `onConnect and onDisconnected do not emit analytics for Bluetooth controller`() {
+        val session = mock(MediaSession::class.java)
+        val player = mock(Player::class.java)
+        `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
+        `when`(session.player).thenReturn(player)
+        val controller = mock(MediaSession.ControllerInfo::class.java)
+        `when`(controller.packageName).thenReturn("com.android.bluetooth")
+
+        callback.onConnect(session, controller)
+        assertTrue(recordedEvents.none { it.first == "android_auto_connected" })
+
+        callback.onDisconnected(session, controller)
+        assertTrue(recordedEvents.none { it.first == "android_auto_disconnected" })
+    }
+
+    @Test
+    fun `onConnect and onDisconnected emit analytics for Android Auto controller`() {
+        val session = mock(MediaSession::class.java)
+        val player = mock(Player::class.java)
+        `when`(player.availableCommands).thenReturn(Player.Commands.EMPTY)
+        `when`(session.player).thenReturn(player)
+        val controller = mock(MediaSession.ControllerInfo::class.java)
+        `when`(controller.packageName).thenReturn("com.google.android.projection.gearhead")
+
+        callback.onConnect(session, controller)
+        assertTrue(recordedEvents.any { it.first == "android_auto_connected" })
+
+        callback.onDisconnected(session, controller)
+        assertTrue(recordedEvents.any { it.first == "android_auto_disconnected" })
+    }
+
+    @Test
+    fun `onGetChildren does not emit android_auto_browse for non-Auto controller`() {
+        val session = mock(MediaLibrarySession::class.java)
+        val controller = mock(MediaSession.ControllerInfo::class.java)
+        `when`(controller.packageName).thenReturn("com.android.bluetooth")
+
+        callback.onGetChildren(session, controller, AutoBrowseContract.ROOT_ID, 0, 10, null)
+        assertTrue(recordedEvents.none { it.first == "android_auto_browse" })
+    }
+
+    @Test
+    fun `onGetChildren emits android_auto_browse for Android Auto controller`() {
+        val session = mock(MediaLibrarySession::class.java)
+        val controller = mock(MediaSession.ControllerInfo::class.java)
+        `when`(controller.packageName).thenReturn("com.google.android.projection.gearhead")
+
+        callback.onGetChildren(session, controller, AutoBrowseContract.ROOT_ID, 0, 10, null)
+        assertTrue(recordedEvents.any { it.first == "android_auto_browse" })
     }
 }
