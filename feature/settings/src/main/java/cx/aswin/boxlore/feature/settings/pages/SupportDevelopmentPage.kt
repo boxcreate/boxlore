@@ -20,6 +20,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -70,6 +71,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
@@ -623,6 +625,7 @@ private fun SupportCtaSection(
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = activeColor,
                 contentColor = buttonContentColor,
@@ -637,6 +640,9 @@ private fun SupportCtaSection(
             Text(
                 text = "Deploy ${tier.title} • ${tier.cost}",
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
             )
         }
 
@@ -740,7 +746,7 @@ internal val SUPPORT_TIER_CARDS = listOf(
         auraColor = Color(0xFF8B5CF6),
     ),
     SupportTierCardData(
-        title = "Orbital Quantum Beacon",
+        title = "Quantum Beacon",
         powerImpact = "Powers 1 Full Week",
         shortDuration = "7d",
         energySegments = 5,

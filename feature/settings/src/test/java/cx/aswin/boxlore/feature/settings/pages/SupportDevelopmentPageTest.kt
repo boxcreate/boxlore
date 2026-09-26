@@ -17,7 +17,7 @@ class SupportDevelopmentPageTest {
                 "Field Battery Pack",
                 "Power Station",
                 "Server Tower",
-                "Orbital Quantum Beacon",
+                "Quantum Beacon",
             ),
             titles,
         )
@@ -39,7 +39,7 @@ class SupportDevelopmentPageTest {
     fun supportTierCards_hasExactlyOneFeaturedTier() {
         val featured = SUPPORT_TIER_CARDS.filter { it.isFeatured }
         assertEquals(1, featured.size)
-        assertEquals("Orbital Quantum Beacon", featured.first().title)
+        assertEquals("Quantum Beacon", featured.first().title)
     }
 
     @Test
