@@ -14,7 +14,14 @@ data class SyncResponse(val items: List<SyncItem> = emptyList(), val error: Stri
 data class SyncItem(val id: String, val latestEpisode: EpisodeItem? = null)
 
 @Serializable
-data class FeedbackRequest(val category: String, val message: String, val appVersion: String, val email: String? = null)
+data class FeedbackRequest(
+    val category: String,
+    val message: String,
+    val appVersion: String,
+    val email: String? = null,
+    val diagnostics: String? = null,
+    val logs: String? = null,
+)
 
 @Serializable
 data class FeedbackResponse(val success: Boolean)

@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.FeedbackDraft
 import java.net.URLEncoder
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +52,17 @@ class FeedbackViewModel(
     private val podcastRepository: PodcastRepository,
     private val boxcastPrefs: BoxcastPrefs,
     private val context: Context,
-    private val submitFeedbackAction: (suspend (category: String, message: String, appVersion: String, email: String?) -> Boolean)? = null,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val submitFeedbackAction: (
+        suspend (
+        category: String,
+        message: String,
+        appVersion: String,
+        email: String?,
+        diagnostics: String?,
+        logs: String?,
+    ) -> Boolean
+    )? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedbackUiState())
@@ -157,7 +168,7 @@ class FeedbackViewModel(
     fun loadLogsForPreview() {
         _uiState.update { it.copy(isLoadingLogs = true) }
         viewModelScope.launch {
-            val logs = withContext(Dispatchers.IO) {
+            val logs = withContext(ioDispatcher) {
                 LogcatCollector.collectSanitizedLogcat(context = context, maxLines = 150)
             }
             _uiState.update {
@@ -193,6 +204,8 @@ class FeedbackViewModel(
 
             val appVersion = state.diagnosticInfo?.appVersion ?: "unknown"
 
+            val diagnosticsInfo = state.diagnosticInfo ?: DiagnosticCollector.collect(context)
+
             val fullMessage = buildString {
                 if (state.category == FeedbackCategory.AUDIO) {
                     append("[Category: Audio / Stream Issue]\n\n")
@@ -202,14 +215,28 @@ class FeedbackViewModel(
                     append("\n\nSteps to reproduce:\n")
                     append(state.stepsToReproduce.trim())
                 }
-                if (state.attachDiagnostics && state.diagnosticInfo != null) {
+                if (state.attachDiagnostics) {
                     append("\n\n---\nDiagnostics: ")
-                    append(state.diagnosticInfo.toCondensedSummary())
+                    append(diagnosticsInfo.toCondensedSummary())
                 }
             }.take(2000)
 
-            val submit = submitFeedbackAction ?: { cat, msg, ver, mail ->
-                podcastRepository.submitFeedback(cat, msg, ver, mail)
+            val diagnosticsReport = if (state.attachDiagnostics) {
+                diagnosticsInfo.toMarkdownReport()
+            } else {
+                null
+            }
+
+            val sanitizedLogs = if (state.attachDiagnostics) {
+                withContext(ioDispatcher) {
+                    LogcatCollector.collectSanitizedLogcat(context = context, maxLines = 100)
+                }
+            } else {
+                null
+            }
+
+            val submit = submitFeedbackAction ?: { cat, msg, ver, mail, diag, logs ->
+                podcastRepository.submitFeedback(cat, msg, ver, mail, diag, logs)
             }
 
             val success = submit(
@@ -217,6 +244,8 @@ class FeedbackViewModel(
                 fullMessage,
                 appVersion,
                 state.email.trim().ifBlank { null },
+                diagnosticsReport,
+                sanitizedLogs,
             )
 
             if (success) {

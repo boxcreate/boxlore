@@ -128,7 +128,7 @@ class FeedbackViewModelTest {
             dummyPodcastRepository,
             prefs,
             context,
-            submitFeedbackAction = { _, _, _, _ ->
+            submitFeedbackAction = { _, _, _, _, _, _ ->
                 called = true
                 true
             },
@@ -152,7 +152,7 @@ class FeedbackViewModelTest {
             dummyPodcastRepository,
             prefs,
             context,
-            submitFeedbackAction = { cat, _, _, mail ->
+            submitFeedbackAction = { cat, _, _, mail, _, _ ->
                 capturedCategory = cat
                 capturedEmail = mail
                 true
@@ -181,7 +181,8 @@ class FeedbackViewModelTest {
             dummyPodcastRepository,
             prefs,
             context,
-            submitFeedbackAction = { cat, _, _, _ ->
+            ioDispatcher = testDispatcher,
+            submitFeedbackAction = { cat, _, _, _, _, _ ->
                 capturedCategory = cat
                 true
             },
@@ -195,6 +196,32 @@ class FeedbackViewModelTest {
         val state = vm.uiState.value
         assertTrue(state.isSuccess)
         assertEquals("bug", capturedCategory)
+    }
+
+    @Test
+    fun onSubmit_with_diagnostics_attached_passes_diagnostics_and_logs() = runTest(testDispatcher) {
+        var capturedDiag: String? = null
+
+        val vm = FeedbackViewModel(
+            dummyPodcastRepository,
+            prefs,
+            context,
+            ioDispatcher = testDispatcher,
+            submitFeedbackAction = { _, _, _, _, diag, _ ->
+                capturedDiag = diag
+                true
+            },
+        )
+        vm.onCategorySelected(FeedbackCategory.BUG)
+        vm.onMessageChanged("Crash when clicking download button")
+
+        vm.onSubmit()
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue(state.isSuccess)
+        assertNotNull(capturedDiag)
+        assertTrue(capturedDiag!!.contains("System Diagnostics"))
     }
 
     @Test
