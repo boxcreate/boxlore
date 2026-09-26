@@ -313,6 +313,7 @@ fun HomeRoute(
             onImportClick,
             onAiOnboardingClick,
             onBriefingClick,
+            onFeedbackClick,
             onNavigateToLatestEpisodes,
         ) {
             HomeScreenCallbacks(

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.feedback
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -86,18 +87,23 @@ object DiagnosticCollector {
         )
     }
 
+    @SuppressLint("MissingPermission")
     private fun determineNetworkType(context: Context): String {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            ?: return "Unknown"
-        val network = cm.activeNetwork ?: return "Offline"
-        val caps = cm.getNetworkCapabilities(network) ?: return "Offline"
+        return try {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                ?: return "Unknown"
+            val network = cm.activeNetwork ?: return "Offline"
+            val caps = cm.getNetworkCapabilities(network) ?: return "Offline"
 
-        return when {
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "VPN"
-            else -> "Connected"
+            when {
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "VPN"
+                else -> "Connected"
+            }
+        } catch (_: SecurityException) {
+            "Unknown"
         }
     }
 

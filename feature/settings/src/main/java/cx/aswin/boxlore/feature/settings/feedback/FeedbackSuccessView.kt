@@ -43,6 +43,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
+private const val STATUS_TITLE_CONTACT = "Reach out within 24 hours"
+private const val STATUS_TITLE_ANONYMOUS = "Submitted anonymously"
+
 internal data class FeedbackSuccessContent(
     val title: String,
     val subtitle: String,
@@ -57,12 +60,13 @@ internal fun getFeedbackSuccessContent(
 ): FeedbackSuccessContent {
     val trimmedEmail = email.trim()
     val hasEmail = trimmedEmail.isNotBlank()
+    val statusTitle = if (hasEmail) STATUS_TITLE_CONTACT else STATUS_TITLE_ANONYMOUS
 
     return when (category) {
         FeedbackCategory.BUG -> FeedbackSuccessContent(
             title = "Bug report submitted",
             subtitle = "Thank you for helping us squash this bug. We obsess over getting boxlore right and fixing issues at the source.",
-            statusTitle = if (hasEmail) "Reach out within 24 hours" else "Submitted anonymously",
+            statusTitle = statusTitle,
             statusDescription = if (hasEmail) {
                 "Rather than applying a quick band-aid, we would like to chat more about the issue to ensure it is truly solved. We will review your diagnostics and reach out to $trimmedEmail within 24 hours."
             } else {
@@ -73,7 +77,7 @@ internal fun getFeedbackSuccessContent(
         FeedbackCategory.AUDIO -> FeedbackSuccessContent(
             title = "Audio report submitted",
             subtitle = "Playback reliability is core to boxlore. Thank you for reporting this stream behavior so we can investigate and resolve it.",
-            statusTitle = if (hasEmail) "Reach out within 24 hours" else "Submitted anonymously",
+            statusTitle = statusTitle,
             statusDescription = if (hasEmail) {
                 "We obsess over getting boxlore right. We'll analyze your playback diagnostics and reach out to $trimmedEmail within 24 hours to help troubleshoot."
             } else {
@@ -84,7 +88,7 @@ internal fun getFeedbackSuccessContent(
         FeedbackCategory.FEATURE -> FeedbackSuccessContent(
             title = "Feature idea submitted",
             subtitle = "We love shaping boxlore alongside our listeners. Your suggestion helps steer what we build next.",
-            statusTitle = if (hasEmail) "Reach out within 24 hours" else "Submitted anonymously",
+            statusTitle = statusTitle,
             statusDescription = if (hasEmail) {
                 "We discuss community ideas regularly. If we explore this feature further or need your perspective, we'll reach out to $trimmedEmail within 24 hours."
             } else {
@@ -95,7 +99,7 @@ internal fun getFeedbackSuccessContent(
         FeedbackCategory.OTHER -> FeedbackSuccessContent(
             title = "Feedback received",
             subtitle = "Thank you for taking the time to write to us. Every note and perspective helps make boxlore better.",
-            statusTitle = if (hasEmail) "Reach out within 24 hours" else "Submitted anonymously",
+            statusTitle = statusTitle,
             statusDescription = if (hasEmail) {
                 "We personally review every note. If your message requires a follow-up or reply, we'll reach out to $trimmedEmail within 24 hours."
             } else {
@@ -204,13 +208,27 @@ private fun FeedbackStatusCard(
     content: FeedbackSuccessContent,
     modifier: Modifier = Modifier,
 ) {
+    val isAttached = content.isEmailAttached
+    val cardColor = if (isAttached) {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
+    }
+    val iconContainerColor = if (isAttached) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.secondaryContainer
+    }
+    val iconTint = if (isAttached) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    }
+    val iconVector = if (isAttached) Icons.Rounded.Schedule else Icons.Rounded.DoneAll
+
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = if (content.isEmailAttached) {
-            MaterialTheme.colorScheme.surfaceContainerHigh
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
-        },
+        color = cardColor,
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
@@ -220,26 +238,14 @@ private fun FeedbackStatusCard(
         ) {
             Surface(
                 shape = CircleShape,
-                color = if (content.isEmailAttached) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.secondaryContainer
-                },
+                color = iconContainerColor,
                 modifier = Modifier.size(40.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = if (content.isEmailAttached) {
-                            Icons.Rounded.Schedule
-                        } else {
-                            Icons.Rounded.DoneAll
-                        },
+                        imageVector = iconVector,
                         contentDescription = null,
-                        tint = if (content.isEmailAttached) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        },
+                        tint = iconTint,
                         modifier = Modifier.size(22.dp),
                     )
                 }

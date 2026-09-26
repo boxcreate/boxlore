@@ -106,19 +106,45 @@ class FeedbackViewModelTest {
                 category = "other",
                 message = "Something random",
                 stepsToReproduce = "step 1",
+                email = "user@example.com",
             ),
         )
 
         val vm = FeedbackViewModel(dummyPodcastRepository, prefs, context)
         assertTrue(vm.uiState.value.isDraftRestored)
+        assertEquals("user@example.com", vm.uiState.value.email)
 
         vm.onDiscardDraft()
 
         val state = vm.uiState.value
         assertEquals("", state.message)
         assertEquals("", state.stepsToReproduce)
+        assertEquals("", state.email)
         assertFalse(state.isDraftRestored)
         assertNull(prefs.getFeedbackDraft())
+    }
+
+    @Test
+    fun initial_state_restores_draft_when_only_steps_are_present() {
+        prefs.saveFeedbackDraft(
+            FeedbackDraft(
+                category = "bug",
+                message = "",
+                email = "listener@example.com",
+                stepsToReproduce = "1. Play\n2. Wait",
+                attachDiagnostics = true,
+            ),
+        )
+
+        val vm = FeedbackViewModel(dummyPodcastRepository, prefs, context)
+        val state = vm.uiState.value
+
+        assertEquals(FeedbackCategory.BUG, state.category)
+        assertEquals("", state.message)
+        assertEquals("listener@example.com", state.email)
+        assertEquals("1. Play\n2. Wait", state.stepsToReproduce)
+        assertTrue(state.attachDiagnostics)
+        assertTrue(state.isDraftRestored)
     }
 
     @Test

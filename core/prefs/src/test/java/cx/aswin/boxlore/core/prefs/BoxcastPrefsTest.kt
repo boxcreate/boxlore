@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -191,5 +192,38 @@ class BoxcastPrefsTest {
 
         prefs.clearFeedbackDraft()
         assertNull(prefs.getFeedbackDraft())
+    }
+
+    @Test
+    fun feedbackDraft_returnsDraft_whenOnlyStepsArePresent() {
+        val draft = FeedbackDraft(
+            category = "bug",
+            message = "",
+            email = "tester@example.com",
+            stepsToReproduce = "1. Crash on click",
+            attachDiagnostics = true,
+        )
+        prefs.saveFeedbackDraft(draft)
+
+        val retrieved = prefs.getFeedbackDraft()
+        assertNotNull(retrieved)
+        assertEquals("", retrieved?.message)
+        assertEquals("1. Crash on click", retrieved?.stepsToReproduce)
+        assertEquals("tester@example.com", retrieved?.email)
+    }
+
+    @Test
+    fun feedbackDraft_returnsNull_whenBothMessageAndStepsAreBlank() {
+        val draft = FeedbackDraft(
+            category = "bug",
+            message = "   ",
+            email = "tester@example.com",
+            stepsToReproduce = "   ",
+            attachDiagnostics = true,
+        )
+        prefs.saveFeedbackDraft(draft)
+
+        val retrieved = prefs.getFeedbackDraft()
+        assertNull(retrieved)
     }
 }

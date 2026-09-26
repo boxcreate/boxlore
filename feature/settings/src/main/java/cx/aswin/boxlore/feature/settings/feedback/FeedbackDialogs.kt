@@ -80,7 +80,7 @@ fun LogsPreviewDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
-                    text = "These diagnostics and logs are already included with your submission. Tokens and sensitive keys are scrubbed.\nTip: Reproduce the issue first so relevant error logs appear.",
+                    text = "These diagnostics and sanitized logs will be included with your submission when diagnostics are enabled.\nTip: Reproduce the issue first so relevant error logs appear.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -76,7 +76,7 @@ class FeedbackViewModel(
         val diagnostics = DiagnosticCollector.collect(context)
         val draft = boxcastPrefs.getFeedbackDraft()
 
-        if (draft != null && draft.message.isNotBlank()) {
+        if (draft != null && (draft.message.isNotBlank() || draft.stepsToReproduce.isNotBlank())) {
             val matchingCategory = FeedbackCategory.entries.find { it.id == draft.category }
                 ?: FeedbackCategory.FEATURE
 
@@ -142,6 +142,7 @@ class FeedbackViewModel(
                 category = FeedbackCategory.FEATURE,
                 message = "",
                 stepsToReproduce = "",
+                email = "",
                 attachDiagnostics = false,
                 isDraftRestored = false,
                 errorMessage = null,
@@ -186,6 +187,8 @@ class FeedbackViewModel(
 
     fun onSubmit() {
         val state = _uiState.value
+        if (state.isSubmitting) return
+
         val trimmedMessage = state.message.trim()
         if (trimmedMessage.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Please enter your feedback before submitting.") }
@@ -195,45 +198,12 @@ class FeedbackViewModel(
         _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
 
         viewModelScope.launch {
-            // Map category: proxy endpoint accepts ["feature", "bug", "other"]
-            val wireCategory = when (state.category) {
-                FeedbackCategory.FEATURE -> "feature"
-                FeedbackCategory.BUG, FeedbackCategory.AUDIO -> "bug"
-                FeedbackCategory.OTHER -> "other"
-            }
-
+            val wireCategory = mapWireCategory(state.category)
             val appVersion = state.diagnosticInfo?.appVersion ?: "unknown"
-
             val diagnosticsInfo = state.diagnosticInfo ?: DiagnosticCollector.collect(context)
 
-            val fullMessage = buildString {
-                if (state.category == FeedbackCategory.AUDIO) {
-                    append("[Category: Audio / Stream Issue]\n\n")
-                }
-                append(trimmedMessage)
-                if (state.stepsToReproduce.isNotBlank()) {
-                    append("\n\nSteps to reproduce:\n")
-                    append(state.stepsToReproduce.trim())
-                }
-                if (state.attachDiagnostics) {
-                    append("\n\n---\nDiagnostics: ")
-                    append(diagnosticsInfo.toCondensedSummary())
-                }
-            }.take(2000)
-
-            val diagnosticsReport = if (state.attachDiagnostics) {
-                diagnosticsInfo.toMarkdownReport()
-            } else {
-                null
-            }
-
-            val sanitizedLogs = if (state.attachDiagnostics) {
-                withContext(ioDispatcher) {
-                    LogcatCollector.collectSanitizedLogcat(context = context, maxLines = 100)
-                }
-            } else {
-                null
-            }
+            val fullMessage = buildFullFeedbackMessage(state, trimmedMessage, diagnosticsInfo)
+            val (diagnosticsReport, sanitizedLogs) = prepareDiagnosticPayload(state, diagnosticsInfo)
 
             val submit = submitFeedbackAction ?: { cat, msg, ver, mail, diag, logs ->
                 podcastRepository.submitFeedback(cat, msg, ver, mail, diag, logs)
@@ -248,22 +218,39 @@ class FeedbackViewModel(
                 sanitizedLogs,
             )
 
-            if (success) {
-                boxcastPrefs.clearFeedbackDraft()
-                _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        isSuccess = true,
-                        isDraftRestored = false,
-                    )
-                }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        errorMessage = "Couldn't send feedback right now. Please check your connection and try again.",
-                    )
-                }
+            handleSubmissionResult(success)
+        }
+    }
+
+    private suspend fun prepareDiagnosticPayload(
+        state: FeedbackUiState,
+        diagnosticsInfo: DiagnosticInfo,
+    ): Pair<String?, String?> {
+        if (!state.attachDiagnostics) return null to null
+
+        val diagnosticsReport = diagnosticsInfo.toMarkdownReport()
+        val sanitizedLogs = state.logsPreview ?: withContext(ioDispatcher) {
+            LogcatCollector.collectSanitizedLogcat(context = context, maxLines = 100)
+        }
+        return diagnosticsReport to sanitizedLogs
+    }
+
+    private fun handleSubmissionResult(success: Boolean) {
+        if (success) {
+            boxcastPrefs.clearFeedbackDraft()
+            _uiState.update {
+                it.copy(
+                    isSubmitting = false,
+                    isSuccess = true,
+                    isDraftRestored = false,
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    isSubmitting = false,
+                    errorMessage = "Couldn't send feedback right now. Please check your connection and try again.",
+                )
             }
         }
     }
@@ -278,6 +265,31 @@ class FeedbackViewModel(
     }
 }
 
+private fun mapWireCategory(category: FeedbackCategory): String = when (category) {
+    FeedbackCategory.FEATURE -> "feature"
+    FeedbackCategory.BUG, FeedbackCategory.AUDIO -> "bug"
+    FeedbackCategory.OTHER -> "other"
+}
+
+private fun buildFullFeedbackMessage(
+    state: FeedbackUiState,
+    trimmedMessage: String,
+    diagnosticsInfo: DiagnosticInfo,
+): String = buildString {
+    if (state.category == FeedbackCategory.AUDIO) {
+        append("[Category: Audio / Stream Issue]\n\n")
+    }
+    append(trimmedMessage)
+    if (state.stepsToReproduce.isNotBlank()) {
+        append("\n\nSteps to reproduce:\n")
+        append(state.stepsToReproduce.trim())
+    }
+    if (state.attachDiagnostics) {
+        append("\n\n---\nDiagnostics: ")
+        append(diagnosticsInfo.toCondensedSummary())
+    }
+}.take(2000)
+
 fun buildFeedbackGitHubIssueUrl(state: FeedbackUiState): String {
     val title = "[${state.category.label}]: " + state.message.take(60).replace("\n", " ").trim()
     val body = buildString {
@@ -289,10 +301,11 @@ fun buildFeedbackGitHubIssueUrl(state: FeedbackUiState): String {
             append(state.stepsToReproduce)
             append("\n\n")
         }
-        if (state.diagnosticInfo != null) {
-            append(state.diagnosticInfo.toMarkdownReport(state.logsPreview))
+        if (state.attachDiagnostics && state.diagnosticInfo != null) {
+            append(state.diagnosticInfo.toMarkdownReport())
+            append("\n*Note: To attach app logs, please copy them from the app's diagnostic preview and paste here.*\n")
         }
-    }
+    }.take(2000)
 
     return try {
         "https://github.com/boxcreate/boxlore/issues/new?title=" +

@@ -245,11 +245,11 @@ class BoxcastPrefs(context: Context) {
     // ── Feedback Draft ────────────────────────────────────────────────────────
 
     fun getFeedbackDraft(): FeedbackDraft? {
-        val message = prefs.getString(KEY_FEEDBACK_DRAFT_MESSAGE, null) ?: return null
-        if (message.isBlank()) return null
+        val message = prefs.getString(KEY_FEEDBACK_DRAFT_MESSAGE, null).orEmpty()
+        val steps = prefs.getString(KEY_FEEDBACK_DRAFT_STEPS, null).orEmpty()
+        if (message.isBlank() && steps.isBlank()) return null
         val category = prefs.getString(KEY_FEEDBACK_DRAFT_CATEGORY, "feature") ?: "feature"
         val email = prefs.getString(KEY_FEEDBACK_DRAFT_EMAIL, "") ?: ""
-        val steps = prefs.getString(KEY_FEEDBACK_DRAFT_STEPS, "") ?: ""
         val attachDiagnostics = prefs.getBoolean(KEY_FEEDBACK_DRAFT_ATTACH_DIAGNOSTICS, true)
         return FeedbackDraft(
             category = category,

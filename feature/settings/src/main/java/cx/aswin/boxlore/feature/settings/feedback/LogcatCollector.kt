@@ -20,7 +20,7 @@ object LogcatCollector {
     private const val SCRUBBED_APP_KEY_LABEL = "public key"
 
     private val BEARER_AUTH_PATTERN = Pattern.compile(
-        """(?i)(["']?authorization["']?\s*:\s*)?Bearer\s+([A-Za-z0-9\-_./+=]{6,})""",
+        """(?i)(["']?authorization["']?\s*:\s*)?Bearer\s+([a-z0-9\-_./+=]{6,})""",
     )
 
     private val FIREBASE_API_KEY_PATTERN = Pattern.compile(
@@ -33,7 +33,7 @@ object LogcatCollector {
     )
 
     private val X_APP_KEY_VALUE_PATTERN = Pattern.compile(
-        """(?i)["']?(?:x[-_ ]app[-_ ]key|boxlore[-_]public[-_]key|boxcast[-_]public[-_]key)["']?\s*[:=]\s*(?:\[REDACTED\]|["']?[^"'\s,;&?]+["']?)""",
+        """(?i)["']?[a-z0-9_-]+(?:app|public)[-_ ]key["']?\s*[:=]\s*(?:\[REDACTED\]|["']?[^\s"']+)""",
     )
 
     private val X_APP_KEY_NAME_PATTERN = Pattern.compile(
@@ -41,7 +41,7 @@ object LogcatCollector {
     )
 
     private val SENSITIVE_KEY_VALUE_PATTERN = Pattern.compile(
-        """(?i)(["']?(?:authorization|token|secret|api[-_]?key|password|app[-_]?key)["']?\s*[:=]\s*["']?)(?!\s*(?:Bearer|\[REDACTED))([^"'\s,;&?]{6,})(["']?)""",
+        """(?i)(["']?(?:authorization|token|secret|password|(?:api|app)[-_]?key)["']?\s*[:=]\s*["']?)(?!Bearer|\[REDACTED)([^"'\s,;&?]{6,})(["']?)""",
     )
 
     private val EMAIL_ADDRESS_PATTERN = Pattern.compile(
@@ -49,15 +49,15 @@ object LogcatCollector {
     )
 
     private val API_URL_PATTERN = Pattern.compile(
-        """(?i)https?://[a-zA-Z0-9.-]*aswin\.cx(:[0-9]+)?(/[^\s"']*)?""",
+        """(?i)https?://[a-z0-9.-]*aswin\.cx(:[0-9]+)?(/[^\s"']*)?""",
     )
 
     private val ASWIN_HOST_PATTERN = Pattern.compile(
-        """(?i)\b[a-zA-Z0-9.-]*aswin\.cx(:[0-9]+)?\b""",
+        """(?i)\b[a-z0-9.-]*aswin\.cx(:[0-9]+)?\b""",
     )
 
     private val API_CONFIG_URL_PATTERN = Pattern.compile(
-        """(?i)(["']?(?:api[-_]?base[-_]?url|api[-_]?url|base[-_]?url)["']?\s*[:=]\s*["']?)https?://[^"'\s]+(["']?)""",
+        """(?i)(["']?(?:api|base)[-_a-z]*url["']?\s*[:=]\s*["']?)https?://[^"'\s]+(["']?)""",
     )
 
     /**
@@ -66,42 +66,51 @@ object LogcatCollector {
      */
     @WorkerThread
     fun collectSanitizedLogcat(context: Context? = null, maxLines: Int = 150): String = try {
+        val process = startLogcatProcess(maxLines)
+        val rawLog = readProcessOutput(process)
+
+        if (rawLog.isBlank()) {
+            "[No logcat entries recorded for current session]"
+        } else {
+            val (apiBaseUrl, publicKey) = readApiConfig(context)
+            sanitizeLogcatOutput(rawLog, apiBaseUrl, publicKey)
+        }
+    } catch (e: Exception) {
+        "[Logcat collection unavailable: ${e.javaClass.simpleName}]"
+    }
+
+    private fun startLogcatProcess(maxLines: Int): java.lang.Process {
         val pid = Process.myPid()
-        val process = try {
+        return try {
             ProcessBuilder("logcat", "--pid=$pid", "-d", "-v", "time", "-t", maxLines.toString())
                 .redirectErrorStream(true)
                 .start()
         } catch (_: Exception) {
-            // Fallback without --pid if platform logcat doesn't support the flag
             ProcessBuilder("logcat", "-d", "-v", "time", "-t", maxLines.toString())
                 .redirectErrorStream(true)
                 .start()
         }
+    }
 
-        val reader = BufferedReader(InputStreamReader(process.inputStream))
+    private fun readProcessOutput(process: java.lang.Process): String {
         val output = StringBuilder()
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
-            line?.let {
-                output.append(it).append('\n')
+        try {
+            BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
+                reader.lineSequence().forEach { line ->
+                    output.append(line).append('\n')
+                }
             }
+            process.waitFor()
+        } finally {
+            process.destroy()
         }
-        process.waitFor()
+        return output.toString()
+    }
 
-        val rawLog = output.toString()
-        if (rawLog.isBlank()) {
-            "[No logcat entries recorded for current session]"
-        } else {
-            val (apiBaseUrl, publicKey) = if (context != null) {
-                val prefs = context.getSharedPreferences("boxlore_api_config", Context.MODE_PRIVATE)
-                prefs.getString("base_url", null) to prefs.getString("public_key", null)
-            } else {
-                null to null
-            }
-            sanitizeLogcatOutput(rawLog, apiBaseUrl, publicKey)
-        }
-    } catch (e: Exception) {
-        "[Logcat collection unavailable: ${e.message ?: e.javaClass.simpleName}]"
+    private fun readApiConfig(context: Context?): Pair<String?, String?> {
+        if (context == null) return null to null
+        val prefs = context.getSharedPreferences("boxlore_api_config", Context.MODE_PRIVATE)
+        return prefs.getString("base_url", null) to prefs.getString("public_key", null)
     }
 
     /**

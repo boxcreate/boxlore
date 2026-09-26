@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.feedback
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -615,10 +616,14 @@ private fun FeedbackCommunityRow(
     ) {
         OutlinedButton(
             onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(gitHubUrl)).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(gitHubUrl)).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (_: ActivityNotFoundException) {
+                    // Ignored if no browser/app can handle the intent
                 }
-                context.startActivity(intent)
             },
             modifier = Modifier.weight(1f),
             shape = MaterialTheme.shapes.large,
@@ -635,15 +640,29 @@ private fun FeedbackCommunityRow(
         OutlinedButton(
             onClick = {
                 val pkgName = context.packageName
-                val uri = try {
+                val marketUri = try {
                     Uri.parse("market://details?id=$pkgName")
                 } catch (_: Exception) {
                     Uri.parse("https://play.google.com/store/apps/details?id=$pkgName")
                 }
-                val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, marketUri).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (_: ActivityNotFoundException) {
+                    try {
+                        val webIntent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://play.google.com/store/apps/details?id=$pkgName"),
+                        ).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(webIntent)
+                    } catch (_: ActivityNotFoundException) {
+                        // Ignored if neither store nor browser is available
+                    }
                 }
-                context.startActivity(intent)
             },
             modifier = Modifier.weight(1f),
             shape = MaterialTheme.shapes.large,
