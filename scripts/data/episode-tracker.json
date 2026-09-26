@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-09-26T06:25:55.432Z",
+  "lastRun": "2026-09-26T11:41:10.639Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "efe4c226-cfc6-11f0-83c5-0f782a2af401",
-      "lastEpisodeTitle": "I have some questions for Mark Zuckerberg",
-      "lastEpisodeId": "60596669928",
-      "lastCheckedAt": 1790258537680
+      "lastRssKey": "87c4228a-b388-11f1-ac82-0f252aa34536",
+      "lastEpisodeTitle": "Can Cloudflare save the web from AI?",
+      "lastEpisodeId": "60871178578",
+      "lastCheckedAt": 1790422871095
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7h",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "8ea691bb-425e-4fde-aeb2-ed64d2d38015",
-      "lastEpisodeTitle": "NPR News: 09-26-2026 2AM EDT",
+      "lastRssKey": "ff6c1152-0fc1-40e5-bd9a-0375514ee73b",
+      "lastEpisodeTitle": "NPR News: 09-26-2026 7AM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790403959821
+      "lastCheckedAt": 1790422874039
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75369778",
@@ -153,10 +153,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "7C14ABEE-FA21-4D55-9C2B-850A5F0D8504",
-      "lastEpisodeTitle": "TNB Tech Minute: U.S. Appeals Court Upholds Pentagon's Label of Anthropic as Security Risk",
-      "lastEpisodeId": "60829982707",
-      "lastCheckedAt": 1790376037135
+      "lastRssKey": "48428727-6F4F-4BD6-9DD8-ADC888BAC3A2",
+      "lastEpisodeTitle": "Can Laws Keep Up With AI Therapists?",
+      "lastEpisodeId": "60870650500",
+      "lastCheckedAt": 1790422885712
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -171,16 +171,16 @@
       "lastCheckedAt": 1790364377616
     },
     "353744": {
-      "lastRssKey": "flightcast:01M2X1DGXZZDMDGGVKCB1GKN0M",
-      "lastEpisodeTitle": "What Divorce Does To A Child",
+      "lastRssKey": "flightcast:01M2X1GTK26QBQD9F4ZMCGQ2HZ",
+      "lastEpisodeTitle": "What Men Don’t Understand About Pregnancy (Postpartum Depression)",
       "lastEpisodeId": "60295405214",
-      "lastCheckedAt": 1789992425236
+      "lastCheckedAt": 1790422886622
     },
     "385117": {
-      "lastRssKey": "d79dc93a-b970-11f1-b6dd-8f9a5fa6b356",
-      "lastEpisodeTitle": "2AM ET 09/26/2026 Newscast",
+      "lastRssKey": "bd1ee524-b99a-11f1-8c12-bf6f1d003313",
+      "lastEpisodeTitle": "7AM ET 09/26/2026 Newscast",
       "lastEpisodeId": "60769426413",
-      "lastCheckedAt": 1790403968223
+      "lastCheckedAt": 1790422886766
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -243,10 +243,10 @@
       "lastCheckedAt": 1790108549383
     },
     "437685": {
-      "lastRssKey": "865f82fc-8d60-11f1-adef-cb8fc8a2f320",
-      "lastEpisodeTitle": "Matthew Fontaine Maury: The Man Who Revolutionized Ocean Navigation",
-      "lastEpisodeId": "60817491858",
-      "lastCheckedAt": 1790331919053
+      "lastRssKey": "863f5e64-8d60-11f1-adef-73dd81229a35",
+      "lastEpisodeTitle": "The FBIs Most Wanted List",
+      "lastEpisodeId": "60868872741",
+      "lastCheckedAt": 1790422892212
     },
     "438184": {
       "lastRssKey": "fe829dc6-b8cd-11f1-a2f8-b7b94f238b54",
@@ -454,10 +454,10 @@
       "lastCheckedAt": 1789856681689
     },
     "743229": {
-      "lastRssKey": "8f5e1454-6790-4e6c-891c-f71788c109dc",
-      "lastEpisodeTitle": "The Life and, for Now, the Death of the Kennedy Center",
-      "lastEpisodeId": "60730420969",
-      "lastCheckedAt": 1790331937277
+      "lastRssKey": "a5194659-370d-42e0-bc0b-c320072b24e6",
+      "lastEpisodeTitle": "Sylvester Stallone Hid His Struggles for Decades. Now He’s Coming Clean.",
+      "lastEpisodeId": "60871890859",
+      "lastCheckedAt": 1790422909568
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -519,10 +519,10 @@
       "lastCheckedAt": 1790108581873
     },
     "827592": {
-      "lastEpisodeId": "60782197885",
-      "lastEpisodeTitle": "Emily Post: Ettiquette Queen",
-      "lastRssKey": "9c65a2b6-5710-4ffe-863a-b4cc01219456",
-      "lastCheckedAt": 1790274821065
+      "lastEpisodeId": "60863929369",
+      "lastEpisodeTitle": "Introducing 3 Putt Bogey",
+      "lastRssKey": "1abdca83-ddaa-43de-abdc-b4d10021cd41",
+      "lastCheckedAt": 1790422912454
     },
     "837535": {
       "lastRssKey": "66a81b36-b75e-11f1-847a-0b3a668f0876",
@@ -658,10 +658,10 @@
       "lastCheckedAt": 1790097010529
     },
     "1116485": {
-      "lastRssKey": "6ab667679c4cc12a89354549",
-      "lastEpisodeTitle": "Liverpool Targeting Micky van de Ven | Daily News Update",
-      "lastEpisodeId": "60831255783",
-      "lastCheckedAt": 1790350019154
+      "lastRssKey": "6ab672916930a5abcbfaec63",
+      "lastEpisodeTitle": "Carragher's Wirtz Comments, New Sporting Director, Neil Mellor Praises Koumas & How Liverpool Improve Under Iraola | Redmen Weekly",
+      "lastEpisodeId": "60871351001",
+      "lastCheckedAt": 1790422925280
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -722,10 +722,10 @@
       "lastCheckedAt": 1790239275981
     },
     "1366771": {
-      "lastRssKey": "6ab6abcb62a47b6bec170ab0",
-      "lastEpisodeTitle": "Evening briefing Friday 25th September",
-      "lastEpisodeId": "60840063038",
-      "lastCheckedAt": 1790364443822
+      "lastRssKey": "6ab7736bbd67ce4b53758292",
+      "lastEpisodeTitle": "Daily briefing Saturday 26th September",
+      "lastEpisodeId": "60865956173",
+      "lastCheckedAt": 1790422927893
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19453613",
@@ -734,10 +734,10 @@
       "lastCheckedAt": 1790364444030
     },
     "1388001": {
-      "lastRssKey": "734780ad-0d99-4d3a-8aa6-566151674e8e",
-      "lastEpisodeTitle": "Le bras de fer entre Emmanuel Macron et Benjamin Netanyahu",
-      "lastEpisodeId": "60815806288",
-      "lastCheckedAt": 1790331956788
+      "lastRssKey": "bbf907a5-fde6-402e-9f7a-88e2bd2e7fb0",
+      "lastEpisodeTitle": "La guerre des étoiles : des armes américaines dans l'espace ?",
+      "lastEpisodeId": "60869553090",
+      "lastCheckedAt": 1790422928277
     },
     "1545709": {
       "lastRssKey": "audioboom-01a0bf41-50f1-7590-9889-f898b8d0b36a",
@@ -921,9 +921,9 @@
       "lastCheckedAt": 1790331966185
     },
     "4898105": {
-      "lastRssKey": "a5081d7e-b892-11f1-8210-635c9f4958a4",
-      "lastEpisodeTitle": "GTA 6 Is Getting a $400 Collector's Set Without the Actual Game",
-      "lastCheckedAt": 1790331966568
+      "lastRssKey": "ece04882-b7cb-11f1-863d-8743fb9661c6",
+      "lastEpisodeTitle": "IGN Game Review: Silent Hill: Townfall",
+      "lastCheckedAt": 1790422936940
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1002,10 +1002,10 @@
       "lastCheckedAt": 1790274862320
     },
     "5930143": {
-      "lastRssKey": "734780ad-0d99-4d3a-8aa6-566151674e8e",
-      "lastEpisodeTitle": "Le bras de fer entre Emmanuel Macron et Benjamin Netanyahu",
-      "lastEpisodeId": "60812157356",
-      "lastCheckedAt": 1790331972911
+      "lastRssKey": "bbf907a5-fde6-402e-9f7a-88e2bd2e7fb0",
+      "lastEpisodeTitle": "La guerre des étoiles : des armes américaines dans l'espace ?",
+      "lastEpisodeId": "60866223770",
+      "lastCheckedAt": 1790422942762
     },
     "5945547": {
       "lastRssKey": "6ad40538-0f09-40d3-b107-7c8ef5805678",
@@ -1055,10 +1055,10 @@
       "lastCheckedAt": 1790148286330
     },
     "6467886": {
-      "lastRssKey": "9c054fe4-b6b2-11f1-ba1f-977b64af6cd8",
-      "lastEpisodeTitle": "#334 - Deutschland 2027: Arme Kinder werden sterben - Kinderärztin",
-      "lastEpisodeId": "60587854234",
-      "lastCheckedAt": 1790185483726
+      "lastRssKey": "f06ad122-b8e6-11f1-8a48-bb4c2b581a0c",
+      "lastEpisodeTitle": "#335 - Ich traue mich, die Wahrheit zu sagen - Ex-Schulleiter",
+      "lastEpisodeId": "60867644668",
+      "lastCheckedAt": 1790422944763
     },
     "6559880": {
       "lastRssKey": "680ff622-b81e-11f1-9c9a-c34e4395d8ea",
@@ -1174,10 +1174,10 @@
       "lastCheckedAt": 1790331991677
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779887",
-      "lastEpisodeTitle": "Authors' Playhouse - A Miracle in the Rain",
+      "lastRssKey": "https://api.spreaker.com/episode/59779890",
+      "lastEpisodeTitle": "Lives Of Harry Lime - Work Of Art",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1790331992377
+      "lastCheckedAt": 1790422961117
     },
     "6912659": {
       "lastRssKey": "5006a53e-2698-4778-9f17-d5bff15a2c58",
@@ -1428,10 +1428,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/3bc560e7-a3d1-5633-b4cc-12132152a057",
-      "lastEpisodeTitle": "5 Tricks Narcissists Use to Keep You Hooked ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/a8158e4d-9c31-50e1-a535-901c0d34790b",
+      "lastEpisodeTitle": "Are you in a NORMAL or NARCISSISTIC relationship ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790404052202
+      "lastCheckedAt": 1790422970551
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
