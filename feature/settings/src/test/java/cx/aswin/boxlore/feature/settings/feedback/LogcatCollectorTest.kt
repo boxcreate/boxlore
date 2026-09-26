@@ -48,6 +48,16 @@ class LogcatCollectorTest {
     }
 
     @Test
+    fun `sanitizeLogcatOutput scrubs short key-value credentials`() {
+        val raw = """{"token": "abc12", "key": "123"}"""
+        val sanitized = LogcatCollector.sanitizeLogcatOutput(raw)
+
+        assertFalse(sanitized.contains("abc12"))
+        assertFalse(sanitized.contains("123"))
+        assertTrue(sanitized.contains("[REDACTED]"))
+    }
+
+    @Test
     fun `sanitizeLogcatOutput scrubs sensitive query parameters`() {
         val raw = "GET https://api.boxlore.cx/query?token=xyz123456&category=news HTTP/1.1"
         val sanitized = LogcatCollector.sanitizeLogcatOutput(raw)

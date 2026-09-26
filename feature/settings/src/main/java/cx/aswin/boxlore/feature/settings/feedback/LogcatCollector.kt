@@ -41,7 +41,7 @@ object LogcatCollector {
     )
 
     private val SENSITIVE_KEY_VALUE_PATTERN = Pattern.compile(
-        """(?i)(["']?[a-z0-9_]*(?:auth|token|secret|password|key)["']?\s*[:=]\s*["']?)([^"'\s,;&?\[]{6,})(["']?)""",
+        """(?i)(["']?[a-z0-9_]*(?:auth|token|secret|password|key)["']?\s*[:=]\s*["']?)([^"'\s,;&?\[]+)(["']?)""",
     )
 
     private val EMAIL_ADDRESS_PATTERN = Pattern.compile(
