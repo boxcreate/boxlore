@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.feature.settings.pages
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,16 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AllInclusive
-import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.RocketLaunch
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,12 +28,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
@@ -47,173 +45,69 @@ internal fun SupportDevelopmentPage(
         title = "Support us",
         onBack = onBack,
     ) {
-        SupportHeroHeader()
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SupportIntroSection()
 
-        Text(
-            text = "Power Tiers",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
+            Text(
+                text = "Power Tiers",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
 
-        Text(
-            text = "Choose how you would like to energize the project",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
-
-        SUPPORT_TIER_CARDS.forEach { tier ->
-            SupportTierCard(tier = tier)
-            Spacer(modifier = Modifier.height(12.dp))
+            SUPPORT_TIER_CARDS.forEach { tier ->
+                SupportTierCard(tier = tier)
+            }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        SupportComingSoonFooter()
     }
 }
 
 @Composable
-private fun SupportHeroHeader() {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+private fun SupportIntroSection() {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 20.dp),
+            .padding(vertical = 4.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 8.dp),
         ) {
             Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.size(64.dp),
-                shadowElevation = 2.dp,
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(36.dp),
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Icon(
                         imageVector = Icons.Rounded.Favorite,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Text(
-                text = "Keep boxlore ad-free & open for everyone",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = GoogleSansWeight.bold),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                textAlign = TextAlign.Center,
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = "boxlore is built with dedication to create a truly great podcast experience. No paywalls, no banner clutter, and zero audio ads—ever. Your support directly fuels ongoing development, cloud infrastructure, AI models, and bandwidth so boxlore stays open, beautiful, and free for all listeners.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-                textAlign = TextAlign.Center,
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                PillarBadge(icon = Icons.Rounded.Block, label = "100% Ad-Free")
-                PillarBadge(icon = Icons.Rounded.AllInclusive, label = "Free Forever")
-                PillarBadge(icon = Icons.Rounded.RocketLaunch, label = "Indie Built")
-            }
-        }
-    }
-}
-
-@Composable
-private fun SupportComingSoonFooter() {
-    Card(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Rounded.Bolt,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column {
-                Text(
-                    text = "In-App Tipping Coming Soon",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Direct Google Play tipping will be available in the upcoming update. Thank you for listening with boxlore!",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PillarBadge(
-    icon: ImageVector,
-    label: String,
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp),
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
+                text = "Keep boxlore ad-free for everyone",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
+
+        Text(
+            text = "boxlore is built with dedication to remain completely free of ads and paywalls for listeners worldwide. Your support directly powers continuous app development, cloud infrastructure, AI intelligence, and bandwidth.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            lineHeight = 22.sp,
+        )
     }
 }
 
@@ -270,7 +164,7 @@ private fun SupportTierCard(
     tier: SupportTierCardData,
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (tier.isFeatured) {
                 MaterialTheme.colorScheme.surfaceContainerHighest
@@ -278,88 +172,154 @@ private fun SupportTierCard(
                 MaterialTheme.colorScheme.surfaceContainer
             },
         ),
+        border = if (tier.isFeatured) {
+            BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        } else {
+            null
+        },
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(20.dp),
         ) {
-            // 3D Rendered Asset Icon
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.size(72.dp),
-                shadowElevation = 1.dp,
-            ) {
-                Box(
-                    modifier = Modifier.padding(4.dp),
-                    contentAlignment = Alignment.Center,
+            SupportTierHeader(tier = tier)
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = tier.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 20.sp,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SupportTierActionButton(tier = tier)
+        }
+    }
+}
+
+@Composable
+private fun SupportTierHeader(
+    tier: SupportTierCardData,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            painter = painterResource(id = tier.iconRes),
+            contentDescription = tier.title,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(width = 68.dp, height = 76.dp),
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            if (tier.isFeatured) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 6.dp),
                 ) {
-                    Image(
-                        painter = painterResource(id = tier.iconRes),
-                        contentDescription = tier.title,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.size(64.dp),
+                    Text(
+                        text = "SUPREME PATRON",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = tier.title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
 
-            Column(modifier = Modifier.weight(1f)) {
-                if (tier.isFeatured) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    ) {
-                        Text(
-                            text = "SUPREME PATRON",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
-                }
+            Spacer(modifier = Modifier.height(6.dp))
 
-                Text(
-                    text = tier.title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                Text(
-                    text = tier.powerImpact,
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = tier.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                )
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Price pill badge
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
             ) {
-                Text(
-                    text = tier.cost,
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.bold),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Bolt,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = tier.powerImpact,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = GoogleSansWeight.semiBold,
+                        ),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun SupportTierActionButton(
+    tier: SupportTierCardData,
+) {
+    if (tier.isFeatured) {
+        Button(
+            onClick = {},
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Favorite,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Support ${tier.cost}",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
+            )
+        }
+    } else {
+        FilledTonalButton(
+            onClick = {},
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Bolt,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Support ${tier.cost}",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
+            )
         }
     }
 }
