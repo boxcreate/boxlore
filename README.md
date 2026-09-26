@@ -126,6 +126,11 @@ and listen without paywalls, subscriptions, or ads.
 <ul align="left">
 <li>Fixed critical bugs related to Google sign in not working and onboarding authentication flow <a href="https://github.com/boxcreate/boxlore/pull/1086"><img src="https://img.shields.io/badge/PR-1086-6750A4?style=flat-square" alt="PR #1086" height="18"/></a></li>
 </ul>
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>In-app feedback screen revamp with automatic draft recovery. <a href="https://github.com/boxcreate/boxlore/pull/1087"><img src="https://img.shields.io/badge/PR-1087-6750A4?style=flat-square" alt="PR #1087" height="18"/></a></li>
+<li>General stability optimizations and performance enhancements. <a href="https://github.com/boxcreate/boxlore/pull/1087"><img src="https://img.shields.io/badge/PR-1087-6750A4?style=flat-square" alt="PR #1087" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 
