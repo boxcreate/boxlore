@@ -8,22 +8,21 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -41,9 +40,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,7 +69,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -369,15 +364,18 @@ private fun SupportArtifactStage(
             ) { page ->
                 val tier = tiers[page]
                 val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+                val signedOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
 
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            val scale = lerp(1f, 0.78f, pageOffset.coerceIn(0f, 1f))
+                            val scale = lerp(1f, 0.76f, pageOffset.coerceIn(0f, 1f))
                             scaleX = scale
                             scaleY = scale
-                            alpha = lerp(1f, 0.20f, pageOffset.coerceIn(0f, 1f))
+                            alpha = lerp(1f, 0.18f, pageOffset.coerceIn(0f, 1f))
+                            rotationY = -20f * signedOffset.coerceIn(-1f, 1f)
+                            cameraDistance = 12f * density
                         },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -400,7 +398,8 @@ private fun SupportArtifactStage(
         Spacer(modifier = Modifier.height(4.dp))
 
         SupportStageTierInfo(
-            tier = tiers[pagerState.currentPage],
+            selectedIndex = pagerState.currentPage,
+            tiers = tiers,
             activeAuraColor = activeAuraColor,
         )
     }
@@ -408,14 +407,28 @@ private fun SupportArtifactStage(
 
 @Composable
 private fun SupportStageTierInfo(
-    tier: SupportTierCardData,
+    selectedIndex: Int,
+    tiers: List<SupportTierCardData>,
     activeAuraColor: Color,
 ) {
     AnimatedContent(
-        targetState = tier,
-        transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(180)) },
+        targetState = selectedIndex,
+        transitionSpec = {
+            if (targetState > initialState) {
+                (slideInHorizontally(tween(220, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeIn(tween(180)))
+                    .togetherWith(
+                        slideOutHorizontally(tween(200, easing = FastOutSlowInEasing)) { width -> -width / 3 } + fadeOut(tween(160)),
+                    )
+            } else {
+                (slideInHorizontally(tween(220, easing = FastOutSlowInEasing)) { width -> -width / 3 } + fadeIn(tween(180)))
+                    .togetherWith(
+                        slideOutHorizontally(tween(200, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeOut(tween(160)),
+                    )
+            }
+        },
         label = "tier_stage_details",
-    ) { targetTier ->
+    ) { index ->
+        val targetTier = tiers[index]
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth(),
@@ -501,165 +514,6 @@ private fun SupportSegmentedGauge(
                     .background(segmentColor),
             )
         }
-    }
-}
-
-@Composable
-private fun SupportTierPicker(
-    selectedIndex: Int,
-    tiers: List<SupportTierCardData>,
-    activeColor: Color,
-    onSelect: (Int) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        tiers.forEachIndexed { index, tier ->
-            Box(modifier = Modifier.weight(1f)) {
-                SupportTierPill(
-                    tier = tier,
-                    isSelected = index == selectedIndex,
-                    activeColor = activeColor,
-                    onSelect = { onSelect(index) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SupportTierPill(
-    tier: SupportTierCardData,
-    isSelected: Boolean,
-    activeColor: Color,
-    onSelect: () -> Unit,
-) {
-    val elevationOffset by animateFloatAsState(
-        targetValue = if (isSelected) (-3f) else 0f,
-        animationSpec = tween(200, easing = FastOutSlowInEasing),
-        label = "pill_elevation",
-    )
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            activeColor
-        } else {
-            Color(0xFF101016)
-        },
-        animationSpec = tween(200),
-        label = "pill_background",
-    )
-    val borderColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            activeColor
-        } else {
-            Color(0xFF22222E)
-        },
-        animationSpec = tween(200),
-        label = "pill_border",
-    )
-    val durationTextColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            getSupportButtonContentColor(activeColor)
-        } else {
-            Color.White
-        },
-        animationSpec = tween(200),
-        label = "pill_duration_color",
-    )
-    val costTextColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            getSupportButtonContentColor(activeColor).copy(alpha = 0.85f)
-        } else {
-            Color(0xFF8E8E9A)
-        },
-        animationSpec = tween(200),
-        label = "pill_cost_color",
-    )
-
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = backgroundColor,
-        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor),
-        modifier = Modifier
-            .fillMaxWidth()
-            .graphicsLayer { translationY = elevationOffset.dp.toPx() }
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onSelect),
-    ) {
-        Column(
-            modifier = Modifier.padding(vertical = 8.5.dp, horizontal = 2.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = tier.shortDuration,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.bold),
-                color = durationTextColor,
-                maxLines = 1,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = tier.cost,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.medium),
-                color = costTextColor,
-                maxLines = 1,
-            )
-        }
-    }
-}
-
-internal fun getSupportButtonContentColor(backgroundColor: Color): Color =
-    if (backgroundColor.luminance() > 0.45f) Color.Black else Color.White
-
-@Composable
-private fun SupportCtaSection(
-    tier: SupportTierCardData,
-    activeColor: Color,
-) {
-    val buttonContentColor = getSupportButtonContentColor(activeColor)
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Button(
-            onClick = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(16.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = activeColor,
-                contentColor = buttonContentColor,
-            ),
-        ) {
-            Icon(
-                imageVector = if (tier.isFeatured) Icons.Rounded.Favorite else Icons.Rounded.Bolt,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Deploy ${tier.title} • ${tier.cost}",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(7.dp))
-
-        Text(
-            text = "One-time contribution • No recurring subscription",
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.medium),
-            color = Color.White.copy(alpha = 0.70f),
-            textAlign = TextAlign.Center,
-        )
     }
 }
 
