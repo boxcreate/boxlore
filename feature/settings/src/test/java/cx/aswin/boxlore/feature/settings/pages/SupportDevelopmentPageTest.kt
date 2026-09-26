@@ -48,11 +48,11 @@ class SupportDevelopmentPageTest {
         val codenames = SUPPORT_TIER_CARDS.map { "${it.codenameLine1} ${it.codenameLine2}" }
         assertEquals(
             listOf(
-                "OMEGA ONE",
-                "PROJECT FLUX",
-                "GOLDEN RELAY",
-                "DARK NEXUS",
-                "ORBIT PRIME",
+                "UNIT BLUE",
+                "GRID HAWK",
+                "VAULT PRIME",
+                "STACK ZERO",
+                "ORBIT X",
             ),
             codenames,
         )
