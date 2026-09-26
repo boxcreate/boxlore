@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGraphWiring) {
     addMainSettingsRoute(w)
     addDownloadSettingsRoutes(w)
+    addFeedbackRoute(w)
 }
 
 private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraphWiring) {
@@ -98,6 +99,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 appInstanceId = appInstanceId,
                 initialPage = settingsPage,
                 isOnboarding = isFromOnboarding,
+                onSendFeedback = { navController.navigate("feedback") },
             ),
             regionSettings = RegionSettings(
                 currentRegion = settingsState.currentRegion,
@@ -298,6 +300,20 @@ private fun androidx.navigation.NavGraphBuilder.addDownloadSettingsRoutes(w: Nav
     composable("auto_download_settings") {
         AutoDownloadSettingsScreen(
             userPrefs = userPrefs,
+            onBack = { navController.popBackStack() },
+        )
+    }
+}
+
+private fun androidx.navigation.NavGraphBuilder.addFeedbackRoute(w: NavGraphWiring) {
+    val navController = w.navController
+    val container = w.container
+    val application = w.application
+
+    composable("feedback") {
+        cx.aswin.boxlore.feature.settings.feedback.FeedbackScreen(
+            podcastRepository = container.podcastRepository,
+            boxcastPrefs = cx.aswin.boxlore.core.prefs.BoxcastPrefs(application),
             onBack = { navController.popBackStack() },
         )
     }

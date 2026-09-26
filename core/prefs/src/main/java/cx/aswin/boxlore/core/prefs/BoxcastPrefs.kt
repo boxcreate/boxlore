@@ -177,6 +177,11 @@ class BoxcastPrefs(context: Context) {
         const val KEY_LAST_SYNCED_USER_ID = "sync_last_user_id"
         const val KEY_SYNC_METADATA_VERSION = "sync_metadata_version"
         const val KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION = "has_requested_notification_permission"
+        const val KEY_FEEDBACK_DRAFT_CATEGORY = "feedback_draft_category"
+        const val KEY_FEEDBACK_DRAFT_MESSAGE = "feedback_draft_message"
+        const val KEY_FEEDBACK_DRAFT_EMAIL = "feedback_draft_email"
+        const val KEY_FEEDBACK_DRAFT_STEPS = "feedback_draft_steps"
+        const val KEY_FEEDBACK_DRAFT_ATTACH_DIAGNOSTICS = "feedback_draft_attach_diagnostics"
     }
 
     // ── Auth / Magic Link ───────────────────────────────────────────────────
@@ -236,4 +241,53 @@ class BoxcastPrefs(context: Context) {
     fun setHasRequestedNotificationPermission(requested: Boolean = true) {
         prefs.edit().putBoolean(KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION, requested).apply()
     }
+
+    // ── Feedback Draft ────────────────────────────────────────────────────────
+
+    fun getFeedbackDraft(): FeedbackDraft? {
+        val message = prefs.getString(KEY_FEEDBACK_DRAFT_MESSAGE, null) ?: return null
+        if (message.isBlank()) return null
+        val category = prefs.getString(KEY_FEEDBACK_DRAFT_CATEGORY, "feature") ?: "feature"
+        val email = prefs.getString(KEY_FEEDBACK_DRAFT_EMAIL, "") ?: ""
+        val steps = prefs.getString(KEY_FEEDBACK_DRAFT_STEPS, "") ?: ""
+        val attachDiagnostics = prefs.getBoolean(KEY_FEEDBACK_DRAFT_ATTACH_DIAGNOSTICS, true)
+        return FeedbackDraft(
+            category = category,
+            message = message,
+            email = email,
+            stepsToReproduce = steps,
+            attachDiagnostics = attachDiagnostics,
+        )
+    }
+
+    fun saveFeedbackDraft(draft: FeedbackDraft) {
+        prefs.edit()
+            .putString(KEY_FEEDBACK_DRAFT_CATEGORY, draft.category)
+            .putString(KEY_FEEDBACK_DRAFT_MESSAGE, draft.message)
+            .putString(KEY_FEEDBACK_DRAFT_EMAIL, draft.email)
+            .putString(KEY_FEEDBACK_DRAFT_STEPS, draft.stepsToReproduce)
+            .putBoolean(KEY_FEEDBACK_DRAFT_ATTACH_DIAGNOSTICS, draft.attachDiagnostics)
+            .apply()
+    }
+
+    fun clearFeedbackDraft() {
+        prefs.edit()
+            .remove(KEY_FEEDBACK_DRAFT_CATEGORY)
+            .remove(KEY_FEEDBACK_DRAFT_MESSAGE)
+            .remove(KEY_FEEDBACK_DRAFT_EMAIL)
+            .remove(KEY_FEEDBACK_DRAFT_STEPS)
+            .remove(KEY_FEEDBACK_DRAFT_ATTACH_DIAGNOSTICS)
+            .apply()
+    }
 }
+
+/**
+ * Persisted draft for the user feedback screen to prevent data loss on accidental dismissal.
+ */
+data class FeedbackDraft(
+    val category: String,
+    val message: String,
+    val email: String = "",
+    val stepsToReproduce: String = "",
+    val attachDiagnostics: Boolean = true,
+)

@@ -172,4 +172,24 @@ class BoxcastPrefsTest {
         prefs.setHasRequestedNotificationPermission(false)
         assertFalse(prefs.hasRequestedNotificationPermission())
     }
+
+    @Test
+    fun feedbackDraft_defaultsToNullAndRoundTripsAndClears() {
+        assertNull(prefs.getFeedbackDraft())
+
+        val draft = FeedbackDraft(
+            category = "bug",
+            message = "Playback stops after 5 minutes",
+            email = "listener@example.com",
+            stepsToReproduce = "1. Play episode\n2. Wait 5 min",
+            attachDiagnostics = true,
+        )
+        prefs.saveFeedbackDraft(draft)
+
+        val retrieved = prefs.getFeedbackDraft()
+        assertEquals(draft, retrieved)
+
+        prefs.clearFeedbackDraft()
+        assertNull(prefs.getFeedbackDraft())
+    }
 }

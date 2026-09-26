@@ -117,6 +117,7 @@ internal fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphW
             onNavigateToSettings = { navController.navigate("settings?page=hub") },
             onNavigateToPlayStoreReview = { launchInAppReview(context) },
             onSubmitFeedback = onSubmitFeedback,
+            onFeedbackClick = { w.actions.onShowFeedbackSheet() },
             onNavigateToDebug = { navController.navigate("debug") },
             onImportClick = {
                 opmlCallbacks.onSourceChange("home_import_banner")

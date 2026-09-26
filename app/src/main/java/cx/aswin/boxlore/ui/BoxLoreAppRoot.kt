@@ -66,7 +66,6 @@ import cx.aswin.boxlore.core.playback.stopAndClearQueue
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.fcm.FcmTopicHelper
 import cx.aswin.boxlore.feature.home.ModeSwitchState
-import cx.aswin.boxlore.feature.home.components.FeedbackSheet
 import cx.aswin.boxlore.feature.onboarding.generateRecommendationsFromOpml
 import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetActions
@@ -183,7 +182,6 @@ fun BoxLoreAppRoot(
     val smartDownloadManager = container.smartDownloadManager
     val installReferrerManager = container.installReferrerManager
 
-    var showFeedbackSheet by remember { mutableStateOf(false) }
     val onSubmitFeedback: suspend (String, String, String, String) -> Boolean =
         remember(podcastRepository) {
             { category, message, version, email ->
@@ -631,7 +629,7 @@ fun BoxLoreAppRoot(
                                 NavHostActions(
                                     onLoreQueueConflictEpisode = { loreQueueConflictEpisode = it },
                                     queueLoreEpisode = queueLoreEpisode,
-                                    onShowFeedbackSheet = { showFeedbackSheet = true },
+                                    onShowFeedbackSheet = { navController.navigate("feedback") },
                                     onSubmitFeedback = onSubmitFeedback,
                                 ),
                                 settingsState =
@@ -910,43 +908,6 @@ fun BoxLoreAppRoot(
                     },
                 ),
             )
-
-            if (showFeedbackSheet) {
-                val versionStr =
-                    remember {
-                        try {
-                            activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
-                                ?: "unknown"
-                        } catch (_: Exception) {
-                            "unknown"
-                        }
-                    }
-                FeedbackSheet(
-                    appVersion = versionStr,
-                    onSubmit = onSubmitFeedback,
-                    onRateInstead = {
-                        showFeedbackSheet = false
-                        try {
-                            activity.startActivity(
-                                android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse("market://details?id=${activity.packageName}"),
-                                ),
-                            )
-                        } catch (_: Exception) {
-                            activity.startActivity(
-                                android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse(
-                                        "https://play.google.com/store/apps/details?id=${activity.packageName}",
-                                    ),
-                                ),
-                            )
-                        }
-                    },
-                    onDismissRequest = { showFeedbackSheet = false },
-                )
-            }
         }
     }
 }

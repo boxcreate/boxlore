@@ -98,6 +98,7 @@ data class SettingsScreenConfig(
     /** Optional deep-link page: "library", "appearance", etc. */
     val initialPage: String? = null,
     val isOnboarding: Boolean = false,
+    val onSendFeedback: (() -> Unit)? = null,
 )
 
 /** Appearance sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -411,6 +412,7 @@ private fun SettingsAnimatedPages(
                     appInfo = uiData.appInfo,
                     onVisitPodcastIndex = { visitPodcastIndexHomepage(contentBundle.context) },
                     onOpenChangelog = { openChangelog(contentBundle.context) },
+                    onSendFeedback = { config.onSendFeedback?.invoke() },
                     onBack = actions.onReturnToHub,
                 )
         }
