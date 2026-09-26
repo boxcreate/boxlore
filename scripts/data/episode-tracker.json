@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-25T22:40:24.079Z",
+  "lastRun": "2026-09-26T01:13:06.343Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "efe4c226-cfc6-11f0-83c5-0f782a2af401",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "5806a2cd-8b8e-43bc-be1e-0e2a67e0e096",
-      "lastEpisodeTitle": "NPR News: 09-25-2026 6PM EDT",
+      "lastRssKey": "9bcf3649-a340-454e-a106-93711facb754",
+      "lastEpisodeTitle": "NPR News: 09-25-2026 9PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790376027188
+      "lastCheckedAt": 1790385190046
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75339228",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1789992425236
     },
     "385117": {
-      "lastRssKey": "c63c20b2-b92d-11f1-a2de-1bf8ddb93512",
-      "lastEpisodeTitle": "Xi Jinping Heads Back to China After Summit With President Trump",
+      "lastRssKey": "ee8619ec-b946-11f1-9873-efc8a5bbca9f",
+      "lastEpisodeTitle": "9PM ET 09/25/2026 Newscast",
       "lastEpisodeId": "60769426413",
-      "lastCheckedAt": 1790376038245
+      "lastCheckedAt": 1790385205162
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -231,10 +231,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3CFK0EYEK0E0K1QP36ERFZ4",
-      "lastEpisodeTitle": "Day 2 of the U.S.-China summit",
+      "lastRssKey": "01M3CXJWW1G2A2203YG86Y3VE4",
+      "lastEpisodeTitle": "High interest rates could balloon the national debt",
       "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790349965382
+      "lastCheckedAt": 1790385210566
     },
     "432535": {
       "lastRssKey": "df581185-7631-4f5a-949b-daf47fd2b3e8",
@@ -751,10 +751,10 @@
       "lastCheckedAt": 1789727972144
     },
     "1809220": {
-      "lastRssKey": "5ec0214a-c252-4384-8e60-b4d000e90826",
-      "lastEpisodeTitle": "10 BOLD PREDICTIONS FOR THE NHL SEASON!",
+      "lastRssKey": "a55f8447-6ee1-4b1b-8070-b4d00183971c",
+      "lastEpisodeTitle": "RANKING EVERY NHL TEAM FOR THE 2026/27 SEASON I TIER LIST",
       "lastEpisodeId": "57421560583",
-      "lastCheckedAt": 1790364445850
+      "lastCheckedAt": 1790385270880
     },
     "2136580": {
       "lastRssKey": "6e13c536-0fab-4069-bdfa-d984070cb12c",
@@ -803,10 +803,10 @@
       "lastCheckedAt": 1790258615686
     },
     "3353685": {
-      "lastRssKey": "8010b566-b7b2-11f1-8711-071328943bb6",
-      "lastEpisodeTitle": "Discord Age Verification Hits All Users, ShinyHunters Claim FBI Hack, Apple Solders M6 Mac Mini Storage + more!",
-      "lastEpisodeId": "60586969768",
-      "lastCheckedAt": 1790220073169
+      "lastRssKey": "a5837766-b942-11f1-a2ec-07c627ab21a1",
+      "lastEpisodeTitle": "Microsoft Kills Copilot+ PCs, Meta's VR Glasses and Muse Charm, Google Tests Gemini Phone Calls + more!",
+      "lastEpisodeId": "60852941877",
+      "lastCheckedAt": 1790385278899
     },
     "3423895": {
       "lastEpisodeId": "60583452250",
@@ -903,10 +903,10 @@
       "lastCheckedAt": 1790028531083
     },
     "4780435": {
-      "lastRssKey": "tag:soundcloud,2010:tracks/2385719535",
-      "lastEpisodeTitle": "وعي ١١١ | سلسلة الصحابة | عبدالله بن ام مكتوم",
+      "lastRssKey": "tag:soundcloud,2010:tracks/2407924290",
+      "lastEpisodeTitle": "وعي ١١٢ | سلسلة الصحابة | سعد بن معاذ",
       "lastEpisodeId": "58381513018",
-      "lastCheckedAt": 1787326350565
+      "lastCheckedAt": 1790385287621
     },
     "4790854": {
       "lastRssKey": "cmuam56ne012101ym45g24082",
@@ -1120,10 +1120,10 @@
       "lastCheckedAt": 1789992512786
     },
     "6761897": {
-      "lastRssKey": "ca65e6da-fe9d-4183-b219-9ba829813650",
-      "lastEpisodeTitle": "Signal Numberless Registration is Here!",
-      "lastEpisodeId": "60576383650",
-      "lastCheckedAt": 1789781434460
+      "lastRssKey": "5b95f647-8216-4b1c-8030-b10387c9bde8",
+      "lastEpisodeTitle": "F-Droid 2.0 Is a Game Changer",
+      "lastEpisodeId": "60849474714",
+      "lastCheckedAt": 1790385319611
     },
     "6763230": {
       "lastRssKey": "ee259d76-b4f3-11f1-8e93-1b7db27b5797",
@@ -1288,15 +1288,15 @@
       "lastCheckedAt": 1789992521809
     },
     "7348627": {
-      "lastRssKey": "cd2706c3-318e-44e6-9edf-b9ac8d0fdac7",
-      "lastEpisodeTitle": "2 Hours of Jane Doe Cases That Need To Be Solved | True Crime Compilation | 317",
-      "lastCheckedAt": 1790239314862
+      "lastRssKey": "70a08fcd-505d-4362-aa30-6d6356321ec8",
+      "lastEpisodeTitle": "3 Chilling Cold Cases With Disturbing Implications | 318",
+      "lastCheckedAt": 1790385336142
     },
     "7376606": {
-      "lastRssKey": "2632a72e-9226-487b-b7fa-0313804e045a",
-      "lastEpisodeTitle": "Egyptian Gods Explained 🐍☀️ | The Gods, Myths, and Legends of Ancient Egypt | Boring History for Sleep",
+      "lastRssKey": "b2cfd3b5-9373-4bc6-8784-b1f746b205e6",
+      "lastEpisodeTitle": "Cape Verde 🇨🇻🌊 | The Strange Atlantic Paradise You’ve Never Heard Of | Boring History for Sleep",
       "lastEpisodeId": "60631240276",
-      "lastCheckedAt": 1790313323837
+      "lastCheckedAt": 1790385336545
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031jzh",
@@ -1387,10 +1387,10 @@
       "lastCheckedAt": 1789640289064
     },
     "7641673": {
-      "lastRssKey": "3237498e-c5ad-4314-8c13-57a7a10b45bc",
-      "lastEpisodeTitle": "Historical Mysteries That Will Make You Question Reality",
+      "lastRssKey": "b627e026-07b3-4669-916c-9360df6571e2",
+      "lastEpisodeTitle": "2 Hours of Ancient History Mysteries You Need To Know",
       "lastEpisodeId": "60721626247",
-      "lastCheckedAt": 1790239318475
+      "lastCheckedAt": 1790385342374
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
@@ -1404,10 +1404,10 @@
       "lastCheckedAt": 1790258655107
     },
     "7756959": {
-      "lastRssKey": "391000e0-b870-11f1-b41d-530f7dafaaab",
-      "lastEpisodeTitle": "Austin TV: el nuevo concepto detrás de sus máscaras y su nuevo álbum | VA VA VA",
+      "lastRssKey": "1114eafa-b939-11f1-9da8-4ba239a91f8b",
+      "lastEpisodeTitle": "Viernes de Fornicio: las mejores partes del cuerpo de un hombre | VA VA VA",
       "lastEpisodeId": "60132395912",
-      "lastCheckedAt": 1790296125995
+      "lastCheckedAt": 1790385343916
     },
     "7837137": {
       "lastRssKey": "https://api.spreaker.com/episode/71692639",
@@ -1428,10 +1428,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/a28720bf-824b-5a10-9b8c-e91cc4be17bb",
-      "lastEpisodeTitle": "Narcissists want you to be AS UNEMPATHIC as them ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/a6251ca5-7bd6-5276-9476-30375a14973d",
+      "lastEpisodeTitle": "5 MADDENING Things That Happen in a Narcissistic Relationship ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790376140203
+      "lastCheckedAt": 1790385345167
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
