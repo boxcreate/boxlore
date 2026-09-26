@@ -11,7 +11,7 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 - `FeedbackScreen`, `FeedbackViewModel`, `DiagnosticCollector`, and `LogcatCollector` under `feedback/` for sticky draft feedback submissions, in-process sanitized logcat extraction, device diagnostics, and GitHub issue reporting.
 - `AutoDownloadSettingsScreen` and `SmartDownloadsSettingsScreen` under `downloads/` for download management.
 - `AccountSettingsPage`, `SyncAndBackupsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`.
-- Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
+- Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`, `SupportDevelopmentSheet`.
 
 ## Internal structure
 
@@ -28,6 +28,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     AccentColorPickerDialog.kt
     AddRssFeedDialog.kt
     ResetAnalyticsDialog.kt
+    SupportDevelopmentSheet.kt
   downloads/
     AutoDownloadSettingsScreen.kt
     SmartDownloadsSettingsScreen.kt
