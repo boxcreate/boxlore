@@ -1,9 +1,9 @@
 package cx.aswin.boxlore.feature.settings.pages
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -12,6 +12,10 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
+/**
+ * Renders the tactical HUD calibration reticle centered behind the floating battery artifact,
+ * transforming seamlessly across the 5 power tiers with gyro rotations and optical targeting marks.
+ */
 internal fun DrawScope.drawTransformingPlatform(
     pagePosition: Float,
     rotation: Float,
@@ -23,24 +27,24 @@ internal fun DrawScope.drawTransformingPlatform(
     val fraction = pagePosition - leftPage
 
     val centerX = size.width / 2f
-    val centerY = size.height * 0.77f
+    val centerY = size.height * 0.50f
 
     if (fraction < 0.01f) {
-        drawTierPlatform(leftPage, 1f, 1f, centerX, centerY, rotation, pulse, tiers[leftPage].auraColor)
+        drawTierHudReticle(leftPage, 1f, 1f, centerX, centerY, rotation, pulse, tiers[leftPage].auraColor)
     } else if (fraction > 0.99f) {
-        drawTierPlatform(rightPage, 1f, 1f, centerX, centerY, rotation, pulse, tiers[rightPage].auraColor)
+        drawTierHudReticle(rightPage, 1f, 1f, centerX, centerY, rotation, pulse, tiers[rightPage].auraColor)
     } else {
         val leftAlpha = (1f - fraction).coerceIn(0f, 1f)
         val rightAlpha = fraction.coerceIn(0f, 1f)
-        val leftScale = 1f - (0.14f * fraction)
-        val rightScale = 0.86f + (0.14f * fraction)
-        drawTierPlatform(leftPage, leftAlpha, leftScale, centerX, centerY, rotation, pulse, tiers[leftPage].auraColor)
-        drawTierPlatform(rightPage, rightAlpha, rightScale, centerX, centerY, rotation, pulse, tiers[rightPage].auraColor)
+        val leftScale = 1f - (0.08f * fraction)
+        val rightScale = 0.92f + (0.08f * fraction)
+        drawTierHudReticle(leftPage, leftAlpha, leftScale, centerX, centerY, rotation, pulse, tiers[leftPage].auraColor)
+        drawTierHudReticle(rightPage, rightAlpha, rightScale, centerX, centerY, rotation, pulse, tiers[rightPage].auraColor)
     }
 }
 
 @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
-internal fun DrawScope.drawTierPlatform(
+internal fun DrawScope.drawTierHudReticle(
     tierIndex: Int,
     alpha: Float,
     scale: Float,
@@ -53,257 +57,307 @@ internal fun DrawScope.drawTierPlatform(
     if (alpha <= 0.01f) return
     val baseColor = color.copy(alpha = color.alpha * alpha)
     val effectivePulse = pulse * scale
+    val hw = 72.dp.toPx() * scale
+    val hh = 72.dp.toPx() * scale
+    val arm = 14.dp.toPx() * scale
+
+    // Common tactical corner brackets framing the item
+    drawCornerBrackets(
+        centerX = centerX,
+        centerY = centerY,
+        halfWidth = hw,
+        halfHeight = hh,
+        armLength = arm,
+        color = baseColor.copy(alpha = 0.50f * alpha),
+        strokeWidth = 1.3.dp.toPx(),
+    )
 
     when (tierIndex) {
         0 -> {
-            // Tier 0: Micro Energy Cell - Concentric Orbital Ellipses with 2 atomic satellites
-            val baseRadius = 65.dp.toPx() * effectivePulse
-            val outerWidth = baseRadius * 2.30f
-            val outerHeight = outerWidth * 0.28f
-            val innerWidth = baseRadius * 1.45f
-            val innerHeight = innerWidth * 0.28f
-
-            drawOval(
+            // Tier 0: Unit Blue - Precision Rangefinder Reticle
+            val radius = 58.dp.toPx() * effectivePulse
+            drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(baseColor.copy(alpha = 0.35f * alpha), Color.Transparent),
+                    colors = listOf(baseColor.copy(alpha = 0.22f * alpha), Color.Transparent),
                     center = Offset(centerX, centerY),
-                    radius = baseRadius * 1.30f,
+                    radius = radius * 1.35f,
                 ),
-                topLeft = Offset(centerX - baseRadius * 1.15f, centerY - outerHeight / 2f),
-                size = Size(baseRadius * 2.30f, outerHeight),
+                center = Offset(centerX, centerY),
+                radius = radius * 1.35f,
             )
 
-            drawOval(
-                color = baseColor.copy(alpha = 0.60f * alpha),
-                topLeft = Offset(centerX - outerWidth / 2f, centerY - outerHeight / 2f),
-                size = Size(outerWidth, outerHeight),
+            // Segmented circular calibration ring
+            drawCircle(
+                color = baseColor.copy(alpha = 0.65f * alpha),
+                radius = radius,
+                center = Offset(centerX, centerY),
                 style = Stroke(
-                    width = 1.3.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f), rotation * 1.2f),
+                    width = 1.2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(18f, 14f), rotation * 0.9f),
                 ),
             )
 
-            for (k in 0..1) {
-                val angle = (rotation * 1.2 + k * 180.0) * (PI / 180.0)
-                val sx = (centerX + (outerWidth / 2f) * cos(angle)).toFloat()
-                val sy = (centerY + (outerHeight / 2f) * sin(angle)).toFloat()
-                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.5.dp.toPx(), center = Offset(sx, sy))
-                drawCircle(color = baseColor, radius = 5.5.dp.toPx(), center = Offset(sx, sy), style = Stroke(1.dp.toPx()))
-            }
+            // 4 Cardinal Rangefinder Crosshairs
+            val tickIn = radius - 7.dp.toPx()
+            val tickOut = radius + 7.dp.toPx()
+            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX, centerY - tickOut), Offset(centerX, centerY - tickIn), 1.4.dp.toPx())
+            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX, centerY + tickIn), Offset(centerX, centerY + tickOut), 1.4.dp.toPx())
+            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX - tickOut, centerY), Offset(centerX - tickIn, centerY), 1.4.dp.toPx())
+            drawLine(baseColor.copy(alpha = 0.85f * alpha), Offset(centerX + tickIn, centerY), Offset(centerX + tickOut, centerY), 1.4.dp.toPx())
 
-            drawOval(
-                color = baseColor.copy(alpha = 0.88f * alpha),
-                topLeft = Offset(centerX - innerWidth / 2f, centerY - innerHeight / 2f),
-                size = Size(innerWidth, innerHeight),
-                style = Stroke(width = 1.3.dp.toPx()),
-            )
+            // 2 Orbiting Calibration Nodes
+            for (k in 0..1) {
+                val angle = (rotation * 1.4 + k * 180.0) * (PI / 180.0)
+                val sx = (centerX + radius * cos(angle)).toFloat()
+                val sy = (centerY + radius * sin(angle)).toFloat()
+                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.dp.toPx(), center = Offset(sx, sy))
+                drawCircle(color = baseColor, radius = 4.5.dp.toPx(), center = Offset(sx, sy), style = Stroke(1.dp.toPx()))
+            }
         }
         1 -> {
-            // Tier 1: Field Battery Pack - Tactical Hexagonal Grid (6 vertices) with 3 capacitor nodes
-            val hexRadius = 82.dp.toPx() * effectivePulse
-            val innerHexRadius = hexRadius * 0.62f
-
-            drawOval(
+            // Tier 1: Grid Hawk - Tactical Hexagonal Flight Reticle
+            val hexRadius = 60.dp.toPx() * effectivePulse
+            drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(baseColor.copy(alpha = 0.36f * alpha), Color.Transparent),
+                    colors = listOf(baseColor.copy(alpha = 0.24f * alpha), Color.Transparent),
                     center = Offset(centerX, centerY),
-                    radius = hexRadius * 1.20f,
+                    radius = hexRadius * 1.30f,
                 ),
-                topLeft = Offset(centerX - hexRadius, centerY - hexRadius * 0.28f),
-                size = Size(hexRadius * 2f, hexRadius * 0.56f),
+                center = Offset(centerX, centerY),
+                radius = hexRadius * 1.30f,
             )
 
-            drawIsometricPolygon(
+            // Hexagonal calibration perimeter
+            drawPolygon(
                 centerX = centerX,
                 centerY = centerY,
                 radius = hexRadius,
                 sides = 6,
                 rotation = rotation * 1.1f,
-                color = baseColor.copy(alpha = 0.65f * alpha),
-                strokeWidth = 1.4.dp.toPx(),
+                color = baseColor.copy(alpha = 0.70f * alpha),
+                strokeWidth = 1.3.dp.toPx(),
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 8f), 0f),
             )
 
-            drawIsometricPolygon(
-                centerX = centerX,
-                centerY = centerY,
-                radius = innerHexRadius,
-                sides = 6,
-                rotation = -rotation * 1.4f,
-                color = baseColor.copy(alpha = 0.90f * alpha),
-                strokeWidth = 1.3.dp.toPx(),
-            )
+            // Lateral Vector Rangefinder Wings
+            val wingStart = 48.dp.toPx()
+            val wingEnd = 80.dp.toPx()
+            drawLine(baseColor.copy(alpha = 0.65f * alpha), Offset(centerX - wingEnd, centerY), Offset(centerX - wingStart, centerY), 1.2.dp.toPx())
+            drawLine(baseColor.copy(alpha = 0.65f * alpha), Offset(centerX + wingStart, centerY), Offset(centerX + wingEnd, centerY), 1.2.dp.toPx())
 
-            // 3 vertex energy capacitors
-            for (k in 0..2) {
-                val angle = (rotation * 1.1 + k * 120.0) * (PI / 180.0)
-                val sx = (centerX + hexRadius * cos(angle)).toFloat()
-                val sy = (centerY + hexRadius * sin(angle) * 0.28f).toFloat()
-                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.6.dp.toPx(), center = Offset(sx, sy))
-                drawCircle(color = baseColor, radius = 5.2.dp.toPx(), center = Offset(sx, sy), style = Stroke(1.2.dp.toPx()))
+            // 3 Lateral Hash Notches on each wing
+            for (i in 0..2) {
+                val off = 58.dp.toPx() + i * 9.dp.toPx()
+                drawLine(baseColor.copy(alpha = 0.75f * alpha), Offset(centerX - off, centerY - 3.5.dp.toPx()), Offset(centerX - off, centerY + 3.5.dp.toPx()), 1.dp.toPx())
+                drawLine(baseColor.copy(alpha = 0.75f * alpha), Offset(centerX + off, centerY - 3.5.dp.toPx()), Offset(centerX + off, centerY + 3.5.dp.toPx()), 1.dp.toPx())
             }
+
+            // Top & Bottom Chevron Targeting Triangles
+            drawChevron(centerX, centerY - hexRadius - 6.dp.toPx(), 5.dp.toPx(), true, baseColor.copy(alpha = 0.90f * alpha))
+            drawChevron(centerX, centerY + hexRadius + 6.dp.toPx(), 5.dp.toPx(), false, baseColor.copy(alpha = 0.90f * alpha))
         }
         2 -> {
-            // Tier 2: Power Station - Heavy Octagonal Reactor Grid (8 vertices) with crosshair alignment axis
-            val octRadius = 94.dp.toPx() * effectivePulse
-            val innerSquareRadius = octRadius * 0.58f
-
-            drawOval(
+            // Tier 2: Vault Prime - Reinforced Octagonal Aegis
+            val octRadius = 62.dp.toPx() * effectivePulse
+            val innerRadius = octRadius * 0.65f
+            drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(baseColor.copy(alpha = 0.38f * alpha), Color.Transparent),
+                    colors = listOf(baseColor.copy(alpha = 0.26f * alpha), Color.Transparent),
                     center = Offset(centerX, centerY),
-                    radius = octRadius * 1.25f,
+                    radius = octRadius * 1.30f,
                 ),
-                topLeft = Offset(centerX - octRadius, centerY - octRadius * 0.28f),
-                size = Size(octRadius * 2f, octRadius * 0.56f),
+                center = Offset(centerX, centerY),
+                radius = octRadius * 1.30f,
             )
 
-            drawIsometricPolygon(
+            // Octagonal Reinforced Shield Ring
+            drawPolygon(
                 centerX = centerX,
                 centerY = centerY,
                 radius = octRadius,
                 sides = 8,
-                rotation = rotation * 0.9f,
-                color = baseColor.copy(alpha = 0.65f * alpha),
+                rotation = rotation * 0.85f,
+                color = baseColor.copy(alpha = 0.75f * alpha),
                 strokeWidth = 1.5.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 8f), 0f),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 8f), 0f),
             )
 
-            drawIsometricPolygon(
+            // Inner Solid Concentric Core
+            drawCircle(
+                color = baseColor.copy(alpha = 0.85f * alpha),
+                radius = innerRadius,
+                center = Offset(centerX, centerY),
+                style = Stroke(width = 1.3.dp.toPx()),
+            )
+
+            // 4 Reinforced Corner Tabs (Double Corner Notches)
+            drawCornerBrackets(
                 centerX = centerX,
                 centerY = centerY,
-                radius = innerSquareRadius,
-                sides = 4,
-                rotation = -rotation * 1.8f + 45f,
-                color = baseColor.copy(alpha = 0.92f * alpha),
-                strokeWidth = 1.4.dp.toPx(),
+                halfWidth = hw - 6.dp.toPx(),
+                halfHeight = hh - 6.dp.toPx(),
+                armLength = 7.dp.toPx(),
+                color = baseColor.copy(alpha = 0.40f * alpha),
+                strokeWidth = 1.dp.toPx(),
             )
 
-            // 4 heavy reactor corner containment nodes
-            for (k in 0..3) {
-                val angle = (rotation * 0.9 + k * 90.0) * (PI / 180.0)
+            // 8 Perimeter Alignment Nodes
+            for (k in 0..7) {
+                val angle = (rotation * 0.85 + k * 45.0) * (PI / 180.0)
                 val sx = (centerX + octRadius * cos(angle)).toFloat()
-                val sy = (centerY + octRadius * sin(angle) * 0.28f).toFloat()
-                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.8.dp.toPx(), center = Offset(sx, sy))
-                drawCircle(color = baseColor, radius = 6.dp.toPx(), center = Offset(sx, sy), style = Stroke(1.3.dp.toPx()))
+                val sy = (centerY + octRadius * sin(angle)).toFloat()
+                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.dp.toPx(), center = Offset(sx, sy))
             }
         }
         3 -> {
-            // Tier 3: Server Tower - Cybernetic Dodecagon (12 vertices) with dual counter-rotating circuit rings
-            val dodecRadius = 106.dp.toPx() * effectivePulse
-            val midHexRadius = dodecRadius * 0.72f
-            val coreRingRadius = dodecRadius * 0.42f
-
-            drawOval(
+            // Tier 3: Stack Zero - High-Density Quantum Matrix
+            val boxRadius = 56.dp.toPx() * effectivePulse
+            drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(baseColor.copy(alpha = 0.40f * alpha), Color.Transparent),
+                    colors = listOf(baseColor.copy(alpha = 0.28f * alpha), Color.Transparent),
                     center = Offset(centerX, centerY),
-                    radius = dodecRadius * 1.30f,
+                    radius = boxRadius * 1.35f,
                 ),
-                topLeft = Offset(centerX - dodecRadius, centerY - dodecRadius * 0.28f),
-                size = Size(dodecRadius * 2f, dodecRadius * 0.56f),
+                center = Offset(centerX, centerY),
+                radius = boxRadius * 1.35f,
             )
 
-            drawIsometricPolygon(
+            // 45° Diamond Perimeter Reticle
+            drawPolygon(
                 centerX = centerX,
                 centerY = centerY,
-                radius = dodecRadius,
-                sides = 12,
-                rotation = rotation * 1.2f,
+                radius = boxRadius * 1.15f,
+                sides = 4,
+                rotation = 45f,
                 color = baseColor.copy(alpha = 0.60f * alpha),
-                strokeWidth = 1.5.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f),
-            )
-
-            drawIsometricPolygon(
-                centerX = centerX,
-                centerY = centerY,
-                radius = midHexRadius,
-                sides = 6,
-                rotation = -rotation * 1.6f,
-                color = baseColor.copy(alpha = 0.85f * alpha),
                 strokeWidth = 1.3.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f),
             )
 
-            drawOval(
-                color = baseColor.copy(alpha = 0.95f * alpha),
-                topLeft = Offset(centerX - coreRingRadius, centerY - coreRingRadius * 0.28f),
-                size = Size(coreRingRadius * 2f, coreRingRadius * 0.56f),
-                style = Stroke(width = 1.4.dp.toPx()),
+            // Counter-Rotating Gyroscopic Ring
+            drawCircle(
+                color = baseColor.copy(alpha = 0.85f * alpha),
+                radius = boxRadius * 0.80f,
+                center = Offset(centerX, centerY),
+                style = Stroke(
+                    width = 1.2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), -rotation * 1.5f),
+                ),
             )
 
-            // 6 peripheral data bus nodes
-            for (k in 0..5) {
-                val angle = (rotation * 1.2 + k * 60.0) * (PI / 180.0)
-                val sx = (centerX + dodecRadius * cos(angle)).toFloat()
-                val sy = (centerY + dodecRadius * sin(angle) * 0.28f).toFloat()
-                drawCircle(color = Color.White.copy(alpha = alpha), radius = 2.6.dp.toPx(), center = Offset(sx, sy))
-                drawCircle(color = baseColor, radius = 5.dp.toPx(), center = Offset(sx, sy), style = Stroke(1.2.dp.toPx()))
+            // Lateral Pitch Ladder Telemetry (4 micro ticks on each side)
+            for (i in -2..2) {
+                if (i == 0) continue
+                val ty = centerY + i * 11.dp.toPx()
+                drawLine(baseColor.copy(alpha = 0.70f * alpha), Offset(centerX - hw + 6.dp.toPx(), ty), Offset(centerX - hw + 14.dp.toPx(), ty), 1.1.dp.toPx())
+                drawLine(baseColor.copy(alpha = 0.70f * alpha), Offset(centerX + hw - 14.dp.toPx(), ty), Offset(centerX + hw - 6.dp.toPx(), ty), 1.1.dp.toPx())
             }
         }
         else -> {
-            // Tier 4: Quantum Beacon - Majestic 8-Pointed Celestial Star / Arcane Quantum Stargate
-            val outerStarRadius = 118.dp.toPx() * effectivePulse
-            val innerStarRadius = outerStarRadius * 0.65f
-            val coreRingRadius = outerStarRadius * 0.38f
+            // Tier 4: Orbit X - Supreme Celestial Matrix
+            val outerRadius = 68.dp.toPx() * effectivePulse
+            val midRadius = outerRadius * 0.75f
+            val coreRadius = outerRadius * 0.48f
 
-            drawOval(
+            drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.32f * alpha),
-                        baseColor.copy(alpha = 0.45f * alpha),
+                        Color.White.copy(alpha = 0.20f * alpha),
+                        baseColor.copy(alpha = 0.35f * alpha),
                         Color.Transparent,
                     ),
                     center = Offset(centerX, centerY),
-                    radius = outerStarRadius * 1.35f,
+                    radius = outerRadius * 1.40f,
                 ),
-                topLeft = Offset(centerX - outerStarRadius, centerY - outerStarRadius * 0.28f),
-                size = Size(outerStarRadius * 2f, outerStarRadius * 0.56f),
+                center = Offset(centerX, centerY),
+                radius = outerRadius * 1.40f,
             )
 
-            drawIsometricStar(
-                centerX = centerX,
-                centerY = centerY,
-                outerRadius = outerStarRadius,
-                innerRadius = innerStarRadius,
-                points = 8,
-                rotation = rotation * 1.3f,
-                color = baseColor.copy(alpha = 0.85f * alpha),
-                strokeWidth = 1.6.dp.toPx(),
+            // Outer Gyroscope Aperture (Dashed)
+            drawCircle(
+                color = baseColor.copy(alpha = 0.70f * alpha),
+                radius = outerRadius,
+                center = Offset(centerX, centerY),
+                style = Stroke(
+                    width = 1.3.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 10f), rotation * 1.1f),
+                ),
             )
 
-            drawIsometricPolygon(
-                centerX = centerX,
-                centerY = centerY,
-                radius = innerStarRadius * 0.85f,
-                sides = 8,
-                rotation = -rotation * 2.0f,
-                color = Color.White.copy(alpha = 0.80f * alpha),
-                strokeWidth = 1.2.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f),
+            // Middle Gyroscope Ring with 8 Radial Solar Spikes
+            drawCircle(
+                color = Color.White.copy(alpha = 0.85f * alpha),
+                radius = midRadius,
+                center = Offset(centerX, centerY),
+                style = Stroke(width = 1.4.dp.toPx()),
             )
 
-            drawOval(
-                color = Color.White.copy(alpha = 0.95f * alpha),
-                topLeft = Offset(centerX - coreRingRadius, centerY - coreRingRadius * 0.28f),
-                size = Size(coreRingRadius * 2f, coreRingRadius * 0.56f),
-                style = Stroke(width = 1.8.dp.toPx()),
-            )
-
-            // 8 celestial tachyon sparks
             for (k in 0..7) {
-                val angle = (rotation * 1.3 + k * 45.0) * (PI / 180.0)
-                val sx = (centerX + outerStarRadius * cos(angle)).toFloat()
-                val sy = (centerY + outerStarRadius * sin(angle) * 0.28f).toFloat()
-                drawCircle(color = Color.White.copy(alpha = alpha), radius = 3.dp.toPx(), center = Offset(sx, sy))
-                drawCircle(color = baseColor, radius = 6.dp.toPx(), center = Offset(sx, sy), style = Stroke(1.3.dp.toPx()))
+                val angle = (rotation * 0.9 + k * 45.0) * (PI / 180.0)
+                val inX = (centerX + midRadius * cos(angle)).toFloat()
+                val inY = (centerY + midRadius * sin(angle)).toFloat()
+                val outX = (centerX + (midRadius + 7.dp.toPx()) * cos(angle)).toFloat()
+                val outY = (centerY + (midRadius + 7.dp.toPx()) * sin(angle)).toFloat()
+                drawLine(Color.White.copy(alpha = 0.85f * alpha), Offset(inX, inY), Offset(outX, outY), 1.3.dp.toPx())
             }
+
+            // Inner Core Aperture Ring (Counter-Rotating)
+            drawCircle(
+                color = baseColor.copy(alpha = 0.95f * alpha),
+                radius = coreRadius,
+                center = Offset(centerX, centerY),
+                style = Stroke(
+                    width = 1.3.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), -rotation * 1.6f),
+                ),
+            )
+
+            // 4 Vertex Diamonds at Corner Bracket Junctions
+            drawVertexDiamond(centerX - hw, centerY - hh, 3.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
+            drawVertexDiamond(centerX + hw, centerY - hh, 3.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
+            drawVertexDiamond(centerX - hw, centerY + hh, 3.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
+            drawVertexDiamond(centerX + hw, centerY + hh, 3.5.dp.toPx(), Color.White.copy(alpha = alpha), baseColor)
         }
     }
 }
 
+private fun DrawScope.drawCornerBrackets(
+    centerX: Float,
+    centerY: Float,
+    halfWidth: Float,
+    halfHeight: Float,
+    armLength: Float,
+    color: Color,
+    strokeWidth: Float,
+) {
+    val left = centerX - halfWidth
+    val right = centerX + halfWidth
+    val top = centerY - halfHeight
+    val bottom = centerY + halfHeight
+
+    // Top-Left ┌
+    drawLine(color, Offset(left, top + armLength), Offset(left, top), strokeWidth)
+    drawLine(color, Offset(left, top), Offset(left + armLength, top), strokeWidth)
+    drawCircle(color, radius = 1.5.dp.toPx(), center = Offset(left, top))
+
+    // Top-Right ┐
+    drawLine(color, Offset(right - armLength, top), Offset(right, top), strokeWidth)
+    drawLine(color, Offset(right, top), Offset(right, top + armLength), strokeWidth)
+    drawCircle(color, radius = 1.5.dp.toPx(), center = Offset(right, top))
+
+    // Bottom-Left └
+    drawLine(color, Offset(left, bottom - armLength), Offset(left, bottom), strokeWidth)
+    drawLine(color, Offset(left, bottom), Offset(left + armLength, bottom), strokeWidth)
+    drawCircle(color, radius = 1.5.dp.toPx(), center = Offset(left, bottom))
+
+    // Bottom-Right ┘
+    drawLine(color, Offset(right - armLength, bottom), Offset(right, bottom), strokeWidth)
+    drawLine(color, Offset(right, bottom), Offset(right, bottom - armLength), strokeWidth)
+    drawCircle(color, radius = 1.5.dp.toPx(), center = Offset(right, bottom))
+}
+
 @Suppress("LongParameterList")
-private fun DrawScope.drawIsometricPolygon(
+private fun DrawScope.drawPolygon(
     centerX: Float,
     centerY: Float,
     radius: Float,
@@ -313,12 +367,11 @@ private fun DrawScope.drawIsometricPolygon(
     strokeWidth: Float,
     pathEffect: PathEffect? = null,
 ) {
-    val path = androidx.compose.ui.graphics.Path()
-    val ySquash = 0.28f
+    val path = Path()
     for (i in 0 until sides) {
         val angle = (rotation + (i * 360f / sides)) * (PI.toFloat() / 180f)
         val x = centerX + radius * cos(angle)
-        val y = centerY + radius * sin(angle) * ySquash
+        val y = centerY + radius * sin(angle)
         if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
     }
     path.close()
@@ -329,31 +382,36 @@ private fun DrawScope.drawIsometricPolygon(
     )
 }
 
-@Suppress("LongParameterList")
-private fun DrawScope.drawIsometricStar(
-    centerX: Float,
-    centerY: Float,
-    outerRadius: Float,
-    innerRadius: Float,
-    points: Int,
-    rotation: Float,
+private fun DrawScope.drawChevron(
+    cx: Float,
+    cy: Float,
+    size: Float,
+    pointDown: Boolean,
     color: Color,
-    strokeWidth: Float,
 ) {
-    val path = androidx.compose.ui.graphics.Path()
-    val ySquash = 0.28f
-    val totalVertices = points * 2
-    for (i in 0 until totalVertices) {
-        val r = if (i % 2 == 0) outerRadius else innerRadius
-        val angle = (rotation + (i * 360f / totalVertices)) * (PI.toFloat() / 180f)
-        val x = centerX + r * cos(angle)
-        val y = centerY + r * sin(angle) * ySquash
-        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    val dy = if (pointDown) size else -size
+    val path = Path().apply {
+        moveTo(cx - size, cy - dy)
+        lineTo(cx, cy)
+        lineTo(cx + size, cy - dy)
     }
-    path.close()
-    drawPath(
-        path = path,
-        color = color,
-        style = Stroke(width = strokeWidth),
-    )
+    drawPath(path = path, color = color, style = Stroke(width = 1.3.dp.toPx()))
+}
+
+private fun DrawScope.drawVertexDiamond(
+    cx: Float,
+    cy: Float,
+    size: Float,
+    fillColor: Color,
+    strokeColor: Color,
+) {
+    val path = Path().apply {
+        moveTo(cx, cy - size)
+        lineTo(cx + size, cy)
+        lineTo(cx, cy + size)
+        lineTo(cx - size, cy)
+        close()
+    }
+    drawPath(path = path, color = fillColor)
+    drawPath(path = path, color = strokeColor, style = Stroke(width = 1.dp.toPx()))
 }
