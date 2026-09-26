@@ -42,7 +42,6 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 internal fun SupportTierPicker(
     selectedIndex: Int,
     tiers: List<SupportTierCardData>,
-    activeColor: Color,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -66,7 +65,6 @@ internal fun SupportTierPicker(
                     SupportTierPill(
                         tier = tier,
                         isSelected = index == selectedIndex,
-                        activeColor = activeColor,
                         onSelect = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onSelect(index)
@@ -82,10 +80,10 @@ internal fun SupportTierPicker(
 private fun SupportTierPill(
     tier: SupportTierCardData,
     isSelected: Boolean,
-    activeColor: Color,
     onSelect: () -> Unit,
 ) {
-    val activeContentColor = if (activeColor.luminance() > 0.45f) Color(0xFF0A0A12) else Color.White
+    val tierAura = tier.auraColor
+    val activeContentColor = if (tierAura.luminance() > 0.45f) Color(0xFF0A0A12) else Color.White
 
     val animatedBorderColor by animateColorAsState(
         targetValue = if (isSelected) Color.White.copy(alpha = 0.70f) else Color.Transparent,
@@ -105,14 +103,14 @@ private fun SupportTierPill(
 
     val backgroundBrush = if (isSelected) {
         val activeColorDeep = Color(
-            red = (activeColor.red * 0.82f).coerceIn(0f, 1f),
-            green = (activeColor.green * 0.82f).coerceIn(0f, 1f),
-            blue = (activeColor.blue * 0.82f).coerceIn(0f, 1f),
+            red = (tierAura.red * 0.82f).coerceIn(0f, 1f),
+            green = (tierAura.green * 0.82f).coerceIn(0f, 1f),
+            blue = (tierAura.blue * 0.82f).coerceIn(0f, 1f),
             alpha = 1f,
         )
         Brush.verticalGradient(
             colors = listOf(
-                activeColor.copy(alpha = 1f),
+                tierAura.copy(alpha = 1f),
                 activeColorDeep,
             ),
         )

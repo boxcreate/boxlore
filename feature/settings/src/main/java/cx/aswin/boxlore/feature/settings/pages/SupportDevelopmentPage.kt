@@ -5,6 +5,7 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -123,7 +124,7 @@ internal fun SupportDevelopmentPage(
 
     val activeAuraColor by animateColorAsState(
         targetValue = activeTier.auraColor,
-        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        animationSpec = tween(200, easing = FastOutSlowInEasing),
         label = "active_aura_color",
     )
 
@@ -211,7 +212,6 @@ private fun SupportPageContent(
         SupportTierPicker(
             selectedIndex = pagerState.currentPage,
             tiers = SUPPORT_TIER_CARDS,
-            activeColor = activeAuraColor,
             onSelect = onSelectTier,
         )
 
@@ -435,13 +435,19 @@ private fun SupportArtifactStage(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(185.dp),
+                .height(190.dp),
             contentAlignment = Alignment.Center,
         ) {
             SupportLightningAtmosphere(
                 tier = tiers[pagerState.currentPage],
                 activeColor = activeAuraColor,
                 modifier = Modifier.requiredSize(440.dp),
+            )
+
+            // Static Stalinist codename backdrop behind platform & floating items
+            ItemBackdropCodename(
+                tier = tiers[pagerState.currentPage],
+                modifier = Modifier.fillMaxSize(),
             )
 
             val pagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 4f)
@@ -480,8 +486,6 @@ private fun SupportArtifactStage(
                         },
                     contentAlignment = Alignment.Center,
                 ) {
-                    ItemBackdropCodename(tier = tier)
-
                     Image(
                         painter = painterResource(id = tier.iconRes),
                         contentDescription = tier.title,
@@ -497,7 +501,6 @@ private fun SupportArtifactStage(
         SupportStageTierInfo(
             selectedIndex = pagerState.currentPage,
             tiers = tiers,
-            activeAuraColor = activeAuraColor,
         )
     }
 }
@@ -507,35 +510,47 @@ private fun ItemBackdropCodename(
     tier: SupportTierCardData,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                alpha = 0.35f
-            },
-    ) {
-        Text(
-            text = tier.codenameLine1,
-            fontFamily = StalinistOneFontFamily,
-            fontSize = 32.sp,
-            lineHeight = 34.sp,
-            letterSpacing = 2.5.sp,
-            textAlign = TextAlign.Center,
-            color = tier.auraColor,
-            maxLines = 1,
-        )
-        Text(
-            text = tier.codenameLine2,
-            fontFamily = StalinistOneFontFamily,
-            fontSize = 40.sp,
-            lineHeight = 42.sp,
-            letterSpacing = 3.5.sp,
-            textAlign = TextAlign.Center,
-            color = tier.auraColor,
-            maxLines = 1,
-        )
+    Crossfade(
+        targetState = tier,
+        animationSpec = tween(180, easing = FastOutSlowInEasing),
+        label = "backdrop_codename_crossfade",
+        modifier = modifier,
+    ) { currentTier ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = currentTier.codenameLine1,
+                fontFamily = StalinistOneFontFamily,
+                fontSize = 42.sp,
+                lineHeight = 44.sp,
+                letterSpacing = 1.sp,
+                textAlign = TextAlign.Start,
+                color = currentTier.auraColor,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp),
+            )
+            Text(
+                text = currentTier.codenameLine2,
+                fontFamily = StalinistOneFontFamily,
+                fontSize = 52.sp,
+                lineHeight = 54.sp,
+                letterSpacing = 1.5.sp,
+                textAlign = TextAlign.End,
+                color = currentTier.auraColor,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 4.dp),
+            )
+        }
     }
 }
 
@@ -543,80 +558,87 @@ private fun ItemBackdropCodename(
 private fun SupportStageTierInfo(
     selectedIndex: Int,
     tiers: List<SupportTierCardData>,
-    activeAuraColor: Color,
 ) {
-    AnimatedContent(
-        targetState = selectedIndex,
-        transitionSpec = {
-            if (targetState > initialState) {
-                (slideInHorizontally(tween(220, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeIn(tween(180)))
-                    .togetherWith(
-                        slideOutHorizontally(tween(200, easing = FastOutSlowInEasing)) { width -> -width / 3 } + fadeOut(tween(160)),
-                    )
-            } else {
-                (slideInHorizontally(tween(220, easing = FastOutSlowInEasing)) { width -> -width / 3 } + fadeIn(tween(180)))
-                    .togetherWith(
-                        slideOutHorizontally(tween(200, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeOut(tween(160)),
-                    )
-            }
-        },
-        label = "tier_stage_details",
-    ) { index ->
-        val targetTier = tiers[index]
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            if (targetTier.isFeatured) {
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = targetTier.auraColor,
-                    modifier = Modifier.padding(bottom = 5.dp),
+    val currentTier = tiers[selectedIndex]
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        AnimatedContent(
+            targetState = selectedIndex,
+            transitionSpec = {
+                if (targetState > initialState) {
+                    (slideInHorizontally(tween(220, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeIn(tween(180)))
+                        .togetherWith(
+                            slideOutHorizontally(tween(200, easing = FastOutSlowInEasing)) { width -> -width / 3 } + fadeOut(tween(160)),
+                        )
+                } else {
+                    (slideInHorizontally(tween(220, easing = FastOutSlowInEasing)) { width -> -width / 3 } + fadeIn(tween(180)))
+                        .togetherWith(
+                            slideOutHorizontally(tween(200, easing = FastOutSlowInEasing)) { width -> width / 3 } + fadeOut(tween(160)),
+                        )
+                }
+            },
+            label = "tier_stage_details",
+        ) { index ->
+            val targetTier = tiers[index]
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (targetTier.isFeatured) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = targetTier.auraColor,
+                        modifier = Modifier.padding(bottom = 5.dp),
+                    ) {
+                        Text(
+                            text = "★ SUPREME PATRON UNIT",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                            color = if (targetTier.auraColor.luminance() > 0.45f) Color.Black else Color.White,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+
+                Text(
+                    text = targetTier.title,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = GoogleSansWeight.bold),
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                 ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Bolt,
+                        contentDescription = null,
+                        tint = targetTier.auraColor,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "★ SUPREME PATRON UNIT",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                        color = if (targetTier.auraColor.luminance() > 0.45f) Color.Black else Color.White,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                        text = targetTier.powerImpact,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
+                        color = targetTier.auraColor,
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
-
-            Text(
-                text = targetTier.title,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = GoogleSansWeight.bold),
-                color = Color.White,
-                textAlign = TextAlign.Center,
-            )
-
-            Spacer(modifier = Modifier.height(3.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Bolt,
-                    contentDescription = null,
-                    tint = activeAuraColor,
-                    modifier = Modifier.size(16.dp),
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = targetTier.powerImpact,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
-                    color = activeAuraColor,
-                    textAlign = TextAlign.Center,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            SupportSegmentedGauge(
-                segments = targetTier.energySegments,
-                activeColor = activeAuraColor,
-            )
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Position indicator bars stay static below item name & power impact text
+        SupportSegmentedGauge(
+            segments = currentTier.energySegments,
+            activeColor = currentTier.auraColor,
+        )
     }
 }
 
@@ -637,7 +659,7 @@ private fun SupportSegmentedGauge(
                 } else {
                     Color(0xFF1E1E26)
                 },
-                animationSpec = tween(250, easing = FastOutSlowInEasing),
+                animationSpec = tween(100, easing = FastOutSlowInEasing),
                 label = "gauge_segment",
             )
             Box(
