@@ -16,6 +16,7 @@ import cx.aswin.boxlore.core.network.BoxLoreApi
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.network.model.QueueItemSyncDto
 import cx.aswin.boxlore.core.network.model.QueueSyncDto
+import cx.aswin.boxlore.core.network.model.SyncDeleteAccountResponse
 import cx.aswin.boxlore.core.network.model.SyncPullRequest
 import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import cx.aswin.boxlore.core.network.model.SyncPushRequest
@@ -27,7 +28,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Timeout
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -58,6 +61,7 @@ class UserSyncCoordinatorTest {
 
     private var syncPushHandler: ((publicKey: String, auth: String?, request: SyncPushRequest) -> Call<SyncPushResponse>)? = null
     private var syncPullHandler: ((publicKey: String, auth: String?, request: SyncPullRequest) -> Call<SyncPullResponse>)? = null
+    private var deleteSyncAccountHandler: ((publicKey: String, auth: String?) -> Call<SyncDeleteAccountResponse>)? = null
 
     private lateinit var subscriptionSyncResolver: SubscriptionSyncResolver
     private lateinit var historySyncResolver: HistorySyncResolver
@@ -83,6 +87,7 @@ class UserSyncCoordinatorTest {
         fakeQueueSyncPort = FakeQueueSyncPort()
         syncPushHandler = null
         syncPullHandler = null
+        deleteSyncAccountHandler = null
 
         fakeBoxLoreApi = Proxy.newProxyInstance(
             BoxLoreApi::class.java.classLoader,
@@ -91,6 +96,7 @@ class UserSyncCoordinatorTest {
             when (method.name) {
                 "syncPush" -> syncPushHandler?.invoke(args[0] as String, args[1] as? String, args[2] as SyncPushRequest)
                 "syncPull" -> syncPullHandler?.invoke(args[0] as String, args[1] as? String, args[2] as SyncPullRequest)
+                "deleteSyncAccount" -> deleteSyncAccountHandler?.invoke(args[0] as String, args[1] as? String)
                 "hashCode" -> 42
                 "equals" -> false
                 "toString" -> "FakeBoxLoreApi"
@@ -900,5 +906,68 @@ class UserSyncCoordinatorTest {
         assertTrue(fakePlayback.stopAndClearActiveSessionCalled)
         assertEquals("account-b", prefs.getLastSyncedUserId())
         assertEquals(2000L, prefs.getLastSyncTimestamp())
+    }
+
+    @Test
+    fun deleteCloudSyncData_callsDeleteSyncAccountAndClearsPrefs() = runTest(testDispatcher) {
+        prefs.setLastSyncedUserId("test-user-123")
+        prefs.setLastSyncTimestamp(12345L)
+
+        var capturedPublicKey: String? = null
+        var capturedAuth: String? = null
+
+        deleteSyncAccountHandler = { pubKey, auth ->
+            capturedPublicKey = pubKey
+            capturedAuth = auth
+            FakeCall(Response.success(SyncDeleteAccountResponse(status = "ok")))
+        }
+
+        val result = coordinator.deleteCloudSyncData()
+        assertTrue(result.isSuccess)
+        assertEquals("test-public-key", capturedPublicKey)
+        assertEquals("Bearer mock-jwt-token", capturedAuth)
+        assertEquals(null, prefs.getLastSyncedUserId())
+        assertEquals(0L, prefs.getLastSyncTimestamp())
+    }
+
+    @Test
+    fun deleteCloudSyncData_treats404AsSuccessAndClearsPrefs() = runTest(testDispatcher) {
+        prefs.setLastSyncedUserId("test-user-123")
+        prefs.setLastSyncTimestamp(12345L)
+
+        deleteSyncAccountHandler = { _, _ ->
+            FakeCall(
+                Response.error(
+                    404,
+                    "{\"error\":\"Not Found\"}".toResponseBody("application/json".toMediaTypeOrNull()),
+                ),
+            )
+        }
+
+        val result = coordinator.deleteCloudSyncData()
+        assertTrue(result.isSuccess)
+        assertEquals(null, prefs.getLastSyncedUserId())
+        assertEquals(0L, prefs.getLastSyncTimestamp())
+    }
+
+    @Test
+    fun deleteCloudSyncData_serverErrorReturnsFailure() = runTest(testDispatcher) {
+        prefs.setLastSyncedUserId("test-user-123")
+        prefs.setLastSyncTimestamp(12345L)
+
+        deleteSyncAccountHandler = { _, _ ->
+            FakeCall(
+                Response.error(
+                    500,
+                    "{\"error\":\"Database connection failed\"}".toResponseBody("application/json".toMediaTypeOrNull()),
+                ),
+            )
+        }
+
+        val result = coordinator.deleteCloudSyncData()
+        assertTrue(result.isFailure)
+        // Ensure prefs are NOT wiped if the server deletion failed
+        assertEquals("test-user-123", prefs.getLastSyncedUserId())
+        assertEquals(12345L, prefs.getLastSyncTimestamp())
     }
 }
