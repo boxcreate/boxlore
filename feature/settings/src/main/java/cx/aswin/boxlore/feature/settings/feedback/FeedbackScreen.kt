@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,12 +27,14 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Launch
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -155,7 +158,6 @@ fun FeedbackScreen(
                 isLoading = uiState.isLoadingLogs,
                 diagnosticInfo = uiState.diagnosticInfo,
                 onShare = { shareFeedbackDiagnostics(context, uiState) },
-                onEmail = { sendFeedbackEmail(context, uiState) },
                 onDismissRequest = { feedbackViewModel.clearLogsPreview() },
             )
         }
@@ -521,35 +523,83 @@ private fun FeedbackDiagnosticsSection(
             }
 
             if (attachDiagnostics && diagnosticInfo != null) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "boxlore v${diagnosticInfo.appVersion} (${diagnosticInfo.buildCode}) • Android ${diagnosticInfo.androidRelease} (API ${diagnosticInfo.sdkInt})",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = "${diagnosticInfo.manufacturer} ${diagnosticInfo.model} • ${diagnosticInfo.networkType} • ${diagnosticInfo.audioRoute}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                OutlinedButton(
-                    onClick = onPreviewLogs,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Text("Preview & Export Logs")
-                }
+                DiagnosticsDetailsContent(
+                    diagnosticInfo = diagnosticInfo,
+                    onPreviewLogs = onPreviewLogs,
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticsDetailsContent(
+    diagnosticInfo: DiagnosticInfo,
+    onPreviewLogs: () -> Unit,
+) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "boxlore v${diagnosticInfo.appVersion} (${diagnosticInfo.buildCode}) • Android ${diagnosticInfo.androidRelease} (API ${diagnosticInfo.sdkInt})",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "${diagnosticInfo.manufacturer} ${diagnosticInfo.model} • ${diagnosticInfo.networkType} • ${diagnosticInfo.audioRoute}",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.CheckCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(15.dp),
+            )
+            Text(
+                text = "Included automatically with report",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        TextButton(
+            onClick = onPreviewLogs,
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Visibility,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "Preview logs",
+                style = MaterialTheme.typography.labelMedium,
+            )
         }
     }
 }

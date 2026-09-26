@@ -23,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,7 +50,6 @@ fun LogsPreviewDialog(
     isLoading: Boolean,
     diagnosticInfo: DiagnosticInfo?,
     onShare: () -> Unit,
-    onEmail: () -> Unit,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -82,7 +80,7 @@ fun LogsPreviewDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
-                    text = "Tokens and sensitive keys are automatically scrubbed.\nTip: Reproduce the issue first so relevant error logs appear.",
+                    text = "These diagnostics and logs are already included with your submission. Tokens and sensitive keys are scrubbed.\nTip: Reproduce the issue first so relevant error logs appear.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -92,7 +90,6 @@ fun LogsPreviewDialog(
                     diagnosticInfo = diagnosticInfo,
                     isLoading = isLoading,
                     onShare = onShare,
-                    onEmail = onEmail,
                 )
             }
         },
@@ -156,7 +153,6 @@ private fun LogsActionButtons(
     diagnosticInfo: DiagnosticInfo?,
     isLoading: Boolean,
     onShare: () -> Unit,
-    onEmail: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -176,29 +172,13 @@ private fun LogsActionButtons(
             },
             modifier = Modifier.weight(1f),
             enabled = isActionEnabled,
-            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
             shape = MaterialTheme.shapes.medium,
         ) {
             Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(6.dp))
             Text(
-                text = "Copy",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        OutlinedButton(
-            onClick = onEmail,
-            modifier = Modifier.weight(1f),
-            enabled = isActionEnabled,
-            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
-            shape = MaterialTheme.shapes.medium,
-        ) {
-            Icon(Icons.Rounded.Email, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
-            Text(
-                text = "Email",
+                text = "Copy text",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -208,13 +188,13 @@ private fun LogsActionButtons(
             onClick = onShare,
             modifier = Modifier.weight(1f),
             enabled = isActionEnabled,
-            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
             shape = MaterialTheme.shapes.medium,
         ) {
             Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(6.dp))
             Text(
-                text = "Share",
+                text = "Share text",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
