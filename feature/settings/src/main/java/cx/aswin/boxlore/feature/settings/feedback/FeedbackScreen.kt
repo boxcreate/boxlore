@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +26,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Launch
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.rounded.BugReport
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Headphones
@@ -125,11 +123,12 @@ fun FeedbackScreen(
     ) { paddingValues ->
         if (uiState.isSuccess) {
             FeedbackSuccessView(
+                uiState = uiState,
+                onDone = onBack,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(24.dp),
-                onDone = onBack,
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
             )
         } else {
             FeedbackFormView(
@@ -158,61 +157,6 @@ fun FeedbackScreen(
                 onEmail = { sendFeedbackEmail(context, uiState) },
                 onDismissRequest = { feedbackViewModel.clearLogsPreview() },
             )
-        }
-    }
-}
-
-@Composable
-private fun FeedbackSuccessView(
-    modifier: Modifier = Modifier,
-    onDone: () -> Unit,
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(72.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = "Sent — thank you!",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = GoogleSansWeight.semiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Your feedback helps shape boxlore. We read every submission.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            onClick = onDone,
-            modifier = Modifier.fillMaxWidth(0.6f),
-            shape = MaterialTheme.shapes.large,
-        ) {
-            Text("Done")
         }
     }
 }
