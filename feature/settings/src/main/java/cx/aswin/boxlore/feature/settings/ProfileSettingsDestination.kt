@@ -12,5 +12,5 @@ internal enum class ProfileSettingsDestination(
     Downloads("Downloads"),
     Privacy("Privacy"),
     About("About boxlore"),
-    Support("Support us"),
+    Support("Support boxlore"),
 }

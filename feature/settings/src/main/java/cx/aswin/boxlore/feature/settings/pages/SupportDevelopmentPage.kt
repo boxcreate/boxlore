@@ -235,7 +235,7 @@ private fun SupportTopAppBar(
     CenterAlignedTopAppBar(
         title = {
             Text(
-                text = "Support us",
+                text = "Support boxlore",
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = GoogleSansWeight.bold,
                     fontSize = 18.sp,

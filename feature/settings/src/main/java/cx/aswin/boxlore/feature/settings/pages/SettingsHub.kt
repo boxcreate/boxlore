@@ -41,12 +41,12 @@ internal fun SettingsHub(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Favorite,
-                    contentDescription = "Support development",
+                    contentDescription = "Support boxlore",
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Support us",
+                    text = "Support boxlore",
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
