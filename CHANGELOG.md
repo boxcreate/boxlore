@@ -9,22 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.27] - 2026-09-26
+
 ### Added
 - In-app feedback screen revamp with sticky draft persistence. ([#1087](https://github.com/boxcreate/boxlore/pull/1087)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - General stability optimizations and performance enhancements. ([#1087](https://github.com/boxcreate/boxlore/pull/1087)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 ### Fixed
 - Fixed critical bugs related to Google sign in not working and onboarding authentication flow ([#1086](https://github.com/boxcreate/boxlore/pull/1086)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 
-<!-- readme-copy:start pr=1086
-### Critical
-- Fixed critical bugs related to Google sign in not working and onboarding authentication flow
-readme-copy:end pr=1086 -->
-
-<!-- readme-copy:start pr=1087
-### Improvements
-- In-app feedback screen revamp with automatic draft recovery.
-- General stability optimizations and performance enhancements.
-readme-copy:end pr=1087 -->
 ## [v0.0.26] - 2026-09-25
 
 ### Added
