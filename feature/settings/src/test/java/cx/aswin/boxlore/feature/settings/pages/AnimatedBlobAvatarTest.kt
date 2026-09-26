@@ -155,6 +155,7 @@ class AnimatedBlobAvatarTest {
         for (mood in moods) {
             assertTrue("Mood ID must not be blank", mood.id.isNotBlank())
             assertTrue("Display name must not be blank", mood.displayName.isNotBlank())
+            assertTrue("Emoji must not be blank", mood.emoji.isNotBlank())
             val nextMood = BlobAvatarGenreMood.next(mood)
             assertTrue("Next mood must be valid", moods.contains(nextMood))
         }
@@ -165,5 +166,18 @@ class AnimatedBlobAvatarTest {
             current = BlobAvatarGenreMood.next(current)
         }
         assertEquals("Full cycle must return to start", moods.first(), current)
+    }
+
+    @Test
+    fun blobAvatar_moodAccessoriesAndEnvironments_areUniqueAndConfigured() {
+        val moods = BlobAvatarGenreMood.entries
+        val accessories = moods.map { it.accessoryType }.toSet()
+        val environments = moods.map { it.environmentType }.toSet()
+
+        assertEquals("Each of the 7 moods must have a unique accessory", 7, accessories.size)
+        assertEquals("Each of the 7 moods must have a unique environment backdrop", 7, environments.size)
+
+        assertEquals(7, BlobAvatarGenreMood.AccessoryType.entries.size)
+        assertEquals(7, BlobAvatarGenreMood.EnvironmentType.entries.size)
     }
 }
