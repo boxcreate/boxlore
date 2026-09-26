@@ -183,9 +183,12 @@ class AnimatedBlobAvatarTest {
 
     @Test
     fun blobAvatar_randomMood_avoidsConsecutiveDuplicates() {
-        var lastMood = BlobAvatarGenreMood.random()
-        repeat(20) {
-            val nextMood = BlobAvatarGenreMood.random()
+        var lastMood = BlobAvatarGenreMood.random(random = kotlin.random.Random(42))
+        repeat(20) { index ->
+            val nextMood = BlobAvatarGenreMood.random(
+                exclude = lastMood,
+                random = kotlin.random.Random(42 + index),
+            )
             org.junit.Assert.assertNotEquals(
                 "Consecutive random moods must not duplicate",
                 lastMood,

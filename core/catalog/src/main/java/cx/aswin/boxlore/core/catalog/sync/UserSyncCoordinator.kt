@@ -458,7 +458,7 @@ open class UserSyncCoordinator(
                 if (userId.isNullOrBlank()) {
                     return@runCatching
                 }
-                val token = tokenProvider() ?: return@runCatching
+                val token = tokenProvider() ?: error("Missing authentication token for cloud sync data deletion")
                 val call = requireBoxLoreApi.deleteSyncAccount(
                     publicKey = publicKey,
                     authorization = "Bearer $token",

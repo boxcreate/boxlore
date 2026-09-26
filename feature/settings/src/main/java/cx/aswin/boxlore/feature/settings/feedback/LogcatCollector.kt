@@ -19,8 +19,8 @@ object LogcatCollector {
     private const val SCRUBBED_API_HOST = "api.boxlore.app"
     private const val SCRUBBED_APP_KEY_LABEL = "public key"
 
-    private val BEARER_AUTH_PATTERN = Pattern.compile(
-        """(?i)(["']?authorization["']?\s*:\s*)?Bearer\s+([a-z0-9\-_./+=]{6,})""",
+    private val AUTH_HEADER_PATTERN = Pattern.compile(
+        """(?i)(["']?authorization["']?\s*:\s*)?(Bearer|Basic)\s+([a-z0-9\-_./+=]{4,})""",
     )
 
     private val FIREBASE_API_KEY_PATTERN = Pattern.compile(
@@ -41,7 +41,7 @@ object LogcatCollector {
     )
 
     private val SENSITIVE_KEY_VALUE_PATTERN = Pattern.compile(
-        """(?i)(["']?(?:authorization|token|secret|password|(?:api|app)[-_]?key)["']?\s*[:=]\s*["']?)(?!Bearer|\[REDACTED)([^"'\s,;&?]{6,})(["']?)""",
+        """(?i)(["']?[a-z0-9_]*(?:auth|token|secret|password|key)["']?\s*[:=]\s*["']?)([^"'\s,;&?\[]{6,})(["']?)""",
     )
 
     private val EMAIL_ADDRESS_PATTERN = Pattern.compile(
@@ -133,7 +133,7 @@ object LogcatCollector {
         }
 
         sanitized = URL_QUERY_PARAM_PATTERN.matcher(sanitized).replaceAll("$1[REDACTED]")
-        sanitized = BEARER_AUTH_PATTERN.matcher(sanitized).replaceAll("$1Bearer [REDACTED]")
+        sanitized = AUTH_HEADER_PATTERN.matcher(sanitized).replaceAll("$1$2 [REDACTED]")
         sanitized = FIREBASE_API_KEY_PATTERN.matcher(sanitized).replaceAll("[REDACTED_API_KEY]")
         sanitized = X_APP_KEY_VALUE_PATTERN.matcher(sanitized).replaceAll("$SCRUBBED_APP_KEY_LABEL: [REDACTED]")
         sanitized = X_APP_KEY_NAME_PATTERN.matcher(sanitized).replaceAll(SCRUBBED_APP_KEY_LABEL)

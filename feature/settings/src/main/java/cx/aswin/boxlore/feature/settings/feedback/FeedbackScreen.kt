@@ -190,12 +190,14 @@ private fun FeedbackFormView(
         FeedbackMessageInput(
             category = uiState.category,
             message = uiState.message,
+            enabled = !uiState.isSubmitting,
             onMessageChanged = { viewModel.onMessageChanged(it) },
         )
 
         if (uiState.category.isBugReport) {
             FeedbackStepsInput(
                 steps = uiState.stepsToReproduce,
+                enabled = !uiState.isSubmitting,
                 onStepsChanged = { viewModel.onStepsChanged(it) },
             )
         }
@@ -203,6 +205,7 @@ private fun FeedbackFormView(
         FeedbackEmailInput(
             category = uiState.category,
             email = uiState.email,
+            enabled = !uiState.isSubmitting,
             onEmailChanged = { viewModel.onEmailChanged(it) },
         )
 
@@ -335,12 +338,14 @@ private fun FeedbackCategorySelector(
 private fun FeedbackMessageInput(
     category: FeedbackCategory,
     message: String,
+    enabled: Boolean = true,
     onMessageChanged: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         OutlinedTextField(
             value = message,
             onValueChange = onMessageChanged,
+            enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(150.dp),
@@ -372,6 +377,7 @@ private fun FeedbackMessageInput(
 @Composable
 private fun FeedbackStepsInput(
     steps: String,
+    enabled: Boolean = true,
     onStepsChanged: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -409,6 +415,7 @@ private fun FeedbackStepsInput(
         OutlinedTextField(
             value = steps,
             onValueChange = onStepsChanged,
+            enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(100.dp),
@@ -442,6 +449,7 @@ private fun getEmailSupportingText(category: FeedbackCategory): String = when (c
 private fun FeedbackEmailInput(
     category: FeedbackCategory,
     email: String,
+    enabled: Boolean = true,
     onEmailChanged: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -455,6 +463,7 @@ private fun FeedbackEmailInput(
         OutlinedTextField(
             value = email,
             onValueChange = onEmailChanged,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(

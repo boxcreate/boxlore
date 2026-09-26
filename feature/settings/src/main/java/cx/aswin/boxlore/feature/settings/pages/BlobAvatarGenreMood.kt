@@ -119,26 +119,23 @@ internal enum class BlobAvatarGenreMood(
     }
 
     companion object {
-        private var lastShownMood: BlobAvatarGenreMood? = null
-
-        fun random(random: Random = Random): BlobAvatarGenreMood {
+        fun random(
+            exclude: BlobAvatarGenreMood? = null,
+            random: Random = Random,
+        ): BlobAvatarGenreMood {
             val all = entries
-            val candidates = if (all.size > 1 && lastShownMood != null) {
-                all.filter { it != lastShownMood }
+            val candidates = if (all.size > 1 && exclude != null) {
+                all.filter { it != exclude }
             } else {
                 all
             }
-            val chosen = candidates[random.nextInt(candidates.size)]
-            lastShownMood = chosen
-            return chosen
+            return candidates[random.nextInt(candidates.size)]
         }
 
         fun next(current: BlobAvatarGenreMood): BlobAvatarGenreMood {
             val all = entries
             val nextIndex = (current.ordinal + 1) % all.size
-            val nextMood = all[nextIndex]
-            lastShownMood = nextMood
-            return nextMood
+            return all[nextIndex]
         }
     }
 }

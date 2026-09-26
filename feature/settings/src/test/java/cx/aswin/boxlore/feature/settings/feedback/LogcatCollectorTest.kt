@@ -17,6 +17,15 @@ class LogcatCollectorTest {
     }
 
     @Test
+    fun `sanitizeLogcatOutput scrubs sensitive basic auth credentials`() {
+        val raw = "12-10 10:20:30.123 1000 1000 D OkHttp: Authorization: Basic dXNlcjpwYXNz"
+        val sanitized = LogcatCollector.sanitizeLogcatOutput(raw)
+
+        assertFalse(sanitized.contains("dXNlcjpwYXNz"))
+        assertTrue(sanitized.contains("Basic [REDACTED]"))
+    }
+
+    @Test
     fun `sanitizeLogcatOutput scrubs Firebase API keys`() {
         val fakeKey = "AIza" + "SyD1234567890abcdefghijklmnopqrstuv"
         val raw = "Loaded Firebase options with key $fakeKey"

@@ -117,24 +117,32 @@ private fun resolveSyncVisual(
     }
 }
 
+internal fun resolveSyncBadgeText(syncStatus: CloudSyncUiStatus): String = when {
+    syncStatus is CloudSyncUiStatus.Error -> "Sync issue"
+    syncStatus is CloudSyncUiStatus.Syncing -> "Syncing..."
+    else -> "Cloud sync active"
+}
+
+internal fun resolveCloudSyncSubtitle(accountStatus: String?): String =
+    if (accountStatus != null) {
+        "Signed in as $accountStatus"
+    } else {
+        "Sign in to backup and sync across devices"
+    }
+
 @Composable
 private fun SyncStatusBadge(
     syncStatus: CloudSyncUiStatus,
     modifier: Modifier = Modifier,
 ) {
     val isSyncError = syncStatus is CloudSyncUiStatus.Error
-    val isSyncing = syncStatus is CloudSyncUiStatus.Syncing
 
     val statusDotColor = if (isSyncError) {
         MaterialTheme.colorScheme.error
     } else {
         MaterialTheme.colorScheme.primary
     }
-    val statusText = when {
-        isSyncError -> "Sync issue"
-        isSyncing -> "Syncing..."
-        else -> "Cloud sync active"
-    }
+    val statusText = resolveSyncBadgeText(syncStatus)
 
     Row(
         modifier = modifier,
@@ -203,11 +211,7 @@ private fun CloudSyncCard(
             )
 
             Text(
-                text = if (isSignedIn) {
-                    "Signed in as $accountStatus"
-                } else {
-                    "Sign in to backup and sync across devices"
-                },
+                text = resolveCloudSyncSubtitle(accountStatus),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

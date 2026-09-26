@@ -275,20 +275,27 @@ private fun buildFullFeedbackMessage(
     state: FeedbackUiState,
     trimmedMessage: String,
     diagnosticsInfo: DiagnosticInfo,
-): String = buildString {
-    if (state.category == FeedbackCategory.AUDIO) {
-        append("[Category: Audio / Stream Issue]\n\n")
+): String {
+    val prefix = if (state.category == FeedbackCategory.AUDIO) {
+        "[Category: Audio / Stream Issue]\n\n"
+    } else {
+        ""
     }
-    append(trimmedMessage)
-    if (state.stepsToReproduce.isNotBlank()) {
-        append("\n\nSteps to reproduce:\n")
-        append(state.stepsToReproduce.trim())
+    val steps = if (state.category.isBugReport && state.stepsToReproduce.isNotBlank()) {
+        "\n\nSteps to reproduce:\n${state.stepsToReproduce.trim()}"
+    } else {
+        ""
     }
-    if (state.attachDiagnostics) {
-        append("\n\n---\nDiagnostics: ")
-        append(diagnosticsInfo.toCondensedSummary())
+    val diagnostics = if (state.attachDiagnostics) {
+        "\n\n---\nDiagnostics: ${diagnosticsInfo.toCondensedSummary()}"
+    } else {
+        ""
     }
-}.take(2000)
+    val overhead = prefix.length + steps.length + diagnostics.length
+    val availableForMessage = (2000 - overhead).coerceAtLeast(100)
+    val cappedMessage = trimmedMessage.take(availableForMessage)
+    return "$prefix$cappedMessage$steps$diagnostics".take(2000)
+}
 
 fun buildFeedbackGitHubIssueUrl(state: FeedbackUiState): String {
     val title = "[${state.category.label}]: " + state.message.take(60).replace("\n", " ").trim()
@@ -296,7 +303,7 @@ fun buildFeedbackGitHubIssueUrl(state: FeedbackUiState): String {
         append("### Description\n")
         append(state.message.ifBlank { "Describe the issue or feature request here." })
         append("\n\n")
-        if (state.stepsToReproduce.isNotBlank()) {
+        if (state.category.isBugReport && state.stepsToReproduce.isNotBlank()) {
             append("### Steps to Reproduce\n")
             append(state.stepsToReproduce)
             append("\n\n")

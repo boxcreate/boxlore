@@ -128,7 +128,7 @@ class FirebaseAuthRepository(
             "recent-login",
             "requires-recent-login",
             "credential_too_old",
-            "401",
+            "ERROR_REQUIRES_RECENT_LOGIN",
         )
     }
 }

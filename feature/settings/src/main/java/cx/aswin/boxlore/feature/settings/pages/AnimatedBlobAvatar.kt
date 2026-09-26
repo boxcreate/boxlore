@@ -12,7 +12,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -23,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,11 +39,14 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.sin
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -235,11 +240,7 @@ internal fun resolveAvatarPalette(
         Color(0xFFF8FAFC)
     }
 
-    val bodyShadow = if (isDark) {
-        Color(0xFFCBD5E1)
-    } else {
-        Color(0xFFCBD5E1)
-    }
+    val bodyShadow = Color(0xFFCBD5E1)
 
     val bodyOutline = if (isDark) {
         Color.White.copy(alpha = 0.18f)
@@ -298,7 +299,7 @@ internal fun AnimatedBlobAvatar(
     val animState = rememberBlobAvatarAnimationState()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
-    var activeMood by remember {
+    var activeMood by rememberSaveable {
         mutableStateOf(initialMood ?: BlobAvatarGenreMood.random())
     }
 
@@ -308,11 +309,11 @@ internal fun AnimatedBlobAvatar(
 
     val squishScaleY = remember { Animatable(1f) }
     var isWinking by remember { mutableStateOf(false) }
+    var winkJob by remember { mutableStateOf<Job?>(null) }
 
     val onTapAvatar = {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         activeMood = BlobAvatarGenreMood.next(activeMood)
-        isWinking = true
         coroutineScope.launch {
             squishScaleY.snapTo(0.80f)
             squishScaleY.animateTo(
@@ -323,7 +324,9 @@ internal fun AnimatedBlobAvatar(
                 ),
             )
         }
-        coroutineScope.launch {
+        winkJob?.cancel()
+        winkJob = coroutineScope.launch {
+            isWinking = true
             delay(650)
             isWinking = false
         }
@@ -347,8 +350,15 @@ internal fun AnimatedBlobAvatar(
     Box(
         modifier = modifier
             .size(size)
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { onTapAvatar() })
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClickLabel = "Cycle avatar mood",
+                onClick = onTapAvatar,
+            )
+            .semantics {
+                contentDescription = "Avatar mood: ${activeMood.displayName}"
             },
         contentAlignment = Alignment.Center,
     ) {

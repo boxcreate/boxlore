@@ -308,7 +308,6 @@ private fun androidx.navigation.NavGraphBuilder.addDownloadSettingsRoutes(w: Nav
 private fun androidx.navigation.NavGraphBuilder.addFeedbackRoute(w: NavGraphWiring) {
     val navController = w.navController
     val container = w.container
-    val application = w.application
 
     composable("feedback") {
         cx.aswin.boxlore.feature.settings.feedback.FeedbackScreen(

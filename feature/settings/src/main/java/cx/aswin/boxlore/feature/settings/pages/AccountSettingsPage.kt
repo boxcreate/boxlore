@@ -103,11 +103,17 @@ private fun openAccountDeletionInfo(context: Context, uriHandler: UriHandler) {
         true
     }.getOrDefault(false)
     if (!opened) {
-        runCatching {
+        val fallbackOpened = runCatching {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ACCOUNT_DELETION_URL)).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
+            true
+        }.getOrDefault(false)
+        if (!fallbackOpened) {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Account Deletion URL", ACCOUNT_DELETION_URL))
+            android.widget.Toast.makeText(context, "Link copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 }
