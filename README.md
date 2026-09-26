@@ -20,7 +20,7 @@ and listen without paywalls, subscriptions, or ads.
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.26.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.27.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
 &nbsp;&nbsp;
 <!-- download-obtainium:start -->
@@ -122,6 +122,15 @@ and listen without paywalls, subscriptions, or ads.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.27` · 2026-09-26
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.27 date=2026-09-26 -->
 <b>🚨 Critical:</b>
 <ul align="left">
 <li>Fixed critical bugs related to Google sign in not working and onboarding authentication flow <a href="https://github.com/boxcreate/boxlore/pull/1086"><img src="https://img.shields.io/badge/PR-1086-6750A4?style=flat-square" alt="PR #1086" height="18"/></a></li>
@@ -130,26 +139,6 @@ and listen without paywalls, subscriptions, or ads.
 <ul align="left">
 <li>In-app feedback screen revamp with automatic draft recovery. <a href="https://github.com/boxcreate/boxlore/pull/1087"><img src="https://img.shields.io/badge/PR-1087-6750A4?style=flat-square" alt="PR #1087" height="18"/></a></li>
 <li>General stability optimizations and performance enhancements. <a href="https://github.com/boxcreate/boxlore/pull/1087"><img src="https://img.shields.io/badge/PR-1087-6750A4?style=flat-square" alt="PR #1087" height="18"/></a></li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.26` · 2026-09-25
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.26 date=2026-09-25 -->
-<b>🆕 New features & Cloud Sync:</b>
-<ul align="left">
-<li><b>**Realtime Cloud Sync**</b>: Keep subscriptions, playback progress, and queues in sync across your devices with conflict-resolved multi-device synchronization. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
-<li><b>**Secure Accounts & Email Verification**</b>: Sign up with email and password featuring verified inbox confirmation, or sign in instantly with Google. <a href="https://github.com/boxcreate/boxlore/pull/1084"><img src="https://img.shields.io/badge/PR-1084-6750A4?style=flat-square" alt="PR #1084" height="18"/></a></li>
-<li><b>**Instant Playback Handoff**</b>: Pause an episode on your phone and resume listening seamlessly right where you left off on another device. <a href="https://github.com/boxcreate/boxlore/pull/1082"><img src="https://img.shields.io/badge/PR-1082-6750A4?style=flat-square" alt="PR #1082" height="18"/></a></li>
-<li><b>**Onboarding & Import Sync**</b>: Connect your account directly from welcome onboarding or library import sheets to restore shows immediately. <a href="https://github.com/boxcreate/boxlore/pull/1084"><img src="https://img.shields.io/badge/PR-1084-6750A4?style=flat-square" alt="PR #1084" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements & Polish:</b>
-<ul align="left">
-<li><b>**Modular Architecture**</b>: Decoupled settings, listening history, and auth into dedicated, focused feature and core modules. <a href="https://github.com/boxcreate/boxlore/pull/1083"><img src="https://img.shields.io/badge/PR-1083-6750A4?style=flat-square" alt="PR #1083" height="18"/></a></li>
-<li><b>**Library & Import Polish**</b>: Wider import option cards, responsive dialog dismissals, and enhanced account sync controls. <a href="https://github.com/boxcreate/boxlore/pull/1084"><img src="https://img.shields.io/badge/PR-1084-6750A4?style=flat-square" alt="PR #1084" height="18"/></a></li>
-<li><b>**Notice on Upcoming Fixes**</b>: We apologize that a few promised bug fixes couldn't make this build—they are queued and will ship in an update by next weekend!</li>
 </ul>
 <!-- release-whats-new:end -->
 

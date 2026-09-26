@@ -54,8 +54,8 @@ android {
         applicationId = "cx.aswin.boxlore"
         minSdk = 31
         targetSdk = 36
-        versionCode = 26
-        versionName = "0.0.26"
+        versionCode = 27
+        versionName = "0.0.27"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
