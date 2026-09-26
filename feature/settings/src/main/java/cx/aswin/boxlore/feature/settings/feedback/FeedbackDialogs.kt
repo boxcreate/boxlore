@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +47,7 @@ fun LogsPreviewDialog(
     isLoading: Boolean,
     diagnosticInfo: DiagnosticInfo?,
     onShare: () -> Unit,
+    onEmail: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     AlertDialog(
@@ -70,7 +72,7 @@ fun LogsPreviewDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = "Tokens, keys, and private credentials are automatically scrubbed.",
+                    text = "Tokens and sensitive keys are automatically scrubbed.\nTip: Reproduce the issue first so relevant error logs appear.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -82,6 +84,7 @@ fun LogsPreviewDialog(
                 logs = logs,
                 diagnosticInfo = diagnosticInfo,
                 onShare = onShare,
+                onEmail = onEmail,
             )
         },
         dismissButton = {
@@ -143,11 +146,12 @@ private fun LogsActionButtons(
     logs: String?,
     diagnosticInfo: DiagnosticInfo?,
     onShare: () -> Unit,
+    onEmail: () -> Unit,
 ) {
     val context = LocalContext.current
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedButton(
@@ -162,6 +166,15 @@ private fun LogsActionButtons(
             Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(4.dp))
             Text("Copy")
+        }
+
+        OutlinedButton(
+            onClick = onEmail,
+            shape = MaterialTheme.shapes.medium,
+        ) {
+            Icon(Icons.Rounded.Email, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Email")
         }
 
         FilledTonalButton(

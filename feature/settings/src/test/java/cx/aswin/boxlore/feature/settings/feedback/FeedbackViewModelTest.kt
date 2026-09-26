@@ -204,9 +204,37 @@ class FeedbackViewModelTest {
         vm.onMessageChanged("Crash when clicking download button")
         vm.onStepsChanged("1. Tap download\n2. Observe crash")
 
-        val url = vm.buildGitHubIssueUrl()
+        val url = buildFeedbackGitHubIssueUrl(vm.uiState.value)
         assertTrue(url.startsWith("https://github.com/boxcreate/boxlore/issues/new?title="))
         assertTrue(url.contains("Crash"))
         assertTrue(url.contains("body="))
+    }
+
+    @Test
+    fun category_selection_toggles_attachDiagnostics_default_for_bug_reports() {
+        val vm = FeedbackViewModel(dummyPodcastRepository, prefs, context)
+        // Default category is FEATURE -> attachDiagnostics should be false
+        assertEquals(FeedbackCategory.FEATURE, vm.uiState.value.category)
+        assertFalse(vm.uiState.value.attachDiagnostics)
+
+        // Switching to BUG should default attachDiagnostics to true
+        vm.onCategorySelected(FeedbackCategory.BUG)
+        assertEquals(FeedbackCategory.BUG, vm.uiState.value.category)
+        assertTrue(vm.uiState.value.attachDiagnostics)
+
+        // Switching to AUDIO should keep attachDiagnostics true
+        vm.onCategorySelected(FeedbackCategory.AUDIO)
+        assertEquals(FeedbackCategory.AUDIO, vm.uiState.value.category)
+        assertTrue(vm.uiState.value.attachDiagnostics)
+
+        // Switching back to FEATURE should set attachDiagnostics to false
+        vm.onCategorySelected(FeedbackCategory.FEATURE)
+        assertEquals(FeedbackCategory.FEATURE, vm.uiState.value.category)
+        assertFalse(vm.uiState.value.attachDiagnostics)
+
+        // Switching to OTHER should set attachDiagnostics to false
+        vm.onCategorySelected(FeedbackCategory.OTHER)
+        assertEquals(FeedbackCategory.OTHER, vm.uiState.value.category)
+        assertFalse(vm.uiState.value.attachDiagnostics)
     }
 }

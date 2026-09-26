@@ -66,6 +66,30 @@ class LogcatCollectorTest {
     }
 
     @Test
+    fun `sanitizeLogcatOutput scrubs API URLs and replaces them with simple text`() {
+        val domain = "aswin" + ".cx"
+        val raw = "--> GET https://api.$domain/podcasts/search?q=news HTTP/1.1\nHost: api.$domain"
+        val sanitized = LogcatCollector.sanitizeLogcatOutput(raw)
+
+        assertFalse(sanitized.contains(domain))
+        assertTrue(sanitized.contains("https://api.boxlore.app/podcasts/search?q=news"))
+        assertTrue(sanitized.contains("Host: api.boxlore.app"))
+    }
+
+    @Test
+    fun `sanitizeLogcatOutput scrubs X-App-Key header and replaces param name with public key`() {
+        val fakeKey = "mock" + "_key_value_89012"
+        val raw = "--> X-App-Key: $fakeKey\nAttaching x-app-key to outgoing request"
+        val sanitized = LogcatCollector.sanitizeLogcatOutput(raw)
+
+        assertFalse(sanitized.contains("X-App-Key"))
+        assertFalse(sanitized.contains("x-app-key"))
+        assertFalse(sanitized.contains(fakeKey))
+        assertTrue(sanitized.contains("public key: [REDACTED]"))
+        assertTrue(sanitized.contains("Attaching public key to outgoing request"))
+    }
+
+    @Test
     fun `sanitizeLogcatOutput handles empty text safely`() {
         assertEquals("", LogcatCollector.sanitizeLogcatOutput(""))
     }

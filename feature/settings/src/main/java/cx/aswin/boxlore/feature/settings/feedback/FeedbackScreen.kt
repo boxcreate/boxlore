@@ -69,6 +69,8 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 
+private val FEEDBACK_CONTENT_BOTTOM_PADDING = 240.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedbackScreen(
@@ -135,7 +137,12 @@ fun FeedbackScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(
+                        start = 20.dp,
+                        top = 12.dp,
+                        end = 20.dp,
+                        bottom = FEEDBACK_CONTENT_BOTTOM_PADDING,
+                    ),
                 uiState = uiState,
                 viewModel = feedbackViewModel,
                 context = context,
@@ -147,7 +154,8 @@ fun FeedbackScreen(
                 logs = uiState.logsPreview,
                 isLoading = uiState.isLoadingLogs,
                 diagnosticInfo = uiState.diagnosticInfo,
-                onShare = { feedbackViewModel.shareDiagnosticsReport(context) },
+                onShare = { shareFeedbackDiagnostics(context, uiState) },
+                onEmail = { sendFeedbackEmail(context, uiState) },
                 onDismissRequest = { feedbackViewModel.clearLogsPreview() },
             )
         }
@@ -237,7 +245,7 @@ private fun FeedbackFormView(
             onMessageChanged = { viewModel.onMessageChanged(it) },
         )
 
-        if (uiState.category == FeedbackCategory.BUG || uiState.category == FeedbackCategory.AUDIO) {
+        if (uiState.category.isBugReport) {
             FeedbackStepsInput(
                 steps = uiState.stepsToReproduce,
                 onStepsChanged = { viewModel.onStepsChanged(it) },
@@ -257,7 +265,7 @@ private fun FeedbackFormView(
         )
 
         FeedbackCommunityRow(
-            gitHubUrl = viewModel.buildGitHubIssueUrl(),
+            gitHubUrl = buildFeedbackGitHubIssueUrl(uiState),
             context = context,
         )
 
@@ -268,7 +276,7 @@ private fun FeedbackFormView(
             onSubmit = { viewModel.onSubmit() },
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -417,13 +425,37 @@ private fun FeedbackStepsInput(
     steps: String,
     onStepsChanged: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = "Steps to Reproduce (Optional)",
             style = MaterialTheme.typography.labelLarge,
             fontWeight = GoogleSansWeight.medium,
             color = MaterialTheme.colorScheme.onSurface,
         )
+
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Lightbulb,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = "Tip: Reproduce the issue right before sending so recent logs capture the error.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
         OutlinedTextField(
             value = steps,

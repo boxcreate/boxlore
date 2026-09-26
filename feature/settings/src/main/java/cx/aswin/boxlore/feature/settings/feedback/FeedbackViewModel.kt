@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.settings.feedback
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -28,12 +29,15 @@ enum class FeedbackCategory(
     OTHER("other", "General", "Tell us what's on your mind..."),
 }
 
+val FeedbackCategory.isBugReport: Boolean
+    get() = this == FeedbackCategory.BUG || this == FeedbackCategory.AUDIO
+
 data class FeedbackUiState(
     val category: FeedbackCategory = FeedbackCategory.FEATURE,
     val message: String = "",
     val stepsToReproduce: String = "",
     val email: String = "",
-    val attachDiagnostics: Boolean = true,
+    val attachDiagnostics: Boolean = false,
     val isDraftRestored: Boolean = false,
     val isSubmitting: Boolean = false,
     val isSuccess: Boolean = false,
@@ -84,7 +88,13 @@ class FeedbackViewModel(
     }
 
     fun onCategorySelected(category: FeedbackCategory) {
-        _uiState.update { it.copy(category = category, errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                category = category,
+                attachDiagnostics = category.isBugReport,
+                errorMessage = null,
+            )
+        }
         saveCurrentDraft()
     }
 
@@ -121,6 +131,7 @@ class FeedbackViewModel(
                 category = FeedbackCategory.FEATURE,
                 message = "",
                 stepsToReproduce = "",
+                attachDiagnostics = false,
                 isDraftRestored = false,
                 errorMessage = null,
             )
@@ -147,7 +158,7 @@ class FeedbackViewModel(
         _uiState.update { it.copy(isLoadingLogs = true) }
         viewModelScope.launch {
             val logs = withContext(Dispatchers.IO) {
-                LogcatCollector.collectSanitizedLogcat(maxLines = 150)
+                LogcatCollector.collectSanitizedLogcat(context = context, maxLines = 150)
             }
             _uiState.update {
                 it.copy(
@@ -228,48 +239,6 @@ class FeedbackViewModel(
         }
     }
 
-    fun buildGitHubIssueUrl(): String {
-        val state = _uiState.value
-        val title = "[${state.category.label}]: " + state.message.take(60).replace("\n", " ").trim()
-        val body = buildString {
-            append("### Description\n")
-            append(state.message.ifBlank { "Describe the issue or feature request here." })
-            append("\n\n")
-            if (state.stepsToReproduce.isNotBlank()) {
-                append("### Steps to Reproduce\n")
-                append(state.stepsToReproduce)
-                append("\n\n")
-            }
-            if (state.diagnosticInfo != null) {
-                append(state.diagnosticInfo.toMarkdownReport(state.logsPreview))
-            }
-        }
-
-        return try {
-            "https://github.com/boxcreate/boxlore/issues/new?title=" +
-                URLEncoder.encode(title, "UTF-8") +
-                "&body=" +
-                URLEncoder.encode(body, "UTF-8")
-        } catch (_: Exception) {
-            "https://github.com/boxcreate/boxlore/issues/new"
-        }
-    }
-
-    fun shareDiagnosticsReport(context: Context) {
-        val state = _uiState.value
-        val report = state.diagnosticInfo?.toMarkdownReport(state.logsPreview)
-            ?: "No diagnostics available."
-
-        val sendIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "boxlore Diagnostics & Logs")
-            putExtra(Intent.EXTRA_TEXT, report)
-        }
-        val shareIntent = Intent.createChooser(sendIntent, "Share Diagnostics & Logs")
-        shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(shareIntent)
-    }
-
     class Factory(
         private val podcastRepository: PodcastRepository,
         private val boxcastPrefs: BoxcastPrefs,
@@ -277,5 +246,77 @@ class FeedbackViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T = FeedbackViewModel(podcastRepository, boxcastPrefs, context) as T
+    }
+}
+
+fun buildFeedbackGitHubIssueUrl(state: FeedbackUiState): String {
+    val title = "[${state.category.label}]: " + state.message.take(60).replace("\n", " ").trim()
+    val body = buildString {
+        append("### Description\n")
+        append(state.message.ifBlank { "Describe the issue or feature request here." })
+        append("\n\n")
+        if (state.stepsToReproduce.isNotBlank()) {
+            append("### Steps to Reproduce\n")
+            append(state.stepsToReproduce)
+            append("\n\n")
+        }
+        if (state.diagnosticInfo != null) {
+            append(state.diagnosticInfo.toMarkdownReport(state.logsPreview))
+        }
+    }
+
+    return try {
+        "https://github.com/boxcreate/boxlore/issues/new?title=" +
+            URLEncoder.encode(title, "UTF-8") +
+            "&body=" +
+            URLEncoder.encode(body, "UTF-8")
+    } catch (_: Exception) {
+        "https://github.com/boxcreate/boxlore/issues/new"
+    }
+}
+
+fun shareFeedbackDiagnostics(context: Context, state: FeedbackUiState) {
+    val report = state.diagnosticInfo?.toMarkdownReport(state.logsPreview)
+        ?: "No diagnostics available."
+
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, "boxlore Diagnostics & Logs")
+        putExtra(Intent.EXTRA_TEXT, report)
+    }
+    val shareIntent = Intent.createChooser(sendIntent, "Share Diagnostics & Logs")
+    shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(shareIntent)
+}
+
+fun sendFeedbackEmail(context: Context, state: FeedbackUiState) {
+    val report = buildString {
+        if (state.message.isNotBlank()) {
+            append("Message:\n")
+            append(state.message.trim())
+            append("\n\n")
+        }
+        if (state.stepsToReproduce.isNotBlank()) {
+            append("Steps to reproduce:\n")
+            append(state.stepsToReproduce.trim())
+            append("\n\n")
+        }
+        append(state.diagnosticInfo?.toMarkdownReport(state.logsPreview) ?: "No diagnostics available.")
+    }
+
+    val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+        data = Uri.parse("mailto:feedback@aswin.cx")
+        putExtra(
+            Intent.EXTRA_SUBJECT,
+            "[boxlore] ${state.category.label} & Diagnostics (v${state.diagnosticInfo?.appVersion ?: ""})",
+        )
+        putExtra(Intent.EXTRA_TEXT, report)
+    }
+    try {
+        val chooser = Intent.createChooser(emailIntent, "Send feedback email")
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(chooser)
+    } catch (_: Exception) {
+        shareFeedbackDiagnostics(context, state)
     }
 }
