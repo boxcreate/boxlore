@@ -62,4 +62,64 @@ class BottomNavPresentationTest {
     fun shouldShowBottomNav_whenNullRoute_returnsFalse() {
         assertFalse(shouldShowBottomNav(onboardingCompleted = true, currentRoute = null, isFromOnboarding = false))
     }
+
+    @Test
+    fun resolveIsFromOnboarding_returnsTrueOnlyWhenOnboardingActiveAndNotHomeBanner() {
+        assertTrue(resolveIsFromOnboarding(onboardingCompleted = false, opmlImportSource = "welcome_screen"))
+        assertTrue(resolveIsFromOnboarding(onboardingCompleted = false, opmlImportSource = "welcome_import_button"))
+        assertFalse(resolveIsFromOnboarding(onboardingCompleted = false, opmlImportSource = "home_import_banner"))
+        assertFalse(resolveIsFromOnboarding(onboardingCompleted = true, opmlImportSource = "welcome_screen"))
+        assertFalse(resolveIsFromOnboarding(onboardingCompleted = true, opmlImportSource = "home_import_banner"))
+    }
+
+    @Test
+    fun handleSettingsOnBack_whenFromOnboardingAndUserVerified_completesOnboardingAndNavigatesHome() {
+        var onCompletedCalled = false
+        var silentMarkCalled = false
+        var navigateHomeCalled = false
+        var popBackStackCalled = false
+
+        handleSettingsOnBack(
+            isFromOnboarding = true,
+            isUserVerified = true,
+            onOnboardingCompleted = { onCompletedCalled = true },
+            markOnboardingCompletedSilent = { onDone ->
+                silentMarkCalled = true
+                onDone()
+            },
+            navigateToHome = { navigateHomeCalled = true },
+            popBackStack = { popBackStackCalled = true },
+        )
+
+        assertTrue(onCompletedCalled)
+        assertTrue(silentMarkCalled)
+        assertTrue(navigateHomeCalled)
+        assertFalse(popBackStackCalled)
+    }
+
+    @Test
+    fun handleSettingsOnBack_whenNotFromOnboardingOrUnverified_popsBackStack() {
+        var popBackStackCalled = false
+
+        handleSettingsOnBack(
+            isFromOnboarding = false,
+            isUserVerified = true,
+            onOnboardingCompleted = {},
+            markOnboardingCompletedSilent = null,
+            navigateToHome = {},
+            popBackStack = { popBackStackCalled = true },
+        )
+        assertTrue(popBackStackCalled)
+
+        popBackStackCalled = false
+        handleSettingsOnBack(
+            isFromOnboarding = true,
+            isUserVerified = false,
+            onOnboardingCompleted = {},
+            markOnboardingCompletedSilent = null,
+            navigateToHome = {},
+            popBackStack = { popBackStackCalled = true },
+        )
+        assertTrue(popBackStackCalled)
+    }
 }

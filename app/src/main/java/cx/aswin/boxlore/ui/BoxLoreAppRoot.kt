@@ -84,6 +84,7 @@ import cx.aswin.boxlore.navigation.isLaunchLandingBackRoute
 import cx.aswin.boxlore.navigation.navigateBottomNavTab
 import cx.aswin.boxlore.navigation.navigateHomeFromLaunchSubscriptions
 import cx.aswin.boxlore.navigation.resolveBottomNavTab
+import cx.aswin.boxlore.navigation.resolveIsFromOnboarding
 import cx.aswin.boxlore.navigation.resolveLaunchSubscriptionsBack
 import cx.aswin.boxlore.navigation.shouldShowBottomNav
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
@@ -904,7 +905,8 @@ fun BoxLoreAppRoot(
                     },
                     onSyncAccountSelected = {
                         opmlImportState = OpmlImportState.Idle
-                        navController.navigate("settings?page=account&fromOnboarding=true")
+                        val fromOnboarding = resolveIsFromOnboarding(onboardingCompleted, opmlImportSource)
+                        navController.navigate("settings?page=account&fromOnboarding=$fromOnboarding")
                     },
                 ),
             )

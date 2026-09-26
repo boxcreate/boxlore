@@ -73,16 +73,20 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
             config = SettingsScreenConfig(
                 onBack = {
                     val user = container.authRepository.currentUser.value
-                    if (isFromOnboarding && user != null && user.isEmailVerified) {
-                        w.session.onOnboardingCompleted()
-                        w.session.onboardingViewModel.markOnboardingCompletedSilent {
+                    handleSettingsOnBack(
+                        isFromOnboarding = isFromOnboarding,
+                        isUserVerified = user?.isEmailVerified == true,
+                        onOnboardingCompleted = w.session.onOnboardingCompleted,
+                        markOnboardingCompletedSilent = { onDone ->
+                            w.session.onboardingViewModel.markOnboardingCompletedSilent(onDone)
+                        },
+                        navigateToHome = {
                             navController.navigate("home") {
                                 popUpTo("onboarding") { inclusive = true }
                             }
-                        }
-                    } else {
-                        navController.popBackStack()
-                    }
+                        },
+                        popBackStack = { navController.popBackStack() },
+                    )
                 },
                 onResetAnalytics = {
                     try {
@@ -344,5 +348,27 @@ private suspend fun runLibraryExport(
                     android.widget.Toast.LENGTH_SHORT,
                 ).show()
         }
+    }
+}
+
+internal fun handleSettingsOnBack(
+    isFromOnboarding: Boolean,
+    isUserVerified: Boolean,
+    onOnboardingCompleted: () -> Unit,
+    markOnboardingCompletedSilent: ((() -> Unit) -> Unit)?,
+    navigateToHome: () -> Unit,
+    popBackStack: () -> Unit,
+) {
+    if (isFromOnboarding && isUserVerified) {
+        onOnboardingCompleted()
+        if (markOnboardingCompletedSilent != null) {
+            markOnboardingCompletedSilent {
+                navigateToHome()
+            }
+        } else {
+            navigateToHome()
+        }
+    } else {
+        popBackStack()
     }
 }

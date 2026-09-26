@@ -111,6 +111,15 @@ internal fun shouldShowBottomNav(
         !isFromOnboarding
 }
 
+/**
+ * Resolves whether an import or settings navigation originated from onboarding.
+ * False if onboarding was already completed or if triggered from the Home banner.
+ */
+internal fun resolveIsFromOnboarding(
+    onboardingCompleted: Boolean,
+    opmlImportSource: String?,
+): Boolean = !onboardingCompleted && opmlImportSource != "home_import_banner"
+
 // ---------------------------------------------------------------------------
 // Settings state grouping (reduces parameter count on BoxLoreNavHost)
 // ---------------------------------------------------------------------------

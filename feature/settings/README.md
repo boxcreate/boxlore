@@ -7,6 +7,7 @@ Owns the unified Settings hub, category pages (Account, Appearance, Playback, Pr
 ## Public API
 
 - `SettingsScreen`, `SettingsViewModel`, `SettingsViewModelAssembler`, and `ProfileSettingsDestination` for the settings hub and sub-pages.
+- `SettingsScreenConfig` includes `isOnboarding: Boolean` (used by app navigation to keep onboarding mode active and bypass the hub on return) and `resolveSettingsBackAction` for deterministic back-handler actions.
 - `AutoDownloadSettingsScreen` and `SmartDownloadsSettingsScreen` under `downloads/` for download management.
 - `AccountSettingsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`.
 - Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`.
@@ -68,7 +69,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 ## Testing notes
 
 - Unit tests live under `feature/settings/src/test`.
-- Existing coverage includes Settings ViewModel tests, Account auth helper validation, Appearance actions tracking, and Roborazzi golden captures for dialogs.
+- Existing coverage includes Settings ViewModel tests, Account auth helper validation, Appearance actions tracking, back navigation action resolution tests (`SettingsBackNavigationTest`), and Roborazzi golden captures for dialogs.
 
 ```bash
 ./gradlew :feature:settings:testDebugUnitTest
