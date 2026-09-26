@@ -213,14 +213,11 @@ fun SettingsScreen(
     val returnToHub = {
         val prev = previousDestination
         previousDestination = null
-        if (config.isOnboarding) {
-            config.onBack()
-        } else if (prev != null) {
-            destination = prev
-        } else if (initialPage != null && initialPage != "hub") {
-            config.onBack()
-        } else {
-            destination = ProfileSettingsDestination.Hub
+        when {
+            config.isOnboarding -> config.onBack()
+            prev != null -> destination = prev
+            initialPage != null && initialPage != "hub" -> config.onBack()
+            else -> destination = ProfileSettingsDestination.Hub
         }
     }
 

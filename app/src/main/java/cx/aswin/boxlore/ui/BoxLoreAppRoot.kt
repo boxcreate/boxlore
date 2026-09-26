@@ -257,14 +257,12 @@ fun BoxLoreAppRoot(
     }
 
     LaunchedEffect(currentUser) {
-        val user = currentUser
-        if (user != null && user.isEmailVerified && !onboardingCompleted) {
-            if (currentRoute == "onboarding") {
-                onboardingViewModel.markOnboardingCompletedSilent {
-                    onboardingCompleted = true
-                    navController.navigate("home") {
-                        popUpTo("onboarding") { inclusive = true }
-                    }
+        val isVerified = currentUser?.isEmailVerified == true
+        if (isVerified && !onboardingCompleted && currentRoute == "onboarding") {
+            onboardingViewModel.markOnboardingCompletedSilent {
+                onboardingCompleted = true
+                navController.navigate("home") {
+                    popUpTo("onboarding") { inclusive = true }
                 }
             }
         }
