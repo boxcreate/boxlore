@@ -4,8 +4,10 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -33,6 +35,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,8 +45,6 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Sensors
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,6 +64,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -107,18 +109,18 @@ internal fun SupportDevelopmentPage(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            SupportIntroHeader()
+            SupportHeroHeader(activeAuraColor = activeAuraColor)
 
-            SupportStage(
+            SupportCardlessStage(
                 pagerState = pagerState,
                 tiers = SUPPORT_TIER_CARDS,
                 activeAuraColor = activeAuraColor,
             )
 
-            SupportDialSelector(
+            CurvedPowerRailSelector(
                 selectedIndex = pagerState.currentPage,
                 tiers = SUPPORT_TIER_CARDS,
                 activeColor = activeAuraColor,
@@ -134,7 +136,7 @@ internal fun SupportDevelopmentPage(
                 activeColor = activeAuraColor,
             )
 
-            SupportSpecCard(
+            SupportAllocationMatrix(
                 tier = activeTier,
                 activeColor = activeAuraColor,
             )
@@ -171,10 +173,39 @@ private fun SupportTopAppBar(
 }
 
 @Composable
-private fun SupportIntroHeader() {
+private fun SupportHeroHeader(
+    activeAuraColor: Color,
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = activeAuraColor.copy(alpha = 0.12f),
+            border = BorderStroke(1.dp, activeAuraColor.copy(alpha = 0.35f)),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(activeAuraColor),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "100% LISTENER SUPPORTED",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = activeAuraColor,
+                    letterSpacing = 0.6.sp,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
             text = "Keep boxlore ad-free for everyone",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
@@ -193,112 +224,179 @@ private fun SupportIntroHeader() {
 }
 
 @Composable
-private fun SupportStage(
+private fun SupportCardlessStage(
     pagerState: PagerState,
     tiers: List<SupportTierCardData>,
     activeAuraColor: Color,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "stage_levitation")
+    val infiniteTransition = rememberInfiniteTransition(label = "stage_atmosphere")
     val floatOffset by infiniteTransition.animateFloat(
-        initialValue = -4f,
-        targetValue = 4f,
+        initialValue = -5f,
+        targetValue = 5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = FastOutSlowInEasing),
+            animation = tween(2400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "unit_levitation",
     )
+    val ringRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(16000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "ring_rotation",
+    )
+    val plasmaPulse by infiniteTransition.animateFloat(
+        initialValue = 0.88f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "plasma_pulse",
+    )
 
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.65f),
-        ),
-        border = BorderStroke(
-            width = 1.dp,
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    activeAuraColor.copy(alpha = 0.5f),
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                    activeAuraColor.copy(alpha = 0.2f),
-                ),
-            ),
-        ),
+    Column(
         modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .height(210.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            SupportStagePager(
-                pagerState = pagerState,
-                tiers = tiers,
-                activeAuraColor = activeAuraColor,
-                floatOffset = floatOffset,
+            HolographicReactorBackdrop(
+                auraColor = activeAuraColor,
+                rotation = ringRotation,
+                pulse = plasmaPulse,
+                modifier = Modifier.fillMaxSize(),
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+            ) { page ->
+                val tier = tiers[page]
+                val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
 
-            SupportStageTierInfo(
-                tier = tiers[pagerState.currentPage],
-                activeAuraColor = activeAuraColor,
-            )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val scale = lerp(1f, 0.8f, pageOffset.coerceIn(0f, 1f))
+                            scaleX = scale
+                            scaleY = scale
+                            alpha = lerp(1f, 0.25f, pageOffset.coerceIn(0f, 1f))
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(id = tier.iconRes),
+                        contentDescription = tier.title,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .size(150.dp)
+                            .graphicsLayer {
+                                if (page == pagerState.currentPage) {
+                                    translationY = floatOffset.dp.toPx()
+                                }
+                            },
+                    )
+                }
+            }
         }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        SupportStageTierInfo(
+            tier = tiers[pagerState.currentPage],
+            activeAuraColor = activeAuraColor,
+        )
     }
 }
 
 @Composable
-private fun SupportStagePager(
-    pagerState: PagerState,
-    tiers: List<SupportTierCardData>,
-    activeAuraColor: Color,
-    floatOffset: Float,
+private fun HolographicReactorBackdrop(
+    auraColor: Color,
+    rotation: Float,
+    pulse: Float,
+    modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(160.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        HolographicPedestal(
-            auraColor = activeAuraColor,
-            modifier = Modifier.align(Alignment.BottomCenter),
+    Canvas(modifier = modifier) {
+        val centerX = size.width / 2f
+        val centerY = size.height * 0.68f
+        val baseRadius = size.width * 0.36f
+
+        // 1. Ambient radiant plasma bloom
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    auraColor.copy(alpha = 0.32f * pulse),
+                    auraColor.copy(alpha = 0.10f * pulse),
+                    Color.Transparent,
+                ),
+                center = Offset(centerX, size.height * 0.46f),
+                radius = baseRadius * 1.3f * pulse,
+            ),
         )
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-        ) { page ->
-            val tier = tiers[page]
-            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+        // 2. Base Pedestal Frosted Glow
+        drawOval(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.25f),
+                    auraColor.copy(alpha = 0.18f),
+                    Color.Transparent,
+                ),
+                center = Offset(centerX, centerY),
+                radius = baseRadius * 0.72f,
+            ),
+            topLeft = Offset(centerX - baseRadius * 0.72f, centerY - 24.dp.toPx()),
+            size = Size(baseRadius * 1.44f, 48.dp.toPx()),
+        )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        val scale = lerp(1f, 0.82f, pageOffset.coerceIn(0f, 1f))
-                        scaleX = scale
-                        scaleY = scale
-                        alpha = lerp(1f, 0.35f, pageOffset.coerceIn(0f, 1f))
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(id = tier.iconRes),
-                    contentDescription = tier.title,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .size(135.dp)
-                        .graphicsLayer {
-                            if (page == pagerState.currentPage) {
-                                translationY = floatOffset.dp.toPx()
-                            }
-                        },
-                )
-            }
-        }
+        // 3. Outer counter-rotating holographic dashed rings
+        val outerRingWidth = baseRadius * 1.55f
+        val outerRingHeight = 54.dp.toPx()
+        drawOval(
+            color = auraColor.copy(alpha = 0.45f),
+            topLeft = Offset(centerX - outerRingWidth / 2f, centerY - outerRingHeight / 2f),
+            size = Size(outerRingWidth, outerRingHeight),
+            style = Stroke(
+                width = 1.4.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(12f, 10f),
+                    rotation * 1.5f,
+                ),
+            ),
+        )
+
+        // 4. Inner reverse-rotating dashed ring
+        val innerRingWidth = baseRadius * 1.15f
+        val innerRingHeight = 38.dp.toPx()
+        drawOval(
+            color = auraColor.copy(alpha = 0.65f),
+            topLeft = Offset(centerX - innerRingWidth / 2f, centerY - innerRingHeight / 2f),
+            size = Size(innerRingWidth, innerRingHeight),
+            style = Stroke(
+                width = 1.1.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(8f, 10f),
+                    -rotation * 2f,
+                ),
+            ),
+        )
+
+        // 5. Center sharp focal dais
+        drawOval(
+            color = auraColor.copy(alpha = 0.85f),
+            topLeft = Offset(centerX - (baseRadius * 0.75f) / 2f, centerY - 12.dp.toPx()),
+            size = Size(baseRadius * 0.75f, 24.dp.toPx()),
+            style = Stroke(width = 1.dp.toPx()),
+        )
     }
 }
 
@@ -325,7 +423,7 @@ private fun SupportStageTierInfo(
                     Text(
                         text = "★ SUPREME PATRON UNIT",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                        color = if (targetTier.auraColor.luminance() > 0.5f) Color.Black else Color.White,
+                        color = if (targetTier.auraColor.luminance() > 0.45f) Color.Black else Color.White,
                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                     )
                 }
@@ -333,7 +431,7 @@ private fun SupportStageTierInfo(
 
             Text(
                 text = targetTier.title,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
@@ -344,67 +442,6 @@ private fun SupportStageTierInfo(
                 segments = targetTier.energySegments,
                 powerImpact = targetTier.powerImpact,
                 activeColor = activeAuraColor,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HolographicPedestal(
-    auraColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .padding(bottom = 6.dp)
-            .size(width = 190.dp, height = 54.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeWidth = 1.5.dp.toPx()
-            val centerOffset = Offset(size.width / 2f, size.height / 2f)
-
-            // 1. Ambient radiant energy bloom
-            drawOval(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        auraColor.copy(alpha = 0.45f),
-                        auraColor.copy(alpha = 0.15f),
-                        Color.Transparent,
-                    ),
-                    center = centerOffset,
-                    radius = size.width * 0.5f,
-                ),
-            )
-
-            // 2. Outer holographic dashed projection ring
-            drawOval(
-                color = auraColor.copy(alpha = 0.55f),
-                style = Stroke(
-                    width = strokeWidth,
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f),
-                ),
-            )
-
-            // 3. Frosted glass dais core
-            drawOval(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.22f),
-                        auraColor.copy(alpha = 0.12f),
-                        Color.Transparent,
-                    ),
-                    center = centerOffset,
-                    radius = size.width * 0.35f,
-                ),
-            )
-
-            // 4. Inner sharp luminous ring
-            drawOval(
-                color = auraColor.copy(alpha = 0.7f),
-                topLeft = Offset(size.width * 0.18f, size.height * 0.18f),
-                size = Size(size.width * 0.64f, size.height * 0.64f),
-                style = Stroke(width = 1.dp.toPx()),
             )
         }
     }
@@ -465,68 +502,43 @@ private fun SupportSegmentedGauge(
 }
 
 @Composable
-private fun SupportDialSelector(
+private fun CurvedPowerRailSelector(
     selectedIndex: Int,
     tiers: List<SupportTierCardData>,
     activeColor: Color,
     onSelect: (Int) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        tiers.forEachIndexed { index, tier ->
-            val isSelected = index == selectedIndex
-            val backgroundColor by animateColorAsState(
-                targetValue = if (isSelected) {
-                    activeColor.copy(alpha = 0.18f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainer
-                },
-                animationSpec = tween(200),
-                label = "dial_container",
-            )
-            val borderColor by animateColorAsState(
-                targetValue = if (isSelected) {
-                    activeColor
-                } else {
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                },
-                animationSpec = tween(200),
-                label = "dial_border",
-            )
-            val contentColor by animateColorAsState(
-                targetValue = if (isSelected) {
-                    activeColor
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                animationSpec = tween(200),
-                label = "dial_content",
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(66.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            CurvedRailTrackCanvas(
+                selectedIndex = selectedIndex,
+                totalTiers = tiers.size,
+                activeColor = activeColor,
             )
 
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = backgroundColor,
-                border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor),
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { onSelect(index) },
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = tier.shortDuration,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.bold),
-                        color = contentColor,
-                    )
-                    Text(
-                        text = tier.cost,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.medium),
-                        color = contentColor.copy(alpha = if (isSelected) 0.95f else 0.75f),
+                tiers.forEachIndexed { index, tier ->
+                    CurvedRailNodePill(
+                        tier = tier,
+                        isSelected = index == selectedIndex,
+                        activeColor = activeColor,
+                        onSelect = { onSelect(index) },
                     )
                 }
             }
@@ -535,37 +547,169 @@ private fun SupportDialSelector(
 }
 
 @Composable
-private fun SupportSpecCard(
+private fun CurvedRailTrackCanvas(
+    selectedIndex: Int,
+    totalTiers: Int,
+    activeColor: Color,
+) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val startX = 26.dp.toPx()
+        val endX = size.width - 26.dp.toPx()
+        val midY = size.height * 0.5f
+        val dipY = 8.dp.toPx()
+
+        val basePath = Path().apply {
+            moveTo(startX, midY - dipY)
+            quadraticTo(size.width / 2f, midY + dipY, endX, midY - dipY)
+        }
+
+        drawPath(
+            path = basePath,
+            color = Color.White.copy(alpha = 0.12f),
+            style = Stroke(width = 2.dp.toPx()),
+        )
+
+        val progress = (selectedIndex / (totalTiers - 1).toFloat()).coerceIn(0f, 1f)
+        val activeEndX = startX + (endX - startX) * progress
+        val activeMidX = (startX + activeEndX) / 2f
+        val activeDipY = dipY * progress
+
+        val activePath = Path().apply {
+            moveTo(startX, midY - dipY)
+            quadraticTo(activeMidX, midY + activeDipY, activeEndX, midY - (dipY * (1f - progress)))
+        }
+
+        drawPath(
+            path = activePath,
+            brush = Brush.horizontalGradient(
+                colors = listOf(
+                    activeColor.copy(alpha = 0.35f),
+                    activeColor,
+                ),
+                startX = startX,
+                endX = activeEndX,
+            ),
+            style = Stroke(width = 2.5.dp.toPx()),
+        )
+    }
+}
+
+@Composable
+private fun CurvedRailNodePill(
+    tier: SupportTierCardData,
+    isSelected: Boolean,
+    activeColor: Color,
+    onSelect: () -> Unit,
+) {
+    val elevationOffset by animateFloatAsState(
+        targetValue = if (isSelected) -4f else 0f,
+        animationSpec = tween(220, easing = FastOutSlowInEasing),
+        label = "node_elevation",
+    )
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            activeColor.copy(alpha = 0.22f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.65f)
+        },
+        animationSpec = tween(200),
+        label = "dial_container",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            activeColor
+        } else {
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        },
+        animationSpec = tween(200),
+        label = "dial_border",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            activeColor
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        animationSpec = tween(200),
+        label = "dial_content",
+    )
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = backgroundColor,
+        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor),
+        modifier = Modifier
+            .graphicsLayer { translationY = elevationOffset.dp.toPx() }
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onSelect),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = tier.shortDuration,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.bold),
+                color = contentColor,
+            )
+            Spacer(modifier = Modifier.height(1.dp))
+            Text(
+                text = tier.cost,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.medium),
+                color = contentColor.copy(alpha = if (isSelected) 0.95f else 0.72f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SupportAllocationMatrix(
     tier: SupportTierCardData,
     activeColor: Color,
 ) {
-    Card(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.75f),
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+        border = BorderStroke(1.dp, activeColor.copy(alpha = 0.25f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(16.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.Sensors,
-                    contentDescription = null,
-                    tint = activeColor,
-                    modifier = Modifier.size(16.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "INFRASTRUCTURE IMPACT",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = activeColor,
-                    letterSpacing = 0.5.sp,
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Sensors,
+                        contentDescription = null,
+                        tint = activeColor,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "INFRASTRUCTURE IMPACT",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = activeColor,
+                        letterSpacing = 0.6.sp,
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = activeColor.copy(alpha = 0.12f),
+                ) {
+                    Text(
+                        text = tier.powerImpact,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = activeColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -578,10 +722,10 @@ private fun SupportSpecCard(
             )
 
             if (tier.technicalBreakdown.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     tier.technicalBreakdown.forEach { item ->
                         Row(
@@ -589,10 +733,10 @@ private fun SupportSpecCard(
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(
-                                text = "•",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                text = "◆",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = activeColor,
-                                modifier = Modifier.padding(end = 6.dp),
+                                modifier = Modifier.padding(end = 8.dp, top = 1.dp),
                             )
                             Text(
                                 text = item,
@@ -608,9 +752,8 @@ private fun SupportSpecCard(
     }
 }
 
-internal fun getSupportButtonContentColor(backgroundColor: Color): Color {
-    return if (backgroundColor.luminance() > 0.45f) Color.Black else Color.White
-}
+internal fun getSupportButtonContentColor(backgroundColor: Color): Color =
+    if (backgroundColor.luminance() > 0.45f) Color.Black else Color.White
 
 @Composable
 private fun SupportCtaSection(
