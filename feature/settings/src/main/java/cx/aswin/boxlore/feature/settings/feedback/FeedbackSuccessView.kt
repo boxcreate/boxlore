@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -110,6 +111,7 @@ fun FeedbackSuccessView(
     uiState: FeedbackUiState,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    bottomPadding: Dp = 240.dp,
 ) {
     val content = remember(uiState.category, uiState.email) {
         getFeedbackSuccessContent(uiState.category, uiState.email)
@@ -119,7 +121,7 @@ fun FeedbackSuccessView(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(16.dp))
@@ -128,7 +130,7 @@ fun FeedbackSuccessView(
         FeedbackStatusCard(content = content)
         Spacer(modifier = Modifier.height(16.dp))
         FeedbackSummaryCard(uiState = uiState, isEmailAttached = content.isEmailAttached)
-        Spacer(modifier = Modifier.height(36.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         Button(
             onClick = onDone,
             modifier = Modifier
@@ -138,7 +140,7 @@ fun FeedbackSuccessView(
         ) {
             Text("Done")
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(bottomPadding))
     }
 }
 

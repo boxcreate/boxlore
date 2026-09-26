@@ -125,10 +125,11 @@ fun FeedbackScreen(
             FeedbackSuccessView(
                 uiState = uiState,
                 onDone = onBack,
+                bottomPadding = FEEDBACK_CONTENT_BOTTOM_PADDING,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = 24.dp),
             )
         } else {
             FeedbackFormView(
