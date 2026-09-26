@@ -10,6 +10,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -33,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
@@ -144,14 +146,6 @@ internal fun SupportDevelopmentPage(
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        SupportLightningAtmosphere(
-            activeColor = activeAuraColor,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(440.dp)
-                .align(Alignment.TopCenter),
-        )
-
         CosmicAtmosphereCanvas(
             auraColor = activeAuraColor,
             pulse = plasmaPulse,
@@ -268,14 +262,33 @@ private fun SupportTopAppBar(
 
 @Composable
 private fun SupportLightningAtmosphere(
+    tier: SupportTierCardData,
     activeColor: Color,
     modifier: Modifier = Modifier,
 ) {
+    val tierPowerFraction = ((tier.energySegments - 1) / 4f).coerceIn(0f, 1f)
+    val lightningScale by animateFloatAsState(
+        targetValue = 0.78f + (0.54f * tierPowerFraction),
+        animationSpec = tween(350, easing = FastOutSlowInEasing),
+        label = "lightning_scale",
+    )
+    val lightningSpeed by animateFloatAsState(
+        targetValue = 0.80f + (0.65f * tierPowerFraction),
+        animationSpec = tween(350, easing = FastOutSlowInEasing),
+        label = "lightning_speed",
+    )
+    val lightningAlpha by animateFloatAsState(
+        targetValue = 0.20f + (0.32f * tierPowerFraction),
+        animationSpec = tween(350, easing = FastOutSlowInEasing),
+        label = "lightning_alpha",
+    )
+
     val composition by rememberLottieComposition(
         LottieCompositionSpec.RawRes(R.raw.lightning_ambient),
     )
     val progress by animateLottieCompositionAsState(
         composition = composition,
+        speed = lightningSpeed,
         iterations = LottieConstants.IterateForever,
     )
     val dynamicProperties = rememberLottieDynamicProperties(
@@ -290,10 +303,13 @@ private fun SupportLightningAtmosphere(
         composition = composition,
         progress = { progress },
         dynamicProperties = dynamicProperties,
-        contentScale = ContentScale.Crop,
-        modifier = modifier.graphicsLayer {
-            alpha = 0.35f
-        },
+        contentScale = ContentScale.Fit,
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = lightningScale
+                scaleY = lightningScale
+                alpha = lightningAlpha
+            },
     )
 }
 
@@ -398,6 +414,12 @@ private fun SupportArtifactStage(
                 .height(185.dp),
             contentAlignment = Alignment.Center,
         ) {
+            SupportLightningAtmosphere(
+                tier = tiers[pagerState.currentPage],
+                activeColor = activeAuraColor,
+                modifier = Modifier.requiredSize(440.dp),
+            )
+
             val pagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 4f)
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawTransformingPlatform(
