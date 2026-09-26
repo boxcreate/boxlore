@@ -41,7 +41,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Sensors
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,7 +76,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
+import kotlin.math.PI
 import kotlin.math.absoluteValue
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlinx.coroutines.launch
 
 private val SUPPORT_CONTENT_BOTTOM_PADDING = 220.dp
@@ -107,11 +109,9 @@ internal fun SupportDevelopmentPage(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(horizontal = 16.dp, vertical = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SupportHeroHeader()
-
             SupportCardlessStage(
                 pagerState = pagerState,
                 tiers = SUPPORT_TIER_CARDS,
@@ -134,8 +134,7 @@ internal fun SupportDevelopmentPage(
                 activeColor = activeAuraColor,
             )
 
-            SupportAllocationMatrix(
-                tier = activeTier,
+            SupportMissionCard(
                 activeColor = activeAuraColor,
             )
 
@@ -168,28 +167,6 @@ private fun SupportTopAppBar(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
     )
-}
-
-@Composable
-private fun SupportHeroHeader() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(
-            text = "Keep boxlore ad-free for everyone",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = "boxlore is completely free and ad-free. Contributions directly support our development and help keep it free for everyone.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 18.sp,
-        )
-    }
 }
 
 @Composable
@@ -234,7 +211,7 @@ private fun SupportCardlessStage(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(210.dp),
+                .height(260.dp),
             contentAlignment = Alignment.Center,
         ) {
             HolographicReactorBackdrop(
@@ -267,7 +244,7 @@ private fun SupportCardlessStage(
                         contentDescription = tier.title,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .size(150.dp)
+                            .size(165.dp)
                             .graphicsLayer {
                                 if (page == pagerState.currentPage) {
                                     translationY = floatOffset.dp.toPx()
@@ -278,7 +255,7 @@ private fun SupportCardlessStage(
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         SupportStageTierInfo(
             tier = tiers[pagerState.currentPage],
@@ -296,75 +273,108 @@ private fun HolographicReactorBackdrop(
 ) {
     Canvas(modifier = modifier) {
         val centerX = size.width / 2f
-        val centerY = size.height * 0.68f
-        val baseRadius = size.width * 0.36f
+        val centerY = size.height * 0.72f
+        val baseRadius = size.width * 0.38f
 
-        // 1. Ambient radiant plasma bloom
+        // 1. Broad outer ambient nebula glow
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    auraColor.copy(alpha = 0.32f * pulse),
-                    auraColor.copy(alpha = 0.10f * pulse),
+                    auraColor.copy(alpha = 0.28f * pulse),
+                    auraColor.copy(alpha = 0.08f * pulse),
                     Color.Transparent,
                 ),
-                center = Offset(centerX, size.height * 0.46f),
-                radius = baseRadius * 1.3f * pulse,
+                center = Offset(centerX, size.height * 0.44f),
+                radius = baseRadius * 1.45f * pulse,
             ),
         )
 
-        // 2. Base Pedestal Frosted Glow
+        // 2. Focused reactor core glow beneath asset
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.30f),
+                    auraColor.copy(alpha = 0.35f),
+                    Color.Transparent,
+                ),
+                center = Offset(centerX, centerY - 10.dp.toPx()),
+                radius = baseRadius * 0.65f,
+            ),
+        )
+
+        // 3. Glowing holographic dais pedestal base
         drawOval(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.25f),
-                    auraColor.copy(alpha = 0.18f),
+                    Color.White.copy(alpha = 0.35f),
+                    auraColor.copy(alpha = 0.25f),
                     Color.Transparent,
                 ),
                 center = Offset(centerX, centerY),
-                radius = baseRadius * 0.72f,
+                radius = baseRadius * 0.75f,
             ),
-            topLeft = Offset(centerX - baseRadius * 0.72f, centerY - 24.dp.toPx()),
-            size = Size(baseRadius * 1.44f, 48.dp.toPx()),
+            topLeft = Offset(centerX - baseRadius * 0.75f, centerY - 22.dp.toPx()),
+            size = Size(baseRadius * 1.50f, 44.dp.toPx()),
         )
 
-        // 3. Outer counter-rotating holographic dashed rings
-        val outerRingWidth = baseRadius * 1.55f
-        val outerRingHeight = 54.dp.toPx()
+        // 4. Outer rotating dashed ring with orbital energy nodes
+        val outerWidth = baseRadius * 1.65f
+        val outerHeight = 58.dp.toPx()
         drawOval(
             color = auraColor.copy(alpha = 0.45f),
-            topLeft = Offset(centerX - outerRingWidth / 2f, centerY - outerRingHeight / 2f),
-            size = Size(outerRingWidth, outerRingHeight),
+            topLeft = Offset(centerX - outerWidth / 2f, centerY - outerHeight / 2f),
+            size = Size(outerWidth, outerHeight),
             style = Stroke(
-                width = 1.4.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(
-                    floatArrayOf(12f, 10f),
-                    rotation * 1.5f,
-                ),
+                width = 1.5.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), rotation * 1.5f),
             ),
         )
 
-        // 4. Inner reverse-rotating dashed ring
-        val innerRingWidth = baseRadius * 1.15f
-        val innerRingHeight = 38.dp.toPx()
+        // Orbiting spark on outer ring
+        val outerAngleRad = rotation * (PI / 180.0)
+        val sparkX1 = (centerX + (outerWidth / 2f) * cos(outerAngleRad)).toFloat()
+        val sparkY1 = (centerY + (outerHeight / 2f) * sin(outerAngleRad)).toFloat()
+        drawCircle(
+            color = Color.White,
+            radius = 2.5.dp.toPx(),
+            center = Offset(sparkX1, sparkY1),
+        )
+        drawCircle(
+            color = auraColor,
+            radius = 5.dp.toPx(),
+            center = Offset(sparkX1, sparkY1),
+            style = Stroke(width = 1.dp.toPx()),
+        )
+
+        // 5. Inner counter-rotating ring
+        val innerWidth = baseRadius * 1.22f
+        val innerHeight = 42.dp.toPx()
         drawOval(
             color = auraColor.copy(alpha = 0.65f),
-            topLeft = Offset(centerX - innerRingWidth / 2f, centerY - innerRingHeight / 2f),
-            size = Size(innerRingWidth, innerRingHeight),
+            topLeft = Offset(centerX - innerWidth / 2f, centerY - innerHeight / 2f),
+            size = Size(innerWidth, innerHeight),
             style = Stroke(
-                width = 1.1.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(
-                    floatArrayOf(8f, 10f),
-                    -rotation * 2f,
-                ),
+                width = 1.2.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 10f), -rotation * 2.2f),
             ),
         )
 
-        // 5. Center sharp focal dais
+        // Orbiting spark on inner ring
+        val innerAngleRad = (-rotation * 2.2 + 120.0) * (PI / 180.0)
+        val sparkX2 = (centerX + (innerWidth / 2f) * cos(innerAngleRad)).toFloat()
+        val sparkY2 = (centerY + (innerHeight / 2f) * sin(innerAngleRad)).toFloat()
+        drawCircle(
+            color = Color.White.copy(alpha = 0.9f),
+            radius = 2.dp.toPx(),
+            center = Offset(sparkX2, sparkY2),
+        )
+
+        // 6. Central sharp luminous dais horizon
         drawOval(
-            color = auraColor.copy(alpha = 0.85f),
-            topLeft = Offset(centerX - (baseRadius * 0.75f) / 2f, centerY - 12.dp.toPx()),
-            size = Size(baseRadius * 0.75f, 24.dp.toPx()),
-            style = Stroke(width = 1.dp.toPx()),
+            color = auraColor.copy(alpha = 0.90f),
+            topLeft = Offset(centerX - (baseRadius * 0.78f) / 2f, centerY - 11.dp.toPx()),
+            size = Size(baseRadius * 0.78f, 22.dp.toPx()),
+            style = Stroke(width = 1.2.dp.toPx()),
         )
     }
 }
@@ -374,6 +384,8 @@ private fun SupportStageTierInfo(
     tier: SupportTierCardData,
     activeAuraColor: Color,
 ) {
+    val accessibleAccent = getAccessibleAccentColor(activeAuraColor)
+
     AnimatedContent(
         targetState = tier,
         transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(180)) },
@@ -387,7 +399,7 @@ private fun SupportStageTierInfo(
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = targetTier.auraColor,
-                    modifier = Modifier.padding(bottom = 4.dp),
+                    modifier = Modifier.padding(bottom = 6.dp),
                 ) {
                     Text(
                         text = "★ SUPREME PATRON UNIT",
@@ -400,16 +412,36 @@ private fun SupportStageTierInfo(
 
             Text(
                 text = targetTier.title,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = GoogleSansWeight.bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Bolt,
+                    contentDescription = null,
+                    tint = accessibleAccent,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = targetTier.powerImpact,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
+                    color = accessibleAccent,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             SupportSegmentedGauge(
                 segments = targetTier.energySegments,
-                powerImpact = targetTier.powerImpact,
                 activeColor = activeAuraColor,
             )
         }
@@ -419,53 +451,29 @@ private fun SupportStageTierInfo(
 @Composable
 private fun SupportSegmentedGauge(
     segments: Int,
-    powerImpact: String,
     activeColor: Color,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(0.85f),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Row(
+        modifier = Modifier.fillMaxWidth(0.50f),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-        ) {
-            for (i in 1..5) {
-                val isFilled = i <= segments
-                val segmentColor by animateColorAsState(
-                    targetValue = if (isFilled) {
-                        activeColor
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    },
-                    animationSpec = tween(250, easing = FastOutSlowInEasing),
-                    label = "gauge_segment",
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(segmentColor),
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        val accessibleAccent = getAccessibleAccentColor(activeColor)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Rounded.Bolt,
-                contentDescription = null,
-                tint = accessibleAccent,
-                modifier = Modifier.size(15.dp),
+        for (i in 1..5) {
+            val isFilled = i <= segments
+            val segmentColor by animateColorAsState(
+                targetValue = if (isFilled) {
+                    activeColor
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                },
+                animationSpec = tween(250, easing = FastOutSlowInEasing),
+                label = "gauge_segment",
             )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = powerImpact,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.bold),
-                color = accessibleAccent,
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(segmentColor),
             )
         }
     }
@@ -593,8 +601,7 @@ internal fun getAccessibleAccentColor(color: Color): Color {
 }
 
 @Composable
-private fun SupportAllocationMatrix(
-    tier: SupportTierCardData,
+private fun SupportMissionCard(
     activeColor: Color,
 ) {
     val accessibleAccent = getAccessibleAccentColor(activeColor)
@@ -609,78 +616,31 @@ private fun SupportAllocationMatrix(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(18.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Rounded.Sensors,
-                        contentDescription = null,
-                        tint = accessibleAccent,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "INFRASTRUCTURE IMPACT",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = accessibleAccent,
-                        letterSpacing = 0.6.sp,
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = activeColor.copy(alpha = if (isLightMode) 0.20f else 0.12f),
-                ) {
-                    Text(
-                        text = tier.powerImpact,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = accessibleAccent,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Favorite,
+                    contentDescription = null,
+                    tint = accessibleAccent,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Keep boxlore ad-free for everyone",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = tier.description,
+                text = "boxlore is completely free and ad-free. Contributions directly support our development and help keep it free for everyone.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp,
             )
-
-            if (tier.technicalBreakdown.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    tier.technicalBreakdown.forEach { item ->
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(
-                                text = "◆",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = accessibleAccent,
-                                modifier = Modifier.padding(end = 8.dp, top = 1.dp),
-                            )
-                            Text(
-                                text = item,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 16.sp,
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -751,9 +711,6 @@ internal data class SupportTierCardData(
     val powerImpact: String,
     val shortDuration: String,
     val energySegments: Int,
-    val scope: String,
-    val description: String,
-    val technicalBreakdown: List<String> = emptyList(),
     val cost: String,
     @DrawableRes val iconRes: Int,
     val auraColor: Color,
@@ -763,81 +720,45 @@ internal data class SupportTierCardData(
 internal val SUPPORT_TIER_CARDS = listOf(
     SupportTierCardData(
         title = "Micro Energy Cell",
-        powerImpact = "Powers 3 Hours",
+        powerImpact = "Powers the boxlore servers for 3 hours",
         shortDuration = "3h",
         energySegments = 1,
-        scope = "Sync & Feed Ingestion",
-        description = "Directly funds real-time background feed synchronization, RSS ingestion webhooks, and podcast catalog lookups across our edge network.",
-        technicalBreakdown = listOf(
-            "RSS feed polling & catalog lookups",
-            "Cloud edge worker execution & cache hits",
-            "Real-time delta sync for active listeners",
-        ),
         cost = "$0.49",
         iconRes = R.drawable.ic_tier_1_micro_cell,
         auraColor = Color(0xFF00E5FF),
     ),
     SupportTierCardData(
         title = "Field Battery Pack",
-        powerImpact = "Powers 8 Hours",
+        powerImpact = "Powers the boxlore servers for 8 hours",
         shortDuration = "8h",
         energySegments = 2,
-        scope = "Catalog Caching",
-        description = "Covers high-frequency episode metadata indexing, fast podcast artwork delivery, and database read queries during peak listening hours.",
-        technicalBreakdown = listOf(
-            "Podcast artwork CDN delivery & edge caching",
-            "Database read queries & full-text search indexing",
-            "Continuous episode release monitoring",
-        ),
         cost = "$0.99",
         iconRes = R.drawable.ic_tier_2_field_battery,
         auraColor = Color(0xFF00E676),
     ),
     SupportTierCardData(
         title = "Power Station",
-        powerImpact = "Powers 1 Full Day",
+        powerImpact = "Powers the boxlore servers for 1 full day",
         shortDuration = "1d",
         energySegments = 3,
-        scope = "AI & Vector Search",
-        description = "Drives a full 24-hour computing capacity for AI semantic embeddings, semantic search queries, transcript processing, and backend streaming proxies.",
-        technicalBreakdown = listOf(
-            "AI vector embeddings & semantic episode matching",
-            "Cloudflare worker proxies & network bandwidth",
-            "Fast transcript retrieval & metadata enrichment",
-        ),
         cost = "$2.49",
         iconRes = R.drawable.ic_tier_3_power_station,
         auraColor = Color(0xFFFFB300),
     ),
     SupportTierCardData(
         title = "Server Tower",
-        powerImpact = "Powers 3 Full Days",
+        powerImpact = "Powers the boxlore servers for 3 full days",
         shortDuration = "3d",
         energySegments = 4,
-        scope = "Database Cluster",
-        description = "Sustains 72 hours of multi-tenant database clusters, high-throughput cloud sync pipelines, automated database backups, and audio metadata caches.",
-        technicalBreakdown = listOf(
-            "Primary database cluster & automated failovers",
-            "Realtime multi-device cloud sync engine",
-            "Audio stream caching & high-volume downloads",
-        ),
         cost = "$6.99",
         iconRes = R.drawable.ic_tier_4_server_tower,
         auraColor = Color(0xFF8B5CF6),
     ),
     SupportTierCardData(
         title = "Quantum Beacon",
-        powerImpact = "Powers 1 Full Week",
+        powerImpact = "Powers the boxlore servers for 1 full week",
         shortDuration = "7d",
         energySegments = 5,
-        scope = "Global Grid",
-        description = "Supreme patron beacon: keeps the entire global boxlore infrastructure fully funded for a full week, covering cloud compute, AI vector databases, global CDN caching, and continuous independent open-source development.",
-        technicalBreakdown = listOf(
-            "Full-stack server compute & database clusters",
-            "Global CDN edge distribution & high-bandwidth audio",
-            "Vector search models, AI embeddings & cloud sync",
-            "Dedicated independent development & open-source tools",
-        ),
         cost = "$17.99",
         iconRes = R.drawable.ic_tier_5_quantum_beacon,
         auraColor = Color(0xFFFF2D55),

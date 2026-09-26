@@ -26,11 +26,11 @@ class SupportDevelopmentPageTest {
         val impacts = SUPPORT_TIER_CARDS.map { it.powerImpact }
         assertEquals(
             listOf(
-                "Powers 3 Hours",
-                "Powers 8 Hours",
-                "Powers 1 Full Day",
-                "Powers 3 Full Days",
-                "Powers 1 Full Week",
+                "Powers the boxlore servers for 3 hours",
+                "Powers the boxlore servers for 8 hours",
+                "Powers the boxlore servers for 1 full day",
+                "Powers the boxlore servers for 3 full days",
+                "Powers the boxlore servers for 1 full week",
             ),
             impacts,
         )
@@ -47,8 +47,7 @@ class SupportDevelopmentPageTest {
     fun supportTierCards_costsAndIconsAreValid() {
         SUPPORT_TIER_CARDS.forEach { tier ->
             assertTrue("Cost should start with USD dollar sign", tier.cost.startsWith("$"))
-            assertTrue("Description should not be blank", tier.description.isNotBlank())
-            assertTrue("Scope should not be blank", tier.scope.isNotBlank())
+            assertTrue("Power impact should not be blank", tier.powerImpact.isNotBlank())
             assertTrue("Short duration should not be blank", tier.shortDuration.isNotBlank())
             assertTrue("Energy segments must be between 1 and 5", tier.energySegments in 1..5)
             assertTrue("Icon resource must be non-zero", tier.iconRes != 0)
@@ -56,16 +55,6 @@ class SupportDevelopmentPageTest {
 
         val segments = SUPPORT_TIER_CARDS.map { it.energySegments }
         assertEquals(listOf(1, 2, 3, 4, 5), segments)
-    }
-
-    @Test
-    fun supportTierCards_technicalBreakdownsArePopulated() {
-        SUPPORT_TIER_CARDS.forEach { tier ->
-            assertTrue("Technical breakdown must not be empty", tier.technicalBreakdown.isNotEmpty())
-            tier.technicalBreakdown.forEach { item ->
-                assertTrue("Breakdown item must not be blank", item.isNotBlank())
-            }
-        }
     }
 
     @Test
