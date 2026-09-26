@@ -213,7 +213,9 @@ fun SettingsScreen(
     val returnToHub = {
         val prev = previousDestination
         previousDestination = null
-        if (prev != null) {
+        if (config.isOnboarding) {
+            config.onBack()
+        } else if (prev != null) {
             destination = prev
         } else if (initialPage != null && initialPage != "hub") {
             config.onBack()

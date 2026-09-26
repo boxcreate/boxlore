@@ -85,6 +85,7 @@ import cx.aswin.boxlore.navigation.navigateBottomNavTab
 import cx.aswin.boxlore.navigation.navigateHomeFromLaunchSubscriptions
 import cx.aswin.boxlore.navigation.resolveBottomNavTab
 import cx.aswin.boxlore.navigation.resolveLaunchSubscriptionsBack
+import cx.aswin.boxlore.navigation.shouldShowBottomNav
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
 import cx.aswin.boxlore.ui.announcement.FeatureAnnouncementOverlay
 import cx.aswin.boxlore.ui.announcement.InAppAnnouncementDialog
@@ -237,8 +238,15 @@ fun BoxLoreAppRoot(
                 (currentUser != null && currentUser?.isEmailVerified == true),
         )
     }
+    val isFromOnboardingRoute =
+        navBackStackEntry?.arguments?.getBoolean("fromOnboarding") == true ||
+            (!onboardingCompleted && currentRoute.startsWith("settings"))
     val showBottomNav =
-        onboardingCompleted && !currentRoute.startsWith("player") && currentRoute != "onboarding"
+        shouldShowBottomNav(
+            onboardingCompleted = onboardingCompleted,
+            currentRoute = currentRoute,
+            isFromOnboarding = isFromOnboardingRoute,
+        )
 
     LaunchedEffect(hasDeepLink) {
         if (hasDeepLink) {
@@ -251,8 +259,13 @@ fun BoxLoreAppRoot(
     LaunchedEffect(currentUser) {
         val user = currentUser
         if (user != null && user.isEmailVerified && !onboardingCompleted) {
-            onboardingViewModel.markOnboardingCompletedSilent {
-                onboardingCompleted = true
+            if (currentRoute == "onboarding") {
+                onboardingViewModel.markOnboardingCompletedSilent {
+                    onboardingCompleted = true
+                    navController.navigate("home") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                }
             }
         }
     }
@@ -893,7 +906,7 @@ fun BoxLoreAppRoot(
                     },
                     onSyncAccountSelected = {
                         opmlImportState = OpmlImportState.Idle
-                        navController.navigate("settings?page=account")
+                        navController.navigate("settings?page=account&fromOnboarding=true")
                     },
                 ),
             )

@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.navigation
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
@@ -38,16 +39,24 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
     val appInstanceId = w.session.appInstanceId
 
     composable(
-        route = "settings?page={page}",
+        route = "settings?page={page}&fromOnboarding={fromOnboarding}",
         arguments = listOf(
             navArgument("page") {
                 type = NavType.StringType
                 nullable = true
                 defaultValue = null
             },
+            navArgument("fromOnboarding") {
+                type = NavType.BoolType
+                defaultValue = false
+            },
         ),
     ) { backStackEntry ->
         val settingsPage = backStackEntry.arguments?.getString("page")
+        val fromOnboardingArg = backStackEntry.arguments?.getBoolean("fromOnboarding") ?: false
+        val isFromOnboarding = rememberSaveable {
+            fromOnboardingArg || !w.session.onboardingCompleted
+        }
 
         SettingsScreen(
             repositories = SettingsRepositories(
@@ -64,7 +73,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
             config = SettingsScreenConfig(
                 onBack = {
                     val user = container.authRepository.currentUser.value
-                    if (!w.session.onboardingCompleted && user != null && user.isEmailVerified) {
+                    if (isFromOnboarding && user != null && user.isEmailVerified) {
                         w.session.onOnboardingCompleted()
                         w.session.onboardingViewModel.markOnboardingCompletedSilent {
                             navController.navigate("home") {
@@ -84,7 +93,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 },
                 appInstanceId = appInstanceId,
                 initialPage = settingsPage,
-                isOnboarding = !w.session.onboardingCompleted,
+                isOnboarding = isFromOnboarding,
             ),
             regionSettings = RegionSettings(
                 currentRegion = settingsState.currentRegion,

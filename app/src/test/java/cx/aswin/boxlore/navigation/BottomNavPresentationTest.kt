@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.navigation
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BottomNavPresentationTest {
@@ -28,5 +30,36 @@ class BottomNavPresentationTest {
         assertEquals(1, getRouteIndex("explore"))
         assertEquals(2, getRouteIndex("library"))
         assertEquals(3, getRouteIndex("learn"))
+    }
+
+    @Test
+    fun shouldShowBottomNav_whenOnboardingNotCompleted_returnsFalse() {
+        assertFalse(shouldShowBottomNav(onboardingCompleted = false, currentRoute = "home", isFromOnboarding = false))
+        assertFalse(shouldShowBottomNav(onboardingCompleted = false, currentRoute = "settings", isFromOnboarding = false))
+    }
+
+    @Test
+    fun shouldShowBottomNav_whenOnboardingOrPlayerRoute_returnsFalse() {
+        assertFalse(shouldShowBottomNav(onboardingCompleted = true, currentRoute = "onboarding", isFromOnboarding = false))
+        assertFalse(shouldShowBottomNav(onboardingCompleted = true, currentRoute = "player", isFromOnboarding = false))
+        assertFalse(shouldShowBottomNav(onboardingCompleted = true, currentRoute = "player/queue", isFromOnboarding = false))
+    }
+
+    @Test
+    fun shouldShowBottomNav_whenFromOnboardingRoute_returnsFalse() {
+        assertFalse(shouldShowBottomNav(onboardingCompleted = true, currentRoute = "settings?page=account", isFromOnboarding = true))
+        assertFalse(shouldShowBottomNav(onboardingCompleted = false, currentRoute = "settings?page=account", isFromOnboarding = true))
+    }
+
+    @Test
+    fun shouldShowBottomNav_whenCompletedAndOnMainDestinations_returnsTrue() {
+        assertTrue(shouldShowBottomNav(onboardingCompleted = true, currentRoute = "home", isFromOnboarding = false))
+        assertTrue(shouldShowBottomNav(onboardingCompleted = true, currentRoute = "library", isFromOnboarding = false))
+        assertTrue(shouldShowBottomNav(onboardingCompleted = true, currentRoute = "settings", isFromOnboarding = false))
+    }
+
+    @Test
+    fun shouldShowBottomNav_whenNullRoute_returnsFalse() {
+        assertFalse(shouldShowBottomNav(onboardingCompleted = true, currentRoute = null, isFromOnboarding = false))
     }
 }

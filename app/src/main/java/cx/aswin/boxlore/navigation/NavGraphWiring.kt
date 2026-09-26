@@ -91,6 +91,26 @@ internal fun resolveBottomNavTabFromBackStack(backStack: List<androidx.navigatio
     return "home"
 }
 
+/**
+ * Resolves whether the bottom navigation bar should be visible.
+ *
+ * Rules:
+ * - Hidden if onboarding is not completed.
+ * - Hidden while on the player or onboarding routes.
+ * - Hidden if the current destination was opened from onboarding (e.g. account setup).
+ */
+internal fun shouldShowBottomNav(
+    onboardingCompleted: Boolean,
+    currentRoute: String?,
+    isFromOnboarding: Boolean,
+): Boolean {
+    val route = currentRoute ?: return false
+    return onboardingCompleted &&
+        !route.startsWith("player") &&
+        route != "onboarding" &&
+        !isFromOnboarding
+}
+
 // ---------------------------------------------------------------------------
 // Settings state grouping (reduces parameter count on BoxLoreNavHost)
 // ---------------------------------------------------------------------------
