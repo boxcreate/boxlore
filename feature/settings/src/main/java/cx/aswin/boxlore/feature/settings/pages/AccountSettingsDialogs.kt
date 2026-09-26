@@ -2,6 +2,10 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -9,6 +13,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.CoroutineScope
@@ -61,11 +67,13 @@ internal fun AccountSettingsDialogs(
     onConfirmDelete: () -> Unit,
     onDismissReauthRequired: () -> Unit,
     onSignOutToReauth: () -> Unit,
+    onOpenAccountDeletionInfo: () -> Unit = {},
 ) {
     if (showDeleteConfirmation) {
         DeleteAccountConfirmationDialog(
             onDismiss = onDismissDeleteConfirmation,
             onConfirmDelete = onConfirmDelete,
+            onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
         )
     }
 
@@ -81,16 +89,27 @@ internal fun AccountSettingsDialogs(
 private fun DeleteAccountConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirmDelete: () -> Unit,
+    onOpenAccountDeletionInfo: () -> Unit = {},
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Delete Account", fontWeight = GoogleSansWeight.bold) },
         text = {
-            Text(
-                "Are you sure you want to delete your boxlore account? " +
-                    "This permanently removes your cloud profile and cross-device sync data. " +
-                    "Your local downloads and podcast catalog on this device will not be erased.",
-            )
+            Column {
+                Text(
+                    "Are you sure you want to delete your boxlore account? " +
+                        "This permanently removes your cloud profile and cross-device sync data. " +
+                        "Your local downloads and podcast catalog on this device will not be erased.",
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "Learn how your data is handled after deletion",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = GoogleSansWeight.medium,
+                    modifier = Modifier.clickable(onClick = onOpenAccountDeletionInfo),
+                )
+            }
         },
         confirmButton = {
             Button(
