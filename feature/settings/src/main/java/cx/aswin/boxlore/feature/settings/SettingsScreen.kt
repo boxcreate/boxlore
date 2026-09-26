@@ -1,9 +1,6 @@
 package cx.aswin.boxlore.feature.settings
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -53,6 +50,7 @@ import cx.aswin.boxlore.feature.settings.pages.PlaybackUiState
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsActions
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
+import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
 import kotlinx.coroutines.flow.StateFlow
 
@@ -328,102 +326,138 @@ private fun SettingsAnimatedPages(
                 ?: remember { mutableStateOf(CloudSyncUiStatus.Idle) }
         )
 
-        when (currentDestination) {
-            ProfileSettingsDestination.Hub ->
-                SettingsHub(
-                    onBack = config.onBack,
-                    onNavigate = actions.onNavigate,
-                )
-
-            ProfileSettingsDestination.Account -> {
-                AccountSettingsPage(
-                    authRepository = repositories.authRepository,
-                    onBack = actions.onReturnToHub,
-                    syncStatus = syncStatus,
-                    onSyncNow = repositories.onSyncNow ?: {},
-                    isOnboarding = config.isOnboarding,
-                )
-            }
-
-            ProfileSettingsDestination.SyncAndBackups ->
-                SyncAndBackupsPage(
-                    accountStatus = uiData.accountStatus,
-                    syncStatus = syncStatus,
-                    backupActions = actions.backupActions,
-                    onBack = actions.onReturnToHub,
-                    onAccountClick = actions.onNavigateToAccountFromSync,
-                )
-
-            ProfileSettingsDestination.Library ->
-                LibrarySettingsPage(
-                    discoveryPreferences = LibraryDiscoveryPreferences(
-                        currentRegion = contentBundle.regionSettings.currentRegion,
-                        contentLanguages = contentBundle.regionSettings.contentLanguages,
-                        onSetRegion = {
-                            AnalyticsHelper.trackSettingsInteraction("content_region_changed", it)
-                            contentBundle.regionSettings.onSetRegion(it)
-                        },
-                        onSetContentLanguages = {
-                            AnalyticsHelper.trackSettingsInteraction(
-                                "content_languages_changed",
-                                it.joinToString(","),
-                            )
-                            contentBundle.regionSettings.onSetContentLanguages(it)
-                        },
-                    ),
-                    onAddRssClick = { contentBundle.settingsViewModel.openAddRssDialog() },
-                    onBack = actions.onReturnToHub,
-                )
-
-            ProfileSettingsDestination.Appearance ->
-                AppearanceSettingsPage(
-                    state = contentBundle.appearanceSettings.state,
-                    actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
-                    onBack = actions.onReturnToHub,
-                )
-
-            ProfileSettingsDestination.Playback ->
-                PlaybackSettingsPage(
-                    state = contentBundle.playbackSettings.state,
-                    actions = contentBundle.playbackSettings.actions,
-                    onBack = actions.onReturnToHub,
-                )
-
-            ProfileSettingsDestination.Downloads ->
-                DownloadsSettingsPage(
-                    onSmartDownloadsClick = contentBundle.downloadsNavigation.onNavigateToSmartDownloads,
-                    onAutoDownloadsClick = contentBundle.downloadsNavigation.onNavigateToAutoDownloads,
-                    onBack = actions.onReturnToHub,
-                )
-
-            ProfileSettingsDestination.Privacy ->
-                PrivacySettingsPage(
-                    deletionId = uiData.deletionId,
-                    isDeletionExpanded = uiData.isDeletionExpanded,
-                    actions =
-                    PrivacySettingsActions(
-                        onDeletionExpandedChange = actions.onDeletionExpandedChange,
-                        onResetIdentityClick = actions.onShowResetDialog,
-                        onResetRecommendationsClick = contentBundle.settingsViewModel::resetRecommendations,
-                        onCopyDeletionId = { copyDeletionId(contentBundle.context, uiData.deletionId) },
-                        onEmailDeletionRequest = {
-                            requestAnalyticsDeletionByEmail(contentBundle.context, uiData.deletionId)
-                        },
-                    ),
-                    onBack = actions.onReturnToHub,
-                )
-
-            ProfileSettingsDestination.About ->
-                AboutSettingsPage(
-                    appInfo = uiData.appInfo,
-                    onVisitPodcastIndex = { visitPodcastIndexHomepage(contentBundle.context) },
-                    onOpenChangelog = { openChangelog(contentBundle.context) },
-                    onSendFeedback = { config.onSendFeedback?.invoke() },
-                    onBack = actions.onReturnToHub,
-                )
-        }
+        SettingsDestinationContent(
+            destination = currentDestination,
+            syncStatus = syncStatus,
+            config = config,
+            repositories = repositories,
+            contentBundle = contentBundle,
+            uiData = uiData,
+            actions = actions,
+        )
     }
 }
+
+@Composable
+private fun SettingsDestinationContent(
+    destination: ProfileSettingsDestination,
+    syncStatus: CloudSyncUiStatus,
+    config: SettingsScreenConfig,
+    repositories: SettingsRepositories,
+    contentBundle: SettingsPagesContentBundle,
+    uiData: SettingsPagesUiData,
+    actions: SettingsPagesActions,
+) {
+    when (destination) {
+        ProfileSettingsDestination.Hub ->
+            SettingsHub(
+                onBack = config.onBack,
+                onNavigate = actions.onNavigate,
+            )
+
+        ProfileSettingsDestination.Account ->
+            AccountSettingsPage(
+                authRepository = repositories.authRepository,
+                onBack = actions.onReturnToHub,
+                syncStatus = syncStatus,
+                onSyncNow = repositories.onSyncNow ?: {},
+                isOnboarding = config.isOnboarding,
+            )
+
+        ProfileSettingsDestination.SyncAndBackups ->
+            SyncAndBackupsPage(
+                accountStatus = uiData.accountStatus,
+                syncStatus = syncStatus,
+                backupActions = actions.backupActions,
+                onBack = actions.onReturnToHub,
+                onAccountClick = actions.onNavigateToAccountFromSync,
+            )
+
+        ProfileSettingsDestination.Library ->
+            LibrarySettingsPage(
+                discoveryPreferences = createLibraryDiscoveryPreferences(contentBundle.regionSettings),
+                onAddRssClick = { contentBundle.settingsViewModel.openAddRssDialog() },
+                onBack = actions.onReturnToHub,
+            )
+
+        ProfileSettingsDestination.Appearance ->
+            AppearanceSettingsPage(
+                state = contentBundle.appearanceSettings.state,
+                actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
+                onBack = actions.onReturnToHub,
+            )
+
+        ProfileSettingsDestination.Playback ->
+            PlaybackSettingsPage(
+                state = contentBundle.playbackSettings.state,
+                actions = contentBundle.playbackSettings.actions,
+                onBack = actions.onReturnToHub,
+            )
+
+        ProfileSettingsDestination.Downloads ->
+            DownloadsSettingsPage(
+                onSmartDownloadsClick = contentBundle.downloadsNavigation.onNavigateToSmartDownloads,
+                onAutoDownloadsClick = contentBundle.downloadsNavigation.onNavigateToAutoDownloads,
+                onBack = actions.onReturnToHub,
+            )
+
+        ProfileSettingsDestination.Privacy ->
+            PrivacySettingsPage(
+                deletionId = uiData.deletionId,
+                isDeletionExpanded = uiData.isDeletionExpanded,
+                actions = createPrivacySettingsActions(uiData, actions, contentBundle),
+                onBack = actions.onReturnToHub,
+            )
+
+        ProfileSettingsDestination.About ->
+            AboutSettingsPage(
+                appInfo = uiData.appInfo,
+                onVisitPodcastIndex = { visitPodcastIndexHomepage(contentBundle.context) },
+                onOpenChangelog = { openChangelog(contentBundle.context) },
+                onSendFeedback = { config.onSendFeedback?.invoke() },
+                onBack = actions.onReturnToHub,
+            )
+
+        ProfileSettingsDestination.Support ->
+            SupportDevelopmentPage(
+                onBack = actions.onReturnToHub,
+            )
+    }
+}
+
+private fun createLibraryDiscoveryPreferences(
+    regionSettings: RegionSettings,
+): LibraryDiscoveryPreferences =
+    LibraryDiscoveryPreferences(
+        currentRegion = regionSettings.currentRegion,
+        contentLanguages = regionSettings.contentLanguages,
+        onSetRegion = {
+            AnalyticsHelper.trackSettingsInteraction("content_region_changed", it)
+            regionSettings.onSetRegion(it)
+        },
+        onSetContentLanguages = {
+            AnalyticsHelper.trackSettingsInteraction(
+                "content_languages_changed",
+                it.joinToString(","),
+            )
+            regionSettings.onSetContentLanguages(it)
+        },
+    )
+
+private fun createPrivacySettingsActions(
+    uiData: SettingsPagesUiData,
+    actions: SettingsPagesActions,
+    contentBundle: SettingsPagesContentBundle,
+): PrivacySettingsActions =
+    PrivacySettingsActions(
+        onDeletionExpandedChange = actions.onDeletionExpandedChange,
+        onResetIdentityClick = actions.onShowResetDialog,
+        onResetRecommendationsClick = contentBundle.settingsViewModel::resetRecommendations,
+        onCopyDeletionId = { copyDeletionId(contentBundle.context, uiData.deletionId) },
+        onEmailDeletionRequest = {
+            requestAnalyticsDeletionByEmail(contentBundle.context, uiData.deletionId)
+        },
+    )
 
 @Composable
 private fun SettingsDialogs(
@@ -593,82 +627,3 @@ private fun rememberAppInfo(context: Context): AppInfo {
         )
     }
 }
-
-private fun copyDeletionId(
-    context: Context,
-    deletionId: String,
-) {
-    AnalyticsHelper.trackSettingsInteraction("delete_id_copied")
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("Anonymous analytics ID", deletionId))
-    Toast.makeText(context, "Analytics ID copied", Toast.LENGTH_SHORT).show()
-}
-
-private fun requestAnalyticsDeletionByEmail(
-    context: Context,
-    deletionId: String,
-) {
-    AnalyticsHelper.trackSettingsInteraction("delete_email_clicked")
-    val intent =
-        Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:")
-            putExtra(Intent.EXTRA_EMAIL, arrayOf("support@aswin.cx"))
-            putExtra(Intent.EXTRA_SUBJECT, "Analytics data deletion request")
-            putExtra(
-                Intent.EXTRA_TEXT,
-                "Please delete PostHog analytics data associated with this distinct ID: $deletionId",
-            )
-        }
-    runCatching { context.startActivity(intent) }
-        .onFailure {
-            Toast.makeText(context, "No email app is available", Toast.LENGTH_SHORT).show()
-        }
-}
-
-private fun visitPodcastIndexHomepage(context: Context) {
-    AnalyticsHelper.trackSettingsInteraction("podcast_index_homepage_clicked")
-    runCatching {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://podcastindex.org")))
-    }
-}
-
-private fun openChangelog(context: Context) {
-    AnalyticsHelper.trackSettingsInteraction("changelog_clicked")
-    runCatching {
-        context.startActivity(
-            Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("https://github.com/boxcreate/boxlore/blob/master/CHANGELOG.md"),
-            ),
-        )
-    }
-}
-
-internal fun String?.toSettingsDestination(): ProfileSettingsDestination = when (this?.trim()?.lowercase()) {
-    "account" -> ProfileSettingsDestination.Account
-    "sync", "sync_and_backups", "sync-and-backups", "backups" -> ProfileSettingsDestination.SyncAndBackups
-    "library" -> ProfileSettingsDestination.Library
-    "appearance" -> ProfileSettingsDestination.Appearance
-    "playback" -> ProfileSettingsDestination.Playback
-    "downloads" -> ProfileSettingsDestination.Downloads
-    "privacy" -> ProfileSettingsDestination.Privacy
-    "about" -> ProfileSettingsDestination.About
-    else -> ProfileSettingsDestination.Hub
-}
-
-internal sealed interface SettingsBackAction {
-    data object NavigateBack : SettingsBackAction
-    data class NavigateTo(val destination: ProfileSettingsDestination) : SettingsBackAction
-}
-
-internal fun resolveSettingsBackAction(
-    isOnboarding: Boolean,
-    previousDestination: ProfileSettingsDestination?,
-    initialPage: String?,
-): SettingsBackAction =
-    when {
-        isOnboarding -> SettingsBackAction.NavigateBack
-        previousDestination != null -> SettingsBackAction.NavigateTo(previousDestination)
-        initialPage != null && initialPage != "hub" -> SettingsBackAction.NavigateBack
-        else -> SettingsBackAction.NavigateTo(ProfileSettingsDestination.Hub)
-    }

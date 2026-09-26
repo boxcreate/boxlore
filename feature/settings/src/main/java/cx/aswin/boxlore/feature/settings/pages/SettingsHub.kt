@@ -19,30 +19,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.settings.ProfileSettingsDestination
 import cx.aswin.boxlore.feature.settings.components.SettingsCategoryCard
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
-import cx.aswin.boxlore.feature.settings.dialogs.SupportDevelopmentSheet
 
 @Composable
 internal fun SettingsHub(
     onBack: () -> Unit,
     onNavigate: (ProfileSettingsDestination) -> Unit,
 ) {
-    var showSupportSheet by rememberSaveable { mutableStateOf(false) }
-
     SettingsScaffold(
         title = "Settings",
         onBack = onBack,
         actions = {
             FilledTonalButton(
-                onClick = { showSupportSheet = true },
+                onClick = { onNavigate(ProfileSettingsDestination.Support) },
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                 modifier = Modifier.padding(end = 8.dp),
             ) {
@@ -59,12 +52,6 @@ internal fun SettingsHub(
             }
         },
     ) {
-        if (showSupportSheet) {
-            SupportDevelopmentSheet(
-                onDismissRequest = { showSupportSheet = false },
-            )
-        }
-
         SettingsCategoryCard(
             title = "Cloud Sync & Backups",
             description = "Account sync, OPML feeds, and library backups",

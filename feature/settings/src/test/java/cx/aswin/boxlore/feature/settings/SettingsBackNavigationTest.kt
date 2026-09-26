@@ -88,6 +88,8 @@ class SettingsBackNavigationTest {
         assertEquals(ProfileSettingsDestination.SyncAndBackups, "backups".toSettingsDestination())
         assertEquals(ProfileSettingsDestination.Library, "library".toSettingsDestination())
         assertEquals(ProfileSettingsDestination.Account, "account".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.Support, "support".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.Support, "support_us".toSettingsDestination())
         assertEquals(ProfileSettingsDestination.Hub, "unknown".toSettingsDestination())
     }
 }

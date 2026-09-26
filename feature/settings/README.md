@@ -10,14 +10,16 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 - `SettingsScreenConfig` includes `isOnboarding: Boolean` (used by app navigation to keep onboarding mode active and bypass the hub on return), `onSendFeedback: (() -> Unit)?` to route to feedback, and `resolveSettingsBackAction` for deterministic back-handler actions.
 - `FeedbackScreen`, `FeedbackViewModel`, `DiagnosticCollector`, and `LogcatCollector` under `feedback/` for sticky draft feedback submissions, in-process sanitized logcat extraction, device diagnostics, and GitHub issue reporting.
 - `AutoDownloadSettingsScreen` and `SmartDownloadsSettingsScreen` under `downloads/` for download management.
-- `AccountSettingsPage`, `SyncAndBackupsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`.
-- Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`, `SupportDevelopmentSheet`.
+- `AccountSettingsPage`, `SyncAndBackupsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`, `SupportDevelopmentPage`.
+- Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
 
 ## Internal structure
 
 ```text
 src/main/java/cx/aswin/boxlore/feature/settings/
   SettingsScreen.kt
+  SettingsBackNavigation.kt
+  SettingsExternalActions.kt
   SettingsViewModel.kt
   SettingsViewModelAssembler.kt
   ProfileSettingsDestination.kt
@@ -28,7 +30,6 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     AccentColorPickerDialog.kt
     AddRssFeedDialog.kt
     ResetAnalyticsDialog.kt
-    SupportDevelopmentSheet.kt
   downloads/
     AutoDownloadSettingsScreen.kt
     SmartDownloadsSettingsScreen.kt
@@ -59,6 +60,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     PlaybackSettingsPage.kt
     PrivacySettingsPage.kt
     SettingsHub.kt
+    SupportDevelopmentPage.kt
     SyncAndBackupsPage.kt
 ```
 
