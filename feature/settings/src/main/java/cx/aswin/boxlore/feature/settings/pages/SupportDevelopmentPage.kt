@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,7 +52,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -152,7 +152,7 @@ internal fun SupportDevelopmentPage(
             particleProgress = particleProgress,
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.60f)
+                .fillMaxHeight(0.75f)
                 .align(Alignment.TopCenter),
         )
 
@@ -202,33 +202,28 @@ private fun SupportPageContent(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            SupportTierPicker(
-                selectedIndex = pagerState.currentPage,
-                tiers = SUPPORT_TIER_CARDS,
-                activeColor = activeAuraColor,
-                onSelect = onSelectTier,
-            )
+        SupportTierPicker(
+            selectedIndex = pagerState.currentPage,
+            tiers = SUPPORT_TIER_CARDS,
+            activeColor = activeAuraColor,
+            onSelect = onSelectTier,
+        )
 
-            Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-            SupportCtaSection(
-                tier = activeTier,
-                activeColor = activeAuraColor,
-            )
-        }
+        SupportCtaSection(
+            tier = activeTier,
+            activeColor = activeAuraColor,
+        )
 
-        Spacer(modifier = Modifier.weight(1.1f))
+        Spacer(modifier = Modifier.weight(1f))
 
         SupportMissionCard(
             activeColor = activeAuraColor,
             totalListeningHours = totalListeningHours,
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(10.dp))
     }
 }
 
@@ -237,11 +232,15 @@ private fun SupportPageContent(
 private fun SupportTopAppBar(
     onBack: () -> Unit,
 ) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
             Text(
                 text = "Support us",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = GoogleSansWeight.bold,
+                    fontSize = 18.sp,
+                    letterSpacing = 0.3.sp,
+                ),
                 color = Color.White,
             )
         },
@@ -253,6 +252,9 @@ private fun SupportTopAppBar(
                     tint = Color.White,
                 )
             }
+        },
+        actions = {
+            Spacer(modifier = Modifier.width(48.dp))
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
@@ -322,19 +324,35 @@ private fun CosmicAtmosphereCanvas(
 ) {
     Canvas(modifier = modifier) {
         val centerX = size.width / 2f
-        val baseRadius = size.width * 0.45f
+        val baseRadius = size.width * 0.48f
 
-        // Smooth vertical atmospheric wash into pitch black (no circular halo)
+        // Rich vertical atmospheric wash radiating into deep black from top
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
+                    auraColor.copy(alpha = 0.40f * pulse),
                     auraColor.copy(alpha = 0.18f * pulse),
-                    auraColor.copy(alpha = 0.05f * pulse),
+                    auraColor.copy(alpha = 0.04f * pulse),
                     Color.Transparent,
                 ),
                 startY = 0f,
-                endY = size.height * 0.70f,
+                endY = size.height * 0.85f,
             ),
+        )
+
+        // Focused radiant epicenter bloom behind stage
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    auraColor.copy(alpha = 0.32f * pulse),
+                    auraColor.copy(alpha = 0.08f * pulse),
+                    Color.Transparent,
+                ),
+                center = Offset(centerX, size.height * 0.45f),
+                radius = baseRadius * 1.30f,
+            ),
+            center = Offset(centerX, size.height * 0.45f),
+            radius = baseRadius * 1.30f,
         )
 
         // Energy particles emerging from items and floating UPWARDS
@@ -437,17 +455,22 @@ private fun SupportArtifactStage(
                 val tier = tiers[page]
                 val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
                 val signedOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                val clampedOffset = pageOffset.coerceIn(0f, 1f)
+                val levitationWeight = 1f - clampedOffset
 
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            val scale = lerp(1f, 0.76f, pageOffset.coerceIn(0f, 1f))
+                            cameraDistance = 14f * density
+                            rotationY = -26f * signedOffset.coerceIn(-1f, 1f)
+                            rotationZ = -4.5f * signedOffset.coerceIn(-1f, 1f)
+                            translationX = signedOffset * -16.dp.toPx()
+                            translationY = (clampedOffset * 14.dp.toPx()) + (floatOffset.dp.toPx() * levitationWeight)
+                            val scale = lerp(1f, 0.72f, clampedOffset)
                             scaleX = scale
                             scaleY = scale
-                            alpha = lerp(1f, 0.18f, pageOffset.coerceIn(0f, 1f))
-                            rotationY = -20f * signedOffset.coerceIn(-1f, 1f)
-                            cameraDistance = 12f * density
+                            alpha = lerp(1f, 0.22f, clampedOffset)
                         },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -455,13 +478,7 @@ private fun SupportArtifactStage(
                         painter = painterResource(id = tier.iconRes),
                         contentDescription = tier.title,
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .size(170.dp)
-                            .graphicsLayer {
-                                if (page == pagerState.currentPage) {
-                                    translationY = floatOffset.dp.toPx()
-                                }
-                            },
+                        modifier = Modifier.size(170.dp),
                     )
                 }
             }

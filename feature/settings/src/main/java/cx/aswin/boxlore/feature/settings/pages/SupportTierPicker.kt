@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
@@ -84,27 +85,35 @@ private fun SupportTierPill(
     activeColor: Color,
     onSelect: () -> Unit,
 ) {
+    val activeContentColor = if (activeColor.luminance() > 0.45f) Color(0xFF0A0A12) else Color.White
+
     val animatedBorderColor by animateColorAsState(
-        targetValue = if (isSelected) activeColor.copy(alpha = 0.85f) else Color.Transparent,
+        targetValue = if (isSelected) Color.White.copy(alpha = 0.70f) else Color.Transparent,
         animationSpec = tween(240, easing = FastOutSlowInEasing),
         label = "pill_border_color",
     )
     val durationTextColor by animateColorAsState(
-        targetValue = if (isSelected) Color.White else Color(0xFF9E9EB2),
+        targetValue = if (isSelected) activeContentColor else Color(0xFF9E9EB2),
         animationSpec = tween(200),
         label = "pill_duration_color",
     )
     val costTextColor by animateColorAsState(
-        targetValue = if (isSelected) activeColor else Color(0xFF656578),
+        targetValue = if (isSelected) activeContentColor.copy(alpha = 0.88f) else Color(0xFF656578),
         animationSpec = tween(200),
         label = "pill_cost_color",
     )
 
     val backgroundBrush = if (isSelected) {
+        val activeColorDeep = Color(
+            red = (activeColor.red * 0.82f).coerceIn(0f, 1f),
+            green = (activeColor.green * 0.82f).coerceIn(0f, 1f),
+            blue = (activeColor.blue * 0.82f).coerceIn(0f, 1f),
+            alpha = 1f,
+        )
         Brush.verticalGradient(
             colors = listOf(
-                activeColor.copy(alpha = 0.22f),
-                activeColor.copy(alpha = 0.08f),
+                activeColor.copy(alpha = 1f),
+                activeColorDeep,
             ),
         )
     } else {
@@ -122,7 +131,7 @@ private fun SupportTierPill(
             .clip(RoundedCornerShape(14.dp))
             .background(backgroundBrush)
             .border(
-                BorderStroke(if (isSelected) 1.dp else 0.5.dp, animatedBorderColor),
+                BorderStroke(if (isSelected) 1.2.dp else 0.5.dp, animatedBorderColor),
                 shape = RoundedCornerShape(14.dp),
             )
             .clickable(onClick = onSelect)
@@ -131,7 +140,7 @@ private fun SupportTierPill(
     ) {
         SupportTierPips(
             count = tier.energySegments,
-            pipColor = if (isSelected) activeColor else Color(0xFF323244),
+            pipColor = if (isSelected) activeContentColor.copy(alpha = 0.80f) else Color(0xFF323244),
         )
 
         Spacer(modifier = Modifier.height(4.dp))

@@ -101,10 +101,16 @@ private fun SupportDeployButton(
     )
 
     val backgroundGradient = remember(activeColor) {
+        val activeColorHighlight = Color(
+            red = (activeColor.red * 1.12f).coerceIn(0f, 1f),
+            green = (activeColor.green * 1.12f).coerceIn(0f, 1f),
+            blue = (activeColor.blue * 1.12f).coerceIn(0f, 1f),
+            alpha = 1f,
+        )
         Brush.horizontalGradient(
             colors = listOf(
                 activeColor,
-                activeColor.copy(alpha = 0.88f),
+                activeColorHighlight,
                 activeColor,
             ),
         )
