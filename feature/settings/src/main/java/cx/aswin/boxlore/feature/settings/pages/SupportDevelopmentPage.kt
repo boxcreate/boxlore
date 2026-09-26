@@ -608,12 +608,16 @@ private fun SupportSpecCard(
     }
 }
 
+internal fun getSupportButtonContentColor(backgroundColor: Color): Color {
+    return if (backgroundColor.luminance() > 0.45f) Color.Black else Color.White
+}
+
 @Composable
 private fun SupportCtaSection(
     tier: SupportTierCardData,
     activeColor: Color,
 ) {
-    val buttonContentColor = if (activeColor.luminance() > 0.55f) Color.Black else Color.White
+    val buttonContentColor = getSupportButtonContentColor(activeColor)
 
     Column(
         modifier = Modifier.fillMaxWidth(),

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.compose.ui.graphics.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -65,5 +66,20 @@ class SupportDevelopmentPageTest {
                 assertTrue("Breakdown item must not be blank", item.isNotBlank())
             }
         }
+    }
+
+    @Test
+    fun supportButtonContentColor_contrastsCorrectly() {
+        val tier1Color = SUPPORT_TIER_CARDS[0].auraColor // Teal
+        val tier2Color = SUPPORT_TIER_CARDS[1].auraColor // Green
+        val tier3Color = SUPPORT_TIER_CARDS[2].auraColor // Yellow
+        val tier4Color = SUPPORT_TIER_CARDS[3].auraColor // Purple
+        val tier5Color = SUPPORT_TIER_CARDS[4].auraColor // Red
+
+        assertEquals(Color.Black, getSupportButtonContentColor(tier1Color))
+        assertEquals(Color.Black, getSupportButtonContentColor(tier2Color))
+        assertEquals(Color.Black, getSupportButtonContentColor(tier3Color))
+        assertEquals(Color.White, getSupportButtonContentColor(tier4Color))
+        assertEquals(Color.White, getSupportButtonContentColor(tier5Color))
     }
 }
