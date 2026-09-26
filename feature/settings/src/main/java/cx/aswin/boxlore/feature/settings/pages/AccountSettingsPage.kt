@@ -469,7 +469,7 @@ private fun UserProfileCard(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedBlobAvatar(
-                size = 76.dp,
+                size = 92.dp,
             )
 
             Spacer(Modifier.height(14.dp))

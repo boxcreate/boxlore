@@ -46,6 +46,8 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     AccountSettingsPage.kt
     AccountSignedOutContent.kt
     AnimatedBlobAvatar.kt
+    BlobAvatarGeometry.kt
+    BlobAvatarGenreMood.kt
     AppearanceSettingsPage.kt
     DownloadsSettingsPage.kt
     EmailVerificationPendingSection.kt
