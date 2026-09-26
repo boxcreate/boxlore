@@ -58,6 +58,7 @@ internal fun SupportCtaSection(
     tier: SupportTierCardData,
     activeColor: Color,
     modifier: Modifier = Modifier,
+    onDonateClick: (SupportTierCardData) -> Unit = {},
 ) {
     val buttonContentColor = getSupportButtonContentColor(activeColor)
 
@@ -69,6 +70,7 @@ internal fun SupportCtaSection(
             tier = tier,
             activeColor = activeColor,
             contentColor = buttonContentColor,
+            onClick = { onDonateClick(tier) },
         )
 
         Spacer(modifier = Modifier.height(7.dp))
@@ -87,6 +89,7 @@ private fun SupportDeployButton(
     tier: SupportTierCardData,
     activeColor: Color,
     contentColor: Color,
+    onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -117,7 +120,7 @@ private fun SupportDeployButton(
     }
 
     Surface(
-        onClick = {},
+        onClick = onClick,
         interactionSource = interactionSource,
         shape = RoundedCornerShape(18.dp),
         color = Color.Transparent,

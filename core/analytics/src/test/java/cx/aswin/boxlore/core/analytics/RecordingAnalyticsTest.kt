@@ -196,6 +196,36 @@ class AnalyticsGlossaryAllowlistTest {
     }
 
     @Test
+    fun `support events are allowed and emit with expected properties`() {
+        assertTrue(AnalyticsGlossary.isAllowedEvent("support_page_viewed"))
+        assertTrue(AnalyticsGlossary.isAllowedEvent("support_tier_toggled"))
+        assertTrue(AnalyticsGlossary.isAllowedEvent("support_donate_clicked"))
+
+        val captured = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsEmit.installRecordingSink(captured)
+        try {
+            AnalyticsHelper.trackSupportPageViewed()
+            AnalyticsHelper.trackSupportTierToggled(
+                tierTitle = "Micro Energy Cell",
+                codename = "WITCH CELL",
+                amount = "$0.49",
+                isLoreInspect = true,
+            )
+            AnalyticsHelper.trackSupportDonateClicked(
+                tierTitle = "Field Battery Pack",
+                codename = "GRAVE PACK",
+                amount = "$0.99",
+            )
+
+            assertTrue(captured.any { it.first == "support_page_viewed" })
+            assertTrue(captured.any { it.first == "support_tier_toggled" && it.second["codename"] == "WITCH CELL" && it.second["amount"] == "$0.49" })
+            assertTrue(captured.any { it.first == "support_donate_clicked" && it.second["codename"] == "GRAVE PACK" && it.second["amount"] == "$0.99" })
+        } finally {
+            restore()
+        }
+    }
+
+    @Test
     fun `facade emissions after representative tracks are only glossary Phase A union B union C`() {
         val captured = mutableListOf<Pair<String, Map<String, Any>>>()
         val restore = AnalyticsEmit.installRecordingSink(captured)

@@ -101,7 +101,17 @@ object AnalyticsGlossary {
 
     val PHASE_A_UNION_B_UNION_C: Set<String> = PHASE_A_UNION_B + PHASE_C
 
-    fun isAllowedEvent(eventName: String): Boolean = eventName == PERSON_SET_EVENT || eventName in PHASE_A_UNION_B_UNION_C
+    /** Support development and donation tier tracking events. */
+    val SUPPORT_EVENTS: Set<String> =
+        setOf(
+            "support_page_viewed",
+            "support_tier_toggled",
+            "support_donate_clicked",
+        )
+
+    val ALL_ALLOWED_EVENTS: Set<String> = PHASE_A_UNION_B_UNION_C + SUPPORT_EVENTS
+
+    fun isAllowedEvent(eventName: String): Boolean = eventName == PERSON_SET_EVENT || eventName in ALL_ALLOWED_EVENTS
 
     /**
      * Normalizes legacy / free-form playback entry_point strings to the glossary enum sheet.

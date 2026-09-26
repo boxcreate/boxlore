@@ -133,4 +133,39 @@ class SupportDevelopmentPageTest {
             assertTrue("Copy should never falsely claim zero tracking", !copy.contains("tracking", ignoreCase = true))
         }
     }
+
+    @Test
+    fun supportDevelopmentAnalytics_tracksEventsWithAttributes() {
+        val captured = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = cx.aswin.boxlore.core.analytics.AnalyticsHelper.installRecordingSink(captured)
+        try {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSupportPageViewed()
+            val tier = SUPPORT_TIER_CARDS[0]
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSupportTierToggled(
+                tierTitle = tier.title,
+                codename = "${tier.codenameLine1} ${tier.codenameLine2}",
+                amount = tier.cost,
+                isLoreInspect = true,
+            )
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackSupportDonateClicked(
+                tierTitle = tier.title,
+                codename = "${tier.codenameLine1} ${tier.codenameLine2}",
+                amount = tier.cost,
+            )
+
+            assertTrue(captured.any { it.first == "support_page_viewed" })
+            val toggledEvent = captured.find { it.first == "support_tier_toggled" }
+            assertEquals("Micro Energy Cell", toggledEvent?.second?.get("tier_title"))
+            assertEquals("WITCH CELL", toggledEvent?.second?.get("codename"))
+            assertEquals("$0.49", toggledEvent?.second?.get("amount"))
+            assertEquals(true, toggledEvent?.second?.get("is_lore_inspect"))
+
+            val donateEvent = captured.find { it.first == "support_donate_clicked" }
+            assertEquals("Micro Energy Cell", donateEvent?.second?.get("tier_title"))
+            assertEquals("WITCH CELL", donateEvent?.second?.get("codename"))
+            assertEquals("$0.49", donateEvent?.second?.get("amount"))
+        } finally {
+            restore()
+        }
+    }
 }

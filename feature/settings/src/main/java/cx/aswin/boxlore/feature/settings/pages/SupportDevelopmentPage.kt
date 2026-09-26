@@ -1,8 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
 import android.app.Activity
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -57,20 +55,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -87,20 +84,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.view.WindowCompat
-import com.airbnb.lottie.LottieProperty
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
-import com.airbnb.lottie.compose.rememberLottieDynamicProperties
-import com.airbnb.lottie.compose.rememberLottieDynamicProperty
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
-import kotlin.math.PI
 import kotlin.math.absoluteValue
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 private val StalinistOneFontFamily = FontFamily(
@@ -126,6 +115,25 @@ internal fun SupportDevelopmentPage(
     val pagerState = rememberPagerState(initialPage = 2) { SUPPORT_TIER_CARDS.size }
     val coroutineScope = rememberCoroutineScope()
     val activeTier = SUPPORT_TIER_CARDS[pagerState.currentPage]
+
+    LaunchedEffect(Unit) {
+        AnalyticsHelper.trackSupportPageViewed()
+    }
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }
+            .distinctUntilChanged()
+            .drop(1)
+            .collect { page ->
+                val tier = SUPPORT_TIER_CARDS[page]
+                AnalyticsHelper.trackSupportTierToggled(
+                    tierTitle = tier.title,
+                    codename = "${tier.codenameLine1} ${tier.codenameLine2}",
+                    amount = tier.cost,
+                    isLoreInspect = false,
+                )
+            }
+    }
 
     val activeAuraColor by animateColorAsState(
         targetValue = activeTier.auraColor,
@@ -225,6 +233,13 @@ private fun SupportPageContent(
         SupportCtaSection(
             tier = activeTier,
             activeColor = activeAuraColor,
+            onDonateClick = { tier ->
+                AnalyticsHelper.trackSupportDonateClicked(
+                    tierTitle = tier.title,
+                    codename = "${tier.codenameLine1} ${tier.codenameLine2}",
+                    amount = tier.cost,
+                )
+            },
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -274,135 +289,59 @@ private fun SupportTopAppBar(
 }
 
 @Composable
-private fun SupportLightningAtmosphere(
-    tier: SupportTierCardData,
-    activeColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    val tierPowerFraction = ((tier.energySegments - 1) / 4f).coerceIn(0f, 1f)
-    val lightningScale by animateFloatAsState(
-        targetValue = 0.78f + (0.54f * tierPowerFraction),
-        animationSpec = tween(350, easing = FastOutSlowInEasing),
-        label = "lightning_scale",
-    )
-    val lightningSpeed by animateFloatAsState(
-        targetValue = 0.80f + (0.65f * tierPowerFraction),
-        animationSpec = tween(350, easing = FastOutSlowInEasing),
-        label = "lightning_speed",
-    )
-    val lightningAlpha by animateFloatAsState(
-        targetValue = 0.20f + (0.32f * tierPowerFraction),
-        animationSpec = tween(350, easing = FastOutSlowInEasing),
-        label = "lightning_alpha",
-    )
-
-    val composition by rememberLottieComposition(
-        LottieCompositionSpec.RawRes(R.raw.lightning_ambient),
-    )
-    val progress by animateLottieCompositionAsState(
-        composition = composition,
-        speed = lightningSpeed,
-        iterations = LottieConstants.IterateForever,
-    )
-    val dynamicProperties = rememberLottieDynamicProperties(
-        rememberLottieDynamicProperty(
-            property = LottieProperty.COLOR_FILTER,
-            value = PorterDuffColorFilter(activeColor.toArgb(), PorterDuff.Mode.SRC_ATOP),
-            keyPath = arrayOf("**"),
-        ),
-    )
-
-    LottieAnimation(
-        composition = composition,
-        progress = { progress },
-        dynamicProperties = dynamicProperties,
-        contentScale = ContentScale.Fit,
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = lightningScale
-                scaleY = lightningScale
-                alpha = lightningAlpha
-            },
-    )
-}
-
-@Composable
-private fun CosmicAtmosphereCanvas(
-    auraColor: Color,
-    pulse: Float,
-    particleProgress: Float,
-    modifier: Modifier = Modifier,
-) {
-    Canvas(modifier = modifier) {
-        val centerX = size.width / 2f
-        val baseRadius = size.width * 0.48f
-
-        // Rich vertical atmospheric wash radiating into deep black from top
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    auraColor.copy(alpha = 0.40f * pulse),
-                    auraColor.copy(alpha = 0.18f * pulse),
-                    auraColor.copy(alpha = 0.04f * pulse),
-                    Color.Transparent,
-                ),
-                startY = 0f,
-                endY = size.height * 0.85f,
-            ),
-        )
-
-        // Focused radiant epicenter bloom behind stage
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    auraColor.copy(alpha = 0.32f * pulse),
-                    auraColor.copy(alpha = 0.08f * pulse),
-                    Color.Transparent,
-                ),
-                center = Offset(centerX, size.height * 0.45f),
-                radius = baseRadius * 1.30f,
-            ),
-            center = Offset(centerX, size.height * 0.45f),
-            radius = baseRadius * 1.30f,
-        )
-
-        // Energy particles emerging from items and floating UPWARDS
-        val particleCount = 20
-        val startY = size.height * 0.65f
-        val riseDistance = size.height * 0.55f
-
-        for (i in 0 until particleCount) {
-            val seed = (i * 73.17f) % 360f
-            val rad = seed * (PI.toFloat() / 180f)
-            val progress = (particleProgress + i.toFloat() / particleCount) % 1f
-            val spreadFactor = 0.35f + (0.65f * progress)
-            val spreadX = (baseRadius * 0.85f * spreadFactor) * cos(rad)
-            val wobble = sin(progress * 2.5f * PI.toFloat() + seed) * 12.dp.toPx()
-            val px = centerX + spreadX + wobble
-            val py = startY - (progress * riseDistance)
-            val alpha = sin(progress * PI.toFloat()).coerceIn(0f, 1f) * 0.85f
-
-            if (alpha > 0.02f) {
-                drawCircle(
-                    color = auraColor.copy(alpha = alpha * 0.50f),
-                    radius = (2.2.dp + (1.2.dp * (1f - progress))).toPx(),
-                    center = Offset(px, py),
-                )
-                drawCircle(
-                    color = Color.White.copy(alpha = alpha * 0.95f),
-                    radius = (1.0.dp + (0.4.dp * (1f - progress))).toPx(),
-                    center = Offset(px, py),
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun SupportArtifactStage(
     pagerState: PagerState,
     tiers: List<SupportTierCardData>,
     activeAuraColor: Color,
+) {
+    val haptic = LocalHapticFeedback.current
+    var isStoryMode by remember { mutableStateOf(false) }
+    val storyProgress by animateFloatAsState(
+        targetValue = if (isStoryMode) 1f else 0f,
+        animationSpec = tween(360, easing = FastOutSlowInEasing),
+        label = "story_progress",
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        StageDisplayBox(
+            pagerState = pagerState,
+            tiers = tiers,
+            activeAuraColor = activeAuraColor,
+            storyProgress = storyProgress,
+            onStageClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                val nextStoryMode = !isStoryMode
+                isStoryMode = nextStoryMode
+                val currentTier = tiers[pagerState.currentPage]
+                AnalyticsHelper.trackSupportTierToggled(
+                    tierTitle = currentTier.title,
+                    codename = "${currentTier.codenameLine1} ${currentTier.codenameLine2}",
+                    amount = currentTier.cost,
+                    isLoreInspect = nextStoryMode,
+                )
+            },
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        SupportStageTierInfo(
+            selectedIndex = pagerState.currentPage,
+            tiers = tiers,
+        )
+    }
+}
+
+@Composable
+private fun StageDisplayBox(
+    pagerState: PagerState,
+    tiers: List<SupportTierCardData>,
+    activeAuraColor: Color,
+    storyProgress: Float,
+    onStageClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "unit_levitation_transition")
     val floatOffset by infiniteTransition.animateFloat(
@@ -433,74 +372,52 @@ private fun SupportArtifactStage(
         label = "platform_pulse",
     )
 
-    val haptic = LocalHapticFeedback.current
-    var isStoryMode by remember { mutableStateOf(false) }
-    val storyProgress by animateFloatAsState(
-        targetValue = if (isStoryMode) 1f else 0f,
-        animationSpec = tween(360, easing = FastOutSlowInEasing),
-        label = "story_progress",
-    )
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(190.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onStageClick,
+            ),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
+        SupportLightningAtmosphere(
+            tier = tiers[pagerState.currentPage],
+            activeColor = activeAuraColor,
+            modifier = Modifier.requiredSize(440.dp),
+        )
+
+        val pagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 4f)
+
+        // Transforming Stalinist codename backdrop behind platform & floating items
+        ItemBackdropCodename(
+            pagePosition = pagePosition,
+            tiers = tiers,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(190.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    isStoryMode = !isStoryMode
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = 1f - storyProgress
                 },
-            contentAlignment = Alignment.Center,
-        ) {
-            SupportLightningAtmosphere(
-                tier = tiers[pagerState.currentPage],
-                activeColor = activeAuraColor,
-                modifier = Modifier.requiredSize(440.dp),
-            )
+        )
 
-            val pagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 4f)
-
-            // Transforming Stalinist codename backdrop behind platform & floating items
-            ItemBackdropCodename(
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawTransformingPlatform(
                 pagePosition = pagePosition,
-                tiers = tiers,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        alpha = 1f - storyProgress
-                    },
-            )
-
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                drawTransformingPlatform(
-                    pagePosition = pagePosition,
-                    rotation = platformRotation,
-                    pulse = platformPulse,
-                    tiers = tiers,
-                    storyProgress = storyProgress,
-                )
-            }
-
-            SupportArtifactPager(
-                pagerState = pagerState,
+                rotation = platformRotation,
+                pulse = platformPulse,
                 tiers = tiers,
                 storyProgress = storyProgress,
-                floatOffset = floatOffset,
-                modifier = Modifier.fillMaxSize(),
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        SupportStageTierInfo(
-            selectedIndex = pagerState.currentPage,
+        SupportArtifactPager(
+            pagerState = pagerState,
             tiers = tiers,
+            storyProgress = storyProgress,
+            floatOffset = floatOffset,
+            modifier = Modifier.fillMaxSize(),
         )
     }
 }

@@ -448,4 +448,61 @@ internal object LibraryAnalyticsTracks {
             ),
         )
     }
+
+    fun trackSupportPageViewed() {
+        AnalyticsEmit.event("support_page_viewed")
+        AnalyticsEmit.event(
+            "settings_interaction",
+            mapOf(
+                "action" to "support_page_viewed",
+                "setting_key" to "support_development",
+            ),
+        )
+    }
+
+    fun trackSupportTierToggled(
+        tierTitle: String,
+        codename: String,
+        amount: String,
+        isLoreInspect: Boolean = false,
+    ) {
+        val props = mapOf(
+            "tier_title" to tierTitle,
+            "codename" to codename,
+            "amount" to amount,
+            "is_lore_inspect" to isLoreInspect,
+        )
+        AnalyticsEmit.event("support_tier_toggled", props)
+        AnalyticsEmit.event(
+            "settings_interaction",
+            mapOf(
+                "action" to "support_tier_toggled",
+                "setting_key" to tierTitle,
+                "value" to codename,
+                "amount" to amount,
+            ),
+        )
+    }
+
+    fun trackSupportDonateClicked(
+        tierTitle: String,
+        codename: String,
+        amount: String,
+    ) {
+        val props = mapOf(
+            "tier_title" to tierTitle,
+            "codename" to codename,
+            "amount" to amount,
+        )
+        AnalyticsEmit.event("support_donate_clicked", props)
+        AnalyticsEmit.event(
+            "settings_interaction",
+            mapOf(
+                "action" to "support_donate_clicked",
+                "setting_key" to tierTitle,
+                "value" to codename,
+                "amount" to amount,
+            ),
+        )
+    }
 }
