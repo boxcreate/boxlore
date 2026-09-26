@@ -60,7 +60,10 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     PlaybackSettingsPage.kt
     PrivacySettingsPage.kt
     SettingsHub.kt
+    SupportAtmosphere.kt
+    SupportCtaSection.kt
     SupportDevelopmentPage.kt
+    SupportTierModels.kt
     SyncAndBackupsPage.kt
 ```
 
