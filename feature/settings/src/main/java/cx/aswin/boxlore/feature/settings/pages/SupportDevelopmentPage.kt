@@ -842,8 +842,8 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$0.49",
         iconRes = R.drawable.ic_tier_1_micro_cell,
         auraColor = Color(0xFF2979FF),
-        codenameLine1 = "UNIT",
-        codenameLine2 = "BLUE",
+        codenameLine1 = "WITCH",
+        codenameLine2 = "CELL",
     ),
     SupportTierCardData(
         title = "Field Battery Pack",
@@ -853,8 +853,8 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$0.99",
         iconRes = R.drawable.ic_tier_2_field_battery,
         auraColor = Color(0xFF00E676),
-        codenameLine1 = "GRID",
-        codenameLine2 = "HAWK",
+        codenameLine1 = "GRAVE",
+        codenameLine2 = "PACK",
     ),
     SupportTierCardData(
         title = "Power Station",
@@ -864,8 +864,8 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$2.49",
         iconRes = R.drawable.ic_tier_3_power_station,
         auraColor = Color(0xFFFFB300),
-        codenameLine1 = "VAULT",
-        codenameLine2 = "PRIME",
+        codenameLine1 = "SUN",
+        codenameLine2 = "RELIC",
     ),
     SupportTierCardData(
         title = "Server Tower",
@@ -875,8 +875,8 @@ internal val SUPPORT_TIER_CARDS = listOf(
         cost = "$6.99",
         iconRes = R.drawable.ic_tier_4_server_tower,
         auraColor = Color(0xFF8B5CF6),
-        codenameLine1 = "STACK",
-        codenameLine2 = "ZERO",
+        codenameLine1 = "VOID",
+        codenameLine2 = "SPIRE",
     ),
     SupportTierCardData(
         title = "Quantum Beacon",
@@ -887,7 +887,7 @@ internal val SUPPORT_TIER_CARDS = listOf(
         iconRes = R.drawable.ic_tier_5_quantum_beacon,
         auraColor = Color(0xFFFF2D55),
         isFeatured = true,
-        codenameLine1 = "ORBIT",
-        codenameLine2 = "X",
+        codenameLine1 = "BLOOD",
+        codenameLine2 = "ORB",
     ),
 )

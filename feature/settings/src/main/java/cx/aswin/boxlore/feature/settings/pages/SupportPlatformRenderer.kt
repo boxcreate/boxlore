@@ -74,7 +74,7 @@ internal fun DrawScope.drawTierHudReticle(
 
     when (tierIndex) {
         0 -> {
-            // Tier 0: Unit Blue - Precision Rangefinder Reticle
+            // Tier 0: Witch Cell - Precision Rangefinder Reticle
             val radius = 88.dp.toPx() * effectivePulse
             drawCircle(
                 brush = Brush.radialGradient(
@@ -137,7 +137,7 @@ internal fun DrawScope.drawTierHudReticle(
             }
         }
         1 -> {
-            // Tier 1: Grid Hawk - Tactical Hexagonal Flight Reticle
+            // Tier 1: Grave Pack - Tactical Hexagonal Flight Reticle
             val hexRadius = 88.dp.toPx() * effectivePulse
             drawCircle(
                 brush = Brush.radialGradient(
@@ -190,7 +190,7 @@ internal fun DrawScope.drawTierHudReticle(
             drawChevron(centerX, centerY + hexRadius + 7.dp.toPx(), 6.5.dp.toPx(), false, baseColor.copy(alpha = 0.90f * alpha))
         }
         2 -> {
-            // Tier 2: Vault Prime - Reinforced Octagonal Aegis
+            // Tier 2: Sun Relic - Reinforced Octagonal Aegis
             val octRadius = 92.dp.toPx() * effectivePulse
             val innerRadius = octRadius * 0.65f
             drawCircle(
@@ -243,7 +243,7 @@ internal fun DrawScope.drawTierHudReticle(
             }
         }
         3 -> {
-            // Tier 3: Stack Zero - High-Density Quantum Matrix
+            // Tier 3: Void Spire - High-Density Quantum Matrix
             val boxRadius = 88.dp.toPx() * effectivePulse
             drawCircle(
                 brush = Brush.radialGradient(
@@ -287,7 +287,7 @@ internal fun DrawScope.drawTierHudReticle(
             }
         }
         else -> {
-            // Tier 4: Orbit X - Supreme Celestial Matrix
+            // Tier 4: Blood Orb - Supreme Celestial Matrix
             val outerRadius = 96.dp.toPx() * effectivePulse
             val midRadius = outerRadius * 0.74f
             val coreRadius = outerRadius * 0.46f
