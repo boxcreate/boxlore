@@ -71,4 +71,36 @@ class SupportDevelopmentPageTest {
         assertEquals(Color.White, getSupportButtonContentColor(tier4Color))
         assertEquals(Color.White, getSupportButtonContentColor(tier5Color))
     }
+
+    @Test
+    fun supportMissionText_underFiveHoursOrNull_returnsGeneralOpenPledgeCopy() {
+        val expected = "Software that helps people learn, listen, and explore should simply exist without a catch. " +
+            "No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone."
+
+        assertEquals(expected, getSupportMissionText(null))
+        assertEquals(expected, getSupportMissionText(0L))
+        assertEquals(expected, getSupportMissionText(1L))
+        assertEquals(expected, getSupportMissionText(4L))
+    }
+
+    @Test
+    fun supportMissionText_fiveHoursOrMore_returnsCompanionCopyHighlightingListeningTime() {
+        val text5h = getSupportMissionText(5L)
+        val text42h = getSupportMissionText(42L)
+
+        assertTrue(text5h.contains("across your 5 hours of listening"))
+        assertTrue(text5h.contains("Software that helps people learn, listen, and explore should simply exist without a catch."))
+        assertTrue(text5h.contains("backing a power cell helps keep the app free and ad-free for everyone."))
+
+        assertTrue(text42h.contains("across your 42 hours of listening"))
+        assertTrue(text42h.contains("backing a power cell helps keep the app free and ad-free for everyone."))
+    }
+
+    @Test
+    fun supportMissionText_neverMentionsZeroTracking() {
+        listOf(null, 0L, 3L, 5L, 20L).forEach { hours ->
+            val copy = getSupportMissionText(hours)
+            assertTrue("Copy should never falsely claim zero tracking", !copy.contains("tracking", ignoreCase = true))
+        }
+    }
 }

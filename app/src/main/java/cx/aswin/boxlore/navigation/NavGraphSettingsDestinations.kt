@@ -1,11 +1,13 @@
 package cx.aswin.boxlore.navigation
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
 import cx.aswin.boxlore.feature.settings.AppearanceSettings
 import cx.aswin.boxlore.feature.settings.DownloadsNavigation
@@ -24,6 +26,8 @@ import cx.aswin.boxlore.feature.settings.pages.PlaybackUiState
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 internal fun androidx.navigation.NavGraphBuilder.addSettingsDestination(w: NavGraphWiring) {
@@ -69,6 +73,18 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                     scope.launch {
                         container.cloudSyncTriggerCoordinator.triggerManualSync()
                     }
+                },
+                totalListeningHoursFlow = remember(container.playbackRepository) {
+                    container.playbackRepository.observeInsights(
+                        ListeningPeriod.ALL,
+                    ).map { summary ->
+                        val displayMs = if (summary.hasEnoughData) {
+                            summary.totalConsumedMs
+                        } else {
+                            summary.estimatedLibraryMs
+                        }
+                        displayMs / (3600 * 1000L)
+                    }.distinctUntilChanged()
                 },
             ),
             config = SettingsScreenConfig(

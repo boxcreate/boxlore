@@ -53,6 +53,7 @@ import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
 import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 /** Where to send the user for the two Downloads settings sub-screens. */
@@ -88,6 +89,7 @@ data class SettingsRepositories(
     val authRepository: cx.aswin.boxlore.core.auth.AuthRepository? = null,
     val syncStatusFlow: StateFlow<CloudSyncUiStatus>? = null,
     val onSyncNow: (() -> Unit)? = null,
+    val totalListeningHoursFlow: Flow<Long>? = null,
 )
 
 /** [SettingsScreen]'s top-level identifiers/callbacks that aren't tied to a specific sub-page. */
@@ -176,6 +178,10 @@ fun SettingsScreen(
         repositories.authRepository?.currentUser?.collectAsStateWithLifecycle()
             ?: remember { mutableStateOf(null) }
     )
+    val totalListeningHours by (
+        repositories.totalListeningHoursFlow?.collectAsStateWithLifecycle(initialValue = null)
+            ?: remember { mutableStateOf<Long?>(null) }
+    )
     val accountStatus = resolveAccountStatus(currentUser)
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var isDeletionExpanded by rememberSaveable { mutableStateOf(false) }
@@ -248,6 +254,7 @@ fun SettingsScreen(
         deletionId = deletionId,
         isDeletionExpanded = isDeletionExpanded,
         appInfo = appInfo,
+        totalListeningHours = totalListeningHours,
     )
 
     val actions = SettingsPagesActions(
@@ -307,6 +314,7 @@ internal data class SettingsPagesUiData(
     val deletionId: String,
     val isDeletionExpanded: Boolean,
     val appInfo: AppInfo,
+    val totalListeningHours: Long? = null,
 )
 
 internal data class SettingsPagesActions(
@@ -432,6 +440,7 @@ private fun SettingsDestinationContent(
         ProfileSettingsDestination.Support ->
             SupportDevelopmentPage(
                 onBack = actions.onReturnToHub,
+                totalListeningHours = uiData.totalListeningHours,
             )
     }
 }

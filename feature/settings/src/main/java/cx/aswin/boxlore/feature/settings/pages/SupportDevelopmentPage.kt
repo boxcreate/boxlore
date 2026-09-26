@@ -37,7 +37,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -57,6 +56,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,9 +69,12 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
@@ -87,6 +90,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun SupportDevelopmentPage(
     onBack: () -> Unit,
+    totalListeningHours: Long? = null,
 ) {
     val view = LocalView.current
     DisposableEffect(Unit) {
@@ -154,6 +158,7 @@ internal fun SupportDevelopmentPage(
                 pagerState = pagerState,
                 activeTier = activeTier,
                 activeAuraColor = activeAuraColor,
+                totalListeningHours = totalListeningHours,
                 onSelectTier = { page ->
                     coroutineScope.launch {
                         pagerState.animateScrollToPage(page)
@@ -170,6 +175,7 @@ private fun SupportPageContent(
     pagerState: PagerState,
     activeTier: SupportTierCardData,
     activeAuraColor: Color,
+    totalListeningHours: Long?,
     onSelectTier: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -211,6 +217,7 @@ private fun SupportPageContent(
 
         SupportMissionCard(
             activeColor = activeAuraColor,
+            totalListeningHours = totalListeningHours,
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -656,60 +663,97 @@ private fun SupportCtaSection(
     }
 }
 
+internal fun getSupportMissionText(totalListeningHours: Long?): String =
+    if (totalListeningHours != null && totalListeningHours >= 5L) {
+        "Software that helps people learn, listen, and explore should simply exist without a catch. " +
+            "If boxlore has been a great companion across your $totalListeningHours hours of listening, " +
+            "backing a power cell helps keep the app free and ad-free for everyone."
+    } else {
+        "Software that helps people learn, listen, and explore should simply exist without a catch. " +
+            "No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone."
+    }
+
 @Composable
 private fun SupportMissionCard(
     activeColor: Color,
+    totalListeningHours: Long?,
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = Color(0xFF0E0E16),
-        border = BorderStroke(1.dp, activeColor.copy(alpha = 0.28f)),
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFF0D0D14),
+        border = BorderStroke(1.dp, activeColor.copy(alpha = 0.22f)),
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 18.dp, vertical = 15.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(activeColor.copy(alpha = 0.12f))
+                    .padding(horizontal = 7.dp, vertical = 3.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(activeColor.copy(alpha = 0.14f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Favorite,
-                        contentDescription = null,
-                        tint = activeColor,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
+                Icon(
+                    imageVector = Icons.Rounded.Bolt,
+                    contentDescription = null,
+                    tint = activeColor,
+                    modifier = Modifier.size(12.dp),
+                )
                 Text(
-                    text = "Keep boxlore free for everyone",
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    text = "A QUIET COMPANION",
+                    style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = GoogleSansWeight.bold,
-                        fontSize = 17.5.sp,
+                        letterSpacing = 1.1.sp,
+                        fontSize = 10.sp,
                     ),
-                    color = Color.White,
+                    color = activeColor,
                 )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "boxlore is completely independent, with zero ads, zero tracking, and no paywalls. Every contribution directly funds our servers and search engine, keeping podcasting free and open for everyone.",
+                text = "Keeping boxlore fast, open, and ad-free",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = GoogleSansWeight.bold,
+                    fontSize = 16.5.sp,
+                    letterSpacing = (-0.2).sp,
+                ),
+                color = Color.White,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val missionText = remember(totalListeningHours) {
+                buildAnnotatedString {
+                    append("Software that helps people learn, listen, and explore should simply exist without a catch. ")
+                    if (totalListeningHours != null && totalListeningHours >= 5L) {
+                        append("If boxlore has been a great companion across your ")
+                        withStyle(
+                            SpanStyle(
+                                fontWeight = GoogleSansWeight.bold,
+                                color = Color.White,
+                            ),
+                        ) {
+                            append("$totalListeningHours hours")
+                        }
+                        append(" of listening, backing a power cell helps keep the app free and ad-free for everyone.")
+                    } else {
+                        append("No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone.")
+                    }
+                }
+            }
+
+            Text(
+                text = missionText,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.5.sp,
-                    lineHeight = 20.sp,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
                 ),
                 color = Color(0xFFA6A6B4),
             )
