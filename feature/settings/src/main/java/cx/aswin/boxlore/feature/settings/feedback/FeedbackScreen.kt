@@ -253,6 +253,7 @@ private fun FeedbackFormView(
         }
 
         FeedbackEmailInput(
+            category = uiState.category,
             email = uiState.email,
             onEmailChanged = { viewModel.onEmailChanged(it) },
         )
@@ -480,8 +481,18 @@ private fun FeedbackStepsInput(
     }
 }
 
+private fun getEmailSupportingText(category: FeedbackCategory): String = when (category) {
+    FeedbackCategory.BUG, FeedbackCategory.AUDIO ->
+        "We obsess over getting boxlore right. Rather than applying a quick band-aid, we would like to chat more about the issue to ensure that it is truly solved. So please, if possible, share your email — we promise to respect your inbox with no marketing, only direct help on this issue."
+    FeedbackCategory.FEATURE ->
+        "We love shaping boxlore alongside our listeners. If your idea sparks something great, we’d love to reach out to brainstorm, discuss designs, or have you test it early — strictly product chats, zero marketing."
+    FeedbackCategory.OTHER ->
+        "Every note helps shape where boxlore goes next. Leave your email if you'd like us to write back — we read every single message and promise to respect your inbox with zero marketing."
+}
+
 @Composable
 private fun FeedbackEmailInput(
+    category: FeedbackCategory,
     email: String,
     onEmailChanged: (String) -> Unit,
 ) {
@@ -506,7 +517,7 @@ private fun FeedbackEmailInput(
             },
             supportingText = {
                 Text(
-                    text = "Only used if we need more context or to let you know when it's resolved.",
+                    text = getEmailSupportingText(category),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 )
