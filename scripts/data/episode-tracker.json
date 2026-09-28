@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-09-28T08:15:27.606Z",
+  "lastRun": "2026-09-28T16:53:31.143Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "87c4228a-b388-11f1-ac82-0f252aa34536",
-      "lastEpisodeTitle": "Can Cloudflare save the web from AI?",
-      "lastEpisodeId": "60871178578",
-      "lastCheckedAt": 1790422871095
+      "lastRssKey": "ef63f164-cfc6-11f0-83c5-4b5ce81acc16",
+      "lastEpisodeTitle": "The SaaSpocalypse that wasn't, with Atlassian's CEO",
+      "lastEpisodeId": "60949952037",
+      "lastCheckedAt": 1790614411603
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7h",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "6c38bc9d-b3ae-4a58-9415-61a98f0bb7fa",
-      "lastEpisodeTitle": "NPR News: 09-28-2026 4AM EDT",
+      "lastRssKey": "3def742e-7cd0-4764-811b-78929bb9a681",
+      "lastEpisodeTitle": "NPR News: 09-28-2026 12PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790583330483
+      "lastCheckedAt": 1790614414388
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75400620",
-      "lastEpisodeTitle": "Afghans under scrutiny, a bird changes its call, and avalanche in Nepal",
-      "lastEpisodeId": "60932729501",
-      "lastCheckedAt": 1790560307019
+      "lastRssKey": "https://api.spreaker.com/episode/75411993",
+      "lastEpisodeTitle": "The Catch Up: Part of Shahi Masjid in Ujjain being removed (28 September)",
+      "lastEpisodeId": "60962405984",
+      "lastCheckedAt": 1790614415072
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -98,9 +98,9 @@
       "lastCheckedAt": 1790511503220
     },
     "204808": {
-      "lastRssKey": "f54d377c-1b0f-458f-8c54-9c23a5c5f304",
-      "lastEpisodeTitle": "NFL WEEK 3 PREVIEW",
-      "lastCheckedAt": 1790207515336
+      "lastRssKey": "b9938eed-4827-4a21-9b00-667b2980dee0",
+      "lastEpisodeTitle": "Die besten 7 Sekunden der NFL-Geschichte? MONTALK WEEK 3",
+      "lastCheckedAt": 1790614419682
     },
     "207877": {
       "lastRssKey": "suKbHzKDo586w0EsyuHF0RKfnuBj0785",
@@ -115,16 +115,16 @@
       "lastCheckedAt": 1790376034266
     },
     "215799": {
-      "lastRssKey": "6db8e638-e67f-448e-a75f-99f65fc41037",
-      "lastEpisodeTitle": "How to Make a Difference: Part 1",
+      "lastRssKey": "b27f54c6-92cc-42ff-8fb3-a330e579e8bb",
+      "lastEpisodeTitle": "How to Make a Difference: Part 2",
       "lastEpisodeId": "60670311107",
-      "lastCheckedAt": 1790014603836
+      "lastCheckedAt": 1790614420238
     },
     "222512": {
-      "lastRssKey": "Buzzsprout-19813021",
-      "lastEpisodeTitle": "How Time Is Shrinking | Signs of the Hour Ep. 17 | Dr. Omar Suleiman",
-      "lastEpisodeId": "60430922267",
-      "lastCheckedAt": 1789516722197
+      "lastRssKey": "Buzzsprout-19875424",
+      "lastEpisodeTitle": "Uthman ibn Talha (ra): The Key Guarded by One Clan for 1,400 Years | The Firsts | Dr. Omar Suleiman",
+      "lastEpisodeId": "60963391564",
+      "lastCheckedAt": 1790614420570
     },
     "229239": {
       "lastRssKey": "50ccae82-2c74-11f1-8711-678a084fc4d2",
@@ -143,9 +143,9 @@
       "lastCheckedAt": 1790550950749
     },
     "300687": {
-      "lastRssKey": "bdd923fa-c56e-4f02-84b6-677522c1e4e7",
-      "lastEpisodeTitle": "Inteligencia Artificial, tu resumen semanal | Diapositivas listas para PowerPoint sin salir del chat",
-      "lastCheckedAt": 1789992423847
+      "lastRssKey": "77e5ab76-21b3-4a23-be9d-5c62a37b7dc7",
+      "lastEpisodeTitle": "IA, tu resumen semanal | Meta ya destronó a ChatGPT",
+      "lastCheckedAt": 1790614422303
     },
     "311214": {
       "lastEpisodeId": "567104661",
@@ -153,10 +153,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "48428727-6F4F-4BD6-9DD8-ADC888BAC3A2",
-      "lastEpisodeTitle": "Can Laws Keep Up With AI Therapists?",
+      "lastRssKey": "C998A8E7-442D-4051-BC0D-69692902596D",
+      "lastEpisodeTitle": "TNB Tech Minute: Nvidia Launches Largest-Ever U.S. Stock Buyback Program",
       "lastEpisodeId": "60870650500",
-      "lastCheckedAt": 1790422885712
+      "lastCheckedAt": 1790614422784
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -171,16 +171,16 @@
       "lastCheckedAt": 1790364377616
     },
     "353744": {
-      "lastRssKey": "flightcast:01M2X1GTK26QBQD9F4ZMCGQ2HZ",
-      "lastEpisodeTitle": "What Men Don’t Understand About Pregnancy (Postpartum Depression)",
-      "lastEpisodeId": "60295405214",
-      "lastCheckedAt": 1790422886622
+      "lastRssKey": "flightcast:01M3F5A332K24W3T0NH5BVBVTQ",
+      "lastEpisodeTitle": "How Cops Use Psychology To Make You Talk",
+      "lastEpisodeId": "60962825498",
+      "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "f0205a00-bb13-11f1-b76b-cb02a37ff3a4",
-      "lastEpisodeTitle": "4AM ET 09/28/2026 Newscast",
+      "lastRssKey": "fe8013cc-bb56-11f1-b54c-bb9797185e98",
+      "lastEpisodeTitle": "12PM ET 09/28/2026 Newscast",
       "lastEpisodeId": "60920162256",
-      "lastCheckedAt": 1790583339519
+      "lastCheckedAt": 1790614424475
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -231,10 +231,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3CXJWW1G2A2203YG86Y3VE4",
-      "lastEpisodeTitle": "High interest rates could balloon the national debt",
-      "lastEpisodeId": "60512949859",
-      "lastCheckedAt": 1790385210566
+      "lastRssKey": "01M3M763CC9YBCHD1ZBM5R847Z",
+      "lastEpisodeTitle": "Our trust in the federal government is dwindling",
+      "lastEpisodeId": "60963456169",
+      "lastCheckedAt": 1790614428909
     },
     "432535": {
       "lastRssKey": "df581185-7631-4f5a-949b-daf47fd2b3e8",
@@ -243,16 +243,16 @@
       "lastCheckedAt": 1790108549383
     },
     "437685": {
-      "lastRssKey": "86f3e050-8d60-11f1-adef-070fcfdba0f2",
-      "lastEpisodeTitle": "Marcus Tullius Cicero",
-      "lastEpisodeId": "60907214605",
-      "lastCheckedAt": 1790511523045
+      "lastRssKey": "872fb0ee-8d60-11f1-adef-5791b6086164",
+      "lastEpisodeTitle": "The Montgomery Bus Boycott",
+      "lastEpisodeId": "60949235195",
+      "lastCheckedAt": 1790614430235
     },
     "438184": {
-      "lastRssKey": "fe829dc6-b8cd-11f1-a2f8-b7b94f238b54",
-      "lastEpisodeTitle": "There’s 98 days until 2027...Do this and you’ll thank yourself on Jan 1st",
-      "lastEpisodeId": "60826066763",
-      "lastCheckedAt": 1790349966656
+      "lastRssKey": "9b3f54d6-baba-11f1-8d50-aba717db2a09",
+      "lastEpisodeTitle": "MIT scientist: Elon Musk was right, we are almost certainly in a simulation",
+      "lastEpisodeId": "60965368970",
+      "lastCheckedAt": 1790614430776
     },
     "444331": {
       "lastRssKey": "9b73ee3e-b89f-11f1-93dc-47b81452bc30",
@@ -311,10 +311,10 @@
       "lastCheckedAt": 1790540283432
     },
     "491579": {
-      "lastRssKey": "6ab5c526864264ef3ec48e8b",
-      "lastEpisodeTitle": "Skylights Shootout: Leeds United Quiz | The West Stand",
+      "lastRssKey": "6aba91ea8ec4e79ce6e8e4f8",
+      "lastEpisodeTitle": "Ed Cowburn: 43 Leeds Tattoos for Klichy | The West Stand",
       "lastEpisodeId": "60811874133",
-      "lastCheckedAt": 1790331923949
+      "lastCheckedAt": 1790614433976
     },
     "497129": {
       "lastRssKey": "12381::3571134",
@@ -359,10 +359,10 @@
       "lastCheckedAt": 1789508283942
     },
     "522889": {
-      "lastRssKey": "178b5d44-b5c7-11f1-8539-bf6dbd80c834",
-      "lastEpisodeTitle": "1041: What are normies using AI for?",
-      "lastEpisodeId": "60732878208",
-      "lastCheckedAt": 1790168104299
+      "lastRssKey": "5daa2860-b6b1-11f1-8ef7-bb315dd5dbd1",
+      "lastEpisodeTitle": "1042: Is the Jev Hype Overblown?",
+      "lastEpisodeId": "60953437323",
+      "lastCheckedAt": 1790614438599
     },
     "545784": {
       "lastRssKey": "2fbd8231d43425c9412928f93f52c0d6",
@@ -430,16 +430,16 @@
       "lastCheckedAt": 1790296024012
     },
     "665403": {
-      "lastRssKey": "b9a84e4c-fb88-4d83-ba29-aad8df1a5959",
-      "lastEpisodeTitle": "#1722 September 11, 25 Years Later",
-      "lastEpisodeId": "60434133188",
-      "lastCheckedAt": 1790014628618
+      "lastRssKey": "aa92b3cb-07fc-4a9b-815b-4aa72289996c",
+      "lastEpisodeTitle": "#1723 On the Trail of Marco Polo",
+      "lastEpisodeId": "60959727313",
+      "lastCheckedAt": 1790614443603
     },
     "724143": {
-      "lastEpisodeId": "60848344429",
-      "lastEpisodeTitle": "Governo proíbe bets, Conselho do MPF livra Paulo Gonet e conta de luz terá bandeira verde",
-      "lastRssKey": "7b76214a-b92d-11f1-b2d4-ef4942d8f6ac",
-      "lastCheckedAt": 1790376073829
+      "lastRssKey": "5e209626-bb25-11f1-bc83-533433a0fe5f",
+      "lastEpisodeTitle": "Última semana de campanha; Flávio Bolsonaro dispara contra CNBB, que reage; Lula quer reunião com clubes de futebol",
+      "lastEpisodeId": "60952617176",
+      "lastCheckedAt": 1790614444190
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/mbdm7FqApWkMF1leES32j8BmnIVkghmms67B1O_PMMg",
@@ -454,10 +454,10 @@
       "lastCheckedAt": 1790460360036
     },
     "743229": {
-      "lastRssKey": "d9759ebd-1c66-4ffd-907d-f40e391e2a01",
-      "lastEpisodeTitle": "The Best TV Shows of the 21st Century",
-      "lastEpisodeId": "60871890859",
-      "lastCheckedAt": 1790511560554
+      "lastRssKey": "bf6646a8-cdd6-4d87-92bd-6d088fe36dc3",
+      "lastEpisodeTitle": "He Was Deported to a Country He’d Never Heard Of",
+      "lastEpisodeId": "60951107463",
+      "lastCheckedAt": 1790614447807
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -537,10 +537,10 @@
       "lastCheckedAt": 1790583382556
     },
     "853158": {
-      "lastRssKey": "39b230fa-6617-4ef0-9688-c16feeb8c111",
-      "lastEpisodeTitle": "Episode 531: Shallow feedback and my coworker is a huge sloperator",
+      "lastRssKey": "7691dbd2-7ccc-40b3-8c73-15d07f9c6ed2",
+      "lastEpisodeTitle": "Episode 532: My new company is an absolute mess and should I get an English-speaking job as a Japanese engineer?",
       "lastEpisodeId": "60118865665",
-      "lastCheckedAt": 1790014636798
+      "lastCheckedAt": 1790614451545
     },
     "889671": {
       "lastRssKey": "e395e429-e122-4098-8481-8b1b89705fac",
@@ -590,10 +590,10 @@
       "lastCheckedAt": 1790376097115
     },
     "980370": {
-      "lastRssKey": "6ab2aeff68ec5641e2235644",
-      "lastEpisodeTitle": "How to break through fear and become a leader | Valerie Montgomery Rice",
-      "lastEpisodeId": "60252776187",
-      "lastCheckedAt": 1790489851999
+      "lastRssKey": "6ab68e195410c8e94cb948d1",
+      "lastEpisodeTitle": "Why I’m building libraries inside prisons | Reginald Dwayne Betts",
+      "lastEpisodeId": "60962791399",
+      "lastCheckedAt": 1790614455011
     },
     "998969": {
       "lastRssKey": "audioboom-01a0e2a0-4a37-798b-922e-3b851a2854a8",
@@ -618,16 +618,16 @@
       "lastCheckedAt": 1790350012094
     },
     "1035900": {
-      "lastRssKey": "d88cbfb1-9317-458c-8f05-9ae6ed653fb5",
-      "lastEpisodeTitle": "Zerstört der Realismus den Spielspaß in GTA 6? | mit Heideltraut",
+      "lastRssKey": "3a153dbc-94bf-40a9-9f7a-a7c95d8619cc",
+      "lastEpisodeTitle": "Für wen lohnt sich das Witcher Remaster wirklich? | mit NerdyNele",
       "lastEpisodeId": "60910063876",
-      "lastCheckedAt": 1790511575133
+      "lastCheckedAt": 1790614458186
     },
     "1047718": {
-      "lastRssKey": "6ab4cd2d8f08b60496b8e885",
-      "lastEpisodeTitle": "England face world champions Spain as international break commences – Football Weekly – Football Weekly podcast",
+      "lastRssKey": "6aba0c358f08e45777815d54",
+      "lastEpisodeTitle": "The Manchester City verdict and England run world champions close – Football Weekly",
       "lastEpisodeId": "58884055225",
-      "lastCheckedAt": 1790258599204
+      "lastCheckedAt": 1790614458635
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-how-gratitude-can-heal-your-trauma",
@@ -659,10 +659,10 @@
       "lastCheckedAt": 1790528988245
     },
     "1116485": {
-      "lastRssKey": "6ab672916930a5abcbfaec63",
-      "lastEpisodeTitle": "Carragher's Wirtz Comments, New Sporting Director, Neil Mellor Praises Koumas & How Liverpool Improve Under Iraola | Redmen Weekly",
-      "lastEpisodeId": "60871351001",
-      "lastCheckedAt": 1790422925280
+      "lastRssKey": "6aba5dc4ca098b2f0cb1a6f7",
+      "lastEpisodeTitle": "Man City Must Be PUNISHED After Being Found GUILTY Of Financial Breaches!",
+      "lastEpisodeId": "60965522179",
+      "lastCheckedAt": 1790614463765
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -676,10 +676,10 @@
       "lastCheckedAt": 1790313282410
     },
     "1193286": {
-      "lastRssKey": "b45a5dc0-b935-11f1-b3b9-eb472e04ec75",
-      "lastEpisodeTitle": "Habs vs Sens; Who Has The Most At Stake? | The Sick Podcast with Tony Marinaro September 25 2026",
+      "lastRssKey": "ac5377c4-bb56-11f1-868d-3bb32bc32b8d",
+      "lastEpisodeTitle": "Florian Xhekaj Et Montembeault Ont Gagné Leur Pari! | Le Sick Podcast Avec Tony Marinaro 28/09/26",
       "lastEpisodeId": "60837829375",
-      "lastCheckedAt": 1790404017676
+      "lastCheckedAt": 1790614465299
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -688,10 +688,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6ab82b6dbd67ce4b538b1e9d",
-      "lastEpisodeTitle": "Azerbaijan GP: Has Baku revived F1 title battle + Should Colapinto be banned?",
+      "lastRssKey": "6aba8f686ffb28f8d6613eee",
+      "lastEpisodeTitle": "Mailbag: Will Aston Martin win a title before Ferrari?",
       "lastEpisodeId": "60888424174",
-      "lastCheckedAt": 1790460382320
+      "lastCheckedAt": 1790614465862
     },
     "1258562": {
       "lastRssKey": "6ab7a51bbd67ce4b537bc280",
@@ -723,10 +723,10 @@
       "lastCheckedAt": 1790583397022
     },
     "1366771": {
-      "lastRssKey": "6ab9ceb292f3bf83ef71014d",
-      "lastEpisodeTitle": "Morning briefing Monday 28th September",
-      "lastEpisodeId": "60944153985",
-      "lastCheckedAt": 1790583397599
+      "lastRssKey": "6aba3130d316e15fda3dea13",
+      "lastEpisodeTitle": "Afternoon Briefing Monday 28th September",
+      "lastEpisodeId": "60958366939",
+      "lastCheckedAt": 1790614467456
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -741,9 +741,9 @@
       "lastCheckedAt": 1790583398026
     },
     "1545709": {
-      "lastRssKey": "audioboom-01a0e320-4add-765d-846d-8de2df42147a",
-      "lastEpisodeTitle": "24th September 2026 - Tech News & Reviews on BBC Radio London",
-      "lastCheckedAt": 1790528992753
+      "lastRssKey": "audioboom-01a0e824-3e3a-7ef2-a344-9e31fb5ab2e8",
+      "lastEpisodeTitle": "25th September 2026 - Talking AI Agents Hacking Australia on LBC",
+      "lastCheckedAt": 1790614468238
     },
     "1621172": {
       "lastRssKey": "https://krfp.org/?p=33534",
@@ -798,10 +798,10 @@
       "lastCheckedAt": 1789135539229
     },
     "3237767": {
-      "lastRssKey": "08b60067-1d35-495a-a118-9c4ef39b3f0b",
-      "lastEpisodeTitle": "Should You Worry About the Philadelphia Eagles? - NFL Week 2 Recap Cont.",
-      "lastEpisodeId": "60768719108",
-      "lastCheckedAt": 1790258615686
+      "lastRssKey": "20368f47-8890-4917-83ab-f901ef2a1534",
+      "lastEpisodeTitle": "NFL Week 3 Recap: Disappointing Rams Leave Question Marks in Denver",
+      "lastEpisodeId": "60958973085",
+      "lastCheckedAt": 1790614471635
     },
     "3353685": {
       "lastRssKey": "a5837766-b942-11f1-a2ec-07c627ab21a1",
@@ -922,9 +922,9 @@
       "lastCheckedAt": 1790583409893
     },
     "4898105": {
-      "lastRssKey": "c9707512-b892-11f1-b3d8-77ae5042f4f7",
-      "lastEpisodeTitle": "IGN Movie Review: Heart of the Beast",
-      "lastCheckedAt": 1790511597114
+      "lastRssKey": "fe8744d4-bae9-11f1-8757-87a53c53784f",
+      "lastEpisodeTitle": "PlayStation Polling Game Developers After Decision to Kill Discs",
+      "lastCheckedAt": 1790614477954
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -967,10 +967,10 @@
       "lastCheckedAt": 1790583411251
     },
     "5716308": {
-      "lastRssKey": "urn:bbc:podcast:p0pbqy71",
-      "lastEpisodeTitle": "EP 225: Tweakage",
-      "lastEpisodeId": "60673418438",
-      "lastCheckedAt": 1790014666109
+      "lastRssKey": "urn:bbc:podcast:p0pcvyfj",
+      "lastEpisodeTitle": "EP 226: Onion Berlin",
+      "lastEpisodeId": "60962173630",
+      "lastCheckedAt": 1790614479299
     },
     "5716515": {
       "lastRssKey": "https://www.greatdetectives.net/detectives/?p=51685",
@@ -1015,10 +1015,10 @@
       "lastCheckedAt": 1790185480873
     },
     "5972153": {
-      "lastRssKey": "d0ff7202-ba5d-11f1-bbd6-db741ef536b4",
-      "lastEpisodeTitle": "Iran-US diplomacy, RAF Fairford and Brazil elections",
-      "lastEpisodeId": "60878227916",
-      "lastCheckedAt": 1790529012084
+      "lastRssKey": "940d89b0-bb11-11f1-967a-fb0cd6ac4caa",
+      "lastEpisodeTitle": "UK airbase arrests, GOP vs data centers and Spain's housing crisis",
+      "lastEpisodeId": "60959762524",
+      "lastCheckedAt": 1790614485183
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1044,10 +1044,10 @@
       "lastCheckedAt": 1790511606861
     },
     "6413946": {
-      "lastRssKey": "ca64c71f-d61a-493b-a77e-b61f25893c59",
-      "lastEpisodeTitle": "EP 830: Población mexicana envejece y pronto dejará de crecer, Sale delegado de la Fiscalía en Guanajuato por supuesto huachicol y Una bomba de Diesel amenaza la economía",
+      "lastRssKey": "2f66a309-c1df-44dc-b755-e1150e64d02b",
+      "lastEpisodeTitle": "EP 831: ¿Hallaron restos de niños en Michoacán? Sheinbaum cierra su gira de informes con mitin y Revelan otra filtración masiva de datos",
       "lastEpisodeId": "60831745119",
-      "lastCheckedAt": 1790350039507
+      "lastCheckedAt": 1790614486174
     },
     "6456494": {
       "lastRssKey": "6ab28a1cf161207303f67c36",
@@ -1115,10 +1115,10 @@
       "lastCheckedAt": 1790551043861
     },
     "6744768": {
-      "lastRssKey": "0984fdbe-949e-4052-9963-e8f522f5b07a",
-      "lastEpisodeTitle": "High Above Bangkok with Seal on Tour",
-      "lastEpisodeId": "59871186213",
-      "lastCheckedAt": 1789992512786
+      "lastRssKey": "a9e53687-38fd-41ba-a914-d488ae2d993f",
+      "lastEpisodeTitle": "The Worst Thing About YouTubers",
+      "lastEpisodeId": "60965430658",
+      "lastCheckedAt": 1790614490708
     },
     "6761897": {
       "lastRssKey": "5b95f647-8216-4b1c-8030-b10387c9bde8",
@@ -1175,10 +1175,10 @@
       "lastCheckedAt": 1790331991677
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779891",
-      "lastEpisodeTitle": "The Black Museum - Champagne Glass",
+      "lastRssKey": "https://api.spreaker.com/episode/59779893",
+      "lastEpisodeTitle": "Lives Of Harry Lime - The Third Woman",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1790511615006
+      "lastCheckedAt": 1790614493111
     },
     "6912659": {
       "lastRssKey": "5006a53e-2698-4778-9f17-d5bff15a2c58",
@@ -1241,10 +1241,10 @@
       "lastCheckedAt": 1790551052304
     },
     "7183032": {
-      "lastRssKey": "173ad9ec-e103-4bd2-a508-0e0e88f74315",
-      "lastEpisodeTitle": "Universe: 6 Days or 13.8 Billion Years? - Science Keeps Confirming the Quran!",
+      "lastRssKey": "63509e39-a722-4bfb-ad34-098c737882f7",
+      "lastEpisodeTitle": "\"I Set a Muslim's Hair on F*re!\" - Islamophobe Converts to Islam",
       "lastEpisodeId": "60255242233",
-      "lastCheckedAt": 1789992519742
+      "lastCheckedAt": 1790614496330
     },
     "7200648": {
       "lastRssKey": "https://api.spreaker.com/episode/64228821",
@@ -1283,10 +1283,10 @@
       "lastCheckedAt": 1789443365235
     },
     "7324937": {
-      "lastRssKey": "4872c5a0-ba95-11f1-83aa-87339fc29978",
-      "lastEpisodeTitle": "Burned by a UFO: The Cash-Landrum Incident",
-      "lastEpisodeId": "60920868600",
-      "lastCheckedAt": 1790540360172
+      "lastRssKey": "b05c1f30-2d42-11f1-801d-4390d5f09a5c",
+      "lastEpisodeTitle": "The Basement: Alex Petkas | Julius Caesar's Final 24 Hours",
+      "lastEpisodeId": "60950479264",
+      "lastCheckedAt": 1790614497806
     },
     "7348627": {
       "lastRssKey": "f6a614a7-eb68-4914-b675-c63171fe7515",
@@ -1429,10 +1429,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/671774ae-b786-50e9-94b6-9946946d506b",
-      "lastEpisodeTitle": "Why it can be DIFFICULT to make DECISIONS after a narcissistic breakup ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/96dfcfbf-1351-5144-9066-4f95401bd03f",
+      "lastEpisodeTitle": "The TRUTH about FORGIVENESS in narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790583434279
+      "lastCheckedAt": 1790614503304
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
