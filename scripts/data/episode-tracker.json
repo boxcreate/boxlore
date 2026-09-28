@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-28T16:53:31.143Z",
+  "lastRun": "2026-09-28T22:24:36.998Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef63f164-cfc6-11f0-83c5-4b5ce81acc16",
@@ -38,16 +38,16 @@
       "lastCheckedAt": 1789363039070
     },
     "55386": {
-      "lastRssKey": "gid://art19-episode-locator/V0/zaYogUJC_mEJObZ6GJvU7xQetoN5xNyvWakhJH_WJi4",
-      "lastEpisodeTitle": "Become Dangerously Smart with AI (in 32 minutes)",
+      "lastRssKey": "gid://art19-episode-locator/V0/ucpUPmOXjL6Q6ZSCf6wNqVJZwA3neAM6zOsRbdm4Q9Y",
+      "lastEpisodeTitle": "5 Speed Reading Techniques to Read Faster and Retain More",
       "lastEpisodeId": "60085919668",
-      "lastCheckedAt": 1789992409983
+      "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "3def742e-7cd0-4764-811b-78929bb9a681",
-      "lastEpisodeTitle": "NPR News: 09-28-2026 12PM EDT",
+      "lastRssKey": "b9e482fe-5671-4d36-9f53-6e181775c00d",
+      "lastEpisodeTitle": "NPR News: 09-28-2026 6PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790614414388
+      "lastCheckedAt": 1790634281098
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75411993",
@@ -153,10 +153,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "C998A8E7-442D-4051-BC0D-69692902596D",
-      "lastEpisodeTitle": "TNB Tech Minute: Nvidia Launches Largest-Ever U.S. Stock Buyback Program",
+      "lastRssKey": "D7689223-D1D0-4D95-91C6-DC808BE60D8F",
+      "lastEpisodeTitle": "TNB Tech Minute: Top AI Researchers Urge Government Oversight of Self-Improving Models",
       "lastEpisodeId": "60870650500",
-      "lastCheckedAt": 1790614422784
+      "lastCheckedAt": 1790634289527
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -165,10 +165,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "83c781d4-a890-11f1-95c4-bb6500cae384",
-      "lastEpisodeTitle": "Is Copilot Microsoft's Everything App?",
+      "lastRssKey": "83fb919a-a890-11f1-95c4-0f73901aaf45",
+      "lastEpisodeTitle": "Starship Reaches Orbit For The First Time",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1790364377616
+      "lastCheckedAt": 1790634290205
     },
     "353744": {
       "lastRssKey": "flightcast:01M3F5A332K24W3T0NH5BVBVTQ",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "fe8013cc-bb56-11f1-b54c-bb9797185e98",
-      "lastEpisodeTitle": "12PM ET 09/28/2026 Newscast",
+      "lastRssKey": "491e5344-bb89-11f1-bcef-57f171a49e85",
+      "lastEpisodeTitle": "6PM ET 09/28/2026 Newscast",
       "lastEpisodeId": "60920162256",
-      "lastCheckedAt": 1790614424475
+      "lastCheckedAt": 1790634290884
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -207,10 +207,10 @@
       "lastCheckedAt": 1790185399693
     },
     "415434": {
-      "lastRssKey": "ca490244-c3c7-11f0-8340-ef1cc61061e0",
-      "lastEpisodeTitle": "Phones don't have lights",
-      "lastEpisodeId": "60788283787",
-      "lastCheckedAt": 1790364380211
+      "lastRssKey": "499366f8-6e7b-11f1-94bf-c7272ee5ccc0",
+      "lastEpisodeTitle": "Shuhei Yoshida on the future of gaming",
+      "lastEpisodeId": "60977785663",
+      "lastCheckedAt": 1790634292500
     },
     "419624": {
       "lastRssKey": "94db0911-3e6e-40ad-8247-f02651e619c9",
@@ -219,10 +219,10 @@
       "lastCheckedAt": 1790528936762
     },
     "431205": {
-      "lastRssKey": "b95dc3af-2a9d-4952-81ad-263e60be014c",
-      "lastEpisodeTitle": "Rate Hike Regret, Iran Negotiations, and Mortgage Mayhem 9/25/26",
+      "lastRssKey": "034ce5fb-2692-4535-a4fb-34c7f355cd6f",
+      "lastEpisodeTitle": "Nvidia’s Security Push, Consumer Conundrum, and the Diesel Divide  9/28/26",
       "lastEpisodeId": "60571577178",
-      "lastCheckedAt": 1790364381998
+      "lastCheckedAt": 1790634294839
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -231,16 +231,16 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3M763CC9YBCHD1ZBM5R847Z",
-      "lastEpisodeTitle": "Our trust in the federal government is dwindling",
+      "lastRssKey": "01M3MAQY7P9FKKZ91ATF6PYSWM",
+      "lastEpisodeTitle": "Nvidia's record-breaking stock buyback",
       "lastEpisodeId": "60963456169",
-      "lastCheckedAt": 1790614428909
+      "lastCheckedAt": 1790634295757
     },
     "432535": {
-      "lastRssKey": "df581185-7631-4f5a-949b-daf47fd2b3e8",
-      "lastEpisodeTitle": "The Hidden Truth About Your Brain, Trauma & Healing with Kelly Noonan Gores",
+      "lastRssKey": "e9bae1e1-0b0f-4d1b-afa8-1ff9bb1ac398",
+      "lastEpisodeTitle": "Neal McDonough Opens Up: Brain Health, Breaking Addiction & the Fight to Rebuild Your Life",
       "lastEpisodeId": "59964924407",
-      "lastCheckedAt": 1790108549383
+      "lastCheckedAt": 1790634297171
     },
     "437685": {
       "lastRssKey": "872fb0ee-8d60-11f1-adef-5791b6086164",
@@ -299,10 +299,10 @@
       "lastCheckedAt": 1789640214417
     },
     "483834": {
-      "lastRssKey": "6ab71c5d864264ef3e01ffe6",
-      "lastEpisodeTitle": "Wild Horse Nine Movie Trailer, Castlevania: Belmont’s Curse Demo — September 27, 2026",
+      "lastRssKey": "6abad7d76ffb28f8d67bf1be",
+      "lastEpisodeTitle": "The Curse of Silver Casting, Transformers Energon Universe Goes to 15th Printing  — September 28, 2026",
       "lastEpisodeId": "60837111726",
-      "lastCheckedAt": 1790528943114
+      "lastCheckedAt": 1790634301153
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -436,10 +436,10 @@
       "lastCheckedAt": 1790614443603
     },
     "724143": {
-      "lastRssKey": "5e209626-bb25-11f1-bc83-533433a0fe5f",
-      "lastEpisodeTitle": "Última semana de campanha; Flávio Bolsonaro dispara contra CNBB, que reage; Lula quer reunião com clubes de futebol",
+      "lastRssKey": "3ecef9c8-bb86-11f1-82b3-63c53687398b",
+      "lastEpisodeTitle": "Reação das bets contra proibição, embates sobre Nossa Senhora Aparecida, e Lula na liderança da Quaest",
       "lastEpisodeId": "60952617176",
-      "lastCheckedAt": 1790614444190
+      "lastCheckedAt": 1790634326051
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/mbdm7FqApWkMF1leES32j8BmnIVkghmms67B1O_PMMg",
@@ -448,10 +448,10 @@
       "lastCheckedAt": 1790274816095
     },
     "742927": {
-      "lastRssKey": "tag:soundcloud,2010:tracks/2407527705",
-      "lastEpisodeTitle": "Auf ein Bier #601: Onimusha – Way of the Sword",
+      "lastRssKey": "tag:soundcloud,2010:tracks/2409445572",
+      "lastEpisodeTitle": "Weltherrschaft: Noch mehr Géraldine",
       "lastEpisodeId": "60319860430",
-      "lastCheckedAt": 1790460360036
+      "lastCheckedAt": 1790634329622
     },
     "743229": {
       "lastRssKey": "bf6646a8-cdd6-4d87-92bd-6d088fe36dc3",
@@ -601,10 +601,10 @@
       "lastCheckedAt": 1790540315977
     },
     "1015378": {
-      "lastRssKey": "39dac85d-ab62-45b0-a587-67797ed8f0ee",
-      "lastEpisodeTitle": "Anthropic IPO at Risk, Meta's Muse Pop, Token Prices Fall, Open Source Gains Share, Alignment Fails",
+      "lastRssKey": "7b660c9d-26d0-4ff4-9205-6808ee6898d5",
+      "lastEpisodeTitle": "Daniel Ek: Life After Spotify, Broken Healthcare Incentives, Catching Disease Early & AI's Potential",
       "lastEpisodeId": "60856501003",
-      "lastCheckedAt": 1790404008343
+      "lastCheckedAt": 1790634339570
     },
     "1021803": {
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
@@ -659,10 +659,10 @@
       "lastCheckedAt": 1790528988245
     },
     "1116485": {
-      "lastRssKey": "6aba5dc4ca098b2f0cb1a6f7",
-      "lastEpisodeTitle": "Man City Must Be PUNISHED After Being Found GUILTY Of Financial Breaches!",
+      "lastRssKey": "6abaa266c62c3ed37bc1da9c",
+      "lastEpisodeTitle": "“A HARD Penalty, NOW!” Sports Lawyer Reveals What Premier League Will Want for Man City",
       "lastEpisodeId": "60965522179",
-      "lastCheckedAt": 1790614463765
+      "lastCheckedAt": 1790634346962
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -723,10 +723,10 @@
       "lastCheckedAt": 1790583397022
     },
     "1366771": {
-      "lastRssKey": "6aba3130d316e15fda3dea13",
-      "lastEpisodeTitle": "Afternoon Briefing Monday 28th September",
-      "lastEpisodeId": "60958366939",
-      "lastCheckedAt": 1790614467456
+      "lastRssKey": "6abaa29029a486156aad0a99",
+      "lastEpisodeTitle": "Evening briefing Monday 28th September",
+      "lastEpisodeId": "60974720836",
+      "lastCheckedAt": 1790634350451
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -770,10 +770,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6ab67b208ebb0785b9bfa77a",
-      "lastEpisodeTitle": "Toujours fatigué(e) ? Écoute les conseils du Pr Pierre Philip (Rediff)",
-      "lastEpisodeId": "60814304043",
-      "lastCheckedAt": 1790489868570
+      "lastRssKey": "6abaae68217888cc1e815fe7",
+      "lastEpisodeTitle": "Des messages ouvertement antisemites de Bardella révélés, il répond (28/09)",
+      "lastEpisodeId": "60977889099",
+      "lastCheckedAt": 1790634354969
     },
     "2574026": {
       "lastRssKey": "6e346410-b838-11f1-9725-f710ffda4192",
@@ -1038,10 +1038,10 @@
       "lastCheckedAt": 1790207606978
     },
     "6280366": {
-      "lastRssKey": "7d27c468-b98c-4ce1-8393-e6e803ea2319",
-      "lastEpisodeTitle": "The Rise of the AI Moderates",
-      "lastEpisodeId": "60911546186",
-      "lastCheckedAt": 1790511606861
+      "lastRssKey": "d850de68-b6e3-4c36-bce9-680b9af9edce",
+      "lastEpisodeTitle": "The Real Risks of AI Agents",
+      "lastEpisodeId": "60978344795",
+      "lastCheckedAt": 1790634374760
     },
     "6413946": {
       "lastRssKey": "2f66a309-c1df-44dc-b755-e1150e64d02b",
@@ -1259,10 +1259,10 @@
       "lastCheckedAt": 1790551054007
     },
     "7248222": {
-      "lastRssKey": "1b4c1b8a-b923-11f1-affc-032f1650c1f5",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Viernes 25 de septiembre de 2026",
+      "lastRssKey": "12f9cdc0-bb7f-11f1-be59-9b23e355e831",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Lunes 28 de septiembre de 2026",
       "lastEpisodeId": "60845763898",
-      "lastCheckedAt": 1790376134532
+      "lastCheckedAt": 1790634386301
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1399,10 +1399,10 @@
       "lastCheckedAt": 1786543013085
     },
     "7679624": {
-      "lastRssKey": "https://api.spreaker.com/episode/75334484",
+      "lastRssKey": "https://api.spreaker.com/episode/75334455",
       "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack - - Full Episode",
       "lastEpisodeId": "60684324212",
-      "lastCheckedAt": 1790551060659
+      "lastCheckedAt": 1790634391318
     },
     "7756959": {
       "lastRssKey": "1114eafa-b939-11f1-9da8-4ba239a91f8b",
@@ -1429,10 +1429,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/96dfcfbf-1351-5144-9066-4f95401bd03f",
-      "lastEpisodeTitle": "The TRUTH about FORGIVENESS in narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/9ca80a33-ec4b-5360-9deb-17841de9836d",
+      "lastEpisodeTitle": "It is okay to CUT AWAY from happy people ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790614503304
+      "lastCheckedAt": 1790634392448
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
