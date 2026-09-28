@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-27T23:15:38.094Z",
+  "lastRun": "2026-09-28T01:51:42.495Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "87c4228a-b388-11f1-ac82-0f252aa34536",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1789992409983
     },
     "55810": {
-      "lastRssKey": "b8fadb8c-b46c-414b-95db-5520e9b3e8a7",
-      "lastEpisodeTitle": "NPR News: 09-27-2026 7PM EDT",
+      "lastRssKey": "a27b07c0-6954-4cac-85d4-a0e93f2a772d",
+      "lastEpisodeTitle": "NPR News: 09-27-2026 9PM EDT",
       "lastEpisodeId": "60603194523",
-      "lastCheckedAt": 1790550941012
+      "lastCheckedAt": 1790560306332
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75369778",
-      "lastEpisodeTitle": "The Catch Up: Election Commission SIR row, and more (25 September)",
-      "lastEpisodeId": "60859831723",
-      "lastCheckedAt": 1790403960448
+      "lastRssKey": "https://api.spreaker.com/episode/75400620",
+      "lastEpisodeTitle": "Afghans under scrutiny, a bird changes its call, and avalanche in Nepal",
+      "lastEpisodeId": "60932729501",
+      "lastCheckedAt": 1790560307019
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -80,10 +80,10 @@
       "lastCheckedAt": 1790313226437
     },
     "160817": {
-      "lastRssKey": "https://linuxunplugged.com/685",
-      "lastEpisodeTitle": "Pool Party | LINUX Unplugged 685",
-      "lastEpisodeId": "60660291960",
-      "lastCheckedAt": 1789992419031
+      "lastRssKey": "https://linuxunplugged.com/686",
+      "lastEpisodeTitle": "Stop Desktop Slop | LINUX Unplugged 686",
+      "lastEpisodeId": "60932499214",
+      "lastCheckedAt": 1790560309569
     },
     "193209": {
       "lastRssKey": "5c1d663e-f163-482b-b4ad-4d643845b3a9",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1790422886622
     },
     "385117": {
-      "lastRssKey": "801d5a32-bac8-11f1-b6a7-bba60f68c412",
-      "lastEpisodeTitle": "7PM ET 09/27/2026 Newscast",
+      "lastRssKey": "4093743a-bad9-11f1-b9d3-f367ac9dbf80",
+      "lastEpisodeTitle": "9PM ET 09/27/2026 Newscast",
       "lastEpisodeId": "60920162256",
-      "lastCheckedAt": 1790550952182
+      "lastCheckedAt": 1790560315415
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -641,10 +641,10 @@
       "lastCheckedAt": 1790296047902
     },
     "1070334": {
-      "lastRssKey": "5f0860ba-b818-11f1-abb1-7fda03d5bad1",
-      "lastEpisodeTitle": "Spotted: Frank Skinner!",
-      "lastEpisodeId": "60436867156",
-      "lastCheckedAt": 1790296048438
+      "lastRssKey": "5568e44e-b822-11f1-83e9-3ba44974a202",
+      "lastEpisodeTitle": "Lying in the Street",
+      "lastEpisodeId": "60932634969",
+      "lastCheckedAt": 1790560361318
     },
     "1076260": {
       "lastRssKey": "285d3822-69fd-4d3e-bb34-b4c9011155e1",
@@ -1193,10 +1193,10 @@
       "lastCheckedAt": 1790376130846
     },
     "6956562": {
-      "lastRssKey": "43264c43-3aad-4a71-9b19-75ee5695f50b",
-      "lastEpisodeTitle": "What happens when insurance commissions are cut?",
-      "lastEpisodeId": "60800238505",
-      "lastCheckedAt": 1790313319915
+      "lastRssKey": "32ec6dbc-a39b-4636-bc9c-13bf626c3683",
+      "lastEpisodeTitle": "The ebbs and flows of India’s irrigation story",
+      "lastEpisodeId": "60934398315",
+      "lastCheckedAt": 1790560391948
     },
     "6959250": {
       "lastRssKey": "99f92a05-76b6-4edd-b507-b1ad2cda5d61",
@@ -1294,10 +1294,10 @@
       "lastCheckedAt": 1790489904030
     },
     "7376606": {
-      "lastRssKey": "e9e3bdbf-d8af-4c79-9317-101f75c3c61f",
-      "lastEpisodeTitle": "The Book of Enoch Explained 📜👼 | Fallen Angels, Giants, and Visions of Heaven | Boring History for Sleep",
+      "lastRssKey": "228bf5a4-7bdb-48df-a510-406cf1d473ab",
+      "lastEpisodeTitle": "Secrets of the Deep Sea 🌊👽 | Ancient Aliens & Mysteries Beneath the Ocean | Boring History for Sleep",
       "lastEpisodeId": "60898632528",
-      "lastCheckedAt": 1790489904589
+      "lastCheckedAt": 1790560395697
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031jzh",
@@ -1388,10 +1388,10 @@
       "lastCheckedAt": 1789640289064
     },
     "7641673": {
-      "lastRssKey": "b627e026-07b3-4669-916c-9360df6571e2",
-      "lastEpisodeTitle": "2 Hours of Ancient History Mysteries You Need To Know",
+      "lastRssKey": "a9c8c283-9564-4a21-9fa6-5fa172f3e7df",
+      "lastEpisodeTitle": "Bizarre Historical Mysteries Explained: King Arthur in the Arctic and the Mountains of Kong",
       "lastEpisodeId": "60721626247",
-      "lastCheckedAt": 1790385342374
+      "lastCheckedAt": 1790560398831
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
@@ -1429,10 +1429,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/db971f10-cc58-53a8-8a68-77fd172f4a33",
-      "lastEpisodeTitle": "The ANATOMY of a narcissistic APOLOGY ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/bd263cf5-42b5-55b8-b2e3-9f7a19174fbf",
+      "lastEpisodeTitle": "The narcissists BAD ENERGY ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790551062491
+      "lastCheckedAt": 1790560399993
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
