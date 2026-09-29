@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-29T02:10:22.829Z",
+  "lastRun": "2026-09-29T08:52:04.525Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef63f164-cfc6-11f0-83c5-4b5ce81acc16",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "a05730f7-766c-4bee-8baa-861ba1d97111",
-      "lastEpisodeTitle": "NPR News: 09-28-2026 9PM EDT",
-      "lastEpisodeId": "60985381901",
-      "lastCheckedAt": 1790647825892
+      "lastRssKey": "05a914a6-4d80-4e0f-9b7b-0de5c9a4bddf",
+      "lastEpisodeTitle": "NPR News: 09-29-2026 4AM EDT",
+      "lastEpisodeId": "60998420668",
+      "lastCheckedAt": 1790671932001
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75418577",
@@ -153,10 +153,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "D7689223-D1D0-4D95-91C6-DC808BE60D8F",
-      "lastEpisodeTitle": "TNB Tech Minute: Top AI Researchers Urge Government Oversight of Self-Improving Models",
-      "lastEpisodeId": "60870650500",
-      "lastCheckedAt": 1790634289527
+      "lastRssKey": "A462F0F4-0093-42F8-AF1D-85E9509A5EA4",
+      "lastEpisodeTitle": "The Middle Schoolers Ditching Real Friends for AI Chatbots",
+      "lastEpisodeId": "60995454680",
+      "lastCheckedAt": 1790671948763
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "6e5923d2-bba2-11f1-a282-d37160704b55",
-      "lastEpisodeTitle": "9PM ET 09/28/2026 Newscast",
+      "lastRssKey": "1ab80046-bbdd-11f1-bdfa-13c79ca9c124",
+      "lastEpisodeTitle": "4AM ET 09/29/2026 Newscast",
       "lastEpisodeId": "60986048427",
-      "lastCheckedAt": 1790647837160
+      "lastCheckedAt": 1790671951175
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -189,16 +189,16 @@
       "lastCheckedAt": 1790364378383
     },
     "388141": {
-      "lastRssKey": "6aa84dbcff74edfd004b27e1",
-      "lastEpisodeTitle": "The Myth of Normal (1/5): The brain science of obesity | Mads Tang-Christensen",
-      "lastEpisodeId": "60145641127",
-      "lastCheckedAt": 1790239212712
+      "lastRssKey": "6a9ae547f8f4d42589eb8941",
+      "lastEpisodeTitle": "What is pain? with Rachel Zoffness",
+      "lastEpisodeId": "60993138395",
+      "lastCheckedAt": 1790671952770
     },
     "398589": {
-      "lastRssKey": "gid://art19-episode-locator/V0/DSLdFPwRdpEQeBUcMoRlM7CzYWiiBMo3YSXb5KnRnGU",
-      "lastEpisodeTitle": "Listen Now: My Mom’s Murder",
+      "lastRssKey": "gid://art19-episode-locator/V0/2k3usGst4Dc8neRfy3aFXYljQWibQedO6nVBkgrDtEw",
+      "lastEpisodeTitle": "Varsity Blues | The Admissions Process | 4",
       "lastEpisodeId": "60947240256",
-      "lastCheckedAt": 1790583341385
+      "lastCheckedAt": 1790671953581
     },
     "399669": {
       "lastRssKey": "abc6e1e0-dfb1-4aab-8235-6543f97e0999",
@@ -261,10 +261,10 @@
       "lastCheckedAt": 1790331920600
     },
     "444785": {
-      "lastRssKey": "41b8e537-d582-458b-aac0-8bac5b9d3fb2",
-      "lastEpisodeTitle": "GO TIME: Canadiens Close out Pre-Season with STRONG Effort from Slafkovsky, SURPRISE Roster Choices",
-      "lastEpisodeId": "60938814633",
-      "lastCheckedAt": 1790583346631
+      "lastRssKey": "9940fa1b-4f09-41b7-aa39-f495e458942a",
+      "lastEpisodeTitle": "EXPECTATIONS: Chris Kreider, Alex Newhook DRIVE Canadiens’ Early INTRIGUE | Opening Week Preview",
+      "lastEpisodeId": "60989553924",
+      "lastCheckedAt": 1790671968273
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -335,10 +335,10 @@
       "lastCheckedAt": 1790583351920
     },
     "509873": {
-      "lastRssKey": "c013a0b0-41e5-4e45-80a9-b239eb49e9c2",
-      "lastEpisodeTitle": "Maddow: Why the Constitution and the American spirit are against Trump's war on the free press",
+      "lastRssKey": "2e406df3-97ac-4dec-8e62-aea8a4b3554d",
+      "lastEpisodeTitle": "Maddow: Patel picks a bad time to get petty with counterterrorism",
       "lastEpisodeId": "59517346400",
-      "lastCheckedAt": 1790079790675
+      "lastCheckedAt": 1790671980909
     },
     "511104": {
       "lastRssKey": "https://www.archive.org/download/interpretationofdreams_1401_librivox/interpretationofdreams_00_freud_64kb.mp3",
@@ -365,10 +365,10 @@
       "lastCheckedAt": 1790614438599
     },
     "545784": {
-      "lastRssKey": "2fbd8231d43425c9412928f93f52c0d6",
-      "lastEpisodeTitle": "Strand by me (Amthorheiten mit Nikki Hassan-Nia)",
-      "lastEpisodeId": "60936970526",
-      "lastCheckedAt": 1790583371069
+      "lastRssKey": "2b91e936f8157f83190506a833c63efc",
+      "lastEpisodeTitle": "Spahnische Grippe",
+      "lastEpisodeId": "60987696199",
+      "lastCheckedAt": 1790672001798
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/captivate/twit_1103/137d0471-cb85-40e3-ad82-79d599a1ac4f/twit1103.mp3",
@@ -382,10 +382,10 @@
       "lastCheckedAt": 1782585870863
     },
     "561991": {
-      "lastRssKey": "flightcast:01M330K9Y4A28T2M9YPXJSSGKE",
-      "lastEpisodeTitle": "What Mentally Strong People Do on Their Worst Days with Psychotherapist Amy Morin",
+      "lastRssKey": "flightcast:01M3N17HJS846AZ541S29E4GG8",
+      "lastEpisodeTitle": "Revisited: The Power of Saying &#34;Screw It&#34; with Rob Lowe",
       "lastEpisodeId": "60199213754",
-      "lastCheckedAt": 1790079798432
+      "lastCheckedAt": 1790672003948
     },
     "570903": {
       "lastRssKey": "urn:bbc:podcast:m00318yz",
@@ -484,10 +484,10 @@
       "lastCheckedAt": 1790148238614
     },
     "744587": {
-      "lastRssKey": "4aaad6f2-05f4-4867-958d-bfdf45d21463",
-      "lastEpisodeTitle": "La Bruja de Xalapa y otras historias de horror",
-      "lastEpisodeId": "60858816228",
-      "lastCheckedAt": 1790404000470
+      "lastRssKey": "5757b713-80da-4a00-8d0a-082d66f9d758",
+      "lastEpisodeTitle": "Hay Algo Satánico en Casa (historia de terror)",
+      "lastEpisodeId": "60994773085",
+      "lastCheckedAt": 1790672018507
     },
     "745392": {
       "lastRssKey": "20ad2ce9-3088-449b-8001-2e3e739b54d8",
@@ -502,10 +502,10 @@
       "lastCheckedAt": 1789318929535
     },
     "771813": {
-      "lastRssKey": "39760cd6-e170-478f-9535-24da79f6e0df",
-      "lastEpisodeTitle": "Cosmic Queries – Space Junk! with Moriba Jah",
+      "lastRssKey": "589a3ac9-fbd2-492d-8c18-a0a2315d1b8a",
+      "lastEpisodeTitle": "Quantum Anomalies with Lara Anderson",
       "lastEpisodeId": "60630493896",
-      "lastCheckedAt": 1790331939420
+      "lastCheckedAt": 1790672020141
     },
     "790970": {
       "lastRssKey": "a8d87878-b75b-11f1-b099-2b2fa066703a",
@@ -561,10 +561,10 @@
       "lastCheckedAt": 1790239260461
     },
     "928708": {
-      "lastRssKey": "e36af7fc-b992-11f1-9711-336620b5f0c6",
-      "lastEpisodeTitle": "This Day in History - September 28, 2026",
+      "lastRssKey": "22a04fb6-ba9d-11f1-9118-1f0a52a3c69f",
+      "lastEpisodeTitle": "History Today - Sept. 29",
       "lastEpisodeId": "60943213375",
-      "lastCheckedAt": 1790583384557
+      "lastCheckedAt": 1790672028859
     },
     "946758": {
       "lastRssKey": "10cc122e-77b5-11f0-8752-0bb04facbe23",
@@ -676,10 +676,10 @@
       "lastCheckedAt": 1790313282410
     },
     "1193286": {
-      "lastRssKey": "ac5377c4-bb56-11f1-868d-3bb32bc32b8d",
-      "lastEpisodeTitle": "Florian Xhekaj Et Montembeault Ont Gagné Leur Pari! | Le Sick Podcast Avec Tony Marinaro 28/09/26",
+      "lastRssKey": "fc67f1d8-bbb3-11f1-8459-ebdaa9f84d44",
+      "lastEpisodeTitle": "Did The Habs Just Miss A Huge Opportunity?! | The Sick Podcast with Tony Marinaro September 28 2026",
       "lastEpisodeId": "60837829375",
-      "lastCheckedAt": 1790614465299
+      "lastCheckedAt": 1790672051245
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -706,15 +706,20 @@
       "lastCheckedAt": 1786559324862
     },
     "1271557": {
-      "lastRssKey": "cmtwk18tm01tz01tpbe2p79a8",
-      "lastEpisodeTitle": "霸軒廣播電台#158 你家有淹水嗎？",
-      "lastCheckedAt": 1789119185910
+      "lastRssKey": "cmum69w3003as01vn3vtchro4",
+      "lastEpisodeTitle": "霸軒廣播電台#159 垃圾要分類",
+      "lastCheckedAt": 1790672054334
     },
     "1286498": {
-      "lastRssKey": "Buzzsprout-19843136",
-      "lastEpisodeTitle": "Artificial Intimacy: Who We Become When We Talk to Machines (#320)",
-      "lastEpisodeId": "60689760083",
-      "lastCheckedAt": 1790058976106
+      "lastRssKey": "Buzzsprout-19878147",
+      "lastEpisodeTitle": "America, War, and the Myths We Still Believe (#321)",
+      "lastEpisodeId": "60991662489",
+      "lastCheckedAt": 1790672055320
+    },
+    "1336369": {
+      "lastRssKey": "2136e894-bb63-11f1-ba8b-5f6e63e6a9c2",
+      "lastEpisodeTitle": "Unsolved: The Servant Girl Annihilator",
+      "lastCheckedAt": 1790672056110
     },
     "1365758": {
       "lastRssKey": "982695aa-badf-11f1-9093-e3267f060ab3",
@@ -723,10 +728,10 @@
       "lastCheckedAt": 1790583397022
     },
     "1366771": {
-      "lastRssKey": "6abaa29029a486156aad0a99",
-      "lastEpisodeTitle": "Evening briefing Monday 28th September",
-      "lastEpisodeId": "60974720836",
-      "lastCheckedAt": 1790634350451
+      "lastRssKey": "6abb1df64e059d44b5ebec60",
+      "lastEpisodeTitle": "Morning briefing Tuesday 29th September",
+      "lastEpisodeId": "60988653180",
+      "lastCheckedAt": 1790672057479
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -735,10 +740,10 @@
       "lastCheckedAt": 1790511583543
     },
     "1388001": {
-      "lastRssKey": "4f53c780-572d-4518-9452-f82d36cd873c",
-      "lastEpisodeTitle": "Donald Trump sans stratégie après avoir refusé l’offre de négociations iranienne",
+      "lastRssKey": "eefdf4fa-9b36-49da-875e-d7fabe570469",
+      "lastEpisodeTitle": "Des armes américaines pour la Chine ? L’extravagante suggestion de Donald Trump",
       "lastEpisodeId": "60912436180",
-      "lastCheckedAt": 1790583398026
+      "lastCheckedAt": 1790672061328
     },
     "1545709": {
       "lastRssKey": "audioboom-01a0e824-3e3a-7ef2-a344-9e31fb5ab2e8",
@@ -770,10 +775,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6abaae68217888cc1e815fe7",
-      "lastEpisodeTitle": "Des messages ouvertement antisemites de Bardella révélés, il répond (28/09)",
+      "lastRssKey": "6aba9c521fdaeb8964fbdbf8",
+      "lastEpisodeTitle": "(Pop) La désinformation venue de Russie explose en France… HugoDécrypte",
       "lastEpisodeId": "60977889099",
-      "lastCheckedAt": 1790634354969
+      "lastCheckedAt": 1790672066180
     },
     "2574026": {
       "lastRssKey": "6e346410-b838-11f1-9725-f710ffda4192",
@@ -887,10 +892,10 @@
       "lastCheckedAt": 1786559328886
     },
     "4507961": {
-      "lastRssKey": "c34d8ebb-e8eb-4eec-be82-6999f3fc781d",
-      "lastEpisodeTitle": "235 - Amanda Orson: Privacy and Homesteading",
+      "lastRssKey": "dee73a47-399b-4060-a43e-3e5a3265ac75",
+      "lastEpisodeTitle": "236 - Jon Padfield: The Problem of Flock Cameras",
       "lastEpisodeId": "59615847309",
-      "lastCheckedAt": 1789935860026
+      "lastCheckedAt": 1790672081884
     },
     "4534957": {
       "lastRssKey": "6aa161e2647921ed602e03a1",
@@ -1003,10 +1008,10 @@
       "lastCheckedAt": 1790274862320
     },
     "5930143": {
-      "lastRssKey": "4f53c780-572d-4518-9452-f82d36cd873c",
-      "lastEpisodeTitle": "Donald Trump sans stratégie après avoir refusé l’offre de négociations iranienne",
+      "lastRssKey": "eefdf4fa-9b36-49da-875e-d7fabe570469",
+      "lastEpisodeTitle": "Des armes américaines pour la Chine ? L’extravagante suggestion de Donald Trump",
       "lastEpisodeId": "60944365423",
-      "lastCheckedAt": 1790583417849
+      "lastCheckedAt": 1790672099413
     },
     "5945547": {
       "lastRssKey": "6ad40538-0f09-40d3-b107-7c8ef5805678",
@@ -1085,10 +1090,10 @@
       "lastCheckedAt": 1789640271775
     },
     "6637069": {
-      "lastRssKey": "15c9de70-b5f6-11f1-bed1-bba8a30fc4a0",
-      "lastEpisodeTitle": "The Crooked Man - Part One",
-      "lastEpisodeId": "60422002133",
-      "lastCheckedAt": 1790059010669
+      "lastRssKey": "8901c1a4-bb29-11f1-84e8-4fd508314e90",
+      "lastEpisodeTitle": "The Crooked Man - Part Two",
+      "lastEpisodeId": "60990708724",
+      "lastCheckedAt": 1790672107154
     },
     "6655297": {
       "lastRssKey": "indieventurepodcast.podbean.com/3b67977b-17e5-37c4-aada-4332098953f8",
@@ -1151,10 +1156,10 @@
       "lastCheckedAt": 1790274881245
     },
     "6852067": {
-      "lastRssKey": "2dc799cc-b7a9-11f1-822b-7b7e610e6edb",
-      "lastEpisodeTitle": "Emprender en México: SIENDO MAMÁ - Chispa Experience",
-      "lastEpisodeId": "60114499389",
-      "lastCheckedAt": 1790220099056
+      "lastRssKey": "113b0948-bbb8-11f1-8a15-bbab9bb3bc43",
+      "lastEpisodeTitle": "Crumbl Cookies: la guerra del azúcar en Utah",
+      "lastEpisodeId": "60995722405",
+      "lastCheckedAt": 1790672115593
     },
     "6866470": {
       "lastRssKey": "https://api.spreaker.com/episode/75398700",
@@ -1289,9 +1294,9 @@
       "lastCheckedAt": 1790614497806
     },
     "7348627": {
-      "lastRssKey": "f6a614a7-eb68-4914-b675-c63171fe7515",
-      "lastEpisodeTitle": "5 Hours of Chilling Cold Case Mysteries To Sleep To | 319",
-      "lastCheckedAt": 1790489904030
+      "lastRssKey": "7f5960ae-fd19-49d3-841c-d7606d0c1785",
+      "lastEpisodeTitle": "2 Hours of Chilling Mysteries You Won't See On Netflix | 320",
+      "lastCheckedAt": 1790672133869
     },
     "7376606": {
       "lastRssKey": "1786c639-fea7-4c26-b55c-6456eecb7770",
@@ -1336,9 +1341,9 @@
       "lastCheckedAt": 1790511625402
     },
     "7504615": {
-      "lastRssKey": "audioboom-01a0b5e2-7fbb-717b-8d25-9826b85dc6df",
-      "lastEpisodeTitle": "54: Exposing JP Miller’s Shady History: Years Of Abuse, SA Allegations, and More",
-      "lastCheckedAt": 1790127661608
+      "lastRssKey": "audioboom-01a0d4ab-5168-7e6c-a746-383d215b20a7",
+      "lastEpisodeTitle": "55: A Party To Die For | The Disturbing Case Of Tyler Hadley",
+      "lastCheckedAt": 1790672138759
     },
     "7540523": {
       "lastRssKey": "8257452a-d639-4918-8fb2-7ca994d89861",
@@ -1358,10 +1363,10 @@
       "lastCheckedAt": 1790350064972
     },
     "7584644": {
-      "lastRssKey": "6aa8307db54f356fc7b8c044",
-      "lastEpisodeTitle": "Music @ Work (2000) Side A With Podcast Legend Sean McGinity",
-      "lastEpisodeId": "59747541808",
-      "lastCheckedAt": 1789418813409
+      "lastRssKey": "6abb4c73f4720dfefb5d2ea6",
+      "lastEpisodeTitle": "Music @ Work (2000) Side B with Roving Rock Fan Nicole Fortin",
+      "lastEpisodeId": "60998705101",
+      "lastCheckedAt": 1790672141712
     },
     "7587315": {
       "lastRssKey": "33961638-b8c3-11f1-964b-6372825d0114",
@@ -1394,10 +1399,10 @@
       "lastCheckedAt": 1789640289064
     },
     "7641673": {
-      "lastRssKey": "bf986aba-a1be-488a-92b0-eb5dcdba431c",
-      "lastEpisodeTitle": "1 Hour of Ancient Egyptian History and Lore Explained",
-      "lastEpisodeId": "60721626247",
-      "lastCheckedAt": 1790647939708
+      "lastRssKey": "a9c8c283-9564-4a21-9fa6-5fa172f3e7df",
+      "lastEpisodeTitle": "Bizarre Historical Mysteries Explained: King Arthur in the Arctic and the Mountains of Kong",
+      "lastEpisodeId": "60948190524",
+      "lastCheckedAt": 1790672145154
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
@@ -1417,10 +1422,10 @@
       "lastCheckedAt": 1790647940907
     },
     "7837137": {
-      "lastRssKey": "https://api.spreaker.com/episode/71692639",
-      "lastEpisodeTitle": "A esposa chora no velório enquanto seu amante foge com a faca",
+      "lastRssKey": "https://api.spreaker.com/episode/71692641",
+      "lastEpisodeTitle": "Micaela se aproxima do casal na festa e os leva para casa",
       "lastEpisodeId": "57875815786",
-      "lastCheckedAt": 1790079926535
+      "lastCheckedAt": 1790672148927
     },
     "7901923": {
       "lastRssKey": "7e0ddec8-ca3d-11f0-a082-377ee4edaeb2",
@@ -1435,10 +1440,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/d16a2710-845d-5e37-9e92-f16f59dc5892",
-      "lastEpisodeTitle": "Narcissistic relationship healing workshop ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/c4082355-faa6-53eb-80e2-0254ebc9dba4",
+      "lastEpisodeTitle": "DOs and DONTs of supporting someone in a narcissistic relationship ~ Dr. Ramani",
       "lastEpisodeId": "60749655562",
-      "lastCheckedAt": 1790647942327
+      "lastCheckedAt": 1790672150997
     },
     "7935877": {
       "lastRssKey": "flightcast:01M2ZYSPCPDDNSZEEN9NZ0QYQV",
@@ -1451,6 +1456,12 @@
       "lastEpisodeTitle": "EP02 - The First Kill",
       "lastRssKey": "https://api.spreaker.com/episode/74318844",
       "lastCheckedAt": 1788281442246
+    },
+    "8008705": {
+      "lastRssKey": "934ddd0a-51d5-4f2f-a621-cbbd0c4f6757",
+      "lastEpisodeTitle": "Meri Murtiyan Khud Tootne Lagi: Supernatural Haunted Workshop Horror - Hindi Horror Story",
+      "lastEpisodeId": "60725587480",
+      "lastCheckedAt": 1790672153238
     }
   }
 }
