@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-30T16:40:10.296Z",
+  "lastRun": "2026-09-30T21:12:57.040Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef63f164-cfc6-11f0-83c5-4b5ce81acc16",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "ab7b2976-739d-4d42-a54f-840165721c85",
-      "lastEpisodeTitle": "NPR News: 09-30-2026 12PM EDT",
+      "lastRssKey": "cc966550-0c65-454f-98d8-2bf84ec4712e",
+      "lastEpisodeTitle": "NPR News: 09-30-2026 5PM EDT",
       "lastEpisodeId": "60998420668",
-      "lastCheckedAt": 1790786414995
+      "lastCheckedAt": 1790802780746
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75440233",
-      "lastEpisodeTitle": "Delhi's unsafe parks, demand for UP's split, and SC to hear SIR plea",
-      "lastEpisodeId": "61032568449",
-      "lastCheckedAt": 1790741353025
+      "lastRssKey": "https://api.spreaker.com/episode/75463720",
+      "lastEpisodeTitle": "The Catch Up: Govt showpiece deep-tech initiative hits pause (30 September)",
+      "lastEpisodeId": "61070851131",
+      "lastCheckedAt": 1790802781545
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -153,10 +153,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "3C37F74E-9B5F-444B-8654-898FC8A5AB72",
-      "lastEpisodeTitle": "TNB Tech Minute: Trump Defends His Light-Touch AI Regulation Strategy",
+      "lastRssKey": "1CF28FA1-A1B9-489A-B39D-05B9C64A0C7E",
+      "lastEpisodeTitle": "TNB Tech Minute:  FTC Opens Anthropic and OpenAI Investigation",
       "lastEpisodeId": "60995454680",
-      "lastCheckedAt": 1790786429020
+      "lastCheckedAt": 1790802790463
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -165,10 +165,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "8429d2ee-a890-11f1-95c4-67bd3bcbc1c2",
-      "lastEpisodeTitle": "We Have The Anthropic IPO Numbers",
+      "lastRssKey": "845da81c-a890-11f1-95c4-dfff239f29c3",
+      "lastEpisodeTitle": "Dippin Dots",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1790712458704
+      "lastCheckedAt": 1790802791206
     },
     "353744": {
       "lastRssKey": "flightcast:01M3F5A332K24W3T0NH5BVBVTQ",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "5315f288-bce9-11f1-80d8-dbdf05251698",
-      "lastEpisodeTitle": "12PM ET 09/30/2026 Newscast",
+      "lastRssKey": "37f413b6-bd13-11f1-adc8-37212721b423",
+      "lastEpisodeTitle": "5PM ET 09/30/2026 Newscast",
       "lastEpisodeId": "61039010137",
-      "lastCheckedAt": 1790786430389
+      "lastCheckedAt": 1790802791786
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -207,10 +207,10 @@
       "lastCheckedAt": 1790786432605
     },
     "415434": {
-      "lastRssKey": "c99d80ae-c3c7-11f0-8340-07ca0baa4b6d",
-      "lastEpisodeTitle": "Pokémon trading cards are their own economy",
+      "lastRssKey": "49ae64bc-6e7b-11f1-94bf-bfe2861e7f0d",
+      "lastEpisodeTitle": "Dots are OpenAI's cute lil guys",
       "lastEpisodeId": "60977785663",
-      "lastCheckedAt": 1790712462910
+      "lastCheckedAt": 1790802794348
     },
     "419624": {
       "lastRssKey": "94db0911-3e6e-40ad-8247-f02651e619c9",
@@ -219,10 +219,10 @@
       "lastCheckedAt": 1790528936762
     },
     "431205": {
-      "lastRssKey": "6de4b296-961e-4850-b042-a0dc0d84404d",
-      "lastEpisodeTitle": "Inside Man: How Chinese Spies Used Lies, Romance and Betrayal to Target the Federal Reserve",
+      "lastRssKey": "fead0679-ab2c-4710-8812-c2fce4ad4fe0",
+      "lastEpisodeTitle": "The Federal Reserve: a Renovation Report, an Inflation Tracker, and a Tale of Espionage 9/30/26",
       "lastEpisodeId": "60571577178",
-      "lastCheckedAt": 1790786435465
+      "lastCheckedAt": 1790802796417
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -255,10 +255,10 @@
       "lastCheckedAt": 1790786439323
     },
     "444331": {
-      "lastRssKey": "9b73ee3e-b89f-11f1-93dc-47b81452bc30",
-      "lastEpisodeTitle": "#685 - Joey Diaz",
-      "lastEpisodeId": "60810124798",
-      "lastCheckedAt": 1790331920600
+      "lastRssKey": "45aad538-bd06-11f1-8939-07bcb3c9b65d",
+      "lastEpisodeTitle": "#686 - Caleb Pressley",
+      "lastEpisodeId": "61071894612",
+      "lastCheckedAt": 1790802799882
     },
     "444785": {
       "lastRssKey": "fcccbfe4-3f5a-4a13-b095-a884ae1019ec",
@@ -299,10 +299,10 @@
       "lastCheckedAt": 1789640214417
     },
     "483834": {
-      "lastRssKey": "6abc09714e059d44b5328211",
-      "lastEpisodeTitle": "Minions and Monsters Streaming Date, Neflix's Icebreaker Lead Roles — September 29, 2026",
-      "lastEpisodeId": "60837111726",
-      "lastCheckedAt": 1790712479907
+      "lastRssKey": "6abd50d3787195a30e6a0d06",
+      "lastEpisodeTitle": "Robert Eggers’ Werwulf Official Trailer 2, Critical Role and Lichthund Team for Video Game — September 30, 2026",
+      "lastEpisodeId": "61071269265",
+      "lastCheckedAt": 1790802803185
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -596,15 +596,15 @@
       "lastCheckedAt": 1790786492124
     },
     "998969": {
-      "lastRssKey": "audioboom-01a0e2a0-4a37-798b-922e-3b851a2854a8",
-      "lastEpisodeTitle": "Episode 368: The Mystery of San Pedro Part 1: Maria Rudecinda Florencia Sepulveda De Dodson",
-      "lastCheckedAt": 1790540315977
+      "lastRssKey": "audioboom-01a0f2ac-1740-75fb-9664-ff18bd4985d0",
+      "lastEpisodeTitle": "Midweek Mini: The 4th UAP File Dump",
+      "lastCheckedAt": 1790802844331
     },
     "1015378": {
-      "lastRssKey": "7b660c9d-26d0-4ff4-9205-6808ee6898d5",
-      "lastEpisodeTitle": "Daniel Ek: Life After Spotify, Broken Healthcare Incentives, Catching Disease Early & AI's Potential",
+      "lastRssKey": "1c456716-c38b-472a-9dd0-9d8800f22dd8",
+      "lastEpisodeTitle": "Jake Paul & The Chainsmokers: Turning Fame into Funds, Jake Enters Politics? & Venture Bubble Signs",
       "lastEpisodeId": "60856501003",
-      "lastCheckedAt": 1790634339570
+      "lastCheckedAt": 1790802845557
     },
     "1021803": {
       "lastRssKey": "flightcast:01M12FWPTRS9YZ9YNQSKT4592W",
@@ -659,10 +659,10 @@
       "lastCheckedAt": 1790695454145
     },
     "1116485": {
-      "lastRssKey": "6abd20fbafa3f4c95e12c837",
-      "lastEpisodeTitle": "Will Liverpool Sue Manchester City?",
+      "lastRssKey": "6abcef3bafa3f4c95e12c836",
+      "lastEpisodeTitle": "Raiding Man City: The Perfect 3 Signings For Liverpool | The Deep Dive | Q&A Special",
       "lastEpisodeId": "61008470048",
-      "lastCheckedAt": 1790786502899
+      "lastCheckedAt": 1790802854456
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -688,10 +688,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6aba8f686ffb28f8d6613eee",
-      "lastEpisodeTitle": "Mailbag: Will Aston Martin win a title before Ferrari?",
-      "lastEpisodeId": "60888424174",
-      "lastCheckedAt": 1790614465862
+      "lastRssKey": "6abd4c43205819f3d7da640f",
+      "lastEpisodeTitle": "What's really behind Ferrari's unusual Vasseur backing?",
+      "lastEpisodeId": "61074267095",
+      "lastCheckedAt": 1790802856380
     },
     "1258562": {
       "lastRssKey": "6ab7a51bbd67ce4b537bc280",
@@ -727,11 +727,17 @@
       "lastEpisodeId": "60661458183",
       "lastCheckedAt": 1790583397022
     },
+    "1365765": {
+      "lastRssKey": "5b3a78c0-b826-11f1-8f96-8ba30ba9f7aa",
+      "lastEpisodeTitle": "709. The Terror: The Execution of Marie Antoinette (Part 3)",
+      "lastEpisodeId": "60930977429",
+      "lastCheckedAt": 1790802858572
+    },
     "1366771": {
-      "lastRssKey": "6abce174e1bd8d0f19da5bc2",
-      "lastEpisodeTitle": "Afternoon Briefing Wednesday 30th September",
-      "lastEpisodeId": "61002255163",
-      "lastCheckedAt": 1790764814309
+      "lastRssKey": "6abd51fafa77186cebfeb246",
+      "lastEpisodeTitle": "Evening briefing Wednesday 30th September",
+      "lastEpisodeId": "61074000084",
+      "lastCheckedAt": 1790802858978
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -775,10 +781,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6abbef58c5f1555cd465e023",
-      "lastEpisodeTitle": "(Pop) À Hollywood, les films écrits et réalisés par des femmes sont les plus rentables… HugoDécrypte",
+      "lastRssKey": "6abd39a27a2e34d6f460c6c8",
+      "lastEpisodeTitle": "Tout ce qui change pour toi demain",
       "lastEpisodeId": "61047523379",
-      "lastCheckedAt": 1790764818482
+      "lastCheckedAt": 1790802861409
     },
     "2574026": {
       "lastRssKey": "6e346410-b838-11f1-9725-f710ffda4192",
@@ -857,9 +863,10 @@
       "lastCheckedAt": 1787712428218
     },
     "4068658": {
-      "lastRssKey": "7e8e7cfc-b779-11f1-b432-5791853d019c",
-      "lastEpisodeTitle": "Ep. 269 - Ranking Every Fast Food Fries",
-      "lastCheckedAt": 1790197773287
+      "lastRssKey": "417d9b6a-bcef-11f1-80ef-9766c82bb3b7",
+      "lastEpisodeTitle": "Ep. 270 - The Influencers Are Here",
+      "lastEpisodeId": "61072429139",
+      "lastCheckedAt": 1790802867355
     },
     "4112681": {
       "lastRssKey": "Buzzsprout-19872227",
@@ -1043,10 +1050,10 @@
       "lastCheckedAt": 1790764841795
     },
     "6280366": {
-      "lastRssKey": "b0758d72-3ca8-40b1-9bb4-2f40a6e693a6",
-      "lastEpisodeTitle": "How to Build Team Agents",
+      "lastRssKey": "472602a9-4dab-4cf6-a8b5-c437fd5f7036",
+      "lastEpisodeTitle": "The Most Important New AI Tools from OpenAI DevDay",
       "lastEpisodeId": "60978344795",
-      "lastCheckedAt": 1790712576334
+      "lastCheckedAt": 1790802880648
     },
     "6413946": {
       "lastRssKey": "bd16fd59-dc4b-4a02-95c7-da3cd4b792a1",
@@ -1440,10 +1447,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/7f578bd9-e2eb-52e9-b2e6-34ee70af770e",
-      "lastEpisodeTitle": "Publicly Catching the Narcissist in a Lie ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/5f85d572-2051-5a02-87e0-e8a03b4b2fcf",
+      "lastEpisodeTitle": "The Ungrateful Narcissist Who Went Too Far ~ Dr. Ramani",
       "lastEpisodeId": "61030843726",
-      "lastCheckedAt": 1790786568066
+      "lastCheckedAt": 1790802901643
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
