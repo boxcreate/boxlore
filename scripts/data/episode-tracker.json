@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-01T19:41:07.325Z",
+  "lastRun": "2026-10-01T23:41:43.650Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f09a4402-cfc6-11f0-83c5-af993cf4b45d",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "2d8dacc7-ee6a-42a3-b24d-96ec3576afaa",
-      "lastEpisodeTitle": "NPR News: 10-01-2026 3PM EDT",
-      "lastEpisodeId": "60998420668",
-      "lastCheckedAt": 1790883672185
+      "lastRssKey": "ff71914d-d561-4368-a55e-34ddf2618ba7",
+      "lastEpisodeTitle": "NPR News: 10-01-2026 7PM EDT",
+      "lastEpisodeId": "61129221442",
+      "lastCheckedAt": 1790898107577
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75486880",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "e01345c0-bdcd-11f1-9798-53f2500fc063",
-      "lastEpisodeTitle": "3PM ET 10/01/2026 Newscast",
+      "lastRssKey": "2c63e8f2-bded-11f1-8b0e-dff6d9d44ec6",
+      "lastEpisodeTitle": "7PM ET 10/01/2026 Newscast",
       "lastEpisodeId": "61039010137",
-      "lastCheckedAt": 1790883683566
+      "lastCheckedAt": 1790898116546
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -212,10 +212,10 @@
       "lastCheckedAt": 1790786432605
     },
     "415434": {
-      "lastRssKey": "49ae64bc-6e7b-11f1-94bf-bfe2861e7f0d",
-      "lastEpisodeTitle": "Dots are OpenAI's cute lil guys",
-      "lastEpisodeId": "60977785663",
-      "lastCheckedAt": 1790802794348
+      "lastRssKey": "49c9c7fc-6e7b-11f1-94bf-67a5e8fad119",
+      "lastEpisodeTitle": "We answer your questions about an iPod comeback, an E Ink iPhone Duo, and more",
+      "lastEpisodeId": "61122767217",
+      "lastCheckedAt": 1790898118554
     },
     "419624": {
       "lastRssKey": "94db0911-3e6e-40ad-8247-f02651e619c9",
@@ -236,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3VX001CYW6J0TQ50M9EE2K6",
-      "lastEpisodeTitle": "Mortgage rates climb, sidelining homebuyers",
+      "lastRssKey": "01M3WEXT85QYHEGNR5P9XXTJ42",
+      "lastEpisodeTitle": "Inflation held steady in August. Yay?",
       "lastEpisodeId": "61105523289",
-      "lastCheckedAt": 1790883688123
+      "lastCheckedAt": 1790898121264
     },
     "432535": {
       "lastRssKey": "e9bae1e1-0b0f-4d1b-afa8-1ff9bb1ac398",
@@ -260,10 +260,10 @@
       "lastCheckedAt": 1790786439323
     },
     "444331": {
-      "lastRssKey": "45aad538-bd06-11f1-8939-07bcb3c9b65d",
-      "lastEpisodeTitle": "#686 - Caleb Pressley",
-      "lastEpisodeId": "61071894612",
-      "lastCheckedAt": 1790802799882
+      "lastRssKey": "1a60f922-bde5-11f1-a901-1335cef787d2",
+      "lastEpisodeTitle": "#687 - Zohran Mamdani",
+      "lastEpisodeId": "61127893447",
+      "lastCheckedAt": 1790898123130
     },
     "444785": {
       "lastRssKey": "6bedb853-3d02-4d10-b64e-f4f427a64da8",
@@ -429,10 +429,10 @@
       "lastCheckedAt": 1790837591344
     },
     "640518": {
-      "lastRssKey": "6ab4d4dd62a47b6becab199f",
-      "lastEpisodeTitle": "Koksende Erstklässler",
+      "lastRssKey": "6abcd2de4b9baaeac0df4dbc",
+      "lastEpisodeTitle": "Gude Käse",
       "lastEpisodeId": "60793415595",
-      "lastCheckedAt": 1790296024012
+      "lastCheckedAt": 1790898149120
     },
     "665403": {
       "lastRssKey": "aa92b3cb-07fc-4a9b-815b-4aa72289996c",
@@ -441,10 +441,10 @@
       "lastCheckedAt": 1790614443603
     },
     "724143": {
-      "lastRssKey": "3fd90334-bd81-11f1-b39a-179238138b48",
-      "lastEpisodeTitle": "Reações à ausência confirmada de Lula em debate; decisão do TSE sobre Nossa Senhora; ‘exposed’ do cunhado de Vorcaro",
-      "lastEpisodeId": "61010900961",
-      "lastCheckedAt": 1790864009675
+      "lastRssKey": "6adb2206-bde0-11f1-9f91-0b7646dcab41",
+      "lastEpisodeTitle": "Trump diz que acompanha eleição de perto, Fachin rejeita afastamento de Dino e condenada à morte sobrevive nos EUA",
+      "lastEpisodeId": "61127127234",
+      "lastCheckedAt": 1790898150677
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/mbdm7FqApWkMF1leES32j8BmnIVkghmms67B1O_PMMg",
@@ -513,9 +513,9 @@
       "lastCheckedAt": 1790672020141
     },
     "790970": {
-      "lastRssKey": "6bc47a2c-bb61-11f1-ba10-7f5d67c8ab4c",
-      "lastEpisodeTitle": "The Science of Happiness, Love & Human Connection with Professor Sonja Lyubomirsky #683",
-      "lastCheckedAt": 1790726020199
+      "lastRssKey": "927d447a-bcbd-11f1-bd61-8361ee9b2062",
+      "lastEpisodeTitle": "BITESIZE | The Science of Sunlight: How 20 Minutes a Day Could Transform Your Mood, Energy & Sleep | Dr Roger Seheult #684",
+      "lastCheckedAt": 1790898155971
     },
     "808826": {
       "lastRssKey": "6aaa3cff7f8a8df4338bea9e",
@@ -640,10 +640,10 @@
       "lastCheckedAt": 1790786497817
     },
     "1065434": {
-      "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1121",
-      "lastEpisodeTitle": "PodQuiz 1121",
+      "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1122",
+      "lastEpisodeTitle": "PodQuiz 1122",
       "lastEpisodeId": "59615769287",
-      "lastCheckedAt": 1790296047902
+      "lastCheckedAt": 1790898166465
     },
     "1070334": {
       "lastRssKey": "9f19a144-bc20-11f1-9517-5fd5ee884fb6",
@@ -1056,10 +1056,10 @@
       "lastCheckedAt": 1790764841795
     },
     "6280366": {
-      "lastRssKey": "472602a9-4dab-4cf6-a8b5-c437fd5f7036",
-      "lastEpisodeTitle": "The Most Important New AI Tools from OpenAI DevDay",
+      "lastRssKey": "0b86817b-f8d0-4e36-b02e-f20f9d4480a7",
+      "lastEpisodeTitle": "Gemini 4 Argon, Sonnet 5.5 and What Matters with AI Models",
       "lastEpisodeId": "60978344795",
-      "lastCheckedAt": 1790802880648
+      "lastCheckedAt": 1790898191419
     },
     "6413946": {
       "lastRssKey": "9a78c5ae-4369-40bd-b842-c89d8bde23eb",
@@ -1276,21 +1276,21 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a0f584-59d0-70bf-8c90-6d124ede5949",
-      "lastEpisodeTitle": "Elissa Slotkin Spots a Big Warning Sign for Trump’s GOP | Command Post",
-      "lastCheckedAt": 1790864096228
+      "lastRssKey": "audioboom-01a0f9bf-e2d4-7f30-989f-3cc3f60228dc",
+      "lastEpisodeTitle": "Trump Crashes Out: You Haven't Asked \"One F'ing Positive Question\"",
+      "lastCheckedAt": 1790898204580
     },
     "7239415": {
-      "lastRssKey": "e1849682-bd1b-11f1-a95b-1f7558b53c4c",
-      "lastEpisodeTitle": "This turns things on their head right away...",
+      "lastRssKey": "f4866c5c-bde7-11f1-b29c-d7a282d2b1b1",
+      "lastEpisodeTitle": "This forces Montreal into a TOUGH decision...",
       "lastEpisodeId": "61077760178",
-      "lastCheckedAt": 1790815415118
+      "lastCheckedAt": 1790898205148
     },
     "7248222": {
-      "lastRssKey": "2953df00-bd16-11f1-8491-d3954fb9a0fc",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Miércoles 30 de septiembre de 2026",
-      "lastEpisodeId": "61026674525",
-      "lastCheckedAt": 1790815415602
+      "lastRssKey": "e527ac4a-bde1-11f1-b7e3-27af0472426f",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Jueves 01 de octubre de 2026",
+      "lastEpisodeId": "61127602091",
+      "lastCheckedAt": 1790898205953
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1439,22 +1439,28 @@
       "lastCheckedAt": 1786543013085
     },
     "7679624": {
-      "lastRssKey": "https://api.spreaker.com/episode/75334422",
-      "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack - Full Episode",
-      "lastEpisodeId": "61077417237",
-      "lastCheckedAt": 1790815422241
+      "lastRssKey": "https://api.spreaker.com/episode/75334399",
+      "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack - - Full Episode",
+      "lastEpisodeId": "61126946465",
+      "lastCheckedAt": 1790898211146
     },
     "7756959": {
-      "lastRssKey": "f20f0dde-bd1b-11f1-8fab-37dbefdeff88",
-      "lastEpisodeTitle": "¿Quién ganará el ‘Premio Nobel de Literatura’? | VA VA VA",
+      "lastRssKey": "fda1a9c4-bdf0-11f1-9264-a7a916e62475",
+      "lastEpisodeTitle": "Pepe y Chema: las historias que nadie se atreve a contar | VA VA VA",
       "lastEpisodeId": "61078085518",
-      "lastCheckedAt": 1790815422995
+      "lastCheckedAt": 1790898212297
     },
     "7837137": {
       "lastRssKey": "https://api.spreaker.com/episode/71692641",
       "lastEpisodeTitle": "Micaela se aproxima do casal na festa e os leva para casa",
       "lastEpisodeId": "57875815786",
       "lastCheckedAt": 1790672148927
+    },
+    "7853463": {
+      "lastRssKey": "1cbcfedf-b82e-4e4e-9d57-18bb9ed474b5",
+      "lastEpisodeTitle": "ليش نگول على الناس نرجسيين؟ 🤔 | نوارة الداهري في بودكاست #ركز_وياي",
+      "lastEpisodeId": "59518266561",
+      "lastCheckedAt": 1790898212830
     },
     "7901923": {
       "lastRssKey": "7e0ddec8-ca3d-11f0-a082-377ee4edaeb2",
@@ -1469,10 +1475,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/496e20a3-b143-5207-a273-84eac2c75d21",
-      "lastEpisodeTitle": "When people call YOU a narcissist for SETTING BOUNDARIES ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/2a1a1f40-dd45-53e2-9058-afed5d0da60f",
+      "lastEpisodeTitle": "Contagious narcissism ~ Dr. Ramani",
       "lastEpisodeId": "61030843726",
-      "lastCheckedAt": 1790883804033
+      "lastCheckedAt": 1790898213145
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
