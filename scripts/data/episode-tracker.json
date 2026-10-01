@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-01T00:41:18.672Z",
+  "lastRun": "2026-10-01T06:52:25.022Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef63f164-cfc6-11f0-83c5-4b5ce81acc16",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "415d347e-1ee1-4cf8-81a6-161c4057d8e9",
-      "lastEpisodeTitle": "NPR News: 09-30-2026 8PM EDT",
+      "lastRssKey": "debc7806-60b6-48cd-b993-ad6cf3a3a3e5",
+      "lastEpisodeTitle": "NPR News: 10-01-2026 2AM EDT",
       "lastEpisodeId": "60998420668",
-      "lastCheckedAt": 1790815283025
+      "lastCheckedAt": 1790837548570
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75467990",
@@ -80,10 +80,10 @@
       "lastCheckedAt": 1790313226437
     },
     "160817": {
-      "lastRssKey": "https://linuxunplugged.com/686",
-      "lastEpisodeTitle": "Stop Desktop Slop | LINUX Unplugged 686",
-      "lastEpisodeId": "60932499214",
-      "lastCheckedAt": 1790560309569
+      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/86",
+      "lastEpisodeTitle": "Web Browser? I hardly Know 'er! | The Launch 🚀 86",
+      "lastEpisodeId": "61084022316",
+      "lastCheckedAt": 1790837551572
     },
     "193209": {
       "lastRssKey": "5c1d663e-f163-482b-b4ad-4d643845b3a9",
@@ -127,10 +127,10 @@
       "lastCheckedAt": 1790695387605
     },
     "229239": {
-      "lastRssKey": "50ccae82-2c74-11f1-8711-678a084fc4d2",
-      "lastEpisodeTitle": "James Sexton, Rick Glassman, Matt McCusker - Mostly Wise #4 - #1156",
-      "lastEpisodeId": "60196429938",
-      "lastCheckedAt": 1790583336931
+      "lastRssKey": "6b0aa678-2c74-11f1-87f6-7f71920d0414",
+      "lastEpisodeTitle": "How To Go Hard, Even When You Don’t Want To - Sam Sulek - #1157",
+      "lastEpisodeId": "61092337315",
+      "lastCheckedAt": 1790837555329
     },
     "230598": {
       "lastRssKey": "b8702e26-a54a-11f0-b1fc-83e349d266a1",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "61111cda-bd2c-11f1-9f08-4b840c879957",
-      "lastEpisodeTitle": "8PM ET 09/30/2026 Newscast",
+      "lastRssKey": "ab9e0d08-bd5e-11f1-a458-93a2163b6dd0",
+      "lastEpisodeTitle": "2AM ET 10/01/2026 Newscast",
       "lastEpisodeId": "61039010137",
-      "lastCheckedAt": 1790815294782
+      "lastCheckedAt": 1790837558337
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -261,10 +261,10 @@
       "lastCheckedAt": 1790802799882
     },
     "444785": {
-      "lastRssKey": "fcccbfe4-3f5a-4a13-b095-a884ae1019ec",
-      "lastEpisodeTitle": "IMPACT: Canadiens' Josh Anderson and Depth Forwards FUEL Opening Night Win Over Toronto Maple Leafs",
-      "lastEpisodeId": "61038684230",
-      "lastCheckedAt": 1790741370319
+      "lastRssKey": "6bedb853-3d02-4d10-b64e-f4f427a64da8",
+      "lastEpisodeTitle": "Montreal Canadiens trade target pivot? | Jakub Dobeš' historic career start | Habs top six patience",
+      "lastEpisodeId": "61087754790",
+      "lastCheckedAt": 1790837564703
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -323,16 +323,16 @@
       "lastCheckedAt": 1790528945179
     },
     "499394": {
-      "lastRssKey": "flightcast:01M32K500669XNSP3RQZSWNC4M",
-      "lastEpisodeTitle": "Adam Neumann: The Real Story Behind WeWork, A $4 Billion Cab Ride, And Surviving A $460 Million Debt",
+      "lastRssKey": "flightcast:01M32KE23H52RT1RTNT9EKC4JA",
+      "lastEpisodeTitle": "Shawn Ryan: There&#39;s A Battle For Your Soul, It&#39;s Happening Right Now",
       "lastEpisodeId": "60808652654",
-      "lastCheckedAt": 1790583351516
+      "lastCheckedAt": 1790837569244
     },
     "503644": {
-      "lastRssKey": "3cabf2b0-12ca-4d9d-b8dc-70127f0326d0",
-      "lastEpisodeTitle": "Matthew McConaughey & Woody Harrelson",
-      "lastEpisodeId": "60939083551",
-      "lastCheckedAt": 1790583351920
+      "lastRssKey": "d8b94afd-0c66-4c7e-8965-249585f94c35",
+      "lastEpisodeTitle": "Conan O’Brien Must Go: Season 3 Roundtable Discussion Part I",
+      "lastEpisodeId": "61087939005",
+      "lastCheckedAt": 1790837570072
     },
     "509873": {
       "lastRssKey": "2e406df3-97ac-4dec-8e62-aea8a4b3554d",
@@ -365,10 +365,10 @@
       "lastCheckedAt": 1790786464899
     },
     "545784": {
-      "lastRssKey": "22e9bb0e797aac2453e69ccb1b6c8b58",
-      "lastEpisodeTitle": "Gerührt, nicht geschüttelt (mit René Pfister)",
-      "lastEpisodeId": "61036920096",
-      "lastCheckedAt": 1790741385554
+      "lastRssKey": "f5867bc99d37fdada5d4ab3b15fac83e",
+      "lastEpisodeTitle": "Immobilienschweine! (Linke Dinger mit Felix Banaszak)",
+      "lastEpisodeId": "61085883750",
+      "lastCheckedAt": 1790837589064
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/captivate/twit_1103/137d0471-cb85-40e3-ad82-79d599a1ac4f/twit1103.mp3",
@@ -418,10 +418,10 @@
       "lastCheckedAt": 1790470025744
     },
     "628250": {
-      "lastRssKey": "6d037346-cd98-49d0-871f-c4a2e58ebbd6",
-      "lastEpisodeTitle": "Big_Impossible",
+      "lastRssKey": "10513f69-c259-46a5-a21f-bef7906178b0",
+      "lastEpisodeTitle": "Big_Informant",
       "lastEpisodeId": "60941807060",
-      "lastCheckedAt": 1790583374599
+      "lastCheckedAt": 1790837591344
     },
     "640518": {
       "lastRssKey": "6ab4d4dd62a47b6becab199f",
@@ -525,10 +525,10 @@
       "lastCheckedAt": 1790764792283
     },
     "837535": {
-      "lastRssKey": "a9622ede-bcdc-11f1-8f5a-032a1c4a943f",
-      "lastEpisodeTitle": "Ab DIESEM Gehalt zahlst du 2027 mehr Sozialabgaben!",
+      "lastRssKey": "7a0bd888-bcff-11f1-b322-637709ce6b93",
+      "lastEpisodeTitle": "PKV vs. GKV: Wie unfair ist das Zweik(l)assenmodell? (#745)",
       "lastEpisodeId": "60940578661",
-      "lastCheckedAt": 1790786485546
+      "lastCheckedAt": 1790837599906
     },
     "838740": {
       "lastRssKey": "cce03e0e-bc7e-11f1-8131-8fa0c788d008",
@@ -561,16 +561,16 @@
       "lastCheckedAt": 1790695438373
     },
     "928708": {
-      "lastRssKey": "9a4bd38c-bb5b-11f1-956f-c7b6b536d1d7",
-      "lastEpisodeTitle": "History Today - Sept. 30",
+      "lastRssKey": "d56d370a-bc1c-11f1-b65a-07c7a8875fd4",
+      "lastEpisodeTitle": "History Today - Oct. 1",
       "lastEpisodeId": "60943213375",
-      "lastCheckedAt": 1790741397792
+      "lastCheckedAt": 1790837602614
     },
     "946758": {
-      "lastRssKey": "10cc122e-77b5-11f0-8752-0bb04facbe23",
-      "lastEpisodeTitle": "294 - Revelations",
+      "lastRssKey": "10f30bcc-77b5-11f0-8752-7b07bcd8ee21",
+      "lastEpisodeTitle": "295 - The Book of Dale",
       "lastEpisodeId": "59193386502",
-      "lastCheckedAt": 1789463630441
+      "lastCheckedAt": 1790837603525
     },
     "947138": {
       "lastRssKey": "81f486ca-b5cc-11f0-92f1-bf7cc043da06",
@@ -676,10 +676,10 @@
       "lastCheckedAt": 1790764810995
     },
     "1193286": {
-      "lastRssKey": "779d94ce-bce6-11f1-ab38-3309ec754291",
-      "lastEpisodeTitle": "Dobes, Carrier, Bolduc Et Anderson ; Le CH S'Impose À Toronto | Le Sick Podcast Avec Tony Marinaro 30/09/26",
+      "lastRssKey": "70d505a4-bd19-11f1-ac46-8fe5e6e5d5e7",
+      "lastEpisodeTitle": "Encouraging Habs Win Still Brings Some Concern… | The Sick Podcast with Tony Marinaro September 30 2026",
       "lastEpisodeId": "61015123707",
-      "lastCheckedAt": 1790786504234
+      "lastCheckedAt": 1790837614379
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -734,10 +734,10 @@
       "lastCheckedAt": 1790815360103
     },
     "1366771": {
-      "lastRssKey": "6abd51fafa77186cebfeb246",
-      "lastEpisodeTitle": "Evening briefing Wednesday 30th September",
-      "lastEpisodeId": "61074000084",
-      "lastCheckedAt": 1790802858978
+      "lastRssKey": "6abdc216205819f3d704bc88",
+      "lastEpisodeTitle": "Morning briefing Thursday 1st October",
+      "lastEpisodeId": "61087241974",
+      "lastCheckedAt": 1790837617022
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -746,10 +746,10 @@
       "lastCheckedAt": 1790511583543
     },
     "1388001": {
-      "lastRssKey": "e50b9278-493c-4bfb-8bdb-da86df75cb35",
-      "lastEpisodeTitle": "Les conflits du Moyen Orient se jouent aussi dans la Corne de l’Afrique",
+      "lastRssKey": "b503a483-93c8-4369-87b3-b0a1689e5703",
+      "lastEpisodeTitle": "La guerre psychologique de Moscou : la Russie menace l’OTAN d’une guerre nucléaire",
       "lastEpisodeId": "61048418011",
-      "lastCheckedAt": 1790764814993
+      "lastCheckedAt": 1790837617400
     },
     "1545709": {
       "lastRssKey": "audioboom-01a0e824-3e3a-7ef2-a344-9e31fb5ab2e8",
@@ -781,10 +781,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6abd39a27a2e34d6f460c6c8",
-      "lastEpisodeTitle": "Tout ce qui change pour toi demain",
+      "lastRssKey": "6abd3defa6dbac3ace17aed2",
+      "lastEpisodeTitle": "(Pop) Une nouvelle plateforme de streaming dédiée à la musique classique va voir le jour en France … HugoDécrypte",
       "lastEpisodeId": "61047523379",
-      "lastCheckedAt": 1790802861409
+      "lastCheckedAt": 1790837619149
     },
     "2574026": {
       "lastRssKey": "6e346410-b838-11f1-9725-f710ffda4192",
@@ -905,10 +905,10 @@
       "lastCheckedAt": 1790672081884
     },
     "4534957": {
-      "lastRssKey": "6aa161e2647921ed602e03a1",
-      "lastEpisodeTitle": "Hans Christian Andersen: Smutný král pohádek, pro kterého se vlastní úspěch stal hořkým prokletím",
+      "lastRssKey": "6abd235982177b9ab8498e89",
+      "lastEpisodeTitle": "Emil Kolben: Geniální průmyslník, kterého před nacisty nezachránilo ani vlastní impérium",
       "lastEpisodeId": "60655230024",
-      "lastCheckedAt": 1790197777029
+      "lastCheckedAt": 1790837624869
     },
     "4622987": {
       "lastRssKey": "0f01f5bf-4a5f-4198-b1a4-333e1c4a83f9",
@@ -973,10 +973,10 @@
       "lastCheckedAt": 1790239290221
     },
     "5698881": {
-      "lastRssKey": "327dc387-ec6a-4e57-8290-4dacdd495f19",
-      "lastEpisodeTitle": "How to Stop Living Paycheck to Paycheck & Finally Get Ahead",
-      "lastEpisodeId": "60939054106",
-      "lastCheckedAt": 1790583411251
+      "lastRssKey": "c58cb86d-f2a7-4851-8489-78dd990cc8c8",
+      "lastEpisodeTitle": "How One “Golden Moment” Can Transform Your Entire Life",
+      "lastEpisodeId": "61087919558",
+      "lastCheckedAt": 1790837628027
     },
     "5716308": {
       "lastRssKey": "urn:bbc:podcast:p0pcvyfj",
@@ -1015,10 +1015,10 @@
       "lastCheckedAt": 1790274862320
     },
     "5930143": {
-      "lastRssKey": "e50b9278-493c-4bfb-8bdb-da86df75cb35",
-      "lastEpisodeTitle": "Les conflits du Moyen Orient se jouent aussi dans la Corne de l’Afrique",
+      "lastRssKey": "b503a483-93c8-4369-87b3-b0a1689e5703",
+      "lastEpisodeTitle": "La guerre psychologique de Moscou : la Russie menace l’OTAN d’une guerre nucléaire",
       "lastEpisodeId": "61044718563",
-      "lastCheckedAt": 1790764840326
+      "lastCheckedAt": 1790837646263
     },
     "5945547": {
       "lastRssKey": "6ad40538-0f09-40d3-b107-7c8ef5805678",
@@ -1086,10 +1086,10 @@
       "lastCheckedAt": 1790529014373
     },
     "6628686": {
-      "lastRssKey": "67d6bc4c-b7ef-11f1-9461-7fe6d52ccd06",
-      "lastEpisodeTitle": "Does an Enlarged Prostate Mean You’re More Likely to Get Prostate Cancer?",
+      "lastRssKey": "efca872e-a3cb-11f1-9586-97e8b98c98d5",
+      "lastEpisodeTitle": "Moment: You’ve Been Masturbating Wrong Your Entire Life—Here’s How to Fix It!",
       "lastEpisodeId": "60835585667",
-      "lastCheckedAt": 1790364464945
+      "lastCheckedAt": 1790837649134
     },
     "6634680": {
       "lastRssKey": "cb571878-467a-49c1-bb3a-a9e6128a2f0b",
@@ -1163,10 +1163,10 @@
       "lastCheckedAt": 1790274881245
     },
     "6852067": {
-      "lastRssKey": "113b0948-bbb8-11f1-8a15-bbab9bb3bc43",
-      "lastEpisodeTitle": "Crumbl Cookies: la guerra del azúcar en Utah",
+      "lastRssKey": "a40046da-bd25-11f1-b02e-67fea375ba72",
+      "lastEpisodeTitle": "Emprender en México SIN RED DE APOYO - Pronail",
       "lastEpisodeId": "60995722405",
-      "lastCheckedAt": 1790672115593
+      "lastCheckedAt": 1790837656537
     },
     "6866470": {
       "lastRssKey": "https://api.spreaker.com/episode/75398700",
@@ -1205,10 +1205,10 @@
       "lastCheckedAt": 1790376130846
     },
     "6956562": {
-      "lastRssKey": "fa0f9611-09ca-44e8-9961-edde7e49fc44",
-      "lastEpisodeTitle": "The agro-mutual fund that crashed and burned",
-      "lastEpisodeId": "61035963433",
-      "lastCheckedAt": 1790741443774
+      "lastRssKey": "b499f172-5e11-4755-9d22-4cfb8f7a925c",
+      "lastEpisodeTitle": "Inox Clean’s second attempt at a first impression",
+      "lastEpisodeId": "61083870559",
+      "lastCheckedAt": 1790837657879
     },
     "6959250": {
       "lastRssKey": "99f92a05-76b6-4edd-b507-b1ad2cda5d61",
@@ -1301,9 +1301,9 @@
       "lastCheckedAt": 1790614497806
     },
     "7348627": {
-      "lastRssKey": "7f5960ae-fd19-49d3-841c-d7606d0c1785",
-      "lastEpisodeTitle": "2 Hours of Chilling Mysteries You Won't See On Netflix | 320",
-      "lastCheckedAt": 1790672133869
+      "lastRssKey": "475cc019-bd06-406e-bad5-bd287c0934ec",
+      "lastEpisodeTitle": "Chilling Cold Cases Netflix Won't Cover | 321",
+      "lastCheckedAt": 1790837661925
     },
     "7376606": {
       "lastRssKey": "50018ebb-2340-41b2-a6c7-a2a667969197",
@@ -1447,10 +1447,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/b3dd2162-7a43-5190-b0ff-5b27b0f44cb2",
-      "lastEpisodeTitle": "Im embarrassed I STILL LOVE the narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/1c341eb1-1e71-5f71-9dd7-9815db2300af",
+      "lastEpisodeTitle": "Exciting news ~ Dr. Ramani",
       "lastEpisodeId": "61030843726",
-      "lastCheckedAt": 1790815424654
+      "lastCheckedAt": 1790837666806
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
