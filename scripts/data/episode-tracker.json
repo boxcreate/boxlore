@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-01T14:12:31.500Z",
+  "lastRun": "2026-10-01T19:41:07.325Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f09a4402-cfc6-11f0-83c5-af993cf4b45d",
@@ -12,6 +12,11 @@
       "lastEpisodeTitle": "Do plants know we're here?",
       "lastEpisodeId": "59343622582",
       "lastCheckedAt": 1790376024714
+    },
+    "7162": {
+      "lastRssKey": "f2986c9c-c6e0-4f78-b333-cc04a5ca3c50",
+      "lastEpisodeTitle": "Murder From The Shadows - Stab, Kentucky",
+      "lastCheckedAt": 1790883669208
     },
     "8820": {
       "lastRssKey": "f1a104e6-612e-4a46-834f-18d757bfbb5a",
@@ -44,16 +49,16 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "21c15318-f929-4d80-a20e-3c9ea5aec331",
-      "lastEpisodeTitle": "NPR News: 10-01-2026 10AM EDT",
+      "lastRssKey": "2d8dacc7-ee6a-42a3-b24d-96ec3576afaa",
+      "lastEpisodeTitle": "NPR News: 10-01-2026 3PM EDT",
       "lastEpisodeId": "60998420668",
-      "lastCheckedAt": 1790863955503
+      "lastCheckedAt": 1790883672185
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75467990",
-      "lastEpisodeTitle": "Behind the LPU protests, deep-tech funding, and Flydubai flight incident",
-      "lastEpisodeId": "61081647091",
-      "lastCheckedAt": 1790815283893
+      "lastRssKey": "https://api.spreaker.com/episode/75486880",
+      "lastEpisodeTitle": "The Catch Up: Critical actions that saved Flydubai plane (1 October)",
+      "lastEpisodeId": "61115019752",
+      "lastCheckedAt": 1790883673009
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -165,10 +170,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "845da81c-a890-11f1-95c4-dfff239f29c3",
-      "lastEpisodeTitle": "Dippin Dots",
+      "lastRssKey": "10142060-b823-11f1-957c-2fb65fb6cef0",
+      "lastEpisodeTitle": "Is Gemini 4 Argon Just Benchmaxxing?",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1790802791206
+      "lastCheckedAt": 1790883682966
     },
     "353744": {
       "lastRssKey": "flightcast:01M3F5A332K24W3T0NH5BVBVTQ",
@@ -177,10 +182,10 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "b94d2770-bda1-11f1-aec7-4368c6dea876",
-      "lastEpisodeTitle": "10AM ET 10/01/2026 Newscast",
+      "lastRssKey": "e01345c0-bdcd-11f1-9798-53f2500fc063",
+      "lastEpisodeTitle": "3PM ET 10/01/2026 Newscast",
       "lastEpisodeId": "61039010137",
-      "lastCheckedAt": 1790863968895
+      "lastCheckedAt": 1790883683566
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -219,10 +224,10 @@
       "lastCheckedAt": 1790528936762
     },
     "431205": {
-      "lastRssKey": "fead0679-ab2c-4710-8812-c2fce4ad4fe0",
-      "lastEpisodeTitle": "The Federal Reserve: a Renovation Report, an Inflation Tracker, and a Tale of Espionage 9/30/26",
+      "lastRssKey": "25bd7807-c1e3-458b-9ae5-db8e5526696e",
+      "lastEpisodeTitle": "Under-the-Rader AI Plays, Housing Shift, and Sneaker Softness 10/1/26",
       "lastEpisodeId": "60571577178",
-      "lastCheckedAt": 1790802796417
+      "lastCheckedAt": 1790883687591
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -231,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3VM7GBFNGKHCQXZB58JF26W",
-      "lastEpisodeTitle": "A big change to SNAP kicks in today",
+      "lastRssKey": "01M3VX001CYW6J0TQ50M9EE2K6",
+      "lastEpisodeTitle": "Mortgage rates climb, sidelining homebuyers",
       "lastEpisodeId": "61105523289",
-      "lastCheckedAt": 1790863974408
+      "lastCheckedAt": 1790883688123
     },
     "432535": {
       "lastRssKey": "e9bae1e1-0b0f-4d1b-afa8-1ff9bb1ac398",
@@ -272,10 +277,10 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
-      "lastRssKey": "a22cbd22-d58f-4de1-a56a-4599d646a9f5",
-      "lastEpisodeTitle": "Starship Flight 14 - SUCCESS! | Tesla Time News 682",
-      "lastEpisodeId": "61021291142",
-      "lastCheckedAt": 1790712476519
+      "lastRssKey": "479805e4-3962-43ac-a35d-47455be57f73",
+      "lastEpisodeTitle": "Another Roadster Reveal?! | Tesla Time News 683",
+      "lastEpisodeId": "61118279707",
+      "lastCheckedAt": 1790883691221
     },
     "462634": {
       "lastRssKey": "gid://art19-episode-locator/V0/zhBAe-9x74-fe5SBqieVgP3woOBgZTlPZUzhzZZ16G0",
@@ -299,10 +304,10 @@
       "lastCheckedAt": 1789640214417
     },
     "483834": {
-      "lastRssKey": "6abd50d3787195a30e6a0d06",
-      "lastEpisodeTitle": "Robert Eggers’ Werwulf Official Trailer 2, Critical Role and Lichthund Team for Video Game — September 30, 2026",
+      "lastRssKey": "6abeacce0e2e02bcec239b2b",
+      "lastEpisodeTitle": "Wednesday Season 3 Wraps Filming, Ted Animated Series on Peacock — October 1st, 2026",
       "lastEpisodeId": "61071269265",
-      "lastCheckedAt": 1790802803185
+      "lastCheckedAt": 1790883693525
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -549,16 +554,16 @@
       "lastCheckedAt": 1790815340873
     },
     "902798": {
-      "lastRssKey": "3f3378e0-2359-49de-8207-76cfc38927d7",
-      "lastEpisodeTitle": "The Next $1 Trillion Energy Boom: Solar, Wind, & Green Hydrogen | Sumant Sinha | FO568 Raj Shamani",
+      "lastRssKey": "82be8876-8aaf-4fa8-8817-3ba7e85feba5",
+      "lastEpisodeTitle": "Fake Names & Secret Identities: How Intelligence Agents Operate | David Bickford | FO569 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1790712526848
+      "lastCheckedAt": 1790883729860
     },
     "906591": {
-      "lastRssKey": "df284ce4-bbd6-11f1-9821-eb898c46b6ff",
-      "lastEpisodeTitle": "FBI Hacked: Top Director Quits",
+      "lastRssKey": "9ceaa0a0-bdb3-11f1-b1a1-3f00796e96fd",
+      "lastEpisodeTitle": "The Next Generation Is So Screwed",
       "lastEpisodeId": "61008739158",
-      "lastCheckedAt": 1790695438373
+      "lastCheckedAt": 1790883730655
     },
     "928708": {
       "lastRssKey": "d56d370a-bc1c-11f1-b65a-07c7a8875fd4",
@@ -590,10 +595,10 @@
       "lastCheckedAt": 1790376097115
     },
     "980370": {
-      "lastRssKey": "6abd245b56d8e12f09c351cf",
-      "lastEpisodeTitle": "AI and the end of loneliness | Paul Bloom",
+      "lastRssKey": "6abe7442ce220947617cd457",
+      "lastEpisodeTitle": "Are your dealbreakers sabotaging your love life? | Amy Chan",
       "lastEpisodeId": "61063258161",
-      "lastCheckedAt": 1790786492124
+      "lastCheckedAt": 1790883733777
     },
     "998969": {
       "lastRssKey": "audioboom-01a0f2ac-1740-75fb-9664-ff18bd4985d0",
@@ -618,10 +623,10 @@
       "lastCheckedAt": 1790864025812
     },
     "1035900": {
-      "lastRssKey": "5c723614-9008-40b1-bce3-a1737ae0f836",
-      "lastEpisodeTitle": "Liberty City und Spotify?! - Radio Buschfunk: Die neusten Gerüchte um GTA 6 mit Heideltraut",
-      "lastEpisodeId": "61018323455",
-      "lastCheckedAt": 1790712539809
+      "lastRssKey": "f41f13f4-b3bd-4250-a6f7-7915794222be",
+      "lastEpisodeTitle": "Vom Indie-Rebell zur Milliarden-Hoffnung: Phänomen Warhorse",
+      "lastEpisodeId": "61118090496",
+      "lastCheckedAt": 1790883737272
     },
     "1047718": {
       "lastRssKey": "6abe04998f08be47d22c2b56",
@@ -659,10 +664,10 @@
       "lastCheckedAt": 1790695454145
     },
     "1116485": {
-      "lastRssKey": "6abe2eeb855f3078c5cf83a3",
-      "lastEpisodeTitle": "Hugo Ekitike Set To RETURN To Liverpool Training Next Month! | Daily News Update",
+      "lastRssKey": "6abe6328c4425160b887ec52",
+      "lastEpisodeTitle": "Why Jurgen Klopp’s Liverpool Are The GREATEST Of The Premier League Era",
       "lastEpisodeId": "61107551036",
-      "lastCheckedAt": 1790864033513
+      "lastCheckedAt": 1790883743155
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -676,10 +681,10 @@
       "lastCheckedAt": 1790764810995
     },
     "1193286": {
-      "lastRssKey": "70d505a4-bd19-11f1-ac46-8fe5e6e5d5e7",
-      "lastEpisodeTitle": "Encouraging Habs Win Still Brings Some Concern… | The Sick Podcast with Tony Marinaro September 30 2026",
-      "lastEpisodeId": "61015123707",
-      "lastCheckedAt": 1790837614379
+      "lastRssKey": "cba244be-bdb0-11f1-9253-bbcfc028c479",
+      "lastEpisodeTitle": "Le Prochain Dossier De Hughes À L'Interne Doit Être... | Le Sick Podcast Avec Tony Marinaro 01/10/26",
+      "lastEpisodeId": "61114227304",
+      "lastCheckedAt": 1790883744772
     },
     "1199730": {
       "lastEpisodeId": "59317998159",
@@ -688,10 +693,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6abe3eb938e6d69a303c5921",
-      "lastEpisodeTitle": "Tech Show: How F1 design teams are harnessing AI power",
-      "lastEpisodeId": "61074267095",
-      "lastCheckedAt": 1790864035463
+      "lastRssKey": "6abe9345d2d2814e2c30c4ef",
+      "lastEpisodeTitle": "In-Car Insights: Mercedes upgrades talk of the pitlane in Sepang",
+      "lastEpisodeId": "61116848199",
+      "lastCheckedAt": 1790883745328
     },
     "1258562": {
       "lastRssKey": "6ab7a51bbd67ce4b537bc280",
@@ -734,10 +739,10 @@
       "lastCheckedAt": 1790815360103
     },
     "1366771": {
-      "lastRssKey": "6abe26a4205819f3d72677a2",
-      "lastEpisodeTitle": "Afternoon briefing Thursday 1st October",
+      "lastRssKey": "6abea53167b6d36f87e3256e",
+      "lastEpisodeTitle": "Evening Briefing Thursday 1st October",
       "lastEpisodeId": "61100919851",
-      "lastCheckedAt": 1790864038210
+      "lastCheckedAt": 1790883747441
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -781,15 +786,16 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6abd3defa6dbac3ace17aed2",
-      "lastEpisodeTitle": "(Pop) Une nouvelle plateforme de streaming dédiée à la musique classique va voir le jour en France … HugoDécrypte",
-      "lastEpisodeId": "61047523379",
-      "lastCheckedAt": 1790837619149
+      "lastRssKey": "6abea4ee0805ddd0aab9f1ff",
+      "lastEpisodeTitle": "Je fais le point sur les blocus lycéens et étudiants",
+      "lastEpisodeId": "61120137017",
+      "lastCheckedAt": 1790883752741
     },
     "2574026": {
-      "lastRssKey": "6e346410-b838-11f1-9725-f710ffda4192",
-      "lastEpisodeTitle": "How a first-time founder bootstrapped her way to a $47.5 Million Exit with Ashley Tyrner-Dolce, FarboxRX",
-      "lastCheckedAt": 1790274843402
+      "lastRssKey": "0682bec8-bd26-11f1-9529-aba7f383686d",
+      "lastEpisodeTitle": "The Case for Crowdfunding Before Raising Venture Capital with Everette Taylor, Kickstarter",
+      "lastEpisodeId": "61115850716",
+      "lastCheckedAt": 1790883753218
     },
     "2611393": {
       "lastRssKey": "0e72a65f-c10a-424c-8605-f2ea70492f12",
@@ -1009,10 +1015,10 @@
       "lastCheckedAt": 1790726060786
     },
     "5848065": {
-      "lastRssKey": "6ab5540a62a47b6becceea84",
-      "lastEpisodeTitle": "رفلکس ۲۲ | چرا از کسی دفاع می‌کنی که حتی تو رو نمی‌شناسه؟",
+      "lastRssKey": "6abe8aef90f8a952d487679a",
+      "lastEpisodeTitle": "وریا امیری | خدا انسان را آفرید، یا انسان خدا را؟",
       "lastEpisodeId": "60515874671",
-      "lastCheckedAt": 1790274862320
+      "lastCheckedAt": 1790883771483
     },
     "5930143": {
       "lastRssKey": "b503a483-93c8-4369-87b3-b0a1689e5703",
@@ -1056,10 +1062,10 @@
       "lastCheckedAt": 1790802880648
     },
     "6413946": {
-      "lastRssKey": "bd16fd59-dc4b-4a02-95c7-da3cd4b792a1",
-      "lastEpisodeTitle": "EP 833: Andy López Beltrán, en la mira de Estados Unidos, Morena empieza operación cicatriz con perdedores y Adiós al super peso",
-      "lastEpisodeId": "60831745119",
-      "lastCheckedAt": 1790786531560
+      "lastRssKey": "9a78c5ae-4369-40bd-b842-c89d8bde23eb",
+      "lastEpisodeTitle": "EP 834: López Obrador reaparece y acusa presión de Estados Unidos, Se desploman producción y exportaciones de Pemex y Copiloto intenta secuestrar avión que volaba a Israel",
+      "lastEpisodeId": "61107801237",
+      "lastCheckedAt": 1790883773362
     },
     "6456494": {
       "lastRssKey": "6abc529cf560f37dfc52823a",
@@ -1162,10 +1168,10 @@
       "lastCheckedAt": 1787770938932
     },
     "6841381": {
-      "lastRssKey": "6ab5407c432e34fa45e502e8",
-      "lastEpisodeTitle": "Apple’s £2,000 iPhone Duo vs The Best Android Foldables",
+      "lastRssKey": "6abe6a2aa195b13a1abd2ba7",
+      "lastEpisodeTitle": "Meta’s New VR Glasses Could Change Everything",
       "lastEpisodeId": "60775756310",
-      "lastCheckedAt": 1790274881245
+      "lastCheckedAt": 1790883789938
     },
     "6852067": {
       "lastRssKey": "a40046da-bd25-11f1-b02e-67fea375ba72",
@@ -1362,6 +1368,12 @@
       "lastEpisodeTitle": "55: A Party To Die For | The Disturbing Case Of Tyler Hadley",
       "lastCheckedAt": 1790672138759
     },
+    "7529115": {
+      "lastEpisodeId": "60946482168",
+      "lastEpisodeTitle": "S3E2 The Whistleblower's Tiger Mom",
+      "lastRssKey": "6ab85548079b46c8194e089b",
+      "lastCheckedAt": 1790883800539
+    },
     "7540523": {
       "lastRssKey": "8257452a-d639-4918-8fb2-7ca994d89861",
       "lastEpisodeTitle": "Staffelfinale im Supermarkt (S01/E10)",
@@ -1369,10 +1381,10 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
-      "lastEpisodeId": "61057650798",
-      "lastEpisodeTitle": "Wednesday, September 30, 2026 - 5 Minute AI News",
-      "lastRssKey": "199fd322-a750-42b1-bfac-128293e895ec",
-      "lastCheckedAt": 1790786564463
+      "lastEpisodeId": "61115014212",
+      "lastEpisodeTitle": "Thursday, October 1, 2026 - 5 Minute AI News",
+      "lastRssKey": "9fa6808b-578c-460e-894b-6dbedeb7c186",
+      "lastCheckedAt": 1790883801257
     },
     "7551349": {
       "lastRssKey": "30b5c9da-3233-4e29-ad4c-b49b014c85d1",
@@ -1457,10 +1469,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/3d70d417-30c2-5a15-a380-c5bf7c8ee0d0",
-      "lastEpisodeTitle": "5 ways to survive a narcissist when YOU CANT LEAVE ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/496e20a3-b143-5207-a273-84eac2c75d21",
+      "lastEpisodeTitle": "When people call YOU a narcissist for SETTING BOUNDARIES ~ Dr. Ramani",
       "lastEpisodeId": "61030843726",
-      "lastCheckedAt": 1790864106248
+      "lastCheckedAt": 1790883804033
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
