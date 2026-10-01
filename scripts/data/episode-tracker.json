@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-09-30T21:12:57.040Z",
+  "lastRun": "2026-10-01T00:41:18.672Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "ef63f164-cfc6-11f0-83c5-4b5ce81acc16",
@@ -44,16 +44,16 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "cc966550-0c65-454f-98d8-2bf84ec4712e",
-      "lastEpisodeTitle": "NPR News: 09-30-2026 5PM EDT",
+      "lastRssKey": "415d347e-1ee1-4cf8-81a6-161c4057d8e9",
+      "lastEpisodeTitle": "NPR News: 09-30-2026 8PM EDT",
       "lastEpisodeId": "60998420668",
-      "lastCheckedAt": 1790802780746
+      "lastCheckedAt": 1790815283025
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75463720",
-      "lastEpisodeTitle": "The Catch Up: Govt showpiece deep-tech initiative hits pause (30 September)",
-      "lastEpisodeId": "61070851131",
-      "lastCheckedAt": 1790802781545
+      "lastRssKey": "https://api.spreaker.com/episode/75467990",
+      "lastEpisodeTitle": "Behind the LPU protests, deep-tech funding, and Flydubai flight incident",
+      "lastEpisodeId": "61081647091",
+      "lastCheckedAt": 1790815283893
     },
     "78573": {
       "lastRssKey": "3cb27556-77ab-46c6-940f-9f34fa099eec",
@@ -98,9 +98,9 @@
       "lastCheckedAt": 1790741358357
     },
     "204808": {
-      "lastRssKey": "b9938eed-4827-4a21-9b00-667b2980dee0",
-      "lastEpisodeTitle": "Die besten 7 Sekunden der NFL-Geschichte? MONTALK WEEK 3",
-      "lastCheckedAt": 1790614419682
+      "lastRssKey": "4a13c6ef-ee7b-499f-9815-aca8e0380e15",
+      "lastEpisodeTitle": "NFL WEEK 4 PREVIEW",
+      "lastCheckedAt": 1790815290312
     },
     "207877": {
       "lastRssKey": "suKbHzKDo586w0EsyuHF0RKfnuBj0785",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "37f413b6-bd13-11f1-adc8-37212721b423",
-      "lastEpisodeTitle": "5PM ET 09/30/2026 Newscast",
+      "lastRssKey": "61111cda-bd2c-11f1-9f08-4b840c879957",
+      "lastEpisodeTitle": "8PM ET 09/30/2026 Newscast",
       "lastEpisodeId": "61039010137",
-      "lastCheckedAt": 1790802791786
+      "lastCheckedAt": 1790815294782
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -231,10 +231,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3SDS3BHHGWX9AA9PV0HYEZ8",
-      "lastEpisodeTitle": "Even middle-income folks are struggling to pay rent",
-      "lastEpisodeId": "61063703538",
-      "lastCheckedAt": 1790786436597
+      "lastRssKey": "01M3T13Z8R7B5ZZY0MF57Z0GHF",
+      "lastEpisodeTitle": "OpenAI is staying private (for now)",
+      "lastEpisodeId": "61078541649",
+      "lastCheckedAt": 1790815300221
     },
     "432535": {
       "lastRssKey": "e9bae1e1-0b0f-4d1b-afa8-1ff9bb1ac398",
@@ -436,10 +436,10 @@
       "lastCheckedAt": 1790614443603
     },
     "724143": {
-      "lastRssKey": "c1e2134c-bcb5-11f1-9e3d-67ff26f1578d",
-      "lastEpisodeTitle": "Julgamento no TSE sobre posts de Nossa Senhora; cerco contra bets; briga de pilotos em voo no Oriente Médio",
+      "lastRssKey": "9dcfd618-bd20-11f1-87d6-0319abf4688f",
+      "lastEpisodeTitle": "Julgamento sobre Nossa Senhora no TSE, ausência de Lula em debate e tentativa de derrubada de avião",
       "lastEpisodeId": "61010900961",
-      "lastCheckedAt": 1790764784605
+      "lastCheckedAt": 1790815331761
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/mbdm7FqApWkMF1leES32j8BmnIVkghmms67B1O_PMMg",
@@ -543,10 +543,10 @@
       "lastCheckedAt": 1790614451545
     },
     "889671": {
-      "lastRssKey": "e395e429-e122-4098-8481-8b1b89705fac",
-      "lastEpisodeTitle": "Raspberry Pi Blocks RAM Upgrades",
+      "lastRssKey": "db4f32d5-5812-47e4-a887-dd6d8d7dea56",
+      "lastEpisodeTitle": "Qualcomm ❤️ Linux, F-Droid 2.0, VST3 Plugins In OBS!",
       "lastEpisodeId": "59241576400",
-      "lastCheckedAt": 1790207564670
+      "lastCheckedAt": 1790815340873
     },
     "902798": {
       "lastRssKey": "3f3378e0-2359-49de-8207-76cfc38927d7",
@@ -728,10 +728,10 @@
       "lastCheckedAt": 1790583397022
     },
     "1365765": {
-      "lastRssKey": "5b3a78c0-b826-11f1-8f96-8ba30ba9f7aa",
-      "lastEpisodeTitle": "709. The Terror: The Execution of Marie Antoinette (Part 3)",
+      "lastRssKey": "7d4f6bf6-bcb2-11f1-9e30-afa90f070c5b",
+      "lastEpisodeTitle": "710. The Terror: Death at the Guillotine (Part 4)",
       "lastEpisodeId": "60930977429",
-      "lastCheckedAt": 1790802858572
+      "lastCheckedAt": 1790815360103
     },
     "1366771": {
       "lastRssKey": "6abd51fafa77186cebfeb246",
@@ -1115,10 +1115,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "509aef94-bb46-11f1-9a77-130ecaa13ace",
-      "lastEpisodeTitle": "New Strictly Hosts & New Celebrity Traitors",
+      "lastRssKey": "db89b1a2-bcc3-11f1-9741-cf48d3cd2b4f",
+      "lastEpisodeTitle": "How John Grisham Sold 400 Million Books",
       "lastEpisodeId": "60985802307",
-      "lastCheckedAt": 1790647919307
+      "lastCheckedAt": 1790815389271
     },
     "6725294": {
       "lastRssKey": "cmuf8qkxp0cl601vd1lnx2m6w",
@@ -1247,10 +1247,10 @@
       "lastCheckedAt": 1787841002583
     },
     "7131280": {
-      "lastRssKey": "5f71c000-acf1-11f1-b749-4fad1579c3ec",
-      "lastEpisodeTitle": "A Study in Scarlet: Part Four",
+      "lastRssKey": "c137c838-adec-11f1-aa75-7beb85322023",
+      "lastEpisodeTitle": "A Study in Scarlet: Part Five",
       "lastEpisodeId": "60511350052",
-      "lastCheckedAt": 1790551052304
+      "lastCheckedAt": 1790815413407
     },
     "7183032": {
       "lastRssKey": "63509e39-a722-4bfb-ad34-098c737882f7",
@@ -1265,16 +1265,16 @@
       "lastCheckedAt": 1786559336271
     },
     "7239415": {
-      "lastRssKey": "5b1fef5e-bca0-11f1-980d-47f5d806b29f",
-      "lastEpisodeTitle": "How can you not LOVE this...",
-      "lastEpisodeId": "61047998559",
-      "lastCheckedAt": 1790764855978
+      "lastRssKey": "e1849682-bd1b-11f1-a95b-1f7558b53c4c",
+      "lastEpisodeTitle": "This turns things on their head right away...",
+      "lastEpisodeId": "61077760178",
+      "lastCheckedAt": 1790815415118
     },
     "7248222": {
-      "lastRssKey": "d7223b3c-bc3e-11f1-8814-e37a6b7a3778",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Martes 29 de septiembre de 2026",
+      "lastRssKey": "2953df00-bd16-11f1-8491-d3954fb9a0fc",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Miércoles 30 de septiembre de 2026",
       "lastEpisodeId": "61026674525",
-      "lastCheckedAt": 1790726093493
+      "lastCheckedAt": 1790815415602
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1376,10 +1376,10 @@
       "lastCheckedAt": 1790672141712
     },
     "7587315": {
-      "lastRssKey": "33961638-b8c3-11f1-964b-6372825d0114",
-      "lastEpisodeTitle": "Why Do We Like Staring Into Fire?",
+      "lastRssKey": "c91e9b04-bbf1-11f1-b741-83c200262e6f",
+      "lastEpisodeTitle": "Hacking The Kendama With Physics",
       "lastEpisodeId": "58798183213",
-      "lastCheckedAt": 1790551058700
+      "lastCheckedAt": 1790815420258
     },
     "7606603": {
       "lastRssKey": "51051648-b657-4085-a131-c9d20e285b2d",
@@ -1417,16 +1417,16 @@
       "lastCheckedAt": 1786543013085
     },
     "7679624": {
-      "lastRssKey": "https://api.spreaker.com/episode/75334428",
-      "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack -- Full Episode",
-      "lastEpisodeId": "61047983694",
-      "lastCheckedAt": 1790764862479
+      "lastRssKey": "https://api.spreaker.com/episode/75334422",
+      "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack - Full Episode",
+      "lastEpisodeId": "61077417237",
+      "lastCheckedAt": 1790815422241
     },
     "7756959": {
-      "lastRssKey": "128c6840-bc54-11f1-9f47-17000af5b065",
-      "lastEpisodeTitle": "¿Cuál es la mejor serie del siglo XXI? | VA VA VA",
-      "lastEpisodeId": "60979053336",
-      "lastCheckedAt": 1790726100341
+      "lastRssKey": "f20f0dde-bd1b-11f1-8fab-37dbefdeff88",
+      "lastEpisodeTitle": "¿Quién ganará el ‘Premio Nobel de Literatura’? | VA VA VA",
+      "lastEpisodeId": "61078085518",
+      "lastCheckedAt": 1790815422995
     },
     "7837137": {
       "lastRssKey": "https://api.spreaker.com/episode/71692641",
@@ -1447,10 +1447,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/5f85d572-2051-5a02-87e0-e8a03b4b2fcf",
-      "lastEpisodeTitle": "The Ungrateful Narcissist Who Went Too Far ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/b3dd2162-7a43-5190-b0ff-5b27b0f44cb2",
+      "lastEpisodeTitle": "Im embarrassed I STILL LOVE the narcissist ~ Dr. Ramani",
       "lastEpisodeId": "61030843726",
-      "lastCheckedAt": 1790802901643
+      "lastCheckedAt": 1790815424654
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
