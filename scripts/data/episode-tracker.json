@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-10-01T06:52:25.022Z",
+  "lastRun": "2026-10-01T14:12:31.500Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "ef63f164-cfc6-11f0-83c5-4b5ce81acc16",
-      "lastEpisodeTitle": "The SaaSpocalypse that wasn't, with Atlassian's CEO",
-      "lastEpisodeId": "60949952037",
-      "lastCheckedAt": 1790614411603
+      "lastRssKey": "f09a4402-cfc6-11f0-83c5-af993cf4b45d",
+      "lastEpisodeTitle": "How Utah locals fought Kevin O'Leary's AI data center",
+      "lastEpisodeId": "61107324187",
+      "lastCheckedAt": 1790863952207
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7h",
@@ -26,10 +26,10 @@
       "lastCheckedAt": 1790764728125
     },
     "44367": {
-      "lastRssKey": "mupxmwzqadfzlu12",
-      "lastEpisodeTitle": "710: That New Mouse Pad Feeling",
+      "lastRssKey": "s3ppazy4c2tecgq0",
+      "lastEpisodeTitle": "711: Hot Dog on an Actuator",
       "lastEpisodeId": "60522510368",
-      "lastCheckedAt": 1790274776552
+      "lastCheckedAt": 1790863953968
     },
     "48166": {
       "lastRssKey": "68b66323-6e74-4c90-8157-ef3f1ed0d042",
@@ -44,10 +44,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "debc7806-60b6-48cd-b993-ad6cf3a3a3e5",
-      "lastEpisodeTitle": "NPR News: 10-01-2026 2AM EDT",
+      "lastRssKey": "21c15318-f929-4d80-a20e-3c9ea5aec331",
+      "lastEpisodeTitle": "NPR News: 10-01-2026 10AM EDT",
       "lastEpisodeId": "60998420668",
-      "lastCheckedAt": 1790837548570
+      "lastCheckedAt": 1790863955503
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75467990",
@@ -153,10 +153,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "1CF28FA1-A1B9-489A-B39D-05B9C64A0C7E",
-      "lastEpisodeTitle": "TNB Tech Minute:  FTC Opens Anthropic and OpenAI Investigation",
-      "lastEpisodeId": "60995454680",
-      "lastCheckedAt": 1790802790463
+      "lastRssKey": "25918E2F-CB03-4DAA-8131-4C139E68D68C",
+      "lastEpisodeTitle": "Inside the Race to Build AI Defenses Against Bioweapons",
+      "lastEpisodeId": "61108443091",
+      "lastCheckedAt": 1790863967535
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -177,10 +177,10 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "ab9e0d08-bd5e-11f1-a458-93a2163b6dd0",
-      "lastEpisodeTitle": "2AM ET 10/01/2026 Newscast",
+      "lastRssKey": "b94d2770-bda1-11f1-aec7-4368c6dea876",
+      "lastEpisodeTitle": "10AM ET 10/01/2026 Newscast",
       "lastEpisodeId": "61039010137",
-      "lastCheckedAt": 1790837558337
+      "lastCheckedAt": 1790863968895
     },
     "386911": {
       "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
@@ -231,10 +231,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M3T13Z8R7B5ZZY0MF57Z0GHF",
-      "lastEpisodeTitle": "OpenAI is staying private (for now)",
-      "lastEpisodeId": "61078541649",
-      "lastCheckedAt": 1790815300221
+      "lastRssKey": "01M3VM7GBFNGKHCQXZB58JF26W",
+      "lastEpisodeTitle": "A big change to SNAP kicks in today",
+      "lastEpisodeId": "61105523289",
+      "lastCheckedAt": 1790863974408
     },
     "432535": {
       "lastRssKey": "e9bae1e1-0b0f-4d1b-afa8-1ff9bb1ac398",
@@ -243,10 +243,10 @@
       "lastCheckedAt": 1790634297171
     },
     "437685": {
-      "lastRssKey": "876d1bd2-8d60-11f1-adef-9f50a9e2bf79",
-      "lastEpisodeTitle": "Neanderthals",
-      "lastEpisodeId": "61049322473",
-      "lastCheckedAt": 1790764750573
+      "lastRssKey": "6c6859fe-bc91-11f1-84e4-1b5039794b11",
+      "lastEpisodeTitle": "Questions and Answers: Volume 46",
+      "lastEpisodeId": "61097982183",
+      "lastCheckedAt": 1790863976415
     },
     "438184": {
       "lastRssKey": "da03e5b8-bcbf-11f1-b04e-974a137a8a44",
@@ -311,10 +311,10 @@
       "lastCheckedAt": 1790540283432
     },
     "491579": {
-      "lastRssKey": "6aba91ea8ec4e79ce6e8e4f8",
-      "lastEpisodeTitle": "Ed Cowburn: 43 Leeds Tattoos for Klichy | The West Stand",
+      "lastRssKey": "6abe6006fa77186ceb58628f",
+      "lastEpisodeTitle": "You Know What You Are | The Square Ball",
       "lastEpisodeId": "60811874133",
-      "lastCheckedAt": 1790614433976
+      "lastCheckedAt": 1790863982072
     },
     "497129": {
       "lastRssKey": "12381::3571134",
@@ -436,10 +436,10 @@
       "lastCheckedAt": 1790614443603
     },
     "724143": {
-      "lastRssKey": "9dcfd618-bd20-11f1-87d6-0319abf4688f",
-      "lastEpisodeTitle": "Julgamento sobre Nossa Senhora no TSE, ausência de Lula em debate e tentativa de derrubada de avião",
+      "lastRssKey": "3fd90334-bd81-11f1-b39a-179238138b48",
+      "lastEpisodeTitle": "Reações à ausência confirmada de Lula em debate; decisão do TSE sobre Nossa Senhora; ‘exposed’ do cunhado de Vorcaro",
       "lastEpisodeId": "61010900961",
-      "lastCheckedAt": 1790815331761
+      "lastCheckedAt": 1790864009675
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/mbdm7FqApWkMF1leES32j8BmnIVkghmms67B1O_PMMg",
@@ -454,10 +454,10 @@
       "lastCheckedAt": 1790634329622
     },
     "743229": {
-      "lastRssKey": "c85ca0b8-06a3-4135-96f2-dbe71a97651a",
-      "lastEpisodeTitle": "Inside the Devastating Hack of the F.B.I.",
+      "lastRssKey": "50b87109-f780-4c0d-aa33-2e91b4404b1d",
+      "lastEpisodeTitle": "Why Washington Is Trying to Rein In College Sports",
       "lastEpisodeId": "61052054091",
-      "lastCheckedAt": 1790764788698
+      "lastCheckedAt": 1790864013139
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -519,10 +519,10 @@
       "lastCheckedAt": 1790712519819
     },
     "827592": {
-      "lastRssKey": "980bf20b-77bd-4045-aed2-b4d401844195",
-      "lastEpisodeTitle": "Short Stuff: The Retirement Curse",
-      "lastEpisodeId": "61000003015",
-      "lastCheckedAt": 1790764792283
+      "lastRssKey": "3d494b3c-945d-46fd-aa4c-b4d300ee7cda",
+      "lastEpisodeTitle": "Let's Thank Universal Pictures for Monster Movies!",
+      "lastEpisodeId": "61098786738",
+      "lastCheckedAt": 1790864016513
     },
     "837535": {
       "lastRssKey": "7a0bd888-bcff-11f1-b322-637709ce6b93",
@@ -579,9 +579,9 @@
       "lastCheckedAt": 1790331943889
     },
     "952276": {
-      "lastRssKey": "audioboom-01a0da50-fe4e-705b-9167-a9fc88942bab",
-      "lastEpisodeTitle": "444: Philly ‘House of Horrors’ Now Linked to 58 Women & Selling Body Parts",
-      "lastCheckedAt": 1790583385355
+      "lastRssKey": "b39a7975-54f5-4c66-8b26-f5efa6148526",
+      "lastEpisodeTitle": "445: 17-Year-Old Begs TikTok to Help Solve Her Parents Murder | Sarah Grace Patrick",
+      "lastCheckedAt": 1790864020902
     },
     "959112": {
       "lastRssKey": "https://9to5google.com/?p=731718",
@@ -612,10 +612,10 @@
       "lastCheckedAt": 1788643859907
     },
     "1026613": {
-      "lastRssKey": "0270f621-aa0b-4262-90d5-b9cdc4604dee",
-      "lastEpisodeTitle": "The Ezra Klein Show: Jensen Huang Thinks A.I. Alarmism Has Gone Too Far",
+      "lastRssKey": "64e13c97-b3b6-4a93-a333-8a4abe8aa588",
+      "lastEpisodeTitle": "What’s Next for ‘Hard Fork’?",
       "lastEpisodeId": "60548247176",
-      "lastCheckedAt": 1790350012094
+      "lastCheckedAt": 1790864025812
     },
     "1035900": {
       "lastRssKey": "5c723614-9008-40b1-bce3-a1737ae0f836",
@@ -624,10 +624,10 @@
       "lastCheckedAt": 1790712539809
     },
     "1047718": {
-      "lastRssKey": "6abca7338f0885b09eae21aa",
-      "lastEpisodeTitle": "The Premier League v Manchester City and England beat Czechia – Football Weekly",
+      "lastRssKey": "6abe04998f08be47d22c2b56",
+      "lastEpisodeTitle": "Manchester City scandal latest as Pep Guardiola speaks: Football Weekly Extra",
       "lastEpisodeId": "58884055225",
-      "lastCheckedAt": 1790786497285
+      "lastCheckedAt": 1790864028460
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-the-wisdom-behind-the-qurans-revelation-deeper-look-surah-al-jinn",
@@ -659,10 +659,10 @@
       "lastCheckedAt": 1790695454145
     },
     "1116485": {
-      "lastRssKey": "6abcef3bafa3f4c95e12c836",
-      "lastEpisodeTitle": "Raiding Man City: The Perfect 3 Signings For Liverpool | The Deep Dive | Q&A Special",
-      "lastEpisodeId": "61008470048",
-      "lastCheckedAt": 1790802854456
+      "lastRssKey": "6abe2eeb855f3078c5cf83a3",
+      "lastEpisodeTitle": "Hugo Ekitike Set To RETURN To Liverpool Training Next Month! | Daily News Update",
+      "lastEpisodeId": "61107551036",
+      "lastCheckedAt": 1790864033513
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -688,10 +688,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6abd4c43205819f3d7da640f",
-      "lastEpisodeTitle": "What's really behind Ferrari's unusual Vasseur backing?",
+      "lastRssKey": "6abe3eb938e6d69a303c5921",
+      "lastEpisodeTitle": "Tech Show: How F1 design teams are harnessing AI power",
       "lastEpisodeId": "61074267095",
-      "lastCheckedAt": 1790802856380
+      "lastCheckedAt": 1790864035463
     },
     "1258562": {
       "lastRssKey": "6ab7a51bbd67ce4b537bc280",
@@ -722,10 +722,10 @@
       "lastCheckedAt": 1790672056110
     },
     "1365758": {
-      "lastRssKey": "982695aa-badf-11f1-9093-e3267f060ab3",
-      "lastEpisodeTitle": "What Humans, Animals and Plants Tell Us About Consciousness | Michael Pollan",
+      "lastRssKey": "6e6186c8-bd49-11f1-9d60-eb7961313029",
+      "lastEpisodeTitle": "Essentials: Tools to Improve Your Focus & Concentration",
       "lastEpisodeId": "60661458183",
-      "lastCheckedAt": 1790583397022
+      "lastCheckedAt": 1790864037166
     },
     "1365765": {
       "lastRssKey": "7d4f6bf6-bcb2-11f1-9e30-afa90f070c5b",
@@ -734,10 +734,10 @@
       "lastCheckedAt": 1790815360103
     },
     "1366771": {
-      "lastRssKey": "6abdc216205819f3d704bc88",
-      "lastEpisodeTitle": "Morning briefing Thursday 1st October",
-      "lastEpisodeId": "61087241974",
-      "lastCheckedAt": 1790837617022
+      "lastRssKey": "6abe26a4205819f3d72677a2",
+      "lastEpisodeTitle": "Afternoon briefing Thursday 1st October",
+      "lastEpisodeId": "61100919851",
+      "lastCheckedAt": 1790864038210
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -809,10 +809,10 @@
       "lastCheckedAt": 1789135539229
     },
     "3237767": {
-      "lastRssKey": "20368f47-8890-4917-83ab-f901ef2a1534",
-      "lastEpisodeTitle": "NFL Week 3 Recap: Disappointing Rams Leave Question Marks in Denver",
-      "lastEpisodeId": "60958973085",
-      "lastCheckedAt": 1790614471635
+      "lastRssKey": "04d3bc0b-e380-4cc0-a9e0-e69dcb753b01",
+      "lastEpisodeTitle": "Is It Still Not Justin Herbert's Fault?",
+      "lastEpisodeId": "61099188438",
+      "lastCheckedAt": 1790864044796
     },
     "3353685": {
       "lastRssKey": "648be6b0-bba6-11f1-8381-5f2b0582ee84",
@@ -928,15 +928,15 @@
       "lastCheckedAt": 1790583409554
     },
     "4894842": {
-      "lastRssKey": "f280f1b8-c92d-4a7e-8487-df0b59a2fe33",
-      "lastEpisodeTitle": "Brutal Mercy (PODCAST EXCLUSIVE EPISODE)",
-      "lastEpisodeId": "60490150210",
-      "lastCheckedAt": 1790764831273
+      "lastRssKey": "76dd00dd-3af8-44cb-98cc-cd8b4327388e",
+      "lastEpisodeTitle": "Reality Glitch Vol. II",
+      "lastEpisodeId": "61103826202",
+      "lastCheckedAt": 1790864053716
     },
     "4898105": {
-      "lastRssKey": "e06cd986-bc7f-11f1-a59c-47aa0409a63f",
-      "lastEpisodeTitle": "GTA 6 Has an 'Advanced' Weather System",
-      "lastCheckedAt": 1790764831741
+      "lastRssKey": "3ad71ab2-bd4d-11f1-8010-474efd660240",
+      "lastEpisodeTitle": "Marvel fans need to prepare for \"a very surprising ending\" to Avengers: Doomsday",
+      "lastCheckedAt": 1790864054214
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -997,10 +997,10 @@
       "lastCheckedAt": 1790313299131
     },
     "5731394": {
-      "lastRssKey": "2beba6c6-bc8f-11f1-a810-eff857cf9c73",
-      "lastEpisodeTitle": "Sci Fi Section Ep 10: Golden Son Chapters 12-17",
+      "lastRssKey": "64b3bb50-bd2b-11f1-8ea0-772e58f99474",
+      "lastEpisodeTitle": "The Florida Panthers Might Not Get Scored On All Season w/ Dave Jackson",
       "lastEpisodeId": "60007884583",
-      "lastCheckedAt": 1790764837225
+      "lastCheckedAt": 1790864061240
     },
     "5815838": {
       "lastRssKey": "5dbb039e-1ca2-47a6-b488-f50ea5173eb9",
@@ -1021,16 +1021,16 @@
       "lastCheckedAt": 1790837646263
     },
     "5945547": {
-      "lastRssKey": "6ad40538-0f09-40d3-b107-7c8ef5805678",
-      "lastEpisodeTitle": "Episode 149 - Planes, Presidents & Pasta",
+      "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
+      "lastEpisodeTitle": "Episode 150 - Treasure, Tyrants & Tinseltown ft. Ami Goradia",
       "lastEpisodeId": "59548566836",
-      "lastCheckedAt": 1790185480873
+      "lastCheckedAt": 1790864064387
     },
     "5972153": {
-      "lastRssKey": "1a251cf6-bca8-11f1-91b9-8b75cefa2348",
-      "lastEpisodeTitle": "AI safety pact, US leaves Iraq and Fat Bear win",
-      "lastEpisodeId": "61003244517",
-      "lastCheckedAt": 1790764840972
+      "lastRssKey": "fdd5940e-bd5b-11f1-ae94-3fdf4b033848",
+      "lastEpisodeTitle": "Flydubai passengers, USS Washington, Iowa cancer and AI Big Mac pricing",
+      "lastEpisodeId": "61102393968",
+      "lastCheckedAt": 1790864065033
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1102,11 +1102,16 @@
       "lastEpisodeId": "60990708724",
       "lastCheckedAt": 1790672107154
     },
+    "6643236": {
+      "lastRssKey": "gid://art19-episode-locator/V0/Jjv7CVO7S8Nk25Qx38uQ2gfvQy_qB1FN8qxg_AWpKG0",
+      "lastEpisodeTitle": "Chapter Two",
+      "lastCheckedAt": 1790864068120
+    },
     "6655297": {
-      "lastRssKey": "indieventurepodcast.podbean.com/3b67977b-17e5-37c4-aada-4332098953f8",
-      "lastEpisodeTitle": "#66. Gamescom Season of the Beast",
+      "lastRssKey": "indieventurepodcast.podbean.com/fe9c8645-ccb9-3b6d-8558-9f6a5bdcf84e",
+      "lastEpisodeTitle": "SIDE QUEST: Indieventure Goes to the Movies (Tomb Raider 2001 vs Return to Silent Hill)",
       "lastEpisodeId": "60509388415",
-      "lastCheckedAt": 1789657932137
+      "lastCheckedAt": 1790864068755
     },
     "6686930": {
       "lastRssKey": "661671f397ce6d00176628b4",
@@ -1187,10 +1192,10 @@
       "lastCheckedAt": 1790331991677
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779900",
-      "lastEpisodeTitle": "Gang Busters - The Death Mask Killer",
+      "lastRssKey": "https://api.spreaker.com/episode/59779901",
+      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Marigold Matter",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1790764849726
+      "lastCheckedAt": 1790864089088
     },
     "6912659": {
       "lastRssKey": "62f6e497-dc3e-46f0-abaa-993246faf9f3",
@@ -1235,10 +1240,10 @@
       "lastCheckedAt": 1786559335991
     },
     "7064213": {
-      "lastRssKey": "c679d4c8-4a12-447f-86f9-881743651fe9",
-      "lastEpisodeTitle": "203. Sat Randhawa: Can You Train Your Brain? QEEG & Neurofeedback",
+      "lastRssKey": "d47149d3-5a9e-4c1a-8e5e-6aaa1a4b85c3",
+      "lastEpisodeTitle": "204. Dr. Cassie Smith: Fix Your Gut, Fix Your Hormones, Fix Your Health",
       "lastEpisodeId": "60696385666",
-      "lastCheckedAt": 1790695502923
+      "lastCheckedAt": 1790864093716
     },
     "7098500": {
       "lastRssKey": "66bb84b96ceb55ab6dbacb631fecaac54ddbcff7",
@@ -1263,6 +1268,11 @@
       "lastEpisodeTitle": "Bhoot FM - 13 Number Oshuvo Songket (Special)",
       "lastEpisodeId": "33401269201",
       "lastCheckedAt": 1786559336271
+    },
+    "7201724": {
+      "lastRssKey": "audioboom-01a0f584-59d0-70bf-8c90-6d124ede5949",
+      "lastEpisodeTitle": "Elissa Slotkin Spots a Big Warning Sign for Trump’s GOP | Command Post",
+      "lastCheckedAt": 1790864096228
     },
     "7239415": {
       "lastRssKey": "e1849682-bd1b-11f1-a95b-1f7558b53c4c",
@@ -1306,10 +1316,10 @@
       "lastCheckedAt": 1790837661925
     },
     "7376606": {
-      "lastRssKey": "50018ebb-2340-41b2-a6c7-a2a667969197",
-      "lastEpisodeTitle": "The Swiss Bank — Secrets Behind the World’s Most Famous Banks 🏦🇨🇭 | Complete Documentary | Boring History for Sleep",
+      "lastRssKey": "06726b27-590c-40ee-bc4f-4fd1b35a4fd4",
+      "lastEpisodeTitle": "The Mysterious History of Tarot 🃏🔮 | The Symbols and Stories Behind All 78 Cards | Boring History for Sleep",
       "lastEpisodeId": "60898632528",
-      "lastCheckedAt": 1790741447806
+      "lastCheckedAt": 1790864098325
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031jzh",
@@ -1447,10 +1457,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/1c341eb1-1e71-5f71-9dd7-9815db2300af",
-      "lastEpisodeTitle": "Exciting news ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/3d70d417-30c2-5a15-a380-c5bf7c8ee0d0",
+      "lastEpisodeTitle": "5 ways to survive a narcissist when YOU CANT LEAVE ~ Dr. Ramani",
       "lastEpisodeId": "61030843726",
-      "lastCheckedAt": 1790837666806
+      "lastCheckedAt": 1790864106248
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
