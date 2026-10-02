@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-02T16:29:57.835Z",
+  "lastRun": "2026-10-02T20:55:02.132Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f09a4402-cfc6-11f0-83c5-af993cf4b45d",
@@ -8,10 +8,10 @@
       "lastCheckedAt": 1790863952207
     },
     "6921": {
-      "lastRssKey": "urn:bbc:podcast:w3ct8k7h",
-      "lastEpisodeTitle": "Do plants know we're here?",
+      "lastRssKey": "urn:bbc:podcast:w3ct8k7j",
+      "lastEpisodeTitle": "How are shells made?",
       "lastEpisodeId": "59343622582",
-      "lastCheckedAt": 1790376024714
+      "lastCheckedAt": 1790974503225
     },
     "7162": {
       "lastRssKey": "f2986c9c-c6e0-4f78-b333-cc04a5ca3c50",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "3f66ac9a-0def-4b23-8e6a-8cc3a4507ccf",
-      "lastEpisodeTitle": "NPR News: 10-02-2026 12PM EDT",
-      "lastEpisodeId": "61129221442",
-      "lastCheckedAt": 1790958602080
+      "lastRssKey": "4882f01f-f2f3-4ecd-a4e0-ff58389e0961",
+      "lastEpisodeTitle": "NPR News: 10-02-2026 4PM EDT",
+      "lastEpisodeId": "61175327876",
+      "lastCheckedAt": 1790974506946
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75524531",
@@ -97,10 +97,10 @@
       "lastCheckedAt": 1789848367126
     },
     "199250": {
-      "lastRssKey": "1fb4e90c-0137-4bbb-86ba-d119a0b0f4ba",
-      "lastEpisodeTitle": "The Big Gamble",
+      "lastRssKey": "9a2f2022-3bfd-4fc3-a498-5accc8f596aa",
+      "lastEpisodeTitle": "The Big Mail",
       "lastEpisodeId": "33774316304",
-      "lastCheckedAt": 1790741358357
+      "lastCheckedAt": 1790974511322
     },
     "204808": {
       "lastRssKey": "4a13c6ef-ee7b-499f-9815-aca8e0380e15",
@@ -114,10 +114,10 @@
       "lastCheckedAt": 1790239203594
     },
     "212882": {
-      "lastRssKey": "45057f4e-a7f8-11f0-954a-6f11f20f54c7",
-      "lastEpisodeTitle": "We Ranked Life's Biggest Milestones | Trash Taste #327",
+      "lastRssKey": "45290842-a7f8-11f0-954a-a7e538f708c0",
+      "lastEpisodeTitle": "We Roasted Our Viewer's Trash Taste in Anime | Trash Taste #328",
       "lastEpisodeId": "58691788675",
-      "lastCheckedAt": 1790376034266
+      "lastCheckedAt": 1790974514866
     },
     "215799": {
       "lastRssKey": "b27f54c6-92cc-42ff-8fb3-a330e579e8bb",
@@ -126,10 +126,10 @@
       "lastCheckedAt": 1790614420238
     },
     "222512": {
-      "lastRssKey": "Buzzsprout-19881747",
-      "lastEpisodeTitle": "Why Modern Life Makes Every Death Feel Sudden | Signs of the Hour Ep. 19 | Dr. Omar Suleiman",
-      "lastEpisodeId": "61012768370",
-      "lastCheckedAt": 1790695387605
+      "lastRssKey": "Buzzsprout-19901587",
+      "lastEpisodeTitle": "How To Raise Young Muslims in a Land Built Against Them | Khutbah by Sh. Mohammad Elshinawy",
+      "lastEpisodeId": "61173502120",
+      "lastCheckedAt": 1790974515604
     },
     "229239": {
       "lastRssKey": "6b0aa678-2c74-11f1-87f6-7f71920d0414",
@@ -170,10 +170,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "10142060-b823-11f1-957c-2fb65fb6cef0",
-      "lastEpisodeTitle": "Is Gemini 4 Argon Just Benchmaxxing?",
+      "lastRssKey": "10952728-b823-11f1-957c-6b9d5730a718",
+      "lastEpisodeTitle": "Did OpenAI Fire Its Whistleblowers?",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1790883682966
+      "lastCheckedAt": 1790974518768
     },
     "353744": {
       "lastRssKey": "flightcast:01M3F5A332K24W3T0NH5BVBVTQ",
@@ -182,16 +182,16 @@
       "lastCheckedAt": 1790614423652
     },
     "385117": {
-      "lastRssKey": "a4ebc090-be7b-11f1-87f3-efb9764330da",
-      "lastEpisodeTitle": "12PM ET 10/02/2026 Newscast",
+      "lastRssKey": "2b8978a6-be9d-11f1-b024-db49e4e2dff1",
+      "lastEpisodeTitle": "4PM ET 10/02/2026 Newscast",
       "lastEpisodeId": "61164679957",
-      "lastCheckedAt": 1790958615274
+      "lastCheckedAt": 1790974519299
     },
     "386911": {
-      "lastRssKey": "a7a63d16-b90c-11f1-a8f4-a7b9d79be52c",
-      "lastEpisodeTitle": "NerdCast 1049 - NerdCon 2026: Ao Vivo, Tudo Pode Acontecer!",
-      "lastEpisodeId": "59666491926",
-      "lastCheckedAt": 1790364378383
+      "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
+      "lastEpisodeTitle": "NerdCast 1050 - O Melhor de 1050 NerdCasts",
+      "lastEpisodeId": "61170825617",
+      "lastCheckedAt": 1790974519736
     },
     "388141": {
       "lastRssKey": "6a9ae547f8f4d42589eb8941",
@@ -224,10 +224,10 @@
       "lastCheckedAt": 1790528936762
     },
     "431205": {
-      "lastRssKey": "25bd7807-c1e3-458b-9ae5-db8e5526696e",
-      "lastEpisodeTitle": "Under-the-Rader AI Plays, Housing Shift, and Sneaker Softness 10/1/26",
-      "lastEpisodeId": "60571577178",
-      "lastCheckedAt": 1790883687591
+      "lastRssKey": "9fcd520f-44e8-4c69-a27b-0a581b3a5bff",
+      "lastEpisodeTitle": "A Jobs Jolt, Mayer’s New Venture, and Can Nike Pick Up the “Pace”? 10/2/26",
+      "lastEpisodeId": "61170552508",
+      "lastCheckedAt": 1790974523864
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -304,10 +304,10 @@
       "lastCheckedAt": 1790958626535
     },
     "483834": {
-      "lastRssKey": "6abeacce0e2e02bcec239b2b",
-      "lastEpisodeTitle": "Wednesday Season 3 Wraps Filming, Ted Animated Series on Peacock — October 1st, 2026",
+      "lastRssKey": "6abfe25e0d8a484144d621dd",
+      "lastEpisodeTitle": "Marvel’s VisionQuest Official Trailer, New R.L. Stine Movie from Tubi — October 2nd, 2026",
       "lastEpisodeId": "61071269265",
-      "lastCheckedAt": 1790883693525
+      "lastCheckedAt": 1790974531078
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -739,10 +739,10 @@
       "lastCheckedAt": 1790815360103
     },
     "1366771": {
-      "lastRssKey": "6abf859d01239e8aeefe614a",
-      "lastEpisodeTitle": "Afternoon Briefing Friday 2nd October",
+      "lastRssKey": "6abfec9eab90e256c3453979",
+      "lastEpisodeTitle": "Evening briefing Friday 2nd October",
       "lastEpisodeId": "61100919851",
-      "lastCheckedAt": 1790937626778
+      "lastCheckedAt": 1790974586304
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -774,10 +774,10 @@
       "lastCheckedAt": 1790385270880
     },
     "2136580": {
-      "lastRssKey": "f669ab07-7181-4374-b398-f6455d127348",
-      "lastEpisodeTitle": "Episode 389: JOSH ANDERSON & CANADIENS SPOIL MAPLE LEAFS SEASON OPENER!",
-      "lastEpisodeId": "58874707637",
-      "lastCheckedAt": 1790741417945
+      "lastRssKey": "eb03ecbe-6f52-4beb-a3f0-ab108606c6d3",
+      "lastEpisodeTitle": "Episode 390: Michael Dufort Chasing The UFC Dream...AND HE LOVES THE MONTREAL CANADIENS!",
+      "lastEpisodeId": "61173312933",
+      "lastCheckedAt": 1790974588793
     },
     "2136949": {
       "lastRssKey": "6aa83ca42469d1a3b3cb1d35",
@@ -786,10 +786,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6abe99a05722850991be7caf",
-      "lastEpisodeTitle": "(Pop) Warner Bros Discovery est enfin vendu à Paramount Skydance ? … HugoDécrypte",
+      "lastRssKey": "6abfe9f2ceded38707bb79ee",
+      "lastEpisodeTitle": "Détrompez vous : le détroit d’Ormuz est en fait quasiment ouvert",
       "lastEpisodeId": "61149923891",
-      "lastCheckedAt": 1790937628702
+      "lastCheckedAt": 1790974589954
     },
     "2574026": {
       "lastRssKey": "0682bec8-bd26-11f1-9529-aba7f383686d",
@@ -1056,10 +1056,10 @@
       "lastCheckedAt": 1790764841795
     },
     "6280366": {
-      "lastRssKey": "0b86817b-f8d0-4e36-b02e-f20f9d4480a7",
-      "lastEpisodeTitle": "Gemini 4 Argon, Sonnet 5.5 and What Matters with AI Models",
+      "lastRssKey": "f72c9043-45df-47c1-91ad-b419a039be6f",
+      "lastEpisodeTitle": "What the Best Business AI Users Are Doing Different",
       "lastEpisodeId": "60978344795",
-      "lastCheckedAt": 1790898191419
+      "lastCheckedAt": 1790974612389
     },
     "6413946": {
       "lastRssKey": "a5ef6ecb-29d9-4026-b519-d4b3bf134f38",
@@ -1086,10 +1086,10 @@
       "lastCheckedAt": 1790914573293
     },
     "6602135": {
-      "lastRssKey": "1efefa21-7661-49af-ad29-8c9eb0d4db34",
-      "lastEpisodeTitle": "Olivia Dean: The Art of a Perfect Album",
-      "lastEpisodeId": "59895386080",
-      "lastCheckedAt": 1790958705330
+      "lastRssKey": "15094733-de70-40e9-9d5d-b9b1cce37a31",
+      "lastEpisodeTitle": "ROSALÍA: Can we understand without knowing?",
+      "lastEpisodeId": "61164573428",
+      "lastCheckedAt": 1790974614176
     },
     "6628686": {
       "lastRssKey": "flightcast:01M3X86XCTB0CW4J38KFDRHN4A",
@@ -1282,9 +1282,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a0f9ff-4642-760c-9c12-70ecda46586e",
-      "lastEpisodeTitle": "The Daily Wire is Making the Most MAGA Movie Imaginable",
-      "lastCheckedAt": 1790937658597
+      "lastRssKey": "audioboom-01a0fe1a-d929-72d7-9e3a-c708541f7847",
+      "lastEpisodeTitle": "LIVE: Sarah Longwell AMA",
+      "lastEpisodeId": "61174850642",
+      "lastCheckedAt": 1790974631834
     },
     "7239415": {
       "lastRssKey": "f4866c5c-bde7-11f1-b29c-d7a282d2b1b1",
@@ -1445,10 +1446,10 @@
       "lastCheckedAt": 1786543013085
     },
     "7679624": {
-      "lastRssKey": "https://api.spreaker.com/episode/75334399",
-      "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack - - Full Episode",
-      "lastEpisodeId": "61126946465",
-      "lastCheckedAt": 1790898211146
+      "lastRssKey": "https://api.spreaker.com/episode/75334387",
+      "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack -",
+      "lastEpisodeId": "61172954998",
+      "lastCheckedAt": 1790974639294
     },
     "7756959": {
       "lastRssKey": "fda1a9c4-bdf0-11f1-9264-a7a916e62475",
@@ -1481,10 +1482,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/6a05500b-8579-5dfa-b7c5-fbeee8b71390",
-      "lastEpisodeTitle": "When a securely attached person dates a narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/ddebbab5-9aa1-5114-925f-e93f4073eb62",
+      "lastEpisodeTitle": "Why narcissists dont etsarcasm ~ Dr. Ramani",
       "lastEpisodeId": "61030843726",
-      "lastCheckedAt": 1790958728234
+      "lastCheckedAt": 1790974641782
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
