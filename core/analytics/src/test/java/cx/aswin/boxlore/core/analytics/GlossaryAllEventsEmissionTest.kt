@@ -317,6 +317,15 @@ class GlossaryAllEventsEmissionTest {
                 "proxy_fallback_triggered" to {
                     AnalyticsHelper.trackProxyFallbackTriggered("cdn.example.com", 320)
                 },
+                "support_page_viewed" to {
+                    AnalyticsHelper.trackSupportPageViewed()
+                },
+                "support_tier_toggled" to {
+                    AnalyticsHelper.trackSupportTierToggled("Witch Cell", "Witch Cell", "$5.00")
+                },
+                "support_donate_clicked" to {
+                    AnalyticsHelper.trackSupportDonateClicked("Witch Cell", "Witch Cell", "$5.00")
+                },
             )
     }
 }

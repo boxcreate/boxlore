@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -46,6 +47,7 @@ internal fun SettingsScaffold(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
+    actions: @Composable RowScope.() -> Unit = {},
     onUnconsumedTap: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -84,6 +86,7 @@ internal fun SettingsScaffold(
                         )
                     }
                 },
+                actions = actions,
                 scrollBehavior = scrollBehavior,
                 colors =
                 TopAppBarDefaults.topAppBarColors(

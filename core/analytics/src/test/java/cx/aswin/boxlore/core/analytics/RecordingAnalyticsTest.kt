@@ -167,8 +167,8 @@ class DeriveGenrePersonaTest {
 class AnalyticsGlossaryAllowlistTest {
     @Test
     fun `phase A union B has expected cardinality`() {
-        // 35 Phase A + 1 A/B (search_performed) + 29 Phase B = 65
-        assertEquals(65, AnalyticsGlossary.PHASE_A_UNION_B.size)
+        // 35 Phase A + 1 A/B (search_performed) + 29 Phase B + 3 Support = 68
+        assertEquals(68, AnalyticsGlossary.PHASE_A_UNION_B.size)
     }
 
     @Test
@@ -193,6 +193,36 @@ class AnalyticsGlossaryAllowlistTest {
         assertTrue(AnalyticsGlossary.isAllowedEvent("feedback_submitted"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("library_history_tracking_notice"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("\$set"))
+    }
+
+    @Test
+    fun `support events are allowed and emit with expected properties`() {
+        assertTrue(AnalyticsGlossary.isAllowedEvent("support_page_viewed"))
+        assertTrue(AnalyticsGlossary.isAllowedEvent("support_tier_toggled"))
+        assertTrue(AnalyticsGlossary.isAllowedEvent("support_donate_clicked"))
+
+        val captured = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsEmit.installRecordingSink(captured)
+        try {
+            AnalyticsHelper.trackSupportPageViewed()
+            AnalyticsHelper.trackSupportTierToggled(
+                tierTitle = "Micro Energy Cell",
+                codename = "WITCH CELL",
+                amount = "$0.49",
+                isLoreInspect = true,
+            )
+            AnalyticsHelper.trackSupportDonateClicked(
+                tierTitle = "Field Battery Pack",
+                codename = "GRAVE PACK",
+                amount = "$0.99",
+            )
+
+            assertTrue(captured.any { it.first == "support_page_viewed" })
+            assertTrue(captured.any { it.first == "support_tier_toggled" && it.second["codename"] == "WITCH CELL" && it.second["amount"] == "$0.49" })
+            assertTrue(captured.any { it.first == "support_donate_clicked" && it.second["codename"] == "GRAVE PACK" && it.second["amount"] == "$0.99" })
+        } finally {
+            restore()
+        }
     }
 
     @Test

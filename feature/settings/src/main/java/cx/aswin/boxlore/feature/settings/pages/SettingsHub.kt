@@ -1,15 +1,26 @@
 package cx.aswin.boxlore.feature.settings.pages
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DownloadForOffline
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PrivacyTip
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.settings.ProfileSettingsDestination
 import cx.aswin.boxlore.feature.settings.components.SettingsCategoryCard
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
@@ -22,6 +33,24 @@ internal fun SettingsHub(
     SettingsScaffold(
         title = "Settings",
         onBack = onBack,
+        actions = {
+            FilledTonalButton(
+                onClick = { onNavigate(ProfileSettingsDestination.Support) },
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.padding(end = 8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Favorite,
+                    contentDescription = "Support boxlore",
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Support boxlore",
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        },
     ) {
         SettingsCategoryCard(
             title = "Cloud Sync & Backups",

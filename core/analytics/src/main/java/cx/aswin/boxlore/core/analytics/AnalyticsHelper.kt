@@ -672,6 +672,21 @@ object AnalyticsHelper : Analytics {
 
     fun trackSettingsInteraction(action: String, value: String? = null,) = LibraryAnalyticsTracks.trackSettingsInteraction(action, value)
 
+    fun trackSupportPageViewed() = LibraryAnalyticsTracks.trackSupportPageViewed()
+
+    fun trackSupportTierToggled(
+        tierTitle: String,
+        codename: String,
+        amount: String,
+        isLoreInspect: Boolean = false,
+    ) = LibraryAnalyticsTracks.trackSupportTierToggled(tierTitle, codename, amount, isLoreInspect)
+
+    fun trackSupportDonateClicked(
+        tierTitle: String,
+        codename: String,
+        amount: String,
+    ) = LibraryAnalyticsTracks.trackSupportDonateClicked(tierTitle, codename, amount)
+
     fun trackMiniPlayerInteraction(
         action: String,
         podcastId: String?,
