@@ -81,7 +81,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                         val displayMs = if (summary.hasEnoughData) {
                             summary.totalConsumedMs
                         } else {
-                            summary.estimatedLibraryMs
+                            0L
                         }
                         displayMs / (3600 * 1000L)
                     }.distinctUntilChanged()

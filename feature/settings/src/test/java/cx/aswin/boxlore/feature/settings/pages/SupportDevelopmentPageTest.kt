@@ -135,6 +135,20 @@ class SupportDevelopmentPageTest {
     }
 
     @Test
+    fun buildSupportMissionAnnotatedString_stylesHoursSpanWhenEligible() {
+        val annotatedUnderFive = buildSupportMissionAnnotatedString(4L)
+        assertTrue(annotatedUnderFive.spanStyles.isEmpty())
+
+        val annotatedFive = buildSupportMissionAnnotatedString(5L)
+        val span = annotatedFive.spanStyles.firstOrNull()
+        assertTrue("Should have styled span for hours", span != null)
+        val styledSubstring = annotatedFive.text.substring(span!!.start, span.end)
+        assertEquals("5 hours", styledSubstring)
+        assertEquals(cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight.bold, span.item.fontWeight)
+        assertEquals(Color.White, span.item.color)
+    }
+
+    @Test
     fun supportDevelopmentAnalytics_tracksEventsWithAttributes() {
         val captured = mutableListOf<Pair<String, Map<String, Any>>>()
         val restore = cx.aswin.boxlore.core.analytics.AnalyticsHelper.installRecordingSink(captured)

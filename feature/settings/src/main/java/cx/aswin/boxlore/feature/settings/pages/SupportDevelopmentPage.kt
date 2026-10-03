@@ -73,6 +73,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
@@ -295,7 +296,7 @@ private fun SupportArtifactStage(
     activeAuraColor: Color,
 ) {
     val haptic = LocalHapticFeedback.current
-    var isStoryMode by remember { mutableStateOf(false) }
+    var isStoryMode by remember(pagerState.currentPage) { mutableStateOf(false) }
     val storyProgress by animateFloatAsState(
         targetValue = if (isStoryMode) 1f else 0f,
         animationSpec = tween(360, easing = FastOutSlowInEasing),
@@ -771,15 +772,27 @@ private fun SupportSegmentedGauge(
     }
 }
 
-internal fun getSupportMissionText(totalListeningHours: Long?): String =
-    if (totalListeningHours != null && totalListeningHours >= 5L) {
-        "Software that helps people learn, listen, and explore should simply exist without a catch. " +
-            "If boxlore has been a great companion across your $totalListeningHours hours of listening, " +
-            "backing a power cell helps keep the app free and ad-free for everyone."
-    } else {
-        "Software that helps people learn, listen, and explore should simply exist without a catch. " +
-            "No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone."
+internal fun buildSupportMissionAnnotatedString(totalListeningHours: Long?): AnnotatedString =
+    buildAnnotatedString {
+        append("Software that helps people learn, listen, and explore should simply exist without a catch. ")
+        if (totalListeningHours != null && totalListeningHours >= 5L) {
+            append("If boxlore has been a great companion across your ")
+            withStyle(
+                SpanStyle(
+                    fontWeight = GoogleSansWeight.bold,
+                    color = Color.White,
+                ),
+            ) {
+                append("$totalListeningHours hours")
+            }
+            append(" of listening, backing a power cell helps keep the app free and ad-free for everyone.")
+        } else {
+            append("No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone.")
+        }
     }
+
+internal fun getSupportMissionText(totalListeningHours: Long?): String =
+    buildSupportMissionAnnotatedString(totalListeningHours).text
 
 @Composable
 private fun SupportMissionCard(
@@ -838,23 +851,7 @@ private fun SupportMissionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             val missionText = remember(totalListeningHours) {
-                buildAnnotatedString {
-                    append("Software that helps people learn, listen, and explore should simply exist without a catch. ")
-                    if (totalListeningHours != null && totalListeningHours >= 5L) {
-                        append("If boxlore has been a great companion across your ")
-                        withStyle(
-                            SpanStyle(
-                                fontWeight = GoogleSansWeight.bold,
-                                color = Color.White,
-                            ),
-                        ) {
-                            append("$totalListeningHours hours")
-                        }
-                        append(" of listening, backing a power cell helps keep the app free and ad-free for everyone.")
-                    } else {
-                        append("No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone.")
-                    }
-                }
+                buildSupportMissionAnnotatedString(totalListeningHours)
             }
 
             Text(

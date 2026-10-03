@@ -477,9 +477,8 @@ internal object LibraryAnalyticsTracks {
             "settings_interaction",
             mapOf(
                 "action" to "support_tier_toggled",
-                "setting_key" to tierTitle,
-                "value" to codename,
-                "amount" to amount,
+                "setting_key" to "support_development",
+                "value" to tierTitle,
             ),
         )
     }
@@ -499,9 +498,8 @@ internal object LibraryAnalyticsTracks {
             "settings_interaction",
             mapOf(
                 "action" to "support_donate_clicked",
-                "setting_key" to tierTitle,
-                "value" to codename,
-                "amount" to amount,
+                "setting_key" to "support_development",
+                "value" to tierTitle,
             ),
         )
     }
