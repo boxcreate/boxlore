@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.work.NetworkType
 import androidx.work.WorkManager
 import androidx.work.await
 import cx.aswin.boxlore.AppContainer
@@ -12,6 +13,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Restored/cloud settings and process starts rebuild jobs independently of notification permission. */
@@ -34,7 +36,7 @@ internal class AutoDownloadLifecycle(
                 safely {
                     val manager = WorkManager.getInstance(context)
                     for (disabled in previousIds - ids) manager.cancelAllWorkByTag(AutoDownloadScheduling.showTag(disabled)).await()
-                    if (previousWifi != wifi) manager.cancelAllWorkByTag(AutoDownloadScheduling.TRANSFER_TAG).await()
+                    if (previousWifi != wifi) reconcileAutoDownloadWifiPolicy(manager, wifi)
                     container.autoDownloadCoordinator.synchronizeSubscriptions()
                     AutoDownloadScheduling.reconcile(context, ids.isNotEmpty())
                     if (ids.isNotEmpty()) AutoDownloadScheduling.catchUp(context)
@@ -60,6 +62,16 @@ internal class AutoDownloadLifecycle(
             throw e
         } catch (e: Exception) {
             android.util.Log.w("AutoDownloadLifecycle", "Unable to schedule catch-up", e)
+        }
+    }
+}
+
+/** Preserve correctly constrained cold-start work; rebuild only requests with stale policy. */
+internal suspend fun reconcileAutoDownloadWifiPolicy(manager: WorkManager, wifiOnly: Boolean) {
+    val network = if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED
+    for (work in manager.getWorkInfosByTagFlow(AutoDownloadScheduling.TRANSFER_TAG).first()) {
+        if (!work.state.isFinished && work.constraints.requiredNetworkType != network) {
+            manager.cancelWorkById(work.id).await()
         }
     }
 }

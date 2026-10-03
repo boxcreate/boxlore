@@ -35,6 +35,8 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 
 - New-episode FCM callbacks synchronously persist GUID/enclosure hints in unique `NewEpisodeDeliveryWorker` work before network I/O and post a payload-only notification. High-priority messages may expedite this short hydration task with ordinary-work fallback; audio remains ordinary constrained work. Hydration forces an unknown publisher release through the quiet period, resolves its canonical Room ID, and retries transient misses. `AutoDownloadLifecycle` reconciles subscribed auto-download settings and Wi-Fi policy after restore/cloud changes and schedules foreground catch-up independently of notification permission. The local catalog post-persist callback admits auto-downloads from every successful ingest, including manual refresh and import.
 
+- Delayed notification hydration updates only the matching active release; dismissed alerts and newer releases are preserved, including after artwork I/O. Hydration exceptions and unresolved releases share a five-retry limit. On startup or a Wi-Fi policy change, automatic transfer reconciliation compares persisted work constraints and cancels only mismatches, preserving correctly scheduled cold-start workers.
+
 ## Internal structure
 
 ```text

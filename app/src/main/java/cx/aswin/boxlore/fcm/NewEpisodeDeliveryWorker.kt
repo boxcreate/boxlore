@@ -16,14 +16,52 @@ import kotlinx.coroutines.CancellationException
 
 /** Persisted raw GUID/enclosure hint, including releases that do not have a PI episode ID yet. */
 class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    internal interface Dependencies {
+        suspend fun getShow(podcastId: String): cx.aswin.boxlore.core.database.PodcastEntity?
+        suspend fun resolveEpisode(podcastId: String, data: Map<String, String>): cx.aswin.boxlore.core.model.Episode?
+        suspend fun acceptRelease(podcastId: String, episode: cx.aswin.boxlore.core.model.Episode)
+        suspend fun scanCached(podcastId: String)
+        suspend fun updateNotification(podcastId: String, data: Map<String, String>, episode: cx.aswin.boxlore.core.model.Episode)
+    }
+
+    internal var dependencies: Dependencies = AppDependencies(context)
+
     override suspend fun doWork(): Result {
         val data = inputData.keyValueMap.mapNotNull { (key, value) -> (value as? String)?.let { key to it } }.toMap()
         val podcastId = FcmPayloadParser.podcastId(data) ?: return Result.failure()
         return try {
-            val deps = SharedAppDependenciesHolder.require()
-            val show = deps.database.podcastDao().getPodcast(podcastId)
+            val show = dependencies.getShow(podcastId)
             if (show?.isSubscribed != true) return Result.success()
-            val local = NewEpisodePushHydration.resolveLocalEpisode(
+            val local = dependencies.resolveEpisode(podcastId, data)
+            if (local != null) dependencies.acceptRelease(podcastId, local)
+            dependencies.scanCached(podcastId)
+            if (show.notificationsEnabled && local != null) {
+                // Update the already posted bounded slot with the exact Room ID and artwork.
+                try {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        dependencies.updateNotification(podcastId, data, local)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.w("NewEpisodeDeliveryWorker", "Notification update failed", e)
+                }
+            }
+            if (local == null && runAttemptCount < MAX_RETRIES) Result.retry() else Result.success()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.w("NewEpisodeDeliveryWorker", "Publisher release hydration failed", e)
+            if (runAttemptCount < MAX_RETRIES) Result.retry() else Result.failure()
+        }
+    }
+
+    private class AppDependencies(private val context: Context) : Dependencies {
+        override suspend fun getShow(podcastId: String) = SharedAppDependenciesHolder.require().database.podcastDao().getPodcast(podcastId)
+
+        override suspend fun resolveEpisode(podcastId: String, data: Map<String, String>): cx.aswin.boxlore.core.model.Episode? {
+            val deps = SharedAppDependenciesHolder.require()
+            return NewEpisodePushHydration.resolveLocalEpisode(
                 podcastId,
                 FcmPayloadParser.feedUrl(data),
                 FcmPayloadParser.enclosureUrl(data),
@@ -35,31 +73,24 @@ class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : Cor
                     NewEpisodePushHydration.piBaselineLoader { id, limit -> deps.podcastRepository.loadPiEpisodesForBaseline(id, limit) }
                 ),
             )
-            val coordinator = DownloadsDependenciesHolder.require().autoDownloadCoordinator
-            if (local != null) coordinator.acceptRelease(podcastId, local)
-            coordinator.scanCached(podcastId)
-            if (show.notificationsEnabled && local != null) {
-                // Update the already posted bounded slot with the exact Room ID and artwork.
-                try {
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        NewEpisodeNotifications.show(applicationContext, podcastId, data, local, fetchArtwork = true)
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    android.util.Log.w("NewEpisodeDeliveryWorker", "Notification update failed", e)
-                }
-            }
-            if (local == null && runAttemptCount < 5) Result.retry() else Result.success()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            android.util.Log.w("NewEpisodeDeliveryWorker", "Publisher release hydration failed", e)
-            Result.retry()
+        }
+
+        override suspend fun acceptRelease(podcastId: String, episode: cx.aswin.boxlore.core.model.Episode) {
+            DownloadsDependenciesHolder.require().autoDownloadCoordinator.acceptRelease(podcastId, episode)
+        }
+
+        override suspend fun scanCached(podcastId: String) {
+            DownloadsDependenciesHolder.require().autoDownloadCoordinator.scanCached(podcastId)
+        }
+
+        override suspend fun updateNotification(podcastId: String, data: Map<String, String>, episode: cx.aswin.boxlore.core.model.Episode) {
+            NewEpisodeNotifications.show(context, podcastId, data, episode, fetchArtwork = true)
         }
     }
 
     companion object {
+        private const val MAX_RETRIES = 5
+
         fun workName(data: Map<String, String>): String {
             val key = listOf(
                 FcmPayloadParser.podcastId(data),

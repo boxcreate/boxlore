@@ -11,6 +11,8 @@ import androidx.core.app.NotificationCompat
 import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
 
 internal object NewEpisodeNotifications {
+    private const val RELEASE_KEY = "boxlore_release_key"
+    private val updateLock = Any()
     data class NewEpisodeDetails(
         val episodeId: String?,
         val podcastTitle: String,
@@ -52,11 +54,10 @@ internal object NewEpisodeNotifications {
         )
     }
 
-    private fun showNewEpisodeNotification(context: Context, podcastId: String, details: NewEpisodeDetails, fetchArtwork: Boolean) {
+    private fun showNewEpisodeNotification(context: Context, podcastId: String, details: NewEpisodeDetails, fetchArtwork: Boolean, releaseKey: String, bitmap: android.graphics.Bitmap?) {
         val episodeId = details.episodeId
         val podcastTitle = details.podcastTitle
         val episodeTitle = details.episodeTitle
-        val imageUrl = details.imageUrl
         val durationMinutes = details.durationMinutes
         val route = details.route
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -128,19 +129,18 @@ internal object NewEpisodeNotifications {
                 .setContentText(bodyText)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(fetchArtwork)
+                .addExtras(android.os.Bundle().apply { putString(RELEASE_KEY, releaseKey) })
                 .setSound(soundUri)
 
         if (pendingIntent != null) {
             notificationBuilder.setContentIntent(pendingIntent)
         }
 
-        if (fetchArtwork && !imageUrl.isNullOrBlank()) {
-            fetchBitmap(imageUrl)?.let { bitmap ->
+        if (bitmap != null) {
                 notificationBuilder.setStyle(
                     NotificationCompat.BigPictureStyle().bigPicture(bitmap)
                     .bigLargeIcon(null as android.graphics.Bitmap?)
                 ).setLargeIcon(bitmap)
-            }
         }
 
         notificationManager.notify(notificationId, notificationBuilder.build())
@@ -160,7 +160,20 @@ internal object NewEpisodeNotifications {
     }
 
     fun show(context: Context, podcastId: String, data: Map<String, String>, local: cx.aswin.boxlore.core.model.Episode? = null, fetchArtwork: Boolean = false) {
+        val releaseKey = NewEpisodeDeliveryWorker.workName(data + ("podcastId" to podcastId))
+        if (fetchArtwork && !isCurrentRelease(context, podcastId, releaseKey)) return
         val details = resolveNewEpisodeDetails(podcastId, data, local)
-        showNewEpisodeNotification(context, podcastId, details, fetchArtwork)
+        val bitmap = if (fetchArtwork) details.imageUrl?.takeIf { it.isNotBlank() }?.let(::fetchBitmap) else null
+        synchronized(updateLock) {
+            // Recheck after artwork I/O, before updating the shared PendingIntent or notification slot.
+            if (fetchArtwork && !isCurrentRelease(context, podcastId, releaseKey)) return
+            showNewEpisodeNotification(context, podcastId, details, fetchArtwork, releaseKey, bitmap)
+        }
+    }
+
+    private fun isCurrentRelease(context: Context, podcastId: String, releaseKey: String): Boolean {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.episodeSlot(podcastId)
+        return manager.activeNotifications.any { it.id == id && it.notification.extras.getString(RELEASE_KEY) == releaseKey }
     }
 }
