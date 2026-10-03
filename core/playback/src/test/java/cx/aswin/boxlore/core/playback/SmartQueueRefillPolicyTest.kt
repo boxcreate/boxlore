@@ -7,6 +7,13 @@ import org.junit.jupiter.api.Test
 
 class SmartQueueRefillPolicyTest {
     @Test
+    fun `context queues never refill while visible items remain or final item is still playing`() {
+        for (remaining in 0..2) {
+            assertFalse(SmartQueueRefillPolicy.shouldRefill(remaining, false, 3, false, false, isContextQueue = true))
+        }
+    }
+
+    @Test
     fun `refills when remaining low and not blocked`() {
         assertTrue(
             SmartQueueRefillPolicy.shouldRefill(

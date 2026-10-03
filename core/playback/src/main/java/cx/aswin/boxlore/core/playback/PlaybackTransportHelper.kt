@@ -98,7 +98,7 @@ internal class PlaybackTransportHelper(
                                     ).setDisplayTitle(episode.title)
                                     .setSubtitle(episode.podcastTitle ?: podcast.title)
                                     .setGenre(episode.podcastGenre ?: podcast.genre)
-                                    .setExtras(entryPointContext)
+                                    .setExtras(PlaybackQueueContext.extras(episode, entryPointContext))
                                     .build()
 
                             MediaItem
@@ -112,6 +112,7 @@ internal class PlaybackTransportHelper(
                                 ).build()
                         }
 
+                    PlaybackActivationRequest.set(currentEpisode.id, savedPosition, applyIntroTrim = savedPosition == 0L)
                     controller.setMediaItems(mediaItems, startIndex, savedPosition.coerceAtLeast(0L))
                     controller.prepare()
                     applyResumeSource("resume_restore")
@@ -129,7 +130,7 @@ internal class PlaybackTransportHelper(
                             ).setDisplayTitle(currentEpisode.title)
                             .setSubtitle(podcast?.title ?: "")
                             .setGenre(currentEpisode.podcastGenre ?: podcast?.genre ?: "Podcast")
-                            .setExtras(entryPointContext)
+                            .setExtras(PlaybackQueueContext.extras(currentEpisode, entryPointContext))
                             .build()
 
                     val mediaItem =
@@ -140,12 +141,10 @@ internal class PlaybackTransportHelper(
                             .setMediaMetadata(metadata)
                             .setMediaId(currentEpisode.id)
                             .setCustomCacheKey(
-                                PlaybackMediaIdPolicy.customCacheKey(
-                                    currentEpisode.id,
-                                    currentEpisode.audioUrl,
-                                ),
+                                PlaybackMediaIdPolicy.customCacheKey(currentEpisode.id, currentEpisode.audioUrl),
                             ).build()
 
+                    PlaybackActivationRequest.set(currentEpisode.id, savedPosition, applyIntroTrim = savedPosition == 0L)
                     controller.setMediaItem(mediaItem, savedPosition.coerceAtLeast(0L))
                     controller.prepare()
                     applyResumeSource("resume_restore")
@@ -193,6 +192,7 @@ internal class PlaybackTransportHelper(
                 "skipToEpisode: Restoring position ${savedPosMs}ms for $targetEpisodeId (entry=$entryPointKey)",
             )
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                PlaybackActivationRequest.set(targetEpisodeId, savedPosMs, applyIntroTrim = savedPosMs == 0L)
                 controller.seekTo(mediaIndex, savedPosMs)
                 controller.play()
             }

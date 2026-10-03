@@ -38,6 +38,48 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class QueueRepositoryTest {
+    @Test
+    fun guardedRefillRejectsReplacedQueue() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        val oldSnapshot = database.queueDao().getAllQueueItemsSync().map { it.episodeId }
+        repository.replaceQueue(listOf(domainEpisode("9")))
+        val added = repository.addRefillEntriesIfUnchanged(
+            listOf(QueueEntry(episodeItem(2), podcast(), SmartQueueEngine.SOURCE_RESUME)),
+            oldSnapshot,
+        ) { true }
+        assertFalse(added)
+        assertEquals(listOf("9"), repository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
+    @Test
+    fun guardedRefillRollsBackWholeBatchWhenActivationChanges() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        var checks = 0
+        val added = repository.addRefillEntriesIfUnchanged(
+            listOf(QueueEntry(episodeItem(2), podcast(), SmartQueueEngine.SOURCE_RESUME)),
+            listOf("1"),
+        ) { ++checks == 1 }
+        assertFalse(added)
+        assertEquals(listOf("1"), repository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
+    @Test
+    fun guardedRefillCommitsOrderedBatchAndContext() = runTest {
+        repository.addToQueue(episodeItem(1), podcast())
+        val added = repository.addRefillEntriesIfUnchanged(
+            listOf(
+                QueueEntry(episodeItem(2), podcast(), SmartQueueEngine.SOURCE_RESUME),
+                QueueEntry(episodeItem(3), podcast(), SmartQueueEngine.SOURCE_SUBSCRIPTION),
+            ),
+                listOf("1"),
+        ) { true }
+        assertTrue(added)
+        val restored = repository.getQueueEpisodeSnapshot()
+        assertEquals(listOf("1", "2", "3"), restored.map { it.id })
+        assertEquals("AUTO_FILL", restored[1].contextType)
+        assertEquals(SmartQueueEngine.SOURCE_RESUME, restored[1].contextSourceId)
+    }
+
     private lateinit var database: BoxLoreDatabase
     private lateinit var podcastRepository: PodcastRepository
     private lateinit var repository: QueueRepository

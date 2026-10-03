@@ -30,6 +30,7 @@ internal class PlaybackIntroOutroController(
     private val onActiveDurationResolved: (episodeId: String, durationMs: Long) -> Unit,
     private val onNaturalCompletion: (episodeId: String, durationMs: Long) -> Job?,
     private val onClearEndOfEpisodeSleep: () -> Unit,
+    private val onContextQueueExhausted: (Player) -> Boolean = { false },
 ) {
     data class SeekDiscontinuityResult(val isLifecycleSeek: Boolean,)
 
@@ -37,7 +38,8 @@ internal class PlaybackIntroOutroController(
     private var activeLifecycleEpisodeId: String? = null
     private var activeLifecycleMediaItem: MediaItem? = null
     private var activeLifecycleDurationMs = 0L
-    private var activationInitialPositionMs = 0L
+    private var activationExplicitPositionMs: Long? = null
+    private var activationRestartWithIntroTrim = false
     private var effectiveSkipBeginningMs = 0L
     private var effectiveSkipEndingMs = 0L
     private var introTargetResolved = false
@@ -55,6 +57,7 @@ internal class PlaybackIntroOutroController(
     private var outroMonitorJob: Job? = null
     private var effectiveEndWatchdogJob: Job? = null
     private var completionPersistenceJob: Job? = null
+    private var activationConfigurationJob: Job? = null
 
     val activeEpisodeId: String?
         get() = activeLifecycleEpisodeId
@@ -68,12 +71,15 @@ internal class PlaybackIntroOutroController(
     fun isActiveMediaItem(mediaItem: MediaItem): Boolean = lifecycleEpisodeId(mediaItem) == activeLifecycleEpisodeId &&
         mediaItem === activeLifecycleMediaItem
 
-    fun reset(mediaItem: MediaItem?, initialPositionMs: Long,) {
+    fun reset(mediaItem: MediaItem?, initialPositionMs: Long, explicitPositionMs: Long? = null,) {
+        activationConfigurationJob?.cancel()
+        activationConfigurationJob = null
         playbackActivationGeneration++
         activeLifecycleEpisodeId = lifecycleEpisodeId(mediaItem)
         activeLifecycleMediaItem = mediaItem
         activeLifecycleDurationMs = 0L
-        activationInitialPositionMs = initialPositionMs.coerceAtLeast(0L)
+        activationExplicitPositionMs = explicitPositionMs
+        activationRestartWithIntroTrim = false
         effectiveSkipBeginningMs = 0L
         effectiveSkipEndingMs = 0L
         introTargetResolved = false
@@ -91,10 +97,16 @@ internal class PlaybackIntroOutroController(
         effectiveEndWatchdogJob = null
     }
 
-    fun onMediaActivated(player: Player, mediaItem: MediaItem?,) {
-        reset(mediaItem, player.currentPosition)
+    fun onMediaActivated(player: Player, mediaItem: MediaItem?, preservePosition: Boolean = false,) {
+        val requestedPosition = PlaybackActivationRequest.consume(lifecycleEpisodeId(mediaItem))
+        if (isActiveMediaItemOrNull(mediaItem) && requestedPosition == null) return
+        val explicitPosition = requestedPosition?.positionMs ?: player.currentPosition.takeIf { preservePosition }
+        reset(mediaItem, player.currentPosition, explicitPosition)
+        activationRestartWithIntroTrim = requestedPosition?.let { it.positionMs == 0L && it.applyIntroTrim } == true
         refreshActiveSkipConfiguration(player, preferenceChanged = false)
     }
+
+    private fun isActiveMediaItemOrNull(mediaItem: MediaItem?): Boolean = mediaItem != null && isActiveMediaItem(mediaItem)
 
     fun onSkipPreferencesChanged(player: Player) {
         refreshActiveSkipConfiguration(player, preferenceChanged = true)
@@ -116,9 +128,10 @@ internal class PlaybackIntroOutroController(
         if (
             isLifecycleSeek &&
             !introTargetResolved &&
-            newPositionMs > 0L
+            newPositionMs >= 0L
         ) {
-            activationInitialPositionMs = newPositionMs
+            activationExplicitPositionMs = newPositionMs
+            if (newPositionMs > 0L) activationRestartWithIntroTrim = false
         }
         if (!isLifecycleSeek) {
             introCancelledByUser = true
@@ -197,6 +210,7 @@ internal class PlaybackIntroOutroController(
             onClearEndOfEpisodeSleep()
             player.pause()
         } else if (!player.hasNextMediaItem()) {
+            if (onContextQueueExhausted(player)) return
             player.stop()
             reset(null, 0L)
         }
@@ -233,6 +247,12 @@ internal class PlaybackIntroOutroController(
         completionPersistenceJob?.join()
     }
 
+    suspend fun awaitActivationConfiguration(episodeId: String): Boolean {
+        val generation = playbackActivationGeneration
+        activationConfigurationJob?.join()
+        return generation == playbackActivationGeneration && episodeId == activeLifecycleEpisodeId
+    }
+
     fun markCompletionTelemetryDispatched(): Boolean {
         if (completionTelemetryGeneration == playbackActivationGeneration) return false
         completionTelemetryGeneration = playbackActivationGeneration
@@ -244,7 +264,7 @@ internal class PlaybackIntroOutroController(
     private fun refreshActiveSkipConfiguration(player: Player, preferenceChanged: Boolean,) {
         val episodeId = activeLifecycleEpisodeId ?: return
         val generation = playbackActivationGeneration
-        scope.launch {
+        val configurationJob = scope.launch(start = CoroutineStart.LAZY) {
             val (history, effectiveTrim) = resolveActiveSkipConfiguration(episodeId)
 
             if (
@@ -265,6 +285,8 @@ internal class PlaybackIntroOutroController(
             startOutroMonitor(player)
             maybeApplyPendingIntro(player)
         }
+        if (!introTargetResolved) activationConfigurationJob = configurationJob
+        configurationJob.start()
     }
 
     private suspend fun resolveActiveSkipConfiguration(
@@ -304,13 +326,12 @@ internal class PlaybackIntroOutroController(
     }
 
     private fun resolveActiveIntroTarget(history: ListeningHistoryEntity?) {
-        val explicitStartMs = activationInitialPositionMs.takeIf { it > 0L }
         val entryPointKey =
             PlaybackMediaIdPolicy.parseEntryPointString(activeLifecycleMediaItem?.mediaMetadata?.extras)
         val initialPosition =
             PlaybackSkipPolicy.resolveInitialPosition(
-                explicitPositionMs = explicitStartMs,
-                savedProgressMs = history?.progressMs ?: 0L,
+                explicitPositionMs = activationExplicitPositionMs.takeUnless { activationRestartWithIntroTrim },
+                savedProgressMs = if (activationRestartWithIntroTrim) 0L else history?.progressMs ?: 0L,
                 isCompleted = history?.isCompleted == true,
                 skipBeginningMs = effectiveSkipBeginningMs,
                 resumeIntent = PlaybackSkipPolicy.resumeIntentFromEntryPoint(entryPointKey),
@@ -461,6 +482,7 @@ internal class PlaybackIntroOutroController(
                         }
                     }
                 } else {
+                    if (onContextQueueExhausted(player)) return@launch
                     player.stop()
                     reset(null, 0L)
                 }

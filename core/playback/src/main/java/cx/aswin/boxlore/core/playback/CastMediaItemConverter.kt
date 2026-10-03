@@ -6,6 +6,7 @@ import androidx.media3.cast.MediaItemConverter
 import androidx.media3.common.MediaItem
 import com.google.android.gms.cast.MediaQueueItem
 import java.net.InetAddress
+import org.json.JSONObject
 
 internal object CastMediaMetadata {
     internal const val REMOTE_URI_KEY = "boxlore.cast.remote_uri"
@@ -33,8 +34,10 @@ internal object CastMediaMetadata {
  * Keeps local/download playback URIs on-device while sending the original public stream URL
  * to a Cast receiver. Regular streaming items pass through unchanged.
  */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 internal class BoxLoreCastMediaItemConverter : MediaItemConverter {
     private val delegate = DefaultMediaItemConverter()
+    private val contextKey = "boxlore.queue.context"
 
     override fun toMediaQueueItem(mediaItem: MediaItem): MediaQueueItem {
         val remoteUri = CastMediaMetadata.remoteUri(mediaItem)
@@ -48,10 +51,24 @@ internal class BoxLoreCastMediaItemConverter : MediaItemConverter {
             } else {
                 mediaItem.buildUpon().setUri(remoteUri).build()
             }
-        return delegate.toMediaQueueItem(castItem)
+        val converted = delegate.toMediaQueueItem(castItem)
+        if (!PlaybackQueueContext.isContextItem(castItem)) return converted
+        // Media3's default converter does not serialize MediaMetadata.extras.
+        val customData = JSONObject(converted.customData?.toString() ?: "{}")
+            .put(contextKey, PlaybackQueueContext.NEW_EPISODES)
+        return MediaQueueItem.Builder(converted)
+            .setCustomData(customData)
+            .build()
     }
 
-    override fun toMediaItem(mediaQueueItem: MediaQueueItem): MediaItem = delegate.toMediaItem(mediaQueueItem)
+    override fun toMediaItem(mediaQueueItem: MediaQueueItem): MediaItem {
+        val item = delegate.toMediaItem(mediaQueueItem)
+        if (mediaQueueItem.customData?.optString(contextKey) != PlaybackQueueContext.NEW_EPISODES) return item
+        val extras = Bundle(item.mediaMetadata.extras ?: Bundle()).apply {
+            putString("source_entry_point", PlaybackQueueContext.NEW_EPISODES)
+        }
+        return item.buildUpon().setMediaMetadata(item.mediaMetadata.buildUpon().setExtras(extras).build()).build()
+    }
 }
 
 object CastMediaEligibility {

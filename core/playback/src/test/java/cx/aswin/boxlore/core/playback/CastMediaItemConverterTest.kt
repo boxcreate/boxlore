@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -11,6 +12,17 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class CastMediaItemConverterTest {
     private val converter = BoxLoreCastMediaItemConverter()
+
+    @Test
+    fun preservesContextQueueProvenanceAcrossCastRoundTrip() {
+        val episode = cx.aswin.boxlore.core.model.Episode("rss:opaque", "Episode", "", "https://cdn.example.com/episode.mp3")
+        val contextEpisode = PlaybackQueueContext.episodes(listOf(episode)).single()
+        val mediaItem = MediaItem.Builder().setMediaId(episode.id).setUri(episode.audioUrl)
+            .setMediaMetadata(MediaMetadata.Builder().setExtras(PlaybackQueueContext.extras(contextEpisode, null)).build()).build()
+        val restored = converter.toMediaItem(converter.toMediaQueueItem(mediaItem))
+        assertEquals("rss:opaque", restored.mediaId)
+        assertTrue(PlaybackQueueContext.isContextItem(restored))
+    }
 
     @Test
     fun forwardsAnEligibleStreamingUri() {

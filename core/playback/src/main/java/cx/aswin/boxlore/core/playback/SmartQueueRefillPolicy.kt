@@ -14,11 +14,13 @@ object SmartQueueRefillPolicy {
         isLearnEpisode: Boolean,
         sleepingAtEndOfEpisode: Boolean,
         remainingThreshold: Int = DEFAULT_REMAINING_THRESHOLD,
+        isContextQueue: Boolean = false,
     ): Boolean {
         if (isRefilling) return false
         if (mediaItemCount <= 0) return false
         if (isLearnEpisode) return false
         if (sleepingAtEndOfEpisode) return false
+        if (isContextQueue) return false
         return remainingUpcoming <= remainingThreshold
     }
 
