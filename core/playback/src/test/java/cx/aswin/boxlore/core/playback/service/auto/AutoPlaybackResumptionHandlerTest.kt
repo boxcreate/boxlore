@@ -10,12 +10,15 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.playback.PlaybackActivationRequest
 import cx.aswin.boxlore.core.playback.QueueRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -52,6 +55,7 @@ class AutoPlaybackResumptionHandlerTest {
 
     @Before
     fun setUp() {
+        PlaybackActivationRequest.clear()
         context = ApplicationProvider.getApplicationContext()
         prefs = context.getSharedPreferences("test_player_prefs", Context.MODE_PRIVATE)
         prefs.edit().clear().commit()
@@ -77,6 +81,11 @@ class AutoPlaybackResumptionHandlerTest {
         )
     }
 
+    @After
+    fun clearActivation() {
+        PlaybackActivationRequest.clear()
+    }
+
     @Test
     fun `resolveResumption returns live player items and clears player dismissed flag when player has items`() = runBlocking {
         prefs.edit().putBoolean(AutoPlaybackResumptionHandler.KEY_PLAYER_DISMISSED, true).commit()
@@ -90,6 +99,7 @@ class AutoPlaybackResumptionHandlerTest {
         `when`(player.currentPosition).thenReturn(45_000L)
         `when`(player.getMediaItemAt(0)).thenReturn(liveItem)
         `when`(player.currentMediaItem).thenReturn(liveItem)
+        PlaybackActivationRequest.set("live-1", 10_000L)
 
         val result = handler.resolveResumption(mediaSession)
 
@@ -98,6 +108,7 @@ class AutoPlaybackResumptionHandlerTest {
         assertEquals(0, result.startIndex)
         assertEquals(45_000L, result.startPositionMs)
         assertFalse(prefs.getBoolean(AutoPlaybackResumptionHandler.KEY_PLAYER_DISMISSED, false))
+        assertNull(PlaybackActivationRequest.consume("live-1"))
     }
 
     @Test

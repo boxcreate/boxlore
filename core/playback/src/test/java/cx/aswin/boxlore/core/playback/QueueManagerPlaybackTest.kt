@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,6 +36,47 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class QueueManagerPlaybackTest {
+    @Test
+    fun `context playback replaces old queue and keeps mixed show suffix order`() = runTest(testDispatcher) {
+        val manager = QueueManager(queueRepository, playbackRepository)
+        val podcast = Podcast("show-2", "Second show", "Host", "art")
+        val episodes = listOf(
+            Episode("2", "Selected", "", "https://example.com/2.mp3", podcastId = "show-2"),
+            Episode("rss:3", "Next visible", "", "https://example.com/3.mp3", podcastId = "rss:show-3"),
+        )
+        val previousGeneration = PlaybackActivationRequest.generation
+        manager.playContextEpisodes(episodes, podcast)
+        assertTrue(PlaybackActivationRequest.generation > previousGeneration)
+        advanceUntilIdle()
+
+        @Suppress("UNCHECKED_CAST")
+        val queueCaptor = ArgumentCaptor.forClass(List::class.java) as ArgumentCaptor<List<Episode>>
+        val contextCaptor = ArgumentCaptor.forClass(Bundle::class.java)
+        verify(queueRepository).replaceQueue(safeCapture(queueCaptor, emptyList()))
+        val persisted = queueCaptor.value
+        assertEquals(listOf("2", "rss:3"), persisted.map { it.id })
+        assertEquals(listOf("show-2", "rss:show-3"), persisted.map { it.podcastId })
+        assertEquals(setOf(PlaybackQueueContext.NEW_EPISODES), persisted.map { it.contextSourceId }.toSet())
+        verify(queueRepository, never()).clearQueue()
+        verify(queueCoordinator).playQueue(
+            safeEq(persisted),
+            safeEq(podcast),
+            safeEq(0),
+            safeEq(PlaybackEntryPoint.GENERIC),
+            safeEq(null),
+            safeCapture(contextCaptor, Bundle()),
+        )
+        assertEquals(PlaybackQueueContext.NEW_EPISODES, contextCaptor.value.getString("entry_point"))
+    }
+
+    @Test
+    fun `empty context playback leaves current queue alone`() = runTest(testDispatcher) {
+        QueueManager(queueRepository, playbackRepository).playContextEpisodes(emptyList(), Podcast("show", "Show", "Host", "art"))
+        advanceUntilIdle()
+        verify(queueRepository, never()).replaceQueue(emptyList())
+        verify(queueRepository, never()).clearQueue()
+    }
+
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var queueRepository: QueueRepository
     private lateinit var playbackRepository: PlaybackRepository

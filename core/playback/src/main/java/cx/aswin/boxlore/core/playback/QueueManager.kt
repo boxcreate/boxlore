@@ -162,6 +162,24 @@ class QueueManager(private val queueRepository: QueueRepository, private val pla
         }
     }
 
+    /** Always replaces the old queue with the selected New Episodes list snapshot. */
+    fun playContextEpisodes(
+        episodes: List<cx.aswin.boxlore.core.model.Episode>,
+        fallbackPodcast: cx.aswin.boxlore.core.model.Podcast,
+    ) {
+        val queue = PlaybackQueueContext.episodes(episodes)
+        if (queue.isEmpty()) return
+        PlaybackActivationRequest.clear()
+        scope.launch {
+            queueRepository.replaceQueue(queue)
+            val context = android.os.Bundle().apply {
+                putString("entry_point", PlaybackQueueContext.NEW_EPISODES)
+                putString("source_entry_point", PlaybackQueueContext.NEW_EPISODES)
+            }
+            playbackRepository.playQueue(queue, fallbackPodcast, sourceContext = context)
+        }
+    }
+
     fun dismissSameShowContinuation() {
         playbackRepository.dismissSameShowContinuation()
     }

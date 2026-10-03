@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
+import cx.aswin.boxlore.core.playback.PlaybackQueueContext
 
 internal data class AutoPlayableSpec(
     val mediaId: String,
@@ -167,7 +168,13 @@ internal object AutoMediaItemFactory {
             isDownloaded = isDownloaded,
             customCacheKey = EpisodeMediaCacheKey.of(episode.id, episode.audioUrl),
         ),
-    )
+    ).let { item ->
+        item.buildUpon().setMediaMetadata(
+            item.mediaMetadata.buildUpon()
+                .setExtras(PlaybackQueueContext.extras(episode, item.mediaMetadata.extras))
+                .build(),
+        ).build()
+    }
 
     fun fromDownload(download: DownloadedEpisodeEntity, artworkUri: Uri?, uri: String?, groupTitle: String,): MediaItem = playable(
         AutoPlayableSpec(

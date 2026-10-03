@@ -214,8 +214,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                     popUpTo("home")
                 }
             },
-            onPlayEpisode = { episode, podcast -> queueManager.playEpisode(episode, podcast) },
-            onPlayEpisodes = { episodes, fallbackPodcast -> queueManager.playEpisodes(episodes, fallbackPodcast) },
+            onPlayEpisodes = { episodes, fallbackPodcast -> queueManager.playContextEpisodes(episodes, fallbackPodcast) },
             onEpisodeClick = { episode, podcast, entryPointStr ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                 val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""

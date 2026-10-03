@@ -33,6 +33,17 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class PlaybackQueueCoordinatorTest {
+    @Test
+    fun restoredContextQueueKeepsOrderAndShowMetadataInMediaItems() = runTest(testDispatcher) {
+        val episodes = PlaybackQueueContext.episodes(listOf(testEpisode("rss:1", "rss:show-1"), testEpisode("2", "show-2")))
+        queueRepository.replaceQueue(episodes)
+        val restored = queueRepository.getQueueEpisodeSnapshot()
+        val items = queueCoordinator.buildMediaItems(restored, cx.aswin.boxlore.core.model.Podcast("fallback", "Fallback", "Host", ""), null)
+        assertEquals(listOf("rss:1", "2"), items.map { it.mediaId })
+        assertEquals(listOf("Show rss:show-1", "Show show-2"), items.map { it.mediaMetadata.subtitle.toString() })
+        assertTrue(items.all(PlaybackQueueContext::isContextItem))
+    }
+
     private lateinit var database: BoxLoreDatabase
     private lateinit var podcastRepository: PodcastRepository
     private lateinit var queueRepository: QueueRepository

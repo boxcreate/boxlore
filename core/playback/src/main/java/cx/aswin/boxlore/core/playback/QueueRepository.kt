@@ -155,6 +155,34 @@ class QueueRepository(
         )
     }
 
+    /** Rolls back suspended refill writes if another transport request or queue edit wins. */
+    internal suspend fun addRefillEntriesIfUnchanged(
+        entries: List<QueueEntry>,
+        expectedEpisodeIds: List<String>,
+        currentEpisodeId: String,
+        isCurrent: suspend () -> Boolean,
+    ): Boolean = try {
+        database.withTransaction {
+            if (!isCurrent()) return@withTransaction false
+            val currentEpisodeIds = queueDao.getAllQueueItemsSync().map { it.episodeId }
+            val currentIndex = expectedEpisodeIds.indexOf(currentEpisodeId)
+            val consumedPrefixWasTrimmed =
+                currentIndex >= 0 && currentEpisodeIds == expectedEpisodeIds.drop(currentIndex)
+            if (currentEpisodeIds != expectedEpisodeIds && !consumedPrefixWasTrimmed) {
+                return@withTransaction false
+            }
+            entries.forEach { entry ->
+                addToQueue(entry.episode, entry.podcast, contextType = "AUTO_FILL", contextSourceId = entry.source)
+            }
+            if (!isCurrent()) throw RefillInvalidatedException()
+            true
+        }
+    } catch (_: RefillInvalidatedException) {
+        false
+    }
+
+    private class RefillInvalidatedException : RuntimeException()
+
     /**
      * Replace the entire queue with the provided items.
      * Used to sync in-memory queue state back to DB.

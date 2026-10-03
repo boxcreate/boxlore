@@ -556,8 +556,8 @@ internal fun LatestTabContent(
 /** Callbacks for [LatestTabContent], grouped to keep the composable parameter list small. */
 internal data class LatestTabActions(
     val onExploreClick: () -> Unit,
-    val onEpisodeClick: ((Episode, Podcast, String?) -> Unit)?,
     val onPlayEpisode: ((Episode, Podcast) -> Unit)?,
+    val onEpisodeClick: ((Episode, Podcast, String?) -> Unit)?,
     val onPlayEpisodes: ((List<Episode>, Podcast) -> Unit)? = null,
 )
 
@@ -644,14 +644,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.latestEpisodeItems(
 ) {
     if (useSmartRank) {
         items(items = displayPodcasts, key = { "${it.id}_latest_smart" }) { podcast ->
-            LatestEpisodeListRow(podcast = podcast, actions = actions)
+            LatestEpisodeListRow(podcast = podcast, displayPodcasts = displayPodcasts, actions = actions)
         }
         return
     }
     groupedEpisodes.forEach { (header, podcastsInGroup) ->
         stickyHeader { DateHeader(text = header) }
         items(items = podcastsInGroup, key = { "${it.id}_latest_chrono" }) { podcast ->
-            LatestEpisodeListRow(podcast = podcast, actions = actions)
+            LatestEpisodeListRow(podcast = podcast, displayPodcasts = displayPodcasts, actions = actions)
         }
     }
 }
@@ -664,12 +664,15 @@ private fun BoxScope.LatestPlayAllFab(
     bottomPaddingOverride: androidx.compose.ui.unit.Dp? = null,
 ) {
     if (displayPodcasts.isEmpty() || onPlayEpisodes == null) return
-    val firstPodcast = displayPodcasts.firstOrNull() ?: return
+    val episodes = remember(displayPodcasts) { latestPlaybackEpisodes(displayPodcasts) }
+    val firstPodcast = remember(displayPodcasts, episodes) {
+        displayPodcasts.firstOrNull { it.id == episodes.firstOrNull()?.podcastId }
+    } ?: return
     PlayAllFab(
         isPlayerActive = isPlayerActive,
         bottomPaddingOverride = bottomPaddingOverride,
         onClick = {
-            onPlayEpisodes(displayPodcasts.map { it.latestEpisode!! }, firstPodcast)
+            onPlayEpisodes(episodes, firstPodcast)
         },
     )
 }
@@ -677,6 +680,7 @@ private fun BoxScope.LatestPlayAllFab(
 @Composable
 private fun LatestEpisodeListRow(
     podcast: Podcast,
+    displayPodcasts: List<Podcast>,
     actions: LatestTabActions,
 ) {
     val episode = podcast.latestEpisode!!
@@ -685,7 +689,9 @@ private fun LatestEpisodeListRow(
         podcast = podcast,
         onClick = { actions.onEpisodeClick?.invoke(episode, podcast, "library_latest_episodes") },
         onPlay =
-        if (actions.onPlayEpisode != null) {
+        if (actions.onPlayEpisodes != null) {
+            { actions.onPlayEpisodes.invoke(latestPlaybackEpisodes(displayPodcasts, episode.id), podcast) }
+        } else if (actions.onPlayEpisode != null) {
             { actions.onPlayEpisode.invoke(episode, podcast) }
         } else {
             null

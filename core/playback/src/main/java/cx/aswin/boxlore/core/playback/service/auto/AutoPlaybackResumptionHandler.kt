@@ -8,6 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
+import cx.aswin.boxlore.core.playback.PlaybackActivationRequest
 import cx.aswin.boxlore.core.playback.QueueRepository
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import kotlinx.coroutines.guava.future
@@ -94,6 +95,7 @@ internal class AutoPlaybackResumptionHandler(
             "Resumption prepared: case=${decision.case}, target=$targetEpisodeId, index=$startIndex, pos=$startPositionMs, count=${resolvedMediaItems.size}",
         )
 
+        PlaybackActivationRequest.set(targetEpisodeId.stripEpisodePrefix(), startPositionMs, applyIntroTrim = startPositionMs == 0L)
         return MediaSession.MediaItemsWithStartPosition(
             resolvedMediaItems,
             startIndex,
@@ -121,6 +123,8 @@ internal class AutoPlaybackResumptionHandler(
             TAG,
             "Resuming live player: case=${decision.case}, index=$liveIndex, pos=$livePositionMs",
         )
+        // The live item already owns its position; no later activation should reuse it.
+        PlaybackActivationRequest.clear()
         return MediaSession.MediaItemsWithStartPosition(
             currentItems,
             liveIndex,

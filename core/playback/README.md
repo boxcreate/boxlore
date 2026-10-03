@@ -6,6 +6,10 @@ Owns playback session control, queue orchestration, smart queue logic, Media3 pl
 
 ## Public API
 
+- `QueueManager.playContextEpisodes` starts a fresh New Episodes queue from the visible list snapshot. It persists the ordered suffix atomically, preserving each episode’s show metadata and opaque IDs. The `library_latest_episodes` source survives Room restore, Android Auto, and Cast metadata; Smart Queue waits until the final context episode completes before requesting fallback candidates. Completion is persisted before that refill, and paused/sleeping/replaced sessions cannot be restarted by a delayed result. Cast context provenance is serialized in receiver custom data because Media3 drops extras; remote continuation requires the receiver’s explicit finished idle reason and waits for insertion acknowledgment. The refill cap counts current/upcoming items rather than the consumed prefix of a long list.
+- `PlaybackActivationRequest` carries a one-shot transport position, including an intentional zero. `PlaybackIntroOutroController` uses saved history for automatic activations even when Media3 has already advanced the clock by a few milliseconds. Policy-selected zero restarts still apply intro trim; explicit positions and route transfers retain their chosen position.
+- A different episode activation discards abandoned transport positions; same-item seeks and live Android Auto resumption do not leave positions pending for later replay. Guarded refills accept the triggering episode's consumed-prefix trim in Room while rejecting replacement, reordering, or upcoming-row edits. Context fallback advancement carries the same service-owned natural-completion signal as outro advancement, with bounded cleanup for absent controller callbacks.
+
 - `PlaybackRepository` exposes player/session operations to app and feature UI (history ports via
   class delegation to `PlaybackHistoryStore`; queue / transport / sleep / history helpers via
   same-package extension API files), and implements `:core:catalog:ports` `ActivePlaybackSyncPort` (`getActivePlayingEpisodeId`, `stopAndClearActiveSession`) to shield the current active track from remote overwrite during cloud sync and ensure active playback and in-memory queue teardown on account switches. `isTransportReady()` reports whether a Media3 controller is connected; the transport API also exposes previous/next and seek (skip forward/back) operations used by the home-screen widget adapter. `PlaybackChaptersTranscriptController` resolves chapters and transcripts during playback with offline fallbacks (local disk files, cached/downloaded transcripts, and show notes description timestamp parsing).
@@ -62,6 +66,9 @@ src/main/java/cx/aswin/boxlore/core/playback/
   QueueRepository.kt
   ...
   service/
+    PlaybackServiceHistory.kt
+    PlaybackServiceQueue.kt
+    ContextQueueContinuationCoordinator.kt
     BoxLorePlaybackService.kt
     MediaDownloadService.kt
     AutoCollageProvider.kt
@@ -104,6 +111,9 @@ Files under `core/data/service` are compatibility stubs for old service class na
 - Queue, history, and download rows are persisted by `:core:database` and `:core:downloads`.
 
 ## Testing notes
+
+- `PlaybackIntroOutroControllerTest` covers the 1 ms / 100 ms automatic-transition regression, explicit zero, intro trim, stale cutoff, explicit History resume, completed episodes, delayed readiness, and manual seeks. `QueueManagerPlaybackTest`, `QueueRepositoryTest`, `SmartQueueRefillCoordinatorTest`, and `ContextQueueContinuationCoordinatorTest` cover context replacement, ordered mixed-show playback, transactional rollback, completion-before-refill, long lists, and delayed results after a new queue or pause.
+- Review regressions also cover abandoned positions after a different activation, current-item transport seeks, live Auto resume, Room prefix trimming during candidate loading, rejected upcoming queue edits, and natural-advance telemetry signal expiry.
 
 - Unit tests live under `core/playback/src/test`.
 - Existing coverage includes Cast eligibility and route-preserving session clear, skip policy (including stale-resume intent × flag × freshness), media ID policy, artwork resolution, control sync, controller/Room progress merge and restart precedence, missing-history metadata seed precedence, non-regressing service persistence, task-removal persistence, history recommendation filtering, voice search, smart-queue refill policy, mixtape resume policy, night-window logic, listening-history upsert logic, queue math, skip memory, smart queue, playback session mapping, Auto artwork fetch/content-type policy, collage freshness signatures, Auto artwork source-store durability, `QueueRepositoryTest` (monotonic sequence bumping, device ID tracking, bulk tombstoning of removed episodes across mutations, and sync status reset), and `PlaybackQueueCoordinatorTest` (coordinator item removal preserving unrelated queue rows and bumping metadata sequence).

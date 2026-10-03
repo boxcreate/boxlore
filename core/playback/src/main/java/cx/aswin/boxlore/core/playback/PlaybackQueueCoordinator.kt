@@ -230,11 +230,11 @@ internal class PlaybackQueueCoordinator(
                     .Builder()
                     .setTitle(episode.title)
                     .setArtist(episode.podcastTitle ?: podcast.title)
-                    .setArtworkUri(android.net.Uri.parse(resolvedUrl))
+                    .setArtworkUri(resolvedUrl?.let(android.net.Uri::parse))
                     .setDisplayTitle(episode.title)
                     .setSubtitle(episode.podcastTitle ?: podcast.title)
                     .setGenre(episode.podcastGenre ?: podcast.genre)
-                    .setExtras(entryPointContext)
+                    .setExtras(PlaybackQueueContext.extras(episode, entryPointContext))
                     .build()
 
             val mediaId = PlaybackMediaIdPolicy.encodeMediaId(episode.id, isLearn)
@@ -330,6 +330,7 @@ internal class PlaybackQueueCoordinator(
             } else if (startEpisodeId != null) {
                 PlaybackLifecycleSignals.markPendingZeroStart(startEpisodeId)
             }
+            recordActivationRequest(startEpisodeId, startPosMs, initialPositionMs == null)
             controller.setMediaItems(mediaItems, uniqueStartIndex, startPosMs)
             controller.prepare()
 
@@ -339,6 +340,10 @@ internal class PlaybackQueueCoordinator(
             syncQueueToDb()
             ensureCurrentHistoryRow()
         }
+    }
+
+    private fun recordActivationRequest(episodeId: String?, positionMs: Long, implicit: Boolean) {
+        if (episodeId != null) PlaybackActivationRequest.set(episodeId, positionMs, applyIntroTrim = implicit && positionMs == 0L)
     }
 
     private fun enrichWithContextSourceId(
