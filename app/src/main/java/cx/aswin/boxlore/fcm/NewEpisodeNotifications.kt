@@ -147,7 +147,7 @@ internal object NewEpisodeNotifications {
     }
 
     private fun fetchBitmap(imageUrl: String): android.graphics.Bitmap? = try {
-        val connection = java.net.URL(imageUrl.optimizedImageUrl(500)).openConnection() as java.net.HttpURLConnection
+        val connection = java.net.URI(imageUrl.optimizedImageUrl(500)).toURL().openConnection() as java.net.HttpURLConnection
         connection.connectTimeout = 2_000
         connection.readTimeout = 2_000
         try {
