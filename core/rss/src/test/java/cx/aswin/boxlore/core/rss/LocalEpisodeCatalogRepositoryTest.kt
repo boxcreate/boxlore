@@ -82,6 +82,16 @@ class LocalEpisodeCatalogRepositoryTest {
     }
 
     @Test
+    fun downloadDiscoveryChecksAfterOneHourAndReleaseHintsAlwaysBypassQuiet() {
+        val now = System.currentTimeMillis()
+        val feed = LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml")
+            .copy(fetchedAt = now - 3_600_001, ready = true, needsFullBackfill = false)
+        assertTrue(shouldSkipQuiet(feed, nowMillis = now))
+        assertFalse(shouldSkipQuiet(feed, LocalEpisodeCatalogPort.RefreshReason.AUTO_DOWNLOAD, now))
+        assertFalse(shouldSkipQuiet(feed.copy(fetchedAt = now), LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE, now))
+    }
+
+    @Test
     fun piBaselineReloadsForExistingCatalogThatNeverBecameReady() {
         assertTrue(shouldLoadPiBaseline(null))
         assertTrue(

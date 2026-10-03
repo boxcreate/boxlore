@@ -12,6 +12,8 @@ import cx.aswin.boxlore.core.model.Episode
 interface LocalEpisodeCatalogPort {
     data class PodcastMeta(val title: String? = null, val imageUrl: String? = null, val genre: String? = null, val artist: String? = null,)
 
+    enum class RefreshReason { NORMAL, AUTO_DOWNLOAD, NEW_RELEASE }
+
     data class RefreshRequest(
         val podcastIndexId: String,
         val feedUrl: String,
@@ -21,6 +23,7 @@ interface LocalEpisodeCatalogPort {
          * A throwing loader fails the refresh and keeps last-good rows.
          */
         val loadPiBaseline: (suspend () -> List<Episode>)? = null,
+        val reason: RefreshReason = RefreshReason.NORMAL,
     )
 
     sealed interface RefreshOutcome {

@@ -107,6 +107,7 @@ internal object NewEpisodePushHydration {
                 artist = entity?.author,
             )
         val feedUrl = payloadFeedUrl?.trim().orEmpty().ifEmpty { entity?.feedUrl.orEmpty() }
+        catalog.findByCatalogKey(podcastId, payloadGuid, payloadEnclosureUrl, meta)?.let { return it }
         val needsBaseline = !catalog.isReady(podcastId)
         try {
             catalog.refresh(
@@ -114,6 +115,7 @@ internal object NewEpisodePushHydration {
                     podcastIndexId = podcastId,
                     feedUrl = feedUrl,
                     meta = meta,
+                    reason = LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE,
                     loadPiBaseline =
                     if (needsBaseline) {
                         sources.loadPiBaseline?.let { loader -> { loader(podcastId) } }

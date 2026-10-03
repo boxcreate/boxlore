@@ -355,7 +355,7 @@ class NewEpisodePushHydrationTest {
                 ),
             )
         assertEquals("-8", matched?.id)
-        assertEquals(1, catalog.refreshCalls)
+        assertEquals(0, catalog.refreshCalls)
         val blank =
             NewEpisodePushHydration.resolveLocalEpisode(
                 podcastId = "123",
@@ -476,6 +476,50 @@ class NewEpisodePushHydrationTest {
         publishedDate = 200L,
         duration = 1800,
     )
+
+    @Test
+    fun unindexedPushForcesFreshPublisherFeedDuringHeaderlessQuietPeriod() = runBlocking {
+        database.podcastDao().upsert(
+            cx.aswin.boxlore.core.database.PodcastEntity(
+            "123",
+                "Show",
+                "Author",
+                "",
+                null,
+                isSubscribed = true,
+                autoDownloadEnabled = true,
+            feedUrl = "https://feeds.example/show.xml"
+            )
+        )
+        var body = """<rss version="2.0"><channel><title>Show</title><item><guid>old</guid><title>Old</title><enclosure url="https://cdn/old.mp3"/></item></channel></rss>"""
+        var fetches = 0
+        val feed = object : cx.aswin.boxlore.core.rss.RssFeedClient() {
+            override suspend fun fetch(url: String): cx.aswin.boxlore.core.rss.RssFetchResult {
+                fetches++
+                return cx.aswin.boxlore.core.rss.RssFetchResult(url, null, null, body.toByteArray())
+            }
+        }
+        val catalog = cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository.create(database, feed)
+        catalog.refresh(cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest("123", "https://feeds.example/show.xml"))
+        body = """<rss version="2.0"><channel><title>Show</title><item><guid>new-guid</guid><title>Release</title><enclosure url="https://cdn/new.mp3"/></item></channel></rss>"""
+        var piCalls = 0
+        val sources = NewEpisodePushHydration.Sources(
+            subscriptionRepository,
+            localEpisodeCatalog = catalog,
+            loadPiBaseline = {
+                piCalls++
+                emptyList()
+            }
+        )
+        val result = NewEpisodePushHydration.resolveLocalEpisode("123", null, "https://cdn/new.mp3", "new-guid", sources)
+        assertEquals("https://cdn/new.mp3", result?.audioUrl)
+        assertTrue(result!!.id.toLong() < 0)
+        assertEquals(2, fetches)
+        assertEquals(0, piCalls)
+        // Repeated pushes keep the canonical ID and do not fetch again.
+        assertEquals(result.id, NewEpisodePushHydration.resolveLocalEpisode("123", null, "https://cdn/new.mp3", "new-guid", sources)?.id)
+        assertEquals(2, fetches)
+    }
 
     private class FakePort(
         var optedIn: Set<String> = emptySet(),

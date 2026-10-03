@@ -11,7 +11,6 @@ import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
-import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -90,7 +89,7 @@ class DownloadRepositoryTest {
 
     @Test
     fun `reconcileDownloadStatus deletes stale orphaned row when Media3 has no record`() =
-        runBlocking {
+        withDownloadTestLooper {
             dao.insert(
                 downloadEntity(
                     episodeId = "orphaned-ep",
@@ -106,7 +105,7 @@ class DownloadRepositoryTest {
 
     @Test
     fun `reconcileDownloadStatus returns existing row unchanged if already completed`() =
-        runBlocking {
+        withDownloadTestLooper {
             val completed =
                 downloadEntity(
                     episodeId = "completed-ep",
@@ -122,7 +121,7 @@ class DownloadRepositoryTest {
 
     @Test
     fun `reconcileStaleDownloads purges all orphaned downloading rows`() =
-        runBlocking {
+        withDownloadTestLooper {
             dao.insert(downloadEntity("ep-1", status = DownloadedEpisodeEntity.STATUS_DOWNLOADING))
             dao.insert(downloadEntity("ep-2", status = DownloadedEpisodeEntity.STATUS_DOWNLOADING))
             dao.insert(downloadEntity("ep-3", status = DownloadedEpisodeEntity.STATUS_COMPLETED))
@@ -135,7 +134,7 @@ class DownloadRepositoryTest {
         }
 
     @Test
-    fun `reconcileDownloadStatus deletes stale download in STATE_STOPPED`() = runBlocking {
+    fun `reconcileDownloadStatus deletes stale download in STATE_STOPPED`() = withDownloadTestLooper {
         val now = System.currentTimeMillis()
         dao.insert(
             downloadEntity(
@@ -162,7 +161,65 @@ class DownloadRepositoryTest {
     }
 
     @Test
-    fun `reconcileDownloadStatus preserves actively progressing download even if downloadedAt is old`() = runBlocking {
+    fun `paused auto download keeps partial bytes beyond generic stale threshold`() = withDownloadTestLooper {
+        val time = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
+        dao.insert(
+            downloadEntity("auto-paused", status = DownloadedEpisodeEntity.STATUS_QUEUED, downloadedAt = time)
+            .copy(downloadOrigin = DownloadedEpisodeEntity.ORIGIN_AUTO)
+        )
+        val manager = DownloadRepository.getDownloadManager(context)
+        val request = androidx.media3.exoplayer.offline.DownloadRequest.Builder("auto-paused", android.net.Uri.parse("https://cdn/audio.mp3"))
+            .setData("show|Show|Episode|auto".toByteArray()).setCustomCacheKey("auto-paused").build()
+        val download = androidx.media3.exoplayer.offline.Download(
+            request,
+            androidx.media3.exoplayer.offline.Download.STATE_STOPPED,
+            time,
+            time,
+            1000L,
+            AutoDownloadTransfers.WAITING_FOR_WORK,
+            0
+        )
+        (manager.downloadIndex as androidx.media3.exoplayer.offline.WritableDownloadIndex).putDownload(download)
+        val cache = DownloadRepository.getDownloadCache(context)
+        val hole = cache.startReadWrite("auto-paused", 0, 4)
+        try {
+            val file = cache.startFile("auto-paused", 0, 4)
+            file.writeBytes(byteArrayOf(1, 2, 3, 4))
+            cache.commitFile(file, 4)
+        } finally {
+            cache.releaseHoleSpan(hole)
+        }
+        assertNotNull(repository.reconcileDownloadStatus("auto-paused"))
+        assertNotNull(manager.downloadIndex.getDownload("auto-paused"))
+        assertEquals(4L, cache.getCachedBytes("auto-paused", 0, 4))
+    }
+
+    @Test
+    fun `intentional manual download still completes after an auto removal tombstone`() = withDownloadTestLooper {
+        val id = "manual-retry"
+        database.autoDownloadDao().insertRelease(cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity(id, "show"))
+        database.autoDownloadDao().markRemoved(id)
+        dao.insert(downloadEntity(id, status = DownloadedEpisodeEntity.STATUS_DOWNLOADING).copy(downloadOrigin = DownloadedEpisodeEntity.ORIGIN_MANUAL))
+        val request = androidx.media3.exoplayer.offline.DownloadRequest.Builder(id, android.net.Uri.parse("https://cdn/audio.mp3"))
+            .setData("show|Show|Episode|manual".toByteArray()).build()
+        val download = androidx.media3.exoplayer.offline.Download(
+            request,
+            androidx.media3.exoplayer.offline.Download.STATE_COMPLETED,
+            1,
+            1,
+            1000L,
+            0,
+            0
+        )
+        (DownloadRepository.getDownloadManager(context).downloadIndex as androidx.media3.exoplayer.offline.WritableDownloadIndex).putDownload(download)
+        assertTrue(repository.awaitDownloadCompletion(id, 100))
+        assertEquals(DownloadedEpisodeEntity.STATUS_COMPLETED, dao.getDownload(id)?.status)
+        assertEquals(DownloadedEpisodeEntity.ORIGIN_MANUAL, dao.getDownload(id)?.downloadOrigin)
+        assertEquals(cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity.REMOVED, database.autoDownloadDao().getRelease(id)?.state)
+    }
+
+    @Test
+    fun `reconcileDownloadStatus preserves actively progressing download even if downloadedAt is old`() = withDownloadTestLooper {
         val now = System.currentTimeMillis()
         dao.insert(
             downloadEntity(
@@ -189,7 +246,7 @@ class DownloadRepositoryTest {
     }
 
     @Test
-    fun `reconcileDownloadStatus preserves recently stopped download even if downloadedAt is old`() = runBlocking {
+    fun `reconcileDownloadStatus preserves recently stopped download even if downloadedAt is old`() = withDownloadTestLooper {
         val now = System.currentTimeMillis()
         dao.insert(
             downloadEntity(
@@ -239,7 +296,7 @@ class DownloadRepositoryTest {
             )
 
         repository.addDownload(episode, podcast, isSmartDownloaded = false, isForeground = false)
-        val inserted = runBlocking { pollUntilNotNull { dao.getDownload("ep-bg") } }
+        val inserted = withDownloadTestLooper { pollUntilNotNull { dao.getDownload("ep-bg") } }
         assertNotNull(inserted)
         assertEquals(DownloadedEpisodeEntity.STATUS_DOWNLOADING, inserted!!.status)
         assertFalse(inserted.isSmartDownloaded)
@@ -247,7 +304,7 @@ class DownloadRepositoryTest {
 
     @Test
     fun `addDownload preserves isSmartDownloaded = false if existing manual download exists`() {
-        runBlocking {
+        withDownloadTestLooper {
             dao.insert(
                 downloadEntity(
                     episodeId = "ep-manual",
@@ -279,14 +336,14 @@ class DownloadRepositoryTest {
             )
 
         repository.addDownload(episode, podcast, isSmartDownloaded = true, isForeground = false)
-        val updated = runBlocking { pollUntilNotNull { dao.getDownload("ep-manual") } }
+        val updated = withDownloadTestLooper { pollUntilNotNull { dao.getDownload("ep-manual") } }
         assertNotNull(updated)
         assertFalse(updated!!.isSmartDownloaded)
     }
 
     @Test
     fun `addDownload does not revert existing completed download to downloading`() {
-        runBlocking {
+        withDownloadTestLooper {
             dao.insert(
                 downloadEntity(
                     episodeId = "ep-already-completed",
@@ -318,7 +375,7 @@ class DownloadRepositoryTest {
             )
 
         repository.addDownload(episode, podcast, isSmartDownloaded = true, isForeground = false)
-        val updated = runBlocking { pollUntilNotNull { dao.getDownload("ep-already-completed") } }
+        val updated = withDownloadTestLooper { pollUntilNotNull { dao.getDownload("ep-already-completed") } }
         assertNotNull(updated)
         assertEquals(DownloadedEpisodeEntity.STATUS_COMPLETED, updated!!.status)
         assertFalse(updated.isSmartDownloaded)
@@ -326,7 +383,7 @@ class DownloadRepositoryTest {
 
     @Test
     fun `removeDownload purges database row and executes direct removeDownload`() {
-        runBlocking {
+        withDownloadTestLooper {
             dao.insert(
                 downloadEntity(
                     episodeId = "ep-del",
@@ -335,16 +392,16 @@ class DownloadRepositoryTest {
             )
         }
 
-        runBlocking { repository.removeDownload("ep-del").join() }
-        val isDeleted = runBlocking { pollUntil { dao.getDownload("ep-del") == null } }
+        withDownloadTestLooper { repository.removeDownload("ep-del").join() }
+        val isDeleted = withDownloadTestLooper { pollUntil { dao.getDownload("ep-del") == null } }
         assertTrue(isDeleted)
-        val deleted = runBlocking { dao.getDownload("ep-del") }
+        val deleted = withDownloadTestLooper { dao.getDownload("ep-del") }
         assertNull(deleted)
     }
 
     @Test
     fun `removeDownload with isForeground false executes direct removal without launching service`() {
-        runBlocking {
+        withDownloadTestLooper {
             dao.insert(
                 downloadEntity(
                     episodeId = "ep-del-bg",
@@ -353,16 +410,16 @@ class DownloadRepositoryTest {
             )
         }
 
-        runBlocking { repository.removeDownload("ep-del-bg", isForeground = false).join() }
-        val isDeleted = runBlocking { pollUntil { dao.getDownload("ep-del-bg") == null } }
+        withDownloadTestLooper { repository.removeDownload("ep-del-bg", isForeground = false).join() }
+        val isDeleted = withDownloadTestLooper { pollUntil { dao.getDownload("ep-del-bg") == null } }
         assertTrue(isDeleted)
-        val deleted = runBlocking { dao.getDownload("ep-del-bg") }
+        val deleted = withDownloadTestLooper { dao.getDownload("ep-del-bg") }
         assertNull(deleted)
     }
 
     @Test
     fun `awaitDownloadCompletion returns true immediately if already completed in DB`() =
-        runBlocking {
+        withDownloadTestLooper {
             dao.insert(
                 downloadEntity(
                     episodeId = "ep-already-done",
@@ -376,7 +433,7 @@ class DownloadRepositoryTest {
 
     @Test
     fun `awaitDownloadCompletion returns false on timeout if download never completes`() =
-        runBlocking {
+        withDownloadTestLooper {
             dao.insert(
                 downloadEntity(
                     episodeId = "ep-stalled",
@@ -389,7 +446,7 @@ class DownloadRepositoryTest {
         }
 
     @Test
-    fun `removeDownload evicts versioned briefing cache keys from SimpleCache`() = runBlocking {
+    fun `removeDownload evicts versioned briefing cache keys from SimpleCache`() = withDownloadTestLooper {
         val cache = DownloadRepository.getDownloadCache(context)
         val briefingId = "briefing_us_2026-09-05"
         val customKey = "${briefingId}_abc123"
@@ -411,7 +468,7 @@ class DownloadRepositoryTest {
     }
 
     @Test
-    fun `getMedia3DownloadCompletionStatus returns false when onCompleted throws exception`() = runBlocking {
+    fun `getMedia3DownloadCompletionStatus returns false when onCompleted throws exception`() = withDownloadTestLooper {
         val request = androidx.media3.exoplayer.offline.DownloadRequest.Builder("ep-status-fail", android.net.Uri.parse("https://example.com/audio.mp3")).build()
         val download = androidx.media3.exoplayer.offline.Download(
             request,
@@ -433,7 +490,7 @@ class DownloadRepositoryTest {
     }
 
     @Test
-    fun `DownloadCompletionObserver resumes false when onCompleted throws exception`() = runBlocking {
+    fun `DownloadCompletionObserver resumes false when onCompleted throws exception`() = withDownloadTestLooper {
         val completed = kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { cont ->
             val obs = DownloadCompletionObserver(
                 episodeId = "ep-throw",

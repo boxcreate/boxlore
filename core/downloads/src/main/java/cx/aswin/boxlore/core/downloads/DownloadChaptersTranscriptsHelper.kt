@@ -72,14 +72,7 @@ internal object DownloadChaptersTranscriptsHelper {
         // 3. Update database row if either path was created
         if (localChaptersPath != null || localTranscriptPath != null) {
             try {
-                val existing = database.downloadedEpisodeDao().getDownload(episode.id)
-                if (existing != null) {
-                    val updated = existing.copy(
-                        chaptersUrl = localChaptersPath ?: existing.chaptersUrl,
-                        transcriptUrl = localTranscriptPath ?: existing.transcriptUrl,
-                    )
-                    database.downloadedEpisodeDao().insert(updated)
-                }
+                database.downloadedEpisodeDao().updateOfflineText(episode.id, localChaptersPath, localTranscriptPath)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to update downloaded episode with chapters/transcript paths for ${episode.id}", e)
             }
@@ -114,6 +107,7 @@ internal object DownloadChaptersTranscriptsHelper {
         episode: Episode,
         podcast: Podcast,
         isSmartDownloaded: Boolean,
+        onPrepared: () -> Unit = {},
     ) {
         val existing = try {
             database.downloadedEpisodeDao().getDownload(episode.id)
@@ -124,6 +118,7 @@ internal object DownloadChaptersTranscriptsHelper {
 
         if (existing?.status == DownloadedEpisodeEntity.STATUS_COMPLETED) {
             handleAlreadyCompletedOptimistic(database, rankingFeedbackRepository, existing, episode, podcast, effectiveIsSmart)
+            onPrepared()
             return
         }
 
@@ -137,6 +132,7 @@ internal object DownloadChaptersTranscriptsHelper {
             Log.e(TAG, "Optimistic insert failed for ${episode.id}", e)
         }
 
+        onPrepared()
         if (!effectiveIsSmart) {
             recordDownloadRankingFeedback(rankingFeedbackRepository, episode, podcast)
         }
@@ -153,8 +149,8 @@ internal object DownloadChaptersTranscriptsHelper {
         podcast: Podcast,
         effectiveIsSmartDownloaded: Boolean,
     ) {
-        if (existing.isSmartDownloaded && !effectiveIsSmartDownloaded) {
-            database.downloadedEpisodeDao().insert(existing.copy(isSmartDownloaded = false))
+        if (!effectiveIsSmartDownloaded) {
+            database.downloadedEpisodeDao().promoteToManual(existing.episodeId)
         }
         if (!effectiveIsSmartDownloaded) {
             recordDownloadRankingFeedback(rankingFeedbackRepository, episode, podcast)
@@ -184,9 +180,22 @@ internal object DownloadChaptersTranscriptsHelper {
         sizeBytes = existing?.sizeBytes ?: 0,
         status = DownloadedEpisodeEntity.STATUS_DOWNLOADING,
         isSmartDownloaded = effectiveIsSmartDownloaded,
+        downloadOrigin = if (effectiveIsSmartDownloaded) DownloadedEpisodeEntity.ORIGIN_SMART else DownloadedEpisodeEntity.ORIGIN_MANUAL,
         chaptersUrl = existing?.chaptersUrl ?: episode.chaptersUrl,
         transcriptUrl = existing?.transcriptUrl ?: (episode.transcriptUrl ?: episode.transcripts?.firstOrNull()?.url),
     )
+
+    suspend fun enrichAutoDownload(context: Context, database: BoxLoreDatabase, episode: Episode, podcast: Podcast) {
+        fetchAndPersistArtwork(
+            context,
+            database,
+            episode.id,
+            podcast.id,
+            resolveArtworkUrl(episode.imageUrl, podcast.imageUrl),
+            resolveArtworkUrl(podcast.imageUrl, episode.imageUrl)
+        )
+        persistOfflineChaptersAndTranscripts(context, database, episode)
+    }
 
     private suspend fun fetchAndPersistArtwork(
         context: Context,
@@ -201,13 +210,7 @@ internal object DownloadChaptersTranscriptsHelper {
         if (localEp == null && localPod == null) return
 
         try {
-            val current = database.downloadedEpisodeDao().getDownload(episodeId) ?: return
-            database.downloadedEpisodeDao().insert(
-                current.copy(
-                    episodeImageUrl = localEp ?: current.episodeImageUrl,
-                    podcastImageUrl = localPod ?: current.podcastImageUrl,
-                ),
-            )
+            database.downloadedEpisodeDao().updateArtwork(episodeId, localEp, localPod)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update artwork paths for $episodeId", e)
         }

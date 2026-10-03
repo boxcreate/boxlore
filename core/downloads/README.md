@@ -19,6 +19,8 @@ Owns offline download orchestration: Media3 offline cache access, download datab
 - `DownloadTogglePolicy` resolves the deterministic action (`CONFIRM_REMOVAL`, `CANCEL_DOWNLOAD`, or `START_DOWNLOAD`) when toggling episode downloads across surfaces, ensuring downloaded media requires explicit confirmation before removal.
 - `ports.DownloadServiceLauncher` and `DownloadServiceLauncherHolder` let `:app` provide the Media3 service class without a downloads-to-playback Gradle edge.
 
+- `AutoDownloadCoordinator`, `AutoDownloadDiscoveryWorker`, and `AutoDownloadScheduling` discover releases from publisher RSS/Room hourly and on foreground/ingest, independently of push and notification settings. Durable activation boundaries prevent archive downloads; pending episode claims survive death around enqueue, unique canonical episode work prevents overlapping transfers, and handled/removal records prevent replay. Auto-only transfers obey connected/unmetered constraints, run in eight-minute resumable slices with progress-based inactivity detection, and pause their own Media3 request on cancellation/retry using persisted stop reason 1068. Restored requests wait for a constrained worker; paused auto downloads are exempt from generic stale cleanup. Exact metadata misses retry without assigning an unrelated episode to the requested ID. Retention selects only completed `auto` downloads and protects manual, legacy unknown, and active audio. Media3 commands/listeners use its application looper.
+
 ## Internal structure
 
 ```text

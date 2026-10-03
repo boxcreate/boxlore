@@ -26,8 +26,14 @@ data class DownloadedEpisodeEntity(
     val isSmartDownloaded: Boolean = false,
     val chaptersUrl: String? = null,
     val transcriptUrl: String? = null,
+    @androidx.room.ColumnInfo(defaultValue = "'unknown'")
+    val downloadOrigin: String = ORIGIN_UNKNOWN,
 ) {
     companion object {
+        const val ORIGIN_UNKNOWN = "unknown"
+        const val ORIGIN_MANUAL = "manual"
+        const val ORIGIN_AUTO = "auto"
+        const val ORIGIN_SMART = "smart"
         const val STATUS_QUEUED = 0
         const val STATUS_DOWNLOADING = 1
         const val STATUS_COMPLETED = 2

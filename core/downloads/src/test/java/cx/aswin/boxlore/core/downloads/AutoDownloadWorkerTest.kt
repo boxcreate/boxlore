@@ -9,6 +9,7 @@ import androidx.work.testing.TestListenableWorkerBuilder
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -50,7 +51,7 @@ class AutoDownloadWorkerTest {
                         .build(),
                 ).build()
 
-        val result = runBlocking { worker.doWork() }
+        val result = withDownloadTestLooper { worker.doWork() }
         assertEquals(ListenableWorker.Result.failure(), result)
     }
 
@@ -72,7 +73,7 @@ class AutoDownloadWorkerTest {
                         .build(),
                 ).build()
 
-        val result = runBlocking { worker.doWork() }
+        val result = withDownloadTestLooper { worker.doWork() }
         database.close()
         assertEquals(ListenableWorker.Result.success(), result)
     }
@@ -108,7 +109,7 @@ class AutoDownloadWorkerTest {
                         .build(),
                 ).build()
 
-        val result = runBlocking { worker.doWork() }
+        val result = withDownloadTestLooper { worker.doWork() }
         database.close()
         assertEquals(ListenableWorker.Result.success(), result)
     }
@@ -170,7 +171,7 @@ class AutoDownloadWorkerTest {
                         .build(),
                 ).build()
 
-        val result = runBlocking { worker.doWork() }
+        val result = withDownloadTestLooper { worker.doWork() }
         val updatedDownload = runBlocking { database.downloadedEpisodeDao().getDownload("ep-completed") }
         database.close()
 
@@ -179,7 +180,7 @@ class AutoDownloadWorkerTest {
     }
 
     @Test
-    fun `doWork returns failure when episode fetch throws non-retryable error`() {
+    fun `doWork retries unavailable metadata without substituting another episode`() {
         val database =
             Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java)
                 .allowMainThreadQueries()
@@ -216,10 +217,10 @@ class AutoDownloadWorkerTest {
                         .build(),
                 ).build()
 
-        val result = runBlocking { worker.doWork() }
+        val result = withDownloadTestLooper { worker.doWork() }
         database.close()
 
-        assertEquals(ListenableWorker.Result.failure(), result)
+        assertEquals(ListenableWorker.Result.retry(), result)
     }
 
     @Test
@@ -280,7 +281,7 @@ class AutoDownloadWorkerTest {
                         .build(),
                 ).build()
 
-        val result = runBlocking { worker.doWork() }
+        val result = withDownloadTestLooper { worker.doWork() }
         val preserved = runBlocking { database.downloadedEpisodeDao().getDownload("ep-completed-1") }
         database.close()
 
@@ -326,6 +327,7 @@ class AutoDownloadWorkerTest {
                     sizeBytes = 1000L,
                     status = cx.aswin.boxlore.core.database.DownloadedEpisodeEntity.STATUS_COMPLETED,
                     isSmartDownloaded = false,
+                    downloadOrigin = cx.aswin.boxlore.core.database.DownloadedEpisodeEntity.ORIGIN_AUTO,
                 ),
             )
             database.downloadedEpisodeDao().insert(
@@ -366,7 +368,7 @@ class AutoDownloadWorkerTest {
                         .build(),
                 ).build()
 
-        val result = runBlocking { worker.doWork() }
+        val result = withDownloadTestLooper { worker.doWork() }
         val oldDownload = runBlocking { database.downloadedEpisodeDao().getDownload("ep-old") }
         val newerDownload = runBlocking { database.downloadedEpisodeDao().getDownload("ep-newer") }
         database.close()
@@ -375,6 +377,51 @@ class AutoDownloadWorkerTest {
         org.junit.Assert.assertNull(oldDownload)
         org.junit.Assert.assertNotNull(newerDownload)
         assertEquals(false, newerDownload?.isSmartDownloaded)
+    }
+
+    @Test
+    fun `constraint cancellation pauses owned transfer and preserves pending release for resume`() {
+        val database = Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java).allowMainThreadQueries().build()
+        val prefs = UserPreferencesRepository(context)
+        val entered = kotlinx.coroutines.CompletableDeferred<Unit>()
+        var paused = 0
+        val repository = object : DownloadRepository(context, database, cx.aswin.boxlore.core.ranking.RankingFeedbackRepository.create(null)) {
+            override suspend fun addAutoDownload(episode: cx.aswin.boxlore.core.model.Episode, podcast: cx.aswin.boxlore.core.model.Podcast): Boolean = true
+            override suspend fun awaitAutoDownloadCompletion(episodeId: String): Boolean {
+                entered.complete(Unit)
+                kotlinx.coroutines.awaitCancellation()
+            }
+            override suspend fun pauseAutoDownload(episodeId: String) {
+                paused++
+            }
+            override fun removeDownload(episodeId: String, isForeground: Boolean): kotlinx.coroutines.Job = error("Partial audio must not be removed")
+        }
+        runBlocking {
+            prefs.setAutoDownloadWifiOnly(false)
+            database.podcastDao().upsert(cx.aswin.boxlore.core.database.PodcastEntity("pod", "Show", "Author", "", null, isSubscribed = true, autoDownloadEnabled = true))
+            database.localEpisodeCatalogDao().upsertEpisodes(
+                listOf(
+                    cx.aswin.boxlore.core.database.LocalEpisodeEntity(
+                "-100", "pod", "release-guid", "Release", "", "https://cdn/release.mp3", null, 3600, 100,
+                null, null, null, null, null, null, null, null
+                    )
+                )
+            )
+        }
+        SharedAppDependenciesHolder.instance = FakeSharedAppDependencies(database, prefs)
+        DownloadsDependenciesHolder.instance = FakeDownloadsDependencies(repository)
+        val worker = TestListenableWorkerBuilder<AutoDownloadWorker>(context).setInputData(
+            Data.Builder().putString(AutoDownloadWorker.KEY_PODCAST_ID, "pod").putString(AutoDownloadWorker.KEY_EPISODE_ID, "-100").build()
+        ).build()
+        withDownloadTestLooper {
+            val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.currentCoroutineContext()).launch { worker.doWork() }
+            entered.await()
+            job.cancel()
+            job.join()
+            assertEquals(1, paused)
+            assertEquals(cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity.PENDING, database.autoDownloadDao().getRelease("-100")?.state)
+        }
+        database.close()
     }
 
     private class FakeSharedAppDependencies(

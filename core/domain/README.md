@@ -17,6 +17,8 @@ Owns thin domain ports and small result types used by ViewModels, repositories, 
 - `ConnectivityStatusPort` and connectivity status types.
 - `DeviceIdentityPort` for cross-device sync attribution.
 
+- `LocalEpisodeCatalogPort.RefreshRequest.reason` defaults to `NORMAL`; `AUTO_DOWNLOAD` bounds headerless feed freshness to one hour, and `NEW_RELEASE` bypasses quiet/HEAD shortcuts to resolve an announced unknown release. These policies leave the publisher feed and Room as the source of subscribed episodes.
+
 ## Internal structure
 
 ```text

@@ -124,7 +124,7 @@ async function fetchRssNewest(feedUrl) {
 
 async function sendFcm(podcastId, data) {
     const topic = `new_ep_${podcastId}`;
-    const messageId = await admin.messaging().send({ topic, data });
+    const messageId = await admin.messaging().send(lib.newEpisodeFcmMessage(topic, data));
     console.log(`Sent notification ${messageId} to topic: ${topic}`);
 }
 

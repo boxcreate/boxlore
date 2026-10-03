@@ -21,6 +21,7 @@ class SubscriptionRepository(
     private val lookupHttpsFeedUrl: (suspend (String) -> String?)? = null,
     private val folderRepository: FolderRepository? = null,
     private val userPreferencesRepository: UserPreferencesRepository? = null,
+    private val autoDownloadDao: cx.aswin.boxlore.core.database.AutoDownloadDao? = null,
 ) : PodcastNotificationSyncPort {
     val subscribedPodcastIds: Flow<Set<String>> =
         podcastDao
@@ -468,7 +469,11 @@ class SubscriptionRepository(
             podcastDao.setAutoDownloadEnabled(podcastId, false)
             return
         }
-        podcastDao.setAutoDownloadEnabled(podcastId, enabled)
+        if (autoDownloadDao != null) {
+            autoDownloadDao.changeSetting(podcastId, enabled, System.currentTimeMillis() / 1000L)
+        } else {
+            podcastDao.setAutoDownloadEnabled(podcastId, enabled)
+        }
     }
 
     suspend fun setPlaybackSkipOverrides(podcastId: String, skipBeginningMs: Long?, skipEndingMs: Long?,) {

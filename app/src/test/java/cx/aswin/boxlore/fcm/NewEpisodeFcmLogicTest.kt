@@ -370,4 +370,73 @@ class NewEpisodeFcmLogicTest {
         assertEquals("camel-pod", camelWorkRequest.workSpec.input.getString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_PODCAST_ID))
         assertEquals("camel-ep", camelWorkRequest.workSpec.input.getString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_EPISODE_ID))
     }
+
+    @Test
+    fun duplicatePushesUseOneDurableHydrationJobEvenWithoutEpisodeId() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        androidx.work.testing.WorkManagerTestInitHelper.initializeTestWorkManager(context)
+        val workManager = androidx.work.WorkManager.getInstance(context)
+        val payload = mapOf("type" to "new_episode", "podcastId" to "123", "guid" to "guid-new", "enclosureUrl" to "https://cdn/new.mp3")
+        NewEpisodeDeliveryWorker.enqueue(context, payload).result.get()
+        NewEpisodeDeliveryWorker.enqueue(context, payload).result.get()
+        val infos = workManager.getWorkInfosForUniqueWork(NewEpisodeDeliveryWorker.workName(payload)).get()
+        assertEquals(1, infos.size)
+    }
+
+    @Test
+    fun payloadAlertsAgainForLaterEpisodesWhileHydrationUpdatesStayQuiet() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val data = mapOf("podcastTitle" to "Show", "episodeTitle" to "Episode", "episodeId" to "42")
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.episodeSlot("123")
+        NewEpisodeNotifications.show(context, "123", data)
+        val first = org.robolectric.Shadows.shadowOf(manager).getNotification(id)
+        assertEquals(0, first.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE)
+        NewEpisodeNotifications.show(context, "123", data, fetchArtwork = true)
+        val updated = org.robolectric.Shadows.shadowOf(manager).getNotification(id)
+        assertTrue(updated.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE != 0)
+        NewEpisodeNotifications.show(context, "123", data + ("episodeId" to "43"))
+        val next = org.robolectric.Shadows.shadowOf(manager).getNotification(id)
+        assertEquals(0, next.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE)
+    }
+
+    @Test
+    fun hydrationDoesNotRestoreADismissedAlert() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val data = mapOf("podcastTitle" to "Show", "guid" to "unindexed-release")
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.episodeSlot("123")
+        NewEpisodeNotifications.show(context, "123", data)
+        manager.cancel(id)
+        NewEpisodeNotifications.show(context, "123", data, fetchArtwork = true)
+        assertNull(org.robolectric.Shadows.shadowOf(manager).getNotification(id))
+    }
+
+    @Test
+    fun lateHydrationCannotOverwriteANewerRelease() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val older = mapOf("podcastTitle" to "Show", "guid" to "old-release", "episodeTitle" to "Older")
+        val newer = older + mapOf("guid" to "new-release", "episodeTitle" to "Newer")
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.episodeSlot("123")
+        NewEpisodeNotifications.show(context, "123", older)
+        NewEpisodeNotifications.show(context, "123", newer)
+        val expected = org.robolectric.Shadows.shadowOf(manager).getNotification(id)
+        NewEpisodeNotifications.show(context, "123", older, fetchArtwork = true)
+        assertEquals(expected, org.robolectric.Shadows.shadowOf(manager).getNotification(id))
+    }
+
+    @Test
+    fun matchingUnindexedAlertCanBeHydratedWithItsCanonicalLocalId() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val data = mapOf("podcastTitle" to "Show", "guid" to "unindexed-release")
+        val episode = Episode("-42", "Publisher title", "", "https://cdn/release.mp3", "123", publishedDate = 100)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.episodeSlot("123")
+        NewEpisodeNotifications.show(context, "123", data)
+        NewEpisodeNotifications.show(context, "123", data, episode, fetchArtwork = true)
+        val notification = org.robolectric.Shadows.shadowOf(manager).getNotification(id)
+        assertEquals("\"Publisher title\"", notification.extras.getString(android.app.Notification.EXTRA_TEXT))
+        assertTrue(notification.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE != 0)
+    }
 }

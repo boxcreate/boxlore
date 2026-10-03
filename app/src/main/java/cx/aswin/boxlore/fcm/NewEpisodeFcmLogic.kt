@@ -92,28 +92,7 @@ internal object NewEpisodeFcmLogic {
         podcastId: String,
         episodeId: String,
         wifiOnly: Boolean,
-    ): androidx.work.OneTimeWorkRequest {
-        val requiredNetwork =
-            if (wifiOnly) {
-                androidx.work.NetworkType.UNMETERED
-            } else {
-                androidx.work.NetworkType.CONNECTED
-            }
-        val inputData =
-            androidx.work.Data
-                .Builder()
-                .putString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_PODCAST_ID, podcastId)
-                .putString(cx.aswin.boxlore.core.downloads.AutoDownloadWorker.KEY_EPISODE_ID, episodeId)
-                .build()
-        return androidx.work.OneTimeWorkRequestBuilder<cx.aswin.boxlore.core.downloads.AutoDownloadWorker>()
-            .setInputData(inputData)
-            .setConstraints(
-                androidx.work.Constraints
-                    .Builder()
-                    .setRequiredNetworkType(requiredNetwork)
-                    .build(),
-            ).build()
-    }
+    ): androidx.work.OneTimeWorkRequest = cx.aswin.boxlore.core.downloads.AutoDownloadScheduling.transferRequest(podcastId, episodeId, wifiOnly)
 
     suspend fun enqueueAutoDownload(
         workManager: androidx.work.WorkManager,
@@ -121,9 +100,11 @@ internal object NewEpisodeFcmLogic {
         episodeId: String,
         wifiOnly: Boolean,
     ) {
-        val workRequest = buildAutoDownloadWorkRequest(podcastId, episodeId, wifiOnly)
-        val operation = workManager.enqueue(workRequest)
-        operation.await()
+        workManager.enqueueUniqueWork(
+            cx.aswin.boxlore.core.downloads.AutoDownloadScheduling.episodeWorkName(episodeId),
+            androidx.work.ExistingWorkPolicy.KEEP,
+            buildAutoDownloadWorkRequest(podcastId, episodeId, wifiOnly),
+        ).await()
     }
 
     suspend fun executeEpisodeDelivery(
