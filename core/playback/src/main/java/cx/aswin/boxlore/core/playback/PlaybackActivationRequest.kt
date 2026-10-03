@@ -21,8 +21,10 @@ internal object PlaybackActivationRequest {
     fun consume(episodeId: String?): Position? {
         while (true) {
             val request = pending.get() ?: return null
-            if (request.episodeId != episodeId) return null
-            if (pending.compareAndSet(request, null)) return request.position
+            // Any activation consumes the request; a different item invalidates its position.
+            if (pending.compareAndSet(request, null)) {
+                return request.position.takeIf { request.episodeId == episodeId }
+            }
         }
     }
 

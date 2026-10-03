@@ -2,8 +2,10 @@ package cx.aswin.boxlore.core.playback.service
 
 import android.util.Log
 import androidx.media3.common.Player
+import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
 import cx.aswin.boxlore.core.playback.PlaybackQueueContext
 import cx.aswin.boxlore.core.playback.SleepTimerHolder
+import cx.aswin.boxlore.core.playback.SmartQueueRefillPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -50,7 +52,7 @@ internal class ContextQueueContinuationCoordinator(
             if (added) awaitNextItem(player, isCurrent)
             if (!isCurrent()) return
             if (added && player.hasNextMediaItem()) {
-                player.seekToNextMediaItem()
+                advanceAfterCompletion(player)
                 player.prepare()
                 player.play()
             } else {
@@ -61,6 +63,21 @@ internal class ContextQueueContinuationCoordinator(
         } catch (error: Exception) {
             Log.e("AutoQueue", "Context continuation failed", error)
             if (isCurrent()) stop(player)
+        }
+    }
+
+    private fun advanceAfterCompletion(player: Player) {
+        val episodeId = player.currentMediaItem?.mediaId?.let(SmartQueueRefillPolicy::stripQueuePrefixes)
+        PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId = episodeId
+        try {
+            player.seekToNextMediaItem()
+        } finally {
+            scope.launch {
+                delay(2_000L)
+                if (PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId == episodeId) {
+                    PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId = null
+                }
+            }
         }
     }
 

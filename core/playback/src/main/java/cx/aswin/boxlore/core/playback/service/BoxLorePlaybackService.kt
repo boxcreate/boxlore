@@ -509,21 +509,7 @@ open class BoxLorePlaybackService :
                             serviceScope.launch {
                                 progressCoordinator.startPlaybackTicker(player)
                             }
-                        if (episodeId != null) {
-                            serviceScope.launch {
-                                // Read the previous listen time before refreshing it for this activation.
-                                if (!introOutroController.awaitActivationConfiguration(episodeId) ||
-                                    lifecycleEpisodeId(player.currentMediaItem) != episodeId ||
-                                    !player.isPlaying
-                                ) {
-                                    return@launch
-                                }
-                                database.listeningHistoryDao().updateLastPlayedAt(
-                                    episodeId = episodeId,
-                                    lastPlayedAt = System.currentTimeMillis(),
-                                )
-                            }
-                        }
+                        refreshLastPlayedAtAfterActivation(player, episodeId)
                     } else {
                         introOutroController.stopOutroMonitor()
                         val wasActive = progressCoordinator.activePlaybackStartTimeMs > 0
@@ -558,6 +544,20 @@ open class BoxLorePlaybackService :
         )
 
         initMediaSession(player)
+    }
+
+    private fun refreshLastPlayedAtAfterActivation(player: Player, episodeId: String?) {
+        if (episodeId == null) return
+        serviceScope.launch {
+            // Resolve resume policy against the previous listen time before refreshing it.
+            if (!introOutroController.awaitActivationConfiguration(episodeId) ||
+                lifecycleEpisodeId(player.currentMediaItem) != episodeId ||
+                !player.isPlaying
+            ) {
+                return@launch
+            }
+            database.listeningHistoryDao().updateLastPlayedAt(episodeId, System.currentTimeMillis())
+        }
     }
 
     internal fun initMediaSession(player: Player) {

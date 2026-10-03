@@ -123,7 +123,8 @@ internal class AutoPlaybackResumptionHandler(
             TAG,
             "Resuming live player: case=${decision.case}, index=$liveIndex, pos=$livePositionMs",
         )
-        liveEpisodeId?.let { PlaybackActivationRequest.set(it, livePositionMs) }
+        // The live item already owns its position; no later activation should reuse it.
+        PlaybackActivationRequest.clear()
         return MediaSession.MediaItemsWithStartPosition(
             currentItems,
             liveIndex,

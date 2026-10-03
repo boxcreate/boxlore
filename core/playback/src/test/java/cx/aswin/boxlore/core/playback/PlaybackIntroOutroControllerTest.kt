@@ -137,6 +137,22 @@ class PlaybackIntroOutroControllerTest {
         verify(player, never()).seekTo(50_000L)
     }
 
+    @Test fun `returning after a different activation uses current history instead of abandoned position`() = runTest {
+        val (controller, player) = fixture()
+        val originalItem = player.currentMediaItem
+        PlaybackActivationRequest.set("123", 10_000L)
+        val otherItem = MediaItem.Builder().setMediaId("456").build()
+        `when`(player.currentMediaItem).thenReturn(otherItem)
+        controller.onMediaActivated(player, otherItem)
+        advanceUntilIdle()
+
+        `when`(player.currentMediaItem).thenReturn(originalItem)
+        controller.onMediaActivated(player, originalItem)
+        advanceUntilIdle()
+        verify(player).seekTo(50_000L)
+        verify(player, never()).seekTo(10_000L)
+    }
+
     @Test fun `stale implicit episode starts over`() = runTest {
         val (_, player) = fixture(saved = history(System.currentTimeMillis() - PlaybackSkipPolicy.STALE_RESUME_MS - 60_000L))
         advanceUntilIdle()

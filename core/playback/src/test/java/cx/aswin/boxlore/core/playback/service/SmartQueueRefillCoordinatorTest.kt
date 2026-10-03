@@ -133,6 +133,20 @@ class SmartQueueRefillCoordinatorTest {
         assertEquals(listOf("9"), repository.getQueueEpisodeSnapshot().map { it.id })
     }
 
+    @Test fun `transition trimming consumed Room prefix while candidates load still appends refill`() = runTest {
+        val episodes = listOf(episode(1), episode(2), episode(3))
+        repository.replaceQueue(episodes)
+        val playlist = Playlist(episodes, 1)
+        val coordinator = coordinator {
+            // The UI transition drops consumed rows while the service still retains its playlist.
+            repository.replaceQueue(episodes.drop(1))
+            listOf(candidate())
+        }
+        assertTrue(coordinator.refillQueue(playlist.player))
+        assertEquals(listOf("1", "2", "3", "100"), playlist.items.map { it.mediaId })
+        assertEquals(listOf("2", "3", "100"), repository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
     @Test fun `playlist change while candidates load rejects stale refill`() = runTest {
         val episodes = PlaybackQueueContext.episodes(listOf(episode(1)))
         repository.replaceQueue(episodes)

@@ -52,6 +52,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 ## Subscriptions UX contracts
 
 - Tapping a New Episodes row plays that row and the remaining visible rows in their current Smart/Chronological/filter order. Play All starts with the first unfinished visible row. Both actions snapshot the list at tap time, skip completed upcoming rows, preserve each show’s metadata, and use `onPlayEpisodes`; a selected completed row can still be replayed. The app shell starts a fresh context queue, with Smart Queue fallback only after it finishes.
+- Play All remembers its snapshot by the displayed list, so unrelated player-state recompositions do not repeat episode copies and deduplication. Chronological mode follows publication-date display order; Smart mode retains the listener's chosen ranking.
 
 - Route: `library/subscriptions?tab={0|1}` (`0` = Shows, `1` = New Episodes). Omitting `tab` (Library hub, Open app to Subscriptions) uses Appearance **Default tabs** (`shows` / `new_episodes`). Explicit `tab` still wins (Home Latest, widgets).
 - Tab presentation style: Appearance setting allows switching Subscriptions tab style between **Top** (header tab switcher, default) and **Floating** (bottom pill FAB mirroring Explore). When Floating is active, top header tabs are omitted, and the Play All FAB on New Episodes elevates above the floating tab selector with spring animation.
@@ -82,7 +83,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 
 ## Testing notes
 
-- `LatestPlaybackQueueLogicTest` checks visible suffix order, Smart/filter order, completed-row handling, Play All, missing/duplicate rows, mixed-show metadata, and opaque RSS episode IDs.
+- `LatestPlaybackQueueLogicTest` checks visible suffix order, publication-date chronology, Smart/filter order, completed-row handling, Play All, missing/duplicate rows, mixed-show metadata, and opaque RSS episode IDs.
 
 - Unit tests live under `feature/library/src/test`.
 - History date-picker conversion uses UTC midnight millis (`ZoneOffset.UTC`) so the selected calendar day is preserved.

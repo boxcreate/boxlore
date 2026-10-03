@@ -29,6 +29,21 @@ class LatestPlaybackQueueLogicTest {
         assertEquals(listOf("1", "3", "2"), latestPlaybackEpisodes(visible).map { it.id })
     }
 
+    @Test fun `chronological display advances forward by publication date while skipping played rows`() {
+        val unsorted = listOf(
+            podcast("old").let { it.copy(latestEpisode = it.latestEpisode!!.copy(publishedDate = 100L)) },
+            podcast("new").let { it.copy(latestEpisode = it.latestEpisode!!.copy(publishedDate = 400L)) },
+            podcast("played", EpisodeStatus.COMPLETED).let {
+                it.copy(latestEpisode = it.latestEpisode!!.copy(publishedDate = 300L))
+            },
+            podcast("middle").let { it.copy(latestEpisode = it.latestEpisode!!.copy(publishedDate = 200L)) },
+        )
+        val displayed = sortLatestDisplayPodcasts(unsorted, useSmartRank = false, episodeScores = emptyMap())
+        assertEquals(listOf("new", "played", "middle", "old"), displayed.map { it.latestEpisode!!.id })
+        assertEquals(listOf("middle", "old"), latestPlaybackEpisodes(displayed, "middle").map { it.id })
+        assertEquals(listOf("new", "middle", "old"), latestPlaybackEpisodes(displayed).map { it.id })
+    }
+
     @Test fun `completed upcoming rows are skipped but explicitly selected replay is allowed`() {
         val visible = listOf(podcast("1", EpisodeStatus.COMPLETED), podcast("2"), podcast("3", EpisodeStatus.COMPLETED))
         assertEquals(listOf("2"), latestPlaybackEpisodes(visible).map { it.id })

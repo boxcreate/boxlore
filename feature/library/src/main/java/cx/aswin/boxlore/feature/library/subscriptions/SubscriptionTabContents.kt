@@ -664,8 +664,10 @@ private fun BoxScope.LatestPlayAllFab(
     bottomPaddingOverride: androidx.compose.ui.unit.Dp? = null,
 ) {
     if (displayPodcasts.isEmpty() || onPlayEpisodes == null) return
-    val episodes = latestPlaybackEpisodes(displayPodcasts)
-    val firstPodcast = displayPodcasts.firstOrNull { it.id == episodes.firstOrNull()?.podcastId } ?: return
+    val episodes = remember(displayPodcasts) { latestPlaybackEpisodes(displayPodcasts) }
+    val firstPodcast = remember(displayPodcasts, episodes) {
+        displayPodcasts.firstOrNull { it.id == episodes.firstOrNull()?.podcastId }
+    } ?: return
     PlayAllFab(
         isPlayerActive = isPlayerActive,
         bottomPaddingOverride = bottomPaddingOverride,

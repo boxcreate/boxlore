@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
 import cx.aswin.boxlore.core.playback.PlaybackQueueContext
 import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import kotlinx.coroutines.CompletableDeferred
@@ -15,10 +16,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
@@ -54,10 +57,12 @@ class ContextQueueContinuationCoordinatorTest {
 
     @Before fun resetSleep() {
         SleepTimerHolder.sleepAtEndOfEpisode = false
+        PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId = null
     }
 
     @After fun clearSleep() {
         SleepTimerHolder.sleepAtEndOfEpisode = false
+        PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId = null
     }
 
     private fun player(context: Boolean = true): Player = mock(Player::class.java).also { player ->
@@ -100,6 +105,42 @@ class ContextQueueContinuationCoordinatorTest {
         advanceUntilIdle()
         verify(player).stop()
         verify(player, never()).play()
+    }
+
+    @Test fun `context fallback advance is attributed to natural completion and signal expires`() = runTest {
+        val player = player()
+        val item = player.currentMediaItem!!.buildUpon().setMediaId("queue:123").build()
+        `when`(player.currentMediaItem).thenReturn(item)
+        var transitionEpisodeId: String? = null
+        doAnswer {
+            transitionEpisodeId = PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId
+            null
+        }.`when`(player).seekToNextMediaItem()
+        val coordinator = ContextQueueContinuationCoordinator(this, { 1L }, {}, { _, _ ->
+            `when`(player.hasNextMediaItem()).thenReturn(true)
+            true
+        }, { it.stop() })
+
+        coordinator.onExhausted(player)
+        runCurrent()
+        assertEquals("123", transitionEpisodeId)
+        assertEquals("123", PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId)
+        advanceTimeBy(2_000L)
+        runCurrent()
+        assertNull(PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId)
+    }
+
+    @Test fun `continuation cleanup retains a newer natural advance signal`() = runTest {
+        val player = player()
+        val coordinator = ContextQueueContinuationCoordinator(this, { 1L }, {}, { _, _ ->
+            `when`(player.hasNextMediaItem()).thenReturn(true)
+            true
+        }, { it.stop() })
+        coordinator.onExhausted(player)
+        runCurrent()
+        PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId = "newer"
+        advanceUntilIdle()
+        assertEquals("newer", PlaybackLifecycleSignals.serviceOwnedNaturalAdvanceEpisodeId)
     }
 
     @Test fun `new queue invalidates suspended recommendation result`() = runTest {

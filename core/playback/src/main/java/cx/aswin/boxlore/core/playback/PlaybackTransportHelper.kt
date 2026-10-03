@@ -192,7 +192,11 @@ internal class PlaybackTransportHelper(
                 "skipToEpisode: Restoring position ${savedPosMs}ms for $targetEpisodeId (entry=$entryPointKey)",
             )
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                PlaybackActivationRequest.set(targetEpisodeId, savedPosMs, applyIntroTrim = savedPosMs == 0L)
+                if (mediaIndex != controller.currentMediaItemIndex) {
+                    PlaybackActivationRequest.set(targetEpisodeId, savedPosMs, applyIntroTrim = savedPosMs == 0L)
+                } else {
+                    PlaybackActivationRequest.clear()
+                }
                 controller.seekTo(mediaIndex, savedPosMs)
                 controller.play()
             }

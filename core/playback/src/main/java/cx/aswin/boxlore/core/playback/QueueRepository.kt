@@ -159,10 +159,16 @@ class QueueRepository(
     internal suspend fun addRefillEntriesIfUnchanged(
         entries: List<QueueEntry>,
         expectedEpisodeIds: List<String>,
+        currentEpisodeId: String,
         isCurrent: suspend () -> Boolean,
     ): Boolean = try {
         database.withTransaction {
-            if (!isCurrent() || queueDao.getAllQueueItemsSync().map { it.episodeId } != expectedEpisodeIds) {
+            if (!isCurrent()) return@withTransaction false
+            val currentEpisodeIds = queueDao.getAllQueueItemsSync().map { it.episodeId }
+            val currentIndex = expectedEpisodeIds.indexOf(currentEpisodeId)
+            val consumedPrefixWasTrimmed =
+                currentIndex >= 0 && currentEpisodeIds == expectedEpisodeIds.drop(currentIndex)
+            if (currentEpisodeIds != expectedEpisodeIds && !consumedPrefixWasTrimmed) {
                 return@withTransaction false
             }
             entries.forEach { entry ->

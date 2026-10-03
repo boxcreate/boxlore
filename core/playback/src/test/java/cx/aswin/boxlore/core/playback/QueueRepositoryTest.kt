@@ -46,6 +46,7 @@ class QueueRepositoryTest {
         val added = repository.addRefillEntriesIfUnchanged(
             listOf(QueueEntry(episodeItem(2), podcast(), SmartQueueEngine.SOURCE_RESUME)),
             oldSnapshot,
+            currentEpisodeId = "1",
         ) { true }
         assertFalse(added)
         assertEquals(listOf("9"), repository.getQueueEpisodeSnapshot().map { it.id })
@@ -58,6 +59,7 @@ class QueueRepositoryTest {
         val added = repository.addRefillEntriesIfUnchanged(
             listOf(QueueEntry(episodeItem(2), podcast(), SmartQueueEngine.SOURCE_RESUME)),
             listOf("1"),
+            currentEpisodeId = "1",
         ) { ++checks == 1 }
         assertFalse(added)
         assertEquals(listOf("1"), repository.getQueueEpisodeSnapshot().map { it.id })
@@ -71,13 +73,42 @@ class QueueRepositoryTest {
                 QueueEntry(episodeItem(2), podcast(), SmartQueueEngine.SOURCE_RESUME),
                 QueueEntry(episodeItem(3), podcast(), SmartQueueEngine.SOURCE_SUBSCRIPTION),
             ),
-                listOf("1"),
+            listOf("1"),
+            currentEpisodeId = "1",
         ) { true }
         assertTrue(added)
         val restored = repository.getQueueEpisodeSnapshot()
         assertEquals(listOf("1", "2", "3"), restored.map { it.id })
         assertEquals("AUTO_FILL", restored[1].contextType)
         assertEquals(SmartQueueEngine.SOURCE_RESUME, restored[1].contextSourceId)
+    }
+
+    @Test
+    fun guardedRefillAcceptsOnlyConsumedPrefixTrim() = runTest {
+        val expectedIds = listOf("1", "2", "3")
+        repository.replaceQueue(expectedIds.drop(1).map(::domainEpisode))
+        val added = repository.addRefillEntriesIfUnchanged(
+            listOf(QueueEntry(episodeItem(4), podcast(), SmartQueueEngine.SOURCE_RESUME)),
+            expectedIds,
+            currentEpisodeId = "2",
+        ) { true }
+        assertTrue(added)
+        assertEquals(listOf("2", "3", "4"), repository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
+    @Test
+    fun guardedRefillRejectsCurrentRemovalUpcomingEditsAndReordering() = runTest {
+        val edits = listOf(listOf("3"), listOf("2"), listOf("3", "2"), listOf("1", "2", "9"))
+        for (editedIds in edits) {
+            repository.replaceQueue(editedIds.map(::domainEpisode))
+            val added = repository.addRefillEntriesIfUnchanged(
+                listOf(QueueEntry(episodeItem(4), podcast(), SmartQueueEngine.SOURCE_RESUME)),
+                listOf("1", "2", "3"),
+                currentEpisodeId = "2",
+            ) { true }
+            assertFalse("Unexpected refill after queue edit: $editedIds", added)
+            assertEquals(editedIds, repository.getQueueEpisodeSnapshot().map { it.id })
+        }
     }
 
     private lateinit var database: BoxLoreDatabase

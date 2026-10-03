@@ -70,7 +70,7 @@ class SmartQueueRefillCoordinator(
         if (entries.isEmpty()) return false
 
         // Room rolls back the entire batch if a new transport request or queue edit wins.
-        val persisted = queueRepository.addRefillEntriesIfUnchanged(entries, expectedQueueIds) {
+        val persisted = queueRepository.addRefillEntriesIfUnchanged(entries, expectedQueueIds, episodeId) {
             withContext(mainDispatcher) { isCurrent() }
         }
         if (!persisted) return false
