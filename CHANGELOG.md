@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Dedicated Support boxlore screen in Settings featuring interactive 3D tactical artifacts, particle effects, and lore inspection stories. ([#1090](https://github.com/boxcreate/boxlore/pull/1090)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- PostHog telemetry tracks for support page impressions, tier toggles, and donation button clicks. ([#1090](https://github.com/boxcreate/boxlore/pull/1090)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+
+<!-- readme-copy:start pr=1090
+### Improvements
+- Added a dedicated Support boxlore experience in Settings with interactive tactical artifacts and lore inspection.
+readme-copy:end pr=1090 -->
 ## [v0.0.27] - 2026-09-26
 
 ### Added
