@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalFeedOrder
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.CancellationException
@@ -28,12 +29,13 @@ internal suspend fun refreshLocalCatalogLocked(deps: LocalCatalogRefreshDeps, re
     val url =
         LocalEpisodeCatalogRepository.resolveHttps(request.feedUrl, existing?.feedUrl)
             ?: return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
-    if (shouldSkipQuiet(existing)) {
+    if (url == existing?.feedUrl?.trim() && shouldSkipQuiet(existing, request.reason)) {
         return RefreshOutcome.Unchanged(
             deps.dao.getNewest(request.podcastIndexId)?.toCatalogEpisode(request.meta),
         )
     }
-    if (existing != null &&
+    if (request.reason != RefreshReason.NEW_RELEASE &&
+        existing != null &&
         publisherFeedUnchanged(deps, request.podcastIndexId, url)
     ) {
         deps.dao.upsertFeed(existing.copy(fetchedAt = System.currentTimeMillis()))
@@ -66,7 +68,12 @@ private suspend fun publisherFeedUnchanged(deps: LocalCatalogRefreshDeps, podcas
 
 internal fun shouldLoadPiBaseline(existing: LocalEpisodeFeedEntity?): Boolean = existing == null || !LocalCatalogReadyLogic.isReady(existing)
 
-internal fun shouldSkipQuiet(existing: LocalEpisodeFeedEntity?): Boolean {
+internal fun shouldSkipQuiet(
+    existing: LocalEpisodeFeedEntity?,
+    reason: RefreshReason = RefreshReason.NORMAL,
+    nowMillis: Long = System.currentTimeMillis(),
+): Boolean {
+    if (reason == RefreshReason.NEW_RELEASE) return false
     if (existing == null) return false
     if (!LocalCatalogReadyLogic.isReady(existing)) return false
     if (existing.needsFullBackfill) return false
@@ -74,8 +81,8 @@ internal fun shouldSkipQuiet(existing: LocalEpisodeFeedEntity?): Boolean {
         return false
     }
     if (existing.fetchedAt <= 0L) return false
-    return System.currentTimeMillis() - existing.fetchedAt <
-        LocalEpisodeCatalogRepository.QUIET_INTERVAL_MS
+    val interval = if (reason == RefreshReason.AUTO_DOWNLOAD) 60 * 60 * 1000L else LocalEpisodeCatalogRepository.QUIET_INTERVAL_MS
+    return nowMillis - existing.fetchedAt in 0 until interval
 }
 
 private suspend fun fetchAndPersist(

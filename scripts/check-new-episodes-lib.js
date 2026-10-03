@@ -336,3 +336,6 @@ module.exports = {
     feedHasCompleteItem,
     rssDownloadDecision,
 };
+
+// These topics are opted-in visible release alerts, qualifying for prompt Android delivery.
+module.exports.newEpisodeFcmMessage = (topic, data) => ({ topic, data, android: { priority: 'high' } });

@@ -26,11 +26,13 @@ import kotlinx.coroutines.withContext
 class LocalEpisodeCatalogRepository private constructor(
     private val reads: LocalEpisodeCatalogReads,
     private val refreshDeps: LocalCatalogRefreshDeps,
+    private val onCatalogPersisted: suspend (String) -> Unit,
 ) : LocalEpisodeCatalogPort by reads {
     constructor(
         database: BoxLoreDatabase,
         feedClient: RssFeedClient = RssFeedClient(),
         downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
+        onCatalogPersisted: suspend (String) -> Unit = {},
     ) : this(
         dao = database.localEpisodeCatalogDao(),
         feedClient = feedClient,
@@ -44,6 +46,7 @@ class LocalEpisodeCatalogRepository private constructor(
             downloadCacheRelinker = downloadCacheRelinker,
         )::reconcile,
         megaGetGate = Semaphore(MEGA_GET_PERMITS),
+        onCatalogPersisted = onCatalogPersisted,
     )
 
     internal constructor(
@@ -56,6 +59,7 @@ class LocalEpisodeCatalogRepository private constructor(
             catalogRows: List<LocalEpisodeEntity>,
         ) -> Unit,
         megaGetGate: Semaphore,
+        onCatalogPersisted: suspend (String) -> Unit = {},
     ) : this(
         reads = LocalEpisodeCatalogReads(dao, isFeedUnchanged),
         refreshDeps =
@@ -67,13 +71,24 @@ class LocalEpisodeCatalogRepository private constructor(
             reconcileListenerState = reconcileListenerState,
             megaGetGate = megaGetGate,
         ),
+        onCatalogPersisted = onCatalogPersisted,
     )
 
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
 
     override suspend fun refresh(request: RefreshRequest): RefreshOutcome = withContext(Dispatchers.IO) {
         val lock = refreshLocks.getOrPut(request.podcastIndexId) { Mutex() }
-        lock.withLock { refreshLocalCatalogLocked(refreshDeps, request) }
+        val outcome = lock.withLock { refreshLocalCatalogLocked(refreshDeps, request) }
+        if (outcome is RefreshOutcome.Success) {
+            try {
+                onCatalogPersisted(request.podcastIndexId)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("LocalEpisodeCatalog", "Post-persist scheduling failed", e)
+            }
+        }
+        outcome
     }
 
     companion object {
@@ -87,10 +102,12 @@ class LocalEpisodeCatalogRepository private constructor(
             database: BoxLoreDatabase,
             feedClient: RssFeedClient = RssFeedClient(),
             downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
+            onCatalogPersisted: suspend (String) -> Unit = {},
         ): LocalEpisodeCatalogRepository = LocalEpisodeCatalogRepository(
             database = database,
             feedClient = feedClient,
             downloadCacheRelinker = downloadCacheRelinker,
+            onCatalogPersisted = onCatalogPersisted,
         )
 
         internal fun resolveHttps(primary: String, fallback: String?,): String? {

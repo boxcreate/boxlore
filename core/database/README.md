@@ -15,6 +15,8 @@ Owns the main Room database, entities, DAOs, type converters, and migrations for
 - `ListeningRollupMerge` for pure session→rollup merge logic.
 - `Converters` for Room type conversion.
 
+- Version 38 adds `auto_download_shows` activation boundaries, a durable `auto_download_releases` pending/handled/removed ledger, and `downloaded_episodes.downloadOrigin`. Existing non-smart downloads migrate to protected `unknown` provenance; existing smart downloads retain `smart`. Migration seeds currently cached episodes as handled, preserving all episode IDs and existing audio. `AutoDownloadDao` atomically changes show settings and activation state and retains removal tombstones after download rows are deleted.
+
 ## Internal structure
 
 ```text

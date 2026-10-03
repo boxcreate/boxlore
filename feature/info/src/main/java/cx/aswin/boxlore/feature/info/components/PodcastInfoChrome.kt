@@ -143,23 +143,14 @@ internal fun handleNotificationsToggle(
     }
 }
 
+@Suppress("UNUSED_PARAMETER")
 internal fun handleAutoDownloadToggle(
     podcastAutoDownloadEnabled: Boolean,
     podcastNotificationsEnabled: Boolean,
     onShowNotificationsRequiredWarning: () -> Unit,
     onToggleAutoDownload: () -> Unit,
 ) {
-    if (!podcastAutoDownloadEnabled) {
-        // Turning auto-download ON
-        if (!podcastNotificationsEnabled) {
-            onShowNotificationsRequiredWarning()
-        } else {
-            onToggleAutoDownload()
-        }
-    } else {
-        // Turning auto-download OFF
-        onToggleAutoDownload()
-    }
+    onToggleAutoDownload()
 }
 
 internal fun handleToolbarWarningAction(

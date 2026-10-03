@@ -135,6 +135,7 @@ class AppContainer(
             DownloadCacheRelinker { oldId, newId ->
                 DownloadRepository.relinkDownloadCache(appContext, oldId, newId)
             },
+            onCatalogPersisted = { id -> autoDownloadCoordinator.scanCached(id) },
         )
     }
 
@@ -214,6 +215,17 @@ class AppContainer(
         }
     }
 
+    override val autoDownloadCoordinator: cx.aswin.boxlore.core.downloads.AutoDownloadCoordinator by lazy {
+        cx.aswin.boxlore.core.downloads.AutoDownloadCoordinator.create(
+            appContext,
+            database,
+            localEpisodeCatalogRepository,
+            userPreferencesRepository,
+            recoverFeedUrl = { id -> cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(podcastRepository.getPodcastDetails(id)?.feedUrl) },
+            loadInitialBaseline = { id -> podcastRepository.loadPiEpisodesForBaseline(id, SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT) },
+        )
+    }
+
     override val subscriptionRepository: SubscriptionRepository by lazy {
         SubscriptionRepository(
             podcastDao = database.podcastDao(),
@@ -225,6 +237,7 @@ class AppContainer(
             },
             folderRepository = folderRepository,
             userPreferencesRepository = userPreferencesRepository,
+            autoDownloadDao = database.autoDownloadDao(),
         )
     }
 

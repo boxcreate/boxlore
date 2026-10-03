@@ -278,3 +278,10 @@ describe('check-new-episodes-lib', () => {
         assert.equal(result.nextState.lastRssKey, 'guid-new');
     });
 });
+
+it('visible release alerts request high Android priority without changing payload identity', () => {
+    const data = { type: 'new_episode', podcastId: '123', guid: 'unindexed', enclosureUrl: 'https://cdn/new.mp3' };
+    assert.deepEqual(lib.newEpisodeFcmMessage('new_ep_123', data), {
+        topic: 'new_ep_123', data, android: { priority: 'high' },
+    });
+});

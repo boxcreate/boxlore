@@ -15,6 +15,7 @@ import cx.aswin.boxlore.core.downloads.SmartDownloadManager
  */
 interface DownloadsDependencies {
     val downloadRepository: DownloadRepository
+    val autoDownloadCoordinator: AutoDownloadCoordinator get() = error("Auto-download coordinator not installed")
     val smartDownloadManager: SmartDownloadManager
 }
 

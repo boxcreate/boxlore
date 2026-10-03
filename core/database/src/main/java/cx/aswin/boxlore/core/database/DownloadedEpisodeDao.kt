@@ -7,6 +7,7 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions") // Column-only updates preserve deletions during asynchronous enrichment.
 interface DownloadedEpisodeDao {
     @Query("SELECT * FROM downloaded_episodes ORDER BY downloadedAt DESC")
     fun getAllDownloads(): Flow<List<DownloadedEpisodeEntity>>
@@ -37,6 +38,18 @@ interface DownloadedEpisodeDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: DownloadedEpisodeEntity)
+
+    @Query("UPDATE downloaded_episodes SET episodeImageUrl = COALESCE(:episodeArt, episodeImageUrl), podcastImageUrl = COALESCE(:podcastArt, podcastImageUrl) WHERE episodeId = :episodeId")
+    suspend fun updateArtwork(episodeId: String, episodeArt: String?, podcastArt: String?)
+
+    @Query("UPDATE downloaded_episodes SET chaptersUrl = COALESCE(:chapters, chaptersUrl), transcriptUrl = COALESCE(:transcript, transcriptUrl) WHERE episodeId = :episodeId")
+    suspend fun updateOfflineText(episodeId: String, chapters: String?, transcript: String?)
+
+    @Query("UPDATE downloaded_episodes SET status = :status WHERE episodeId = :episodeId AND downloadOrigin = 'auto' AND status != 2")
+    suspend fun updateAutoStatus(episodeId: String, status: Int)
+
+    @Query("UPDATE downloaded_episodes SET isSmartDownloaded = 0, downloadOrigin = 'manual' WHERE episodeId = :episodeId")
+    suspend fun promoteToManual(episodeId: String)
 
     @Query("DELETE FROM downloaded_episodes WHERE episodeId = :episodeId")
     suspend fun delete(episodeId: String)

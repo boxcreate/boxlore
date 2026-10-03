@@ -1490,19 +1490,13 @@ class PodcastInfoViewModel(
                 val currentEnabled = currentState.podcast.notificationsEnabled
                 val newEnabled = !currentEnabled
 
-                // If notifications are turned OFF, auto-download must also turn OFF automatically
-                val updatedAutoDownload = if (!newEnabled) false else currentState.podcast.autoDownloadEnabled
-                if (!newEnabled && currentState.podcast.autoDownloadEnabled) {
-                    subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, false)
-                }
-
                 subscriptionRepository.setNotificationsEnabled(currentState.podcast, newEnabled)
 
                 // Refresh UI State
                 val updatedPodcast =
                     currentState.podcast.copy(
                         notificationsEnabled = newEnabled,
-                        autoDownloadEnabled = updatedAutoDownload,
+                        autoDownloadEnabled = currentState.podcast.autoDownloadEnabled,
                     )
                 _uiState.value = currentState.copy(podcast = updatedPodcast)
 

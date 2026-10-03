@@ -19,7 +19,6 @@ import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.ui.announcement.shouldSuppressWhatsNewOnPlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class BoxLoreFcmService : FirebaseMessagingService() {
@@ -60,7 +59,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             episodeId = FcmPayloadParser.episodeId(data),
         )
         if (type == "new_episode") {
-            handleNewEpisodeMessage(data)
+            handleNewEpisodeMessage(data, message.priority == RemoteMessage.PRIORITY_HIGH)
             return
         }
 
@@ -98,237 +97,23 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
     }
 
-    private data class NewEpisodeDetails(
-        val episodeId: String?,
-        val podcastTitle: String,
-        val episodeTitle: String,
-        val imageUrl: String?,
-        val durationMinutes: Int,
-        val route: String,
-    )
-
-    private fun resolveNewEpisodeDetails(
-        podcastId: String,
-        data: Map<String, String>,
-        local: cx.aswin.boxlore.core.model.Episode?,
-    ): NewEpisodeDetails {
-        val episodeId =
-            NewEpisodeFcmLogic.usableEpisodeId(local?.id)
-                ?: NewEpisodeFcmLogic.usableEpisodeId(FcmPayloadParser.episodeId(data))
-        val podcastTitle =
-            data["podcastTitle"]?.takeIf { it.isNotBlank() }
-                ?: data["podcast_title"]?.takeIf { it.isNotBlank() }
-                ?: local?.podcastTitle?.takeIf { it.isNotBlank() }
-                ?: "New Release"
-        val episodeTitle =
-            local?.title?.takeIf { it.isNotBlank() }
-                ?: data["episodeTitle"]?.takeIf { it.isNotBlank() }
-                ?: data["episode_title"]?.takeIf { it.isNotBlank() }
-                ?: "New Episode"
-        val imageUrl = local?.imageUrl ?: data["image"] ?: data["imageUrl"]
-        val duration =
-            NewEpisodeFcmLogic.durationMinutes(local?.duration, data["duration"])
-        val route = NewEpisodeFcmLogic.route(podcastId, episodeId, podcastTitle)
-        return NewEpisodeDetails(
-            episodeId = episodeId,
-            podcastTitle = podcastTitle,
-            episodeTitle = episodeTitle,
-            imageUrl = imageUrl,
-            durationMinutes = duration,
-            route = route,
-        )
-    }
-
-    private fun handleNewEpisodeMessage(data: Map<String, String>) {
+    private fun handleNewEpisodeMessage(data: Map<String, String>, highPriority: Boolean) {
         val podcastId = FcmPayloadParser.podcastId(data) ?: return
-        CoroutineScope(Dispatchers.IO).launch {
-            val deps = SharedAppDependenciesHolder.instance
-            val local =
-                if (deps != null) {
-                    try {
-                        NewEpisodePushHydration.resolveLocalEpisode(
-                            podcastId = podcastId,
-                            payloadFeedUrl = FcmPayloadParser.feedUrl(data),
-                            payloadEnclosureUrl = FcmPayloadParser.enclosureUrl(data),
-                            payloadGuid = FcmPayloadParser.guid(data),
-                            sources =
-                            NewEpisodePushHydration.Sources(
-                                subscriptionRepository = deps.subscriptionRepository,
-                                episodeSupplementPort = deps.podcastRepository.episodeSupplementRepository,
-                                localEpisodeCatalog = deps.podcastRepository.localEpisodeCatalog,
-                                loadPiBaseline =
-                                NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
-                                    deps.podcastRepository.loadPiEpisodesForBaseline(feedId, limit)
-                                },
-                            ),
-                        )
-                    } catch (e: kotlinx.coroutines.CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        null
-                    }
-                } else {
-                    null
-                }
-            val details = resolveNewEpisodeDetails(podcastId, data, local)
-            NewEpisodeFcmLogic.executeEpisodeDelivery(
-                triggerAutoDownload = {
-                    if (details.episodeId != null) {
-                        triggerAutoDownload(podcastId, details.episodeId)
-                    }
-                },
-                showNotification = {
-                    showNewEpisodeNotification(
-                        podcastId = podcastId,
-                        episodeId = details.episodeId,
-                        podcastTitle = details.podcastTitle,
-                        episodeTitle = details.episodeTitle,
-                        imageUrl = details.imageUrl,
-                        durationMinutes = details.durationMinutes,
-                        route = details.route,
-                    )
-                },
-            )
-        }
-    }
-
-    private fun showNewEpisodeNotification(
-        podcastId: String,
-        episodeId: String?,
-        podcastTitle: String,
-        episodeTitle: String,
-        imageUrl: String?,
-        durationMinutes: Int,
-        route: String,
-    ) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "boxlore_new_episodes_v1"
-        val soundUri = Uri.parse("android.resource://$packageName/raw/boxlore_chime")
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val audioAttributes =
-                AudioAttributes
-                    .Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build()
-            val channel =
-                NotificationChannel(
-                    channelId,
-                    "New Episodes",
-                    NotificationManager.IMPORTANCE_DEFAULT,
-                ).apply {
-                    description = "Alerts for new podcast episodes"
-                    setSound(soundUri, audioAttributes)
-                }
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val slot = NewEpisodeFcmLogic.episodeSlot(podcastId)
-        val notificationId = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + slot
-        val requestCode = NewEpisodeFcmLogic.EPISODE_REQUEST_CODE_BASE + slot
-
-        val intent =
-            NewEpisodeFcmLogic.createNormalizedPushIntent(
-                context = this,
-                targetRoute = route,
-                notificationType = "new_episode",
-                podcastId = podcastId,
-                episodeId = episodeId,
-            )
-
-        val pendingIntent =
-            try {
-                PendingIntent.getActivity(
-                    this,
-                    requestCode,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                )
-            } catch (e: SecurityException) {
-                android.util.Log.w(
-                    "BoxLoreFcmService",
-                    "Failed to create PendingIntent for episode notification due to UID quota exhaustion",
-                    e,
-                )
-                null
-            }
-
-        val bodyText =
-            if (durationMinutes > 0) {
-                "\"$episodeTitle\" ($durationMinutes mins)"
-            } else {
-                "\"$episodeTitle\""
-            }
-
-        val notificationBuilder =
-            NotificationCompat
-                .Builder(this, channelId)
-                .setSmallIcon(cx.aswin.boxlore.R.drawable.ic_notification_custom)
-                .setColor(android.graphics.Color.parseColor("#5B5BD6"))
-                .setContentTitle("New Episode • $podcastTitle")
-                .setContentText(bodyText)
-                .setAutoCancel(true)
-                .setSound(soundUri)
-
-        if (pendingIntent != null) {
-            notificationBuilder.setContentIntent(pendingIntent)
-        }
-
-        if (!imageUrl.isNullOrBlank()) {
-            try {
-                val optimizedUrl = imageUrl.optimizedImageUrl(500)
-                val url = java.net.URL(optimizedUrl)
-                val connection = url.openConnection() as java.net.HttpURLConnection
-                connection.doInput = true
-                connection.connect()
-                val bitmap = android.graphics.BitmapFactory.decodeStream(connection.inputStream)
-                if (bitmap != null) {
-                    notificationBuilder.setStyle(
-                        NotificationCompat
-                            .BigPictureStyle()
-                            .bigPicture(bitmap)
-                            .bigLargeIcon(null as android.graphics.Bitmap?),
-                    )
-                    notificationBuilder.setLargeIcon(bitmap)
-                }
-            } catch (e: Exception) {
-                // Ignore image fetch failure
-            }
-        }
-
-        notificationManager.notify(notificationId, notificationBuilder.build())
-    }
-
-    private suspend fun triggerAutoDownload(podcastId: String, episodeId: String) {
+        // FCM's callback lifetime is short: commit work locally before any network call.
         try {
-            android.util.Log.i(
-                "BoxLore_BackgroundTrace",
-                "[FCM] Received new_episode trigger for podcastId: $podcastId, episodeId: $episodeId",
-            )
-
-            val userPrefs = userPreferences()
-            val wifiOnly = userPrefs.autoDownloadWifiOnlyStream.first()
-
-            android.util.Log.i(
-                "BoxLore_BackgroundTrace",
-                "[FCM] Preparing AutoDownloadWorker. wifiOnly=$wifiOnly",
-            )
-
-            NewEpisodeFcmLogic.enqueueAutoDownload(
-                workManager = androidx.work.WorkManager.getInstance(applicationContext),
-                podcastId = podcastId,
-                episodeId = episodeId,
-                wifiOnly = wifiOnly,
-            )
-            android.util.Log.i(
-                "BoxLore_BackgroundTrace",
-                "[FCM] Successfully enqueued AutoDownloadWorker into WorkManager for podcast $podcastId",
-            )
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
+            NewEpisodeDeliveryWorker.enqueue(applicationContext, data, highPriority).result.get(4, java.util.concurrent.TimeUnit.SECONDS)
         } catch (e: Exception) {
-            android.util.Log.e("BoxLore_BackgroundTrace", "[FCM] Error enqueuing AutoDownloadWorker", e)
+            android.util.Log.e("BoxLoreFcmService", "Unable to persist episode push; discovery will catch up", e)
+        }
+        try {
+            val show = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                SharedAppDependenciesHolder.require().database.podcastDao().getPodcast(podcastId)
+            }
+            if (show?.isSubscribed == true && show.notificationsEnabled) {
+                NewEpisodeNotifications.show(this, podcastId, data)
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("BoxLoreFcmService", "Unable to show episode notification", e)
         }
     }
 

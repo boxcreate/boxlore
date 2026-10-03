@@ -162,6 +162,7 @@ class BoxLoreApplication :
         DownloadsDependenciesHolder.instance = container
         NetworkModule.authenticator =
             FirebaseAuthAuthenticator(container.authRepository)
+        cx.aswin.boxlore.lifecycle.AutoDownloadLifecycle(this, container, applicationScope).start()
         container.cloudSyncTriggerCoordinator.start()
         CloudSyncWorker.schedulePeriodicSync(this)
         HomeScreenWidgetsInstaller.install(

@@ -26,6 +26,8 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 - `FolderRepository` and `RoomFolderRepository` manage library subscription folders: creating iconless or icon-assigned folders with optional `showPodcastGrid` 1×1 cover style, updating display sizes, restoring folders from JSON backups (`restoreFolder`), auto-organizing subscribed shows into genre folders (with selectable display sizes and cover styles, while preserving custom and existing folders), auto-syncing subscribed shows matching `linkedGenre` (with canonical genre token matching and Tech/Technology synonym normalization), moving shows between folders on genre customization, adding/removing podcasts from folders, and cascading folder deletions without unsubscribing shows.
 - `:core:rss`, `:core:domain`, `:core:database`, and `:core:prefs` are re-exported where existing public signatures require those types.
 
+- `SubscriptionRepository.setAutoDownloadEnabled` uses `AutoDownloadDao` in production to atomically persist the activation boundary and cloud-dirty preference. Notification preferences remain independent. Restored/cloud changes are reconciled by the app download lifecycle; release scheduling does not depend on `markAsNew` or Podcast Index tip updates.
+
 ## Internal structure
 
 ```text
