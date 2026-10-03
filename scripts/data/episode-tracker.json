@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-03T15:11:40.745Z",
+  "lastRun": "2026-10-03T18:47:19.055Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "b16706f8-b922-11f1-a2fc-9ff5258a6316",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "7bf978d2-5c28-4055-a8c8-204855a23550",
-      "lastEpisodeTitle": "11am ET, October 03 | The latest headlines from NPR",
+      "lastRssKey": "e60bd708-5874-465f-b178-7f95f2cf7ea7",
+      "lastEpisodeTitle": "2pm ET, October 03 | The latest headlines from NPR",
       "lastEpisodeId": "61201617300",
-      "lastCheckedAt": 1791040305310
+      "lastCheckedAt": 1791053243947
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75524531",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791025801975
     },
     "385117": {
-      "lastRssKey": "0b8b0672-bf34-11f1-8b1c-5f8d399ac021",
-      "lastEpisodeTitle": "10AM ET 10/03/2026 Newscast",
+      "lastRssKey": "95c60014-bf55-11f1-9778-8bce2de26cf2",
+      "lastEpisodeTitle": "2PM ET 10/03/2026 Newscast",
       "lastEpisodeId": "61208616096",
-      "lastCheckedAt": 1791040316046
+      "lastCheckedAt": 1791053254972
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -304,10 +304,10 @@
       "lastCheckedAt": 1790958626535
     },
     "483834": {
-      "lastRssKey": "6abfe25e0d8a484144d621dd",
-      "lastEpisodeTitle": "Marvel’s VisionQuest Official Trailer, New R.L. Stine Movie from Tubi — October 2nd, 2026",
-      "lastEpisodeId": "61071269265",
-      "lastCheckedAt": 1790974531078
+      "lastRssKey": "6ac04ddb0d8a484144ff3a1a",
+      "lastEpisodeTitle": "Bradley Cooper to Star in G.I. Joe Reboot, and Disney Titles streaming on Netflix — October 2nd, 2026",
+      "lastEpisodeId": "61214226729",
+      "lastCheckedAt": 1791053265625
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -554,10 +554,10 @@
       "lastCheckedAt": 1790815340873
     },
     "902798": {
-      "lastRssKey": "82be8876-8aaf-4fa8-8817-3ba7e85feba5",
-      "lastEpisodeTitle": "Fake Names & Secret Identities: How Intelligence Agents Operate | David Bickford | FO569 Raj Shamani",
+      "lastRssKey": "1135bf95-1435-4942-8a69-0bec5a4b18b4",
+      "lastEpisodeTitle": "NYU Professor: The Middle Class Is A Lie & How To Escape It | Scott Galloway | FO570 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1790883729860
+      "lastCheckedAt": 1791053289697
     },
     "906591": {
       "lastRssKey": "6df54612-be24-11f1-9e06-27ee308475ff",
@@ -786,10 +786,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6abfe488c5a53913970ccef8",
-      "lastEpisodeTitle": "(Pop) Le quotidien luxueux de P. Diddy en prison pose question… HugoDécrypte",
+      "lastRssKey": "6ac142098c80378bf3fa1aea",
+      "lastEpisodeTitle": "Pourquoi les jeunes sont en colère (03/10)",
       "lastEpisodeId": "61194740865",
-      "lastCheckedAt": 1791025878158
+      "lastCheckedAt": 1791053311121
     },
     "2574026": {
       "lastRssKey": "0682bec8-bd26-11f1-9529-aba7f383686d",
@@ -1033,10 +1033,10 @@
       "lastCheckedAt": 1790864064387
     },
     "5972153": {
-      "lastRssKey": "5416cf60-be2c-11f1-a541-fbd91c0859e5",
-      "lastEpisodeTitle": "Cornell prosecutor, Tennessee's botched executions and Obamacare checks",
+      "lastRssKey": "db429b70-bf2d-11f1-b2c5-57f4b5a1f66e",
+      "lastEpisodeTitle": "Flydubai, Kyiv bridge strikes and G7's emergency oil stocks",
       "lastEpisodeId": "61102393968",
-      "lastCheckedAt": 1790937645060
+      "lastCheckedAt": 1791053328522
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1180,16 +1180,16 @@
       "lastCheckedAt": 1790837656537
     },
     "6866470": {
-      "lastRssKey": "https://api.spreaker.com/episode/75398700",
-      "lastEpisodeTitle": "Shorts: শকুন্তলা",
-      "lastEpisodeId": "60916004314",
-      "lastCheckedAt": 1790529020450
+      "lastRssKey": "https://api.spreaker.com/episode/75550757",
+      "lastEpisodeTitle": "লেডি ডাক্তার",
+      "lastEpisodeId": "61212854912",
+      "lastCheckedAt": 1791053347342
     },
     "6866732": {
-      "lastRssKey": "https://api.spreaker.com/episode/75398609",
-      "lastEpisodeTitle": "ম্যামথের খোঁজে",
-      "lastEpisodeId": "60915720319",
-      "lastCheckedAt": 1790529021168
+      "lastRssKey": "https://api.spreaker.com/episode/75550604",
+      "lastEpisodeTitle": "প্রফেসর শঙ্কু - বাগদাদের বাক্স",
+      "lastEpisodeId": "61212630002",
+      "lastCheckedAt": 1791053347737
     },
     "6894068": {
       "lastRssKey": "0943a678-bd0c-11f1-bbf1-0366c63b3d39",
@@ -1482,10 +1482,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/173fef8b-dcc2-5842-85e4-f6004f163aa5",
-      "lastEpisodeTitle": "SPECIAL ANNOUNCEMENTGet YOUR Questions Answered ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/ae43f445-26a7-5f29-bf57-45ad7ef1c4bc",
+      "lastEpisodeTitle": "Navigating avoidant attachment in narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "61191691625",
-      "lastCheckedAt": 1791040419376
+      "lastCheckedAt": 1791053362347
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
