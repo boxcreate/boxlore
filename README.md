@@ -122,6 +122,10 @@ and listen without paywalls, subscriptions, or ads.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>🚨 Critical:</b>
+<ul align="left">
+<li>Automatic downloads now recover new episodes when an episode alert is missing, resume after interruptions, and work with notifications turned off. Manually saved episodes stay protected. <a href="https://github.com/boxcreate/boxlore/pull/1092"><img src="https://img.shields.io/badge/PR-1092-6750A4?style=flat-square" alt="PR #1092" height="18"/></a></li>
+</ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Added a dedicated Support boxlore experience in Settings with interactive tactical artifacts and lore inspection. <a href="https://github.com/boxcreate/boxlore/pull/1090"><img src="https://img.shields.io/badge/PR-1090-6750A4?style=flat-square" alt="PR #1090" height="18"/></a></li>

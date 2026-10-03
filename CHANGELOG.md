@@ -12,11 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Dedicated Support boxlore screen in Settings featuring interactive 3D tactical artifacts, particle effects, and lore inspection stories. ([#1090](https://github.com/boxcreate/boxlore/pull/1090)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - PostHog telemetry tracks for support page impressions, tier toggles, and donation button clicks. ([#1090](https://github.com/boxcreate/boxlore/pull/1090)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+### Fixed
+- Restore automatic episode downloads with durable push processing, publisher RSS discovery, and foreground recovery when episode pushes are missing. ([#1092](https://github.com/boxcreate/boxlore/pull/1092)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Preserve interrupted automatic downloads and protect manual downloads from automatic retention. ([#1092](https://github.com/boxcreate/boxlore/pull/1092)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Allow automatic downloads independently of episode notification settings. ([#1092](https://github.com/boxcreate/boxlore/pull/1092)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1090
 ### Improvements
 - Added a dedicated Support boxlore experience in Settings with interactive tactical artifacts and lore inspection.
 readme-copy:end pr=1090 -->
+
+<!-- readme-copy:start pr=1092
+### Critical
+- Automatic downloads now recover new episodes when an episode alert is missing, resume after interruptions, and work with notifications turned off. Manually saved episodes stay protected.
+readme-copy:end pr=1092 -->
 ## [v0.0.27] - 2026-09-26
 
 ### Added
