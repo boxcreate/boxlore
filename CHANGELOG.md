@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restore automatic episode downloads with durable push processing, publisher RSS discovery, and foreground recovery when episode pushes are missing. ([#1092](https://github.com/boxcreate/boxlore/pull/1092)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Preserve interrupted automatic downloads and protect manual downloads from automatic retention. ([#1092](https://github.com/boxcreate/boxlore/pull/1092)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Allow automatic downloads independently of episode notification settings. ([#1092](https://github.com/boxcreate/boxlore/pull/1092)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Preserve the visible New Episodes queue order through playback, restoration, Android Auto, and Cast, deferring Smart Queue fallback until completion and rejecting stale refill results. ([#1093](https://github.com/boxcreate/boxlore/pull/1093)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Restore saved progress on automatic episode transitions without treating the live player clock as an explicit seek or refreshing the history timestamp before resume policy runs. ([#1093](https://github.com/boxcreate/boxlore/pull/1093)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1090
 ### Improvements
@@ -26,6 +28,11 @@ readme-copy:end pr=1090 -->
 ### Critical
 - Automatic downloads now recover new episodes when an episode alert is missing, resume after interruptions, and work with notifications turned off. Manually saved episodes stay protected.
 readme-copy:end pr=1092 -->
+
+<!-- readme-copy:start pr=1093
+### Fixes
+- New Episodes now plays the remaining list in order and resumes unfinished episodes at the right position.
+readme-copy:end pr=1093 -->
 ## [v0.0.27] - 2026-09-26
 
 ### Added

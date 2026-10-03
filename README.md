@@ -130,6 +130,10 @@ and listen without paywalls, subscriptions, or ads.
 <ul align="left">
 <li>Added a dedicated Support boxlore experience in Settings with interactive tactical artifacts and lore inspection. <a href="https://github.com/boxcreate/boxlore/pull/1090"><img src="https://img.shields.io/badge/PR-1090-6750A4?style=flat-square" alt="PR #1090" height="18"/></a></li>
 </ul>
+<b>🐛 Fixes:</b>
+<ul align="left">
+<li>New Episodes now plays the remaining list in order and resumes unfinished episodes at the right position. <a href="https://github.com/boxcreate/boxlore/pull/1093"><img src="https://img.shields.io/badge/PR-1093-6750A4?style=flat-square" alt="PR #1093" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 
