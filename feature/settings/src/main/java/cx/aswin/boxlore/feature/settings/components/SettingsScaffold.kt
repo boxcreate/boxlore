@@ -19,13 +19,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TwoRowsTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -33,14 +34,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 private val SETTINGS_CONTENT_BOTTOM_PADDING = 220.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SettingsScaffold(
     title: String,
@@ -55,12 +54,15 @@ internal fun SettingsScaffold(
     val currentOnUnconsumedTap = rememberUpdatedState(onUnconsumedTap)
     val focusManager = LocalFocusManager.current
 
-    val titleStyle =
-        lerp(
-            start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-            stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-            fraction = scrollBehavior.state.collapsedFraction,
-        )
+    val titlePresentation = settingsHeaderTitlePresentation(
+        typography = MaterialTheme.typography,
+        collapsedFraction = scrollBehavior.state.collapsedFraction,
+    )
+    val compactTitlePresentation = settingsHeaderTitlePresentation(
+        typography = MaterialTheme.typography,
+        collapsedFraction = 0f,
+        expanded = false,
+    )
 
     Scaffold(
         modifier =
@@ -69,15 +71,20 @@ internal fun SettingsScaffold(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            LargeTopAppBar(
-                title = {
+            TwoRowsTopAppBar(
+                title = { expanded ->
+                    val presentation = if (expanded) titlePresentation else compactTitlePresentation
                     Text(
                         text = title,
-                        style = titleStyle,
-                        maxLines = 1,
+                        modifier = if (expanded) Modifier.padding(bottom = 16.dp) else Modifier,
+                        style = presentation.style,
+                        maxLines = presentation.maxLines,
+                        softWrap = true,
                         overflow = TextOverflow.Ellipsis,
                     )
                 },
+                collapsedHeight = TopAppBarDefaults.LargeAppBarCollapsedHeight,
+                expandedHeight = TopAppBarDefaults.LargeAppBarExpandedHeight,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(

@@ -116,6 +116,7 @@ class HomeViewModel(
     internal val _recommendations = MutableStateFlow<List<Episode>>(emptyList())
     internal val _isTrendingLoaded = MutableStateFlow(false)
     internal val _isRecommendationsLoaded = MutableStateFlow(false)
+    internal val homeCacheRestoreGate = HomeCacheRestoreGate()
     internal val _briefingState = MutableStateFlow<Briefing?>(null)
     internal val _briefingDismissedDate = MutableStateFlow("")
     internal val _briefingChaptersState = MutableStateFlow<List<cx.aswin.boxlore.core.model.Chapter>>(emptyList())
@@ -290,40 +291,46 @@ class HomeViewModel(
             }
         }
 
-        // Load cached recommendations asynchronously on IO thread to prevent main-thread jank at startup
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            // Load cached recommendations
-            try {
-                val cached = boxcastPrefs.getCachedRecommendationsJson()
-                if (cached != null) {
-                    val json = Json { ignoreUnknownKeys = true }
-                    val list = json.decodeFromString<List<Episode>>(cached)
-                    _recommendations.value = list
-                }
-                // Load cached fallback flag
-                _isRecommendationsFallback.value = boxcastPrefs.isRecommendationsFallback()
-            } catch (e: Exception) {
-                android.util.Log.e("HomeViewModel", "Failed to load cached recommendations", e)
-            }
-
-            // Load cached "Because You Like" recommendations
-            try {
-                val cached = boxcastPrefs.getCachedBylRecommendationsJson()
-                val cachedPods = boxcastPrefs.getCachedBylPodcastsJson()
-                val cachedPodId = boxcastPrefs.getCachedBylPodcastId()
-                if (cachedPodId != null) {
-                    val json = Json { ignoreUnknownKeys = true }
+        // Restore local caches together before publishing Home or starting API refreshes.
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            homeCacheRestoreGate.restore {
+                // Load cached recommendations
+                try {
+                    val cached = boxcastPrefs.getCachedRecommendationsJson()
                     if (cached != null) {
+                        val json = Json { ignoreUnknownKeys = true }
                         val list = json.decodeFromString<List<Episode>>(cached)
-                        _becauseYouLikeRecommendations.value = list
+                        _recommendations.value = list
                     }
-                    if (cachedPods != null) {
-                        val podsList = json.decodeFromString<List<Podcast>>(cachedPods)
-                        _becauseYouLikePodcasts.value = podsList
-                    }
+                    // Load cached fallback flag
+                    _isRecommendationsFallback.value = boxcastPrefs.isRecommendationsFallback()
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.e("HomeViewModel", "Failed to load cached recommendations", e)
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("HomeViewModel", "Failed to load cached because-you-like recommendations", e)
+
+                // Load cached "Because You Like" recommendations
+                try {
+                    val cached = boxcastPrefs.getCachedBylRecommendationsJson()
+                    val cachedPods = boxcastPrefs.getCachedBylPodcastsJson()
+                    val cachedPodId = boxcastPrefs.getCachedBylPodcastId()
+                    if (cachedPodId != null) {
+                        val json = Json { ignoreUnknownKeys = true }
+                        if (cached != null) {
+                            val list = json.decodeFromString<List<Episode>>(cached)
+                            _becauseYouLikeRecommendations.value = list
+                        }
+                        if (cachedPods != null) {
+                            val podsList = json.decodeFromString<List<Podcast>>(cachedPods)
+                            _becauseYouLikePodcasts.value = podsList
+                        }
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.e("HomeViewModel", "Failed to load cached because-you-like recommendations", e)
+                }
             }
         }
 
@@ -341,6 +348,7 @@ class HomeViewModel(
 
         // Observe overridden podcast ID and region, resolve favorite podcast, and fetch recommendations
         viewModelScope.launch {
+            homeCacheRestoreGate.awaitRestore()
             combine(
                 userPrefs.overriddenRecPodcastIdStream,
                 userPrefs.regionStream,
@@ -558,7 +566,6 @@ class HomeViewModel(
         manageFilterSelectionOnSubscriptionChange()
         observeDiscoveryGreeting()
         loadData()
-        startBackgroundSync()
         eagerlyLoadNewSubscriptions()
     }
 
@@ -671,7 +678,7 @@ class HomeViewModel(
      * Warms episode data for shows subscribed *during* this session so a freshly added show has
      * content ready for the mixtape and the Home filter view immediately — without waiting for the
      * periodic background sync. Existing subs (present on first emission) are handled by
-     * [startBackgroundSync]; this only reacts to genuinely new additions.
+     * the app shell; this only reacts to genuinely new additions.
      */
     private fun eagerlyLoadNewSubscriptions() {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
@@ -731,13 +738,6 @@ class HomeViewModel(
             .forEach { (podId, episode) ->
                 subscriptionRepository.updateLatestEpisode(podId, episode)
             }
-    }
-
-    private fun startBackgroundSync() {
-        // Shared with AppRoot so cold starts that skip Home (open-app-to Subscriptions)
-        // still refresh latest episodes. Library Subscriptions also calls requestRefresh
-        // so that landing is a live `/sync`, not Room cache only.
-        SharedAppDependenciesHolder.instance?.subscriptionForegroundSync?.ensureStarted()
     }
 
     fun dismissHomeImportBanner() {

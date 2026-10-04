@@ -612,6 +612,7 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
         AnalyticsHelper.trackSettingsInteraction("subscriptions_tab_style_changed", it)
         onSetSubscriptionsTabStyle(it)
     },
+    onSetMiniPlayerSeekButtonsEnabled = onSetMiniPlayerSeekButtonsEnabled,
 )
 
 @Composable

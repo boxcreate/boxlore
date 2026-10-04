@@ -1,17 +1,14 @@
 package cx.aswin.boxlore.feature.home
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.feature.home.components.HomeLoadingReveal
 import cx.aswin.boxlore.feature.home.components.YourShowsSection
 import cx.aswin.boxlore.feature.home.components.YourShowsSkeleton
 
@@ -26,25 +23,15 @@ internal fun LazyStaggeredGridScope.yourShowsItem(
     if (!shouldShowYourShows(content, feedState, loadingState)) return
     item(span = StaggeredGridItemSpan.FullLine, key = "your_shows", contentType = "your_shows") {
         PinnedGridItemContent {
-            // Keep hero + filter chips on the same reveal (`viewportReady` / !isLoading).
-            // Skeleton layout is frozen via peak sub count so Room emissions do not remorph
-            // 1-row → 2-row while we wait for that coordinated reveal.
-            val subCount = content.subscribedItems.list.size
-            var skeletonLayoutCount by remember { mutableIntStateOf(0) }
-            LaunchedEffect(subCount) {
-                if (subCount > skeletonLayoutCount) {
-                    skeletonLayoutCount = subCount
-                }
-            }
-            androidx.compose.animation.Crossfade(
-                targetState = derivedState.viewportReady,
-                animationSpec = tween(500),
-                label = "your_shows_crossfade",
+            // Freeze the placeholder geometry for this loading session, including
+            // the unknown-count two-row case, until local content can be revealed.
+            val skeletonLayoutCount = remember { content.subscribedItems.list.size }
+            HomeLoadingReveal(
+                ready = derivedState.viewportReady,
                 modifier = Modifier.padding(bottom = 12.dp),
-            ) { ready ->
+                placeholder = { YourShowsSkeleton(subscribedCount = skeletonLayoutCount) },
+            ) {
                 YourShowsFeedContent(
-                    ready = ready,
-                    skeletonLayoutCount = skeletonLayoutCount,
                     content = content,
                     feedState = feedState,
                     loadingState = loadingState,
@@ -64,8 +51,6 @@ private fun shouldShowYourShows(
 
 @Composable
 private fun YourShowsFeedContent(
-    ready: Boolean,
-    skeletonLayoutCount: Int,
     content: PodcastFeedContent,
     feedState: PodcastFeedUiState,
     loadingState: PodcastFeedLoadingState,
@@ -73,11 +58,6 @@ private fun YourShowsFeedContent(
     callbacks: HomeFeedCallbacks,
 ) {
     when {
-        !ready ->
-            YourShowsSkeleton(
-                // Peak count freezes 1-row vs 2-row for the whole wait; never drop back to 0/5.
-                subscribedCount = skeletonLayoutCount,
-            )
         content.subscribedItems.list.isNotEmpty() ->
             YourShowsSection(
                 subscribedPodcasts = content.subscribedItems,

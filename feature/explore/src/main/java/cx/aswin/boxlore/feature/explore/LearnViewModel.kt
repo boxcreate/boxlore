@@ -19,6 +19,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -45,6 +48,11 @@ class LearnViewModel(
     private val _uiState = MutableStateFlow<LearnUiState>(LearnUiState.Loading)
     val uiState: StateFlow<LearnUiState> = _uiState.asStateFlow()
 
+    private val artworkAccents = LoreArtworkAccentStore(viewModelScope) { sources ->
+        loadLoreArtworkAccent(application, sources)
+    }
+    internal val artworkAccentColors = artworkAccents.colors
+
     // Telemetry tracking fields
     private var sessionStartTime = System.currentTimeMillis()
     private var hasTrackedExit = false
@@ -57,6 +65,7 @@ class LearnViewModel(
 
     fun onScreenResume() {
         applyPendingRestores()
+        artworkAccents.prefetch((_uiState.value as? LearnUiState.Success)?.questionsStack.orEmpty().take(4).map { it.artworkSources })
         if (hasTrackedExit) {
             sessionStartTime = System.currentTimeMillis()
             hasTrackedExit = false
@@ -176,6 +185,11 @@ class LearnViewModel(
     private var fetchJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            uiState.map { state ->
+                (state as? LearnUiState.Success)?.questionsStack.orEmpty().take(4).map { it.artworkSources }
+            }.distinctUntilChanged().collect(artworkAccents::prefetch)
+        }
         loadData()
     }
 

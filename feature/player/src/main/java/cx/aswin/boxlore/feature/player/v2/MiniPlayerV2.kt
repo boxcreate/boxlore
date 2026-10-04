@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.feature.player.v2
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -24,22 +23,19 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.rounded.CastConnected
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
@@ -58,15 +55,21 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.player.v2.logic.ConfirmationVisibility
 import cx.aswin.boxlore.feature.player.v2.logic.confirmationTarget
@@ -90,6 +93,7 @@ data class MiniPlayerContent(
     val seekForwardSeconds: Int = 30,
     val isCasting: Boolean = false,
     val castDeviceName: String? = null,
+    val showSeekButtons: Boolean = false,
 )
 
 data class MiniPlayerColors(
@@ -162,6 +166,11 @@ private class MiniSwipeState {
         scope.launch { hideConfirmation() }
     }
 
+    suspend fun resetForCompact() {
+        autoHideJob?.cancel()
+        hideConfirmation()
+    }
+
     fun confirmDismiss(
         haptics: HapticFeedback,
         onDismiss: () -> Unit,
@@ -212,8 +221,8 @@ private class MiniSwipeState {
 }
 
 /**
- * v2 mini player: squircle artwork, marquee-free two-line labels, transport buttons,
- * and a hairline wavy progress indicator. Swipe horizontally while paused to reveal
+ * v2 mini player: cookie artwork, a wide title above show/seek controls,
+ * a circular play button, and progress beneath the labels. Swipe horizontally while paused to reveal
  * a dismiss pill.
  */
 @Composable
@@ -222,19 +231,25 @@ fun MiniPlayerV2(
     colors: MiniPlayerColors,
     actions: MiniPlayerActions,
     swipeTip: MiniPlayerSwipeTip = MiniPlayerSwipeTip(),
+    morph: MiniPlayerMorph = MiniPlayerMorph(),
     modifier: Modifier = Modifier,
 ) {
+    val compactFraction = morph.compactFraction
     val density = LocalDensity.current
     val haptics = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val swipeState = remember { MiniSwipeState() }
     val dismissThreshold = with(density) { 100.dp.toPx() }
+    val controlsEnabled = compactFraction <= 0.001f && morph.expansionFraction <= 0.001f
+    LaunchedEffect(controlsEnabled) {
+        if (!controlsEnabled) swipeState.resetForCompact()
+    }
 
     Box(modifier = modifier) {
-        MiniDismissConfirmation(swipeState, haptics, actions.onDismiss)
-        MiniPlayerCard(content, colors, actions, swipeState, scope, haptics, dismissThreshold)
+        if (controlsEnabled) MiniDismissConfirmation(swipeState, haptics, actions.onDismiss)
+        MiniPlayerCard(content, colors, actions, swipeState, scope, dismissThreshold, morph)
         MiniSwipeTipOverlay(
-            visible = swipeTip.visible && !content.isPlaying,
+            visible = swipeTip.visible && !content.isPlaying && controlsEnabled,
             onDismissed = swipeTip.onDismissed,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
@@ -288,6 +303,13 @@ private fun MiniDismissConfirmation(
     }
 }
 
+data class MiniPlayerMorph(
+    val compactFraction: Float = 0f,
+    val cookieFraction: Float = 0f,
+    val rotation: State<Float>? = null,
+    val expansionFraction: Float = 0f,
+)
+
 @Composable
 private fun MiniPlayerCard(
     content: MiniPlayerContent,
@@ -295,21 +317,55 @@ private fun MiniPlayerCard(
     actions: MiniPlayerActions,
     swipeState: MiniSwipeState,
     scope: CoroutineScope,
-    haptics: HapticFeedback,
     dismissThreshold: Float,
+    morph: MiniPlayerMorph,
 ) {
-    val shape = RoundedCornerShape(32.dp)
+    val compactFraction = morph.compactFraction
+    val haptics = LocalHapticFeedback.current
+    val chrome = navigationChromeMetrics(LocalNavigationStyle.current)
     Box(
         modifier =
         Modifier
             .fillMaxSize()
             .zIndex(1f)
-            .offset { IntOffset(swipeState.offsetX.value.toInt(), 0) }
-            .background(color = colors.backgroundColor, shape = shape)
-            .clip(shape)
-            .miniSwipeGesture(content.isPlaying, swipeState, scope, haptics, dismissThreshold),
+            .offset { IntOffset((swipeState.offsetX.value * (1f - compactFraction)).toInt(), 0) }
+            .graphicsLayer {
+                shape = AdaptiveMiniPlayerSurfaceShape(
+                    chrome.miniPlayerTopCornerRadius,
+                    chrome.miniPlayerBottomCornerRadius,
+                    morph.cookieFraction,
+                    morph.rotation?.value ?: 0f,
+                )
+                clip = true
+            }
+            .background(color = colors.backgroundColor.copy(alpha = 1f - morph.cookieFraction))
+            .then(
+                if (morph.expansionFraction > 0.001f) {
+                    Modifier.clearAndSetSemantics {}
+                } else if (compactFraction > 0.001f) {
+                    Modifier.clearAndSetSemantics {
+                        contentDescription = content.episode.title
+                        stateDescription = miniPlayerCompactStateDescription(content)
+                        if (miniPlayerCompactDuration(content) > 0L) {
+                            progressBarRangeInfo = ProgressBarRangeInfo(
+                                miniPlayerCompactProgress(content),
+                                0f..1f,
+                            )
+                        }
+                    }
+                } else {
+                    Modifier
+                },
+            )
+            .miniSwipeGesture(
+                content.isPlaying || compactFraction > 0.001f || morph.expansionFraction > 0.001f,
+                swipeState,
+                scope,
+                haptics,
+                dismissThreshold,
+            ),
     ) {
-        MiniPlayerRow(content, colors.colorScheme, actions)
+        MiniPlayerRow(content, colors.colorScheme, actions, morph)
     }
 }
 
@@ -336,30 +392,59 @@ private fun MiniPlayerRow(
     content: MiniPlayerContent,
     colorScheme: ColorScheme,
     actions: MiniPlayerActions,
+    morph: MiniPlayerMorph,
 ) {
-    Row(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        MiniPlayerArtwork(content, colorScheme)
-        Spacer(modifier = Modifier.width(11.dp))
-        MiniPlayerMetadata(content, colorScheme, Modifier.weight(1f))
-        Spacer(modifier = Modifier.width(6.dp))
-        MiniTransportButtons(
-            isPlaying = content.isPlaying,
-            isLoading = content.isLoading,
+    val compactFraction = morph.compactFraction
+    val metadataAlpha = (1f - compactFraction / 0.6f).coerceIn(0f, 1f)
+    val controlsEnabled = compactFraction <= 0.001f && morph.expansionFraction <= 0.001f
+    Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
+        MiniPlayerArtwork(
+            content = content,
             colorScheme = colorScheme,
-            actions = actions,
-            seekDurations =
-            cx.aswin.boxlore.feature.player.SeekControlDurations(
-                backwardSeconds = content.seekBackwardSeconds,
-                forwardSeconds = content.seekForwardSeconds,
-            ),
+            compactFraction = compactFraction,
+            rotation = morph.rotation,
+            modifier = Modifier.align(Alignment.CenterStart).padding(start = lerp(8.dp, 6.dp, compactFraction)),
         )
+        MiniPlayerCompactStatus(
+            content = content,
+            colorScheme = colorScheme,
+            compactFraction = compactFraction,
+            cookieFraction = morph.cookieFraction,
+            rotation = morph.rotation,
+            modifier = Modifier.align(Alignment.CenterStart).padding(start = lerp(6.dp, 0.dp, compactFraction)).size(52.dp),
+        )
+        if (metadataAlpha > 0f) {
+            Row(
+                modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(start = 68.dp, end = 10.dp, top = 4.dp, bottom = 4.dp)
+                    .graphicsLayer { alpha = metadataAlpha }
+                    .then(
+                        if (compactFraction > 0.001f || morph.expansionFraction > 0.001f) {
+                            Modifier.clearAndSetSemantics {}
+                        } else {
+                            Modifier
+                        },
+                    ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MiniPlayerMetadata(
+                    content = content,
+                    colorScheme = colorScheme,
+                    motionEnabled = controlsEnabled,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                MiniTransportControls(
+                    content = content,
+                    enabled = controlsEnabled,
+                    colorScheme = colorScheme,
+                    actions = actions,
+                )
+            }
+        }
     }
 }
 
@@ -367,13 +452,20 @@ private fun MiniPlayerRow(
 private fun MiniPlayerArtwork(
     content: MiniPlayerContent,
     colorScheme: ColorScheme,
+    compactFraction: Float,
+    rotation: State<Float>?,
+    modifier: Modifier = Modifier,
 ) {
     val imageUrl = content.episode.imageUrl?.takeIf { it.isNotBlank() } ?: content.podcastImageUrl
+    val artworkSize = lerp(MiniPlayerArtworkSize, MiniPlayerCompactArtworkSize, compactFraction)
     Box(
         modifier =
-        Modifier
-            .size(48.dp)
-            .clip(CircleShape)
+        modifier
+            .size(artworkSize)
+            .graphicsLayer {
+                shape = MiniPlayerArtworkShape(rotation?.value ?: 0f)
+                clip = true
+            }
             .background(colorScheme.surfaceVariant),
     ) {
         OptimizedImage(
@@ -393,73 +485,69 @@ private fun MiniPlayerArtwork(
 private fun MiniPlayerMetadata(
     content: MiniPlayerContent,
     colorScheme: ColorScheme,
+    motionEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+    Column(modifier = modifier) {
         Text(
             text = content.episode.title.replace("+", " "),
             style =
             MaterialTheme.typography.titleSmall.copy(
-                fontSize = 14.sp,
-                fontWeight = GoogleSansWeight.bold,
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
+                fontWeight = GoogleSansWeight.semiBold,
                 letterSpacing = (-0.15).sp,
             ),
             color = colorScheme.onPrimaryContainer,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            if (content.isCasting) {
-                Icon(
-                    imageVector = Icons.Rounded.CastConnected,
-                    contentDescription = null,
-                    tint = colorScheme.primary,
-                    modifier = Modifier.size(14.dp),
-                )
-            }
-            Text(
-                text =
-                if (content.isCasting) {
-                    "Casting to ${content.castDeviceName ?: "Cast device"}"
-                } else {
-                    content.podcastTitle.replace("+", " ")
-                },
-                style =
-                MaterialTheme.typography.labelMedium.copy(
-                    fontSize = 12.sp,
-                    letterSpacing = 0.sp,
-                ),
-                color = colorScheme.onPrimaryContainer.copy(alpha = 0.68f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        MiniPlayerProgress(content.position, content.duration, colorScheme)
+        MiniPlayerSubtitle(content, colorScheme, Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(4.dp))
+        MiniPlayerProgress(
+            content = content,
+            colorScheme = colorScheme,
+            motionEnabled = motionEnabled,
+            modifier = Modifier.fillMaxWidth().height(6.dp).clearAndSetSemantics {},
+        )
     }
 }
 
 @Composable
-private fun MiniPlayerProgress(
-    position: Long,
-    duration: Long,
+private fun MiniPlayerSubtitle(
+    content: MiniPlayerContent,
     colorScheme: ColorScheme,
+    modifier: Modifier = Modifier,
 ) {
-    if (duration <= 0) return
-    val progress = (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
-    Spacer(modifier = Modifier.height(3.dp))
-    androidx.compose.material3.LinearProgressIndicator(
-        progress = { progress },
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .height(3.dp)
-            .clip(RoundedCornerShape(2.dp)),
-        color = colorScheme.primary,
-        trackColor = colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-    )
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (content.isCasting) {
+            Icon(
+                imageVector = Icons.Rounded.CastConnected,
+                contentDescription = null,
+                tint = colorScheme.primary,
+                modifier = Modifier.size(12.dp),
+            )
+        }
+        Text(
+            text = if (content.isCasting) {
+                "Casting to ${content.castDeviceName ?: "Cast device"}"
+            } else {
+                content.podcastTitle.replace("+", " ")
+            },
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 0.sp,
+            ),
+            color = colorScheme.onPrimaryContainer.copy(alpha = 0.72f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
@@ -515,136 +603,5 @@ private fun SwipeDismissTip(
                     .padding(horizontal = 12.dp, vertical = 4.dp),
             )
         }
-    }
-}
-
-@Composable
-private fun MiniTransportButtons(
-    isPlaying: Boolean,
-    isLoading: Boolean,
-    colorScheme: ColorScheme,
-    actions: MiniPlayerActions,
-    seekDurations: cx.aswin.boxlore.feature.player.SeekControlDurations,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        MiniSeekButton(
-            seconds = seekDurations.backwardSeconds,
-            forward = false,
-            isLoading = isLoading,
-            colorScheme = colorScheme,
-            onClick = actions.onReplay,
-        )
-        MiniPlayButton(isPlaying, isLoading, colorScheme, actions.onPlayPause)
-        MiniSeekButton(
-            seconds = seekDurations.forwardSeconds,
-            forward = true,
-            isLoading = isLoading,
-            colorScheme = colorScheme,
-            onClick = actions.onForward,
-        )
-    }
-}
-
-@Composable
-private fun MiniPlayButton(
-    isPlaying: Boolean,
-    isLoading: Boolean,
-    colorScheme: ColorScheme,
-    onClick: () -> Unit,
-) {
-    val haptics = LocalHapticFeedback.current
-    Box(
-        modifier =
-        Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(colorScheme.primary)
-            .expressiveClickable(
-                shape = CircleShape,
-                indication = ripple(bounded = false),
-                enabled = !isLoading,
-            ) {
-                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClick()
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Crossfade(
-            targetState = isLoading,
-            animationSpec = tween(220),
-            label = "miniLoading",
-        ) { loading ->
-            MiniPlayButtonContent(loading, isPlaying, colorScheme)
-        }
-    }
-}
-
-@Composable
-private fun MiniPlayButtonContent(
-    isLoading: Boolean,
-    isPlaying: Boolean,
-    colorScheme: ColorScheme,
-) {
-    if (isLoading) {
-        BoxLoreLoader.CircularWavy(
-            modifier = Modifier.size(24.dp),
-            color = colorScheme.onPrimary,
-            trackColor = colorScheme.onPrimary.copy(alpha = 0.24f),
-        )
-        return
-    }
-    Crossfade(
-        targetState = isPlaying,
-        animationSpec = tween(180),
-        label = "miniPlayPause",
-    ) { playing ->
-        Icon(
-            if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-            contentDescription = if (playing) "Pause" else "Play",
-            tint = colorScheme.onPrimary,
-            modifier = Modifier.size(24.dp),
-        )
-    }
-}
-
-@Composable
-private fun MiniSeekButton(
-    seconds: Int,
-    forward: Boolean,
-    isLoading: Boolean,
-    colorScheme: ColorScheme,
-    onClick: () -> Unit,
-) {
-    val haptics = LocalHapticFeedback.current
-    Box(
-        modifier =
-        Modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .background(colorScheme.onPrimaryContainer.copy(alpha = 0.1f))
-            .expressiveClickable(
-                shape = CircleShape,
-                indication = ripple(bounded = true),
-                enabled = !isLoading,
-            ) {
-                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClick()
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        cx.aswin.boxlore.feature.player.SeekDurationIcon(
-            seconds = seconds,
-            forward = forward,
-            contentDescription =
-            cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                seconds,
-                forward,
-            ),
-            tint = colorScheme.onPrimaryContainer.copy(alpha = if (isLoading) 0.45f else 0.82f),
-            modifier = Modifier.size(18.dp),
-        )
     }
 }

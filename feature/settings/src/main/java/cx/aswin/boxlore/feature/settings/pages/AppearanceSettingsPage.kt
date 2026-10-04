@@ -14,6 +14,7 @@ import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -71,6 +72,7 @@ data class AppearanceUiState(
     val currentExploreDefaultTab: String = ExploreDefaultTab.FOR_YOU,
     val currentSubscriptionsDefaultTab: String = SubscriptionsDefaultTab.SHOWS,
     val currentSubscriptionsTabStyle: String = SubscriptionsTabStyle.TOP,
+    val miniPlayerSeekButtonsEnabled: Boolean = false,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -87,6 +89,7 @@ data class AppearanceActions(
     val onSetExploreDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsTabStyle: (String) -> Unit = {},
+    val onSetMiniPlayerSeekButtonsEnabled: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -142,6 +145,16 @@ internal fun AppearanceSettingsPage(
             currentNavigationStyle = state.currentNavigationStyle,
             onSetNavigationStyle = actions.onSetNavigationStyle,
         )
+
+        SettingsGroup(title = "Miniplayer") {
+            SettingsSwitchRow(
+                title = "Show seek buttons in miniplayer",
+                supportingText = "Larger back and forward controls beside play/pause",
+                checked = state.miniPlayerSeekButtonsEnabled,
+                onCheckedChange = actions.onSetMiniPlayerSeekButtonsEnabled,
+                icon = Icons.Rounded.Replay,
+            )
+        }
 
         OpenAppToSection(
             currentOpenAppTo = state.currentOpenAppTo,

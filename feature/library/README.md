@@ -6,12 +6,13 @@ Owns Library presentation: hub, subscriptions, liked episodes, downloaded episod
 
 ## Public API
 
-- `LibraryScreen` and `LibraryViewModel`. When Appearance **Cleaner Home** is on, the hub top bar shows Settings and Feedback (the same shortcuts Home normally owns).
+- `LibraryScreen` and `LibraryViewModel`. When Appearance **Cleaner Home** is on, the hub top bar shows Settings and Feedback in the same shared `TopBarUtilityActions` capsule Home normally uses. Styling, 48dp touch targets and press feedback are consistent; Library retains its existing top-bar scrolling and click/long-press actions.
 - `SubscriptionsScreen`, `LikedEpisodesScreen`, and `DownloadedEpisodesScreen`. `downloads/DownloadModels.kt` maps downloaded episode entities to domain episodes (including `chaptersUrl` and `transcriptUrl` for offline chapter/transcript display). Downloaded show episode 3-dots menu uses `RemoveDownloadConfirmationDialog` to protect against accidental file deletion.
 - `AutoOrganizeConfirmationDialogs`: Confirmation dialogs for enabling/disabling auto-organize into folders. The enable dialog allows users to choose their preferred folder display size (default 3×1 Shelf), conditionally pick 1×1 cover style (Folder Icon vs Podcast Grid), and reminds users how to edit show genres using the genre pill. The disable dialog explains that existing folders and contents remain safe and intact.
 - `FolderEditSheet` and `FolderEditComponents`: Subscription folder creation and edit sheet featuring a streamlined hierarchy, slim actionable auto-organize library nudge (`AutoOrganizeSlimNudge`) for instant creation-time grouping, prominent name input with real-time keyword suggestions, preset icons (prioritizing subscribed library genres), automatic icon switching on typing exact genre/topic matches, visual size selector cards for display sizes (`1×1 Compact`, `3×1 Shelf`, `3×2 Panel`, `3×3 Showcase`), contextual 1×1 cover display selector (`[ Folder Icon ]` vs `[ Podcast Grid ]`), compact optional icon picker row, LazyRow-powered horizontal scrolling with crisp edge stops, auto-sync with genre tags, and quiet beta feedback footnote.
 - Downloads multi-select: checklist in the top bar, or long-press a show (hub) / episode (show list) to enter selection with that row checked, then delete several at once.
 - `PlayAllFab` and library UI helpers.
+- Floating Subscriptions tabs and all library Play All controls follow designsystem's shared adaptive-player placement offset, including New Episodes with either Top or Floating tabs. Play All keeps its spacing above the floating selector. Existing system-bar and list clearances stay stable while the player morphs, and Classic retains its existing placement.
 - Library UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 
 ## Internal structure

@@ -1,29 +1,21 @@
 package cx.aswin.boxlore.core.playback.service
 
 import androidx.core.graphics.drawable.toBitmap
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.guava.future
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-internal class CoilBitmapLoader(private val context: android.content.Context, private val serviceScope: CoroutineScope,) : androidx.media3.common.util.BitmapLoader {
+internal class CoilBitmapLoader(private val context: android.content.Context, private val serviceScope: CoroutineScope, private val bitmapDispatcher: CoroutineDispatcher = Dispatchers.IO,) : androidx.media3.common.util.BitmapLoader {
     override fun supportsMimeType(mimeType: String): Boolean = true
 
-    override fun decodeBitmap(data: ByteArray): com.google.common.util.concurrent.ListenableFuture<android.graphics.Bitmap> = try {
+    override fun decodeBitmap(data: ByteArray): com.google.common.util.concurrent.ListenableFuture<android.graphics.Bitmap> = serviceScope.future(bitmapDispatcher) {
         val bitmap = android.graphics.BitmapFactory.decodeByteArray(data, 0, data.size)
-        if (bitmap != null) {
-            com.google.common.util.concurrent.Futures
-                .immediateFuture(bitmap)
-        } else {
-            com.google.common.util.concurrent.Futures.immediateFailedFuture(
-                IllegalArgumentException("Could not decode bitmap"),
-            )
-        }
-    } catch (e: Exception) {
-        com.google.common.util.concurrent.Futures
-            .immediateFailedFuture(e)
+        requireNotNull(bitmap) { "Could not decode bitmap" }
     }
 
-    override fun loadBitmap(uri: android.net.Uri): com.google.common.util.concurrent.ListenableFuture<android.graphics.Bitmap> = serviceScope.future {
+    override fun loadBitmap(uri: android.net.Uri): com.google.common.util.concurrent.ListenableFuture<android.graphics.Bitmap> = serviceScope.future(bitmapDispatcher) {
         try {
             android.util.Log.d("BoxCastPlayer", "CoilBitmapLoader: loadBitmap started for $uri")
             val loader = coil.Coil.imageLoader(context)
@@ -31,6 +23,7 @@ internal class CoilBitmapLoader(private val context: android.content.Context, pr
                 coil.request.ImageRequest
                     .Builder(context)
                     .data(uri)
+                    .size(512, 512)
                     .allowHardware(false) // Required: system notifications cannot use hardware-backed bitmaps
                     .build()
             val result = loader.execute(request)

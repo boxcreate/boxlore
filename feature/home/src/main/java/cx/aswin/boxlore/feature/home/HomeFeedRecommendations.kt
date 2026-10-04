@@ -129,11 +129,13 @@ internal fun LazyStaggeredGridScope.discoverFeedItems(
     if (derivedState.showDiscoverContent) {
         discoverPodcastItems(derivedState, feedState, callbacks)
         discoverViewMoreItem(feedState, callbacks)
-    } else {
-        item(span = StaggeredGridItemSpan.FullLine, key = "discover_skel", contentType = "discover_skel") {
-            EqualHeightPosterGrid {
-                repeat(HomeFeedSpacing.ExploreGridCap) {
-                    GridSkeletonItem()
+    } else if (derivedState.showDiscoverSkeleton) {
+        repeat((HomeFeedSpacing.ExploreGridCap + 1) / 2) { row ->
+            item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid_$row", contentType = "discover_grid") {
+                EqualHeightPosterGrid {
+                    repeat(2) {
+                        GridSkeletonItem()
+                    }
                 }
             }
         }
@@ -159,23 +161,25 @@ private fun LazyStaggeredGridScope.discoverPodcastItems(
     feedState: PodcastFeedUiState,
     callbacks: HomeFeedCallbacks,
 ) {
-    item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid", contentType = "discover_grid") {
-        EqualHeightPosterGrid {
-            derivedState.discoverItems.forEachIndexed { index, podcast ->
-                PodcastCard(
-                    podcast = podcast,
-                    showGenreChip = false,
-                    showSubtitle = false,
-                    density = FeedMediaCardDensity.Grid,
-                    onClick = {
-                        callbacks.onPodcastClick(
-                            podcast,
-                            "home_discover_grid",
-                            feedState.selectedCategory,
-                            index,
-                        )
-                    },
-                )
+    derivedState.discoverItems.chunked(2).forEachIndexed { row, rowItems ->
+        item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid_$row", contentType = "discover_grid") {
+            EqualHeightPosterGrid {
+                rowItems.forEachIndexed { index, podcast ->
+                    PodcastCard(
+                        podcast = podcast,
+                        showGenreChip = false,
+                        showSubtitle = false,
+                        density = FeedMediaCardDensity.Grid,
+                        onClick = {
+                            callbacks.onPodcastClick(
+                                podcast,
+                                "home_discover_grid",
+                                feedState.selectedCategory,
+                                row * 2 + index,
+                            )
+                        },
+                    )
+                }
             }
         }
     }

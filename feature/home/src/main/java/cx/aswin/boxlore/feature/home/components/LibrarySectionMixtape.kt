@@ -132,7 +132,7 @@ internal fun HomeMixModule(
         modifier =
         modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
+            .padding(vertical = HomeMixLayout.VerticalPadding),
     ) {
         HomeMixHeader(
             mode = mode,
@@ -148,7 +148,7 @@ internal fun HomeMixModule(
             modifier = Modifier.padding(horizontal = 18.dp),
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(HomeMixLayout.HeaderGap))
 
         HomeMixRail(
             mode = mode,
@@ -211,7 +211,7 @@ private fun HomeMixRail(
         modifier =
         Modifier
             .fillMaxWidth()
-            .height(124.dp),
+            .height(HomeMixLayout.RailHeight),
     ) { activeMode ->
         when (activeMode) {
             HomeMixMode.DAILY ->
@@ -268,37 +268,32 @@ private fun DailyMixRail(
         itemsIndexed(
             items = podcasts,
             key = { _, podcast -> podcast.latestEpisode?.id ?: podcast.id },
-        ) { index, podcast ->
+        ) { _, podcast ->
             val episode = podcast.latestEpisode ?: return@itemsIndexed
             val playbackState = episodePlaybackState.map[episode.id]
             val softExpire = episode.id in softExpireProgressEpisodeIds
-            AnimatedHomeMixCard(
-                index = index,
-                enterFromEnd = false,
-            ) {
-                MixtapeEpisodeCard(
-                    episode = episode,
-                    podcast = podcast,
-                    onClick = { onEpisodeClick(episode, podcast, HOME_MIXTAPE_EPISODES_ENTRY_POINT) },
-                    onPlay = {
-                        onPlayEpisode(
-                            episode,
-                            podcast,
-                            cx.aswin.boxlore.core.model.PlaybackEntryPoint.HOME_MIXTAPE,
-                        )
-                    },
-                    overrideStatus =
-                    if (softExpire) {
-                        EpisodeStatus.UNPLAYED
-                    } else {
-                        playbackState?.first
-                    },
-                    overrideProgress = if (softExpire) 0f else playbackState?.second,
-                    currentPlayingEpisodeId = currentPlayingEpisodeId,
-                    isPlaying = isPlaying,
-                    isDownloaded = episode.id in downloadedEpisodeIds,
-                )
-            }
+            MixtapeEpisodeCard(
+                episode = episode,
+                podcast = podcast,
+                onClick = { onEpisodeClick(episode, podcast, HOME_MIXTAPE_EPISODES_ENTRY_POINT) },
+                onPlay = {
+                    onPlayEpisode(
+                        episode,
+                        podcast,
+                        cx.aswin.boxlore.core.model.PlaybackEntryPoint.HOME_MIXTAPE,
+                    )
+                },
+                overrideStatus =
+                if (softExpire) {
+                    EpisodeStatus.UNPLAYED
+                } else {
+                    playbackState?.first
+                },
+                overrideProgress = if (softExpire) 0f else playbackState?.second,
+                currentPlayingEpisodeId = currentPlayingEpisodeId,
+                isPlaying = isPlaying,
+                isDownloaded = episode.id in downloadedEpisodeIds,
+            )
         }
     }
 }
@@ -324,28 +319,18 @@ private fun OfflineMixRail(
         itemsIndexed(
             items = downloads,
             key = { _, item -> item.episode.id },
-        ) { index, item ->
-            AnimatedHomeMixCard(
-                index = index,
-                enterFromEnd = true,
-            ) {
-                OfflineMixEpisodeCard(
-                    item = item,
-                    playbackState = episodePlaybackState.map[item.episode.id],
-                    currentPlayingEpisodeId = currentPlayingEpisodeId,
-                    isPlaying = isPlaying,
-                    onEpisodeClick = onEpisodeClick,
-                    onPlayEpisode = onPlayEpisode,
-                )
-            }
+        ) { _, item ->
+            OfflineMixEpisodeCard(
+                item = item,
+                playbackState = episodePlaybackState.map[item.episode.id],
+                currentPlayingEpisodeId = currentPlayingEpisodeId,
+                isPlaying = isPlaying,
+                onEpisodeClick = onEpisodeClick,
+                onPlayEpisode = onPlayEpisode,
+            )
         }
         item(key = "view_all_downloads") {
-            AnimatedHomeMixCard(
-                index = downloads.size,
-                enterFromEnd = true,
-            ) {
-                ViewAllDownloadsCard(onClick = onViewDownloads)
-            }
+            ViewAllDownloadsCard(onClick = onViewDownloads)
         }
     }
 }
@@ -388,7 +373,7 @@ private fun HomeMixHeader(
                 onClick = onPlay,
                 enabled = playEnabled,
                 shape = CircleShape,
-                modifier = Modifier.height(44.dp),
+                modifier = Modifier.height(HomeMixLayout.HeaderHeight),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.PlayArrow,

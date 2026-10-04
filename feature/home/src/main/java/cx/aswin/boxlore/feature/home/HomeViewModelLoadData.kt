@@ -7,10 +7,6 @@ import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.getHistoryForRecommendations
 import cx.aswin.boxlore.core.playback.resumeSessions
-import cx.aswin.boxlore.core.ranking.CandidateSource
-import cx.aswin.boxlore.core.ranking.DiversityPolicy
-import cx.aswin.boxlore.core.ranking.EpisodeRankingInput
-import cx.aswin.boxlore.core.ranking.PodcastRankingInput
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.home.logic.HomeUiAssemblyLogic
@@ -18,8 +14,9 @@ import cx.aswin.boxlore.feature.home.logic.buildHomeEditorialRows
 import cx.aswin.boxlore.feature.home.logic.discoverPodcastsExcluding
 import cx.aswin.boxlore.feature.home.logic.editorialRowDefinitionsFor
 import cx.aswin.boxlore.feature.home.logic.homeMixtapeCacheOrNull
-import cx.aswin.boxlore.feature.home.logic.toRecommendationPodcast
+import cx.aswin.boxlore.feature.home.logic.withCurrentCategoryDiscovery
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +32,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 internal fun HomeViewModel.fetchPersonalizedRecommendations(region: String) {
-    viewModelScope.launch {
+    viewModelScope.launch(Dispatchers.Default) {
+        homeCacheRestoreGate.awaitRestore()
         _isRecommendationsLoaded.value = false
         try {
             val interests = boxcastPrefs.getUserGenres().toList()
@@ -71,9 +69,13 @@ internal fun HomeViewModel.fetchPersonalizedRecommendations(region: String) {
                 val json = Json { ignoreUnknownKeys = true }
                 val serialized = json.encodeToString(distinctRecs)
                 boxcastPrefs.setCachedRecommendationsJson(serialized)
+            } catch (ce: CancellationException) {
+                throw ce
             } catch (ce: Exception) {
                 android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.e("HomeViewModel", "Failed to fetch personalized recommendations", e)
         } finally {
@@ -85,7 +87,8 @@ internal fun HomeViewModel.fetchPersonalizedRecommendations(region: String) {
 // from private fun loadData
 @OptIn(FlowPreview::class)
 internal fun HomeViewModel.loadData() {
-    viewModelScope.launch {
+    viewModelScope.launch(Dispatchers.Default) {
+        homeCacheRestoreGate.awaitRestore()
         // --- BASE DATA FLOW (Restarts when Region or dismissal changes) ---
         combine(
             userPrefs.regionStream,
@@ -95,7 +98,8 @@ internal fun HomeViewModel.loadData() {
             Triple(region, languages, daypart)
         }.distinctUntilChanged()
             .collectLatest { (region, languages, daypart) ->
-                if (cachedRegion != region) {
+                val regionChanged = cachedRegion != region
+                if (regionChanged) {
                     cachedRegion = region
                     cachedForYouTrending = emptyList()
                     cachedHeroItems = emptyList()
@@ -110,11 +114,14 @@ internal fun HomeViewModel.loadData() {
                 }
                 activeRegion = region
 
-                val trendingState = MutableStateFlow<List<Podcast>>(emptyList())
+                val trendingState = MutableStateFlow(cachedForYouTrending)
 
                 // Curated editorial rows are independent from recommendations so a slow
                 // personalization request never leaves the greeting section empty.
-                _editorialRows.value = emptyList()
+                // Preserve matching rows during a background reload. Replace the
+                // result only after this request finishes, never at request start.
+                val activeProviderIds = editorialRowDefinitionsFor(daypart).map { it.providerId }.toSet()
+                _editorialRows.value = if (regionChanged) emptyList() else _editorialRows.value.filter { it.providerId in activeProviderIds }
                 _isEditorialRowsLoading.value = true
                 launch {
                     try {
@@ -138,7 +145,6 @@ internal fun HomeViewModel.loadData() {
                             "Curated Home rows failed for region=$region and daypart=$daypart",
                             error,
                         )
-                        _editorialRows.value = emptyList()
                     } finally {
                         _isEditorialRowsLoading.value = false
                     }
@@ -157,6 +163,8 @@ internal fun HomeViewModel.loadData() {
                             _briefingState.value = bootstrapData.briefing
                             _briefingChaptersState.value = bootstrapData.briefingChapters
                             trendingState.value = bootstrapData.trending
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             android.util.Log.e("BoxCastTiming", "VM: Fast Bootstrap API load failed", e)
                         } finally {
@@ -207,9 +215,13 @@ internal fun HomeViewModel.loadData() {
                                 serialized,
                                 bootstrapData.isRecommendationsFallback,
                             )
+                        } catch (ce: CancellationException) {
+                            throw ce
                         } catch (ce: Exception) {
                             android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         android.util.Log.e("BoxCastTiming", "VM: Recommendations load failed", e)
                     } finally {
@@ -217,15 +229,16 @@ internal fun HomeViewModel.loadData() {
                     }
                 }
 
+                val rankingCache = HomeDiscoveryRankingCache()
                 val coreSlice =
                     combine(
                         trendingState, // Hot StateFlow — never completes
                         playbackRepository.resumeSessions,
                         subscriptionRepository.subscribedPodcasts,
-                        allHomeHistory,
+                        playbackRepository.getAllHistory(),
                         _resolvedSerialEpisodes,
                     ) { trending, resume, subs, history, resolvedSerial ->
-                        HomeCoreSlice(trending, resume, subs, history, resolvedSerial)
+                        HomeCoreSlice(trending, resume, subs, history.map { it.toHomeListeningHistoryItem() }, resolvedSerial, history)
                     }
                 val recsSlice =
                     combine(
@@ -286,6 +299,7 @@ internal fun HomeViewModel.loadData() {
                             resume = core.resume,
                             subs = core.subs,
                             history = core.history,
+                            scoringHistory = core.scoringHistory,
                             resolvedSerial = core.resolvedSerial,
                             recommendations = recs.recommendations,
                             completedEpisodeIds = recs.completedEpisodeIds,
@@ -319,52 +333,18 @@ internal fun HomeViewModel.loadData() {
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                         val rankingNowMs = System.currentTimeMillis()
                         val allHistory = wrapper.history
-                        val scoringHistory = playbackRepository.getAllHistory().first()
-                        val subscribedIds = wrapper.subs.map(Podcast::id).toSet()
-                        val trendingList =
-                            adaptiveScorer.rankPodcasts(
-                                inputs =
-                                wrapper.trending.mapIndexed { index, podcast ->
-                                    PodcastRankingInput(
-                                        podcast = podcast,
-                                        priorScore = (wrapper.trending.size - index).toDouble(),
-                                        source = CandidateSource.TRENDING,
-                                        isNovel = podcast.id !in subscribedIds,
-                                    )
-                                },
+                        val scoringHistory = wrapper.scoringHistory
+                        val ranked = rankingCache.get(
+                            HomeDiscoveryRankingInput(
+                                trending = wrapper.trending,
+                                recommendations = wrapper.recommendations,
                                 history = scoringHistory,
-                                objective = RankingObjective.DISCOVERY,
-                                surface = RankingSurface.HOME,
-                                diversityPolicy =
-                                DiversityPolicy(
-                                    limit = wrapper.trending.size,
-                                    maxPerShow = 1,
-                                    reserveNovelSlot = true,
-                                ),
-                            )
-                        val rankedRecommendations =
-                            adaptiveScorer.rankEpisodes(
-                                inputs =
-                                wrapper.recommendations.mapIndexed { index, episode ->
-                                    val podcast = episode.toRecommendationPodcast()
-                                    EpisodeRankingInput(
-                                        episode = episode,
-                                        podcast = podcast,
-                                        priorScore = (wrapper.recommendations.size - index).toDouble(),
-                                        source = CandidateSource.SERVER_RECOMMENDATION,
-                                        isNovel = podcast.id !in subscribedIds,
-                                    )
-                                },
-                                history = scoringHistory,
-                                objective = RankingObjective.DISCOVERY,
-                                surface = RankingSurface.HOME,
-                                diversityPolicy =
-                                DiversityPolicy(
-                                    limit = wrapper.recommendations.size,
-                                    maxPerShow = 2,
-                                    reserveNovelSlot = true,
-                                ),
-                            )
+                                subscribedIds = wrapper.subs.map(Podcast::id).toSet(),
+                            ),
+                            ::rankDiscovery,
+                        )
+                        val trendingList = ranked.trending
+                        val rankedRecommendations = ranked.recommendations
                         val resumeList = wrapper.resume
                         val subs = wrapper.subs
                         val resolvedSerial = wrapper.resolvedSerial
@@ -504,7 +484,7 @@ internal fun HomeViewModel.loadData() {
                             cachedLatestEpisodes = assembled.latestEpisodes
                         }
 
-                        _uiState.value =
+                        val nextState =
                             HomeUiState(
                                 heroItems = assembled.heroItems,
                                 latestEpisodes = assembled.latestEpisodes,
@@ -541,6 +521,7 @@ internal fun HomeViewModel.loadData() {
                                 isEditorialRowsLoading = wrapper.isEditorialRowsLoading,
                                 pinnedPodcastIds = wrapper.pinnedPodcastIds.toSet(),
                             )
+                        _uiState.update { previous -> nextState.withCurrentCategoryDiscovery(previous) }
                     }
                 }
             }
@@ -608,6 +589,8 @@ internal fun HomeViewModel.loadData() {
                             isFilterLoading = false,
                         )
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     android.util.Log.e("HomeViewModel", "Category stream error", e)
                     _uiState.update { it.copy(isFilterLoading = false) }

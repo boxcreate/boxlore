@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 
 /**
@@ -62,8 +63,8 @@ fun HomeSkeleton(modifier: Modifier = Modifier) {
 
 @Composable
 fun HeroSkeleton(modifier: Modifier = Modifier) {
-    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
 
     LazyRow(
         contentPadding = PaddingValues(horizontal = 0.dp),
@@ -88,8 +89,8 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
 
 @Composable
 fun RisingSkeleton() {
-    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
 
     Column {
         // Header handled by real component now
@@ -123,8 +124,8 @@ fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.GridSk
 
 @Composable
 fun GridSkeletonItem(modifier: Modifier = Modifier) {
-    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
 
     OutlinedCard(
         shape = MaterialTheme.shapes.large,
@@ -147,6 +148,7 @@ fun GridSkeletonItem(modifier: Modifier = Modifier) {
             Column(
                 modifier =
                 Modifier
+                    .height(FeedPosterSpacing.textFootHeight(3) + HomeFeedSpacing.CardTextPadding * 2)
                     .padding(HomeFeedSpacing.CardTextPadding),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
@@ -196,8 +198,8 @@ fun YourShowsSkeleton(
     subscribedCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
-    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
 
     Column(modifier = modifier.padding(bottom = 16.dp)) {
         // Section Header Row
@@ -256,7 +258,7 @@ fun YourShowsSkeleton(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    repeat(4) {
+                    repeat(5) {
                         Box(
                             modifier =
                             Modifier
@@ -292,61 +294,32 @@ fun YourShowsSkeleton(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .height(HomeMixLayout.totalHeight)
                 .clip(RoundedCornerShape(24.dp))
                 .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(24.dp)),
         )
     }
 }
 
-/** Three compact editorial rails shown while endpoint-backed Home rows load. */
+/** One loading rail occupies the same keyed section as its eventual editorial row. */
 @Composable
-fun EditorialRowsSkeleton(modifier: Modifier = Modifier) {
-    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-
+fun EditorialRowSkeleton(isLast: Boolean = false, modifier: Modifier = Modifier) {
+    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
     Column(
-        modifier = modifier.padding(bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.padding(bottom = if (isLast) 20.dp else 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        repeat(3) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier =
-                        Modifier
-                            .size(36.dp)
-                            .clip(MaterialTheme.shapes.medium)
-                            .m3Shimmer(
-                                baseColor,
-                                highlightColor,
-                                shape = MaterialTheme.shapes.medium,
-                            ),
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    SkeletonBlock(
-                        width = 132.dp,
-                        height = 17.dp,
-                        baseColor = baseColor,
-                        highlightColor = highlightColor,
-                    )
-                }
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap)) {
-                    items(4) {
-                        Box(
-                            modifier =
-                            Modifier
-                                .fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION)
-                                .height(214.dp)
-                                .clip(MaterialTheme.shapes.large)
-                                .m3Shimmer(
-                                    baseColor,
-                                    highlightColor,
-                                    shape = MaterialTheme.shapes.large,
-                                ),
-                        )
-                    }
-                }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(36.dp).m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.medium),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            SkeletonBlock(width = 132.dp, height = 17.dp, baseColor = baseColor, highlightColor = highlightColor)
+        }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap)) {
+            items(4) {
+                GridSkeletonItem(modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION))
             }
         }
     }

@@ -14,22 +14,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
+import cx.aswin.boxlore.feature.home.components.EditorialRowSkeleton
 import cx.aswin.boxlore.feature.home.components.HomeChildHeaderTone
 import cx.aswin.boxlore.feature.home.components.HomeChildSectionHeader
 import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
+import cx.aswin.boxlore.feature.home.logic.editorialRowDefinitionsFor
 
 internal fun LazyStaggeredGridScope.editorialFeedItems(
     content: PodcastFeedContent,
+    feedState: PodcastFeedUiState,
     loadingState: PodcastFeedLoadingState,
     callbacks: HomeFeedCallbacks,
 ) {
     if (loadingState.isEditorialRowsLoading && content.editorialRows.list.isEmpty()) {
-        item(
-            span = StaggeredGridItemSpan.FullLine,
-            key = "editorial_rows_skeleton",
-            contentType = "editorial_rows_skeleton",
-        ) {
-            cx.aswin.boxlore.feature.home.components.EditorialRowsSkeleton()
+        val definitions = editorialRowDefinitionsFor(feedState.discoveryGreeting.daypart)
+        definitions.forEachIndexed { index, definition ->
+            item(
+                span = StaggeredGridItemSpan.FullLine,
+                key = "editorial_${definition.providerId}",
+                contentType = "editorial_row",
+            ) {
+                EditorialRowSkeleton(isLast = index == definitions.lastIndex)
+            }
         }
     }
     content.editorialRows.list.forEachIndexed { index, row ->

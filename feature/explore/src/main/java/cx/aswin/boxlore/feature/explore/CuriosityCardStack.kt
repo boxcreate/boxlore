@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.explore
 
-import android.graphics.drawable.BitmapDrawable
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -46,7 +44,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -54,18 +51,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import coil.request.ImageRequest
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.playback.PlayerState
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sin
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
 
 sealed interface CardAction {
     data object Dismiss : CardAction
@@ -78,16 +72,11 @@ sealed interface CardAction {
 @Composable
 fun CuriosityCardStack(
     questions: List<LearnCuriosityCard>,
-    isCurrentEpisode: (String) -> Boolean,
-    isCurrentlyPlaying: (String) -> Boolean,
-    isCurrentlyLoading: (String) -> Boolean,
-    onSwipeLeft: (LearnCuriosityCard) -> Unit,
-    onSwipeRight: (LearnCuriosityCard) -> Unit,
-    onPlayClick: (LearnCuriosityCard) -> Unit,
-    onEpisodeClick: (LearnCuriosityCard) -> Unit,
-    onPodcastClick: (LearnCuriosityCard) -> Unit,
+    playerState: PlayerState,
+    onCardAction: (CardAction, LearnCuriosityCard) -> Unit,
     accentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    artworkAccentColors: Map<List<String>, Int> = emptyMap()
 ) {
     if (questions.isEmpty()) {
         Box(
@@ -108,9 +97,9 @@ fun CuriosityCardStack(
     val swipeThresholdPx = with(LocalDensity.current) { 88.dp.toPx() }
     val swipeState = rememberSwipeableCardState(key = daily.episodeId) { direction ->
         if (direction == SwipeDirection.Left) {
-            onSwipeLeft(daily)
+            onCardAction(CardAction.Dismiss, daily)
         } else {
-            onSwipeRight(daily)
+            onCardAction(CardAction.Queue, daily)
         }
     }
     val swipeProgress by remember(swipeState, swipeThresholdPx) {
@@ -131,80 +120,20 @@ fun CuriosityCardStack(
             key(card.episodeId) {
                 val depth = visibleCards.indexOf(card)
                 val isActive = depth == 0
-                val cardModifier = when (depth) {
-                    2 ->
-                        Modifier
-                            .matchParentSize()
-                            .offset(y = (24f - (10f * swipeProgress)).dp)
-                            .scale(0.93f + (0.035f * swipeProgress))
-                            .graphicsLayer {
-                                rotationZ = 1.8f * (1f - swipeProgress)
-                            }
-                    1 ->
-                        Modifier
-                            .matchParentSize()
-                            .offset(y = (13f - (11f * swipeProgress)).dp)
-                            .scale(0.965f + (0.025f * swipeProgress))
-                            .graphicsLayer {
-                                rotationZ = -1.15f * (1f - swipeProgress)
-                            }
-                    else ->
-                        Modifier
-                            .fillMaxSize()
-                            .offset {
-                                IntOffset(
-                                    swipeState.offset.value.x.roundToInt(),
-                                    0
-                                )
-                            }
-                            .graphicsLayer {
-                                rotationZ = (swipeState.offset.value.x / 180f)
-                                    .coerceIn(-2.5f, 2.5f)
-                                cameraDistance = 12f * density
-                            }
-                            .pointerInput(card.episodeId) {
-                                detectHorizontalDragGestures(
-                                    onDragEnd = {
-                                        val offsetX = swipeState.offset.value.x
-                                        if (offsetX > swipeThresholdPx) {
-                                            swipeState.swipe(SwipeDirection.Right)
-                                        } else if (offsetX < -swipeThresholdPx) {
-                                            swipeState.swipe(SwipeDirection.Left)
-                                        } else {
-                                            swipeState.reset()
-                                        }
-                                    },
-                                    onDragCancel = swipeState::reset,
-                                    onHorizontalDrag = { change, dragAmount ->
-                                        change.consume()
-                                        swipeState.drag(
-                                            androidx.compose.ui.geometry.Offset(
-                                                x = dragAmount,
-                                                y = 0f
-                                            )
-                                        )
-                                    }
-                                )
-                            }
-                }
+                val cardModifier = deckCardModifier(card, depth, swipeProgress, swipeState, swipeThresholdPx)
+                val isCurrent = playerState.currentEpisode?.id == card.episodeId
 
-                DeckCard(
+                CuriosityCardContent(
                     daily = card,
-                    isCurrentEpisode = isCurrentEpisode(card.episodeId),
-                    isCurrentlyPlaying = isCurrentlyPlaying(card.episodeId),
-                    isCurrentlyLoading = isCurrentlyLoading(card.episodeId),
-                    fallbackAccentColor = accentColor,
+                    isCurrentEpisode = isCurrent,
+                    isCurrentlyPlaying = isCurrent && playerState.isPlaying,
+                    isCurrentlyLoading = isCurrent && playerState.isLoading,
+                    accentColor = artworkAccentColors[card.artworkSources]?.let { Color(it) } ?: accentColor,
                     interactive = isActive,
                     modifier = cardModifier,
                     onAction = { action ->
                         if (isActive) {
-                            when (action) {
-                                CardAction.Dismiss -> onSwipeLeft(card)
-                                CardAction.Queue -> onSwipeRight(card)
-                                CardAction.Play -> onPlayClick(card)
-                                CardAction.Click -> onEpisodeClick(card)
-                                CardAction.PodcastClick -> onPodcastClick(card)
-                            }
+                            onCardAction(action, card)
                         }
                     }
                 )
@@ -213,69 +142,67 @@ fun CuriosityCardStack(
     }
 }
 
-@Composable
-private fun DeckCard(
-    daily: LearnCuriosityCard,
-    isCurrentEpisode: Boolean,
-    isCurrentlyPlaying: Boolean,
-    isCurrentlyLoading: Boolean,
-    fallbackAccentColor: Color,
-    interactive: Boolean,
-    onAction: (CardAction) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val accentColor = rememberArtworkAccentColor(
-        daily = daily,
-        fallback = fallbackAccentColor
-    )
-    CuriosityCardContent(
-        daily = daily,
-        isCurrentEpisode = isCurrentEpisode,
-        isCurrentlyPlaying = isCurrentlyPlaying,
-        isCurrentlyLoading = isCurrentlyLoading,
-        accentColor = accentColor,
-        interactive = interactive,
-        onAction = onAction,
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun rememberArtworkAccentColor(
-    daily: LearnCuriosityCard,
-    fallback: Color
-): Color {
-    val context = LocalContext.current
-    val imageUrl = daily.imageUrl ?: daily.feedImage
-    var extractedColor by remember(imageUrl) { mutableStateOf<Color?>(null) }
-
-    LaunchedEffect(imageUrl) {
-        if (imageUrl.isNullOrBlank()) {
-            extractedColor = null
-            return@LaunchedEffect
-        }
-        extractedColor = runCatching {
-            val request = ImageRequest.Builder(context)
-                .data(imageUrl.optimizedImageUrl(width = 160))
-                .allowHardware(false)
-                .size(80, 80)
-                .build()
-            val result = coil.Coil.imageLoader(context).execute(request)
-                as? coil.request.SuccessResult
-                ?: return@runCatching null
-            val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
-                ?: return@runCatching null
-            withContext(Dispatchers.Default) {
-                extractDominantColor(bitmap)
+private fun BoxScope.deckCardModifier(
+    card: LearnCuriosityCard,
+    depth: Int,
+    swipeProgress: Float,
+    swipeState: SwipeableCardState,
+    swipeThresholdPx: Float,
+): Modifier = when (depth) {
+    2 ->
+        Modifier
+            .matchParentSize()
+            .offset(y = (24f - (10f * swipeProgress)).dp)
+            .scale(0.93f + (0.035f * swipeProgress))
+            .graphicsLayer {
+                rotationZ = 1.8f * (1f - swipeProgress)
             }
-        }.getOrNull()
-    }
-
-    return animateColorAsState(
-        targetValue = extractedColor ?: fallback,
-        animationSpec = tween(durationMillis = 450),
-        label = "StackedCardAccent"
-    ).value
+    1 ->
+        Modifier
+            .matchParentSize()
+            .offset(y = (13f - (11f * swipeProgress)).dp)
+            .scale(0.965f + (0.025f * swipeProgress))
+            .graphicsLayer {
+                rotationZ = -1.15f * (1f - swipeProgress)
+            }
+    else ->
+        Modifier
+            .fillMaxSize()
+            .offset {
+                IntOffset(
+                    swipeState.offset.value.x.roundToInt(),
+                    0
+                )
+            }
+            .graphicsLayer {
+                rotationZ = (swipeState.offset.value.x / 180f)
+                    .coerceIn(-2.5f, 2.5f)
+                cameraDistance = 12f * density
+            }
+            .pointerInput(card.episodeId) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        val offsetX = swipeState.offset.value.x
+                        if (offsetX > swipeThresholdPx) {
+                            swipeState.swipe(SwipeDirection.Right)
+                        } else if (offsetX < -swipeThresholdPx) {
+                            swipeState.swipe(SwipeDirection.Left)
+                        } else {
+                            swipeState.reset()
+                        }
+                    },
+                    onDragCancel = swipeState::reset,
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        swipeState.drag(
+                            androidx.compose.ui.geometry.Offset(
+                                x = dragAmount,
+                                y = 0f
+                            )
+                        )
+                    }
+                )
+            }
 }
 
 @Composable
@@ -289,7 +216,7 @@ private fun CuriosityCardContent(
     onAction: (CardAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val coverArt = daily.imageUrl ?: daily.feedImage ?: ""
+    val coverArt = daily.artworkSources.firstOrNull().orEmpty()
     val artworkShape = RoundedCornerShape(14.dp)
     val tertiaryColor = MaterialTheme.colorScheme.tertiary
     val cardShape = MaterialTheme.shapes.extraLarge

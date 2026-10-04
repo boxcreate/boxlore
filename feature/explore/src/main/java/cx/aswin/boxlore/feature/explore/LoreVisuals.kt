@@ -7,7 +7,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +24,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 
 @Composable
 internal fun LoreHaloBackground(
@@ -34,7 +33,7 @@ internal fun LoreHaloBackground(
     content: @Composable () -> Unit
 ) {
     val transition = rememberInfiniteTransition(label = "LoreHalo")
-    val pulse by transition.animateFloat(
+    val pulse = transition.animateFloat(
         initialValue = 0.92f,
         targetValue = 1.08f,
         animationSpec = infiniteRepeatable(
@@ -43,7 +42,7 @@ internal fun LoreHaloBackground(
         ),
         label = "LoreHaloPulse"
     )
-    val drift by transition.animateFloat(
+    val drift = transition.animateFloat(
         initialValue = -24f,
         targetValue = 24f,
         animationSpec = infiniteRepeatable(
@@ -52,10 +51,10 @@ internal fun LoreHaloBackground(
         ),
         label = "LoreHaloDrift"
     )
-    val isDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = LocalEffectiveDarkTheme.current
     val backgroundColor = MaterialTheme.colorScheme.background
     val density = LocalDensity.current
-    val driftPx = with(density) { drift.dp.toPx() }
+    val pixelsPerDp = density.density
     val pageBrush = remember(accentColor, backgroundColor, isDarkTheme) {
         Brush.verticalGradient(
             colors = if (isDarkTheme) {
@@ -108,9 +107,9 @@ internal fun LoreHaloBackground(
                 .offset(y = (-250).dp)
                 .size(540.dp)
                 .graphicsLayer {
-                    translationX = driftPx
-                    scaleX = pulse
-                    scaleY = pulse
+                    translationX = drift.value * pixelsPerDp
+                    scaleX = pulse.value
+                    scaleY = pulse.value
                 }
                 .background(topBrush, CircleShape)
         )
@@ -120,8 +119,8 @@ internal fun LoreHaloBackground(
                 .offset(x = 150.dp, y = 190.dp)
                 .size(440.dp)
                 .graphicsLayer {
-                    translationX = -driftPx
-                    val inversePulse = 2f - pulse
+                    translationX = -drift.value * pixelsPerDp
+                    val inversePulse = 2f - pulse.value
                     scaleX = inversePulse
                     scaleY = inversePulse
                 }
@@ -133,9 +132,9 @@ internal fun LoreHaloBackground(
                 .offset(x = (-245).dp, y = 20.dp)
                 .size(500.dp)
                 .graphicsLayer {
-                    translationX = driftPx * 0.45f
-                    scaleX = 2f - pulse
-                    scaleY = 2f - pulse
+                    translationX = drift.value * pixelsPerDp * 0.45f
+                    scaleX = 2f - pulse.value
+                    scaleY = 2f - pulse.value
                 }
                 .background(sideBrush, CircleShape)
         )

@@ -68,16 +68,15 @@ fun OptimizedImage(
     }
 
     val context = LocalContext.current
-    val density = context.resources.displayMetrics.density
-    val pxWidth = remember(proxyWidth, density) { (proxyWidth * density).toInt() }
-    val proxyUrl = remember(url, proxyWidth, density) { url.optimizedImageUrl(proxyWidth) }
+    val pxWidth = remember(proxyWidth) { imageTargetPixels(proxyWidth) }
+    val proxyUrl = remember(url, proxyWidth) { url.optimizedImageUrl(proxyWidth) }
 
     // Check if this url has already failed on the proxy in this app session
     val isProxyKnownFailed = remember(url) { proxyFailedUrls.contains(url) }
 
     // Track which URL we're currently trying
-    var currentUrl by remember(url) { mutableStateOf(if (isProxyKnownFailed) url else proxyUrl) }
-    var hasTriedFallback by remember(url) { mutableStateOf(isProxyKnownFailed) }
+    var currentUrl by remember(url, proxyUrl) { mutableStateOf(if (isProxyKnownFailed) url else proxyUrl) }
+    var hasTriedFallback by remember(url, proxyUrl) { mutableStateOf(isProxyKnownFailed) }
 
     val painter = rememberAsyncImagePainter(
         model = remember(currentUrl, pxWidth) {
@@ -102,6 +101,9 @@ fun OptimizedImage(
     }
 
     Box(modifier = modifier) {
+        // Keep this underneath the image through Coil's success crossfade. Success
+        // is emitted when the transition starts, while its first frame is transparent.
+        OptimizedImageLoadingPlaceholder()
         Image(
             painter = painter,
             contentDescription = contentDescription,
@@ -136,7 +138,7 @@ private fun BoxScope.OptimizedImageOverlay(
         state is AsyncImagePainter.State.Success -> Unit
         state is AsyncImagePainter.State.Error && hasTriedFallback ->
             OptimizedImageFailureContent(errorContent)
-        else -> OptimizedImageLoadingPlaceholder()
+        else -> Unit
     }
 }
 

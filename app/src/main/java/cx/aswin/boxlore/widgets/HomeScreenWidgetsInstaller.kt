@@ -23,34 +23,36 @@ object HomeScreenWidgetsInstaller {
     fun install(
         context: Context,
         scope: CoroutineScope,
-        playbackRepository: PlaybackRepository,
-        subscriptionRepository: SubscriptionRepository,
+        playbackRepository: () -> PlaybackRepository,
+        subscriptionRepository: () -> SubscriptionRepository,
         userPreferencesRepository: UserPreferencesRepository,
-        adaptiveScorer: AdaptiveCandidateScorer,
+        adaptiveScorer: () -> AdaptiveCandidateScorer,
     ) {
         configureNowPlayingWidget(
             object : NowPlayingWidgetDependencies {
                 override val context: Context = context
                 override val scope: CoroutineScope = scope
-                override val playback =
+                override val playback by lazy {
                     NowPlayingWidgetPlaybackAdapter(
-                        playbackRepository = playbackRepository,
+                        playbackRepository = playbackRepository(),
                         scope = scope,
                     )
+                }
             },
         )
         configureLibraryWidgets(
             object : LibraryWidgetDependencies {
                 override val context: Context = context
                 override val scope: CoroutineScope = scope
-                override val library =
+                override val library by lazy {
                     WidgetLibrarySourceAdapter(
-                        subscriptionRepository = subscriptionRepository,
-                        playbackRepository = playbackRepository,
+                        subscriptionRepository = subscriptionRepository(),
+                        playbackRepository = playbackRepository(),
                         userPreferencesRepository = userPreferencesRepository,
-                        adaptiveScorer = adaptiveScorer,
+                        adaptiveScorer = adaptiveScorer(),
                         scope = scope,
                     )
+                }
             },
         )
         // Re-render when widget chrome source, Appearance theme, or lettering changes.

@@ -55,7 +55,7 @@ src/main/res/
 
 ## Threading / lifecycle
 
-- Both `configure*` helpers are called once from `BoxLoreApplication` after `AppContainer` is ready.
+- Both `configure*` helpers register ports once from `BoxLoreApplication` after `AppContainer` is ready. On the application IO scope, they check launcher widget IDs and start collection only for an installed family. Adding a widget later starts its coordinator via the existing enabled broadcast. App adapters are lazy so unused widgets neither restore playback nor project/rank the library; cold widget launches still have ports available immediately.
 - Coordinator collection and artwork IO run on the application `CoroutineScope` from dependencies.
 - Widget control broadcasts use `goAsync()` + `Dispatchers.Main.immediate`; optimistic snapshot render happens before transport restore/actions. Failed restore/transport rolls the snapshot back from authoritative playback state.
 - `onUpdate` reads snapshot prefs on a background scope then renders once (no double `requestRefresh` pass on the main thread).
@@ -82,7 +82,7 @@ The playback widget families are an independent RemoteViews implementation of th
 
 ## Testing notes
 
-Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, widget chrome (App theme vs System), and PendingIntent generation/cancellation via `WidgetActionIntentsTest`.
+`WidgetStartupTest` covers unused-family registration without resolving playback/library ports and independent installed-family detection. Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, widget chrome (App theme vs System), and PendingIntent generation/cancellation via `WidgetActionIntentsTest`.
 
 ```bash
 ./gradlew :feature:widgets:testDebugUnitTest

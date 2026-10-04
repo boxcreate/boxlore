@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.explore
 
-import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -33,21 +32,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.request.ImageRequest
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
@@ -80,7 +74,6 @@ fun LearnScreen(
         initial = cx.aswin.boxlore.core.playback.PlayerState()
     )
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackLearnScreenViewed()
@@ -91,55 +84,17 @@ fun LearnScreen(
         onSessionExit = viewModel::trackScreenExit
     )
 
-    // Extract dominant color state at screen level
-    var extractedColor by remember { mutableStateOf<Color?>(null) }
-    val baseAccentColor = extractedColor ?: MaterialTheme.colorScheme.primary
-
-    // Animate color transition smoothly for ambient background gradient and tinting
+    val artworkColors by viewModel.artworkAccentColors.collectAsState()
+    val cards = (uiState as? LearnUiState.Success)?.questionsStack.orEmpty()
+    val fallbackAccent = MaterialTheme.colorScheme.primary
+    val activeArtwork = cards.firstOrNull()?.artworkSources.orEmpty()
+    val baseAccentColor = artworkColors[activeArtwork]?.let { Color(it) } ?: fallbackAccent
+    // Only the page eases between cards; each card keeps its own prepared artwork colour.
     val animatedAccentColor by animateColorAsState(
         targetValue = baseAccentColor,
-        animationSpec = tween(durationMillis = 700),
+        animationSpec = tween(durationMillis = 180),
         label = "AccentColorTransition"
     )
-
-    // Trigger color extraction based on active card cover artwork changes
-    val activeCardImage = (uiState as? LearnUiState.Success)
-        ?.questionsStack
-        ?.firstOrNull()
-        ?.let { it.imageUrl ?: it.feedImage }
-
-    LaunchedEffect(activeCardImage) {
-        if (activeCardImage.isNullOrEmpty()) {
-            extractedColor = null
-            return@LaunchedEffect
-        }
-        try {
-            val loader = coil.Coil.imageLoader(context)
-            val optimizedUrl = activeCardImage.optimizedImageUrl(width = 200)
-            val request = ImageRequest.Builder(context)
-                .data(optimizedUrl)
-                .allowHardware(false) // Must be a software bitmap for Palette pixel extraction
-                .size(100, 100) // Constrain decode size in memory for palette extraction
-                .build()
-            val result = loader.execute(request)
-            if (result is coil.request.SuccessResult) {
-                val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
-                if (bitmap != null) {
-                    // Generate palette on Default dispatcher to keep UI thread smooth
-                    val color = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                        extractDominantColor(bitmap)
-                    }
-                    extractedColor = color
-                } else {
-                    extractedColor = null
-                }
-            } else {
-                extractedColor = null
-            }
-        } catch (e: Exception) {
-            extractedColor = null
-        }
-    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -294,15 +249,19 @@ fun LearnScreen(
                             Spacer(modifier = Modifier.height(30.dp))
                             CuriosityCardStack(
                                 questions = state.questionsStack,
-                                isCurrentEpisode = { id -> playerState.currentEpisode?.id == id },
-                                isCurrentlyPlaying = { id -> playerState.currentEpisode?.id == id && playerState.isPlaying },
-                                isCurrentlyLoading = { id -> playerState.currentEpisode?.id == id && playerState.isLoading },
-                                onSwipeLeft = { handleLearnCardAction("dismiss", it) },
-                                onSwipeRight = { handleLearnCardAction("queue", it) },
-                                onPlayClick = { handleLearnCardAction("play", it) },
-                                onEpisodeClick = { handleLearnCardAction("info", it) },
-                                onPodcastClick = { handleLearnCardAction("podcast", it) },
-                                accentColor = animatedAccentColor,
+                                playerState = playerState,
+                                onCardAction = { action, card ->
+                                    val actionName = when (action) {
+                                        CardAction.Dismiss -> "dismiss"
+                                        CardAction.Queue -> "queue"
+                                        CardAction.Play -> "play"
+                                        CardAction.Click -> "info"
+                                        CardAction.PodcastClick -> "podcast"
+                                    }
+                                    handleLearnCardAction(actionName, card)
+                                },
+                                accentColor = fallbackAccent,
+                                artworkAccentColors = artworkColors,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
@@ -385,33 +344,6 @@ private fun LoreStateCard(
             }
         }
     }
-}
-
-internal fun extractDominantColor(bitmap: android.graphics.Bitmap): Color {
-    val palette = androidx.palette.graphics.Palette.from(bitmap).generate()
-
-    // 1. Get the absolute dominant swatch from the image palette
-    val dominantSwatch = palette.dominantSwatch
-        ?: palette.vibrantSwatch
-        ?: palette.mutedSwatch
-        ?: palette.lightMutedSwatch
-        ?: palette.darkMutedSwatch
-
-    val rgb = dominantSwatch?.rgb ?: 0xFF6200EE.toInt()
-
-    // 2. Convert RGB to HSL to tweak vibrancy and lightness
-    val hsl = FloatArray(3)
-    androidx.core.graphics.ColorUtils.colorToHSL(rgb, hsl)
-
-    // 3. Boost saturation to make the glow rich and colorful (minimum 40% saturation)
-    hsl[1] = hsl[1].coerceIn(0.40f, 0.85f)
-
-    // 4. Clamp lightness to keep the glow visually pleasant (between 25% and 55%)
-    hsl[2] = hsl[2].coerceIn(0.25f, 0.55f)
-
-    // 5. Convert back to RGB and then Compose Color
-    val colorInt = androidx.core.graphics.ColorUtils.HSLToColor(hsl)
-    return Color(colorInt)
 }
 
 private fun trackLearnCardAction(

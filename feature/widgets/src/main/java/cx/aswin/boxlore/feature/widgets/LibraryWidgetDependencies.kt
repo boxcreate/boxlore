@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.widgets
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 /** One subscribed show row for the Subscriptions list widget. */
@@ -72,5 +73,9 @@ object LibraryWidgetDependenciesHolder {
 fun configureLibraryWidgets(dependencies: LibraryWidgetDependencies) {
     LibraryWidgetDependenciesHolder.instance = dependencies
     WidgetThemeSync.install(dependencies.context)
-    LibraryWidgetCoordinator.start(dependencies)
+    dependencies.scope.launch {
+        if (hasInstalledWidgets(dependencies.context, LibraryWidgetProviders.all.map { it.receiverClass })) {
+            LibraryWidgetCoordinator.start(dependencies)
+        }
+    }
 }

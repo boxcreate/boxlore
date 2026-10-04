@@ -273,7 +273,7 @@ private fun LearnHistoryRow(
     onClick: () -> Unit,
     onRestore: () -> Unit
 ) {
-    val imageUrl = entry.imageUrl ?: entry.feedImage
+    val imageUrl = loreArtworkSources(entry.imageUrl, entry.feedImage).firstOrNull()
     val actionLabel = when (entry.action) {
         LearnHistoryAction.DISMISS -> "Dismissed"
         LearnHistoryAction.QUEUE -> "Queued"

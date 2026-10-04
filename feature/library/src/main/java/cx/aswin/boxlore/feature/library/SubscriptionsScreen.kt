@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -504,6 +505,7 @@ fun SubscriptionsScreen(
                     badgeCount = latestCount,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
+                        .adaptivePlayerOverlayOffset(isMiniPlayerVisible = isPlayerActive)
                         .padding(bottom = animatedBottomOffset),
                 )
             }

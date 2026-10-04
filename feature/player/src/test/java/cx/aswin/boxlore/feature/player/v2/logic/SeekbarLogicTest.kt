@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.player.v2.logic
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SeekbarLogicTest {
@@ -54,5 +55,27 @@ class SeekbarLogicTest {
         assertEquals(0f, playbackFraction(-100L, 1_000L), 0.001f)
         assertEquals(0.5f, playbackFraction(500L, 1_000L), 0.001f)
         assertEquals(1f, playbackFraction(2_000L, 1_000L), 0.001f)
+    }
+
+    @Test
+    fun thumbFitsTrackNarrowerThanItsRequestedWidth() {
+        // Device fatal: size.width - thumbWidth was -0.25 during compact-player expansion.
+        assertEquals(SeekbarThumbBounds(0f, 12.25f), seekbarThumbBounds(12.25f, 12.5f, 6f))
+        assertEquals(SeekbarThumbBounds(0f, 0f), seekbarThumbBounds(0f, 12.5f, 0f))
+    }
+
+    @Test
+    fun thumbStaysInsideTrackThroughoutOpeningAndAtTimelineEdges() {
+        for (width in listOf(0f, 0.25f, 4f, 12.25f, 12.5f, 52f, 300f)) {
+            for (fraction in listOf(-0.1f, 0f, 0.5f, 1f, 1.1f)) {
+                val bounds = seekbarThumbBounds(width, 12.5f, width * fraction)
+                assertTrue(bounds.left >= 0f)
+                assertTrue(bounds.width <= width)
+                assertTrue(bounds.left + bounds.width <= width)
+            }
+        }
+        assertEquals(SeekbarThumbBounds(0f, 5f), seekbarThumbBounds(300f, 5f, 0f))
+        assertEquals(SeekbarThumbBounds(147.5f, 5f), seekbarThumbBounds(300f, 5f, 150f))
+        assertEquals(SeekbarThumbBounds(295f, 5f), seekbarThumbBounds(300f, 5f, 300f))
     }
 }

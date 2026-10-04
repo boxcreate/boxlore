@@ -33,7 +33,7 @@ import cx.aswin.boxlore.feature.home.StableEpisodeList
 
 /**
  * Emits the "For You" section into a [LazyStaggeredGridScope].
- * Hero stays full-line; body cards sit in one full-line [EqualHeightPosterGrid]
+ * Hero stays full-line; body cards load one [EqualHeightPosterGrid] row at a time
  * with fixed 3-line title feet.
  */
 fun LazyStaggeredGridScope.forYouItems(
@@ -55,18 +55,7 @@ fun LazyStaggeredGridScope.forYouItems(
     }
 
     if (items.isEmpty()) {
-        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero_skeleton", contentType = "for_you_hero_skeleton") {
-            val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
-            val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-            ForYouHeroSkeleton(baseColor = baseColor, highlightColor = highlightColor)
-        }
-        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_skeleton", contentType = "for_you_body_skeleton") {
-            EqualHeightPosterGrid {
-                repeat(HomeFeedSpacing.ForYouBodyCount) {
-                    GridSkeletonItem()
-                }
-            }
-        }
+        forYouSkeletonItems()
         return
     }
 
@@ -107,11 +96,11 @@ fun LazyStaggeredGridScope.forYouItems(
     }
 
     val remaining = items.drop(1)
-    if (remaining.isNotEmpty()) {
-        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body", contentType = "for_you_body") {
+    remaining.chunked(2).forEachIndexed { row, rowItems ->
+        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_$row", contentType = "for_you_body") {
             EqualHeightPosterGrid {
-                remaining.forEachIndexed { index, ep ->
-                    val originalIndex = index + 1
+                rowItems.forEachIndexed { index, ep ->
+                    val originalIndex = row * 2 + index + 1
                     val parentPodcast =
                         Podcast(
                             id = ep.podcastId ?: "",
@@ -141,6 +130,21 @@ fun LazyStaggeredGridScope.forYouItems(
                         showSubtitle = false,
                     )
                 }
+            }
+        }
+    }
+}
+
+private fun LazyStaggeredGridScope.forYouSkeletonItems() {
+    item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero", contentType = "for_you_hero") {
+        val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+        val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+        ForYouHeroSkeleton(baseColor = baseColor, highlightColor = highlightColor)
+    }
+    repeat((HomeFeedSpacing.ForYouBodyCount + 1) / 2) { row ->
+        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_$row", contentType = "for_you_body") {
+            EqualHeightPosterGrid {
+                repeat(2) { GridSkeletonItem() }
             }
         }
     }

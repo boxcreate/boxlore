@@ -8,6 +8,23 @@ import org.junit.jupiter.api.Test
 class AppearanceActionsTrackedTest {
 
     @Test
+    fun `trackedForAnalytics preserves miniplayer seek toggle in both directions`() {
+        val recordedValues = mutableListOf<Boolean>()
+        val tracked = AppearanceActions(
+            onSetThemeConfig = {},
+            onToggleDynamicColor = {},
+            onSetThemeBrand = {},
+            onSetSurfaceStyle = {},
+            onSetMiniPlayerSeekButtonsEnabled = { recordedValues.add(it) },
+        ).trackedForAnalytics()
+
+        tracked.onSetMiniPlayerSeekButtonsEnabled(true)
+        tracked.onSetMiniPlayerSeekButtonsEnabled(false)
+
+        assertEquals(listOf(true, false), recordedValues)
+    }
+
+    @Test
     fun `trackedForAnalytics forwards onSetSubscriptionsTabStyle`() {
         var recordedStyle: String? = null
         val baseActions =

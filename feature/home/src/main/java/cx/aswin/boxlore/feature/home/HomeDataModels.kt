@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.home
 
 import cx.aswin.boxlore.core.catalog.content.ContentDaypart
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -39,6 +40,7 @@ data class HomeDataWrapper(
     val isEditorialRowsLoading: Boolean = true,
     val pinnedPodcastIds: List<String> = emptyList(),
     val showsOrderRefreshGeneration: Long = 0L,
+    val scoringHistory: List<ListeningHistoryEntity> = emptyList(),
 )
 
 internal data class HomeCoreSlice(
@@ -47,6 +49,7 @@ internal data class HomeCoreSlice(
     val subs: List<Podcast>,
     val history: List<HomeListeningHistoryItem>,
     val resolvedSerial: Map<String, Episode>,
+    val scoringHistory: List<ListeningHistoryEntity>,
 )
 
 internal data class HomeRecsSlice(

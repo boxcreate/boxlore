@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.home
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,14 +11,23 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.components.HeroCarousel
 import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
+import cx.aswin.boxlore.feature.home.components.HomeLoadingHandoffMillis
+import cx.aswin.boxlore.feature.home.components.HomeLoadingReveal
+import cx.aswin.boxlore.feature.home.logic.shouldAnimateHomeShimmer
+import cx.aswin.boxlore.feature.home.logic.showHomeDiscoveryContent
+import kotlinx.coroutines.delay
 
 @androidx.compose.runtime.Stable
 internal data class PodcastFeedContent(
@@ -89,22 +97,42 @@ internal fun PodcastFeed(
 ) {
     val context = LocalContext.current
     val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState)
-    LazyVerticalStaggeredGrid(
-        columns = StaggeredGridCells.Fixed(2),
-        state = layout.gridState,
-        modifier = layout.modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 160.dp),
-        horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.GridGap),
-        verticalItemSpacing = HomeFeedSpacing.GridGap,
-    ) {
-        smartHeroItem(content, playback, callbacks, derivedState)
-        yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
-        dailyBriefingItem(feedState, playback, callbacks, context)
-        curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState)
-        discoveryGreetingItem(feedState, callbacks)
-        editorialFeedItems(content, loadingState, callbacks)
-        featuredVideoPodcastsItem(featuredVideos, callbacks)
-        discoverFeedItems(feedState, derivedState, callbacks)
+    val visibleKeys by remember(layout.gridState) {
+        derivedStateOf {
+            layout.gridState.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? String }.toSet()
+        }
+    }
+    val hasVisibleLoading = shouldAnimateHomeShimmer(
+            visibleKeys = visibleKeys,
+            initialLoading = loadingState.isLoading,
+            discoveryLoading = loadingState.isFilterLoading,
+            editorialLoading = loadingState.isEditorialRowsLoading,
+            recommendationsLoading = recommendationState.isRecommendationsLoading,
+            selectedShowLoading = loadingState.isSelectedPodcastLoading,
+    )
+    val shimmerActive by produceState(initialValue = hasVisibleLoading, hasVisibleLoading) {
+        // Preserve the same sweep through the short loading-cover handoff.
+        if (!hasVisibleLoading) delay(HomeLoadingHandoffMillis.toLong())
+        value = hasVisibleLoading
+    }
+    ShimmerScope(active = hasVisibleLoading || shimmerActive) {
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Fixed(2),
+            state = layout.gridState,
+            modifier = layout.modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 160.dp),
+            horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.GridGap),
+            verticalItemSpacing = HomeFeedSpacing.GridGap,
+        ) {
+            smartHeroItem(content, playback, callbacks, derivedState)
+            yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
+            dailyBriefingItem(feedState, playback, callbacks, context)
+            curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState)
+            discoveryGreetingItem(feedState, callbacks)
+            editorialFeedItems(content, feedState, loadingState, callbacks)
+            featuredVideoPodcastsItem(featuredVideos, callbacks)
+            discoverFeedItems(feedState, derivedState, callbacks)
+        }
     }
 }
 
@@ -116,6 +144,7 @@ internal data class PodcastFeedDerivedState(
     val discoverItems: List<Podcast>,
     val showDiscoverContent: Boolean,
     val discoverGenreChip: Boolean,
+    val showDiscoverSkeleton: Boolean,
 )
 
 @Composable
@@ -136,8 +165,9 @@ private fun rememberPodcastFeedDerivedState(
         hasBecauseYouLike = hasBecauseYouLike(feedState, recommendationState),
         hasRecommendations = recommendationState.isRecommendationsLoading || content.recommendations.list.isNotEmpty(),
         discoverItems = discoverItems,
-        showDiscoverContent = !loadingState.isLoading && !loadingState.isFilterLoading && discoverItems.isNotEmpty(),
+        showDiscoverContent = showHomeDiscoveryContent(loadingState.isLoading, discoverItems.isNotEmpty()),
         discoverGenreChip = false,
+        showDiscoverSkeleton = loadingState.isLoading || (loadingState.isFilterLoading && discoverItems.isEmpty()),
     )
 }
 
@@ -156,19 +186,17 @@ private fun LazyStaggeredGridScope.smartHeroItem(
     callbacks: HomeFeedCallbacks,
     derivedState: PodcastFeedDerivedState,
 ) {
+    if (derivedState.viewportReady && content.heroItems.list.isEmpty()) return
     item(span = StaggeredGridItemSpan.FullLine, key = "hero", contentType = "hero") {
         PinnedGridItemContent {
-            androidx.compose.animation.Crossfade(
-                targetState = derivedState.heroLoaded,
-                animationSpec = tween(500),
-                label = "hero_crossfade",
+            HomeLoadingReveal(
+                ready = derivedState.heroLoaded,
                 modifier = Modifier.padding(bottom = 12.dp),
-            ) { loaded ->
-                if (loaded) {
-                    SmartHeroCarousel(content.heroItems, playback.player, callbacks)
-                } else {
+                placeholder = {
                     cx.aswin.boxlore.feature.home.components.HeroSkeleton()
-                }
+                },
+            ) {
+                SmartHeroCarousel(content.heroItems, playback.player, callbacks)
             }
         }
     }
