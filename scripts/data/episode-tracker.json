@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-04T00:28:49.206Z",
+  "lastRun": "2026-10-04T06:14:24.048Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "b16706f8-b922-11f1-a2fc-9ff5258a6316",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "9bb60251-aa91-4be4-b924-4efc3c78923b",
-      "lastEpisodeTitle": "8pm ET, October 03 | The latest headlines from NPR",
+      "lastRssKey": "583fdd8e-f162-412b-895b-a1c7c6a00b00",
+      "lastEpisodeTitle": "2am ET, October 04 | The latest headlines from NPR",
       "lastEpisodeId": "61201617300",
-      "lastCheckedAt": 1791073733463
+      "lastCheckedAt": 1791094469219
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75524531",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791025801975
     },
     "385117": {
-      "lastRssKey": "e078030a-bf87-11f1-8d8c-3f4545d3408f",
-      "lastEpisodeTitle": "8PM ET 10/03/2026 Newscast",
+      "lastRssKey": "2aeb9064-bfba-11f1-942b-cb7fd1af18c4",
+      "lastEpisodeTitle": "2AM ET 10/04/2026 Newscast",
       "lastEpisodeId": "61208616096",
-      "lastCheckedAt": 1791073742752
+      "lastCheckedAt": 1791094480870
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -370,10 +370,10 @@
       "lastCheckedAt": 1790786464899
     },
     "545784": {
-      "lastRssKey": "e6f21b20362745d1efd8c5efe4ab6e51",
-      "lastEpisodeTitle": "Wie gerecht sind die Merz-Reformen?",
-      "lastEpisodeId": "61187236078",
-      "lastCheckedAt": 1791005739714
+      "lastRssKey": "ce113c64a19fc103894cf358b4cb168e",
+      "lastEpisodeTitle": "Heimspiel: Hamsterrad der Empörung (mit Omid Nouripour)",
+      "lastEpisodeId": "61228035363",
+      "lastCheckedAt": 1791094516527
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/cap/twit_1103/effbddb8-df68-4c78-b695-12613e560854.mp3",
@@ -566,10 +566,10 @@
       "lastCheckedAt": 1790958659741
     },
     "928708": {
-      "lastRssKey": "d683a91e-bcf6-11f1-82b5-03976c200af1",
-      "lastEpisodeTitle": "History Today - Oct. 3",
+      "lastRssKey": "7516b732-bdde-11f1-b1af-abc253c638eb",
+      "lastEpisodeTitle": "History Today - Oct. 4",
       "lastEpisodeId": "61191360346",
-      "lastCheckedAt": 1791005753016
+      "lastCheckedAt": 1791094531074
     },
     "946758": {
       "lastRssKey": "10f30bcc-77b5-11f0-8752-7b07bcd8ee21",
@@ -595,10 +595,10 @@
       "lastCheckedAt": 1790986292655
     },
     "980370": {
-      "lastRssKey": "6abe754bce220947617cd459",
-      "lastEpisodeTitle": "The joy of foraging your own food | Alexis Nikole Nelson",
-      "lastEpisodeId": "61063258161",
-      "lastCheckedAt": 1791040362458
+      "lastRssKey": "6aa1dbbb156a52f880a51eb6",
+      "lastEpisodeTitle": "Sunday Pick: All the lonely people | from Corner Piece",
+      "lastEpisodeId": "61230509840",
+      "lastCheckedAt": 1791094534090
     },
     "998969": {
       "lastRssKey": "audioboom-01a0f2ac-1740-75fb-9664-ff18bd4985d0",
@@ -774,10 +774,10 @@
       "lastCheckedAt": 1790385270880
     },
     "2136580": {
-      "lastRssKey": "eb03ecbe-6f52-4beb-a3f0-ab108606c6d3",
-      "lastEpisodeTitle": "Episode 390: Michael Dufort Chasing The UFC Dream...AND HE LOVES THE MONTREAL CANADIENS!",
+      "lastRssKey": "352ef84c-bb84-4e49-b84d-b74ff251a29a",
+      "lastEpisodeTitle": "Episode 391: CANADIENS CAN'T COMPLETE COMEBACK IN OVERTIME vs PENGUINS!",
       "lastEpisodeId": "61173312933",
-      "lastCheckedAt": 1790974588793
+      "lastCheckedAt": 1791094550516
     },
     "2136949": {
       "lastRssKey": "6aa83ca42469d1a3b3cb1d35",
@@ -1324,15 +1324,16 @@
       "lastCheckedAt": 1790986354402
     },
     "7348627": {
-      "lastRssKey": "531db8bc-39e2-489f-a286-2880dd344671",
-      "lastEpisodeTitle": "2.5 Hours of John Doe Cases That Need To Be Solved | Cold Case Compilation | 323",
-      "lastCheckedAt": 1791073847577
+      "lastRssKey": "6847da75-a814-4bad-8bf0-a568bc11c5f6",
+      "lastEpisodeTitle": "1.5 Hours of Disturbing Cold Cases That Haunt Detectives | 322",
+      "lastEpisodeId": "61145612047",
+      "lastCheckedAt": 1791094590692
     },
     "7376606": {
-      "lastRssKey": "534f15c4-50c4-41be-b4a1-02835529a904",
-      "lastEpisodeTitle": "The Nazi Regime From Start to Finish (1933–1945) 🇩🇪⚫ | How the Dictatorship Rose and Fell | Boring History for Sleep",
-      "lastEpisodeId": "61132567954",
-      "lastCheckedAt": 1791005808967
+      "lastRssKey": "40dd187f-7d6b-4205-aeb0-03db7c641688",
+      "lastEpisodeTitle": "Life in the Slums of 19th-Century Paris 🏚️🇫🇷 | The Hidden Side of the City of Light | Boring History for Sleep",
+      "lastEpisodeId": "61227308518",
+      "lastCheckedAt": 1791094591120
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031jzh",
@@ -1482,10 +1483,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/0fb42040-017b-5f3a-9d31-185dd918a484",
-      "lastEpisodeTitle": "The 3 Hs of supporting someone in a narcissistic relationship ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/51e0cc90-8c23-5f95-bbc6-24d754102cb3",
+      "lastEpisodeTitle": "GlimmerA Story of Survival, Hope, and Healing ~ Dr. Ramani",
       "lastEpisodeId": "61191691625",
-      "lastCheckedAt": 1791073854199
+      "lastCheckedAt": 1791094597930
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
