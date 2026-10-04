@@ -24,8 +24,16 @@ internal class AutoDownloadLifecycle(
     private val container: AppContainer,
     private val scope: CoroutineScope
 ) : DefaultLifecycleObserver {
+    private val foregroundScan = AutoDownloadForegroundScan(
+        scope = scope,
+        loadIds = { container.autoDownloadCoordinator.synchronizeSubscriptions() },
+        scanCached = { id, canProceed -> container.autoDownloadCoordinator.scanCached(id, canProceed = canProceed) },
+    )
+
     fun start() {
-        container.subscriptionForegroundSync.setForeground(ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+        val foreground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        container.subscriptionForegroundSync.setForeground(foreground)
+        foregroundScan.setForeground(foreground)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         scope.launch {
             var previousIds = emptySet<String>()
@@ -44,7 +52,7 @@ internal class AutoDownloadLifecycle(
                     if (previousWifi != wifi || previousBackground != background) reconcileAutoDownloadWifiPolicy(manager, wifi, background)
                     container.autoDownloadCoordinator.synchronizeSubscriptions()
                     AutoDownloadScheduling.reconcile(context, ids.isNotEmpty(), background)
-                    scanCachedInForeground(ids)
+                    foregroundScan.request(ids)
                     previousIds = ids
                     previousWifi = wifi
                     previousBackground = background
@@ -55,20 +63,13 @@ internal class AutoDownloadLifecycle(
 
     override fun onStart(owner: LifecycleOwner) {
         container.subscriptionForegroundSync.setForeground(true)
-        scope.launch {
-            safely {
-                for (id in container.autoDownloadCoordinator.synchronizeSubscriptions()) container.autoDownloadCoordinator.scanCached(id)
-            }
-        }
+        foregroundScan.setForeground(true)
+        foregroundScan.request()
     }
 
     override fun onStop(owner: LifecycleOwner) {
+        foregroundScan.setForeground(false)
         container.subscriptionForegroundSync.setForeground(false)
-    }
-
-    private suspend fun scanCachedInForeground(ids: Set<String>) {
-        if (!ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
-        for (id in ids) container.autoDownloadCoordinator.scanCached(id)
     }
 
     private suspend fun safely(block: suspend () -> Unit) {

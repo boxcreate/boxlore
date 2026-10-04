@@ -39,7 +39,7 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 
 - Delayed notification hydration updates only the matching active release; dismissed alerts and newer releases are preserved, including after artwork I/O. Hydration exceptions and unresolved releases share a five-retry limit. On startup or a Wi-Fi policy change, automatic transfer reconciliation compares persisted work constraints and cancels only mismatches, preserving correctly scheduled cold-start workers.
 
-- Download lifecycle reconciliation scans cached release claims only while the process is foreground. Push admission can replace pending background-gated transfers before lifecycle cancellation finishes.
+- Download lifecycle reconciliation scans cached release claims only while the process is foreground. Resume and preference reconciliation share `AutoDownloadForegroundScan`: process stop cancels its owned job, each show rechecks foreground state, and in-flight enqueue admission uses the same live guard. A later foreground entry replays interrupted pending claims. Push admission can replace pending background-gated transfers before lifecycle cancellation finishes.
 
 ## Internal structure
 
