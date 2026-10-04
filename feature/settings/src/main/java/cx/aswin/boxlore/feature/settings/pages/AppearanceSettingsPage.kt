@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,6 +42,7 @@ import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
 import cx.aswin.boxlore.core.designsystem.theme.customThemeBrandHex
+import cx.aswin.boxlore.core.designsystem.theme.findThemePreset
 import cx.aswin.boxlore.core.designsystem.theme.isCustomThemeBrand
 import cx.aswin.boxlore.core.designsystem.theme.isExactThemeBrand
 import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
@@ -56,6 +58,8 @@ import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import cx.aswin.boxlore.feature.settings.components.SettingsSwitchRow
+import cx.aswin.boxlore.feature.settings.components.ThemePresetColorsSummary
+import cx.aswin.boxlore.feature.settings.components.ThemePresetPicker
 import cx.aswin.boxlore.feature.settings.dialogs.AccentColorPickerDialog
 
 /** Current values shown on [AppearanceSettingsPage]. Also used by [cx.aswin.boxlore.feature.settings.SettingsScreen]. */
@@ -90,6 +94,7 @@ data class AppearanceActions(
     val onSetSubscriptionsDefaultTab: (String) -> Unit = {},
     val onSetSubscriptionsTabStyle: (String) -> Unit = {},
     val onSetMiniPlayerSeekButtonsEnabled: (Boolean) -> Unit = {},
+    val onSetThemePreset: (String) -> Unit = {},
 )
 
 @Composable
@@ -98,8 +103,6 @@ internal fun AppearanceSettingsPage(
     actions: AppearanceActions,
     onBack: () -> Unit,
 ) {
-    val look = BackgroundLook.fromSurfaceStyle(state.currentSurfaceStyle)
-
     fun applyStyle(style: String) {
         selectSurfaceStyle(
             style = style,
@@ -123,10 +126,11 @@ internal fun AppearanceSettingsPage(
         )
 
         BackgroundLookSection(
-            selectedLook = look,
+            state = state,
             onSelectLook = { nextLook ->
                 applyStyle(nextLook.surfaceStyleKey)
             },
+            onSelectPreset = actions.onSetThemePreset,
         )
 
         ColorsSection(
@@ -390,9 +394,15 @@ private fun ForcedModeBadge(mode: ThemeMode) {
 
 @Composable
 private fun BackgroundLookSection(
-    selectedLook: BackgroundLook,
+    state: AppearanceUiState,
     onSelectLook: (BackgroundLook) -> Unit,
+    onSelectPreset: (String) -> Unit,
 ) {
+    var showPresets by remember { mutableStateOf(false) }
+    val selectedPreset = findThemePreset(state.currentSurfaceStyle)
+    val selectedLook = if (selectedPreset == null) BackgroundLook.fromSurfaceStyle(state.currentSurfaceStyle) else null
+    val customColors = selectedPreset != null &&
+        (state.currentThemeBrand != selectedPreset.key || state.isDynamicColorEnabled)
     SettingsGroup(
         title = "Background",
         footer = "How the app’s surfaces look. They follow Theme above.",
@@ -408,6 +418,30 @@ private fun BackgroundLookSection(
                 SettingsDivider()
             }
         }
+        SettingsDivider()
+        SettingsChoiceRow(
+            title = "Ready-made themes",
+            supportingText = when {
+                selectedPreset == null -> "10 complete looks with matching backgrounds and colors"
+                customColors -> "${selectedPreset.name} · Personalised colors"
+                else -> "${selectedPreset.name} · Matching backgrounds and colors"
+            },
+            selected = selectedPreset != null,
+            onClick = { showPresets = true },
+        )
+    }
+    if (showPresets) {
+        ThemePresetPicker(
+            selectedKey = selectedPreset?.key.orEmpty(),
+            hasCustomColors = customColors,
+            dark = when (state.currentThemeConfig) {
+                "light" -> false
+                "dark" -> true
+                else -> isSystemInDarkTheme()
+            },
+            onSelect = onSelectPreset,
+            onDismiss = { showPresets = false },
+        )
     }
 }
 
@@ -659,6 +693,9 @@ private fun ColorsSection(
                 }
             Column {
                 SettingsDivider()
+                findThemePreset(currentThemeBrand)?.let { preset ->
+                    ThemePresetColorsSummary(preset)
+                }
                 AccentSwatchGrid(
                     seeds = seeds,
                     selectedKey = if (customSelected) "" else currentThemeBrand,

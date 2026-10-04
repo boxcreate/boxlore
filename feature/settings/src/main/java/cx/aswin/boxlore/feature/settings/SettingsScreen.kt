@@ -576,6 +576,10 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
         AnalyticsHelper.trackSettingsInteraction("theme_brand_changed", it)
         onSetThemeBrand(it)
     },
+    onSetThemePreset = {
+        AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)
+        onSetThemePreset(it)
+    },
     onSetSurfaceStyle = {
         AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)
         onSetSurfaceStyle(it)
