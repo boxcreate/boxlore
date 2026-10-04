@@ -149,6 +149,37 @@ class UserPreferencesRepositoryTest {
     }
 
     @Test
+    fun completeThemePresetSurvivesRecreationAndPreservesOtherChoices() = runTest {
+        repository.setThemeConfig("light")
+        repository.setUseDynamicColor(true)
+        repository.setFontRoundness("soft")
+        repository.setNavigationStyle("classic")
+
+        repository.setThemePreset("preset:moss")
+
+        val stored = context.userPreferencesDataStore.data.first()
+        assertEquals("preset:moss", stored[Keys.SURFACE_STYLE])
+        assertEquals("preset:moss", stored[Keys.THEME_BRAND])
+        assertEquals(false, stored[Keys.USE_DYNAMIC_COLOR])
+        val restored = UserPreferencesRepository(context)
+        assertEquals("preset:moss", restored.surfaceStyleStream.first())
+        assertEquals("preset:moss", restored.themeBrandStream.first())
+        assertFalse(restored.useDynamicColorStream.first())
+        assertEquals("preset:moss", restored.cachedSurfaceStyle)
+        assertEquals("preset:moss", restored.cachedThemeBrand)
+        assertFalse(restored.cachedUseDynamicColor)
+        assertEquals("light", restored.themeConfigStream.first())
+        assertEquals("soft", restored.fontRoundnessStream.first())
+        assertEquals("classic", restored.navigationStyleStream.first())
+
+        restored.setThemeBrand("emerald")
+        assertEquals("preset:moss", restored.surfaceStyleStream.first())
+        restored.setThemePreset("preset:ink")
+        assertEquals("preset:ink", restored.themeBrandStream.first())
+        assertEquals("preset:ink", restored.surfaceStyleStream.first())
+    }
+
+    @Test
     fun setFontRoundnessUpdatesStreamAndCache() = runTest {
         repository.setFontRoundness("round")
         assertEquals("round", repository.fontRoundnessStream.first())
