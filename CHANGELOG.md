@@ -10,11 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Scroll-adaptive floating miniplayer with coordinated Lore navigation docking, cookie artwork, compact progress and active playback motion. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Opt-in miniplayer seek controls in Appearance settings. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Dedicated Support boxlore screen in Settings featuring interactive 3D tactical artifacts, particle effects, and lore inspection stories. ([#1090](https://github.com/boxcreate/boxlore/pull/1090)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - PostHog telemetry tracks for support page impressions, tier toggles, and donation button clicks. ([#1090](https://github.com/boxcreate/boxlore/pull/1090)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Changed
 - Require explicit installation-local consent for six-hour background auto-download discovery, with network, battery and charging restrictions enforced for discovery and its transfers. ([#1094](https://github.com/boxcreate/boxlore/pull/1094)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Share a six-hour freshness window for routine foreground feed refreshes, processing up to ten due feeds per pass with two concurrent requests. ([#1094](https://github.com/boxcreate/boxlore/pull/1094)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Refine regular miniplayer controls, progress, full-player expansion and floating navigation selection motion. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Reduce startup contention through deferred optional work, conditional widget initialization, cached discovery ranking and bounded serial-show resolution. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 ### Fixed
 - Restore automatic episode downloads with durable push processing, publisher RSS discovery, and foreground recovery when episode pushes are missing. ([#1092](https://github.com/boxcreate/boxlore/pull/1092)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Preserve interrupted automatic downloads and protect manual downloads from automatic retention. ([#1092](https://github.com/boxcreate/boxlore/pull/1092)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -22,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve the visible New Episodes queue order through playback, restoration, Android Auto, and Cast, deferring Smart Queue fallback until completion and rejecting stale refill results. ([#1093](https://github.com/boxcreate/boxlore/pull/1093)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Restore saved progress on automatic episode transitions without treating the live player clock as an explicit seek or refreshing the history timestamp before resume policy runs. ([#1093](https://github.com/boxcreate/boxlore/pull/1093)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Cancel RSS HTTP calls when background consent or device conditions are revoked, and prevent background metadata hydration from starting downloads through an ungated callback. ([#1094](https://github.com/boxcreate/boxlore/pull/1094)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Keep floating selectors and Play All aligned with the compact player. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Preserve visible Home content during refreshes and stabilize shimmer, skeleton and artwork handoffs. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Share prefetched Lore artwork accents across cards and page colours; wrap long Settings titles onto two lines. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1090
 ### Improvements
@@ -43,6 +50,16 @@ readme-copy:end pr=1093 -->
 - Background episode checks are now optional in Auto-Download Settings. They start off, explain their battery and data costs, offer network and charging restrictions, and pause when the battery is low.
 - Auto-downloads still use new-episode pushes and normal refreshes while boxlore is open. Routine feed checks now share a six-hour cooldown and refresh large libraries in smaller batches.
 readme-copy:end pr=1094 -->
+
+<!-- readme-copy:start pr=1095
+### Improvements
+- The floating player shrinks into a compact artwork control as you scroll, with playback progress kept visible and Lore moving into the navigation bar.
+- Enjoy refined miniplayer controls and smoother transitions into the full player. Optional seek buttons are available in Appearance settings.
+- Home loads more consistently, with smoother loading placeholders and less content blinking during refreshes.
+### Fixes
+- Floating tab selectors and Play All follow the player's compact position.
+- Lore colours follow the active artwork more reliably, and long Settings titles wrap across two lines.
+readme-copy:end pr=1095 -->
 ## [v0.0.27] - 2026-09-26
 
 ### Added

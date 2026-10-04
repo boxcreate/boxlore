@@ -128,12 +128,17 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>The floating player shrinks into a compact artwork control as you scroll, with playback progress kept visible and Lore moving into the navigation bar. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
+<li>Enjoy refined miniplayer controls and smoother transitions into the full player. Optional seek buttons are available in Appearance settings. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
+<li>Home loads more consistently, with smoother loading placeholders and less content blinking during refreshes. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
 <li>Background episode checks are now optional in Auto-Download Settings. They start off, explain their battery and data costs, offer network and charging restrictions, and pause when the battery is low. <a href="https://github.com/boxcreate/boxlore/pull/1094"><img src="https://img.shields.io/badge/PR-1094-6750A4?style=flat-square" alt="PR #1094" height="18"/></a></li>
 <li>Auto-downloads still use new-episode pushes and normal refreshes while boxlore is open. Routine feed checks now share a six-hour cooldown and refresh large libraries in smaller batches. <a href="https://github.com/boxcreate/boxlore/pull/1094"><img src="https://img.shields.io/badge/PR-1094-6750A4?style=flat-square" alt="PR #1094" height="18"/></a></li>
 <li>Added a dedicated Support boxlore experience in Settings with interactive tactical artifacts and lore inspection. <a href="https://github.com/boxcreate/boxlore/pull/1090"><img src="https://img.shields.io/badge/PR-1090-6750A4?style=flat-square" alt="PR #1090" height="18"/></a></li>
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Floating tab selectors and Play All follow the player's compact position. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
+<li>Lore colours follow the active artwork more reliably, and long Settings titles wrap across two lines. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
 <li>New Episodes now plays the remaining list in order and resumes unfinished episodes at the right position. <a href="https://github.com/boxcreate/boxlore/pull/1093"><img src="https://img.shields.io/badge/PR-1093-6750A4?style=flat-square" alt="PR #1093" height="18"/></a></li>
 </ul>
 <!-- release-upcoming:end -->
