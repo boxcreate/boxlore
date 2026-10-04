@@ -63,7 +63,7 @@ class AutoDownloadCoordinatorTest {
         database,
         catalog,
         prefs,
-        enqueue = { _, episodeId, _ ->
+        enqueue = { _, episodeId, _, _ ->
             if (enqueueFails) throw java.io.IOException("process stopped around enqueue")
             enqueued += episodeId
         },
@@ -77,14 +77,14 @@ class AutoDownloadCoordinatorTest {
     private suspend fun release(id: String = "release") {
         feed.items = listOf(id to now + 60, "archive" to now - 86_400)
         val stored = database.localEpisodeCatalogDao().getFeed("100")!!
-        database.localEpisodeCatalogDao().upsertFeed(stored.copy(fetchedAt = System.currentTimeMillis() - 3_600_001))
+        database.localEpisodeCatalogDao().upsertFeed(stored.copy(fetchedAt = System.currentTimeMillis() - 21_600_001))
     }
 
-    @Test fun missingPushIsRecoveredInsideSixHourQuietPeriodWithoutPodcastIndex() = runBlocking {
+    @Test fun optedInDiscoveryRecoversMissingPushAfterSharedSixHourCooldownWithoutPodcastIndex() = runBlocking {
         val coordinator = coordinator()
         coordinator.synchronizeSubscriptions()
         release()
-        assertTrue(coordinator.discover())
+        assertTrue(coordinator.discover { true })
         val canonical = catalog.findByCatalogKey("100", "release", null)!!
         assertTrue(canonical.id.toLong() < 0)
         assertEquals(listOf(canonical.id), enqueued)
@@ -106,7 +106,7 @@ class AutoDownloadCoordinatorTest {
         catalog.refresh(LocalEpisodeCatalogPort.RefreshRequest("100", URL, reason = LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE))
         val coordinator = coordinator()
         coordinator.synchronizeSubscriptions()
-        coordinator.discover()
+        coordinator.discover { true }
         assertTrue(enqueued.isEmpty())
     }
 
@@ -115,11 +115,11 @@ class AutoDownloadCoordinatorTest {
         coordinator.synchronizeSubscriptions()
         release()
         enqueueFails = true
-        assertFalse(coordinator.discover())
+        assertFalse(coordinator.discover { true })
         val id = catalog.findByCatalogKey("100", "release", null)!!.id
         assertEquals(AutoDownloadReleaseEntity.PENDING, database.autoDownloadDao().getRelease(id)?.state)
         enqueueFails = false
-        assertTrue(coordinator().discover())
+        assertTrue(coordinator().discover { true })
         assertEquals(listOf(id), enqueued)
     }
 
@@ -127,7 +127,7 @@ class AutoDownloadCoordinatorTest {
         val coordinator = coordinator()
         coordinator.synchronizeSubscriptions()
         release()
-        coordinator.discover()
+        coordinator.discover { true }
         val id = enqueued.single()
         database.autoDownloadDao().finish(id)
         coordinator.scanCached("100")
@@ -145,7 +145,7 @@ class AutoDownloadCoordinatorTest {
         release()
         val show = database.podcastDao().getPodcast("100")!!
         database.podcastDao().upsert(show.copy(isSubscribed = false))
-        assertTrue(coordinator.discover())
+        assertTrue(coordinator.discover { true })
         assertTrue(enqueued.isEmpty())
         assertNull(database.autoDownloadDao().getShow("100"))
     }
@@ -154,19 +154,68 @@ class AutoDownloadCoordinatorTest {
         val coordinator = coordinator()
         coordinator.synchronizeSubscriptions()
         release()
-        coordinator.discover()
+        coordinator.discover { true }
         val id = enqueued.single()
         feed.fail = true
         val stored = database.localEpisodeCatalogDao().getFeed("100")!!
         database.localEpisodeCatalogDao().upsertFeed(stored.copy(fetchedAt = 1))
-        assertFalse(coordinator.discover())
+        assertFalse(coordinator.discover { true })
         assertEquals(AutoDownloadReleaseEntity.PENDING, database.autoDownloadDao().getRelease(id)?.state)
+    }
+
+    @Test fun defaultDiscoveryAndDeniedBackgroundScanCannotFetchOrEnqueue() = runBlocking {
+        val coordinator = coordinator()
+        coordinator.synchronizeSubscriptions()
+        release()
+        assertTrue(coordinator.discover())
+        assertTrue(coordinator.discover { false })
+        coordinator.scanCached("100", background = true)
+        assertEquals(1, feed.fetches)
+        assertTrue(enqueued.isEmpty())
+    }
+
+    @Test fun backgroundPersistCannotEscapeThroughForegroundCallback() = runBlocking {
+        var callbackCalls = 0
+        catalog = LocalEpisodeCatalogRepository.create(database, feed, onCatalogPersisted = { callbackCalls++ })
+        coordinator().synchronizeSubscriptions()
+        release()
+        assertTrue(coordinator().discover { true })
+        assertEquals(0, callbackCalls)
+        assertEquals(1, enqueued.size)
+    }
+
+    @Test fun revocationDuringFetchPreventsPersistenceAndEnqueue() = runBlocking {
+        val coordinator = coordinator()
+        coordinator.synchronizeSubscriptions()
+        release()
+        var allowed = true
+        feed.afterFetch = { allowed = false }
+        assertFalse(coordinator.discover { allowed })
+        assertNull(catalog.findByCatalogKey("100", "release", null))
+        assertTrue(enqueued.isEmpty())
+    }
+
+    @Test fun forcedBackgroundMetadataRecoveryCannotInvokeOrdinaryDownloadCallback() = runBlocking {
+        var callbacks = 0
+        catalog = LocalEpisodeCatalogRepository.create(database, feed, onCatalogPersisted = { callbacks++ })
+        release()
+        val request = LocalEpisodeCatalogPort.RefreshRequest(
+            "100",
+            URL,
+            reason = LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE,
+            runPostPersistCallback = false,
+        )
+        assertTrue(catalog.refresh(request) is LocalEpisodeCatalogPort.RefreshOutcome.Success)
+        assertEquals(0, callbacks)
+        assertTrue(catalog.refresh(request.copy(reason = LocalEpisodeCatalogPort.RefreshReason.MANUAL, runPostPersistCallback = true)) is LocalEpisodeCatalogPort.RefreshOutcome.Success)
+        assertEquals(1, callbacks)
     }
 
     private class Feed : RssFeedClient() {
         var items = emptyList<Pair<String, Long>>()
         var fetches = 0
         var fail = false
+        var afterFetch: () -> Unit = {}
         override suspend fun fetch(url: String): RssFetchResult {
             fetches++
             if (fail) throw java.io.IOException("offline")
@@ -174,6 +223,7 @@ class AutoDownloadCoordinatorTest {
                 val pubDate = DateTimeFormatter.RFC_1123_DATE_TIME.format(Instant.ofEpochSecond(date).atZone(ZoneOffset.UTC))
                 "<item><guid>$id</guid><title>$id</title><pubDate>$pubDate</pubDate><enclosure url=\"https://cdn.example/$id.mp3\" type=\"audio/mpeg\"/></item>"
             } + "</channel></rss>"
+            afterFetch()
             return RssFetchResult(url, null, null, xml.toByteArray())
         }
     }

@@ -8,6 +8,8 @@
     <include domain="database" path="." />
     <include domain="sharedpref" path="." />
     <include domain="file" path="datastore/" />
+    <!-- Background feed access requires explicit consent on this installation. -->
+    <exclude domain="file" path="datastore/auto_download_background.preferences_pb" />
     <!-- Rebuild WorkManager jobs from DataStore instead of restoring stale schedules. -->
     <exclude domain="database" path="androidx.work.workdb" />
     <exclude domain="database" path="androidx.work.workdb-journal" />

@@ -6,7 +6,10 @@ import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -82,12 +85,15 @@ class LocalEpisodeCatalogRepositoryTest {
     }
 
     @Test
-    fun downloadDiscoveryChecksAfterOneHourAndReleaseHintsAlwaysBypassQuiet() {
+    fun automaticChecksShareSixHourCooldownWithOrWithoutValidatorsAndExplicitRefreshBypassesIt() {
         val now = System.currentTimeMillis()
         val feed = LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml")
             .copy(fetchedAt = now - 3_600_001, ready = true, needsFullBackfill = false)
         assertTrue(shouldSkipQuiet(feed, nowMillis = now))
-        assertFalse(shouldSkipQuiet(feed, LocalEpisodeCatalogPort.RefreshReason.AUTO_DOWNLOAD, now))
+        assertTrue(shouldSkipQuiet(feed, LocalEpisodeCatalogPort.RefreshReason.AUTO_DOWNLOAD, now))
+        assertTrue(shouldSkipQuiet(feed.copy(feedEtag = "etag"), nowMillis = now))
+        assertFalse(shouldSkipQuiet(feed.copy(fetchedAt = now - LocalEpisodeCatalogRepository.QUIET_INTERVAL_MS), nowMillis = now))
+        assertFalse(shouldSkipQuiet(feed.copy(fetchedAt = now), LocalEpisodeCatalogPort.RefreshReason.MANUAL, now))
         assertFalse(shouldSkipQuiet(feed.copy(fetchedAt = now), LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE, now))
     }
 
@@ -285,17 +291,58 @@ class LocalEpisodeCatalogRepositoryTest {
         assertEquals(listOf("-1", "-2", "-3"), window.map { it.id })
     }
 
+    @Test fun recentValidatedFeedDoesNotEvenPerformHeadCheck() = runTest {
+        val dao = FakeCatalogDao()
+        dao.feeds["100"] = LocalEpisodeCatalogRepository.stubFeed("100", "https://feeds.example/show.xml")
+            .copy(fetchedAt = System.currentTimeMillis(), ready = true, needsFullBackfill = false, feedEtag = "etag")
+        var heads = 0
+        val repo = catalogRepo(dao, isFeedUnchanged = { _, _, _ ->
+            heads++
+            true
+        })
+        assertTrue(repo.refresh(LocalEpisodeCatalogPort.RefreshRequest("100", "https://feeds.example/show.xml")) is RefreshOutcome.Unchanged)
+        assertEquals(0, heads)
+        assertFalse(repo.isRefreshDue("100", "https://feeds.example/show.xml", System.currentTimeMillis()))
+        assertTrue(repo.isRefreshDue("100", "https://feeds.example/changed.xml", System.currentTimeMillis()))
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun permissionIsRecheckedAfterWaitingForSharedFetchSlot() = runTest {
+        var allowed = true
+        var fetches = 0
+        val slots = Semaphore(1, acquiredPermits = 1)
+        val repo = catalogRepo(
+            feedClient = object : RssFeedClient() {
+            override suspend fun fetch(url: String): RssFetchResult {
+                fetches++
+                error("revoked fetch must not run")
+            }
+        },
+            megaGetGate = slots
+        )
+        val pending = async {
+            repo.refresh(LocalEpisodeCatalogPort.RefreshRequest("100", "https://feeds.example/show.xml", canProceed = { allowed }))
+        }
+        runCurrent()
+        allowed = false
+        slots.release()
+        assertTrue(pending.await() is RefreshOutcome.Failure)
+        assertEquals(0, fetches)
+    }
+
     private fun catalogRepo(
         dao: FakeCatalogDao = FakeCatalogDao(),
         isFeedUnchanged: suspend (String, String?, String?) -> Boolean = { _, _, _ -> false },
         feedClient: RssFeedClient = RssFeedClient(),
+        megaGetGate: Semaphore = Semaphore(1),
     ) = LocalEpisodeCatalogRepository(
         dao = dao,
         feedClient = feedClient,
         runInTransaction = { it() },
         isFeedUnchanged = isFeedUnchanged,
         reconcileListenerState = { _, _ -> },
-        megaGetGate = Semaphore(1),
+        megaGetGate = megaGetGate,
     )
 
     private class EmptyFeedClient : RssFeedClient() {

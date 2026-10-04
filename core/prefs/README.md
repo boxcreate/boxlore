@@ -22,6 +22,8 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 - `PrefsFileMigrator` opens canonical SharedPreferences files and migrates from legacy file names.
 - `PlaybackSkipBounds` and `EngagementPromptConstants` provide shared preference-related bounds and thresholds.
 
+- `AutoDownloadBackgroundSettings` is installation-local consent in a separate `auto_download_background` DataStore, excluded from Android backup/device transfer and absent from library/cloud settings. Defaults: disabled, unmetered-only, charging optional. Only the explicit settings setter enables checks; existing auto-download preferences and per-show flags do not grant consent.
+
 ## Internal structure
 
 ```text

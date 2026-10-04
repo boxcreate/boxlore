@@ -2,15 +2,17 @@ package cx.aswin.boxlore.lifecycle
 
 import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.work.NetworkType
 import androidx.work.WorkManager
 import androidx.work.await
 import cx.aswin.boxlore.AppContainer
 import cx.aswin.boxlore.core.downloads.AutoDownloadScheduling
+import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -23,36 +25,47 @@ internal class AutoDownloadLifecycle(
     private val scope: CoroutineScope
 ) : DefaultLifecycleObserver {
     fun start() {
+        container.subscriptionForegroundSync.setForeground(ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         scope.launch {
             var previousIds = emptySet<String>()
             var previousWifi: Boolean? = null
+            var previousBackground: AutoDownloadBackgroundSettings? = null
             combine(
                 container.database.podcastDao().getSubscribedPodcasts(),
-                container.userPreferencesRepository.autoDownloadWifiOnlyStream
-            ) { shows, wifi ->
-                shows.filter(cx.aswin.boxlore.core.downloads.AutoDownloadCoordinator::eligible).map { it.podcastId }.toSet() to wifi
-            }.distinctUntilChanged().collect { (ids, wifi) ->
+                container.userPreferencesRepository.autoDownloadWifiOnlyStream,
+                container.userPreferencesRepository.autoDownloadBackgroundSettingsStream
+            ) { shows, wifi, background ->
+                Triple(shows.filter(cx.aswin.boxlore.core.downloads.AutoDownloadCoordinator::eligible).map { it.podcastId }.toSet(), wifi, background)
+            }.distinctUntilChanged().collectLatest { (ids, wifi, background) ->
                 safely {
                     val manager = WorkManager.getInstance(context)
                     for (disabled in previousIds - ids) manager.cancelAllWorkByTag(AutoDownloadScheduling.showTag(disabled)).await()
-                    if (previousWifi != wifi) reconcileAutoDownloadWifiPolicy(manager, wifi)
+                    if (previousWifi != wifi || previousBackground != background) reconcileAutoDownloadWifiPolicy(manager, wifi, background)
                     container.autoDownloadCoordinator.synchronizeSubscriptions()
-                    AutoDownloadScheduling.reconcile(context, ids.isNotEmpty())
-                    if (ids.isNotEmpty()) AutoDownloadScheduling.catchUp(context)
+                    AutoDownloadScheduling.reconcile(context, ids.isNotEmpty(), background)
+                    if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                        for (id in ids) container.autoDownloadCoordinator.scanCached(id)
+                    }
                     previousIds = ids
                     previousWifi = wifi
+                    previousBackground = background
                 }
             }
         }
     }
 
     override fun onStart(owner: LifecycleOwner) {
+        container.subscriptionForegroundSync.setForeground(true)
         scope.launch {
             safely {
-                if (container.autoDownloadCoordinator.synchronizeSubscriptions().isNotEmpty()) AutoDownloadScheduling.catchUp(context)
+                for (id in container.autoDownloadCoordinator.synchronizeSubscriptions()) container.autoDownloadCoordinator.scanCached(id)
             }
         }
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        container.subscriptionForegroundSync.setForeground(false)
     }
 
     private suspend fun safely(block: suspend () -> Unit) {
@@ -67,10 +80,14 @@ internal class AutoDownloadLifecycle(
 }
 
 /** Preserve correctly constrained cold-start work; rebuild only requests with stale policy. */
-internal suspend fun reconcileAutoDownloadWifiPolicy(manager: WorkManager, wifiOnly: Boolean) {
-    val network = if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED
+internal suspend fun reconcileAutoDownloadWifiPolicy(manager: WorkManager, wifiOnly: Boolean, background: AutoDownloadBackgroundSettings = AutoDownloadBackgroundSettings()) {
     for (work in manager.getWorkInfosByTagFlow(AutoDownloadScheduling.TRANSFER_TAG).first()) {
-        if (!work.state.isFinished && work.constraints.requiredNetworkType != network) {
+        val fromBackground = AutoDownloadScheduling.BACKGROUND_TRANSFER_TAG in work.tags
+        val expected = AutoDownloadScheduling.transferConstraints(wifiOnly, if (fromBackground) background else null)
+        val legacy = AutoDownloadScheduling.POLICY_TRANSFER_TAG !in work.tags
+        val backgroundDisallowed = fromBackground && !background.enabled
+        if (work.state.isFinished) continue
+        if (legacy || backgroundDisallowed || work.constraints != expected) {
             manager.cancelWorkById(work.id).await()
         }
     }

@@ -79,7 +79,8 @@ class LocalEpisodeCatalogRepository private constructor(
     override suspend fun refresh(request: RefreshRequest): RefreshOutcome = withContext(Dispatchers.IO) {
         val lock = refreshLocks.getOrPut(request.podcastIndexId) { Mutex() }
         val outcome = lock.withLock { refreshLocalCatalogLocked(refreshDeps, request) }
-        if (outcome is RefreshOutcome.Success) {
+        val notifyPersisted = request.runPostPersistCallback && request.reason != LocalEpisodeCatalogPort.RefreshReason.AUTO_DOWNLOAD
+        if (outcome is RefreshOutcome.Success && notifyPersisted && request.canProceed()) {
             try {
                 onCatalogPersisted(request.podcastIndexId)
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -89,6 +90,11 @@ class LocalEpisodeCatalogRepository private constructor(
             }
         }
         outcome
+    }
+
+    override suspend fun isRefreshDue(podcastId: String, feedUrl: String, nowMillis: Long): Boolean {
+        val existing = refreshDeps.dao.getFeed(podcastId)
+        return existing?.feedUrl?.trim() != feedUrl.trim() || !shouldSkipQuiet(existing, nowMillis = nowMillis)
     }
 
     companion object {

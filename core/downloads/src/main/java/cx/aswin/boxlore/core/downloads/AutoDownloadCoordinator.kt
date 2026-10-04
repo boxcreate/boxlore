@@ -18,7 +18,7 @@ class AutoDownloadCoordinator(
     private val database: BoxLoreDatabase,
     private val catalog: LocalEpisodeCatalogPort,
     private val preferences: UserPreferencesRepository,
-    private val enqueue: suspend (podcastId: String, episodeId: String, wifiOnly: Boolean) -> Unit,
+    private val enqueue: suspend (podcastId: String, episodeId: String, wifiOnly: Boolean, background: Boolean) -> Unit,
     private val recoverFeedUrl: suspend (String) -> String? = { null },
     private val loadInitialBaseline: suspend (String) -> List<Episode> = { emptyList() },
     private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000L },
@@ -37,15 +37,16 @@ class AutoDownloadCoordinator(
     }
 
     /** Failure of one feed does not prevent discovery or replay for other shows. */
-    suspend fun discover(): Boolean {
+    suspend fun discover(canProceed: suspend () -> Boolean = { false }): Boolean {
+        if (!canProceed()) return true
         synchronizeSubscriptions()
         return kotlinx.coroutines.coroutineScope {
-            val limit = kotlinx.coroutines.sync.Semaphore(4)
+            val limit = kotlinx.coroutines.sync.Semaphore(2)
             database.podcastDao().getSubscribedPodcastsList().filter(::eligible).map { show ->
                 async {
                     limit.acquire()
                     try {
-                        discoverShow(show)
+                        if (canProceed()) discoverShow(show, canProceed) else true
                     } finally {
                         limit.release()
                     }
@@ -54,7 +55,7 @@ class AutoDownloadCoordinator(
         }
     }
 
-    private suspend fun discoverShow(show: PodcastEntity): Boolean = try {
+    private suspend fun discoverShow(show: PodcastEntity, canProceed: suspend () -> Boolean): Boolean = try {
         val feed = show.feedUrl?.takeIf { it.startsWith("https://") } ?: recoverMissingFeed(show.podcastId)
         var succeeded = feed != null
         if (feed != null) {
@@ -67,11 +68,12 @@ class AutoDownloadCoordinator(
                     meta = meta(show),
                 loadPiBaseline = if (!ready) ({ loadInitialBaseline(show.podcastId) }) else null,
                 reason = LocalEpisodeCatalogPort.RefreshReason.AUTO_DOWNLOAD,
+                canProceed = canProceed,
             )
             )
             succeeded = outcome !is LocalEpisodeCatalogPort.RefreshOutcome.Failure
         }
-        scanCached(show.podcastId)
+        scanCached(show.podcastId, background = true, canProceed = canProceed)
         succeeded
     } catch (e: CancellationException) {
         throw e
@@ -88,7 +90,8 @@ class AutoDownloadCoordinator(
     }
 
     /** Called after foreground feed persistence too; pending claims are replayable after a crash. */
-    suspend fun scanCached(podcastId: String) = gate.withLock {
+    suspend fun scanCached(podcastId: String, background: Boolean = false, canProceed: suspend () -> Boolean = { !background }) = gate.withLock {
+        if (!canProceed()) return@withLock
         val show = database.podcastDao().getPodcast(podcastId) ?: return@withLock
         if (!eligible(show)) return@withLock
         val activation = ledger.getShow(podcastId) ?: return@withLock
@@ -100,7 +103,7 @@ class AutoDownloadCoordinator(
                 ledger.insertRelease(AutoDownloadReleaseEntity(episode.id, podcastId))
             }
         }
-        enqueuePending(podcastId)
+        enqueuePending(podcastId, background, canProceed)
     }
 
     suspend fun acceptRelease(podcastId: String, episode: Episode) = gate.withLock {
@@ -110,12 +113,15 @@ class AutoDownloadCoordinator(
         val activation = ledger.getShow(podcastId) ?: return@withLock
         if (episode.publishedDate < activation.enabledAt || episode.audioUrl.isBlank()) return@withLock
         ledger.insertRelease(AutoDownloadReleaseEntity(episode.id, podcastId))
-        enqueuePending(podcastId)
+        enqueuePending(podcastId, background = false, canProceed = { true })
     }
 
-    private suspend fun enqueuePending(podcastId: String) {
+    private suspend fun enqueuePending(podcastId: String, background: Boolean, canProceed: suspend () -> Boolean) {
         val wifiOnly = preferences.autoDownloadWifiOnlyStream.first()
-        for (release in ledger.pending(podcastId)) enqueue(podcastId, release.episodeId, wifiOnly)
+        for (release in ledger.pending(podcastId)) {
+            if (!canProceed()) return
+            enqueue(podcastId, release.episodeId, wifiOnly, background)
+        }
     }
 
     companion object {
@@ -133,7 +139,12 @@ class AutoDownloadCoordinator(
                 database,
             catalog,
             preferences,
-                enqueue = { podcastId, episodeId, wifiOnly -> AutoDownloadScheduling.enqueueEpisode(context, podcastId, episodeId, wifiOnly) },
+                enqueue = { podcastId, episodeId, wifiOnly, background ->
+                    val policy = preferences.autoDownloadBackgroundSettingsStream.first()
+                    if (!background || AutoDownloadBackgroundGate.create(context, preferences).allowed()) {
+                        AutoDownloadScheduling.enqueueEpisode(context, podcastId, episodeId, wifiOnly, if (background) policy else null)
+                    }
+                },
                 recoverFeedUrl = recoverFeedUrl,
             loadInitialBaseline = loadInitialBaseline,
             )

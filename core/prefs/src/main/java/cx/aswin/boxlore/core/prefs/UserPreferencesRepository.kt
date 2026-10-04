@@ -37,6 +37,13 @@ internal fun sanitizeOpenAppTo(value: String?): String = when (value?.trim()?.lo
 }
 
 class UserPreferencesRepository(context: Context,) {
+    private val autoDownloadBackground = AutoDownloadBackgroundPreferences(context)
+    val autoDownloadBackgroundSettingsStream = autoDownloadBackground.settings
+
+    suspend fun setAutoDownloadBackgroundChecksEnabled(enabled: Boolean) = autoDownloadBackground.setEnabled(enabled)
+    suspend fun setAutoDownloadBackgroundWifiOnly(wifiOnly: Boolean) = autoDownloadBackground.setWifiOnly(wifiOnly)
+    suspend fun setAutoDownloadBackgroundChargingOnly(chargingOnly: Boolean) = autoDownloadBackground.setChargingOnly(chargingOnly)
+
     private val dataStore = context.userPreferencesDataStore
     private val syncPrefs =
         PrefsFileMigrator.open(

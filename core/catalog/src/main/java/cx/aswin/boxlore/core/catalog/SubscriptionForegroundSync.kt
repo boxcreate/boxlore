@@ -19,8 +19,10 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -64,6 +66,12 @@ class SubscriptionForegroundSync(
     private val catalogIngestAction: suspend (String) -> Unit = {},
 ) {
     private val started = AtomicBoolean(false)
+    private val foreground = MutableStateFlow(true)
+
+    /** App lifecycle owns this gate; process survival must not authorize polling. */
+    fun setForeground(active: Boolean) {
+        foreground.value = active
+    }
     private val syncInFlight = AtomicBoolean(false)
     private val lastCompletedAtMs = AtomicLong(SubscriptionForegroundSyncLogic.NEVER_COMPLETED_MS)
     private val catalogIngestFinishedMutable: MutableSharedFlow<String> =
@@ -135,17 +143,27 @@ class SubscriptionForegroundSync(
             return
         }
         scope.launch {
-            if (initialDelayMs > 0L) delay(initialDelayMs)
-            runSync()
-            if (periodicIntervalMs <= 0L) return@launch
-            while (true) {
-                delay(periodicIntervalMs)
+            var firstPass = true
+            if (periodicIntervalMs <= 0L) {
+                if (initialDelayMs > 0L) delay(initialDelayMs)
                 runSync()
+                return@launch
+            }
+            foreground.collectLatest { active ->
+                if (!active) return@collectLatest
+                if (firstPass && initialDelayMs > 0L) delay(initialDelayMs)
+                firstPass = false
+                runSync()
+                while (true) {
+                    delay(periodicIntervalMs)
+                    runSync()
+                }
             }
         }
     }
 
     private suspend fun runSync() {
+        if (!foreground.value) return
         if (
             SubscriptionForegroundSyncLogic.shouldSkipRefresh(
                 inFlight = syncInFlight.get(),
@@ -168,7 +186,18 @@ class SubscriptionForegroundSync(
             ) {
                 return
             }
-            syncAction()
+            coroutineScope {
+                val action = async { if (foreground.value) syncAction() }
+                val watcher = launch {
+                    foreground.first { !it }
+                    action.cancel()
+                }
+                try {
+                    action.await()
+                } finally {
+                    watcher.cancel()
+                }
+            }
             lastCompletedAtMs.set(nowMs())
         } catch (e: CancellationException) {
             throw e
@@ -193,7 +222,7 @@ class SubscriptionForegroundSync(
         /** Kept for tests; production launch sync no longer waits after PI `/sync`. */
         const val DEFAULT_FEED_NETWORK_DELAY_MS = 0L
         const val DEFAULT_CHUNK_SIZE = 10
-        const val DEFAULT_FEED_CONCURRENCY = 6
+        const val DEFAULT_FEED_CONCURRENCY = 2
 
         /** Same PI page size Podcast Info uses when matching feed-only extras. */
         const val DIRECT_FEED_BASELINE_LIMIT = 1000
@@ -259,7 +288,9 @@ class SubscriptionForegroundSync(
             refreshed: MutableSharedFlow<String>,
             feedNetworkDelayMs: Long,
             chunkSize: Int,
-        ): suspend () -> Unit = {
+        ): suspend () -> Unit {
+            val refreshBatch = DirectFeedRefreshBatch()
+            return {
             SubscriptionForegroundSyncIngest.sweepExpiredLocalCatalogs(localEpisodeCatalog)
             val ids = subscriptionRepository.subscribedPodcastIds.first()
             val recoveryNow = System.currentTimeMillis()
@@ -331,6 +362,12 @@ class SubscriptionForegroundSync(
                     feedNetworkDelayMs = feedNetworkDelayMs,
                     feedConcurrency = DEFAULT_FEED_CONCURRENCY,
                     preferredPodcastId = { preferred.get() },
+                    selectRefreshBatch = { candidates ->
+                        refreshBatch.select(candidates, preferred.get()) { id ->
+                            val feed = subscriptionRepository.getPodcastEntity(id)?.feedUrl
+                            feed != null && (localEpisodeCatalog?.isRefreshDue(id, feed, System.currentTimeMillis()) != false)
+                        }
+                    },
                     onFeedRefreshed = { refreshed.tryEmit(it) },
                 ),
             )
@@ -338,6 +375,7 @@ class SubscriptionForegroundSync(
                 ids = ids,
                 subscriptionRepository = subscriptionRepository,
             )
+            }
         }
 
         private suspend fun resolveLocalCatalogTip(
@@ -552,7 +590,7 @@ class SubscriptionForegroundSync(
         ) {
             if (feedTipIds.isEmpty()) return
             val ordered =
-                DirectFeedSyncOrder.prioritize(feedTipIds, directFeed.preferredPodcastId())
+                directFeed.selectRefreshBatch(DirectFeedSyncOrder.prioritize(feedTipIds, directFeed.preferredPodcastId()))
             val gate = Semaphore(directFeed.feedConcurrency.coerceAtLeast(1))
             coroutineScope {
                 ordered
@@ -771,4 +809,5 @@ internal data class DirectFeedSyncSeams(
     val feedConcurrency: Int = SubscriptionForegroundSync.DEFAULT_FEED_CONCURRENCY,
     val preferredPodcastId: () -> String? = { null },
     val onFeedRefreshed: (String) -> Unit = {},
+    val selectRefreshBatch: suspend (List<String>) -> List<String> = { it },
 )

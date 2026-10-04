@@ -412,6 +412,43 @@ class SubscriptionForegroundSyncTest {
         }
     }
 
+    @Test fun backgroundProcessCannotRunPeriodicOrRequestedRefreshesAndResumesOnForeground() = runTest {
+        var runs = 0
+        val sync = SubscriptionForegroundSync(backgroundScope, 0L, { runs++ }, periodicIntervalMs = 1000L, cooldownMs = 0L)
+        sync.setForeground(false)
+        sync.ensureStarted()
+        sync.requestRefresh()
+        advanceTimeBy(5000L)
+        runCurrent()
+        assertEquals(0, runs)
+        sync.setForeground(true)
+        runCurrent()
+        assertEquals(1, runs)
+        sync.setForeground(false)
+        advanceTimeBy(5000L)
+        runCurrent()
+        assertEquals(1, runs)
+        sync.setForeground(true)
+        runCurrent()
+        assertEquals(2, runs)
+    }
+
+    @Test fun leavingForegroundCancelsInFlightAutomaticRefresh() = runTest {
+        var cancelled = false
+        val sync = SubscriptionForegroundSync(backgroundScope, 0L, {
+            try {
+                kotlinx.coroutines.awaitCancellation()
+            } finally {
+                cancelled = true
+            }
+        }, periodicIntervalMs = 1000L)
+        sync.requestRefresh()
+        runCurrent()
+        sync.setForeground(false)
+        runCurrent()
+        assertTrue(cancelled)
+    }
+
     private fun episode(id: String, podcastId: String,) = cx.aswin.boxlore.core.model.Episode(
         id = id,
         title = "T",

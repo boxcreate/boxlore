@@ -4,6 +4,7 @@
         <include domain="database" path="." />
         <include domain="sharedpref" path="." />
         <include domain="file" path="datastore/" />
+        <exclude domain="file" path="datastore/auto_download_background.preferences_pb" />
         <exclude domain="database" path="androidx.work.workdb" />
         <exclude domain="database" path="androidx.work.workdb-journal" />
         <exclude domain="database" path="androidx.work.workdb-wal" />
@@ -13,6 +14,7 @@
         <include domain="database" path="." />
         <include domain="sharedpref" path="." />
         <include domain="file" path="datastore/" />
+        <exclude domain="file" path="datastore/auto_download_background.preferences_pb" />
         <exclude domain="database" path="androidx.work.workdb" />
         <exclude domain="database" path="androidx.work.workdb-journal" />
         <exclude domain="database" path="androidx.work.workdb-wal" />
