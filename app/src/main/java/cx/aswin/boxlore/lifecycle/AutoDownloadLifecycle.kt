@@ -44,9 +44,7 @@ internal class AutoDownloadLifecycle(
                     if (previousWifi != wifi || previousBackground != background) reconcileAutoDownloadWifiPolicy(manager, wifi, background)
                     container.autoDownloadCoordinator.synchronizeSubscriptions()
                     AutoDownloadScheduling.reconcile(context, ids.isNotEmpty(), background)
-                    if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                        for (id in ids) container.autoDownloadCoordinator.scanCached(id)
-                    }
+                    scanCachedInForeground(ids)
                     previousIds = ids
                     previousWifi = wifi
                     previousBackground = background
@@ -66,6 +64,11 @@ internal class AutoDownloadLifecycle(
 
     override fun onStop(owner: LifecycleOwner) {
         container.subscriptionForegroundSync.setForeground(false)
+    }
+
+    private suspend fun scanCachedInForeground(ids: Set<String>) {
+        if (!ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
+        for (id in ids) container.autoDownloadCoordinator.scanCached(id)
     }
 
     private suspend fun safely(block: suspend () -> Unit) {

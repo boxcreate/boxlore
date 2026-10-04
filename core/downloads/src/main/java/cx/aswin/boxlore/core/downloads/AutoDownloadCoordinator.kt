@@ -46,7 +46,7 @@ class AutoDownloadCoordinator(
                 async {
                     limit.acquire()
                     try {
-                        if (canProceed()) discoverShow(show, canProceed) else true
+                        !canProceed() || discoverShow(show, canProceed)
                     } finally {
                         limit.release()
                     }

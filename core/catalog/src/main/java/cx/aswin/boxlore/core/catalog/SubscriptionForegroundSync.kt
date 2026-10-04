@@ -143,21 +143,25 @@ class SubscriptionForegroundSync(
             return
         }
         scope.launch {
-            var firstPass = true
             if (periodicIntervalMs <= 0L) {
                 if (initialDelayMs > 0L) delay(initialDelayMs)
                 runSync()
                 return@launch
             }
-            foreground.collectLatest { active ->
-                if (!active) return@collectLatest
-                if (firstPass && initialDelayMs > 0L) delay(initialDelayMs)
-                firstPass = false
+            runForegroundSyncLoop(initialDelayMs)
+        }
+    }
+
+    private suspend fun runForegroundSyncLoop(initialDelayMs: Long) {
+        var firstPass = true
+        foreground.collectLatest { active ->
+            if (!active) return@collectLatest
+            if (firstPass && initialDelayMs > 0L) delay(initialDelayMs)
+            firstPass = false
+            runSync()
+            while (true) {
+                delay(periodicIntervalMs)
                 runSync()
-                while (true) {
-                    delay(periodicIntervalMs)
-                    runSync()
-                }
             }
         }
     }
@@ -223,6 +227,7 @@ class SubscriptionForegroundSync(
         const val DEFAULT_FEED_NETWORK_DELAY_MS = 0L
         const val DEFAULT_CHUNK_SIZE = 10
         const val DEFAULT_FEED_CONCURRENCY = 2
+        const val DEFAULT_PI_CONCURRENCY = 6
 
         /** Same PI page size Podcast Info uses when matching feed-only extras. */
         const val DIRECT_FEED_BASELINE_LIMIT = 1000
@@ -572,7 +577,7 @@ class SubscriptionForegroundSync(
             val chunks = piSyncIds.chunked(chunkSize)
             if (chunks.isEmpty()) return
             coroutineScope {
-                val gate = Semaphore(DEFAULT_FEED_CONCURRENCY)
+                val gate = Semaphore(DEFAULT_PI_CONCURRENCY)
                 chunks
                     .map { chunk ->
                         async {
@@ -631,7 +636,7 @@ class SubscriptionForegroundSync(
 
         internal suspend fun recoverMissingFeedUrls(
             ids: Set<String>,
-            concurrency: Int = DEFAULT_FEED_CONCURRENCY,
+            concurrency: Int = DEFAULT_PI_CONCURRENCY,
             recoverOne: suspend (id: String) -> Unit,
         ) {
             val targets = ids.filter { !it.startsWith("rss:") }

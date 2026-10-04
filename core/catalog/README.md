@@ -28,6 +28,8 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 
 - `SubscriptionRepository.setAutoDownloadEnabled` uses `AutoDownloadDao` in production to atomically persist the activation boundary and cloud-dirty preference. Notification preferences remain independent. Restored/cloud changes are reconciled by the app download lifecycle; release scheduling does not depend on `markAsNew` or Podcast Index tip updates.
 
+- The two-request concurrency cap applies to publisher-feed refreshes. Podcast Index chunk sync for not-ready shows and missing-feed-URL recovery retain their independent six-request limit.
+
 ## Internal structure
 
 ```text

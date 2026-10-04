@@ -25,6 +25,8 @@ Owns RSS feed fetching, parsing, deterministic ID generation, episode catalog ma
 
 - `RssHttpExecution` keeps OkHttp cancellation attached through response-body reading. Revoking background consent or leaving a foreground refresh cancels the actual HTTP call; late responses are closed and conditional HEAD cancellation cannot start a fallback GET.
 
+- RSS response consumption keeps coroutine cancellation attached until the body is consumed and closed. The shared response reader validates HTTPS before consuming a response, including redirect responses.
+
 ## Internal structure
 
 ```text

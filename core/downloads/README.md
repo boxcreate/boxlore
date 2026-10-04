@@ -21,6 +21,8 @@ Owns offline download orchestration: Media3 offline cache access, download datab
 
 - `AutoDownloadCoordinator`, `AutoDownloadDiscoveryWorker`, and `AutoDownloadScheduling` use publisher RSS/Room for release discovery. Push-triggered and foreground-discovered downloads remain available without polling consent. Additional background discovery is explicitly opt-in, defaults off, and runs about every six hours; per-show auto-download flags cannot enable it. `AutoDownloadBackgroundGate` fails closed on missing consent, unknown/unvalidated connectivity, low/unknown battery, metered networks when restricted, or missing charging when required. WorkManager constraints and a live consent/network/battery watcher protect both discovery and its tagged transfers; admission is rechecked before fetch slots, persistence and enqueue. Forced metadata recovery from a background transfer also rechecks consent and suppresses the ordinary ingest callback. Disabling cancels background work. Background audio obeys both the check network restriction and the normal auto-download network policy. Durable activation boundaries, pending claims, canonical unique work, resumable eight-minute slices, provenance-safe retention and manual-download protection remain in force.
 
+- Foreground and push admission supersede unfinished background-gated or legacy transfers under the existing episode work name. Repeated background admission and repeated ordinary admission keep the current request; background cancellation cannot remove its ordinary replacement. Enqueue decisions are serialized separately from the transfer lock.
+
 ## Internal structure
 
 ```text

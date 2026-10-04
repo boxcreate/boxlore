@@ -13,8 +13,12 @@ import androidx.work.WorkManager
 import androidx.work.await
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 object AutoDownloadScheduling {
+    private val enqueueGate = Mutex()
     const val DISCOVERY_NAME = "auto-download-discovery"
     const val TRANSFER_TAG = "auto-download-transfer"
     const val BACKGROUND_TRANSFER_TAG = "auto-download-background-transfer"
@@ -37,10 +41,22 @@ object AutoDownloadScheduling {
             .addTag(TRANSFER_TAG).addTag(POLICY_TRANSFER_TAG).addTag(showTag(podcastId))
             .apply { if (background != null) addTag(BACKGROUND_TRANSFER_TAG) }.build()
 
-    suspend fun enqueueEpisode(context: Context, podcastId: String, episodeId: String, wifiOnly: Boolean, background: AutoDownloadBackgroundSettings? = null) {
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            episodeWorkName(episodeId),
-            ExistingWorkPolicy.KEEP,
+    suspend fun enqueueEpisode(context: Context, podcastId: String, episodeId: String, wifiOnly: Boolean, background: AutoDownloadBackgroundSettings? = null): Unit = enqueueGate.withLock {
+        val manager = WorkManager.getInstance(context)
+        val name = episodeWorkName(episodeId)
+        val existing = manager.getWorkInfosForUniqueWorkFlow(name).first()
+        // Push/foreground admission supersedes gated work without restarting another ordinary transfer.
+        val supersedesBackground = background == null &&
+            existing.any { work ->
+            !work.state.isFinished &&
+                (
+                BACKGROUND_TRANSFER_TAG in work.tags ||
+                    (TRANSFER_TAG in work.tags && POLICY_TRANSFER_TAG !in work.tags)
+                )
+        }
+        manager.enqueueUniqueWork(
+            name,
+            if (supersedesBackground) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP,
             transferRequest(podcastId, episodeId, wifiOnly, background),
         ).await()
     }

@@ -22,14 +22,16 @@ internal suspend fun <T> executeRssCall(call: Call, read: (Response) -> T): T = 
                 return
             }
             try {
-                val result = response.use {
-                    require(it.request.url.isHttps) { "RSS feed redirects must stay on HTTPS" }
-                    read(it)
-                }
+                val result = readRssResponse(response, read)
                 if (continuation.isActive) continuation.resume(result)
             } catch (error: Exception) {
                 if (continuation.isActive) continuation.resumeWithException(error)
             }
         }
     })
+}
+
+private fun <T> readRssResponse(response: Response, read: (Response) -> T): T = response.use {
+    require(it.request.url.isHttps) { "RSS feed redirects must stay on HTTPS" }
+    read(it)
 }

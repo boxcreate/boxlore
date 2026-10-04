@@ -400,6 +400,60 @@ class SubscriptionForegroundSyncTest {
         assertEquals(setOf("ok", "also-ok"), recovered.toSet())
     }
 
+    @Test fun podcastIndexChunksRetainSixConcurrentRequests() = runTest {
+        var active = 0
+        var peak = 0
+        SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+            loadIds = { (1..8).map { "show-$it" }.toSet() },
+            syncChunk = {
+                active++
+                peak = maxOf(peak, active)
+                delay(10L)
+                active--
+                emptyMap()
+            },
+            saveLatest = { _, _ -> error("No episodes returned") },
+            chunkSize = 1,
+        )
+        assertEquals(6, peak)
+    }
+
+    @Test fun missingFeedUrlRecoveryRetainsSixConcurrentRequests() = runTest {
+        var active = 0
+        var peak = 0
+        SubscriptionForegroundSync.recoverMissingFeedUrls((1..8).map { "show-$it" }.toSet()) {
+            active++
+            peak = maxOf(peak, active)
+            delay(10L)
+            active--
+        }
+        assertEquals(6, peak)
+    }
+
+    @Test fun publisherFeedRefreshesRemainLimitedToTwoConcurrentRequests() = runTest {
+        val ids = (1..8).map { "show-$it" }.toSet()
+        var active = 0
+        var peak = 0
+        SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+            loadIds = { ids },
+            loadPodcastMeta = { id -> DirectFeedTipMeta("https://feeds.example/$id", id, null, null, null, null) },
+            syncChunk = { error("Opted-in feeds must not use Podcast Index") },
+            saveLatest = { _, _ -> error("No episodes returned") },
+            directFeed = DirectFeedSyncSeams(
+                loadOptedInIds = { ids },
+                resolveFeedTip = { _, _ ->
+                    active++
+                    peak = maxOf(peak, active)
+                    delay(10L)
+                    active--
+                    DirectFeedResolveResult(tip = null, persisted = false)
+                },
+                feedNetworkDelayMs = 0L,
+            ),
+        )
+        assertEquals(2, peak)
+    }
+
     @Test
     fun recoverMissingFeedUrlsRethrowsCancellation() = runTest {
         org.junit.jupiter.api.assertThrows<kotlinx.coroutines.CancellationException> {
