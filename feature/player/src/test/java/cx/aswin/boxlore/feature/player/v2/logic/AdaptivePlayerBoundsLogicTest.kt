@@ -265,6 +265,37 @@ class AdaptivePlayerBoundsLogicTest {
     }
 
     @Test
+    fun regularPlayerRetainsFloatingAndClassicCornerRadii() {
+        for (radius in listOf(32.dp, 26.dp, 14.dp)) {
+            assertEquals(radius, calculateAdaptivePlayerCornerRadius(radius, 0f, 0f, false))
+            assertEquals(radius / 2, calculateAdaptivePlayerCornerRadius(radius / 2, 0.5f, 0f, false))
+        }
+    }
+
+    @Test
+    fun compactCornerRadiusShrinksAsTheFullPlayerExpands() {
+        assertEquals(26.dp, calculateAdaptivePlayerCornerRadius(32.dp, 0f, 1f, false))
+        assertEquals(13.dp, calculateAdaptivePlayerCornerRadius(16.dp, 0.5f, 1f, false))
+        assertEquals(0.dp, calculateAdaptivePlayerCornerRadius(0.dp, 1f, 1f, false))
+    }
+
+    @Test
+    fun intermediateMorphKeepsClassicTopAndBottomCornersDistinct() {
+        val top = calculateAdaptivePlayerCornerRadius(13.dp, 0.5f, 0.5f, false)
+        val bottom = calculateAdaptivePlayerCornerRadius(7.dp, 0.5f, 0.5f, false)
+
+        assertEquals(13.dp, top)
+        assertEquals(10.dp, bottom)
+    }
+
+    @Test
+    fun fullscreenVideoHasSquareCornersRegardlessOfThePreviousMorphState() {
+        for (compact in listOf(0f, 0.5f, 1f)) {
+            assertEquals(0.dp, calculateAdaptivePlayerCornerRadius(32.dp, 0.25f, compact, true))
+        }
+    }
+
+    @Test
     fun browseScrollIsBlockedForEverySheetInteractionMode() {
         assertFalse(isPlayerSheetInteractionActive(0f, false, false, false))
         assertTrue(isPlayerSheetInteractionActive(0.1f, false, false, false))

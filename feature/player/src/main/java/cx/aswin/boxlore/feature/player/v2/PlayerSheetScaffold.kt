@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import cx.aswin.boxlore.core.designsystem.component.AppLoreNavigationActionSize
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
@@ -70,10 +69,12 @@ import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.feature.player.v2.logic.AdaptivePlayerBounds
 import cx.aswin.boxlore.feature.player.v2.logic.AdaptivePlayerBoundsInput
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetGeometryInput
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetNestedScrollLogic
 import cx.aswin.boxlore.feature.player.v2.logic.calculateAdaptivePlayerBounds
+import cx.aswin.boxlore.feature.player.v2.logic.calculateAdaptivePlayerCornerRadius
 import cx.aswin.boxlore.feature.player.v2.logic.calculatePlayerSheetGeometry
 import cx.aswin.boxlore.feature.player.v2.logic.isPlayerSheetInteractionActive
 import kotlin.coroutines.cancellation.CancellationException
@@ -414,28 +415,7 @@ private fun PlayerSheetSurface(
             ) &&
                 !sheetState.isAnimationRunning,
         )
-        val adaptedGeometry = geometry.copy(
-            expansionFraction = surfaceExpansion,
-            miniPlayerHeight = bounds.collapsedHeight,
-            sheetHeight = bounds.height,
-            topCornerRadius = androidx.compose.ui.unit.lerp(
-                if (content.isFullscreenVideo) 0.dp else geometry.topCornerRadius,
-                AppLoreNavigationActionSize / 2 * (1f - surfaceExpansion),
-                bounds.compactFraction,
-            ),
-            bottomCornerRadius = androidx.compose.ui.unit.lerp(
-                if (content.isFullscreenVideo) 0.dp else geometry.bottomCornerRadius,
-                AppLoreNavigationActionSize / 2 * (1f - surfaceExpansion),
-                bounds.compactFraction,
-            ),
-            compactFraction = bounds.compactFraction,
-            cookieFraction = bounds.cookieFraction,
-            compactRotation = rotation,
-            miniAlpha = if (content.isFullscreenVideo) 0f else geometry.miniAlpha,
-            fullAlpha = if (content.isFullscreenVideo) 1f else geometry.fullAlpha,
-            fullTranslationY = if (content.isFullscreenVideo) 0f else geometry.fullTranslationY,
-            fullScale = if (content.isFullscreenVideo) 1f else geometry.fullScale,
-        )
+        val adaptedGeometry = geometry.adaptToBounds(bounds, content.isFullscreenVideo, rotation)
         Box(
             modifier =
             Modifier
@@ -485,6 +465,38 @@ private fun PlayerSheetSurface(
             }
         }
     }
+}
+
+private fun PlayerSheetGeometry.adaptToBounds(
+    bounds: AdaptivePlayerBounds,
+    isFullscreenVideo: Boolean,
+    rotation: State<Float>,
+): PlayerSheetGeometry {
+    val expansion = if (isFullscreenVideo) 1f else expansionFraction
+    return copy(
+        expansionFraction = expansion,
+        miniPlayerHeight = bounds.collapsedHeight,
+        sheetHeight = bounds.height,
+        topCornerRadius = calculateAdaptivePlayerCornerRadius(
+            regularRadius = topCornerRadius,
+            expansionFraction = expansion,
+            compactFraction = bounds.compactFraction,
+            isFullscreenVideo = isFullscreenVideo,
+        ),
+        bottomCornerRadius = calculateAdaptivePlayerCornerRadius(
+            regularRadius = bottomCornerRadius,
+            expansionFraction = expansion,
+            compactFraction = bounds.compactFraction,
+            isFullscreenVideo = isFullscreenVideo,
+        ),
+        compactFraction = bounds.compactFraction,
+        cookieFraction = bounds.cookieFraction,
+        compactRotation = rotation,
+        miniAlpha = if (isFullscreenVideo) 0f else miniAlpha,
+        fullAlpha = if (isFullscreenVideo) 1f else fullAlpha,
+        fullTranslationY = if (isFullscreenVideo) 0f else fullTranslationY,
+        fullScale = if (isFullscreenVideo) 1f else fullScale,
+    )
 }
 
 @Composable

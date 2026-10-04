@@ -84,7 +84,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 - Regular and compact artwork share the same nine-lobe cookie silhouette at 48dp and 40dp, maintaining its normalized contour throughout contraction; the outer Floating/Classic bar shapes still follow navigation metrics.
 - Progress geometry tests verify fixed wave endpoints, bounded amplitude on short tracks, phase movement, flat paused geometry, and safe invalid input. The regular progress line smooths position updates, separates the remaining track with a small gap, and animates only during active, visible playback.
 - Reveal coverage verifies continuous forward/reverse handoff, complementary opacity, eased boundaries, scale endpoints, safe invalid input, and regular sheet clipping before full content appears.
-- Layout coverage preserves Floating's full capsule and Classic's distinct top/bottom corners through expansion.
+- Layout coverage preserves Floating's full capsule and Classic's distinct top/bottom corners through expansion. The shared `calculateAdaptivePlayerCornerRadius` helper keeps corner interpolation out of surface composition; regression tests cover regular/compact endpoints, Classic's intermediate asymmetry, expansion and square fullscreen-video corners.
 - Compose UI test tags for player controls should remain stable when added or expanded.
 
 ```bash

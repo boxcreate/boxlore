@@ -63,6 +63,17 @@ internal fun calculateAdaptivePlayerBounds(input: AdaptivePlayerBoundsInput): Ad
 
 private fun Float.finiteFraction(): Float = if (isFinite()) coerceIn(0f, 1f) else 0f
 
+/** Both regular corner radii approach the compact radius; fullscreen video stays square. */
+internal fun calculateAdaptivePlayerCornerRadius(
+    regularRadius: Dp,
+    expansionFraction: Float,
+    compactFraction: Float,
+    isFullscreenVideo: Boolean,
+): Dp {
+    if (isFullscreenVideo) return 0.dp
+    return lerp(regularRadius, AppLoreNavigationActionSize / 2 * (1f - expansionFraction), compactFraction)
+}
+
 internal fun isPlayerSheetInteractionActive(
     expansionFraction: Float,
     animationRunning: Boolean,
