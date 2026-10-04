@@ -28,8 +28,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -43,8 +45,10 @@ import com.posthog.PostHog
 import cx.aswin.boxlore.BoxLoreApplication
 import cx.aswin.boxlore.BuildConfig
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.component.AppLoreNavigationActionSize
 import cx.aswin.boxlore.core.designsystem.component.AppNavigationBarHorizontalInset
 import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationBar
+import cx.aswin.boxlore.core.designsystem.component.LocalAdaptivePlayerCompactProgress
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.PredictiveBackWrapper
@@ -96,11 +100,14 @@ import cx.aswin.boxlore.ui.libraryimport.OpmlImportEffects
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import cx.aswin.boxlore.ui.libraryimport.performJsonLibraryImport
 import cx.aswin.boxlore.ui.logic.SubscriptionResumeRefreshLogic
+import cx.aswin.boxlore.ui.logic.canUseAdaptivePlayer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Application UI root hosted by [cx.aswin.boxlore.MainActivity]: theme, nav host,
@@ -170,6 +177,14 @@ fun BoxLoreAppRoot(
 
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = navBackStackEntry?.destination?.route ?: "home"
+    val startupWorkGate = application.startupWorkGate
+    LaunchedEffect(currentRoute) {
+        if (currentRoute != "home") {
+            withFrameNanos {}
+            withFrameNanos {}
+            startupWorkGate.markReady()
+        }
+    }
 
     val container = application.container
     val podcastRepository = container.podcastRepository
@@ -304,32 +319,40 @@ fun BoxLoreAppRoot(
         queueManager.addToQueue(episode, podcast, PlaybackEntryPoint.LEARN)
     }
 
-    LaunchedEffect(smartDownloadManager) {
-        try {
-            val lastSyncTime = userPrefs.smartDownloadsLastSyncTimeStream.first()
-            val isEnabled = userPrefs.smartDownloadsEnabledStream.first()
-            if (isEnabled && System.currentTimeMillis() - lastSyncTime > 24 * 3600 * 1000L) {
-                Log.d("MainActivity", "Last smart sync > 24h ago. Triggering graceful catch-up sync.")
-                scope.launch(Dispatchers.IO) {
-                    smartDownloadManager.performSync(isForeground = true)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to check catch-up sync status", e)
-        }
-    }
-
     val isOnline by container.connectivityObserver.isOnlineFlow.collectAsStateWithLifecycle()
 
     LaunchedEffect(onboardingCompleted) {
         if (onboardingCompleted) {
-            container.subscriptionForegroundSync.ensureStarted()
+            startupWorkGate.runWhenReady {
+                withContext(Dispatchers.IO) { container.subscriptionForegroundSync.ensureStarted() }
+            }
         }
     }
 
     LaunchedEffect(onboardingCompleted, isOnline) {
         if (onboardingCompleted) {
-            container.legacyRssRepair.ensureStarted()
+            startupWorkGate.runWhenReady {
+                withContext(Dispatchers.IO) { container.legacyRssRepair.ensureStarted() }
+            }
+        }
+    }
+
+    LaunchedEffect(smartDownloadManager) {
+        startupWorkGate.runWhenReady {
+            try {
+                val lastSyncTime = userPrefs.smartDownloadsLastSyncTimeStream.first()
+                val isEnabled = userPrefs.smartDownloadsEnabledStream.first()
+                if (isEnabled && System.currentTimeMillis() - lastSyncTime > 24 * 3600 * 1000L) {
+                    Log.d("MainActivity", "Last smart sync > 24h ago. Triggering graceful catch-up sync.")
+                    withContext(Dispatchers.IO) {
+                        smartDownloadManager.performSync(isForeground = true)
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to check catch-up sync status", e)
+            }
         }
     }
 
@@ -367,6 +390,7 @@ fun BoxLoreAppRoot(
     val skipEndingMs by userPrefs.skipEndingMsStream.collectAsState(initial = 0L)
     val seekBackwardMs by userPrefs.seekBackwardMsStream.collectAsState(initial = 10_000L)
     val seekForwardMs by userPrefs.seekForwardMsStream.collectAsState(initial = 30_000L)
+    val miniPlayerSeekButtonsEnabled by userPrefs.miniPlayerSeekButtonsEnabledStream.collectAsStateWithLifecycle(initialValue = false)
     val hideCompletedInHome by userPrefs.hideCompletedInHomeStream.collectAsState(initial = true)
     val hideCompletedInSubs by userPrefs.hideCompletedInSubsStream.collectAsState(initial = true)
     val hideCompletedInShowDetails by userPrefs.hideCompletedInShowDetailsStream.collectAsState(initial = false)
@@ -577,13 +601,28 @@ fun BoxLoreAppRoot(
             }
 
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val density = LocalDensity.current
+                val adaptivePlayer = rememberAdaptivePlayerChrome(
+                    enabled = canUseAdaptivePlayer(
+                        style = navigationStyle,
+                        navigationVisible = showBottomNav,
+                        hasEpisode = currentEpisode != null,
+                        suppressed = isModeSwitching || isSupportActive,
+                        widthDp = maxWidth.value,
+                    ),
+                    episodeId = currentEpisode?.id,
+                    route = currentRoute,
+                )
                 Scaffold(
                     containerColor = MaterialTheme.colorScheme.surface,
                     // Screens own their system-bar insets; keep Scaffold padding at zero.
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 ) { innerPadding ->
                     // Consume Scaffold padding for lint; with zeroed insets this is a no-op.
-                    Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                    Box(
+                        modifier = Modifier.padding(innerPadding).fillMaxSize()
+                            .nestedScroll(adaptivePlayer.scrollConnection),
+                    ) {
                         PredictiveBackWrapper(
                             enabled = canGoBack,
                             onBack = {
@@ -601,74 +640,79 @@ fun BoxLoreAppRoot(
                                 }
                             },
                         ) {
-                            BoxLoreNavHost(
-                                navController = navController,
-                                application = application,
-                                session =
-                                NavHostSession(
-                                    onboardingCompleted = onboardingCompleted,
-                                    onOnboardingCompleted = { onboardingCompleted = true },
-                                    onInitialHomeContentReady = { isInitialHomeContentReady = true },
-                                    onboardingViewModel = onboardingViewModel,
-                                    hasDeepLink = hasDeepLink,
-                                    openedToLandingOnLaunch = openedToLandingOnLaunch,
-                                    currentEpisode = currentEpisode,
-                                    miniPlayerPadding = miniPlayerPadding,
-                                    showFeatureDialog = showFeatureDialog,
-                                    hasSeenMarkPlayedTip = hasSeenMarkPlayedTip,
-                                    permissionLauncher = permissionLauncher,
-                                    appInstanceId = appInstanceId,
-                                ),
-                                opmlCallbacks =
-                                NavOpmlCallbacks(
-                                    importState = opmlImportState,
-                                    onImportStateChange = { opmlImportState = it },
-                                    triggerKey = importTriggerKey,
-                                    onTriggerKeyChange = { importTriggerKey = it },
-                                    onSourceChange = { opmlImportSource = it },
-                                    performJsonImport = ::performJsonImport,
-                                ),
-                                actions =
-                                NavHostActions(
-                                    onLoreQueueConflictEpisode = { loreQueueConflictEpisode = it },
-                                    queueLoreEpisode = queueLoreEpisode,
-                                    onShowFeedbackSheet = { navController.navigate("feedback") },
-                                    onSubmitFeedback = onSubmitFeedback,
-                                    onSupportPageVisibilityChanged = { isSupportPageActive = it },
-                                ),
-                                settingsState =
-                                NavSettingsState(
-                                    currentRegion = currentRegion,
-                                    contentLanguages = contentLanguages,
-                                    themeConfig = themeConfig,
-                                    useDynamicColor = useDynamicColor,
-                                    themeBrand = themeBrand,
-                                    surfaceStyle = surfaceStyle,
-                                    fontRoundness = fontRoundnessKey,
-                                    navigationStyle = navigationStyleKey,
-                                    openAppTo = openAppToKey,
-                                    skipBehavior = skipBehavior,
-                                    skipBeginningMs = skipBeginningMs,
-                                    skipEndingMs = skipEndingMs,
-                                    seekBackwardMs = seekBackwardMs,
-                                    seekForwardMs = seekForwardMs,
-                                    hideCompletedInHome = hideCompletedInHome,
-                                    hideCompletedInSubs = hideCompletedInSubs,
-                                    hideCompletedInShowDetails = hideCompletedInShowDetails,
-                                    restartForgottenEpisodes = restartForgottenEpisodes,
-                                    sameShowQueueOnly = sameShowQueueOnly,
-                                    homeShortcutsInLibrary = homeShortcutsInLibrary,
-                                    widgetAppearance = widgetAppearance,
-                                    exploreDefaultTab = exploreDefaultTab,
-                                    subscriptionsDefaultTab = subscriptionsDefaultTab,
-                                    subscriptionsTabStyle = subscriptionsTabStyle,
-                                ),
-                            )
+                            CompositionLocalProvider(LocalAdaptivePlayerCompactProgress provides adaptivePlayer.progress) {
+                                BoxLoreNavHost(
+                                    navController = navController,
+                                    application = application,
+                                    session =
+                                    NavHostSession(
+                                        onboardingCompleted = onboardingCompleted,
+                                        onOnboardingCompleted = { onboardingCompleted = true },
+                                        onInitialHomeContentReady = {
+                                            isInitialHomeContentReady = true
+                                            startupWorkGate.markReady()
+                                        },
+                                        onboardingViewModel = onboardingViewModel,
+                                        hasDeepLink = hasDeepLink,
+                                        openedToLandingOnLaunch = openedToLandingOnLaunch,
+                                        currentEpisode = currentEpisode,
+                                        miniPlayerPadding = miniPlayerPadding,
+                                        showFeatureDialog = showFeatureDialog,
+                                        hasSeenMarkPlayedTip = hasSeenMarkPlayedTip,
+                                        permissionLauncher = permissionLauncher,
+                                        appInstanceId = appInstanceId,
+                                    ),
+                                    opmlCallbacks =
+                                    NavOpmlCallbacks(
+                                        importState = opmlImportState,
+                                        onImportStateChange = { opmlImportState = it },
+                                        triggerKey = importTriggerKey,
+                                        onTriggerKeyChange = { importTriggerKey = it },
+                                        onSourceChange = { opmlImportSource = it },
+                                        performJsonImport = ::performJsonImport,
+                                    ),
+                                    actions =
+                                    NavHostActions(
+                                        onLoreQueueConflictEpisode = { loreQueueConflictEpisode = it },
+                                        queueLoreEpisode = queueLoreEpisode,
+                                        onShowFeedbackSheet = { navController.navigate("feedback") },
+                                        onSubmitFeedback = onSubmitFeedback,
+                                        onSupportPageVisibilityChanged = { isSupportPageActive = it },
+                                    ),
+                                    settingsState =
+                                    NavSettingsState(
+                                        currentRegion = currentRegion,
+                                        contentLanguages = contentLanguages,
+                                        themeConfig = themeConfig,
+                                        useDynamicColor = useDynamicColor,
+                                        themeBrand = themeBrand,
+                                        surfaceStyle = surfaceStyle,
+                                        fontRoundness = fontRoundnessKey,
+                                        navigationStyle = navigationStyleKey,
+                                        openAppTo = openAppToKey,
+                                        skipBehavior = skipBehavior,
+                                        skipBeginningMs = skipBeginningMs,
+                                        skipEndingMs = skipEndingMs,
+                                        seekBackwardMs = seekBackwardMs,
+                                        seekForwardMs = seekForwardMs,
+                                        miniPlayerSeekButtonsEnabled = miniPlayerSeekButtonsEnabled,
+                                        hideCompletedInHome = hideCompletedInHome,
+                                        hideCompletedInSubs = hideCompletedInSubs,
+                                        hideCompletedInShowDetails = hideCompletedInShowDetails,
+                                        restartForgottenEpisodes = restartForgottenEpisodes,
+                                        sameShowQueueOnly = sameShowQueueOnly,
+                                        homeShortcutsInLibrary = homeShortcutsInLibrary,
+                                        widgetAppearance = widgetAppearance,
+                                        exploreDefaultTab = exploreDefaultTab,
+                                        subscriptionsDefaultTab = subscriptionsDefaultTab,
+                                        subscriptionsTabStyle = subscriptionsTabStyle,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }
 
-                val density = LocalDensity.current
                 val screenHeightDp = maxHeight
                 val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 val chromeMetrics = navigationChromeMetrics(navigationStyle)
@@ -705,6 +749,7 @@ fun BoxLoreAppRoot(
                         },
                         style = navigationStyle,
                         initialContentReady = isInitialHomeContentReady,
+                        compactProgress = adaptivePlayer.progress,
                         modifier =
                         Modifier
                             .align(Alignment.BottomCenter)
@@ -772,10 +817,19 @@ fun BoxLoreAppRoot(
                                 12.dp
                             },
                             navigationStyle = navigationStyle,
+                            miniPlayerSeekButtonsEnabled = miniPlayerSeekButtonsEnabled,
                             expandTrigger = expandPlayerTrigger,
+                            compactProgress = adaptivePlayer.progress,
+                            compactTargetY = with(density) {
+                                (
+                                    screenHeightDp - bottomChromeClearance - playerSystemNavigationInset +
+                                        (chromeMetrics.navigationBarHeight - AppLoreNavigationActionSize) / 2
+                                    ).toPx()
+                            },
                         ),
                         actions =
                         PlayerSheetActions(
+                            onSheetInteractionChanged = adaptivePlayer.onSheetInteractionChanged,
                             onEpisodeInfoClick = { episode ->
                                 if (episode.id.startsWith("briefing_")) {
                                     val region = episode.id.removePrefix("briefing_").substringBefore("_")

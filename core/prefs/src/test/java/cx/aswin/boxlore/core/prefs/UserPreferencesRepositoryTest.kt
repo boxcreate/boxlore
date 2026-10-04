@@ -363,6 +363,25 @@ class UserPreferencesRepositoryTest {
     // ---- Playback speed & skip bounds ----
 
     @Test
+    fun miniPlayerSeekButtonsAreOptInAndPersistAcrossRepositoryRecreation() = runTest {
+        assertFalse(repository.miniPlayerSeekButtonsEnabledStream.first())
+        repository.setMiniPlayerSeekButtonsEnabled(true)
+        assertTrue(UserPreferencesRepository(context).miniPlayerSeekButtonsEnabledStream.first())
+        repository.setMiniPlayerSeekButtonsEnabled(false)
+        assertFalse(UserPreferencesRepository(context).miniPlayerSeekButtonsEnabledStream.first())
+    }
+
+    @Test
+    fun hidingMiniPlayerSeekButtonsPreservesGlobalSeekDurations() = runTest {
+        repository.setSeekBackwardMs(20_000L)
+        repository.setSeekForwardMs(45_000L)
+        repository.setMiniPlayerSeekButtonsEnabled(true)
+        repository.setMiniPlayerSeekButtonsEnabled(false)
+        assertEquals(20_000L, repository.seekBackwardMsStream.first())
+        assertEquals(45_000L, repository.seekForwardMsStream.first())
+    }
+
+    @Test
     fun playbackSpeedDefaultsToOne() = runTest {
         assertEquals(1.0f, repository.playbackSpeedStream.first(), 0.0f)
         repository.setPlaybackSpeed(1.75f)

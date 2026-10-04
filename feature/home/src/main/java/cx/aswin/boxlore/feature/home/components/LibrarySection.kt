@@ -290,7 +290,7 @@ fun YourShowsSection(
                             isSelected = selectedPodcastId == null,
                             isAnyPodcastSelected = selectedPodcastId != null,
                             onClick = { onPodcastSelected(null) },
-                            modifier = Modifier.size(60.dp).animateItem(),
+                            modifier = Modifier.size(60.dp).animateItem(fadeInSpec = null, fadeOutSpec = null),
                         )
                     }
                 }
@@ -305,7 +305,7 @@ fun YourShowsSection(
                                 onPodcastSelected(if (selectedPodcastId == podcast.id) null else podcast.id)
                             }
                         },
-                        modifier = Modifier.size(60.dp).animateItem(),
+                        modifier = Modifier.size(60.dp).animateItem(fadeInSpec = null, fadeOutSpec = null),
                         pin =
                         CoverPin(
                             pinned = podcast.id in pinnedPodcastIds,
@@ -439,7 +439,7 @@ fun YourShowsSection(
                         isSelected = selectedPodcastId == null,
                         isAnyPodcastSelected = selectedPodcastId != null,
                         onClick = { onPodcastSelected(null) },
-                        modifier = Modifier.size(60.dp).animateItem(),
+                        modifier = Modifier.size(60.dp).animateItem(fadeInSpec = null, fadeOutSpec = null),
                     )
                 }
                 items(interleavedPodcasts, key = { it.id }) { podcast ->
@@ -451,7 +451,7 @@ fun YourShowsSection(
                         onClick = {
                             onPodcastSelected(if (selectedPodcastId == podcast.id) null else podcast.id)
                         },
-                        modifier = Modifier.size(60.dp).animateItem(),
+                        modifier = Modifier.size(60.dp).animateItem(fadeInSpec = null, fadeOutSpec = null),
                         pin =
                         CoverPin(
                             pinned = podcast.id in pinnedPodcastIds,

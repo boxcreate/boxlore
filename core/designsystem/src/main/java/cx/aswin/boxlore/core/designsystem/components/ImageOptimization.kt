@@ -5,23 +5,7 @@ import java.net.URLEncoder
 private const val SCHEME_HTTP = "http://"
 private const val SCHEME_HTTPS = "https://"
 
-private fun calculateScaledWidth(originalWidth: Int): Int = try {
-    val metrics = android.content.res.Resources.getSystem().displayMetrics
-    val density = metrics.density
-    val screenWidthPx = metrics.widthPixels
-    val isLargeScreen = (screenWidthPx / density) >= 600f
-
-    // originalWidth is already in pixels (callers pass dp * ~2), so only apply
-    // a quality multiplier — do NOT multiply by density again.
-    val qualityMultiplier = when {
-        isLargeScreen -> 2.0f
-        density >= 3.5f -> 1.5f
-        else -> 1.3f
-    }
-    (originalWidth * qualityMultiplier).toInt().coerceIn(10, 2048)
-} catch (e: Exception) {
-    originalWidth
-}
+private fun calculateScaledWidth(originalWidth: Int): Int = imageTargetPixels(originalWidth)
 
 private fun optimizeBbcCdn(httpsUrl: String, scaledWidth: Int): String? {
     if (httpsUrl.contains("ichef.bbci.co.uk")) {
@@ -137,7 +121,7 @@ fun String.optimizedImageUrl(width: Int = 400): String {
         cleanedUrl
     }
 
-    // Dynamically scale width based on screen density and tablet/viewport configuration
+    // Callers already supply pixels; keep CDN and decoder targets identical.
     val scaledWidth = calculateScaledWidth(width)
 
     // NATIVE CDN OPTIMIZATIONS (Completely bypasses third-party proxy lag/failure!)

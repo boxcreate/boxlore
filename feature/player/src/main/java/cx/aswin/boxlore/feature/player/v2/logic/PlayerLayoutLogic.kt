@@ -4,7 +4,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.min
-import androidx.compose.ui.util.lerp
 import cx.aswin.boxlore.feature.player.v2.HeroDimensions
 
 internal data class ResponsiveHeroLayout(
@@ -43,7 +42,8 @@ internal data class PlayerSheetGeometryValues(
     val sheetElevation: Dp,
     val miniAlpha: Float,
     val fullAlpha: Float,
-    val fullTranslationY: Float
+    val fullTranslationY: Float,
+    val fullScale: Float,
 )
 
 internal data class PlayerSheetGeometryInput(
@@ -65,7 +65,7 @@ internal fun calculatePlayerSheetGeometry(
     } else {
         (1f - input.sheetOffset / input.collapsedTargetY).coerceIn(0f, 1f)
     }
-    val fullAlpha = ((expansionFraction - 0.25f).coerceIn(0f, 0.75f) / 0.75f)
+    val reveal = calculatePlayerSheetReveal(expansionFraction)
     return PlayerSheetGeometryValues(
         expansionFraction = expansionFraction,
         miniPlayerHeight = input.miniPlayerHeight,
@@ -74,8 +74,9 @@ internal fun calculatePlayerSheetGeometry(
         bottomCornerRadius = lerp(input.collapsedBottomCornerRadius, 0.dp, expansionFraction),
         horizontalPadding = lerp(input.collapsedHorizontalPadding, 0.dp, expansionFraction),
         sheetElevation = lerp(3.dp, 16.dp, expansionFraction),
-        miniAlpha = (1f - expansionFraction * 2f).coerceIn(0f, 1f),
-        fullAlpha = fullAlpha,
-        fullTranslationY = lerp(input.fullEntranceOffsetPx, 0f, fullAlpha)
+        miniAlpha = reveal.miniAlpha,
+        fullAlpha = reveal.fullAlpha,
+        fullTranslationY = input.fullEntranceOffsetPx * reveal.entranceRemaining,
+        fullScale = reveal.fullScale,
     )
 }

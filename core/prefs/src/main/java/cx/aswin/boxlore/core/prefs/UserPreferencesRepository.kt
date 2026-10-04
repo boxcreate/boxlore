@@ -796,6 +796,19 @@ class UserPreferencesRepository(context: Context,) {
             PlaybackSkipBounds.DEFAULT_SEEK_FORWARD_MS,
         ) { PlaybackSkipBounds.sanitizeSeekForward(it) }
 
+    /** Extra mini-player transport controls are opt-in; full-player seeking is always available. */
+    val miniPlayerSeekButtonsEnabledStream: Flow<Boolean> = dataStore.data
+        .map { preferences -> preferences[Keys.MINI_PLAYER_SEEK_BUTTONS_ENABLED] ?: false }
+        .catch { exception ->
+            if (exception is IOException) emit(false) else throw exception
+        }.distinctUntilChanged()
+
+    suspend fun setMiniPlayerSeekButtonsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.MINI_PLAYER_SEEK_BUTTONS_ENABLED] = enabled
+        }
+    }
+
     suspend fun setSkipBeginningMs(valueMs: Long) {
         setPlaybackDuration(Keys.SKIP_BEGINNING_MS, valueMs) {
             PlaybackSkipBounds.sanitizeTrim(it)

@@ -131,13 +131,15 @@ fun BoxLoreTheme(
     val context = LocalContext.current
 
     val colorScheme =
-        resolveBoxLoreColorScheme(
-            context = context,
-            darkTheme = darkTheme,
-            dynamicColor = dynamicColor,
-            themeBrand = themeBrand,
-            surfaceStyle = surfaceStyle,
-        )
+        remember(context, androidx.compose.ui.platform.LocalConfiguration.current, darkTheme, dynamicColor, themeBrand, surfaceStyle) {
+            resolveBoxLoreColorScheme(
+                context = context,
+                darkTheme = darkTheme,
+                dynamicColor = dynamicColor,
+                themeBrand = themeBrand,
+                surfaceStyle = surfaceStyle,
+            )
+        }
 
     val typography = remember(context, fontRoundness) { buildBoxLoreTypography(context, fontRoundness) }
 

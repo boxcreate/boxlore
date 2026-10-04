@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
@@ -46,6 +47,7 @@ fun BoxScope.PlayAllFab(
     Surface(
         modifier = modifier
             .align(Alignment.BottomEnd)
+            .adaptivePlayerOverlayOffset(isMiniPlayerVisible = isPlayerActive)
             .padding(bottom = bottomPadding, end = 16.dp)
             .expressiveClickable(
                 shape = CircleShape,

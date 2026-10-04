@@ -5,10 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -175,6 +177,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        if (!isChangingConfigurations) {
+            (application as BoxLoreApplication).startupWorkGate.onUiStopped()
+        }
         playbackRepositoryRef?.setUiForeground(false)
         super.onStop()
     }
@@ -186,6 +191,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        (application as BoxLoreApplication).startupWorkGate.onUiCreated()
         installSplashScreen()
         super.onCreate(savedInstanceState)
         consumedAuthLink = savedInstanceState?.getString(KEY_CONSUMED_AUTH_LINK) ?: consumedAuthLink
@@ -210,10 +216,14 @@ class MainActivity : ComponentActivity() {
         }
 
         AnalyticsHelper.trackFirstLaunchIfNecessary(this)
-        playAppUpdateHelper.checkForUpdates()
         CoilImageLoaderSetup.install(applicationContext)
 
         setContent {
+            LaunchedEffect(Unit) {
+                withFrameNanos {}
+                withFrameNanos {}
+                playAppUpdateHelper.checkForUpdates()
+            }
             BoxLoreAppRoot(
                 activity = this@MainActivity,
                 application = application as BoxLoreApplication,

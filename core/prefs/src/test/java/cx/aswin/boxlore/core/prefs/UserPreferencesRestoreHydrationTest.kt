@@ -3,6 +3,8 @@ package cx.aswin.boxlore.core.prefs
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -76,6 +78,29 @@ class UserPreferencesRestoreHydrationTest {
         assertEquals(WidgetAppearance.SYSTEM, repository.widgetAppearanceStream.first())
         assertEquals(ExploreDefaultTab.TOP, repository.exploreDefaultTabStream.first())
         assertEquals(SubscriptionsDefaultTab.NEW_EPISODES, repository.subscriptionsDefaultTabStream.first())
+    }
+
+    @Test
+    fun concurrentAppearanceReadersKeepFastCacheDuringBackgroundHydration() = runTest {
+        val reads = listOf(
+            async { repository.themeConfigStream.first() },
+            async { repository.surfaceStyleStream.first() },
+            async { repository.navigationStyleStream.first() },
+        )
+        val hydration = async { repository.hydrateMissingDataStoreFromFastCache() }
+        assertEquals(listOf("dark", "amoled", "classic"), reads.awaitAll())
+        hydration.await()
+        assertEquals("dark", repository.cachedThemeConfig)
+        assertEquals("amoled", repository.cachedSurfaceStyle)
+    }
+
+    @Test
+    fun backgroundHydrationDoesNotOverwriteAnExistingAppearanceChoice() = runTest {
+        repository.setThemeConfig("light")
+        repository.hydrateMissingDataStoreFromFastCache()
+        assertEquals("light", repository.themeConfigStream.first())
+        assertEquals("light", repository.cachedThemeConfig)
+        assertEquals("amoled", repository.surfaceStyleStream.first())
     }
 
     private fun seedThemeCache(

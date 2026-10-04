@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.component.ExploreTabSelectorFabHeight
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
+import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
@@ -102,7 +103,7 @@ fun ExploreScreen(
     val activeRegionCode by viewModel.activeRegionCode.collectAsStateWithLifecycle()
     val isPlayerVisible by remember(viewModel) {
         viewModel.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
-    }.collectAsStateWithLifecycle(initialValue = false)
+    }.collectAsStateWithLifecycle(initialValue = viewModel.playerState.value.currentEpisode != null)
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackExploreScreenViewed(entryPoint)
@@ -901,6 +902,7 @@ fun ExploreContent(
                 onTabSelected = onTabSelected,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .adaptivePlayerOverlayOffset(isMiniPlayerVisible = isPlayerVisible)
                     .padding(bottom = animatedBottomOffset)
             )
         }

@@ -56,6 +56,7 @@ import cx.aswin.boxlore.feature.player.v2.logic.chapterAtPosition
 import cx.aswin.boxlore.feature.player.v2.logic.playbackFraction
 import cx.aswin.boxlore.feature.player.v2.logic.seekPosition
 import cx.aswin.boxlore.feature.player.v2.logic.seekPreviewText
+import cx.aswin.boxlore.feature.player.v2.logic.seekbarThumbBounds
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sin
@@ -251,6 +252,7 @@ private fun SeekbarTrack(
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
+        if (size.width <= 0f || size.height <= 0f) return@Canvas
         val metrics = seekbarMetrics(state)
         drawInactiveTrack(state, metrics, colorScheme)
         drawStopIndicator(metrics, colorScheme)
@@ -382,13 +384,15 @@ private fun DrawScope.drawChapterMarker(
 }
 
 private fun DrawScope.drawThumb(metrics: SeekbarDrawMetrics, colorScheme: ColorScheme) {
+    val thumb = seekbarThumbBounds(size.width, metrics.thumbWidth, metrics.thumbX)
+    if (thumb.width <= 0f) return
     drawRoundRect(
         color = colorScheme.primary,
         topLeft = Offset(
-            (metrics.thumbX - metrics.thumbWidth / 2f).coerceIn(0f, size.width - metrics.thumbWidth),
+            thumb.left,
             metrics.centerY - metrics.thumbHeight / 2f
         ),
-        size = androidx.compose.ui.geometry.Size(metrics.thumbWidth, metrics.thumbHeight),
-        cornerRadius = CornerRadius(metrics.thumbWidth / 2f)
+        size = androidx.compose.ui.geometry.Size(thumb.width, metrics.thumbHeight),
+        cornerRadius = CornerRadius(thumb.width / 2f)
     )
 }

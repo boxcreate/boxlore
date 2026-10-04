@@ -140,6 +140,25 @@ class HomeUiAssemblyLogicTest {
     }
 
     @Test
+    fun `local subscriptions reveal Home while discovery continues loading`() = runTest {
+        val result = assemble(
+            trending = emptyList(),
+            subs = listOf(TestFixtures.podcast(id = "local-sub")),
+            isTrendingLoaded = false,
+        )
+        assertFalse(result.isLoading)
+        assertTrue(result.isFilterLoading)
+        assertEquals("local-sub", result.subscribedPodcasts.single().id)
+    }
+
+    @Test
+    fun `finished empty discovery does not leave skeletons animating forever`() = runTest {
+        val result = assemble(trending = emptyList(), isTrendingLoaded = true)
+        assertFalse(result.isLoading)
+        assertFalse(result.isFilterLoading)
+    }
+
+    @Test
     fun `briefing surfaces when present and not dismissed or completed`() = runTest {
         val shown = assemble(rawBriefing = briefing)
         assertEquals(briefing, shown.briefing)

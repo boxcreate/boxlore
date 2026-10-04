@@ -150,6 +150,7 @@ data class NavSettingsState(
     val exploreDefaultTab: String,
     val subscriptionsDefaultTab: String,
     val subscriptionsTabStyle: String = cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle.TOP,
+    val miniPlayerSeekButtonsEnabled: Boolean = false,
 )
 
 /** Callbacks for OPML import state owned by MainActivity. */

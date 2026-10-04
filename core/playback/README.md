@@ -93,6 +93,10 @@ Files under `core/data/service` are compatibility stubs for old service class na
 - Libraries: Media3 ExoPlayer/Session/UI/Cast, Google Cast framework, Coil, Palette, Gson, OkHttp, coroutines, and AndroidX core.
 - Reverse-edge rule: catalog and downloads must not depend back on playback. Downloads launch `MediaDownloadService` through the app-installed launcher port.
 
+## Artwork decoding
+
+`CoilBitmapLoader` dispatches both byte-array decoding and URI artwork loading to IO in the service scope. Media3 callers receive a cancellable future immediately; decode errors complete that future exceptionally. Notification covers request at most 512×512 pixels and software bitmaps. `CoilBitmapLoaderTest` covers asynchronous decoding, invalid data and service cancellation.
+
 ## Threading / lifecycle
 
 - `PlaybackRepository`, `QueueRepository`, and `QueueManager` are application-scoped through `AppContainer`.

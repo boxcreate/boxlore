@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.widgets
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 /** Narrow playback port wired from `:app` — never construct [cx.aswin.boxlore.core.playback.PlaybackRepository] here. */
 interface WidgetPlaybackSource {
@@ -47,5 +48,9 @@ object NowPlayingWidgetDependenciesHolder {
 fun configureNowPlayingWidget(dependencies: NowPlayingWidgetDependencies) {
     NowPlayingWidgetDependenciesHolder.instance = dependencies
     WidgetThemeSync.install(dependencies.context)
-    NowPlayingWidgetCoordinator.start(dependencies)
+    dependencies.scope.launch {
+        if (hasInstalledWidgets(dependencies.context, WidgetProviders.all.map { it.receiverClass })) {
+            NowPlayingWidgetCoordinator.start(dependencies)
+        }
+    }
 }

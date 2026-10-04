@@ -2,10 +2,8 @@ package cx.aswin.boxlore.feature.library
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,17 +26,13 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Videocam
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -58,13 +52,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -186,18 +180,13 @@ fun LibraryContent(
                 },
                 actions = {
                     if (showHomeShortcuts) {
-                        LibraryHubShortcutButton(
-                            icon = Icons.Rounded.Feedback,
-                            contentDescription = "Send Feedback",
-                            onClick = onFeedbackClick,
-                            onLongClick = onFeedbackLongClick,
-                        )
-                        LibraryHubShortcutButton(
-                            icon = Icons.Rounded.Settings,
-                            contentDescription = "Settings",
-                            onClick = onSettingsClick,
-                            onLongClick = onSettingsLongClick,
-                            modifier = Modifier.testTag("library_settings_button"),
+                        TopBarUtilityActions(
+                            onFeedbackClick = onFeedbackClick,
+                            onFeedbackLongClick = onFeedbackLongClick,
+                            onSettingsClick = onSettingsClick,
+                            onSettingsLongClick = onSettingsLongClick,
+                            modifier = Modifier.padding(end = 12.dp),
+                            settingsButtonModifier = Modifier.testTag("library_settings_button"),
                         )
                     }
                 },
@@ -586,28 +575,5 @@ fun LibraryPodcastCard(
                 )
             }
         }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun LibraryHubShortcutButton(
-    icon: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    IconButton(onClick = onClick, modifier = modifier) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier =
-            Modifier.combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-                role = Role.Button,
-            ),
-        )
     }
 }

@@ -50,7 +50,7 @@ class PlayerLayoutLogicTest {
     }
 
     @Test
-    fun collapsedSheetUsesPillGeometry() {
+    fun collapsedFloatingSheetUsesFullCapsuleGeometry() {
         val geometry =
             calculatePlayerSheetGeometry(
                 PlayerSheetGeometryInput(
@@ -71,6 +71,32 @@ class PlayerLayoutLogicTest {
         assertEquals(1f, geometry.miniAlpha, 0.001f)
         assertEquals(0f, geometry.fullAlpha, 0.001f)
         assertEquals(24f, geometry.fullTranslationY, 0.001f)
+        assertEquals(0.975f, geometry.fullScale, 0.001f)
+    }
+
+    @Test
+    fun expandingPlayerRetainsEachNavigationStylesCornerProportions() {
+        val input = PlayerSheetGeometryInput(
+            sheetOffset = 500f,
+            collapsedTargetY = 1_000f,
+            containerHeight = 800.dp,
+            collapsedHorizontalPadding = 12.dp,
+            fullEntranceOffsetPx = 24f,
+        )
+        val floating = calculatePlayerSheetGeometry(input)
+        val classic = calculatePlayerSheetGeometry(
+            input.copy(
+                miniPlayerHeight = 72.dp,
+                collapsedTopCornerRadius = 26.dp,
+                collapsedBottomCornerRadius = 14.dp,
+            ),
+        )
+
+        assertEquals(16.dp, floating.topCornerRadius)
+        assertEquals(16.dp, floating.bottomCornerRadius)
+        assertEquals(13.dp, classic.topCornerRadius)
+        assertEquals(7.dp, classic.bottomCornerRadius)
+        assertEquals(floating.expansionFraction, classic.expansionFraction)
     }
 
     @Test
@@ -117,6 +143,7 @@ class PlayerLayoutLogicTest {
         assertEquals(0f, geometry.miniAlpha, 0.001f)
         assertEquals(1f, geometry.fullAlpha, 0.001f)
         assertEquals(0f, geometry.fullTranslationY, 0.001f)
+        assertEquals(1f, geometry.fullScale, 0.001f)
     }
 
     @Test

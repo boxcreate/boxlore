@@ -31,6 +31,7 @@ import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
 import cx.aswin.boxlore.sync.CloudSyncWorker
+import cx.aswin.boxlore.ui.StartupWorkGate
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
@@ -38,13 +39,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 class BoxLoreApplication :
     Application(),
     Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    internal val startupWorkGate = StartupWorkGate()
 
     @Volatile
     private var castSessionGeneration = 0L
@@ -146,7 +147,7 @@ class BoxLoreApplication :
 
         // Single prefs instance shared with AppContainer (theme fast-cache + engagement).
         userPreferencesRepository = UserPreferencesRepository(this)
-        runBlocking(Dispatchers.IO) {
+        applicationScope.launch {
             userPreferencesRepository.hydrateMissingDataStoreFromFastCache()
         }
         container =
@@ -163,24 +164,16 @@ class BoxLoreApplication :
         NetworkModule.authenticator =
             FirebaseAuthAuthenticator(container.authRepository)
         cx.aswin.boxlore.lifecycle.AutoDownloadLifecycle(this, container, applicationScope).start()
-        container.cloudSyncTriggerCoordinator.start()
-        CloudSyncWorker.schedulePeriodicSync(this)
         HomeScreenWidgetsInstaller.install(
             context = this,
             scope = applicationScope,
-            playbackRepository = container.playbackRepository,
-            subscriptionRepository = container.subscriptionRepository,
+            playbackRepository = { container.playbackRepository },
+            subscriptionRepository = { container.subscriptionRepository },
             userPreferencesRepository = userPreferencesRepository,
-            adaptiveScorer = container.adaptiveCandidateScorer,
+            adaptiveScorer = { container.adaptiveCandidateScorer },
         )
         engagementPromptCoordinator = EngagementPromptCoordinator(userPreferencesRepository)
-        // Eagerly touch the container ranking façade so create/install runs its no-op
-        // fallback if Room initialization fails — same startup behavior as before, without
-        // a second RankingFeedbackRepository client diverging from the container.
-        container.rankingFeedbackRepository
-        applicationScope.launch {
-            container.smartDownloadManager.reconcileScheduleWithPreferences()
-        }
+        scheduleOptionalStartup()
 
         // Live learner signal log: on by default in debug; release stays off unless the
         // user explicitly opts in via the debug-screen toggle (persisted true).
@@ -237,6 +230,12 @@ class BoxLoreApplication :
         reportAdaptiveRankingStatus()
 
         setupAppCheck()
+        // After queued launch transactions, distinguish a worker/widget process from
+        // an Activity launch. UI launches release the gate from committed content.
+        android.os.Looper.myQueue().addIdleHandler {
+            startupWorkGate.onMainQueueIdle()
+            false
+        }
 
         // Setup active connectivity listener for offline tracking
         try {
@@ -272,6 +271,21 @@ class BoxLoreApplication :
                 e,
                 "Failed to register connectivity observer",
             )
+        }
+    }
+
+    private fun scheduleOptionalStartup() {
+        applicationScope.launch {
+            startupWorkGate.runWhenReady {
+                val coordinator = container.cloudSyncTriggerCoordinator
+                withContext(Dispatchers.Main.immediate) { coordinator.start() }
+                CloudSyncWorker.schedulePeriodicSync(this@BoxLoreApplication)
+            }
+        }
+        applicationScope.launch {
+            startupWorkGate.runWhenReady {
+                container.smartDownloadManager.reconcileScheduleWithPreferences()
+            }
         }
     }
 
@@ -337,6 +351,7 @@ class BoxLoreApplication :
     @Suppress("TooGenericExceptionCaught")
     private fun reportAdaptiveRankingStatus() {
         applicationScope.launch {
+            startupWorkGate.awaitReady()
             try {
                 val statuses =
                     container.adaptiveRankingRepository

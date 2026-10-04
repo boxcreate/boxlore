@@ -11,29 +11,35 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.AbsoluteAlignment
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -42,9 +48,12 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -60,9 +69,14 @@ import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.feature.player.v2.logic.AdaptivePlayerBounds
+import cx.aswin.boxlore.feature.player.v2.logic.AdaptivePlayerBoundsInput
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetGeometryInput
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerSheetNestedScrollLogic
+import cx.aswin.boxlore.feature.player.v2.logic.calculateAdaptivePlayerBounds
+import cx.aswin.boxlore.feature.player.v2.logic.calculateAdaptivePlayerCornerRadius
 import cx.aswin.boxlore.feature.player.v2.logic.calculatePlayerSheetGeometry
+import cx.aswin.boxlore.feature.player.v2.logic.isPlayerSheetInteractionActive
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.NonCancellable
@@ -87,11 +101,15 @@ data class PlayerSheetLayout(
     val collapsedHorizontalPadding: Dp = 12.dp,
     val navigationStyle: NavigationStyle = NavigationStyle.Floating,
     val expandTrigger: Long = 0L,
+    val compactProgress: State<Float>? = null,
+    val compactTargetY: Float = collapsedTargetY,
+    val miniPlayerSeekButtonsEnabled: Boolean = false,
 )
 
 data class PlayerSheetActions(
     val onEpisodeInfoClick: (cx.aswin.boxlore.core.model.Episode) -> Unit = {},
     val onPodcastInfoClick: (cx.aswin.boxlore.core.model.Podcast) -> Unit = {},
+    val onSheetInteractionChanged: (Boolean) -> Unit = {},
 )
 
 /**
@@ -169,6 +187,17 @@ fun PlayerSheetScaffold(
         }
     ConfigurePlayerSheetAnchors(sheetState, layout.collapsedTargetY)
     val geometry = rememberPlayerSheetGeometry(sheetState, layout)
+    val sheetInteractionSource = remember { MutableInteractionSource() }
+    val isDragging by sheetInteractionSource.collectIsDraggedAsState()
+    PlayerSheetInteractionEffect(
+        active = isPlayerSheetInteractionActive(
+            expansionFraction = geometry.expansionFraction,
+            animationRunning = sheetState.isAnimationRunning,
+            isDragging = isDragging,
+            isFullscreenVideo = isFullscreenVideo,
+        ),
+        onChange = actions.onSheetInteractionChanged,
+    )
     val isExpanded = sheetState.currentValue == PlayerSheetValue.Expanded
     PlayerSheetSettledEffects(sheetState, haptics, episode, podcast)
     PlayerSheetExternalExpansion(sheetState, layout.expandTrigger)
@@ -189,6 +218,7 @@ fun PlayerSheetScaffold(
             isFullscreenVideo = isFullscreenVideo,
             hasSeenSwipeDismissTip = hasSeenSwipeDismissTip,
             hasSeenSwipeMinimizeTip = hasSeenSwipeMinimizeTip,
+            miniPlayerSeekButtonsEnabled = layout.miniPlayerSeekButtonsEnabled,
         ),
         resources =
         PlayerSheetResources(
@@ -198,6 +228,7 @@ fun PlayerSheetScaffold(
             stateHolder = playerStateHolder,
             scope = scope,
             haptics = haptics,
+            sheetInteractionSource = sheetInteractionSource,
             flows =
             PlayerSheetFlows(
                 nestedScrollConnection = sheetNestedScrollConnection,
@@ -215,9 +246,18 @@ fun PlayerSheetScaffold(
             onPodcastInfoClick = actions.onPodcastInfoClick,
         ),
         sheetState = sheetState,
-        containerHeight = layout.containerHeight,
+        layout = layout,
         modifier = modifier,
     )
+}
+
+@Composable
+private fun PlayerSheetInteractionEffect(active: Boolean, onChange: (Boolean) -> Unit) {
+    val currentOnChange = rememberUpdatedState(onChange)
+    LaunchedEffect(active) { currentOnChange.value(active) }
+    DisposableEffect(Unit) {
+        onDispose { currentOnChange.value(false) }
+    }
 }
 
 private data class PlayerSheetGeometry(
@@ -232,6 +272,10 @@ private data class PlayerSheetGeometry(
     val miniAlpha: Float,
     val fullAlpha: Float,
     val fullTranslationY: Float,
+    val fullScale: Float,
+    val compactFraction: Float = 0f,
+    val cookieFraction: Float = 0f,
+    val compactRotation: State<Float>? = null,
 )
 
 private data class PlayerSheetContentState(
@@ -242,6 +286,7 @@ private data class PlayerSheetContentState(
     val isFullscreenVideo: Boolean,
     val hasSeenSwipeDismissTip: Boolean,
     val hasSeenSwipeMinimizeTip: Boolean,
+    val miniPlayerSeekButtonsEnabled: Boolean,
 )
 
 private data class PlayerSheetResources(
@@ -251,6 +296,7 @@ private data class PlayerSheetResources(
     val stateHolder: androidx.compose.runtime.saveable.SaveableStateHolder,
     val scope: kotlinx.coroutines.CoroutineScope,
     val haptics: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    val sheetInteractionSource: MutableInteractionSource,
     val flows: PlayerSheetFlows,
 )
 
@@ -279,7 +325,7 @@ private fun rememberPlayerSheetGeometry(
             if (raw.isNaN()) layout.collapsedTargetY else raw.coerceIn(0f, layout.collapsedTargetY)
         }
     }
-    val fullEntranceOffsetPx = remember(density) { with(density) { 24.dp.toPx() } }
+    val fullEntranceOffsetPx = remember(density) { with(density) { 40.dp.toPx() } }
     val values =
         calculatePlayerSheetGeometry(
             PlayerSheetGeometryInput(
@@ -305,6 +351,7 @@ private fun rememberPlayerSheetGeometry(
         miniAlpha = values.miniAlpha,
         fullAlpha = values.fullAlpha,
         fullTranslationY = values.fullTranslationY,
+        fullScale = values.fullScale,
     )
 }
 
@@ -336,55 +383,120 @@ private fun PlayerSheetSurface(
     resources: PlayerSheetResources,
     callbacks: PlayerSheetCallbacks,
     sheetState: AnchoredDraggableState<PlayerSheetValue>,
-    containerHeight: Dp,
+    layout: PlayerSheetLayout,
     modifier: Modifier = Modifier,
 ) {
-    val shape =
-        RoundedCornerShape(
-            topStart = geometry.topCornerRadius,
-            topEnd = geometry.topCornerRadius,
-            bottomStart = geometry.bottomCornerRadius,
-            bottomEnd = geometry.bottomCornerRadius,
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    BoxWithConstraints(modifier = modifier.fillMaxSize(), contentAlignment = AbsoluteAlignment.TopLeft) {
+        val containerWidth = maxWidth
+        val bounds = calculateAdaptivePlayerBounds(
+            AdaptivePlayerBoundsInput(
+                containerWidth = containerWidth,
+                containerHeight = layout.containerHeight,
+                collapsedHorizontalPadding = layout.collapsedHorizontalPadding,
+                collapsedTargetY = layout.collapsedTargetY,
+                compactTargetY = layout.compactTargetY,
+                miniPlayerHeight = geometry.miniPlayerHeight,
+                compactFraction = layout.compactProgress?.value ?: 0f,
+                expansionFraction = geometry.expansionFraction,
+                isRtl = isRtl,
+                adaptiveEnabled = layout.navigationStyle == NavigationStyle.Floating,
+                isFullscreenVideo = content.isFullscreenVideo,
+            ),
         )
-    Box(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .offset { IntOffset(0, geometry.sheetOffset.roundToInt()) }
-            .graphicsLayer { clip = false }
-            .height(geometry.sheetHeight),
-    ) {
+        val surfaceExpansion = if (content.isFullscreenVideo) 1f else geometry.expansionFraction
+        val rotation = rememberCompactPlayerRotation(
+            episodeId = content.episode.id,
+            running = canAnimateCompactPlayer(
+                content.playerState.isPlaying,
+                content.playerState.isLoading,
+                bounds.cookieFraction,
+                surfaceExpansion,
+            ) &&
+                !sheetState.isAnimationRunning,
+        )
+        val adaptedGeometry = geometry.adaptToBounds(bounds, content.isFullscreenVideo, rotation)
         Box(
             modifier =
             Modifier
-                .fillMaxWidth()
-                .padding(horizontal = geometry.horizontalPadding)
-                .height(geometry.sheetHeight)
-                .shadow(elevation = geometry.sheetElevation, shape = shape, clip = false)
-                .background(color = miniSheetColor(content.colorScheme), shape = shape)
-                .clip(shape)
-                .anchoredDraggable(
-                    state = sheetState,
-                    orientation = Orientation.Vertical,
-                    enabled = !content.isFullscreenVideo,
-                    // Never steal taps while settling: default true-during-animation
-                    // ate mini controls for ~1–2s. Touch-slop still allows swipe-up
-                    // expand from the collapsed mini player.
-                    startDragImmediately = false,
-                ).clickable(
-                    enabled =
-                    geometry.expansionFraction < 0.5f &&
-                        !content.isFullscreenVideo,
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    resources.haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    callbacks.onExpand()
-                },
+                .absoluteOffset { IntOffset(bounds.offsetX.roundToPx(), bounds.offsetY.roundToInt()) }
+                .width(bounds.width)
+                .graphicsLayer { clip = false }
+                .height(bounds.height),
         ) {
-            PlayerSheetLayers(geometry, content, resources, callbacks, containerHeight)
+            Box(
+                modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(bounds.height)
+                    .graphicsLayer {
+                        shape = AdaptiveMiniPlayerSurfaceShape(
+                            adaptedGeometry.topCornerRadius,
+                            adaptedGeometry.bottomCornerRadius,
+                            adaptedGeometry.cookieFraction,
+                            rotation.value,
+                        )
+                        shadowElevation = geometry.sheetElevation.toPx() * (1f - bounds.cookieFraction)
+                        clip = true
+                    }
+                    .background(color = miniSheetColor(content.colorScheme).copy(alpha = 1f - bounds.cookieFraction))
+                    .anchoredDraggable(
+                        state = sheetState,
+                        interactionSource = resources.sheetInteractionSource,
+                        orientation = Orientation.Vertical,
+                        enabled = !content.isFullscreenVideo,
+                        // Never steal taps while settling: default true-during-animation
+                        // ate mini controls for ~1–2s. Touch-slop still allows swipe-up
+                        // expand from the collapsed mini player.
+                        startDragImmediately = false,
+                    ).clickable(
+                        enabled =
+                        geometry.expansionFraction < 0.5f &&
+                            !content.isFullscreenVideo,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClickLabel = "Open player",
+                    ) {
+                        resources.haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        callbacks.onExpand()
+                    },
+            ) {
+                PlayerSheetLayers(adaptedGeometry, content, resources, callbacks, containerWidth, layout.containerHeight)
+            }
         }
     }
+}
+
+private fun PlayerSheetGeometry.adaptToBounds(
+    bounds: AdaptivePlayerBounds,
+    isFullscreenVideo: Boolean,
+    rotation: State<Float>,
+): PlayerSheetGeometry {
+    val expansion = if (isFullscreenVideo) 1f else expansionFraction
+    return copy(
+        expansionFraction = expansion,
+        miniPlayerHeight = bounds.collapsedHeight,
+        sheetHeight = bounds.height,
+        topCornerRadius = calculateAdaptivePlayerCornerRadius(
+            regularRadius = topCornerRadius,
+            expansionFraction = expansion,
+            compactFraction = bounds.compactFraction,
+            isFullscreenVideo = isFullscreenVideo,
+        ),
+        bottomCornerRadius = calculateAdaptivePlayerCornerRadius(
+            regularRadius = bottomCornerRadius,
+            expansionFraction = expansion,
+            compactFraction = bounds.compactFraction,
+            isFullscreenVideo = isFullscreenVideo,
+        ),
+        compactFraction = bounds.compactFraction,
+        cookieFraction = bounds.cookieFraction,
+        compactRotation = rotation,
+        miniAlpha = if (isFullscreenVideo) 0f else miniAlpha,
+        fullAlpha = if (isFullscreenVideo) 1f else fullAlpha,
+        fullTranslationY = if (isFullscreenVideo) 0f else fullTranslationY,
+        fullScale = if (isFullscreenVideo) 1f else fullScale,
+    )
 }
 
 @Composable
@@ -393,21 +505,24 @@ private fun PlayerSheetLayers(
     content: PlayerSheetContentState,
     resources: PlayerSheetResources,
     callbacks: PlayerSheetCallbacks,
+    containerWidth: Dp,
     containerHeight: Dp,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         MiniPlayerLayer(
-            visible = geometry.expansionFraction < 0.999f,
+            visible = geometry.miniAlpha > 0.001f,
             geometry = geometry,
             content = content,
             resources = resources,
         )
         FullPlayerLayer(
+            // Prepare the final-size content before its eased fade becomes visible.
             visible = geometry.expansionFraction > 0.001f,
             geometry = geometry,
             content = content,
             resources = resources,
             callbacks = callbacks,
+            containerWidth = containerWidth,
             containerHeight = containerHeight,
         )
     }
@@ -437,6 +552,7 @@ private fun MiniPlayerLayer(
                 seekForwardSeconds = (content.playerState.seekForwardMs / 1_000L).toInt(),
                 isCasting = content.playerState.playbackRoute.isRemote,
                 castDeviceName = content.playerState.playbackRoute.deviceName,
+                showSeekButtons = content.miniPlayerSeekButtonsEnabled,
             ),
             colors =
             MiniPlayerColors(
@@ -444,6 +560,12 @@ private fun MiniPlayerLayer(
                 backgroundColor = miniSheetColor(content.colorScheme),
             ),
             actions = miniPlayerActions(content, resources),
+            morph = MiniPlayerMorph(
+                compactFraction = geometry.compactFraction,
+                cookieFraction = geometry.cookieFraction,
+                rotation = geometry.compactRotation,
+                expansionFraction = geometry.expansionFraction,
+            ),
             swipeTip =
             MiniPlayerSwipeTip(
                 visible = !content.hasSeenSwipeDismissTip && !content.playerState.isPlaying,
@@ -455,8 +577,10 @@ private fun MiniPlayerLayer(
             Modifier
                 .height(geometry.miniPlayerHeight)
                 .fillMaxWidth()
-                .graphicsLayer { alpha = geometry.miniAlpha }
-                .zIndex(if (geometry.expansionFraction < 0.5f) 1f else 0f),
+                .graphicsLayer {
+                    alpha = geometry.miniAlpha
+                    translationY = -8.dp.toPx() * geometry.fullAlpha
+                },
         )
     }
 }
@@ -511,6 +635,7 @@ private fun FullPlayerLayer(
     content: PlayerSheetContentState,
     resources: PlayerSheetResources,
     callbacks: PlayerSheetCallbacks,
+    containerWidth: Dp,
     containerHeight: Dp,
 ) {
     if (!visible) return
@@ -518,14 +643,16 @@ private fun FullPlayerLayer(
         Box(
             modifier =
             Modifier
-                .height(containerHeight)
+                // Reveal a stable final-size layout from the top of the growing surface.
+                .wrapContentSize(Alignment.TopCenter, unbounded = true)
+                .requiredSize(containerWidth, containerHeight)
                 .graphicsLayer {
                     alpha = geometry.fullAlpha
                     translationY = geometry.fullTranslationY
-                }.zIndex(if (geometry.expansionFraction >= 0.5f) 1f else 0f)
-                .offset {
-                    if (geometry.expansionFraction <= 0.01f) IntOffset(0, 10000) else IntOffset.Zero
-                },
+                    scaleX = geometry.fullScale
+                    scaleY = geometry.fullScale
+                }.zIndex(1f)
+                .then(if (geometry.fullAlpha <= 0.001f) Modifier.clearAndSetSemantics {} else Modifier),
         ) {
             FullPlayerV2(
                 dependencies =

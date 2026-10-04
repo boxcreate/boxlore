@@ -38,6 +38,7 @@ internal object Keys {
     val SKIP_ENDING_MS = androidx.datastore.preferences.core.longPreferencesKey("skip_ending_ms")
     val SEEK_BACKWARD_MS = androidx.datastore.preferences.core.longPreferencesKey("seek_backward_ms")
     val SEEK_FORWARD_MS = androidx.datastore.preferences.core.longPreferencesKey("seek_forward_ms")
+    val MINI_PLAYER_SEEK_BUTTONS_ENABLED = androidx.datastore.preferences.core.booleanPreferencesKey("mini_player_seek_buttons_enabled")
     val HIDE_COMPLETED_IN_FEEDS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_feeds")
     val HIDE_COMPLETED_IN_SHOW_DETAILS = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_show_details")
     val HIDE_COMPLETED_IN_HOME = androidx.datastore.preferences.core.booleanPreferencesKey("hide_completed_in_home")

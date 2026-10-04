@@ -108,5 +108,5 @@ fun Modifier.playerCanvas(scheme: ColorScheme): Modifier = drawBehind {
     )
 }
 
-/** Flat sheet color used while collapsed (mini player) — matches the classic pill look. */
+/** Solid artwork-tinted surface shared by both mini-player presentations. */
 fun miniSheetColor(scheme: ColorScheme): Color = scheme.primaryContainer
