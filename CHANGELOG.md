@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.28] - 2026-10-04
+
 ### Added
 - Scroll-adaptive floating miniplayer with coordinated Lore navigation docking, cookie artwork, compact progress and active playback motion. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Opt-in miniplayer seek controls in Appearance settings. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
@@ -30,36 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve visible Home content during refreshes and stabilize shimmer, skeleton and artwork handoffs. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Share prefetched Lore artwork accents across cards and page colours; wrap long Settings titles onto two lines. ([#1095](https://github.com/boxcreate/boxlore/pull/1095)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 
-<!-- readme-copy:start pr=1090
-### Improvements
-- Added a dedicated Support boxlore experience in Settings with interactive tactical artifacts and lore inspection.
-readme-copy:end pr=1090 -->
-
-<!-- readme-copy:start pr=1092
-### Critical
-- Automatic downloads now recover new episodes when an episode alert is missing, resume after interruptions, and work with notifications turned off. Manually saved episodes stay protected.
-readme-copy:end pr=1092 -->
-
-<!-- readme-copy:start pr=1093
-### Fixes
-- New Episodes now plays the remaining list in order and resumes unfinished episodes at the right position.
-readme-copy:end pr=1093 -->
-
-<!-- readme-copy:start pr=1094
-### Improvements
-- Background episode checks are now optional in Auto-Download Settings. They start off, explain their battery and data costs, offer network and charging restrictions, and pause when the battery is low.
-- Auto-downloads still use new-episode pushes and normal refreshes while boxlore is open. Routine feed checks now share a six-hour cooldown and refresh large libraries in smaller batches.
-readme-copy:end pr=1094 -->
-
-<!-- readme-copy:start pr=1095
-### Improvements
-- The floating player shrinks into a compact artwork control as you scroll, with playback progress kept visible and Lore moving into the navigation bar.
-- Enjoy refined miniplayer controls and smoother transitions into the full player. Optional seek buttons are available in Appearance settings.
-- Home loads more consistently, with smoother loading placeholders and less content blinking during refreshes.
-### Fixes
-- Floating tab selectors and Play All follow the player's compact position.
-- Lore colours follow the active artwork more reliably, and long Settings titles wrap across two lines.
-readme-copy:end pr=1095 -->
 ## [v0.0.27] - 2026-09-26
 
 ### Added

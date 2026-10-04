@@ -20,7 +20,7 @@ and listen without paywalls, subscriptions, or ads.
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.27.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.28.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
 &nbsp;&nbsp;
 <!-- download-obtainium:start -->
@@ -122,6 +122,15 @@ and listen without paywalls, subscriptions, or ads.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.28` · 2026-10-04
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.28 date=2026-10-04 -->
 <b>🚨 Critical:</b>
 <ul align="left">
 <li>Automatic downloads now recover new episodes when an episode alert is missing, resume after interruptions, and work with notifications turned off. Manually saved episodes stay protected. <a href="https://github.com/boxcreate/boxlore/pull/1092"><img src="https://img.shields.io/badge/PR-1092-6750A4?style=flat-square" alt="PR #1092" height="18"/></a></li>
@@ -140,22 +149,6 @@ and listen without paywalls, subscriptions, or ads.
 <li>Floating tab selectors and Play All follow the player's compact position. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
 <li>Lore colours follow the active artwork more reliably, and long Settings titles wrap across two lines. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
 <li>New Episodes now plays the remaining list in order and resumes unfinished episodes at the right position. <a href="https://github.com/boxcreate/boxlore/pull/1093"><img src="https://img.shields.io/badge/PR-1093-6750A4?style=flat-square" alt="PR #1093" height="18"/></a></li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.27` · 2026-09-26
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.27 date=2026-09-26 -->
-<b>🚨 Critical:</b>
-<ul align="left">
-<li>Fixed critical bugs related to Google sign in not working and onboarding authentication flow <a href="https://github.com/boxcreate/boxlore/pull/1086"><img src="https://img.shields.io/badge/PR-1086-6750A4?style=flat-square" alt="PR #1086" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>In-app feedback screen revamp with automatic draft recovery. <a href="https://github.com/boxcreate/boxlore/pull/1087"><img src="https://img.shields.io/badge/PR-1087-6750A4?style=flat-square" alt="PR #1087" height="18"/></a></li>
-<li>General stability optimizations and performance enhancements. <a href="https://github.com/boxcreate/boxlore/pull/1087"><img src="https://img.shields.io/badge/PR-1087-6750A4?style=flat-square" alt="PR #1087" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
