@@ -16,6 +16,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -59,7 +60,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 .get()
                 .build()
 
-        return execute(request).use { response ->
+        return execute(request) { response ->
             require(response.isSuccessful) {
                 "Feed returned HTTP ${response.code}"
             }
@@ -87,16 +88,24 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
     suspend fun confirmUnchanged(url: String, etag: String?, lastModified: String?,): Boolean {
         if (etag.isNullOrBlank() && lastModified.isNullOrBlank()) return false
         val headCode =
-            runCatching {
-                execute(conditionalHeadRequest(url, etag, lastModified)).use { it.code }
-            }.getOrNull()
+            try {
+                execute(conditionalHeadRequest(url, etag, lastModified)) { it.code }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                null
+            }
         if (headCode != null && RssUnchangedLogic.headMeansUnchanged(headCode)) return true
         if (!RssUnchangedLogic.headMeansTryConditionalGet(headCode)) return false
-        return runCatching {
-            execute(conditionalGetRequest(url, etag, lastModified)).use { response ->
+        return try {
+            execute(conditionalGetRequest(url, etag, lastModified)) { response ->
                 RssUnchangedLogic.headMeansUnchanged(response.code)
             }
-        }.getOrDefault(false)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            false
+        }
     }
 
     suspend fun checkFreshness(podcast: PodcastEntity): RssFreshnessResult {
@@ -114,7 +123,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                     podcast.feedEtag,
                     podcast.feedLastModified,
                 ),
-            ).use { response ->
+            ) { response ->
                 val currentEtag = response.header("ETag")
                 val currentLastModified = response.header("Last-Modified")
                 when {
@@ -140,6 +149,8 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                     else -> RssFreshnessResult.Unsupported
                 }
             }
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: Exception) {
             RssFreshnessResult.Failed(error)
         }
@@ -598,14 +609,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             }
     }
 
-    private fun execute(request: Request): Response {
-        val response = httpClient.newCall(request).execute()
-        if (!response.request.url.isHttps) {
-            response.close()
-            error("RSS feed redirects must stay on HTTPS")
-        }
-        return response
-    }
+    private suspend fun <T> execute(request: Request, read: (Response) -> T): T = executeRssCall(httpClient.newCall(request), read)
 
     private fun XmlPullParser.disableUnsafeXmlFeatures() {
         runCatching { setFeature("http://xmlpull.org/v1/doc/features.html#process-docdecl", false) }

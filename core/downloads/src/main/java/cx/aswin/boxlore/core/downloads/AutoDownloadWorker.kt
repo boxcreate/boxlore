@@ -18,11 +18,23 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /** Existing FQCN and input keys are retained for work scheduled before this fix. */
 open class AutoDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    private val fromBackgroundCheck: Boolean
+        get() = inputData.getBoolean(KEY_BACKGROUND_CHECK, false) || AutoDownloadScheduling.BACKGROUND_TRANSFER_TAG in tags
+
     override suspend fun doWork(): Result {
         val episodeId = inputData.getString(KEY_EPISODE_ID)?.takeIf { it.isNotBlank() } ?: return Result.failure()
         val podcastId = inputData.getString(KEY_PODCAST_ID)?.takeIf { it.isNotBlank() } ?: return Result.failure()
+        // Old polling-derived requests cannot bypass consent before startup reconciliation runs.
+        if (AutoDownloadScheduling.TRANSFER_TAG in tags && AutoDownloadScheduling.POLICY_TRANSFER_TAG !in tags) return Result.success()
         return AutoDownloadTransfers.lock(episodeId).withLock {
-            execute(podcastId, episodeId)
+            if (fromBackgroundCheck) {
+                val preferences = SharedAppDependenciesHolder.require().userPreferencesRepository
+                AutoDownloadBackgroundGate.create(applicationContext, preferences, forTransfer = true).runGuarded {
+                    execute(podcastId, episodeId)
+                } ?: if (preferences.autoDownloadBackgroundSettingsStream.first().enabled) Result.retry() else Result.success()
+            } else {
+                execute(podcastId, episodeId)
+            }
         }
     }
 
@@ -119,12 +131,16 @@ open class AutoDownloadWorker(context: Context, params: WorkerParameters) : Coro
         if (stored != null) return stored
         val catalog = deps.podcastRepository.localEpisodeCatalog ?: return null
         val feed = show.feedUrl?.takeIf { it.startsWith("https://") } ?: return null
+        val background = fromBackgroundCheck
+        val backgroundGate = AutoDownloadBackgroundGate.create(applicationContext, deps.userPreferencesRepository, forTransfer = true)
         catalog.refresh(
             LocalEpisodeCatalogPort.RefreshRequest(
                 show.podcastId,
                 feed,
                 AutoDownloadCoordinator.meta(show),
-                reason = LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE
+                reason = LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE,
+                canProceed = { !background || backgroundGate.allowed() },
+                runPostPersistCallback = !background,
             )
         )
         return catalog.getEpisode(episodeId)?.takeIf { it.podcastId == show.podcastId }
@@ -153,6 +169,7 @@ open class AutoDownloadWorker(context: Context, params: WorkerParameters) : Coro
     companion object {
         const val KEY_EPISODE_ID = "episode_id"
         const val KEY_PODCAST_ID = "podcast_id"
+        const val KEY_BACKGROUND_CHECK = "background_check"
         const val WORK_SLICE_MS = 8 * 60 * 1000L
     }
 }

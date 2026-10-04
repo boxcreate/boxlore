@@ -21,7 +21,11 @@ Owns RSS feed fetching, parsing, deterministic ID generation, episode catalog ma
 - `EpisodeSupplementArtworkLogic` fills blank item artwork from the feed channel or the PI show image when persisting extras.
 - `ports.DownloadCacheRelinker` is injected by app wiring so RSS can request download cache relinking without a downloads dependency.
 
-- Catalog refresh reasons preserve the normal six-hour quiet interval, use a one-hour interval for auto-download discovery, and force GET for an unknown pushed release. A changed feed URL never inherits the old quiet interval. `onCatalogPersisted` is an optional app-wired suspend callback outside the feed transaction/lock; its failure does not discard a successful persist. It allows all ingest callers to trigger download discovery without a reverse downloads dependency.
+- Ready catalogs share one persisted six-hour cooldown for `NORMAL` and `AUTO_DOWNLOAD`, including feeds with ETag/Last-Modified. Repair or changed feed URLs bypass stale readiness/freshness assumptions. `MANUAL` and `NEW_RELEASE` force a publisher GET. The shared full-feed gate caps overlapping fetches at two; `RefreshRequest.canProceed` is rechecked after waiting and after fetching so revocation prevents persistence. `isRefreshDue` lets foreground batching exclude recent feeds. The post-persist callback runs outside the transaction/lock and excludes `AUTO_DOWNLOAD` or requests with `runPostPersistCallback = false`; background discovery must admit releases through its own consent and restriction gate.
+
+- `RssHttpExecution` keeps OkHttp cancellation attached through response-body reading. Revoking background consent or leaving a foreground refresh cancels the actual HTTP call; late responses are closed and conditional HEAD cancellation cannot start a fallback GET.
+
+- RSS response consumption keeps coroutine cancellation attached until the body is consumed and closed. The shared response reader validates HTTPS before consuming a response, including redirect responses.
 
 ## Internal structure
 

@@ -56,6 +56,52 @@ class AutoDownloadWorkerTest {
     }
 
     @Test
+    fun `background workers with revoked consent never access catalog or downloader`() = runBlocking {
+        val database = Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java).allowMainThreadQueries().build()
+        try {
+            val preferences = UserPreferencesRepository(context)
+            preferences.setAutoDownloadBackgroundChecksEnabled(false)
+            SharedAppDependenciesHolder.instance = FakeSharedAppDependencies(database, preferences)
+            // Deliberately leave the downloader/coordinator holder absent: either access would fail.
+            val transfer = TestListenableWorkerBuilder<AutoDownloadWorker>(context).setInputData(
+                Data.Builder().putString(AutoDownloadWorker.KEY_PODCAST_ID, "show")
+                    .putString(AutoDownloadWorker.KEY_EPISODE_ID, "release")
+                    .putBoolean(AutoDownloadWorker.KEY_BACKGROUND_CHECK, true).build()
+            ).build()
+            assertEquals(ListenableWorker.Result.success(), transfer.doWork())
+            assertEquals(ListenableWorker.Result.success(), TestListenableWorkerBuilder<AutoDownloadDiscoveryWorker>(context).build().doWork())
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun `unknown device conditions prevent background workers even with consent`() = runBlocking {
+        val database = Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java).allowMainThreadQueries().build()
+        try {
+            val preferences = UserPreferencesRepository(context)
+            preferences.setAutoDownloadBackgroundChecksEnabled(true)
+            SharedAppDependenciesHolder.instance = FakeSharedAppDependencies(database, preferences)
+            assertEquals(ListenableWorker.Result.retry(), TestListenableWorkerBuilder<AutoDownloadDiscoveryWorker>(context).build().doWork())
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun `legacy polling transfer cannot run before startup reconciliation`() = runBlocking {
+        val worker = TestListenableWorkerBuilder<AutoDownloadWorker>(context)
+            .setTags(listOf(AutoDownloadScheduling.TRANSFER_TAG))
+            .setInputData(
+                Data.Builder().putString(AutoDownloadWorker.KEY_PODCAST_ID, "show")
+                .putString(AutoDownloadWorker.KEY_EPISODE_ID, "release").build()
+            )
+            .build()
+        // No dependencies installed: checking legacy origin must happen before any I/O.
+        assertEquals(ListenableWorker.Result.success(), worker.doWork())
+    }
+
+    @Test
     fun `doWork returns success when podcast is not found in database`() {
         val database =
             Room.inMemoryDatabaseBuilder(context, BoxLoreDatabase::class.java)

@@ -13,6 +13,8 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 - `AccountSettingsPage`, `SyncAndBackupsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`, `SupportDevelopmentPage`.
 - Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
 
+- Auto-Download Settings exposes a separate off-by-default background-check switch, unmetered-network restriction and charging option. Copy explains six-hour checks, mandatory low-battery pausing, additional battery/data use, Android delays, and foreground/push behavior when polling is off. Per-show auto-download toggles never enable the switch.
+
 ## Internal structure
 
 ```text

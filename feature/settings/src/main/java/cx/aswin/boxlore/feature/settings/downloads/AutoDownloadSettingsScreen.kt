@@ -24,6 +24,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.launch
 
@@ -38,6 +39,7 @@ fun AutoDownloadSettingsScreen(
     val wifiOnly by userPrefs.autoDownloadWifiOnlyStream.collectAsState(initial = true)
     val maxEpisodes by userPrefs.autoDownloadMaxEpisodesStream.collectAsState(initial = 2)
     val deleteCompleted by userPrefs.autoDownloadDeleteCompletedStream.collectAsState(initial = true)
+    val background by userPrefs.autoDownloadBackgroundSettingsStream.collectAsState(initial = AutoDownloadBackgroundSettings())
 
     var showHowItWorks by remember { mutableStateOf(true) }
 
@@ -139,7 +141,7 @@ fun AutoDownloadSettingsScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Surface(
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                color = MaterialTheme.colorScheme.surface,
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -168,6 +170,12 @@ fun AutoDownloadSettingsScreen(
             }
 
             // Setting 1: Download over Cellular vs Wi-Fi
+            AutoDownloadBackgroundSettingsCard(
+                settings = background,
+                onEnabledChange = { scope.launch { userPrefs.setAutoDownloadBackgroundChecksEnabled(it) } },
+                onWifiOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundWifiOnly(it) } },
+                onChargingOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundChargingOnly(it) } },
+            )
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)

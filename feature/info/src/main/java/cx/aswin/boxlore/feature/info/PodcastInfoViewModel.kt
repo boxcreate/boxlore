@@ -977,6 +977,7 @@ class PodcastInfoViewModel(
                     podcastIndexId = targetPodcastId,
                     feedUrl = feedUrl,
                     meta = meta,
+                    reason = cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.MANUAL,
                     loadPiBaseline =
                     if (needsBaseline) {
                         {

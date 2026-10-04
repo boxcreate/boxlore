@@ -22,6 +22,7 @@ internal data class LocalCatalogRefreshDeps(
 )
 
 internal suspend fun refreshLocalCatalogLocked(deps: LocalCatalogRefreshDeps, request: RefreshRequest,): RefreshOutcome {
+    if (!request.canProceed()) return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
     if (request.podcastIndexId.isBlank() || request.podcastIndexId.startsWith("rss:")) {
         return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
     }
@@ -34,10 +35,12 @@ internal suspend fun refreshLocalCatalogLocked(deps: LocalCatalogRefreshDeps, re
             deps.dao.getNewest(request.podcastIndexId)?.toCatalogEpisode(request.meta),
         )
     }
-    if (request.reason != RefreshReason.NEW_RELEASE &&
+    val forceFetch = request.reason == RefreshReason.NEW_RELEASE || request.reason == RefreshReason.MANUAL
+    if (!forceFetch &&
         existing != null &&
         publisherFeedUnchanged(deps, request.podcastIndexId, url)
     ) {
+        if (!request.canProceed()) return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
         deps.dao.upsertFeed(existing.copy(fetchedAt = System.currentTimeMillis()))
         return RefreshOutcome.Unchanged(
             deps.dao.getNewest(request.podcastIndexId)?.toCatalogEpisode(request.meta),
@@ -73,16 +76,12 @@ internal fun shouldSkipQuiet(
     reason: RefreshReason = RefreshReason.NORMAL,
     nowMillis: Long = System.currentTimeMillis(),
 ): Boolean {
-    if (reason == RefreshReason.NEW_RELEASE) return false
+    if (reason == RefreshReason.NEW_RELEASE || reason == RefreshReason.MANUAL) return false
     if (existing == null) return false
     if (!LocalCatalogReadyLogic.isReady(existing)) return false
     if (existing.needsFullBackfill) return false
-    if (!existing.feedEtag.isNullOrBlank() || !existing.feedLastModified.isNullOrBlank()) {
-        return false
-    }
     if (existing.fetchedAt <= 0L) return false
-    val interval = if (reason == RefreshReason.AUTO_DOWNLOAD) 60 * 60 * 1000L else LocalEpisodeCatalogRepository.QUIET_INTERVAL_MS
-    return nowMillis - existing.fetchedAt in 0 until interval
+    return nowMillis - existing.fetchedAt in 0 until LocalEpisodeCatalogRepository.QUIET_INTERVAL_MS
 }
 
 private suspend fun fetchAndPersist(
@@ -92,7 +91,9 @@ private suspend fun fetchAndPersist(
     existing: LocalEpisodeFeedEntity?,
 ): RefreshOutcome = try {
     deps.megaGetGate.withPermit {
+        if (!request.canProceed()) return@withPermit RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
         val fetched = deps.feedClient.fetch(url)
+        if (!request.canProceed()) return@withPermit RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
         val rssNamespaceId = RssIdGenerator.podcastId(fetched.finalUrl)
         val parsed =
             deps.feedClient.parse(
@@ -100,12 +101,14 @@ private suspend fun fetchAndPersist(
                 bytes = fetched.body,
                 podcastId = rssNamespaceId,
             )
+        if (!request.canProceed()) return@withPermit RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
         val baseline =
             if (shouldLoadPiBaseline(existing)) {
                 request.loadPiBaseline?.invoke()
             } else {
                 null
             }
+        if (!request.canProceed()) return@withPermit RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
         persistParsed(deps, request, existing, fetched, rssNamespaceId, parsed, baseline)
     }
 } catch (error: CancellationException) {

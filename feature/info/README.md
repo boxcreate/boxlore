@@ -17,6 +17,8 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 
 - Show auto-download can be enabled with notifications off or system notification permission denied. Turning the bell off preserves auto-download; the cloud-dirty preference and activation boundary are persisted by the catalog repository. Pure RSS auto-download eligibility remains unchanged.
 
+- Explicit subscribed-show pull-to-refresh uses `MANUAL` to bypass the automatic six-hour cooldown. Show auto-download remains independent of notification permission and never grants background polling consent; without show push notifications or explicit polling consent, discovery occurs during normal foreground refreshes.
+
 ## Internal structure
 
 ```text
