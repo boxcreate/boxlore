@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-04T17:18:28.022Z",
+  "lastRun": "2026-10-04T20:20:43.786Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "b16706f8-b922-11f1-a2fc-9ff5258a6316",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "87267d2c-a59a-4285-9449-31d7aeb85fbd",
-      "lastEpisodeTitle": "1pm ET, October 04 | The latest headlines from NPR",
+      "lastRssKey": "02e47162-b437-4c17-b1f3-4a5b8c066edd",
+      "lastEpisodeTitle": "4pm ET, October 04 | The latest headlines from NPR",
       "lastEpisodeId": "61201617300",
-      "lastCheckedAt": 1791134312599
+      "lastCheckedAt": 1791145249278
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75524531",
@@ -67,10 +67,10 @@
       "lastCheckedAt": 1790958603427
     },
     "83316": {
-      "lastRssKey": "e3b16160-baa0-11f1-9b71-07e37867d17b",
-      "lastEpisodeTitle": "God Wants You To Pour Yourself OUT | Fight The Good Fight | Pastor Josh Howerton",
+      "lastRssKey": "6bf0317a-c01c-11f1-88a0-cb09cbc9b0d1",
+      "lastEpisodeTitle": "How to Fight Spiritual Battles You Can't See | Lakepointe Church | Pastor Jonathan Pokluda",
       "lastEpisodeId": "59407301336",
-      "lastCheckedAt": 1790540263415
+      "lastCheckedAt": 1791145250779
     },
     "92655": {
       "lastRssKey": "9e95ade0-b8bf-41cd-99ae-9f381f9c2350",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791025801975
     },
     "385117": {
-      "lastRssKey": "5e2f7ccc-c016-11f1-b35c-ab25d68d9523",
-      "lastEpisodeTitle": "1PM ET 10/04/2026 Newscast",
+      "lastRssKey": "83dd7a78-c02f-11f1-95e8-67ab4b294356",
+      "lastEpisodeTitle": "4PM ET 10/04/2026 Newscast",
       "lastEpisodeId": "61208616096",
-      "lastCheckedAt": 1791134321504
+      "lastCheckedAt": 1791145261960
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -277,10 +277,10 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
-      "lastRssKey": "479805e4-3962-43ac-a35d-47455be57f73",
-      "lastEpisodeTitle": "Another Roadster Reveal?! | Tesla Time News 683",
-      "lastEpisodeId": "61118279707",
-      "lastCheckedAt": 1790883691221
+      "lastRssKey": "89c18b96-20d3-4e9e-acb0-628dc22708c5",
+      "lastEpisodeTitle": "Tesla &#34;Invents&#34; EVJect | Tesla Time News 684",
+      "lastEpisodeId": "61255401907",
+      "lastCheckedAt": 1791145271414
     },
     "462634": {
       "lastRssKey": "gid://art19-episode-locator/V0/zhBAe-9x74-fe5SBqieVgP3woOBgZTlPZUzhzZZ16G0",
@@ -601,9 +601,9 @@
       "lastCheckedAt": 1791094534090
     },
     "998969": {
-      "lastRssKey": "audioboom-01a0f2ac-1740-75fb-9664-ff18bd4985d0",
-      "lastEpisodeTitle": "Midweek Mini: The 4th UAP File Dump",
-      "lastCheckedAt": 1790802844331
+      "lastRssKey": "audioboom-01a10723-6f2f-7186-9cfe-171448e40672",
+      "lastEpisodeTitle": "Episode 369: The Mummy Files",
+      "lastCheckedAt": 1791145311153
     },
     "1015378": {
       "lastRssKey": "16094471-70e5-4698-9bac-3958d237b7b7",
@@ -621,6 +621,11 @@
       "lastEpisodeTitle": "A.I. Agents: Cute, Cuddly and Maybe Catastrophically Dangerous?",
       "lastEpisodeId": "61162896761",
       "lastCheckedAt": 1790958666736
+    },
+    "1027545": {
+      "lastRssKey": "https://muslimcentral.com/ali-hammuda-islam-in-the-spotlight-why-now",
+      "lastEpisodeTitle": "Islam In The Spotlight Why Now",
+      "lastCheckedAt": 1791145313695
     },
     "1035900": {
       "lastRssKey": "f41f13f4-b3bd-4250-a6f7-7915794222be",
@@ -693,10 +698,10 @@
       "lastCheckedAt": 1789233723248
     },
     "1208307": {
-      "lastRssKey": "6abe9345d2d2814e2c30c4ef",
-      "lastEpisodeTitle": "In-Car Insights: Mercedes upgrades talk of the pitlane in Sepang",
+      "lastRssKey": "6ac2abd152a5384444979ca8",
+      "lastEpisodeTitle": "Bahrain GP: Was farcical Malaysia start avoidable + How Verstappen shocked rivals",
       "lastEpisodeId": "61116848199",
-      "lastCheckedAt": 1790883745328
+      "lastCheckedAt": 1791145322995
     },
     "1258562": {
       "lastRssKey": "6ac22edf52f9e4485fc03f23",
@@ -1282,10 +1287,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a10766-4302-7493-88f0-8fce8fb6e9e7",
-      "lastEpisodeTitle": "A Trump Rally, A Funeral  and a Revealing Day in Ohio | Bulwark on Sunday",
+      "lastRssKey": "audioboom-01a107df-b352-79c7-81f8-6bdfa11752db",
+      "lastEpisodeTitle": "Jack Smith Reveals the Words That Could Have Buried Trump",
       "lastEpisodeId": "61174850642",
-      "lastCheckedAt": 1791134403069
+      "lastCheckedAt": 1791145372926
     },
     "7239415": {
       "lastRssKey": "8b82fb1a-bfc9-11f1-8371-8b000fe77bc2",
@@ -1411,6 +1416,12 @@
       "lastEpisodeId": "58798183213",
       "lastCheckedAt": 1790815420258
     },
+    "7591415": {
+      "lastRssKey": "e6dafbd36ee540bac7cfcd0b921dc2f225402b78",
+      "lastEpisodeTitle": "L'assurance des mosquées arrive enfin",
+      "lastEpisodeId": "61045636386",
+      "lastCheckedAt": 1791145380027
+    },
     "7606603": {
       "lastRssKey": "51051648-b657-4085-a131-c9d20e285b2d",
       "lastEpisodeTitle": "Hass & Morddrohungen: Der Preis für echten Tierschutz | Episode 16",
@@ -1483,10 +1494,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/a815b246-0569-565a-b28c-be78c73a33b8",
-      "lastEpisodeTitle": "How are narcissistic relationships impacting YOUR mental health ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/49efe1fd-41a5-59e9-a046-afd75c81c518",
+      "lastEpisodeTitle": "Narcissists who are CONVINCED they have empathy ~ Dr. Ramani",
       "lastEpisodeId": "61191691625",
-      "lastCheckedAt": 1791134410151
+      "lastCheckedAt": 1791145382541
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
