@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-04T06:14:24.048Z",
+  "lastRun": "2026-10-04T12:44:25.425Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "b16706f8-b922-11f1-a2fc-9ff5258a6316",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1790634280230
     },
     "55810": {
-      "lastRssKey": "583fdd8e-f162-412b-895b-a1c7c6a00b00",
-      "lastEpisodeTitle": "2am ET, October 04 | The latest headlines from NPR",
+      "lastRssKey": "ca345fe1-9717-4e15-ab32-f2cd136a779b",
+      "lastEpisodeTitle": "8am ET, October 04 | The latest headlines from NPR",
       "lastEpisodeId": "61201617300",
-      "lastCheckedAt": 1791094469219
+      "lastCheckedAt": 1791117869766
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75524531",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791025801975
     },
     "385117": {
-      "lastRssKey": "2aeb9064-bfba-11f1-942b-cb7fd1af18c4",
-      "lastEpisodeTitle": "2AM ET 10/04/2026 Newscast",
+      "lastRssKey": "75dda7e2-bfec-11f1-a4ad-6f00310b3b8c",
+      "lastEpisodeTitle": "8AM ET 10/04/2026 Newscast",
       "lastEpisodeId": "61208616096",
-      "lastCheckedAt": 1791094480870
+      "lastCheckedAt": 1791117884714
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -248,10 +248,10 @@
       "lastCheckedAt": 1790634297171
     },
     "437685": {
-      "lastRssKey": "6cb4e76a-bc91-11f1-84e4-939bfdc13021",
-      "lastEpisodeTitle": "The Monster Study",
+      "lastRssKey": "6da6f73a-bc91-11f1-84e4-dff89d1d33e3",
+      "lastEpisodeTitle": "Simón Bolívar",
       "lastEpisodeId": "61198345327",
-      "lastCheckedAt": 1791025809417
+      "lastCheckedAt": 1791117891403
     },
     "438184": {
       "lastRssKey": "da03e5b8-bcbf-11f1-b04e-974a137a8a44",
@@ -417,10 +417,10 @@
       "lastCheckedAt": 1786559318597
     },
     "593004": {
-      "lastRssKey": "a271bb50-b9fb-11f1-857e-873b2955f7c8",
-      "lastEpisodeTitle": "The Massachusetts Lesbian Bar Civil War",
+      "lastRssKey": "62c8b386-bfce-11f1-b643-1f2a0c15b5ef",
+      "lastEpisodeTitle": "Tactical Chihuahua",
       "lastEpisodeId": "59396147606",
-      "lastCheckedAt": 1790470025744
+      "lastCheckedAt": 1791117922407
     },
     "628250": {
       "lastRssKey": "10513f69-c259-46a5-a21f-bef7906178b0",
@@ -459,10 +459,10 @@
       "lastCheckedAt": 1791073777204
     },
     "743229": {
-      "lastRssKey": "068e1ced-4723-48d3-b0fb-3b21ca7ff431",
-      "lastEpisodeTitle": "Chris Rock Has Been Thinking About Forgiveness",
-      "lastEpisodeId": "61052054091",
-      "lastCheckedAt": 1791025849340
+      "lastRssKey": "45a7f05b-0915-41a7-8ceb-9d046acd8cbc",
+      "lastEpisodeTitle": "The Restaurant Industry Is Broken. Can It Be Fixed?",
+      "lastEpisodeId": "61239167372",
+      "lastCheckedAt": 1791117927117
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -739,10 +739,10 @@
       "lastCheckedAt": 1790815360103
     },
     "1366771": {
-      "lastRssKey": "6ac0dd45ab90e256c38e2ca8",
-      "lastEpisodeTitle": "Daily briefing Saturday 3rd October",
+      "lastRssKey": "6ac2286852a53844447ac568",
+      "lastEpisodeTitle": "Daily Briefing Sunday 4th October",
       "lastEpisodeId": "61100919851",
-      "lastCheckedAt": 1791025874738
+      "lastCheckedAt": 1791117950262
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -751,10 +751,10 @@
       "lastCheckedAt": 1790511583543
     },
     "1388001": {
-      "lastRssKey": "06308ac4-b215-4cb3-ad9a-e0803dd5e442",
-      "lastEpisodeTitle": "Et si l’Europe payait des pays étrangers pour accueillir les immigrés indésirables ?",
-      "lastEpisodeId": "61195700914",
-      "lastCheckedAt": 1791025875355
+      "lastRssKey": "e45716d6-cdc3-4d76-93a6-df0285e3941c",
+      "lastEpisodeTitle": "Le mouvement lycéen tel qu'on le connaît actuellement, une spécificité française ?",
+      "lastEpisodeId": "61241931385",
+      "lastCheckedAt": 1791117950828
     },
     "1545709": {
       "lastRssKey": "audioboom-01a0fcf5-f530-79ed-8abb-80f1b2551293",
@@ -940,9 +940,9 @@
       "lastCheckedAt": 1790937636192
     },
     "4898105": {
-      "lastRssKey": "67dccc14-bd4d-11f1-935e-cf524d2caa9e",
-      "lastEpisodeTitle": "IGN Game Review: Minecraft Dungeons 2",
-      "lastCheckedAt": 1791025889400
+      "lastRssKey": "3618843a-be14-11f1-9dda-3319ef61cbd6",
+      "lastEpisodeTitle": "IGN Movie Review: Digger",
+      "lastCheckedAt": 1791117964590
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1021,10 +1021,10 @@
       "lastCheckedAt": 1790883771483
     },
     "5930143": {
-      "lastRssKey": "06308ac4-b215-4cb3-ad9a-e0803dd5e442",
-      "lastEpisodeTitle": "Et si l’Europe payait des pays étrangers pour accueillir les immigrés indésirables ?",
-      "lastEpisodeId": "61147083103",
-      "lastCheckedAt": 1791025897622
+      "lastRssKey": "e45716d6-cdc3-4d76-93a6-df0285e3941c",
+      "lastEpisodeTitle": "Le mouvement lycéen tel qu'on le connaît actuellement, une spécificité française ?",
+      "lastEpisodeId": "61238962477",
+      "lastCheckedAt": 1791117973112
     },
     "5945547": {
       "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
@@ -1056,10 +1056,10 @@
       "lastCheckedAt": 1790764841795
     },
     "6280366": {
-      "lastRssKey": "f72c9043-45df-47c1-91ad-b419a039be6f",
-      "lastEpisodeTitle": "What the Best Business AI Users Are Doing Different",
+      "lastRssKey": "256d1389-fd0d-4a24-98d2-2c2bd38c7f84",
+      "lastEpisodeTitle": "How to Choose Your Personal AI Agent",
       "lastEpisodeId": "60978344795",
-      "lastCheckedAt": 1790974612389
+      "lastCheckedAt": 1791117974441
     },
     "6413946": {
       "lastRssKey": "a5ef6ecb-29d9-4026-b519-d4b3bf134f38",
@@ -1198,10 +1198,10 @@
       "lastCheckedAt": 1790937654636
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779906",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Dead First-Helpers",
+      "lastRssKey": "https://api.spreaker.com/episode/59779909",
+      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Malcolm Wish, Maryland Matter",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1791025917467
+      "lastCheckedAt": 1791117983886
     },
     "6912659": {
       "lastRssKey": "62f6e497-dc3e-46f0-abaa-993246faf9f3",
@@ -1240,10 +1240,10 @@
       "lastCheckedAt": 1787910227743
     },
     "7023146": {
-      "lastRssKey": "5f72e76e-834e-11f0-ac1d-d37aa8e19f71",
-      "lastEpisodeTitle": "Katherine Knight: Australia's Most Disturbing Killer Pt. 2",
+      "lastRssKey": "EkazKgu9QL1Fz8SUMee0YjODlzkEdW97",
+      "lastEpisodeTitle": "Introducing WHAT THE FACT with Connor Tomlinson and Carter Roy, a new Rewind podcast!",
       "lastEpisodeId": "61135460888",
-      "lastCheckedAt": 1790937656928
+      "lastCheckedAt": 1791117987375
     },
     "7045713": {
       "lastRssKey": "sonsofpatriarchy.podbean.com/8c867280-f689-387b-acd9-e385184f81ee",
@@ -1288,10 +1288,10 @@
       "lastCheckedAt": 1791073845560
     },
     "7239415": {
-      "lastRssKey": "366030d8-beb3-11f1-aaba-3b6c95342491",
-      "lastEpisodeTitle": "Everything you need to know before Habs vs Penguins",
-      "lastEpisodeId": "61077760178",
-      "lastCheckedAt": 1790986352464
+      "lastRssKey": "8b82fb1a-bfc9-11f1-8371-8b000fe77bc2",
+      "lastEpisodeTitle": "The Montreal Canadiens have us on heart attack watch already...",
+      "lastEpisodeId": "61241753292",
+      "lastCheckedAt": 1791117991308
     },
     "7248222": {
       "lastRssKey": "1d9f2cbe-beb0-11f1-8f61-c7b3a7c3f791",
@@ -1366,10 +1366,10 @@
       "lastCheckedAt": 1786911630083
     },
     "7492905": {
-      "lastRssKey": "12e164a4-5aa1-11f1-a6e8-6bcb3e5dd2fc",
-      "lastEpisodeTitle": "OLPC XO-1: The price of free",
-      "lastEpisodeId": "57793191904",
-      "lastCheckedAt": 1790511625402
+      "lastRssKey": "12f7bee8-5aa1-11f1-a6e8-9f86dd3205d8",
+      "lastEpisodeTitle": "Google Chromebook CR-48: Black box",
+      "lastEpisodeId": "61240131563",
+      "lastCheckedAt": 1791117994602
     },
     "7504615": {
       "lastRssKey": "audioboom-01a0d4ab-5168-7e6c-a746-383d215b20a7",
@@ -1389,10 +1389,10 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
+      "lastRssKey": "d95de6d7-85e4-48b1-8123-6affbed42b98",
+      "lastEpisodeTitle": "Sunday, October 4, 2026 - 5 Minute AI News",
       "lastEpisodeId": "61203690546",
-      "lastEpisodeTitle": "Saturday, October 3, 2026 - 5 Minute AI News",
-      "lastRssKey": "b2fb078d-92f0-43d4-a839-a89409143093",
-      "lastCheckedAt": 1791040416189
+      "lastCheckedAt": 1791117996660
     },
     "7551349": {
       "lastRssKey": "30b5c9da-3233-4e29-ad4c-b49b014c85d1",
@@ -1483,10 +1483,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/51e0cc90-8c23-5f95-bbc6-24d754102cb3",
-      "lastEpisodeTitle": "GlimmerA Story of Survival, Hope, and Healing ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/aadba6f2-1ab1-57ad-955d-8ffabe954abd",
+      "lastEpisodeTitle": "Exciting announcement ~ Dr. Ramani",
       "lastEpisodeId": "61191691625",
-      "lastCheckedAt": 1791094597930
+      "lastCheckedAt": 1791118001986
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
