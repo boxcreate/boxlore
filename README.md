@@ -128,6 +128,8 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Background episode checks are now optional in Auto-Download Settings. They start off, explain their battery and data costs, offer network and charging restrictions, and pause when the battery is low. <a href="https://github.com/boxcreate/boxlore/pull/1094"><img src="https://img.shields.io/badge/PR-1094-6750A4?style=flat-square" alt="PR #1094" height="18"/></a></li>
+<li>Auto-downloads still use new-episode pushes and normal refreshes while boxlore is open. Routine feed checks now share a six-hour cooldown and refresh large libraries in smaller batches. <a href="https://github.com/boxcreate/boxlore/pull/1094"><img src="https://img.shields.io/badge/PR-1094-6750A4?style=flat-square" alt="PR #1094" height="18"/></a></li>
 <li>Added a dedicated Support boxlore experience in Settings with interactive tactical artifacts and lore inspection. <a href="https://github.com/boxcreate/boxlore/pull/1090"><img src="https://img.shields.io/badge/PR-1090-6750A4?style=flat-square" alt="PR #1090" height="18"/></a></li>
 </ul>
 <b>🐛 Fixes:</b>
