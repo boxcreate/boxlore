@@ -1,3 +1,0 @@
-{
-  "install": "./scripts/ci/write-cloud-agent-local-config.sh"
-}
