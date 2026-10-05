@@ -10,6 +10,13 @@ package cx.aswin.boxlore.core.catalog
  * (delete of `feedUrl` is allowed). Extra children are rejected.
  */
 object TrackedPodcastRtdbLogic {
+    /** FCM excludes colons; keep numeric topics unchanged and RSS payload ids canonical. */
+    fun topic(podcastId: String): String = "new_ep_" + if (podcastId.startsWith("rss:")) "rss_" + podcastId.removePrefix("rss:") else podcastId
+
+    /** Per-device rows prevent one RSS listener's opt-out from disabling other listeners. */
+    fun registrationKey(podcastId: String, deviceRegistrationId: String): String =
+        if (podcastId.startsWith("rss:")) "$podcastId~$deviceRegistrationId" else podcastId
+
     fun httpsFeedUrl(raw: String?): String? {
         val url = raw?.trim().orEmpty()
         return url.takeIf { it.startsWith("https://", ignoreCase = true) }

@@ -5,6 +5,13 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class TrackedPodcastRtdbLogicTest {
+    @Test fun notificationTopicsKeepCatalogNamesAndMapRssColon() {
+        assertEquals("new_ep_123", TrackedPodcastRtdbLogic.topic("123"))
+        assertEquals("new_ep_rss_012345", TrackedPodcastRtdbLogic.topic("rss:012345"))
+        assertEquals("rss:012345~device-a", TrackedPodcastRtdbLogic.registrationKey("rss:012345", "device-a"))
+        assertEquals("123", TrackedPodcastRtdbLogic.registrationKey("123", "device-a"))
+    }
+
     @Test
     fun payloadOmitsFeedUrlWhenMissingOrNotHttps() {
         assertEquals(

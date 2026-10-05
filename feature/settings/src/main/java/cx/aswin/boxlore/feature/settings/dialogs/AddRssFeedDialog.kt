@@ -62,7 +62,7 @@ internal fun AddRssFeedDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Paste an HTTPS feed URL. The app will subscribe to it.",
+                    text = "Paste an HTTPS feed URL. Adding a feed does not publish its URL. Enabling notifications publishes it in public GitHub backups. Keep notifications off for private or premium feeds.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

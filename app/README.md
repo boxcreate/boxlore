@@ -6,6 +6,8 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 
 ## Public API
 
+- The composition root shares `SubscribedEpisodeCatalog` across foreground sync, subscriptions, automatic downloads and FCM hydration. Pure RSS push hydration fetches the saved URL and matches GUID/enclosure to the original negative ID without a PI lookup or newest-item guess. RSS notification disclosure consent is stored outside backups and is tied to the saved URL. No new on-device periodic notification worker is scheduled; existing optional background auto-download discovery remains independently consented.
+
 - `NavGraphLibraryDestinations` routes New Episodes row and Play All snapshots through `QueueManager.playContextEpisodes`, so playback follows the visible list rather than reusing a prior show queue.
 
 - `BoxLoreApplication.container` exposes the process-scoped `AppContainer`.

@@ -211,11 +211,48 @@ class AutoDownloadCoordinatorTest {
         assertEquals(1, callbacks)
     }
 
+    @Test fun pureRssUsesSameReleaseLedgerRetentionBoundAndNeverLoadsCatalogBaseline() = runBlocking {
+        val id = "rss:private-show"
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val rss = cx.aswin.boxlore.core.rss.RssPodcastRepository.createForTests(context, database, feed)
+        database.podcastDao().upsert(
+            PodcastEntity(
+                id, "Private", "Author", "", null,
+            sourceType = PodcastEntity.SOURCE_RSS, isSubscribed = true, autoDownloadEnabled = true,
+            notificationsEnabled = false, feedUrl = URL
+            )
+        )
+        rss.refreshCatalog(id).getOrThrow()
+        val shared = cx.aswin.boxlore.core.catalog.SubscribedEpisodeCatalog(catalog, rss.episodeCatalog)
+        val coordinator = AutoDownloadCoordinator(
+            database,
+            shared,
+            prefs,
+            enqueue = { _, episodeId, _, _ -> enqueued += episodeId },
+            recoverFeedUrl = { error("RSS must not look up a catalog URL") },
+            loadInitialBaseline = { error("RSS must not load a catalog baseline") },
+            nowSeconds = { now }
+        )
+        coordinator.synchronizeSubscriptions()
+        val archive = rss.episodeCatalog.findByCatalogKey(id, "archive", null)!!
+        assertEquals(cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity.HANDLED, database.autoDownloadDao().getRelease(archive.id)!!.state)
+        feed.items = listOf("newest" to now + 120, "next" to now + 60, "archive" to now - 86_400)
+        val row = database.podcastDao().getPodcast(id)!!
+        database.podcastDao().upsert(row.copy(lastRssSyncAt = System.currentTimeMillis() - 21_600_001))
+        assertTrue(coordinator.discover { true })
+        val newest = rss.episodeCatalog.findByCatalogKey(id, "newest", null)!!
+        val next = rss.episodeCatalog.findByCatalogKey(id, "next", null)!!
+        assertEquals(setOf(newest.id, next.id), enqueued.toSet())
+        assertFalse(database.podcastDao().getPodcast(id)!!.notificationsEnabled)
+        assertTrue(newest.id.toLong() < 0)
+    }
+
     private class Feed : RssFeedClient() {
         var items = emptyList<Pair<String, Long>>()
         var fetches = 0
         var fail = false
         var afterFetch: () -> Unit = {}
+        override suspend fun fetchConditional(url: String, etag: String?, lastModified: String?) = fetch(url)
         override suspend fun fetch(url: String): RssFetchResult {
             fetches++
             if (fail) throw java.io.IOException("offline")

@@ -1484,14 +1484,17 @@ class PodcastInfoViewModel(
         }
     }
 
-    fun toggleNotifications() {
+    fun toggleNotifications(rssDisclosureAccepted: Boolean = false, disclosedFeedUrl: String? = null) {
         val currentState = _uiState.value
         if (currentState is PodcastInfoUiState.Success) {
             viewModelScope.launch {
                 val currentEnabled = currentState.podcast.notificationsEnabled
-                val newEnabled = !currentEnabled
-
-                subscriptionRepository.setNotificationsEnabled(currentState.podcast, newEnabled)
+                val newEnabled = subscriptionRepository.setNotificationsEnabled(
+                    currentState.podcast,
+                    !currentEnabled,
+                    acceptRssDisclosure = rssDisclosureAccepted,
+                    disclosedFeedUrl = disclosedFeedUrl,
+                )
 
                 // Refresh UI State
                 val updatedPodcast =
@@ -1533,12 +1536,12 @@ class PodcastInfoViewModel(
         val currentState = _uiState.value
         if (currentState is PodcastInfoUiState.Success) {
             viewModelScope.launch {
-                subscriptionRepository.setNotificationsEnabled(currentState.podcast, true)
+                val notificationsEnabled = subscriptionRepository.setNotificationsEnabled(currentState.podcast, true)
                 subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, true)
 
                 val updatedPodcast =
                     currentState.podcast.copy(
-                        notificationsEnabled = true,
+                        notificationsEnabled = notificationsEnabled,
                         autoDownloadEnabled = true,
                     )
                 _uiState.value = currentState.copy(podcast = updatedPodcast)

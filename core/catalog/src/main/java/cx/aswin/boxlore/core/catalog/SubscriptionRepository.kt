@@ -22,6 +22,7 @@ class SubscriptionRepository(
     private val folderRepository: FolderRepository? = null,
     private val userPreferencesRepository: UserPreferencesRepository? = null,
     private val autoDownloadDao: cx.aswin.boxlore.core.database.AutoDownloadDao? = null,
+    private val rssNotificationConsent: RssNotificationConsent = RssNotificationConsent.NONE,
 ) : PodcastNotificationSyncPort {
     val subscribedPodcastIds: Flow<Set<String>> =
         podcastDao
@@ -131,7 +132,11 @@ class SubscriptionRepository(
         if (existing != null && existing.podcastId != target.podcastId) {
             podcastDao.clearCustomGenre(existing.podcastId)
         }
-        if (target.isRss) podcastDao.deleteRssEpisodes(target.podcastId)
+        if (target.isRss) {
+            podcastDao.deleteRssEpisodes(target.podcastId)
+            rssNotificationConsent.revoke(target.podcastId)
+            updateFirebaseSubscription(target.podcastId, target.title, target.imageUrl, false)
+        }
         if (!podcast.isRss) {
             updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
             localEpisodeCatalog?.setUnsubscribedTtl(
@@ -274,24 +279,45 @@ class SubscriptionRepository(
         }
     }
 
-    suspend fun setNotificationsEnabled(podcast: Podcast, enabled: Boolean,) {
-        if (podcast.isRss) {
-            podcastDao.setNotificationsEnabled(podcast.id, false)
-            podcastDao.setAutoDownloadEnabled(podcast.id, false)
-            return
+    suspend fun setNotificationsEnabled(podcast: Podcast, enabled: Boolean, acceptRssDisclosure: Boolean = false, disclosedFeedUrl: String? = null): Boolean {
+        val current = podcastDao.getPodcast(podcast.id)
+        val pureRss = isRssSubscription(podcast.id, current?.isRss ?: podcast.isRss)
+        if (pureRss) {
+            if (enabled && !canEnableRssNotifications(current, acceptRssDisclosure, disclosedFeedUrl)) {
+                podcastDao.setNotificationsEnabled(podcast.id, false)
+                updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
+                return false
+            }
+            if (!enabled) rssNotificationConsent.revoke(podcast.id)
         }
         podcastDao.setNotificationsEnabled(podcast.id, enabled)
         val row = podcastDao.getPodcast(podcast.id)
+        if (enabled && pureRss && !hasRssNotificationConsent(row)) {
+            podcastDao.setNotificationsEnabled(podcast.id, false)
+            updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, false)
+            return false
+        }
         val feedUrl =
             if (enabled) {
                 TrackedPodcastRtdbLogic.attachableFeedUrl(
-                    feedUrl = podcast.feedUrl ?: row?.feedUrl,
+                    feedUrl = if (pureRss) row?.feedUrl else podcast.feedUrl ?: row?.feedUrl,
                     latestEpisodeId = (podcast.latestEpisode ?: row?.latestEpisode)?.id,
                 )
             } else {
                 null
             }
         updateFirebaseSubscription(podcast.id, podcast.title, podcast.imageUrl, enabled, feedUrl)
+        return enabled
+    }
+
+    private fun canEnableRssNotifications(current: PodcastEntity?, acceptDisclosure: Boolean, disclosedFeedUrl: String?): Boolean {
+        if (current?.isSubscribed != true) return false
+        val url = TrackedPodcastRtdbLogic.httpsFeedUrl(current.feedUrl) ?: return false
+        if (acceptDisclosure) {
+            if (disclosedFeedUrl != url) return false
+            rssNotificationConsent.accept(current.podcastId, url)
+        }
+        return rssNotificationConsent.isAccepted(current.podcastId, url)
     }
 
     /**
@@ -300,12 +326,16 @@ class SubscriptionRepository(
      * polls RSS. No-ops unless the Room row has notifications enabled and a supplement.
      */
     suspend fun syncTrackedPodcastFeedUrl(podcast: Podcast) {
-        if (podcast.isRss) return
         val entity = podcastDao.getPodcast(podcast.id) ?: return
         if (!entity.notificationsEnabled) return
+        if (isRssSubscription(entity.podcastId, entity.isRss) && !hasRssNotificationConsent(entity)) {
+            podcastDao.setNotificationsEnabled(entity.podcastId, false)
+            updateFirebaseSubscription(entity.podcastId, entity.title, entity.imageUrl, false)
+            return
+        }
         val feedUrl =
             TrackedPodcastRtdbLogic.attachableFeedUrl(
-                feedUrl = podcast.feedUrl ?: entity.feedUrl,
+                feedUrl = if (isRssSubscription(entity.podcastId, entity.isRss)) entity.feedUrl else podcast.feedUrl ?: entity.feedUrl,
                 latestEpisodeId = (podcast.latestEpisode ?: entity.latestEpisode)?.id,
             )
         updateFirebaseSubscription(
@@ -318,14 +348,22 @@ class SubscriptionRepository(
     }
 
     override suspend fun setNotificationTopicSubscribed(podcastId: String, subscribed: Boolean) {
-        if (podcastId.startsWith("rss:")) return
         val entity = podcastDao.getPodcast(podcastId)
+        if (podcastId.startsWith("rss:")) {
+            if (subscribed && (entity == null || !hasRssNotificationConsent(entity))) {
+                podcastDao.setNotificationsEnabled(podcastId, false)
+                updateFirebaseSubscription(podcastId, entity?.title.orEmpty(), entity?.imageUrl.orEmpty(), false)
+                return
+            }
+            updateFirebaseSubscription(podcastId, entity?.title.orEmpty(), entity?.imageUrl.orEmpty(), subscribed, if (subscribed) entity?.feedUrl else null)
+            return
+        }
         val hasValidDetails = entity != null && entity.title.isNotBlank() && entity.title != "Loading..."
         if (subscribed && !hasValidDetails) {
             try {
                 com.google.firebase.messaging.FirebaseMessaging
                     .getInstance()
-                    .subscribeToTopic("new_ep_$podcastId")
+                    .subscribeToTopic(TrackedPodcastRtdbLogic.topic(podcastId))
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             android.util.Log.d("FCM_Topic", "Sync subscribed to topic: new_ep_$podcastId")
@@ -365,19 +403,26 @@ class SubscriptionRepository(
         feedUrl: String? = null,
     ) {
         try {
+            val pureRss = podcastId.startsWith("rss:")
+            val trackingId = if (pureRss) {
+                val registration = rssNotificationConsent.registrationId ?: return
+                TrackedPodcastRtdbLogic.registrationKey(podcastId, registration)
+            } else {
+                podcastId
+            }
             if (isSubscribed) {
                 val dbRef =
                     com.google.firebase.database.FirebaseDatabase
                         .getInstance()
                         .getReference("tracked_podcasts")
-                        .child(podcastId)
+                        .child(trackingId)
 
                 val data = TrackedPodcastRtdbLogic.payload(title, imageUrl, feedUrl)
                 dbRef.setValue(data)
 
                 com.google.firebase.messaging.FirebaseMessaging
                     .getInstance()
-                    .subscribeToTopic("new_ep_$podcastId")
+                    .subscribeToTopic(TrackedPodcastRtdbLogic.topic(podcastId))
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             android.util.Log.d("FCM_Topic", "Successfully subscribed to topic: new_ep_$podcastId")
@@ -390,13 +435,13 @@ class SubscriptionRepository(
                     com.google.firebase.database.FirebaseDatabase
                         .getInstance()
                         .getReference("tracked_podcasts")
-                        .child(podcastId)
+                        .child(trackingId)
                 // Keep the tracked node (unsubscribe does not delete it) but drop
                 // feedUrl so Check New Episodes stops polling the publisher feed.
-                dbRef.child("feedUrl").removeValue()
+                if (pureRss) dbRef.removeValue() else dbRef.child("feedUrl").removeValue()
                 com.google.firebase.messaging.FirebaseMessaging
                     .getInstance()
-                    .unsubscribeFromTopic("new_ep_$podcastId")
+                    .unsubscribeFromTopic(TrackedPodcastRtdbLogic.topic(podcastId))
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             android.util.Log.d("FCM_Topic", "Successfully unsubscribed from topic: new_ep_$podcastId")
@@ -465,10 +510,6 @@ class SubscriptionRepository(
     }
 
     suspend fun setAutoDownloadEnabled(podcastId: String, enabled: Boolean,) {
-        if (podcastDao.getPodcast(podcastId)?.isRss == true) {
-            podcastDao.setAutoDownloadEnabled(podcastId, false)
-            return
-        }
         if (autoDownloadDao != null) {
             autoDownloadDao.changeSetting(podcastId, enabled, System.currentTimeMillis() / 1000L)
         } else {
@@ -513,6 +554,12 @@ class SubscriptionRepository(
                 "Reconciling ${podcasts.size} FCM topic subscriptions after restore",
             )
             for (entity in podcasts) {
+                if (isRssSubscription(entity.podcastId, entity.isRss) && !hasRssNotificationConsent(entity)) {
+                    // Upgraded/restored flags are not permission to publish a private subscription.
+                    podcastDao.setNotificationsEnabled(entity.podcastId, false)
+                    updateFirebaseSubscription(entity.podcastId, entity.title, entity.imageUrl, false)
+                    continue
+                }
                 val feedUrl =
                     TrackedPodcastRtdbLogic.attachableFeedUrl(
                         feedUrl = entity.feedUrl,
@@ -530,6 +577,11 @@ class SubscriptionRepository(
             android.util.Log.e("FCM_Topic", "FCM topic reconciliation failed", e)
         }
     }
+
+    private fun isRssSubscription(podcastId: String, sourceIsRss: Boolean): Boolean = podcastId.startsWith("rss:") || sourceIsRss
+
+    private fun hasRssNotificationConsent(entity: PodcastEntity?): Boolean =
+        entity?.isSubscribed == true && entity.feedUrl?.let { rssNotificationConsent.isAccepted(entity.podcastId, it) } == true
 
     /**
      * Writes an HTTPS publisher [feedUrl] onto the Room row so launch sync and

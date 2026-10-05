@@ -456,10 +456,21 @@ class PodcastRepository(
         }
     }
 
-    suspend fun syncSubscriptions(feedIds: List<String>): Map<String, Episode> = withContext(Dispatchers.IO) {
+    suspend fun syncSubscriptions(feedIds: List<String>, runPostPersistCallback: Boolean = true): Map<String, Episode> = withContext(Dispatchers.IO) {
         try {
+            val rssTips = feedIds.filter { it.startsWith("rss:") }.mapNotNull { id ->
+                val row = rssRepository.getPodcast(id)
+                rssRepository.episodeCatalog.refresh(
+                    LocalEpisodeCatalogPort.RefreshRequest(
+                    id,
+                        row?.feedUrl.orEmpty(),
+                        runPostPersistCallback = runPostPersistCallback,
+                )
+                )
+                rssRepository.getPodcast(id)?.latestEpisode?.let { id to it }
+            }.toMap()
             val podcastIndexIds = feedIds.filterNot { it.startsWith("rss:") }
-            if (podcastIndexIds.isEmpty()) return@withContext emptyMap()
+            if (podcastIndexIds.isEmpty()) return@withContext rssTips
 
             val readyIds = podcastIndexIds.filter { isLocalCatalogReady(it) }.toSet()
             val optedIn = loadOptedInPodcastIds()
@@ -468,7 +479,7 @@ class PodcastRepository(
             val catalogTips = loadLocalCatalogTips(readyIds.toList())
             val extrasTips =
                 loadCachedFeedTips(podcastIndexIds.filter { it in optedIn && it !in readyIds })
-            piTips + catalogTips + extrasTips
+            piTips + catalogTips + extrasTips + rssTips
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {

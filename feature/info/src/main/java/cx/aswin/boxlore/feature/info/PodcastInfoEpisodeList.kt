@@ -100,7 +100,7 @@ internal fun PodcastInfoEpisodeList(
                 isSubscribed = contentState.state.isSubscribed,
                 onSubscribeClick = callbacks.onSubscribeClick,
                 accentColor = contentState.accentColor,
-                supportsReleaseAutomation = !contentState.state.podcast.isRss,
+                supportsReleaseAutomation = true,
                 notificationsEnabled = contentState.state.podcast.notificationsEnabled,
                 isSystemNotificationsBlocked = contentState.isSystemNotificationsBlocked,
                 onNotificationsToggle = callbacks.onNotificationsToggle,

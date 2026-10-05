@@ -3,10 +3,10 @@ package cx.aswin.boxlore.core.domain.ports
 import cx.aswin.boxlore.core.model.Episode
 
 /**
- * First-class local episode catalog for a subscribed Podcast Index show.
+ * First-class local episode catalog for a subscribed show, routed by show source.
  *
- * Production: `cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository`.
- * This is **not** [RssSubscriptionPort] (true `rss:` library) and **not**
+ * Production: catalog and RSS adapters composed by `SubscribedEpisodeCatalog`.
+ * Subscription creation remains owned by [RssSubscriptionPort]; this is not
  * [EpisodeSupplementPort] (feed-only extras). Features must not touch DAOs.
  */
 @Suppress("TooManyFunctions") // Paging, identity and freshness belong to the same catalog contract.
@@ -16,6 +16,7 @@ interface LocalEpisodeCatalogPort {
     enum class RefreshReason { NORMAL, AUTO_DOWNLOAD, NEW_RELEASE, MANUAL }
 
     data class RefreshRequest(
+        /** Stable show id, including rss: IDs when using the RSS adapter. */
         val podcastIndexId: String,
         val feedUrl: String,
         val meta: PodcastMeta = PodcastMeta(),
@@ -46,8 +47,8 @@ interface LocalEpisodeCatalogPort {
 
     /**
      * Bounded window for Smart Queue / Download / Auto.
-     * When [aroundEpisodeId] is set, returns the next [bound] episodes in [sort]
-     * order from that id (inclusive of a small lookback so the current item is found).
+     * With [aroundEpisodeId], includes the anchor and the following chronological
+     * episodes for playback continuation. Without an anchor, follows [sort].
      */
     suspend fun getWindow(
         podcastId: String,

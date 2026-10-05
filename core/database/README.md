@@ -6,6 +6,8 @@ Owns the main Room database, entities, DAOs, type converters, and migrations for
 
 ## Public API
 
+- `AutoDownloadDao.seedExisting` seeds both `local_episodes` and `rss_episodes` in the activation transaction. `RssEpisodeDao.getByAudioUrl` supports exact push hydration when a GUID is unavailable. Existing tables/keys/schema version are unchanged; `RSS_REFRESH_AUTOMATIC` is a new value in the existing freshness capability field.
+
 - `PodcastScoring` provides interpretable listening, like, freshness, preference, and optional subscription-recency signals. Canonical Your Shows ranking disables its legacy subscription-recency term so `:core:ranking` can apply one bounded recency policy after normalization; other callers retain the existing `600 / (1 + hours/24)` default.
 - `BoxLoreDatabase` and its `getDatabase` factory.
 - Entities: `PodcastEntity`, `ListeningHistoryEntity`, `ListeningSessionEntity`, `ListeningRollupEntity`, `DownloadedEpisodeEntity`, `RssEpisodeEntity`, `EpisodeSupplementEntity`, `EpisodeSupplementItemEntity`, `LocalEpisodeFeedEntity`, `LocalEpisodeEntity`, `FolderEntity`, `PodcastFolderCrossRef`, `entities.QueueItem`, and `entities.QueueMetadataEntity`.

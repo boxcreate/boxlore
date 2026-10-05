@@ -6,7 +6,6 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
-import cx.aswin.boxlore.core.database.RssFeedStateUpdate
 import cx.aswin.boxlore.core.domain.RssSubscriptionResult
 import cx.aswin.boxlore.core.domain.ports.RssSubscriptionPort
 import cx.aswin.boxlore.core.model.Episode
@@ -22,7 +21,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -45,6 +43,7 @@ class RssPodcastRepository private constructor(
     private val podcastDao = database.podcastDao()
     private val episodeDao = database.rssEpisodeDao()
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
+    val episodeCatalog = RssEpisodeCatalog(database, feedClient, refreshLocks)
     val legacySubscriptionRepair =
         LegacyRssSubscriptionRepair(
             database = database,
@@ -55,22 +54,24 @@ class RssPodcastRepository private constructor(
 
     val refreshingPodcastIds: StateFlow<Set<String>> = _refreshingPodcastIds.asStateFlow()
 
-    @Suppress("LongMethod")
-    override suspend fun addSubscription(rawUrl: String): RssSubscriptionResult = withContext(Dispatchers.IO) {
+    override suspend fun addSubscription(rawUrl: String): RssSubscriptionResult = subscribeFeed(rawUrl)
+
+    /** Restores the original show identity even if the publisher redirects its URL. */
+    suspend fun restoreSubscription(rawUrl: String, podcastId: String): RssSubscriptionResult {
+        require(podcastId.startsWith("rss:")) { ERROR_NOT_RSS_SUBSCRIPTION }
+        return subscribeFeed(rawUrl, podcastId)
+    }
+
+    @Suppress("LongMethod") // Subscription creation also preserves the existing local-source linking contract.
+    private suspend fun subscribeFeed(rawUrl: String, restoredId: String? = null): RssSubscriptionResult = withContext(Dispatchers.IO) {
         val normalizedUrl = RssIdGenerator.validateAndNormalizeFeedUrl(rawUrl)
         val fetched = feedClient.fetch(normalizedUrl)
-        val podcastId = RssIdGenerator.podcastId(fetched.finalUrl)
+        val podcastId = restoredId ?: RssIdGenerator.podcastId(fetched.finalUrl)
         val parsed =
             feedClient.parse(
                 feedUrl = fetched.finalUrl,
                 bytes = fetched.body,
                 podcastId = podcastId,
-            )
-        val supportsHeadChecks =
-            feedClient.confirmHeadValidators(
-                url = fetched.finalUrl,
-                etag = fetched.etag,
-                lastModified = fetched.lastModified,
             )
         val existing = podcastDao.getPodcast(podcastId)
         val podcastIndexSubscriptions = podcastDao.getSubscribedPodcastIndexPodcasts()
@@ -115,14 +116,14 @@ class RssPodcastRepository private constructor(
                 isSubscribed = true,
                 subscribedAt = stateSource?.subscribedAt?.takeIf { stateSource.isSubscribed } ?: now,
                 genre = parsed.genre,
-                type = parsed.podcastType,
+                type = if (stateSource?.preferredSort != null) stateSource.type else parsed.podcastType,
                 lastRefreshed = now,
                 latestEpisode = sticky.latestEpisode,
                 preferredSort =
                 stateSource?.preferredSort
                     ?: if (parsed.podcastType == "serial") "oldest" else "newest",
-                notificationsEnabled = false,
-                autoDownloadEnabled = false,
+                notificationsEnabled = existing?.notificationsEnabled ?: false,
+                autoDownloadEnabled = stateSource?.autoDownloadEnabled ?: false,
                 skipBeginningOverrideMs = stateSource?.skipBeginningOverrideMs,
                 skipEndingOverrideMs = stateSource?.skipEndingOverrideMs,
                 sourceType = PodcastEntity.SOURCE_RSS,
@@ -130,12 +131,7 @@ class RssPodcastRepository private constructor(
                 feedEtag = fetched.etag,
                 feedLastModified = fetched.lastModified,
                 feedDeclaredUpdatedAt = parsed.declaredUpdatedAt,
-                rssRefreshCapability =
-                if (supportsHeadChecks) {
-                    PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS
-                } else {
-                    PodcastEntity.RSS_REFRESH_MANUAL
-                },
+                rssRefreshCapability = PodcastEntity.RSS_REFRESH_AUTOMATIC,
                 lastRssSyncAt = now,
                 rssCatalogStale = false,
                 rssHasNewEpisodes = false,
@@ -159,7 +155,7 @@ class RssPodcastRepository private constructor(
         RssSubscriptionResult(
             podcast = entity.toPodcast(),
             episodeCount = sticky.episodes.size,
-            automaticUpdateChecksSupported = supportsHeadChecks,
+            automaticUpdateChecksSupported = true,
             potentialPodcastIndexMatch = potentialMatch?.toPodcast(),
             linkedPodcastIndexId = exactMatch?.podcastId,
         )
@@ -201,194 +197,45 @@ class RssPodcastRepository private constructor(
         linkedPodcast
     }
 
-    suspend fun refreshCatalog(podcastId: String): Result<Int> = withContext(Dispatchers.IO) {
-        val lock = refreshLocks.getOrPut(podcastId) { Mutex() }
-        lock.withLock {
-            markRefreshing(podcastId, true)
-            try {
-                runCatching {
-                    val existing =
-                        podcastDao.getPodcast(podcastId)
-                            ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
-                    require(existing.isRss) { ERROR_NOT_RSS_SUBSCRIPTION }
-                    val feedUrl = existing.feedUrl ?: error("RSS feed URL is missing")
-                    val fetched = feedClient.fetch(feedUrl)
-                    val parsed =
-                        feedClient.parse(
-                            feedUrl = fetched.finalUrl,
-                            bytes = fetched.body,
-                            podcastId = podcastId,
-                        )
-                    val supportsHeadChecks =
-                        feedClient.confirmHeadValidators(
-                            url = fetched.finalUrl,
-                            etag = fetched.etag,
-                            lastModified = fetched.lastModified,
-                        )
-                    val sticky =
-                        StickyRssEpisodeRemap.prepare(
-                            parsed = parsed.episodes,
-                            existing = episodeDao.listIdentities(podcastId),
-                            podcastTitle = parsed.title,
-                            podcastImageUrl = parsed.imageUrl ?: existing.imageUrl,
-                            podcastGenre = parsed.genre ?: existing.genre,
-                            podcastArtist = parsed.author.ifBlank { existing.author },
-                        )
-                    val updated =
-                        existing.copy(
-                            title = parsed.title,
-                            author = parsed.author.ifBlank { existing.author },
-                            imageUrl = parsed.imageUrl ?: existing.imageUrl,
-                            description = parsed.description ?: existing.description,
-                            genre = parsed.genre ?: existing.genre,
-                            type = parsed.podcastType,
-                            latestEpisode = sticky.latestEpisode,
-                            lastRefreshed = System.currentTimeMillis(),
-                            feedUrl = fetched.finalUrl,
-                            feedEtag = fetched.etag,
-                            feedLastModified = fetched.lastModified,
-                            feedDeclaredUpdatedAt = parsed.declaredUpdatedAt,
-                            rssRefreshCapability =
-                            if (supportsHeadChecks) {
-                                PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS
-                            } else {
-                                PodcastEntity.RSS_REFRESH_MANUAL
-                            },
-                            lastRssSyncAt = System.currentTimeMillis(),
-                            rssCatalogStale = false,
-                            rssHasNewEpisodes = false,
-                        )
-                    database.withTransaction {
-                        podcastDao.upsert(updated)
-                        episodeDao.upsertAll(sticky.episodes)
-                    }
-                    sticky.episodes.size
-                }
-            } finally {
-                markRefreshing(podcastId, false)
+    suspend fun refreshCatalog(podcastId: String): Result<Int> = refreshEpisodes(podcastId, manual = true)
+
+    suspend fun refreshCatalogIfNeeded(podcastId: String): Result<Int> = refreshEpisodes(podcastId, manual = false)
+
+    private suspend fun refreshEpisodes(podcastId: String, manual: Boolean): Result<Int> {
+        markRefreshing(podcastId, true)
+        return try {
+            val row = podcastDao.getPodcast(podcastId) ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
+            val outcome = episodeCatalog.refresh(
+                cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastId,
+                    row.feedUrl.orEmpty(),
+                    reason = if (manual) {
+                        cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.MANUAL
+                    } else {
+                        cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.NORMAL
+                    },
+                ),
+            )
+            when (outcome) {
+                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success -> Result.success(outcome.itemCount)
+                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Unchanged -> Result.success(0)
+                is cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Failure -> Result.failure(IllegalStateException(outcome.message))
             }
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Result.failure(error)
+        } finally {
+            markRefreshing(podcastId, false)
         }
     }
 
-    /**
-     * Refreshes the catalog only when there is reason to believe it changed, so opening a podcast
-     * does not waste a full feed download on every visit.
-     *
-     * - Feeds that support HTTP validators get a cheap conditional HEAD check first; the full feed
-     *   is only downloaded when the server reports a change.
-     * - Feeds without validators fall back to a full refresh, but only after a quiet interval so we
-     *   don't re-download on every screen open.
-     * - A forced [refreshCatalog] (e.g. pull-to-refresh) always bypasses this and downloads.
-     *
-     * Returns the number of episodes downloaded (0 when nothing was refreshed).
-     */
-    suspend fun refreshCatalogIfNeeded(podcastId: String): Result<Int> = withContext(Dispatchers.IO) {
-        runCatching {
-            val existing =
-                podcastDao.getPodcast(podcastId)
-                    ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
-            require(existing.isRss) { ERROR_NOT_RSS_SUBSCRIPTION }
-
-            // A prior HEAD check already flagged the catalog as stale → download now.
-            if (existing.rssCatalogStale) {
-                return@runCatching refreshCatalog(podcastId).getOrThrow()
-            }
-
-            if (existing.rssRefreshCapability == PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS) {
-                return@runCatching when (val freshness = feedClient.checkFreshness(existing)) {
-                    is RssFreshnessResult.Unchanged -> {
-                        podcastDao.updateRssState(
-                            RssFeedStateUpdate(
-                                podcastId = existing.podcastId,
-                                feedEtag = freshness.etag ?: existing.feedEtag,
-                                feedLastModified = freshness.lastModified ?: existing.feedLastModified,
-                                feedDeclaredUpdatedAt = existing.feedDeclaredUpdatedAt,
-                                rssRefreshCapability = existing.rssRefreshCapability,
-                                lastRssSyncAt = System.currentTimeMillis(),
-                                rssCatalogStale = false,
-                                rssHasNewEpisodes = existing.rssHasNewEpisodes,
-                            ),
-                        )
-                        0
-                    }
-                    is RssFreshnessResult.Changed -> refreshCatalog(podcastId).getOrThrow()
-                    RssFreshnessResult.Unsupported -> refreshCatalog(podcastId).getOrThrow()
-                    is RssFreshnessResult.Failed -> 0
-                }
-            }
-
-            // No cheap validator available → gate a full refresh behind a quiet interval.
-            val sinceLastSync = System.currentTimeMillis() - existing.lastRssSyncAt
-            if (existing.lastRssSyncAt > 0L && sinceLastSync < HEAD_CHECK_INTERVAL_MS) {
-                return@runCatching 0
-            }
-            refreshCatalog(podcastId).getOrThrow()
-        }
-    }
-
+    /** Existing imports are repaired in place and all feeds fetch episodes, including HEAD-less feeds. */
     suspend fun checkSubscribedFeedFreshness() = coroutineScope {
-        val now = System.currentTimeMillis()
-        val semaphore = Semaphore(MAX_CONCURRENT_HEAD_CHECKS)
-        podcastDao
-            .getSubscribedRssPodcasts()
-            .filter { podcast ->
-                podcast.rssRefreshCapability == PodcastEntity.RSS_REFRESH_HEAD_VALIDATORS &&
-                    now - podcast.lastRssSyncAt >= HEAD_CHECK_INTERVAL_MS
-            }.map { podcast ->
-                async(Dispatchers.IO) {
-                    semaphore.withPermit {
-                        when (val freshness = feedClient.checkFreshness(podcast)) {
-                            is RssFreshnessResult.Unchanged -> {
-                                podcastDao.updateRssState(
-                                    RssFeedStateUpdate(
-                                        podcastId = podcast.podcastId,
-                                        feedEtag = freshness.etag ?: podcast.feedEtag,
-                                        feedLastModified =
-                                        freshness.lastModified
-                                            ?: podcast.feedLastModified,
-                                        feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
-                                        rssRefreshCapability = podcast.rssRefreshCapability,
-                                        lastRssSyncAt = now,
-                                        rssCatalogStale = podcast.rssCatalogStale,
-                                        rssHasNewEpisodes = podcast.rssHasNewEpisodes,
-                                    ),
-                                )
-                            }
-                            is RssFreshnessResult.Changed -> {
-                                podcastDao.updateRssState(
-                                    RssFeedStateUpdate(
-                                        podcastId = podcast.podcastId,
-                                        feedEtag = freshness.etag ?: podcast.feedEtag,
-                                        feedLastModified =
-                                        freshness.lastModified
-                                            ?: podcast.feedLastModified,
-                                        feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
-                                        rssRefreshCapability = podcast.rssRefreshCapability,
-                                        lastRssSyncAt = now,
-                                        rssCatalogStale = true,
-                                        rssHasNewEpisodes = true,
-                                    ),
-                                )
-                            }
-                            RssFreshnessResult.Unsupported -> {
-                                podcastDao.updateRssState(
-                                    RssFeedStateUpdate(
-                                        podcastId = podcast.podcastId,
-                                        feedEtag = podcast.feedEtag,
-                                        feedLastModified = podcast.feedLastModified,
-                                        feedDeclaredUpdatedAt = podcast.feedDeclaredUpdatedAt,
-                                        rssRefreshCapability = PodcastEntity.RSS_REFRESH_MANUAL,
-                                        lastRssSyncAt = now,
-                                        rssCatalogStale = podcast.rssCatalogStale,
-                                        rssHasNewEpisodes = podcast.rssHasNewEpisodes,
-                                    ),
-                                )
-                            }
-                            is RssFreshnessResult.Failed -> Unit
-                        }
-                    }
-                }
-            }.awaitAll()
+        val semaphore = Semaphore(2)
+        podcastDao.getSubscribedRssPodcasts().map { podcast ->
+            async(Dispatchers.IO) { semaphore.withPermit { refreshCatalogIfNeeded(podcast.podcastId) } }
+        }.awaitAll()
     }
 
     suspend fun getPodcast(podcastId: String): PodcastEntity? = podcastDao.getPodcast(podcastId)
@@ -628,8 +475,6 @@ class RssPodcastRepository private constructor(
     }
 
     companion object {
-        private const val MAX_CONCURRENT_HEAD_CHECKS = 4
-        private const val HEAD_CHECK_INTERVAL_MS = 6L * 60L * 60L * 1000L
         private const val ERROR_RSS_SUBSCRIPTION_NOT_FOUND = "RSS subscription not found"
         private const val ERROR_NOT_RSS_SUBSCRIPTION = "Podcast is not an RSS subscription"
 

@@ -125,7 +125,13 @@ open class AutoDownloadWorker(context: Context, params: WorkerParameters) : Coro
         show: cx.aswin.boxlore.core.database.PodcastEntity,
         episodeId: String,
     ): cx.aswin.boxlore.core.model.Episode? {
-        val stored = deps.database.localEpisodeCatalogDao().getEpisode(episodeId)
+        val rssStored = if (show.isRss) {
+            deps.database.rssEpisodeDao().getEpisode(episodeId)
+            ?.takeIf { it.podcastId == show.podcastId }?.toEpisode(show.title, show.imageUrl, show.genre, show.author)
+        } else {
+            null
+        }
+        val stored = rssStored ?: deps.database.localEpisodeCatalogDao().getEpisode(episodeId)
             ?.takeIf { it.podcastId == show.podcastId }?.toEpisode(show.title, show.imageUrl, show.genre, show.author)
             ?: show.latestEpisode?.takeIf { it.id == episodeId }
         if (stored != null) return stored

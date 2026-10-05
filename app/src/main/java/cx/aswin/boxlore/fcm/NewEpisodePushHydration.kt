@@ -108,7 +108,7 @@ internal object NewEpisodePushHydration {
             )
         val feedUrl = payloadFeedUrl?.trim().orEmpty().ifEmpty { entity?.feedUrl.orEmpty() }
         catalog.findByCatalogKey(podcastId, payloadGuid, payloadEnclosureUrl, meta)?.let { return it }
-        val needsBaseline = !catalog.isReady(podcastId)
+        val needsBaseline = !podcastId.startsWith("rss:") && !catalog.isReady(podcastId)
         try {
             catalog.refresh(
                 LocalEpisodeCatalogPort.RefreshRequest(

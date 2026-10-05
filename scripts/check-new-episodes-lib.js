@@ -1,13 +1,79 @@
 'use strict';
 
+const crypto = require('crypto');
+
+/** RSS registrations are device-local, while release state and topics use canonical show IDs. */
+function groupTrackedPodcasts(registrations) {
+    const shows = Object.create(null);
+    for (const [registrationId, data] of Object.entries(registrations || {})) {
+        if (!data || typeof data !== 'object') continue;
+        const pureRss = registrationId.startsWith('rss:');
+        const id = pureRss ? registrationId.split('~')[0] : registrationId;
+        if (pureRss && !usableFeedUrl(data.feedUrl)) continue;
+        if (!shows[id] || (!usableFeedUrl(shows[id].feedUrl) && usableFeedUrl(data.feedUrl))) shows[id] = data;
+    }
+    return shows;
+}
+
+function notificationTopic(podcastId) {
+    return `new_ep_${String(podcastId).replace(/^rss:/, 'rss_')}`;
+}
+
+/** Re-enabling a feed after all listeners left starts quietly rather than alerting an archive tip. */
+function activeEpisodeState(existing, tracked) {
+    return Object.fromEntries(Object.entries(existing || {}).filter(([id]) => !id.startsWith('rss:') || Object.hasOwn(tracked, id)));
+}
+
+/** Pure RSS never has a PI fallback. Public state contains a digest, not a credential-bearing key. */
+function applyPureRssCheck({ existing, item, now = Date.now() }) {
+    const rawKey = rssItemKey(item);
+    if (!rawKey) return null;
+    const digest = (key) => `sha256:${crypto.createHash('sha256').update(key).digest('hex')}`;
+    const prior = existing && existing.lastRssKey
+        ? { ...existing, lastRssKey: existing.lastRssKey.startsWith('sha256:') ? existing.lastRssKey : digest(existing.lastRssKey) }
+        : undefined;
+    const decision = applyCheck({ existing: prior, source: 'rss', newest: { key: digest(rawKey), title: item.title || 'New Episode' }, now });
+    if (decision.reason === 'unchanged' && existing && !existing.lastRssKey.startsWith('sha256:')) decision.reason = 'rss-state-migrated';
+    return decision;
+}
+
+async function resolveTrackedRelease({ podcastId, podcastData, existing, fetchRssNewest, fetchPiLatest, now }) {
+    const pureRss = String(podcastId).startsWith('rss:');
+    const feedUrl = usableFeedUrl(podcastData.feedUrl);
+    let rssItem = null;
+    if (feedUrl) {
+        try {
+            rssItem = await fetchRssNewest(feedUrl);
+        } catch (error) {
+            if (pureRss) throw error; // Keep last-good state and retry; no unrelated catalog lookup.
+        }
+    }
+    if (pureRss) {
+        const decision = applyPureRssCheck({ existing, item: rssItem, now });
+        return decision ? { decision, data: buildRssFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, rssItem, feedUrl }) } : null;
+    }
+    if (rssItem && rssItemKey(rssItem)) {
+        let piEpisode = null;
+        try { piEpisode = await fetchPiLatest(podcastId); } catch (_) { /* RSS owns the release. */ }
+        const matched = rssMatchesPi(rssItem, piEpisode);
+        const decision = applyCheck({ existing, source: 'rss', newest: { key: rssItemKey(rssItem), title: rssItem.title || 'New Episode', piEpisodeId: matched ? String(piEpisode.id) : undefined }, now });
+        return { decision, data: buildRssFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, rssItem, piEpisode: matched ? piEpisode : null, feedUrl }) };
+    }
+    const piEpisode = await fetchPiLatest(podcastId);
+    if (!piEpisode) return null;
+    const decision = applyCheck({ existing, source: 'pi', newest: { piEpisodeId: String(piEpisode.id), title: piEpisode.title || 'New Episode', rssKey: rssItemKey(piEpisode) }, now });
+    return { decision, data: buildPiFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, piEpisode }) };
+}
+
 function decodeXml(value) {
-    return String(value || '')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&apos;/g, "'")
-        .replace(/&amp;/g, '&')
-        .trim();
+    const named = { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' };
+    return String(value || '').replace(/&(lt|gt|quot|apos|amp|#(?:x[\da-f]+|\d+));/gi, (reference, entity) => {
+        if (Object.hasOwn(named, entity)) return named[entity];
+        const hex = entity.slice(0, 2).toLowerCase() === '#x';
+        const codePoint = Number.parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
+        return Number.isFinite(codePoint) && codePoint > 0 && codePoint <= 0x10ffff && !(codePoint >= 0xd800 && codePoint <= 0xdfff)
+            ? String.fromCodePoint(codePoint) : reference;
+    }).trim();
 }
 
 function usableFeedUrl(raw) {
@@ -60,7 +126,8 @@ function tagText(xml, tag) {
     );
     const match = xml.match(re);
     if (!match) return '';
-    return decodeXml(match[1] || match[2] || '');
+    // CDATA is literal text, not XML entity references. Decode normal text once.
+    return match[1] !== undefined ? match[1].trim() : decodeXml(match[2]);
 }
 
 function attrValue(xml, tag, attrName) {
@@ -78,13 +145,9 @@ function parseItemXml(itemXml, kind) {
             ? tagText(itemXml, 'id')
             : tagText(itemXml, 'guid');
     const title = tagText(itemXml, 'title');
-    let enclosureUrl = attrValue(itemXml, 'enclosure', 'url');
-    if (!enclosureUrl) {
-        const enclosureLink = itemXml.match(
-            /<link[^>]*rel=["']enclosure["'][^>]*href=["']([^"']+)["']/i,
-        );
-        enclosureUrl = enclosureLink ? decodeXml(enclosureLink[1]) : '';
-    }
+    const enclosureUrl = playableEnclosureUrl(itemXml);
+    // Android omits untitled/non-media entries; do not advance alerts to an unplayable tip.
+    if (!title || !enclosureUrl) return null;
     const duration =
         tagText(itemXml, 'itunes:duration') || tagText(itemXml, 'duration');
     const image =
@@ -106,18 +169,33 @@ function parseItemXml(itemXml, kind) {
     };
 }
 
+function playableEnclosureUrl(xml) {
+    const extensions = /\.(mp3|m4a|aac|ogg|opus|wav|mp4|m4v|webm|m3u8)$/i;
+    for (const match of xml.matchAll(/<(enclosure|link|media:content)\b[^>]*>/gi)) {
+        const tag = match[1];
+        if (tag.toLowerCase() === 'link' && attrValue(match[0], tag, 'rel') !== 'enclosure') continue;
+        const url = attrValue(match[0], tag, tag.toLowerCase() === 'link' ? 'href' : 'url');
+        const type = attrValue(match[0], tag, 'type').toLowerCase();
+        const medium = attrValue(match[0], tag, 'medium').toLowerCase();
+        if (url && (/^(audio|video)\//.test(type) || /^(audio|video)$/.test(medium) || extensions.test(url.split(/[?#]/)[0]))) return url;
+    }
+    return '';
+}
+
 function parseFeedItems(xml) {
     const source = String(xml || '');
     const items = [];
     const itemRe = /<item[\s>][\s\S]*?<\/item>/gi;
     let match;
     while ((match = itemRe.exec(source))) {
-        items.push(parseItemXml(match[0], 'rss'));
+        const item = parseItemXml(match[0], 'rss');
+        if (item) items.push(item);
     }
     if (items.length > 0) return items;
     const entryRe = /<entry[\s>][\s\S]*?<\/entry>/gi;
     while ((match = entryRe.exec(source))) {
-        items.push(parseItemXml(match[0], 'atom'));
+        const item = parseItemXml(match[0], 'atom');
+        if (item) items.push(item);
     }
     return items;
 }
@@ -233,31 +311,52 @@ function applyCheck({ existing, source, newest, now = Date.now() }) {
 /** Same 25 MB ceiling as Android `RssFeedClient` — GHA previously used 5 MB. */
 const MAX_FEED_BYTES = 25 * 1024 * 1024;
 
-/** Stop after this many bytes once a complete RSS item / Atom entry is in the buffer. */
-const RSS_PREFIX_BYTES = 2 * 1024 * 1024;
-
-function feedHasCompleteItem(xml) {
-    const source = String(xml || '');
-    return /<\/item>/i.test(source) || /<\/entry>/i.test(source);
-}
-
 /**
- * @returns {'too-large' | 'prefix-enough' | 'continue'}
+ * Full feeds are required: oldest-first feeds can put their newest release at the end.
+ * @returns {'too-large' | 'continue'}
  */
 function rssDownloadDecision({
     received = 0,
     declared,
     maxBytes = MAX_FEED_BYTES,
-    prefixBytes = RSS_PREFIX_BYTES,
-    xml = '',
 } = {}) {
     const declaredN = Number(declared);
     if (received === 0 && Number.isFinite(declaredN) && declaredN > maxBytes) {
         return 'too-large';
     }
     if (received > maxBytes) return 'too-large';
-    if (received >= prefixBytes && feedHasCompleteItem(xml)) return 'prefix-enough';
     return 'continue';
+}
+
+/** A timeout, failed stream or oversized body must never become a partial release baseline. */
+async function fetchRssText(url, { timeoutMs = 60000, maxBytes = MAX_FEED_BYTES, fetchImpl = fetch } = {}) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    const decoder = new TextDecoder('utf-8');
+    let xml = '';
+    let received = 0;
+    try {
+        const response = await fetchImpl(url, {
+            signal: ac.signal,
+            redirect: 'follow',
+            headers: { 'User-Agent': 'BoxLore/1.0', 'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*' },
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (response.url && !usableFeedUrl(response.url)) throw new Error('Feed redirected to a non-HTTPS URL');
+        const declared = Number(response.headers.get('content-length'));
+        if (rssDownloadDecision({ declared, maxBytes }) === 'too-large') throw new Error('Feed too large');
+        if (!response.body) throw new Error('Empty body');
+        for await (const chunk of response.body) {
+            received += chunk.byteLength;
+            if (rssDownloadDecision({ received, maxBytes }) === 'too-large') throw new Error('Feed too large');
+            xml += decoder.decode(chunk, { stream: true });
+        }
+        if (ac.signal.aborted) throw new Error('Feed timed out');
+        return xml + decoder.decode();
+    } finally {
+        clearTimeout(timer);
+        ac.abort();
+    }
 }
 
 function omitEmpty(data) {
@@ -322,6 +421,11 @@ function buildPiFcmData({ podcastId, podcastTitle, imageUrl, piEpisode }) {
 }
 
 module.exports = {
+    activeEpisodeState,
+    groupTrackedPodcasts,
+    notificationTopic,
+    applyPureRssCheck,
+    resolveTrackedRelease,
     usableFeedUrl,
     rssItemKey,
     durationMinutes,
@@ -332,9 +436,8 @@ module.exports = {
     buildRssFcmData,
     buildPiFcmData,
     MAX_FEED_BYTES,
-    RSS_PREFIX_BYTES,
-    feedHasCompleteItem,
     rssDownloadDecision,
+    fetchRssText,
 };
 
 // These topics are opted-in visible release alerts, qualifying for prompt Android delivery.

@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { groupTrackedPodcasts } = require('./check-new-episodes-lib');
 
 const BACKFILL_USER_AGENT = 'boxlore-rtdb-feed-backfill/1.0';
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -48,7 +49,7 @@ function writeWeeklyTrackedPodcastBackup({
     const filename = utcIsoWeekName(now);
     fs.writeFileSync(
         path.join(directory, filename),
-        `${JSON.stringify(sortJson(trackedPodcasts || {}), null, 2)}\n`,
+        `${JSON.stringify(sortJson(groupTrackedPodcasts(trackedPodcasts)), null, 2)}\n`,
     );
     const weeklyFiles =
         fs.readdirSync(directory)
@@ -74,7 +75,7 @@ function usableHttpsFeedUrl(raw) {
 
 function missingTrackedPodcasts(trackedPodcasts) {
     return Object.entries(trackedPodcasts || {})
-        .filter(([, row]) => row && typeof row === 'object' && !usableHttpsFeedUrl(row.feedUrl))
+        .filter(([id, row]) => !String(id).startsWith('rss:') && row && typeof row === 'object' && !usableHttpsFeedUrl(row.feedUrl))
         .map(([id, row]) => ({
             id: String(id),
             title: String(row.title || '').trim(),
@@ -138,6 +139,8 @@ async function resolveTrackedPodcastFeed({
     appKey,
     fetchImpl = fetch,
 }) {
+    if (String(id).startsWith('rss:')) return ''; // Private/premium feeds have no catalog identity to repair.
+
     let apiFeedUrl = '';
     try {
         const endpoint = new URL('podcast', `${apiBaseUrl.replace(/\/?$/, '/')}`);

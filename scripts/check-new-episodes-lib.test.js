@@ -54,12 +54,41 @@ describe('check-new-episodes-lib', () => {
             <id>atom-1</id>
             <title>Atom ep</title>
             <updated>2020-01-03T00:00:00Z</updated>
-            <link rel="enclosure" href="https://cdn.example.com/atom.mp3"/>
+            <link href="https://cdn.example.com/atom.mp3" rel="enclosure"/>
           </entry>
         </feed>`;
         const newest = lib.newestRssItem(lib.parseFeedItems(xml));
         assert.equal(newest.guid, 'atom-1');
         assert.equal(newest.enclosureUrl, 'https://cdn.example.com/atom.mp3');
+    });
+
+    it('ignores newer non-media and untitled entries instead of alerting an unplayable release', () => {
+        const xml = RSS_OLDEST_FIRST.replace('</channel>', `
+          <item><guid>announcement</guid><title>News</title><pubDate>2025-01-01</pubDate></item>
+          <item><guid>document</guid><title>PDF</title><pubDate>2025-01-02</pubDate><enclosure url="https://cdn.example/notes.pdf" type="application/pdf"/></item>
+          <item><guid>untitled</guid><pubDate>2025-01-03</pubDate><enclosure url="https://cdn.example/empty.mp3"/></item>
+        </channel>`);
+        const items = lib.parseFeedItems(xml);
+        assert.equal(items.length, 2);
+        assert.equal(lib.newestRssItem(items).guid, 'guid-new');
+    });
+
+    it('accepts playable media:content with a token URL without a media extension', () => {
+        const items = lib.parseFeedItems('<rss><channel><item><guid>media</guid><title>Episode</title><media:content url="https://cdn.example/play?token=one" medium="audio"/></item></channel></rss>');
+        assert.equal(items[0].enclosureUrl, 'https://cdn.example/play?token=one');
+    });
+
+    it('decodes numeric XML references in release keys and enclosures for exact Android hydration', () => {
+        const [item] = lib.parseFeedItems('<rss><channel><item><guid>g&#x26;one</guid><title>Episode &#128512;</title><enclosure type="audio/mpeg" url="https://cdn.example/play?t=&#65;&amp;p=2"/></item></channel></rss>');
+        assert.equal(item.guid, 'g&one');
+        assert.equal(item.title, 'Episode 😀');
+        assert.equal(item.enclosureUrl, 'https://cdn.example/play?t=A&p=2');
+    });
+
+    it('preserves literal CDATA keys and decodes escaped references only once', () => {
+        const [item] = lib.parseFeedItems('<rss><channel><item><guid><![CDATA[g&amp;literal]]></guid><title>Episode &amp;#38;</title><enclosure url="https://cdn.example/ep.mp3"/></item></channel></rss>');
+        assert.equal(item.guid, 'g&amp;literal');
+        assert.equal(item.title, 'Episode &#38;');
     });
 
     it('rssMatchesPi uses enclosure then guid', () => {
@@ -254,12 +283,74 @@ describe('check-new-episodes-lib', () => {
         );
         assert.equal(
             lib.rssDownloadDecision({
-                received: lib.RSS_PREFIX_BYTES,
+                received: 2 * 1024 * 1024,
                 declared: dailyBytes,
                 xml: '<rss><channel><item><title>x</title></item>',
             }),
-            'prefix-enough',
+            'continue',
         );
+    });
+
+    it('reads a large oldest-first feed through to its newest playable episode at the end', async () => {
+        const split = RSS_OLDEST_FIRST.indexOf('<item>', RSS_OLDEST_FIRST.indexOf('<item>') + 1);
+        const first = RSS_OLDEST_FIRST.slice(0, split) + '<!--' + 'x'.repeat(2 * 1024 * 1024) + '-->';
+        const body = (async function* () {
+            yield Buffer.from(first);
+            yield Buffer.from(RSS_OLDEST_FIRST.slice(split));
+        })();
+        const xml = await lib.fetchRssText('https://publisher.example/feed', {
+            fetchImpl: async () => ({ ok: true, headers: { get: () => null }, body }),
+        });
+        assert.equal(lib.newestRssItem(lib.parseFeedItems(xml)).guid, 'guid-new');
+    });
+
+    it('rejects an interrupted feed even when an earlier complete item was received', async () => {
+        const body = (async function* () {
+            yield Buffer.from('<rss><channel><item><guid>old</guid><title>Old</title><enclosure url="https://cdn.example/old.mp3"/></item>');
+            const error = new Error('interrupted');
+            error.name = 'AbortError';
+            throw error;
+        })();
+        await assert.rejects(lib.fetchRssText('https://publisher.example/feed', {
+            fetchImpl: async () => ({ ok: true, headers: { get: () => null }, body }),
+        }), { name: 'AbortError' });
+    });
+
+    it('aborts oversized streams and declared oversized responses without accepting a prefix', async () => {
+        let signal;
+        let closed = false;
+        const body = (async function* () {
+            try { yield Buffer.from('too large'); } finally { closed = true; }
+        })();
+        await assert.rejects(lib.fetchRssText('https://publisher.example/feed', {
+            maxBytes: 3,
+            fetchImpl: async (_, options) => { signal = options.signal; return { ok: true, headers: { get: () => null }, body }; },
+        }), /too large/);
+        assert.equal(signal.aborted, true);
+        assert.equal(closed, true);
+        await assert.rejects(lib.fetchRssText('https://publisher.example/feed', {
+            maxBytes: 3,
+            fetchImpl: async () => ({ ok: true, headers: { get: () => '4' }, body: {} }),
+        }), /too large/);
+    });
+
+    it('fails a timeout even when a stream ends quietly after its signal is aborted', async () => {
+        await assert.rejects(lib.fetchRssText('https://publisher.example/feed', {
+            timeoutMs: 5,
+            fetchImpl: async (_, { signal }) => ({
+                ok: true, headers: { get: () => null },
+                body: (async function* () {
+                    yield Buffer.from('<rss><channel><item></item>');
+                    await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }));
+                })(),
+            }),
+        }), /timed out/);
+    });
+
+    it('rejects an HTTPS feed that redirects to HTTP', async () => {
+        await assert.rejects(lib.fetchRssText('https://publisher.example/feed', {
+            fetchImpl: async () => ({ ok: true, url: 'http://publisher.example/feed' }),
+        }), /non-HTTPS/);
     });
 
     it('applyCheck RSS does not notify when PI id already recorded', () => {
@@ -284,4 +375,100 @@ it('visible release alerts request high Android priority without changing payloa
     assert.deepEqual(lib.newEpisodeFcmMessage('new_ep_123', data), {
         topic: 'new_ep_123', data, android: { priority: 'high' },
     });
+});
+
+describe('pure RSS notifications', () => {
+    const podcastId = 'rss:012345';
+    const feedUrl = 'https://publisher.example/public.xml';
+    const podcastData = { title: 'Public show', imageUrl: '', feedUrl };
+    const item = { guid: 'https://publisher.example/item?token=secret', title: 'Release', enclosureUrl: 'https://audio.example/release.mp3' };
+    const noPi = async () => { assert.fail('Pure RSS must never query Podcast Index'); };
+
+    it('topic mapping preserves numeric topics and accepts rss IDs', () => {
+        assert.equal(lib.notificationTopic('123'), 'new_ep_123');
+        assert.equal(lib.notificationTopic(podcastId), 'new_ep_rss_012345');
+        assert.match(lib.notificationTopic(podcastId), /^[a-zA-Z0-9\-_.~%]+$/);
+    });
+
+    it('first check quietly seeds a digest and does not publish feed URL or raw key', async () => {
+        const result = await lib.resolveTrackedRelease({ podcastId, podcastData, fetchRssNewest: async () => item, fetchPiLatest: noPi, now: 100 });
+        assert.equal(result.decision.notify, false);
+        assert.match(result.decision.nextState.lastRssKey, /^sha256:[a-f0-9]{64}$/);
+        const state = JSON.stringify(result.decision.nextState);
+        assert.equal(state.includes('secret'), false);
+        assert.equal(state.includes(feedUrl), false);
+        assert.equal(result.data.podcastId, podcastId);
+        assert.equal(result.data.episodeId, undefined);
+    });
+
+    it('new release alerts once and same release remains quiet', async () => {
+        const first = lib.applyPureRssCheck({ item, now: 100 });
+        const nextItem = { ...item, guid: 'new-guid' };
+        const next = await lib.resolveTrackedRelease({ podcastId, podcastData, existing: first.nextState, fetchRssNewest: async () => nextItem, fetchPiLatest: noPi, now: 200 });
+        assert.equal(next.decision.notify, true);
+        const again = lib.applyPureRssCheck({ existing: next.decision.nextState, item: nextItem, now: 300 });
+        assert.equal(again.notify, false);
+    });
+
+    it('metadata edits do not alert and raw legacy keys are migrated quietly', () => {
+        const migrated = lib.applyPureRssCheck({ existing: { lastRssKey: item.guid, lastEpisodeTitle: 'Old title' }, item, now: 100 });
+        assert.equal(migrated.notify, false);
+        assert.equal(migrated.reason, 'rss-state-migrated');
+        assert.equal(JSON.stringify(migrated.nextState).includes('secret'), false);
+        assert.equal(lib.applyPureRssCheck({ existing: migrated.nextState, item: { ...item, title: 'Edited title' } }).notify, false);
+    });
+
+    it('feed failure retains baseline for retry without a catalog fallback', async () => {
+        const existing = lib.applyPureRssCheck({ item }).nextState;
+        await assert.rejects(lib.resolveTrackedRelease({ podcastId, podcastData, existing, fetchRssNewest: async () => { throw new Error('403'); }, fetchPiLatest: noPi }), /403/);
+        assert.equal(lib.applyPureRssCheck({ existing, item }).notify, false);
+    });
+
+    it('disabled tracking and empty feeds do not query catalog or replace state', async () => {
+        assert.equal(await lib.resolveTrackedRelease({ podcastId, podcastData: { title: 'Show' }, fetchRssNewest: async () => { assert.fail('No URL means no fetch'); }, fetchPiLatest: noPi }), null);
+        assert.equal(await lib.resolveTrackedRelease({ podcastId, podcastData, fetchRssNewest: async () => null, fetchPiLatest: noPi }), null);
+    });
+
+    it('catalog shows retain the PI fallback when RSS fails', async () => {
+        const result = await lib.resolveTrackedRelease({ podcastId: '123', podcastData, fetchRssNewest: async () => { throw new Error('offline'); }, fetchPiLatest: async () => ({ id: 42, title: 'PI release' }), now: 100 });
+        assert.equal(result.decision.reason, 'pi-baseline');
+        assert.equal(result.data.episodeId, '42');
+    });
+});
+
+describe('shared RSS registrations', () => {
+    it('groups devices into one canonical feed and leaves numeric show keys unchanged', () => {
+        const rows = {
+            'rss:abc~device-a': { title: 'Show', feedUrl: 'https://example.com/feed' },
+            'rss:abc~device-b': { title: 'Show', feedUrl: 'https://example.com/feed' },
+            '123': { title: 'Catalog' },
+        };
+        const grouped = lib.groupTrackedPodcasts(rows);
+        assert.deepEqual(Object.keys(grouped).sort(), ['123', 'rss:abc']);
+        assert.equal(grouped['rss:abc'].feedUrl, 'https://example.com/feed');
+        delete rows['rss:abc~device-a'];
+        assert.equal(lib.groupTrackedPodcasts(rows)['rss:abc'].feedUrl, 'https://example.com/feed');
+        delete rows['rss:abc~device-b'];
+        assert.equal(lib.groupTrackedPodcasts(rows)['rss:abc'], undefined);
+    });
+
+    it('ignores disabled RSS rows while keeping valid registrations', () => {
+        const grouped = lib.groupTrackedPodcasts({
+            'rss:abc~disabled': { title: 'Show' },
+            'rss:abc~active': { title: 'Show', feedUrl: 'https://example.com/feed' },
+            'rss:invalid': { title: 'Invalid', feedUrl: 'http://example.com/feed' },
+        });
+        assert.deepEqual(Object.keys(grouped), ['rss:abc']);
+    });
+});
+
+it('RSS reactivation after all listeners leave seeds a quiet baseline', () => {
+    const old = lib.applyPureRssCheck({ item: { guid: 'archive', title: 'Old' } }).nextState;
+    const retained = lib.activeEpisodeState({ 'rss:abc': old, '123': { lastEpisodeId: '12' } }, { '123': {} });
+    assert.equal(retained['rss:abc'], undefined);
+    assert.equal(retained['123'].lastEpisodeId, '12');
+    const reactivated = lib.applyPureRssCheck({ existing: retained['rss:abc'], item: { guid: 'latest', title: 'New' } });
+    assert.equal(reactivated.notify, false);
+    assert.equal(reactivated.reason, 'rss-baseline');
+    assert.equal(lib.activeEpisodeState({ 'rss:abc': old }, { 'rss:abc': {} })['rss:abc'], old);
 });

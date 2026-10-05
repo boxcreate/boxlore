@@ -419,7 +419,7 @@ class SubscriptionForegroundSync(
                             feedUrl = meta.feedUrl.orEmpty(),
                             meta = podcastMeta,
                             loadPiBaseline =
-                            if (needsBaseline) {
+                            if (needsBaseline && !podcastId.startsWith("rss:")) {
                                 {
                                     podcastRepository.loadPiEpisodesForBaseline(
                                         feedId = podcastId,
@@ -539,11 +539,11 @@ class SubscriptionForegroundSync(
 
             val feedTipIds =
                 currentSubs.filter { id ->
-                    !id.startsWith("rss:") && id in optedIn
+                    id in optedIn
                 }
             val piSyncIds =
                 currentSubs.filter { id ->
-                    id !in readyIds && id !in optedIn
+                    !id.startsWith("rss:") && id !in readyIds && id !in optedIn
                 }
 
             Log.d(
@@ -622,7 +622,6 @@ class SubscriptionForegroundSync(
         private suspend fun syncTrackedFeedUrlsForHttpsNotifications(ids: Set<String>, subscriptionRepository: SubscriptionRepository,) {
             try {
                 ids
-                    .filter { !it.startsWith("rss:") }
                     .mapNotNull { subscriptionRepository.getPodcastEntity(it) }
                     .forEach { entity ->
                         subscriptionRepository.syncTrackedPodcastFeedUrl(entity.toPodcast())
@@ -690,15 +689,14 @@ class SubscriptionForegroundSync(
 
         private suspend fun httpsSubscribedIds(ids: Set<String>, subscriptionRepository: SubscriptionRepository,): Set<String> = ids
             .filter { id ->
-                !id.startsWith("rss:") &&
-                    TrackedPodcastRtdbLogic.httpsFeedUrl(
+                TrackedPodcastRtdbLogic.httpsFeedUrl(
                         subscriptionRepository.getPodcastEntity(id)?.feedUrl,
                     ) != null
             }.toSet()
 
         private suspend fun readyCatalogIds(ids: Set<String>, localEpisodeCatalog: LocalEpisodeCatalogPort?,): Set<String> {
             val catalog = localEpisodeCatalog ?: return emptySet()
-            return ids.filter { id -> !id.startsWith("rss:") && catalog.isReady(id) }.toSet()
+            return ids.filter { id -> catalog.isReady(id) }.toSet()
         }
 
         private suspend fun promoteCachedDirectFeedTip(

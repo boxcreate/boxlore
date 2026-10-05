@@ -79,6 +79,23 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         }
     }
 
+    /** Conditional GET works even when a publisher rejects HEAD or has no validators. */
+    open suspend fun fetchConditional(url: String, etag: String?, lastModified: String?): RssFetchResult? =
+        execute(conditionalGetRequest(url, etag, lastModified)) { response ->
+            if (response.code == HTTP_NOT_MODIFIED) return@execute null
+            require(response.isSuccessful) { "Feed returned HTTP ${response.code}" }
+            validateContentType(response)
+            val body = response.body
+            val declaredLength = body.contentLength()
+            require(declaredLength < 0L || declaredLength <= MAX_FEED_BYTES) { "Feed is too large" }
+            RssFetchResult(
+                finalUrl = response.request.url.toString(),
+                etag = response.header("ETag"),
+                lastModified = response.header("Last-Modified"),
+                body = readBounded(body.byteStream()),
+            )
+        }
+
     suspend fun confirmHeadValidators(url: String, etag: String?, lastModified: String?,): Boolean = confirmUnchanged(url, etag, lastModified)
 
     /**
