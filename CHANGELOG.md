@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+### Fixed
+- Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+
+<!-- readme-copy:start pr=1097
+### Improvements
+- Automatic download settings are easier to read, with grouped controls and a separate help guide.
+- Backup background checks now clearly explain how they help when show notifications are off or do not arrive.
+### Fixes
+- When automatic downloads depend on opening boxlore, a notice explains this and offers to turn on show notifications.
+readme-copy:end pr=1097 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
