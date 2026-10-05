@@ -2,72 +2,105 @@ package cx.aswin.boxlore.feature.explore
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-enum class SwipeDirection {
-    Left,
-    Right
-}
+enum class SwipeDirection { Left, Right }
+
+internal enum class LoreSwipePhase { Idle, Dragging, Returning, Exiting }
 
 class SwipeableCardState(
-    val coroutineScope: CoroutineScope,
-    val onSwiped: (SwipeDirection) -> Unit
+    private val coroutineScope: CoroutineScope,
+    private val onDragStarted: (SwipeableCardState) -> Unit = {},
+    private val onSwiped: (SwipeDirection) -> Unit,
 ) {
-    val offset = Animatable(Offset.Zero, Offset.VectorConverter)
+    private val animatedX = Animatable(0f)
+    private var dragX by mutableFloatStateOf(0f)
+    private var motion: Job? = null
+    private var disposed = false
+    internal var phase by mutableStateOf(LoreSwipePhase.Idle)
+        private set
+    val offset: State<Offset> = derivedStateOf {
+        Offset(if (phase == LoreSwipePhase.Dragging) dragX else animatedX.value, 0f)
+    }
 
-    fun swipe(direction: SwipeDirection) {
-        coroutineScope.launch {
-            val targetX = if (direction == SwipeDirection.Left) -1500f else 1500f
-            offset.animateTo(
-                targetValue = Offset(targetX, offset.value.y),
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            )
-            onSwiped(direction)
-            offset.snapTo(Offset.Zero)
-        }
+    fun beginDrag() {
+        if (disposed || phase == LoreSwipePhase.Exiting) return
+        dragX = offset.value.x
+        motion?.cancel()
+        phase = LoreSwipePhase.Dragging
+        onDragStarted(this)
     }
 
     fun drag(dragAmount: Offset) {
-        coroutineScope.launch {
-            offset.snapTo(
-                Offset(
-                    x = offset.value.x + dragAmount.x,
-                    y = 0f
-                )
+        if (disposed || phase == LoreSwipePhase.Exiting || !dragAmount.x.isFinite()) return
+        if (phase != LoreSwipePhase.Dragging) beginDrag()
+        // Pointer movement is synchronous; no queued coroutine for every drag event.
+        dragX += dragAmount.x
+    }
+
+    fun swipe(direction: SwipeDirection) {
+        if (disposed || phase == LoreSwipePhase.Exiting) return
+        val from = offset.value.x
+        motion?.cancel()
+        motion = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            animatedX.snapTo(from)
+            phase = LoreSwipePhase.Exiting
+            animatedX.animateTo(
+                if (direction == SwipeDirection.Left) -1500f else 1500f,
+                spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
             )
+            if (!disposed) onSwiped(direction)
+            // Keep the outgoing endpoint until the deck replaces this state.
         }
     }
 
     fun reset() {
-        coroutineScope.launch {
-            offset.animateTo(
-                targetValue = Offset.Zero,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
+        if (disposed || phase == LoreSwipePhase.Exiting) return
+        val from = offset.value.x
+        motion?.cancel()
+        motion = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            animatedX.snapTo(from)
+            phase = LoreSwipePhase.Returning
+            animatedX.animateTo(
+                0f,
+                spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
             )
+            phase = LoreSwipePhase.Idle
         }
+    }
+
+    internal fun dispose() {
+        disposed = true
+        motion?.cancel()
     }
 }
 
 @Composable
 fun rememberSwipeableCardState(
     key: Any?,
-    onSwiped: (SwipeDirection) -> Unit
+    onDragStarted: (SwipeableCardState) -> Unit = {},
+    onSwiped: (SwipeDirection) -> Unit,
 ): SwipeableCardState {
     val scope = rememberCoroutineScope()
-    return remember(key) {
-        SwipeableCardState(scope, onSwiped)
-    }
+    val latestDrag by rememberUpdatedState(onDragStarted)
+    val latestSwipe by rememberUpdatedState(onSwiped)
+    val state = remember(key) { SwipeableCardState(scope, { latestDrag(it) }, { latestSwipe(it) }) }
+    DisposableEffect(state) { onDispose { state.dispose() } }
+    return state
 }

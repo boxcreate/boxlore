@@ -31,6 +31,45 @@ class AdaptivePlayerChromeControllerTest {
     }
 
     @Test
+    fun `Lore forces compact chrome without changing the prior browsing state`() {
+        controller.configure(true, "episode-a", "learn")
+        assertTrue(controller.isCompact)
+        browse(100f)
+        assertTrue(controller.isCompact)
+        controller.configure(true, "episode-a", "library")
+        assertFalse(controller.isCompact)
+
+        browse(-48f)
+        controller.configure(true, "episode-a", "learn")
+        browse(100f)
+        controller.configure(true, "episode-a", "home")
+        assertTrue(controller.isCompact)
+    }
+
+    @Test
+    fun `Lore history is ordinary browsing and unavailable chrome never compacts`() {
+        controller.configure(true, "episode-a", "learn/history")
+        assertFalse(controller.isCompact)
+        controller.configure(false, "episode-a", "learn")
+        assertFalse(controller.isCompact)
+        controller.configure(true, "episode-a", "learn")
+        assertTrue(controller.isCompact)
+        controller.configure(true, "episode-b", "learn")
+        assertTrue(controller.isCompact)
+        controller.configure(true, "episode-b", "home")
+        assertFalse(controller.isCompact)
+    }
+
+    @Test
+    fun `Lore waits for a player interaction to end before retargeting`() {
+        controller.onSheetInteractionChanged(true)
+        controller.configure(true, "episode-a", "learn")
+        assertFalse(controller.isCompact)
+        controller.onSheetInteractionChanged(false)
+        assertTrue(controller.isCompact)
+    }
+
+    @Test
     fun `route change discards partial travel between different lists`() {
         browse(-30f)
         controller.configure(true, "episode-a", "library")

@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -14,10 +13,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.State
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -29,6 +31,13 @@ import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 @Composable
 internal fun LoreHaloBackground(
     accentColor: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) = LoreHaloBackground(rememberUpdatedState(accentColor), modifier, content)
+
+@Composable
+internal fun LoreHaloBackground(
+    accentColor: State<Color>,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -55,51 +64,22 @@ internal fun LoreHaloBackground(
     val backgroundColor = MaterialTheme.colorScheme.background
     val density = LocalDensity.current
     val pixelsPerDp = density.density
-    val pageBrush = remember(accentColor, backgroundColor, isDarkTheme) {
-        Brush.verticalGradient(
-            colors = if (isDarkTheme) {
-                listOf(backgroundColor, backgroundColor)
-            } else {
-                listOf(
-                    lerp(backgroundColor, accentColor, 0.07f),
-                    backgroundColor,
-                    lerp(backgroundColor, accentColor, 0.045f)
-                )
-            }
-        )
-    }
-    val topBrush = remember(accentColor, isDarkTheme) {
-        Brush.radialGradient(
-            colors = listOf(
-                accentColor.copy(alpha = if (isDarkTheme) 0.28f else 0.48f),
-                accentColor.copy(alpha = if (isDarkTheme) 0.08f else 0.16f),
-                Color.Transparent
-            )
-        )
-    }
-    val bottomBrush = remember(accentColor, isDarkTheme) {
-        Brush.radialGradient(
-            colors = listOf(
-                accentColor.copy(alpha = if (isDarkTheme) 0.20f else 0.36f),
-                accentColor.copy(alpha = if (isDarkTheme) 0.05f else 0.11f),
-                Color.Transparent
-            )
-        )
-    }
-    val sideBrush = remember(accentColor, isDarkTheme) {
-        Brush.radialGradient(
-            colors = listOf(
-                accentColor.copy(alpha = if (isDarkTheme) 0.10f else 0.22f),
-                Color.Transparent
-            )
-        )
-    }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(pageBrush)
             .clipToBounds()
+            .drawWithCache {
+                val accent = accentColor.value
+                val brush = Brush.verticalGradient(
+                    colors = if (isDarkTheme) {
+                        listOf(backgroundColor, backgroundColor)
+                    } else {
+                        listOf(lerp(backgroundColor, accent, 0.07f), backgroundColor, lerp(backgroundColor, accent, 0.045f))
+                    }
+                )
+                onDrawBehind { drawRect(brush) }
+            }
     ) {
         Box(
             modifier = Modifier
@@ -111,7 +91,7 @@ internal fun LoreHaloBackground(
                     scaleX = pulse.value
                     scaleY = pulse.value
                 }
-                .background(topBrush, CircleShape)
+                .loreGlow(accentColor, if (isDarkTheme) 0.28f else 0.48f, if (isDarkTheme) 0.08f else 0.16f)
         )
         Box(
             modifier = Modifier
@@ -124,7 +104,7 @@ internal fun LoreHaloBackground(
                     scaleX = inversePulse
                     scaleY = inversePulse
                 }
-                .background(bottomBrush, CircleShape)
+                .loreGlow(accentColor, if (isDarkTheme) 0.20f else 0.36f, if (isDarkTheme) 0.05f else 0.11f)
         )
         Box(
             modifier = Modifier
@@ -136,8 +116,20 @@ internal fun LoreHaloBackground(
                     scaleX = 2f - pulse.value
                     scaleY = 2f - pulse.value
                 }
-                .background(sideBrush, CircleShape)
+                .loreGlow(accentColor, if (isDarkTheme) 0.10f else 0.22f)
         )
         content()
     }
 }
+
+private fun Modifier.loreGlow(accentColor: State<Color>, alpha: Float, innerAlpha: Float = 0f): Modifier =
+    clip(CircleShape).drawWithCache {
+        val accent = accentColor.value
+        val colors = if (innerAlpha > 0f) {
+            listOf(accent.copy(alpha = alpha), accent.copy(alpha = innerAlpha), Color.Transparent)
+        } else {
+            listOf(accent.copy(alpha = alpha), Color.Transparent)
+        }
+        val brush = Brush.radialGradient(colors)
+        onDrawBehind { drawRect(brush) }
+    }

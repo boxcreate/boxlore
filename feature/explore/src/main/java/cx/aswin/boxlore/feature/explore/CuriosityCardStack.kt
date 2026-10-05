@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -56,7 +55,6 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.playback.PlayerState
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.isActive
@@ -72,6 +70,7 @@ sealed interface CardAction {
 @Composable
 fun CuriosityCardStack(
     questions: List<LearnCuriosityCard>,
+    swipeState: SwipeableCardState,
     playerState: PlayerState,
     onCardAction: (CardAction, LearnCuriosityCard) -> Unit,
     accentColor: Color,
@@ -93,19 +92,9 @@ fun CuriosityCardStack(
         return
     }
 
-    val daily = questions.first()
-    val swipeThresholdPx = with(LocalDensity.current) { 88.dp.toPx() }
-    val swipeState = rememberSwipeableCardState(key = daily.episodeId) { direction ->
-        if (direction == SwipeDirection.Left) {
-            onCardAction(CardAction.Dismiss, daily)
-        } else {
-            onCardAction(CardAction.Queue, daily)
-        }
-    }
-    val swipeProgress by remember(swipeState, swipeThresholdPx) {
-        derivedStateOf {
-            (abs(swipeState.offset.value.x) / swipeThresholdPx).coerceIn(0f, 1f)
-        }
+    val swipeThresholdPx = with(LocalDensity.current) { LoreSwipeThresholdDp.dp.toPx() }
+    val swipeProgress = remember(swipeState, swipeThresholdPx) {
+        derivedStateOf { loreSwipeProgress(swipeState.offset.value.x, swipeThresholdPx) }
     }
     val visibleCards = questions.take(3)
 
@@ -129,10 +118,10 @@ fun CuriosityCardStack(
                     isCurrentlyPlaying = isCurrent && playerState.isPlaying,
                     isCurrentlyLoading = isCurrent && playerState.isLoading,
                     accentColor = artworkAccentColors[card.artworkSources]?.let { Color(it) } ?: accentColor,
-                    interactive = isActive,
+                    interactive = isActive && swipeState.phase != LoreSwipePhase.Exiting,
                     modifier = cardModifier,
                     onAction = { action ->
-                        if (isActive) {
+                        if (isActive && swipeState.phase != LoreSwipePhase.Exiting) {
                             onCardAction(action, card)
                         }
                     }
@@ -145,26 +134,26 @@ fun CuriosityCardStack(
 private fun BoxScope.deckCardModifier(
     card: LearnCuriosityCard,
     depth: Int,
-    swipeProgress: Float,
+    swipeProgress: State<Float>,
     swipeState: SwipeableCardState,
     swipeThresholdPx: Float,
 ): Modifier = when (depth) {
     2 ->
-        Modifier
-            .matchParentSize()
-            .offset(y = (24f - (10f * swipeProgress)).dp)
-            .scale(0.93f + (0.035f * swipeProgress))
-            .graphicsLayer {
-                rotationZ = 1.8f * (1f - swipeProgress)
-            }
+        Modifier.matchParentSize().graphicsLayer {
+            val progress = swipeProgress.value
+            translationY = (24f - 10f * progress) * density
+            scaleX = 0.93f + 0.035f * progress
+            scaleY = scaleX
+            rotationZ = 1.8f * (1f - progress)
+        }
     1 ->
-        Modifier
-            .matchParentSize()
-            .offset(y = (13f - (11f * swipeProgress)).dp)
-            .scale(0.965f + (0.025f * swipeProgress))
-            .graphicsLayer {
-                rotationZ = -1.15f * (1f - swipeProgress)
-            }
+        Modifier.matchParentSize().graphicsLayer {
+            val progress = swipeProgress.value
+            translationY = (13f - 11f * progress) * density
+            scaleX = 0.965f + 0.025f * progress
+            scaleY = scaleX
+            rotationZ = -1.15f * (1f - progress)
+        }
     else ->
         Modifier
             .fillMaxSize()
@@ -181,6 +170,7 @@ private fun BoxScope.deckCardModifier(
             }
             .pointerInput(card.episodeId) {
                 detectHorizontalDragGestures(
+                    onDragStart = { swipeState.beginDrag() },
                     onDragEnd = {
                         val offsetX = swipeState.offset.value.x
                         if (offsetX > swipeThresholdPx) {

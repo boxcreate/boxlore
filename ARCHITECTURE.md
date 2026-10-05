@@ -196,6 +196,8 @@ Home, Settings, and Info ViewModels are built through assemblers (`HomeViewModel
 | RSS catalog | `:core:rss` | Negative / `rss:` IDs; exposed through catalog |
 | PI episode supplement | `:core:rss` + `:core:database` | Feed-only extras under PI podcast id; not a subscription |
 
+The app shell owns adaptive player policy. Only Floating navigation with available player chrome can compact. The main Lore route temporarily forces compact presentation and restores the prior browsing state on exit; feature screens use the shared designsystem progress without importing the player feature. Lore may reclaim the released row in its bounded card viewport, while scrollable feed/list tail clearance remains stable. Playback ownership and persisted settings are unchanged.
+
 ## Upgrade failsafes
 
 Historical FQCNs and preference file names remain reachable so upgrades from older installs keep working. These bridges are permanent.
