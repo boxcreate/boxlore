@@ -142,6 +142,11 @@ class PodcastInfoViewModel(
 
     private val userPrefs = userPreferencesRepository
 
+    val autoDownloadBackgroundChecksEnabled: StateFlow<Boolean> =
+        userPrefs.autoDownloadBackgroundSettingsStream
+            .map { it.enabled }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     val globalSkipBeginningMs: StateFlow<Long> =
         userPrefs.skipBeginningMsStream
             .stateIn(
@@ -1529,21 +1534,19 @@ class PodcastInfoViewModel(
         }
     }
 
-    fun enableBothNotificationsAndAutoDownload() {
+    fun enableShowNotifications() {
         val currentState = _uiState.value
         if (currentState is PodcastInfoUiState.Success) {
             viewModelScope.launch {
                 subscriptionRepository.setNotificationsEnabled(currentState.podcast, true)
-                subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, true)
 
                 val updatedPodcast =
                     currentState.podcast.copy(
                         notificationsEnabled = true,
-                        autoDownloadEnabled = true,
                     )
                 _uiState.value = currentState.copy(podcast = updatedPodcast)
 
-                android.util.Log.d("PodcastInfoViewModel", "Enabled both notifications & auto-download for ${currentState.podcast.title}")
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackShowNotificationToggled(currentState.podcast.id, true)
             }
         }
     }

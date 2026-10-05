@@ -13,7 +13,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PushPin
@@ -143,14 +143,17 @@ internal fun handleNotificationsToggle(
     }
 }
 
-@Suppress("UNUSED_PARAMETER")
 internal fun handleAutoDownloadToggle(
     podcastAutoDownloadEnabled: Boolean,
     podcastNotificationsEnabled: Boolean,
-    onShowNotificationsRequiredWarning: () -> Unit,
+    backgroundChecksEnabled: Boolean,
+    onShowAppOpenOnlyNotice: () -> Unit,
     onToggleAutoDownload: () -> Unit,
 ) {
     onToggleAutoDownload()
+    if (!podcastAutoDownloadEnabled && !podcastNotificationsEnabled && !backgroundChecksEnabled) {
+        onShowAppOpenOnlyNotice()
+    }
 }
 
 internal fun handleToolbarWarningAction(
@@ -161,9 +164,9 @@ internal fun handleToolbarWarningAction(
     onShowPermissionBlockedWarning: () -> Unit,
 ) {
     when (warning) {
-        ToolbarWarning.NOTIFICATIONS_REQUIRED -> {
+        ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> {
             if (areAppNotificationsEnabled(context)) {
-                viewModel.enableBothNotificationsAndAutoDownload()
+                viewModel.enableShowNotifications()
             } else if (canPromptRuntimeNotificationPermission(context)) {
                 onRequestNotificationPermission()
             } else {
@@ -187,6 +190,10 @@ internal fun ToolbarWarningBanner(
     onDismiss: () -> Unit,
     onAction: () -> Unit,
 ) {
+    val isNotice = warning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY
+    val containerColor = if (isNotice) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer
+    val contentColor = if (isNotice) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onErrorContainer
+    val accentColor = if (isNotice) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
     AnimatedVisibility(
         visible = warning != ToolbarWarning.NONE,
         enter = expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
@@ -196,10 +203,9 @@ internal fun ToolbarWarningBanner(
             shape = RoundedCornerShape(16.dp),
             colors =
             androidx.compose.material3.CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                containerColor = containerColor,
+                contentColor = contentColor,
             ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
             modifier =
             Modifier
                 .fillMaxWidth()
@@ -222,16 +228,16 @@ internal fun ToolbarWarningBanner(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.WarningAmber,
+                            imageVector = if (isNotice) Icons.Rounded.Info else Icons.Rounded.WarningAmber,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
+                            tint = accentColor,
                             modifier = Modifier.size(22.dp),
                         )
                         Text(
                             text = toolbarWarningTitle(warning),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = GoogleSansWeight.bold,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            color = contentColor,
                         )
                     }
                     IconButton(
@@ -242,7 +248,7 @@ internal fun ToolbarWarningBanner(
                             imageVector = Icons.Rounded.Close,
                             contentDescription = "Dismiss",
                             modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
+                            tint = contentColor,
                         )
                     }
                 }
@@ -252,7 +258,7 @@ internal fun ToolbarWarningBanner(
                 Text(
                     text = toolbarWarningMessage(warning),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f),
+                    color = contentColor,
                 )
 
                 val actionText = toolbarWarningActionText(warning)
@@ -267,8 +273,8 @@ internal fun ToolbarWarningBanner(
                             onClick = onAction,
                             colors =
                             ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError,
+                                containerColor = accentColor,
+                                contentColor = if (isNotice) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onError,
                             ),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         ) {

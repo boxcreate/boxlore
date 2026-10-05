@@ -2,24 +2,24 @@ package cx.aswin.boxlore.feature.info.logic
 
 enum class ToolbarWarning {
     NONE,
-    NOTIFICATIONS_REQUIRED,
+    AUTO_DOWNLOAD_APP_OPEN_ONLY,
     SYSTEM_PERMISSION_BLOCKED,
 }
 
 fun toolbarWarningTitle(warning: ToolbarWarning): String = when (warning) {
-    ToolbarWarning.NOTIFICATIONS_REQUIRED -> "Action Required"
+    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> "Auto-download is on"
     ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Notifications Disabled"
     else -> "Notice"
 }
 
 fun toolbarWarningMessage(warning: ToolbarWarning): String = when (warning) {
-    ToolbarWarning.NOTIFICATIONS_REQUIRED -> "In order for us to download the latest episode of this show when it arrives, you need to toggle notifications on as well."
+    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> "New episodes are picked up when you open and refresh boxlore. Turn on show notifications to start downloads while boxlore is closed."
     ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Notification permissions are disabled in system settings. Please allow notifications and try again. We promise we will never spam."
     else -> ""
 }
 
 fun toolbarWarningActionText(warning: ToolbarWarning): String = when (warning) {
-    ToolbarWarning.NOTIFICATIONS_REQUIRED -> "Enable Both"
+    ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> "Turn on notifications"
     ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Turn On"
     else -> ""
 }
