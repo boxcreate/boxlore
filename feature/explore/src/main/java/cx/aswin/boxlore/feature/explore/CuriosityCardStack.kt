@@ -1,15 +1,11 @@
 package cx.aswin.boxlore.feature.explore
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,17 +33,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.playback.PlayerState
 import kotlin.math.roundToInt
 
@@ -200,6 +195,7 @@ private fun CuriosityCardContent(
 ) {
     val coverArt = daily.artworkSources.firstOrNull().orEmpty()
     val cardShape = MaterialTheme.shapes.extraLarge
+    val cardInteractionSource = remember { MutableInteractionSource() }
 
     OutlinedCard(
         shape = cardShape,
@@ -212,8 +208,10 @@ private fun CuriosityCardContent(
             .fillMaxHeight()
             .then(
                 if (interactive) {
-                    Modifier.expressiveClickable(
-                        shape = cardShape,
+                    Modifier.clickable(
+                        interactionSource = cardInteractionSource,
+                        indication = null,
+                        role = Role.Button,
                         onClick = { onAction(CardAction.Click) }
                     )
                 } else {
@@ -370,8 +368,7 @@ private fun CardQuickAction(
     Column(
         modifier = modifier
             .heightIn(min = 48.dp)
-            .semantics { role = Role.Button }
-            .expressiveClickable(
+            .loreControlClickable(
                 enabled = enabled,
                 shape = RoundedCornerShape(12.dp),
                 onClick = onClick
@@ -410,10 +407,15 @@ private fun LoreCardFooter(
     val artworkShape = RoundedCornerShape(12.dp)
     val podcastTitle = daily.podcastTitle ?: stringResource(R.string.lore_podcast_fallback)
     val podcastDescription = stringResource(R.string.lore_open_podcast, podcastTitle)
+    val windowSize = LocalWindowInfo.current.containerSize
+    val compactSpacing = with(LocalDensity.current) {
+        windowSize.width.toDp() < 360.dp || windowSize.height.toDp() < 720.dp
+    }
     Column(Modifier.fillMaxWidth()) {
         HorizontalDivider(color = accentColor.copy(alpha = 0.24f), modifier = Modifier.padding(horizontal = 20.dp))
         Row(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)
+                .padding(horizontal = 16.dp, vertical = if (compactSpacing) 4.dp else 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -421,9 +423,8 @@ private fun LoreCardFooter(
                 modifier = Modifier.weight(1f).heightIn(min = 48.dp)
                     .semantics(mergeDescendants = true) {
                         contentDescription = podcastDescription
-                        role = Role.Button
                     }
-                    .expressiveClickable(enabled = enabled, shape = artworkShape) {
+                    .loreControlClickable(enabled = enabled, shape = artworkShape) {
                         onAction(CardAction.PodcastClick)
                     }
                     .padding(horizontal = 4.dp),
@@ -450,7 +451,15 @@ private fun LoreCardFooter(
                     modifier = Modifier.size(16.dp),
                 )
             }
-            EpisodePlayButton(isCurrentEpisode, isPlaying, isLoading, accentColor, enabled, { onAction(CardAction.Play) })
+            EpisodePlayButton(
+                isCurrentEpisode = isCurrentEpisode,
+                isPlaying = isPlaying,
+                isLoading = isLoading,
+                accentColor = accentColor,
+                enabled = enabled,
+                compactSpacing = compactSpacing,
+                onClick = { onAction(CardAction.Play) },
+            )
         }
     }
 }
@@ -462,8 +471,8 @@ private fun EpisodePlayButton(
     isLoading: Boolean,
     accentColor: Color,
     enabled: Boolean,
+    compactSpacing: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
     val label = stringResource(
         when {
@@ -473,34 +482,22 @@ private fun EpisodePlayButton(
             else -> R.string.lore_play_episode
         }
     )
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
-        label = "LorePlayPress"
-    )
     Box(
-        modifier = modifier.size(48.dp)
-            .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
-            }
-            .clip(CircleShape)
+        modifier = Modifier.size(if (compactSpacing) 56.dp else 64.dp)
+            .loreControlClickable(enabled = enabled && !isLoading, shape = CircleShape, onClick = onClick)
             .background(lerp(accentColor, Color.Black, 0.58f))
             .border(1.dp, accentColor.copy(alpha = 0.6f), CircleShape)
-            .semantics { contentDescription = label }
-            .clickable(interactionSource, indication = null, enabled = enabled && !isLoading, role = Role.Button, onClick = onClick),
+            .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
         if (isLoading) {
-            CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+            CircularProgressIndicator(Modifier.size(28.dp), color = Color.White, strokeWidth = 2.dp)
         } else {
             Icon(
                 imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(26.dp),
+                modifier = Modifier.size(if (compactSpacing) 30.dp else 34.dp),
             )
         }
     }

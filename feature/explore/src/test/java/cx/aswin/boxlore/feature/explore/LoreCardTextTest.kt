@@ -42,8 +42,9 @@ class LoreCardTextTest {
     @Test
     fun `larger system text retains its scale and fits a normal portrait viewport`() {
         val candidates = measure(width = 353, scale = 1.3f)
-        val selected = selectLoreCardText(candidates, heightPx = 430)
-        assertTrue("Scaled full card needs ${selected.heightPx}px", selected.heightPx <= 430)
+        // The larger play control adds 16dp to the footer on a normal portrait window.
+        val selected = selectLoreCardText(candidates, heightPx = 414)
+        assertTrue("Scaled full card needs ${selected.heightPx}px", selected.heightPx <= 414)
         assertTrue(selected.spec.headingSp >= 24)
         assertTrue(measure(width = 353, scale = 1f).last().heightPx < candidates.last().heightPx)
     }
@@ -55,7 +56,7 @@ class LoreCardTextTest {
             val card = fixtures.getJSONObject(index)
             val heading = card.getString("question")
             val body = card.optString("explanation").takeUnless { it == "null" }
-            for ((width, height, scale) in listOf(Triple(296, 288, 1f), Triple(353, 430, 1.3f))) {
+            for ((width, height, scale) in listOf(Triple(296, 288, 1f), Triple(353, 414, 1.3f))) {
                 val selected = selectLoreCardText(measure(width, scale, body, heading), height)
                 assertTrue("$heading needs ${selected.heightPx}px at width=$width scale=$scale", selected.heightPx <= height)
             }

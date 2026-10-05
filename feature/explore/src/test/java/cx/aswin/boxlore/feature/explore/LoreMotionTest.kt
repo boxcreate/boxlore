@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.explore
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
@@ -33,6 +34,38 @@ class LoreMotionTest {
             }
         }
     )
+
+    @Test
+    fun `control press and release stay subtle without overshooting resting size`() = runTest {
+        val scale = Animatable(1f)
+        val frames = mutableListOf<Float>()
+        motionScope().launch {
+            scale.animateTo(LoreControlPressedScale, LoreControlPressAnimation) { frames += value }
+            scale.animateTo(1f, LoreControlPressAnimation) { frames += value }
+        }
+        advanceUntilIdle()
+        assertTrue(frames.any { it < 1f })
+        assertTrue(frames.all { it >= 0.96f && it <= 1f })
+        assertEquals(1f, scale.value)
+    }
+
+    @Test
+    fun `a press cancelled as a swipe starts returns without a bounce`() = runTest {
+        val scale = Animatable(1f)
+        val scope = motionScope()
+        val pressing = scope.launch { scale.animateTo(LoreControlPressedScale, LoreControlPressAnimation) }
+        advanceTimeBy(64)
+        runCurrent()
+        val interruptedScale = scale.value
+        assertTrue(interruptedScale < 1f && interruptedScale > LoreControlPressedScale)
+        pressing.cancel()
+        val returning = mutableListOf<Float>()
+        scope.launch { scale.animateTo(1f, LoreControlPressAnimation) { returning += value } }
+        advanceUntilIdle()
+        assertTrue(returning.all { it >= interruptedScale && it <= 1f })
+        assertTrue(returning.zipWithNext().all { (previous, next) -> next >= previous })
+        assertEquals(1f, scale.value)
+    }
 
     @Test
     fun `both swipe directions blend toward the same next card and cancellation reverses`() {
