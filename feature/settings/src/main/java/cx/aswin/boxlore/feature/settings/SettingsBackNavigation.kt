@@ -5,6 +5,7 @@ internal fun String?.toSettingsDestination(): ProfileSettingsDestination = when 
     "sync", "sync_and_backups", "sync-and-backups", "backups" -> ProfileSettingsDestination.SyncAndBackups
     "library" -> ProfileSettingsDestination.Library
     "appearance" -> ProfileSettingsDestination.Appearance
+    "theme" -> ProfileSettingsDestination.Theme
     "playback" -> ProfileSettingsDestination.Playback
     "downloads" -> ProfileSettingsDestination.Downloads
     "privacy" -> ProfileSettingsDestination.Privacy
@@ -29,3 +30,11 @@ internal fun resolveSettingsBackAction(
         initialPage != null && initialPage != "hub" -> SettingsBackAction.NavigateBack
         else -> SettingsBackAction.NavigateTo(ProfileSettingsDestination.Hub)
     }
+
+/** Nested settings return toward their parent, matching the toolbar and system Back action. */
+internal fun settingsDestinationMovesForward(from: ProfileSettingsDestination, to: ProfileSettingsDestination): Boolean = when {
+    to == ProfileSettingsDestination.Hub -> false
+    from == ProfileSettingsDestination.Theme && to == ProfileSettingsDestination.Appearance -> false
+    from == ProfileSettingsDestination.Account && to == ProfileSettingsDestination.SyncAndBackups -> false
+    else -> true
+}

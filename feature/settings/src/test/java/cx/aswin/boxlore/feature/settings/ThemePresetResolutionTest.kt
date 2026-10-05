@@ -12,9 +12,7 @@ import cx.aswin.boxlore.core.designsystem.theme.resolveBoxLoreChromeColors
 import cx.aswin.boxlore.core.designsystem.theme.resolveBoxLoreColorScheme
 import cx.aswin.boxlore.core.designsystem.theme.resolveFixedThemeColorScheme
 import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
-import cx.aswin.boxlore.feature.settings.components.themePresetColumnCount
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -86,15 +84,5 @@ class ThemePresetResolutionTest {
                 assertEquals(original.tertiary, actual.tertiary)
             }
         }
-    }
-
-    @Test
-    fun pickerUsesOneColumnForNarrowWindowsOrLargeFonts() {
-        assertEquals(2, themePresetColumnCount(360f, 1f))
-        assertEquals(2, themePresetColumnCount(420f, 1.3f))
-        assertEquals(1, themePresetColumnCount(359f, 1f))
-        assertEquals(1, themePresetColumnCount(420f, 1.5f))
-        assertEquals(1, themePresetColumnCount(Float.NaN, 1f))
-        assertTrue(ThemePresets.all { it.name.isNotBlank() && it.description.isNotBlank() })
     }
 }

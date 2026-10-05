@@ -8,6 +8,7 @@ internal enum class ProfileSettingsDestination(
     SyncAndBackups("Cloud Sync & Backups"),
     Library("Library"),
     Appearance("Appearance"),
+    Theme("Theme"),
     Playback("Playback"),
     Downloads("Downloads"),
     Privacy("Privacy"),
