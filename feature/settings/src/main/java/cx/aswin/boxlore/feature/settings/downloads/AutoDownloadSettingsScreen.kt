@@ -1,307 +1,138 @@
 package cx.aswin.boxlore.feature.settings.downloads
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import cx.aswin.boxlore.feature.settings.components.SettingsContent
+import cx.aswin.boxlore.feature.settings.components.SettingsDivider
+import cx.aswin.boxlore.feature.settings.components.SettingsGroup
+import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import cx.aswin.boxlore.feature.settings.components.SettingsSwitchRow
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutoDownloadSettingsScreen(
     userPrefs: UserPreferencesRepository,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val wifiOnly by userPrefs.autoDownloadWifiOnlyStream.collectAsStateWithLifecycle(initialValue = true)
+    val maxEpisodes by userPrefs.autoDownloadMaxEpisodesStream.collectAsStateWithLifecycle(initialValue = 2)
+    val deleteCompleted by userPrefs.autoDownloadDeleteCompletedStream.collectAsStateWithLifecycle(initialValue = true)
+    val background by userPrefs.autoDownloadBackgroundSettingsStream.collectAsStateWithLifecycle(initialValue = AutoDownloadBackgroundSettings())
+    var showHelp by rememberSaveable { mutableStateOf(false) }
+    val actions = remember(scope, userPrefs) {
+        AutoDownloadSettingsActions(
+            scope = scope,
+            saveEpisodeLimit = userPrefs::setAutoDownloadMaxEpisodes,
+            saveBackgroundEnabled = userPrefs::setAutoDownloadBackgroundChecksEnabled,
+            onHelpVisibilityChange = { showHelp = it },
+        )
+    }
 
-    val wifiOnly by userPrefs.autoDownloadWifiOnlyStream.collectAsState(initial = true)
-    val maxEpisodes by userPrefs.autoDownloadMaxEpisodesStream.collectAsState(initial = 2)
-    val deleteCompleted by userPrefs.autoDownloadDeleteCompletedStream.collectAsState(initial = true)
-    val background by userPrefs.autoDownloadBackgroundSettingsStream.collectAsState(initial = AutoDownloadBackgroundSettings())
-
-    var showHowItWorks by remember { mutableStateOf(true) }
-
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val titleStyle = lerp(
-        start = MaterialTheme.typography.displayMedium.copy(fontWeight = GoogleSansWeight.bold),
-        stop = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold),
-        fraction = scrollBehavior.state.collapsedFraction,
-    )
-
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        text = "Auto-Download Settings",
-                        style = titleStyle,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                )
-            )
+    SettingsScaffold(
+        title = "Automatic downloads",
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = actions::showHelp) {
+                Icon(Icons.Rounded.Info, contentDescription = "How automatic downloads work")
+            }
         },
-        containerColor = MaterialTheme.colorScheme.surface
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 200.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ) {
-            // How It Works Guide Card
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                ),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            Row(
+                modifier = Modifier.padding(18.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "How Auto-Download Works",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = GoogleSansWeight.bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
-                        IconButton(
-                            onClick = { showHowItWorks = !showHowItWorks },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (showHowItWorks) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                                contentDescription = "Toggle instructions"
-                            )
-                        }
-                    }
-
-                    AnimatedVisibility(
-                        visible = showHowItWorks,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Column(modifier = Modifier.padding(top = 12.dp)) {
-                            Text(
-                                text = "Unlike Smart Downloads, Auto-Download is enabled on a per-podcast basis so you only automatically fetch shows you care about most.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.9f)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Surface(
-                                color = MaterialTheme.colorScheme.surface,
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = ImageVector.vectorResource(cx.aswin.boxlore.feature.settings.R.drawable.ic_cloud_download),
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                    Text(
-                                        text = "To turn on for a show: Open any Podcast details page and tap the Cloud Download icon.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = GoogleSansWeight.semiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Setting 1: Download over Cellular vs Wi-Fi
-            AutoDownloadBackgroundSettingsCard(
-                settings = background,
-                onEnabledChange = { scope.launch { userPrefs.setAutoDownloadBackgroundChecksEnabled(it) } },
-                onWifiOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundWifiOnly(it) } },
-                onChargingOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundChargingOnly(it) } },
-            )
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                ),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-                        Text(
-                            text = "Download on Wi-Fi Only",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = GoogleSansWeight.semiBold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (wifiOnly) "Auto-downloads will wait until connected to Wi-Fi." else "Auto-downloads will fetch immediately over cellular or Wi-Fi.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = wifiOnly,
-                        onCheckedChange = { checked ->
-                            scope.launch { userPrefs.setAutoDownloadWifiOnly(checked) }
-                        }
-                    )
-                }
-            }
-
-            // Setting 2: Max Episodes Per Podcast Quota
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                ),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "Max Episodes per Podcast",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = GoogleSansWeight.semiBold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Cap the number of auto-downloaded episodes retained per show. Oldest episode is deleted when new ones arrive.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    val options = listOf(1, 2, 3, 5)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        options.forEach { count ->
-                            val isSelected = count == maxEpisodes
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    scope.launch { userPrefs.setAutoDownloadMaxEpisodes(count) }
-                                },
-                                label = {
-                                    Text("$count ${if (count == 1) "episode" else "episodes"}")
-                                },
-                                leadingIcon = if (isSelected) {
-                                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
-                                } else {
-                                    null
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Setting 3: Auto-Delete Completed
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                ),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-                        Text(
-                            text = "Auto-Delete when Completed",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = GoogleSansWeight.semiBold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Automatically remove downloaded files from storage after you finish listening to an episode.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = deleteCompleted,
-                        onCheckedChange = { checked ->
-                            scope.launch { userPrefs.setAutoDownloadDeleteCompleted(checked) }
-                        }
-                    )
+                Icon(Icons.Rounded.CloudDownload, contentDescription = null, modifier = Modifier.size(28.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+                    Text("For the shows you choose", style = MaterialTheme.typography.titleSmall, fontWeight = GoogleSansWeight.semiBold)
+                    Text("Turn on auto-download from each show's page.", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
+
+        SettingsGroup(title = "Downloads") {
+            SettingsSwitchRow(
+                title = "Wi-Fi only",
+                supportingText = "Audio files wait for an unmetered connection.",
+                icon = Icons.Rounded.Wifi,
+                checked = wifiOnly,
+                onCheckedChange = { scope.launch { userPrefs.setAutoDownloadWifiOnly(it) } },
+            )
+        }
+
+        SettingsGroup(title = "Storage") {
+            SettingsContent {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Keep episodes per show", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Replace the oldest automatic download when this limit is reached.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ConnectedOptionSelector(
+                        options = autoDownloadEpisodeLimits.map { it to it.toString() },
+                        selected = maxEpisodes,
+                        onSelect = actions::selectEpisodeLimit,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
+                    )
+                }
+            }
+            SettingsDivider()
+            SettingsSwitchRow(
+                title = "Remove after listening",
+                supportingText = "Delete downloaded files after an episode is finished.",
+                icon = Icons.Rounded.DeleteOutline,
+                checked = deleteCompleted,
+                onCheckedChange = { scope.launch { userPrefs.setAutoDownloadDeleteCompleted(it) } },
+            )
+        }
+
+        AutoDownloadBackgroundSettingsCard(
+            settings = background,
+            onEnabledChange = actions::setBackgroundEnabled,
+            onWifiOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundWifiOnly(it) } },
+            onChargingOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundChargingOnly(it) } },
+        )
+    }
+
+    if (showHelp) {
+        AutoDownloadSettingsHelp(onDismiss = actions::dismissHelp)
     }
 }

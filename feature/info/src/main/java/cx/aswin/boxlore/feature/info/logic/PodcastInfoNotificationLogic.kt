@@ -16,12 +16,16 @@ internal suspend fun togglePodcastNotifications(
     return podcast.copy(notificationsEnabled = enabled)
 }
 
-internal suspend fun enablePodcastNotificationsAndAutoDownload(
+/** Capture the disclosed URL before deferring either toolbar action to confirmation. */
+internal fun requestPodcastNotificationAction(
     podcast: Podcast,
-    setNotifications: suspend (Podcast, Boolean) -> Boolean,
-    setAutoDownload: suspend (String, Boolean) -> Unit,
-): Podcast {
-    val enabled = setNotifications(podcast, true)
-    setAutoDownload(podcast.id, true)
-    return podcast.copy(notificationsEnabled = enabled, autoDownloadEnabled = true)
+    onDisclosureRequired: (() -> Unit) -> Unit,
+    onProceed: (Boolean, String?) -> Unit,
+) {
+    val feedUrl = podcast.feedUrl
+    if (requiresRssNotificationDisclosure(podcast)) {
+        onDisclosureRequired { onProceed(true, feedUrl) }
+    } else {
+        onProceed(false, null)
+    }
 }

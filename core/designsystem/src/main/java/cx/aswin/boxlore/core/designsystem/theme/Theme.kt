@@ -107,13 +107,20 @@ fun resolveBoxLoreColorScheme(
             if (effectiveDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         applySurfaceStyle(baseScheme, effectiveDarkTheme, surfaceStyle)
     } else {
-        val seed = resolveThemeSeedColor(themeBrand)
-        val scheme = generateBrandColorScheme(seed, effectiveDarkTheme, surfaceStyle)
-        if (isExactThemeBrand(themeBrand)) {
-            scheme.withPinnedPrimary(seed)
-        } else {
-            scheme
-        }
+        resolveFixedThemeColorScheme(themeBrand, darkTheme, surfaceStyle)
+    }
+}
+
+/** Shared fixed-colour resolution for app chrome, widgets and Appearance previews. */
+fun resolveFixedThemeColorScheme(themeBrand: String, darkTheme: Boolean, surfaceStyle: String): ColorScheme {
+    val effectiveDarkTheme = computeEffectiveDarkTheme(surfaceStyle, darkTheme)
+    val seed = resolveThemeSeedColor(themeBrand)
+    val scheme = generateBrandColorScheme(seed, effectiveDarkTheme, surfaceStyle)
+    val preset = findThemePreset(themeBrand)
+    return when {
+        preset != null -> scheme.withThemePreset(preset, effectiveDarkTheme)
+        isExactThemeBrand(themeBrand) -> scheme.withPinnedPrimary(seed)
+        else -> scheme
     }
 }
 
@@ -209,6 +216,7 @@ private fun applyClassicOverrides(base: ColorScheme, isDark: Boolean): ColorSche
 }
 
 private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: String): ColorScheme {
+    findThemePreset(surfaceStyle)?.let { return base.withPresetBackground(it, isDark) }
     val style = if (surfaceStyle == SurfaceStyles.DYNAMIC_OLED_WHITE) {
         if (isDark) SurfaceStyles.AMOLED else SurfaceStyles.PURE_WHITE
     } else {
@@ -317,7 +325,7 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
     // Surface lightness values vary by surface style
     val surfaceLevels = getSurfaceLevels(isDark, surfaceStyle, hue, sat)
 
-    return if (isDark) {
+    val scheme = if (isDark) {
         darkColorScheme(
             primary = hslToColor(hue, sat, 0.7f),
             onPrimary = hslToColor(hue, sat * 0.3f, 0.15f),
@@ -374,6 +382,7 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
             surfaceContainerHighest = surfaceLevels.containerHighest
         )
     }
+    return findThemePreset(surfaceStyle)?.let { scheme.withPresetBackground(it, isDark) } ?: scheme
 }
 
 /**

@@ -8,6 +8,22 @@ import org.junit.jupiter.api.Test
 class AppearanceActionsTrackedTest {
 
     @Test
+    fun `complete preset selection forwards one action without changing mode or individual controls`() {
+        val calls = mutableListOf<String>()
+        val tracked = AppearanceActions(
+            onSetThemeConfig = { calls.add("mode") },
+            onToggleDynamicColor = { calls.add("wallpaper") },
+            onSetThemeBrand = { calls.add("accent") },
+            onSetSurfaceStyle = { calls.add("background") },
+            onSetThemePreset = { calls.add(it) },
+        ).trackedForAnalytics()
+
+        tracked.onSetThemePreset("preset:moss")
+
+        assertEquals(listOf("preset:moss"), calls)
+    }
+
+    @Test
     fun `trackedForAnalytics preserves miniplayer seek toggle in both directions`() {
         val recordedValues = mutableListOf<Boolean>()
         val tracked = AppearanceActions(

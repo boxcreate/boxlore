@@ -43,25 +43,42 @@ class PodcastInfoNotificationLogicTest {
         assertTrue(disabled.autoDownloadEnabled)
     }
 
-    @Test fun `ViewModel enable both action preserves RSS consent refusal while enabling downloads`() = runTest {
-        val actions = mutableListOf<String>()
-        val updated = enablePodcastNotificationsAndAutoDownload(
-            rss.copy(autoDownloadEnabled = false),
-            setNotifications = { show, enabled ->
-                assertEquals(rss.id, show.id)
-                assertTrue(enabled)
-                actions += "notifications"
-                false
-            },
-            setAutoDownload = { id, enabled ->
-                assertEquals(rss.id, id)
-                assertTrue(enabled)
-                actions += "download"
+    @Test fun `both notification entry points defer RSS activation and retain the disclosed feed URL`() {
+        var confirmation: (() -> Unit)? = null
+        var proceeded = false
+        val url = "https://publisher.example/original-feed"
+        requestPodcastNotificationAction(
+            rss.copy(feedUrl = url),
+            onDisclosureRequired = { confirmation = it },
+            onProceed = { accepted, disclosed ->
+                assertTrue(accepted)
+                assertEquals(url, disclosed)
+                proceeded = true
             },
         )
-        assertEquals(listOf("notifications", "download"), actions)
-        assertFalse(updated.notificationsEnabled)
-        assertTrue(updated.autoDownloadEnabled)
+        assertFalse(proceeded)
+        confirmation!!.invoke()
+        assertTrue(proceeded)
+    }
+
+    @Test fun `catalog activation and disabling existing RSS notifications need no disclosure`() {
+        val shows = listOf(
+            rss.copy(notificationsEnabled = true),
+            rss.copy(id = "123", sourceType = Podcast.SOURCE_PODCAST_INDEX),
+        )
+        for (show in shows) {
+            var proceeded = false
+            requestPodcastNotificationAction(
+                show,
+                onDisclosureRequired = { error("unexpected disclosure") },
+                onProceed = { accepted, disclosed ->
+                    assertFalse(accepted)
+                    assertEquals(null, disclosed)
+                    proceeded = true
+                },
+            )
+            assertTrue(proceeded)
+        }
     }
 
     @Test fun `disclosure recognizes canonical RSS IDs even with stale source metadata`() {

@@ -53,6 +53,7 @@ import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
 import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
+import cx.aswin.boxlore.feature.settings.pages.ThemeSettingsPage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -258,7 +259,10 @@ fun SettingsScreen(
     )
 
     val actions = SettingsPagesActions(
-        onNavigate = { destination = it },
+        onNavigate = {
+            if (it == ProfileSettingsDestination.Theme) previousDestination = ProfileSettingsDestination.Appearance
+            destination = it
+        },
         onReturnToHub = returnToHub,
         onNavigateToAccountFromSync = {
             previousDestination = ProfileSettingsDestination.SyncAndBackups
@@ -404,6 +408,14 @@ private fun SettingsDestinationContent(
                 state = contentBundle.appearanceSettings.state,
                 actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
                 onBack = actions.onReturnToHub,
+                onThemeClick = { actions.onNavigate(ProfileSettingsDestination.Theme) },
+            )
+
+        ProfileSettingsDestination.Theme ->
+            ThemeSettingsPage(
+                state = contentBundle.appearanceSettings.state,
+                actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
+                onBack = actions.onReturnToHub,
             )
 
         ProfileSettingsDestination.Playback ->
@@ -518,7 +530,7 @@ private fun SettingsDialogs(
 }
 
 private fun AnimatedContentTransitionScope<ProfileSettingsDestination>.settingsDestinationTransitionSpec(): ContentTransform {
-    val enterFromRight = targetState != ProfileSettingsDestination.Hub
+    val enterFromRight = settingsDestinationMovesForward(initialState, targetState)
     val motionSpec =
         spring<IntOffset>(
             dampingRatio = 0.82f,
@@ -575,6 +587,10 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
     onSetThemeBrand = {
         AnalyticsHelper.trackSettingsInteraction("theme_brand_changed", it)
         onSetThemeBrand(it)
+    },
+    onSetThemePreset = {
+        AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)
+        onSetThemePreset(it)
     },
     onSetSurfaceStyle = {
         AnalyticsHelper.trackSettingsInteraction("surface_style_changed", it)

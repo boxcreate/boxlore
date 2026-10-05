@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearance, Playback, Privacy, Library, Downloads, About, Support), dialogs (Accent color, Add RSS, Reset analytics), authentication credential management (Google One Tap, Magic Link, Password), and download preference screens (`AutoDownloadSettingsScreen`, `SmartDownloadsSettingsScreen`). It presents data from injected core dependencies and does not own catalog engines, ranking persistence, playback services, download workers, or Room schemas.
+Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearance, Playback, Privacy, Library, Downloads, About, Support), dialogs (Add RSS, Reset analytics), authentication credential management (Google One Tap, Magic Link, Password), and download preference screens (`AutoDownloadSettingsScreen`, `SmartDownloadsSettingsScreen`). It presents data from injected core dependencies and does not own catalog engines, ranking persistence, playback services, download workers, or Room schemas.
 
 ## Public API
 
@@ -15,9 +15,10 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 - `AutoDownloadSettingsScreen` and `SmartDownloadsSettingsScreen` under `downloads/` for download management.
 - `AccountSettingsPage`, `SyncAndBackupsPage`, `AppearanceSettingsPage`, `PlaybackSettingsPage`, `PrivacySettingsPage`, `LibrarySettingsPage`, `DownloadsSettingsPage`, `AboutSettingsPage`, `SupportDevelopmentPage`.
 - Appearance → Miniplayer, beside Navigation, exposes **Show seek buttons in miniplayer**, default off. `AppearanceUiState` and `AppearanceActions` carry its value and callback; app wiring owns persistence through `:core:prefs`. The existing Playback seek-duration sliders apply to the optional larger miniplayer buttons too.
-- Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
+- Appearance → **Theme** keeps mode, theme selection and color customization on one page. Compact cards show a basic card/button UI split into labelled Light and Dark previews. Default/Minimal/Colorful/Bold each have a horizontally scrolling lazy preview row. Cards leave a visible next-card edge on phones, cap their width on wider windows, and reserve three description lines for steady row height without clipping larger text. Each row retains its browse position and initially reveals its selected theme. There are no filter strips, dialogs or sheets. Material 3's choice explicitly explains that selecting it enables wallpaper colors. One full-width **Colors for [selected theme]** section follows all theme collections with a stable lazy-list key; choosing another theme updates this section without inserting controls between the preview rows. It explains buttons/icons/highlights, retained preset backgrounds, and Material 3's additional background tinting. Its wallpaper switch, named color swatches and inline custom picker explain how to override the colors; restoring a preset's original colors is an explicit action. Re-tapping the selected theme preserves customized colors. Selected previews resolve the actual active inputs in both modes, while unselected previews resolve the colors that selecting them applies. Lazy, stable-key content keeps scrolling light and selection stable. Existing keys, defaults, legacy mode locks and atomic preset persistence remain intact. Theme Back returns to Appearance with the shared reverse page transition.
+- Dialogs: `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
 
-- Auto-Download Settings exposes a separate off-by-default background-check switch, unmetered-network restriction and charging option. Copy explains six-hour checks, mandatory low-battery pausing, additional battery/data use, Android delays, and foreground/push behavior when polling is off. Per-show auto-download toggles never enable the switch.
+- Automatic downloads uses the shared two-line settings header and solid grouped surfaces for Downloads, Storage, and While boxlore is closed. A connected 1/2/3/5 selector replaces scrolling quota chips; a short introduction explains per-show activation. **Backup background checks** is explicitly described as optional recovery when show notifications are off or do not arrive; notifications can already trigger downloads while closed. Its network/charging controls appear only when the off-by-default switch is enabled, retaining their preferences when hidden. Concise state-dependent copy explains foreground/push discovery or battery/data costs and Android delays; the header help dialog holds the full network, consent, discovery and retention explanation. Per-show auto-download never enables background checking.
 
 ## Internal structure
 
@@ -31,9 +32,11 @@ src/main/java/cx/aswin/boxlore/feature/settings/
   ProfileSettingsDestination.kt
   components/
     SettingsRows.kt
-    SettingsScaffold.kt
+    SettingsScaffold.kt (shared column or lazy-list content)
+    ThemeLookCard.kt
+    InlineAccentPicker.kt
+    AccentSwatchGrid.kt
   dialogs/
-    AccentColorPickerDialog.kt
     AddRssFeedDialog.kt
     ResetAnalyticsDialog.kt
   downloads/
@@ -60,6 +63,9 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     BlobAvatarGeometry.kt
     BlobAvatarGenreMood.kt
     AppearanceSettingsPage.kt
+    ThemeSettingsPage.kt
+    ThemeSettingsControls.kt
+    ThemeSettingsLogic.kt
     DownloadsSettingsPage.kt
     EmailVerificationPendingSection.kt
     LibrarySettingsPage.kt
@@ -95,9 +101,11 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 ## Testing notes
 
 - Unit tests live under `feature/settings/src/test`.
+- `AutoDownloadSettingsActionsTest` exercises the same action callbacks and background presentation used by the screen: all four episode limits, invalid-limit rejection, help opening/dismissal, both background-control visibility states, and retaining all network/charging combinations when checks are disabled and re-enabled. No device or screenshot automation is required.
 - `SettingsHeaderTitleTest` covers reduced expanded typography, two-line support throughout collapse, constant compact-row size, monotonic expanded size/line-height changes and invalid scroll fractions without rendering or device automation.
 - Existing coverage includes Settings ViewModel tests, Account auth helper validation, Appearance actions tracking, back navigation action resolution tests (`SettingsBackNavigationTest`), and Roborazzi golden captures for dialogs.
 - `AppearanceActionsTrackedTest` also verifies the miniplayer seek callback is forwarded in both directions through the appearance action wrapper.
+- `ThemePresetResolutionTest` verifies complete preset backgrounds/accents in both modes, app/widget/preview agreement, retained preset backgrounds with custom or wallpaper colors, legacy background locks, existing palette compatibility. `AppearanceActionsTrackedTest` verifies preset selection forwards one cohesive action without firing separate mode/color/background callbacks. `AccentSwatchLayoutTest` covers narrow/invalid grid constraints; `ThemeSettingsLogicTest` verifies section partitions, complete unique choices, legacy normalization, unchanged-theme color preservation, Material 3 selection and plain-language color explanations; back-navigation tests cover Theme → Appearance and direct entry. These are JVM checks without screenshots or device automation.
 
 ```bash
 ./gradlew :feature:settings:testDebugUnitTest

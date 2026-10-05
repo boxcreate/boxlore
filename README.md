@@ -122,8 +122,17 @@ and listen without paywalls, subscriptions, or ads.
 ### Upcoming
 
 <!-- release-upcoming:start -->
-New features and improvements for the next release are currently in development.
-<p align="center"><sub><sub>AI-generated summary; may contain mistakes.<br/>Verify details in the <a href="CHANGELOG.md">changelog</a> and linked pull requests.</sub></sub></p>
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>Choose from sixteen new complete themes, with simple light/dark previews and clearer wallpaper and custom-color controls. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
+<li>Automatic download settings are easier to read, with grouped controls and a separate help guide. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
+<li>Backup background checks now clearly explain how they help when show notifications are off or do not arrive. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
+</ul>
+<b>🐛 Fixes:</b>
+<ul align="left">
+<li>Navigation highlights match your chosen accent, and the miniplayer stays above the navbar when Android navigation buttons are enabled. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
+<li>When automatic downloads depend on opening boxlore, a notice explains this and offers to turn on show notifications. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
+</ul>
 <!-- release-upcoming:end -->
 
 

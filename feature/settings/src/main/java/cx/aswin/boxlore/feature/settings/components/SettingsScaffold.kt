@@ -8,12 +8,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -39,7 +42,6 @@ import androidx.compose.ui.unit.dp
 
 private val SETTINGS_CONTENT_BOTTOM_PADDING = 220.dp
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SettingsScaffold(
     title: String,
@@ -49,6 +51,42 @@ internal fun SettingsScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     onUnconsumedTap: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
+) {
+    SettingsScaffoldFrame(title, onBack, modifier, actions, onUnconsumedTap) {
+        Column(
+            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().verticalScroll(scrollState)
+                .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = SETTINGS_CONTENT_BOTTOM_PADDING),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            content = content,
+        )
+    }
+}
+
+@Composable
+internal fun SettingsLazyScaffold(
+    title: String,
+    onBack: () -> Unit,
+    content: LazyListScope.() -> Unit,
+) {
+    SettingsScaffoldFrame(title, onBack, Modifier, {}, null) {
+        LazyColumn(
+            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth(),
+            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = SETTINGS_CONTENT_BOTTOM_PADDING),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            content = content,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SettingsScaffoldFrame(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier,
+    actions: @Composable RowScope.() -> Unit,
+    onUnconsumedTap: (() -> Unit)?,
+    content: @Composable () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val currentOnUnconsumedTap = rememberUpdatedState(onUnconsumedTap)
@@ -119,21 +157,7 @@ internal fun SettingsScaffold(
                 },
             contentAlignment = Alignment.TopCenter,
         ) {
-            Column(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 720.dp)
-                    .verticalScroll(scrollState)
-                    .padding(
-                        start = 16.dp,
-                        top = 8.dp,
-                        end = 16.dp,
-                        bottom = SETTINGS_CONTENT_BOTTOM_PADDING,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                content = content,
-            )
+            content()
         }
     }
 }
