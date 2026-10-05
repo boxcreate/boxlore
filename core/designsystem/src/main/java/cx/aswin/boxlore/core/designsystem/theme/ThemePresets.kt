@@ -15,7 +15,14 @@ data class ThemePreset(
     val primary: PresetColors,
     val secondary: PresetColors,
     val tertiary: PresetColors,
+    val collection: ThemeCollection = ThemeCollection.COLORFUL,
 )
+
+enum class ThemeCollection(val label: String) {
+    MINIMAL("Minimal"),
+    COLORFUL("Colorful"),
+    BOLD("Bold"),
+}
 
 @Immutable
 data class PresetColors(val light: Color, val dark: Color)
@@ -111,6 +118,66 @@ val ThemePresets: List<ThemePreset> = listOf(
         PresetColors(Color(0xFF4B5D78), Color(0xFFB9C8E7)),
         PresetColors(Color(0xFF62606B), Color(0xFFCBC5D4)),
         PresetColors(Color(0xFF745846), Color(0xFFE4BCA4)),
+    ),
+    ThemePreset(
+        "preset:paper",
+        "Paper",
+        "Warm paper & understated stone",
+        PresetColors(Color(0xFFFFFAEF), Color(0xFF1C1A16)),
+        PresetColors(Color(0xFF645E54), Color(0xFFD5CFC3)),
+        PresetColors(Color(0xFF61624E), Color(0xFFC8CCBA)),
+        PresetColors(Color(0xFF705949), Color(0xFFDDC4B2)),
+        ThemeCollection.MINIMAL,
+    ),
+    ThemePreset(
+        "preset:graphite",
+        "Graphite",
+        "Clean charcoal & silver",
+        PresetColors(Color(0xFFF5F5F3), Color(0xFF161718)),
+        PresetColors(Color(0xFF444746), Color(0xFFCBD1CE)),
+        PresetColors(Color(0xFF54595A), Color(0xFFB9C3C5)),
+        PresetColors(Color(0xFF5B555A), Color(0xFFD0C4CE)),
+        ThemeCollection.MINIMAL,
+    ),
+    ThemePreset(
+        "preset:voltage",
+        "Voltage",
+        "Acid lime, cobalt & electric orchid",
+        PresetColors(Color(0xFFF2F5DC), Color(0xFF131B06)),
+        PresetColors(Color(0xFF4C6500), Color(0xFFCCFF43)),
+        PresetColors(Color(0xFF284B97), Color(0xFF9FBCFF)),
+        PresetColors(Color(0xFF7B4670), Color(0xFFF2ABE5)),
+        ThemeCollection.BOLD,
+    ),
+    ThemePreset(
+        "preset:arcade",
+        "Arcade",
+        "Electric pink & poolside cyan",
+        PresetColors(Color(0xFFFFF0FC), Color(0xFF220B28)),
+        PresetColors(Color(0xFF982683), Color(0xFFFF95E8)),
+        PresetColors(Color(0xFF005E73), Color(0xFF5FE4F4)),
+        PresetColors(Color(0xFF5D448F), Color(0xFFD7B1FF)),
+        ThemeCollection.BOLD,
+    ),
+    ThemePreset(
+        "preset:solar",
+        "Solar",
+        "Burnt orange, hot rose & turquoise",
+        PresetColors(Color(0xFFFFF1D6), Color(0xFF271000)),
+        PresetColors(Color(0xFF8B4511), Color(0xFFFFB44D)),
+        PresetColors(Color(0xFF8B3149), Color(0xFFFFADD0)),
+        PresetColors(Color(0xFF006369), Color(0xFF7DE0D9)),
+        ThemeCollection.BOLD,
+    ),
+    ThemePreset(
+        "preset:cobalt",
+        "Cobalt",
+        "Deep blue & bright apricot",
+        PresetColors(Color(0xFFEAF1FF), Color(0xFF081631)),
+        PresetColors(Color(0xFF154FAF), Color(0xFF8FB8FF)),
+        PresetColors(Color(0xFF94481D), Color(0xFFFFB78A)),
+        PresetColors(Color(0xFF6B398D), Color(0xFFDAB1FC)),
+        ThemeCollection.BOLD,
     ),
 )
 

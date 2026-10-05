@@ -13,12 +13,12 @@ import org.junit.jupiter.api.Test
 
 class ThemePresetsTest {
     @Test
-    fun `ten distinct presets resolve through the existing brand key contract`() {
-        assertEquals(10, ThemePresets.size)
-        assertEquals(10, ThemePresets.map { it.key }.distinct().size)
-        assertEquals(10, ThemePresets.map { it.primary.light }.distinct().size)
-        assertEquals(10, ThemePresets.map { it.background.light }.distinct().size)
-        assertEquals(10, ThemePresets.map { it.background.dark }.distinct().size)
+    fun `sixteen distinct presets resolve through the existing brand key contract`() {
+        assertEquals(16, ThemePresets.size)
+        assertEquals(16, ThemePresets.map { it.key }.distinct().size)
+        assertEquals(16, ThemePresets.map { it.primary.light }.distinct().size)
+        assertEquals(16, ThemePresets.map { it.background.light }.distinct().size)
+        assertEquals(16, ThemePresets.map { it.background.dark }.distinct().size)
         ThemePresets.forEach { preset ->
             assertEquals(preset, findThemePreset(preset.key))
             assertEquals(preset.primary.light, resolveThemeSeedColor(preset.key))
@@ -27,6 +27,18 @@ class ThemePresetsTest {
         }
         assertNull(findThemePreset("preset:unknown"))
         assertEquals(BrandSeeds["violet"]!!.second, resolveThemeSeedColor("preset:unknown"))
+    }
+
+    @Test
+    fun `collections include quiet and bold complete themes without changing existing keys`() {
+        assertEquals(2, ThemePresets.count { it.collection == ThemeCollection.MINIMAL })
+        assertEquals(4, ThemePresets.count { it.collection == ThemeCollection.BOLD })
+        assertEquals(10, ThemePresets.count { it.collection == ThemeCollection.COLORFUL })
+        assertTrue(
+            listOf("aurora", "tide", "moss", "dune", "ember", "rosewood", "iris", "glacier", "lagoon", "ink").all {
+            findThemePreset("preset:$it") != null
+        }
+        )
     }
 
     @Test
