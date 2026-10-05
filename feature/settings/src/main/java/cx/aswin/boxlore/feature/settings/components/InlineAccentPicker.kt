@@ -83,7 +83,7 @@ internal fun InlineAccentPicker(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Custom accent", style = MaterialTheme.typography.titleMedium)
+        Text("Custom button & icon color", style = MaterialTheme.typography.titleMedium)
         Column(
             modifier =
             Modifier
@@ -94,13 +94,14 @@ internal fun InlineAccentPicker(
             ConnectedOptionSelector(
                 options =
                 listOf(
-                    "m3" to "Material 3",
-                    "exact" to "Exact color",
+                    "m3" to "Adjusted",
+                    "exact" to "Exact",
                 ),
                 selected = if (useExact) "exact" else "m3",
                 onSelect = { useExact = it == "exact" },
             )
             CustomAccentPreview(useExact, selectedColor, matchedPrimary)
+            Text("Move the marker to choose a shade. Use the strip below to change the color.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             SaturationValuePanel(
                 hue = hue,
                 saturation = saturation,
@@ -135,7 +136,7 @@ internal fun InlineAccentPicker(
                     onConfirm(key)
                 },
             ) {
-                Text("Apply accent")
+                Text("Use color")
             }
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
@@ -149,10 +150,9 @@ private fun CustomAccentPreview(useExact: Boolean, selectedColor: Color, matched
     Text(
         text =
         if (useExact) {
-            "Not recommended. Not tested for UI readability. " +
-                "Conflicting colours may cause UI issues."
+            "Uses your color unchanged. Text may be harder to read."
         } else {
-            "Recommended. Your colour is a seed and matched to a Material 3 palette."
+            "Adjusts your chosen color for the app’s light and dark modes."
         },
         style = MaterialTheme.typography.bodySmall,
         color =
@@ -164,7 +164,7 @@ private fun CustomAccentPreview(useExact: Boolean, selectedColor: Color, matched
     )
     if (useExact) {
         ColorSwatchPreview(
-            label = "Your color",
+            label = "Button color",
             color = selectedColor,
             hex = selectedColor.toThemeBrandHex(),
         )
@@ -175,7 +175,7 @@ private fun CustomAccentPreview(useExact: Boolean, selectedColor: Color, matched
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ColorSwatchPreview(
-                label = "Seed",
+                label = "Chosen color",
                 color = selectedColor,
                 hex = selectedColor.toThemeBrandHex(),
             )
@@ -185,7 +185,7 @@ private fun CustomAccentPreview(useExact: Boolean, selectedColor: Color, matched
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             ColorSwatchPreview(
-                label = "Material 3",
+                label = "Button color",
                 color = matchedPrimary,
                 hex = matchedPrimary.toThemeBrandHex(),
             )

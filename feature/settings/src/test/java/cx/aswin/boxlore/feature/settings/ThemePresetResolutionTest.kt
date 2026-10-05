@@ -12,6 +12,9 @@ import cx.aswin.boxlore.core.designsystem.theme.resolveBoxLoreChromeColors
 import cx.aswin.boxlore.core.designsystem.theme.resolveBoxLoreColorScheme
 import cx.aswin.boxlore.core.designsystem.theme.resolveFixedThemeColorScheme
 import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
+import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
+import cx.aswin.boxlore.feature.settings.pages.themeLookOptions
+import cx.aswin.boxlore.feature.settings.pages.themePreviewColors
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -83,6 +86,30 @@ class ThemePresetResolutionTest {
                 assertEquals(original.background, actual.background)
                 assertEquals(original.tertiary, actual.tertiary)
             }
+        }
+    }
+
+    @Test
+    fun selectedSplitPreviewsShowCustomColorsInBothModes() {
+        val look = themeLookOptions().first { it.key == "preset:aurora" }
+        val state = AppearanceUiState("dark", false, "exact:#006C4C", look.key)
+        val preview = themePreviewColors(context, state, look, selected = true)
+        assertEquals(Color(0xFF006C4C), preview.light.primary)
+        assertEquals(Color(0xFF006C4C), preview.dark.primary)
+        assertEquals(resolveBoxLoreColorScheme(context, false, false, state.currentThemeBrand, look.key).background, preview.light.background)
+        assertEquals(resolveBoxLoreColorScheme(context, true, false, state.currentThemeBrand, look.key).background, preview.dark.background)
+    }
+
+    @Test
+    fun unselectedMaterial3ShowsWallpaperColorsAndClassicShowsItsOriginalColors() {
+        val state = AppearanceUiState("dark", false, "preset:paper", "preset:paper")
+        listOf(SurfaceStyles.STANDARD, SurfaceStyles.CLASSIC_DYNAMIC).forEach { key ->
+            val look = themeLookOptions().first { it.key == key }
+            val preview = themePreviewColors(context, state, look, selected = false)
+            val brand = if (key == SurfaceStyles.CLASSIC_DYNAMIC) "violet" else state.currentThemeBrand
+            val wallpaper = key == SurfaceStyles.STANDARD
+            assertEquals(resolveBoxLoreColorScheme(context, false, wallpaper, brand, key).primary, preview.light.primary)
+            assertEquals(resolveBoxLoreColorScheme(context, true, wallpaper, brand, key).primary, preview.dark.primary)
         }
     }
 }

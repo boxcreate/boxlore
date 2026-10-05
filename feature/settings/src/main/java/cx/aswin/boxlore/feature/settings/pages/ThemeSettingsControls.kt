@@ -1,8 +1,6 @@
 package cx.aswin.boxlore.feature.settings.pages
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -12,6 +10,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,7 +23,6 @@ import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.BrandSeeds
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
-import cx.aswin.boxlore.core.designsystem.theme.customThemeBrandHex
 import cx.aswin.boxlore.core.designsystem.theme.isCustomThemeBrand
 import cx.aswin.boxlore.core.designsystem.theme.isExactThemeBrand
 import cx.aswin.boxlore.core.designsystem.theme.resolveThemeSeedColor
@@ -47,11 +45,11 @@ internal fun ThemeModeSection(
     val selectedMode = modeLock?.mode ?: ThemeMode.fromKey(currentThemeConfig) ?: ThemeMode.SYSTEM
 
     SettingsGroup(
-        title = "Light or dark",
+        title = "Display mode",
         footer =
         modeLock?.let {
-            "This background was locked to ${it.mode.label.lowercase()}. Choosing another theme unlocks it."
-        } ?: "Every look follows this choice.",
+            "Choose a different display mode to change this saved setting."
+        } ?: "System follows your phone’s light or dark setting.",
     ) {
         SettingsContent {
             if (modeLock != null) {
@@ -91,7 +89,7 @@ private fun ForcedModeBadge(mode: ThemeMode) {
                 modifier = Modifier.size(16.dp),
             )
             Text(
-                text = "Locked to ${mode.label.lowercase()}",
+                text = "Always ${mode.label.lowercase()}",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = GoogleSansWeight.semiBold,
             )
@@ -100,91 +98,61 @@ private fun ForcedModeBadge(mode: ThemeMode) {
 }
 
 @Composable
-internal fun ColorsSection(
-    isDynamicColorEnabled: Boolean,
-    onToggleDynamicColor: (Boolean) -> Unit,
-    currentThemeBrand: String,
-    onSetThemeBrand: (String) -> Unit,
-) {
-    var showColorPicker by remember { mutableStateOf(false) }
-    val customSelected = isCustomThemeBrand(currentThemeBrand)
-    val customPreview = resolveThemeSeedColor(currentThemeBrand)
-    val customHex = customThemeBrandHex(currentThemeBrand)
-    val exactSelected = isExactThemeBrand(currentThemeBrand)
-
+internal fun ThemeColorsSection(state: AppearanceUiState, actions: AppearanceActions, look: ThemeLookOption) {
+    var editingCustomColor by remember { mutableStateOf(false) }
     SettingsGroup(
-        title = "Accent colors",
-        footer =
-        if (isDynamicColorEnabled) {
-            "Uses your wallpaper. Turn off to pick a fixed color."
-        } else {
-            null
-        },
+        title = "Colors for ${look.name}",
+        footer = if (look.isPreset) "Choosing a different theme applies that theme's colors." else null,
     ) {
-        SettingsSwitchRow(
-            title = "Wallpaper colors",
-            supportingText = "Use colors from your home-screen wallpaper",
-            checked = isDynamicColorEnabled,
-            onCheckedChange = onToggleDynamicColor,
-        )
-        AnimatedVisibility(visible = !isDynamicColorEnabled) {
-            val seeds =
-                remember {
-                    BrandSeeds.map { (key, brand) ->
-                        Triple(key, brand.first, brand.second)
-                    }
-                }
-            Column {
-                SettingsDivider()
-                AccentSwatchGrid(
-                    seeds = seeds,
-                    selectedKey = if (customSelected) "" else currentThemeBrand,
-                    onSelect = onSetThemeBrand,
-                )
-                SettingsDivider()
-                SettingsChoiceRow(
-                    title = "Custom color",
-                    supportingText =
-                    when {
-                        exactSelected && customHex != null ->
-                            "$customHex · exact, not recommended"
-                        customSelected && customHex != null -> customHex
-                        else -> "Pick any accent with the full color picker"
-                    },
-                    selected = customSelected,
-                    onClick = { showColorPicker = true },
-                    leading = {
-                        Surface(
-                            modifier = Modifier.size(28.dp),
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                            color = customPreview,
-                            border =
-                            androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                MaterialTheme.colorScheme.outlineVariant,
-                            ),
-                        ) {}
-                    },
-                )
+        SettingsContent {
+            Text(themeColorExplanation(look), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (look.isPreset && (state.isDynamicColorEnabled || state.currentThemeBrand != look.key)) {
+                TextButton(onClick = { actions.onSetThemePreset(look.key) }) { Text("Use ${look.name}'s original colors") }
             }
         }
+        SettingsSwitchRow(
+            title = "Use wallpaper colors",
+            supportingText = "Automatically choose colors from your phone's wallpaper. Turn off to choose your own color.",
+            checked = state.isDynamicColorEnabled,
+            onCheckedChange = actions.onToggleDynamicColor,
+        )
+        if (!state.isDynamicColorEnabled) {
+            FixedThemeColors(state, actions) { editingCustomColor = !editingCustomColor }
+        }
     }
-
-    if (showColorPicker && !isDynamicColorEnabled) {
+    if (editingCustomColor && !state.isDynamicColorEnabled) {
         SettingsGroup {
             SettingsContent {
                 InlineAccentPicker(
-                    initialColor = customPreview,
-                    initialExact = exactSelected,
+                    initialColor = resolveThemeSeedColor(state.currentThemeBrand),
+                    initialExact = isExactThemeBrand(state.currentThemeBrand),
                     onConfirm = { hex ->
-                        onSetThemeBrand(hex)
-                        showColorPicker = false
+                        actions.onSetThemeBrand(hex)
+                        editingCustomColor = false
                     },
-                    onDismiss = { showColorPicker = false },
+                    onDismiss = { editingCustomColor = false },
                 )
             }
         }
     }
+}
+
+@Composable
+private fun FixedThemeColors(state: AppearanceUiState, actions: AppearanceActions, onCustomColor: () -> Unit) {
+    val seeds = remember { BrandSeeds.map { (key, brand) -> Triple(key, brand.first, brand.second) } }
+    SettingsDivider()
+    SettingsContent {
+        Text("Current colors: ${themeAccentSummary(state)}", style = MaterialTheme.typography.labelLarge)
+        Text("Tap a color to use it for buttons, icons and highlights.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    AccentSwatchGrid(seeds = seeds, selectedKey = state.currentThemeBrand, onSelect = actions.onSetThemeBrand)
+    SettingsDivider()
+    SettingsChoiceRow(
+        title = "Custom color",
+        supportingText = "Adjust a color below, then tap Use color to apply it.",
+        selected = isCustomThemeBrand(state.currentThemeBrand),
+        onClick = onCustomColor,
+    )
 }
 
 internal fun selectSurfaceStyle(
