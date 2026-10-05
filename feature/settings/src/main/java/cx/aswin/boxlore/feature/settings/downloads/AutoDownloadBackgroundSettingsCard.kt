@@ -23,13 +23,10 @@ internal fun AutoDownloadBackgroundSettingsCard(
     onWifiOnlyChange: (Boolean) -> Unit,
     onChargingOnlyChange: (Boolean) -> Unit,
 ) {
+    val presentation = autoDownloadBackgroundPresentation(settings)
     SettingsGroup(
         title = "While boxlore is closed",
-        footer = if (settings.enabled) {
-            "Checks about every 6 hours; Android may delay them. Uses extra battery and data and pauses on low battery."
-        } else {
-            "Show notifications can still start downloads while boxlore is closed. Otherwise, new episodes are picked up when you open and refresh."
-        },
+        footer = presentation.footer,
     ) {
         SettingsSwitchRow(
             title = "Backup background checks",
@@ -39,7 +36,7 @@ internal fun AutoDownloadBackgroundSettingsCard(
             onCheckedChange = onEnabledChange,
         )
         AnimatedVisibility(
-            visible = settings.enabled,
+            visible = presentation.controlsVisible,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {

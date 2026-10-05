@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -49,12 +50,20 @@ fun AutoDownloadSettingsScreen(
     val deleteCompleted by userPrefs.autoDownloadDeleteCompletedStream.collectAsStateWithLifecycle(initialValue = true)
     val background by userPrefs.autoDownloadBackgroundSettingsStream.collectAsStateWithLifecycle(initialValue = AutoDownloadBackgroundSettings())
     var showHelp by rememberSaveable { mutableStateOf(false) }
+    val actions = remember(scope, userPrefs) {
+        AutoDownloadSettingsActions(
+            scope = scope,
+            saveEpisodeLimit = userPrefs::setAutoDownloadMaxEpisodes,
+            saveBackgroundEnabled = userPrefs::setAutoDownloadBackgroundChecksEnabled,
+            onHelpVisibilityChange = { showHelp = it },
+        )
+    }
 
     SettingsScaffold(
         title = "Automatic downloads",
         onBack = onBack,
         actions = {
-            IconButton(onClick = { showHelp = true }) {
+            IconButton(onClick = actions::showHelp) {
                 Icon(Icons.Rounded.Info, contentDescription = "How automatic downloads work")
             }
         },
@@ -98,9 +107,9 @@ fun AutoDownloadSettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     ConnectedOptionSelector(
-                        options = listOf(1 to "1", 2 to "2", 3 to "3", 5 to "5"),
+                        options = autoDownloadEpisodeLimits.map { it to it.toString() },
                         selected = maxEpisodes,
-                        onSelect = { scope.launch { userPrefs.setAutoDownloadMaxEpisodes(it) } },
+                        onSelect = actions::selectEpisodeLimit,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
                     )
                 }
@@ -117,13 +126,13 @@ fun AutoDownloadSettingsScreen(
 
         AutoDownloadBackgroundSettingsCard(
             settings = background,
-            onEnabledChange = { scope.launch { userPrefs.setAutoDownloadBackgroundChecksEnabled(it) } },
+            onEnabledChange = actions::setBackgroundEnabled,
             onWifiOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundWifiOnly(it) } },
             onChargingOnlyChange = { scope.launch { userPrefs.setAutoDownloadBackgroundChargingOnly(it) } },
         )
     }
 
     if (showHelp) {
-        AutoDownloadSettingsHelp(onDismiss = { showHelp = false })
+        AutoDownloadSettingsHelp(onDismiss = actions::dismissHelp)
     }
 }

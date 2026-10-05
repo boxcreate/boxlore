@@ -93,6 +93,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 ## Testing notes
 
 - Unit tests live under `feature/settings/src/test`.
+- `AutoDownloadSettingsActionsTest` exercises the same action callbacks and background presentation used by the screen: all four episode limits, invalid-limit rejection, help opening/dismissal, both background-control visibility states, and retaining all network/charging combinations when checks are disabled and re-enabled. No device or screenshot automation is required.
 - `SettingsHeaderTitleTest` covers reduced expanded typography, two-line support throughout collapse, constant compact-row size, monotonic expanded size/line-height changes and invalid scroll fractions without rendering or device automation.
 - Existing coverage includes Settings ViewModel tests, Account auth helper validation, Appearance actions tracking, back navigation action resolution tests (`SettingsBackNavigationTest`), and Roborazzi golden captures for dialogs.
 - `AppearanceActionsTrackedTest` also verifies the miniplayer seek callback is forwarded in both directions through the appearance action wrapper.
