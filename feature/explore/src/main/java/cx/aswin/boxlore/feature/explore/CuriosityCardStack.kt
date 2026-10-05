@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.playback.PlayerState
@@ -496,7 +497,11 @@ private fun EpisodePlayButton(
         contentAlignment = Alignment.Center,
     ) {
         if (isLoading) {
-            CircularProgressIndicator(Modifier.size(28.dp), color = Color.White, strokeWidth = 2.dp)
+            BoxLoreLoader.CircularWavy(
+                size = if (compactSpacing) 30.dp else 34.dp,
+                color = Color.White,
+                trackColor = Color.White.copy(alpha = 0.2f),
+            )
         } else {
             Icon(
                 imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
