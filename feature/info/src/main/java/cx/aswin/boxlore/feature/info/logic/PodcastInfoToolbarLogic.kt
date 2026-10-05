@@ -6,6 +6,17 @@ enum class ToolbarWarning {
     SYSTEM_PERMISSION_BLOCKED,
 }
 
+fun resolveAutoDownloadToggleWarning(
+    currentWarning: ToolbarWarning,
+    autoDownloadEnabled: Boolean,
+    notificationsEnabled: Boolean,
+    backgroundChecksEnabled: Boolean,
+): ToolbarWarning = when {
+    currentWarning == ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> currentWarning
+    !autoDownloadEnabled && !notificationsEnabled && !backgroundChecksEnabled -> ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY
+    else -> ToolbarWarning.NONE
+}
+
 fun toolbarWarningTitle(warning: ToolbarWarning): String = when (warning) {
     ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> "Auto-download is on"
     ToolbarWarning.SYSTEM_PERMISSION_BLOCKED -> "Notifications Disabled"

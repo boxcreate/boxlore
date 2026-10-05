@@ -7,16 +7,10 @@ import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,9 +23,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PushPin
@@ -40,7 +32,6 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -78,10 +69,8 @@ import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.NotificationToggleAction
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.canPromptNotificationPermission
+import cx.aswin.boxlore.feature.info.logic.resolveAutoDownloadToggleWarning
 import cx.aswin.boxlore.feature.info.logic.resolveNotificationToggleAction
-import cx.aswin.boxlore.feature.info.logic.toolbarWarningActionText
-import cx.aswin.boxlore.feature.info.logic.toolbarWarningMessage
-import cx.aswin.boxlore.feature.info.logic.toolbarWarningTitle
 
 internal tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -147,13 +136,19 @@ internal fun handleAutoDownloadToggle(
     podcastAutoDownloadEnabled: Boolean,
     podcastNotificationsEnabled: Boolean,
     backgroundChecksEnabled: Boolean,
-    onShowAppOpenOnlyNotice: () -> Unit,
+    currentWarning: ToolbarWarning,
+    onWarningChange: (ToolbarWarning) -> Unit,
     onToggleAutoDownload: () -> Unit,
 ) {
+    onWarningChange(
+        resolveAutoDownloadToggleWarning(
+            currentWarning = currentWarning,
+            autoDownloadEnabled = podcastAutoDownloadEnabled,
+            notificationsEnabled = podcastNotificationsEnabled,
+            backgroundChecksEnabled = backgroundChecksEnabled,
+        ),
+    )
     onToggleAutoDownload()
-    if (!podcastAutoDownloadEnabled && !podcastNotificationsEnabled && !backgroundChecksEnabled) {
-        onShowAppOpenOnlyNotice()
-    }
 }
 
 internal fun handleToolbarWarningAction(
@@ -181,113 +176,6 @@ internal fun handleToolbarWarningAction(
             }
         }
         else -> {}
-    }
-}
-
-@Composable
-internal fun ToolbarWarningBanner(
-    warning: ToolbarWarning,
-    onDismiss: () -> Unit,
-    onAction: () -> Unit,
-) {
-    val isNotice = warning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY
-    val containerColor = if (isNotice) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer
-    val contentColor = if (isNotice) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onErrorContainer
-    val accentColor = if (isNotice) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-    AnimatedVisibility(
-        visible = warning != ToolbarWarning.NONE,
-        enter = expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
-        exit = shrinkVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
-    ) {
-        androidx.compose.material3.Card(
-            shape = RoundedCornerShape(16.dp),
-            colors =
-            androidx.compose.material3.CardDefaults.cardColors(
-                containerColor = containerColor,
-                contentColor = contentColor,
-            ),
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-        ) {
-            Column(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = if (isNotice) Icons.Rounded.Info else Icons.Rounded.WarningAmber,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        Text(
-                            text = toolbarWarningTitle(warning),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = GoogleSansWeight.bold,
-                            color = contentColor,
-                        )
-                    }
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(24.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = "Dismiss",
-                            modifier = Modifier.size(18.dp),
-                            tint = contentColor,
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = toolbarWarningMessage(warning),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor,
-                )
-
-                val actionText = toolbarWarningActionText(warning)
-
-                if (actionText.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        Button(
-                            onClick = onAction,
-                            colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = accentColor,
-                                contentColor = if (isNotice) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onError,
-                            ),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        ) {
-                            Text(
-                                text = actionText,
-                                fontWeight = GoogleSansWeight.bold,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

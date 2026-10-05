@@ -22,6 +22,7 @@ import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoFolderSyncLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
+import cx.aswin.boxlore.feature.info.logic.enablePodcastNotifications
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -1535,19 +1536,12 @@ class PodcastInfoViewModel(
     }
 
     fun enableShowNotifications() {
-        val currentState = _uiState.value
-        if (currentState is PodcastInfoUiState.Success) {
-            viewModelScope.launch {
-                subscriptionRepository.setNotificationsEnabled(currentState.podcast, true)
-
-                val updatedPodcast =
-                    currentState.podcast.copy(
-                        notificationsEnabled = true,
-                    )
-                _uiState.value = currentState.copy(podcast = updatedPodcast)
-
-                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackShowNotificationToggled(currentState.podcast.id, true)
-            }
+        viewModelScope.launch {
+            enablePodcastNotifications(
+                uiState = _uiState,
+                setNotificationsEnabled = subscriptionRepository::setNotificationsEnabled,
+                trackShowNotificationToggled = cx.aswin.boxlore.core.analytics.AnalyticsHelper::trackShowNotificationToggled,
+            )
         }
     }
 

@@ -515,12 +515,12 @@ fun PodcastInfoScreen(
                         )
                     },
                     onAutoDownloadToggle = {
-                        toolbarWarning = ToolbarWarning.NONE
                         handleAutoDownloadToggle(
                             podcastAutoDownloadEnabled = state.podcast.autoDownloadEnabled,
                             podcastNotificationsEnabled = state.podcast.notificationsEnabled,
                             backgroundChecksEnabled = backgroundChecksEnabled,
-                            onShowAppOpenOnlyNotice = { toolbarWarning = ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY },
+                            currentWarning = toolbarWarning,
+                            onWarningChange = { toolbarWarning = it },
                             onToggleAutoDownload = { viewModel.toggleAutoDownload() },
                         )
                     },
