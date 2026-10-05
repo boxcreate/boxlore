@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
@@ -65,6 +66,8 @@ fun LearnScreen(
     onNavigateToHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val configuration = LocalConfiguration.current
+    val compactSpacing = configuration.screenWidthDp < 360 || configuration.screenHeightDp < 720
     val uiState by viewModel.uiState.collectAsState()
     val stablePlayerState = remember(playbackRepository) {
         playbackRepository.playerState
@@ -232,7 +235,7 @@ fun LearnScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 4.dp)
+                                    .padding(horizontal = 20.dp, vertical = if (compactSpacing) 0.dp else 4.dp)
                             ) {
                                 LoreLogo(
                                     accentColor = accentTransition.color,
@@ -254,7 +257,7 @@ fun LearnScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(if (compactSpacing) 8.dp else 16.dp))
                             CuriosityCardStack(
                                 questions = state.questionsStack,
                                 swipeState = swipeState,
@@ -274,7 +277,7 @@ fun LearnScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
-                                    .padding(horizontal = 20.dp)
+                                    .padding(horizontal = if (compactSpacing) 12.dp else 20.dp)
                             )
                         }
                     }
