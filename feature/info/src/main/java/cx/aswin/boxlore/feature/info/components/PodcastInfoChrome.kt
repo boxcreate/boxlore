@@ -154,14 +154,14 @@ internal fun handleAutoDownloadToggle(
 internal fun handleToolbarWarningAction(
     warning: ToolbarWarning,
     context: Context,
-    viewModel: PodcastInfoViewModel,
+    onEnableNotifications: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onShowPermissionBlockedWarning: () -> Unit,
 ) {
     when (warning) {
         ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY -> {
             if (areAppNotificationsEnabled(context)) {
-                viewModel.enableShowNotifications()
+                onEnableNotifications()
             } else if (canPromptRuntimeNotificationPermission(context)) {
                 onRequestNotificationPermission()
             } else {

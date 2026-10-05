@@ -23,6 +23,7 @@ import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoFolderSyncLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
 import cx.aswin.boxlore.feature.info.logic.enablePodcastNotifications
+import cx.aswin.boxlore.feature.info.logic.togglePodcastAutoDownload
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -1490,22 +1492,24 @@ class PodcastInfoViewModel(
         }
     }
 
-    fun toggleNotifications() {
+    fun toggleNotifications(rssDisclosureAccepted: Boolean = false, disclosedFeedUrl: String? = null) {
         val currentState = _uiState.value
         if (currentState is PodcastInfoUiState.Success) {
             viewModelScope.launch {
-                val currentEnabled = currentState.podcast.notificationsEnabled
-                val newEnabled = !currentEnabled
-
-                subscriptionRepository.setNotificationsEnabled(currentState.podcast, newEnabled)
-
-                // Refresh UI State
-                val updatedPodcast =
-                    currentState.podcast.copy(
-                        notificationsEnabled = newEnabled,
-                        autoDownloadEnabled = currentState.podcast.autoDownloadEnabled,
-                    )
-                _uiState.value = currentState.copy(podcast = updatedPodcast)
+                val updatedPodcast = cx.aswin.boxlore.feature.info.logic.togglePodcastNotifications(
+                    currentState.podcast,
+                    rssDisclosureAccepted,
+                    disclosedFeedUrl,
+                    subscriptionRepository::setNotificationsEnabled,
+                )
+                val newEnabled = updatedPodcast.notificationsEnabled
+                _uiState.update { latest ->
+                    if (latest is PodcastInfoUiState.Success && latest.podcast.id == currentState.podcast.id) {
+                        latest.copy(podcast = latest.podcast.copy(notificationsEnabled = newEnabled))
+                    } else {
+                        latest
+                    }
+                }
 
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackShowNotificationToggled(
                     currentState.podcast.id,
@@ -1518,28 +1522,18 @@ class PodcastInfoViewModel(
     }
 
     fun toggleAutoDownload() {
-        val currentState = _uiState.value
-        if (currentState is PodcastInfoUiState.Success) {
-            viewModelScope.launch {
-                val currentEnabled = currentState.podcast.autoDownloadEnabled
-                val newEnabled = !currentEnabled
-
-                subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, newEnabled)
-
-                // Refresh UI State
-                val updatedPodcast = currentState.podcast.copy(autoDownloadEnabled = newEnabled)
-                _uiState.value = currentState.copy(podcast = updatedPodcast)
-
-                android.util.Log.d("PodcastInfoViewModel", "Auto-download toggled for ${currentState.podcast.title}: $newEnabled")
-            }
+        viewModelScope.launch {
+            togglePodcastAutoDownload(_uiState, subscriptionRepository::setAutoDownloadEnabled)
         }
     }
 
-    fun enableShowNotifications() {
+    fun enableShowNotifications(rssDisclosureAccepted: Boolean = false, disclosedFeedUrl: String? = null) {
         viewModelScope.launch {
             enablePodcastNotifications(
                 uiState = _uiState,
-                setNotificationsEnabled = subscriptionRepository::setNotificationsEnabled,
+                setNotificationsEnabled = { podcast, enabled ->
+                    subscriptionRepository.setNotificationsEnabled(podcast, enabled, rssDisclosureAccepted, disclosedFeedUrl)
+                },
                 trackShowNotificationToggled = cx.aswin.boxlore.core.analytics.AnalyticsHelper::trackShowNotificationToggled,
             )
         }

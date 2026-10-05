@@ -159,7 +159,7 @@ internal object NewEpisodeNotifications {
         null
     }
 
-    fun show(context: Context, podcastId: String, data: Map<String, String>, local: cx.aswin.boxlore.core.model.Episode? = null, fetchArtwork: Boolean = false) {
+    fun show(context: Context, podcastId: String, data: Map<String, String>, local: cx.aswin.boxlore.core.model.Episode? = null, fetchArtwork: Boolean = false, canPresent: () -> Boolean = { true }) {
         val releaseKey = NewEpisodeDeliveryWorker.workName(data + ("podcastId" to podcastId))
         if (fetchArtwork && !isCurrentRelease(context, podcastId, releaseKey)) return
         val details = resolveNewEpisodeDetails(podcastId, data, local)
@@ -167,6 +167,7 @@ internal object NewEpisodeNotifications {
         synchronized(updateLock) {
             // Recheck after artwork I/O, before updating the shared PendingIntent or notification slot.
             if (fetchArtwork && !isCurrentRelease(context, podcastId, releaseKey)) return
+            if (!canPresent()) return
             showNewEpisodeNotification(context, podcastId, details, fetchArtwork, releaseKey, bitmap)
         }
     }

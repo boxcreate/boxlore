@@ -185,3 +185,33 @@ describe('backfill-tracked-podcast-feeds-lib', () => {
         );
     });
 });
+
+describe('RSS tracking backup and repair', () => {
+    it('never sends RSS-only registrations to catalog matching', async () => {
+        assert.deepEqual(missingTrackedPodcasts({ 'rss:abc~device': { title: 'Private show' } }), []);
+        const resolved = await resolveTrackedPodcastFeed({ id: 'rss:abc~device', title: 'Private', apiBaseUrl: 'https://api.example', appKey: 'key', fetchImpl: async () => { assert.fail('RSS must never query a catalog'); } });
+        assert.equal(resolved, '');
+    });
+
+    it('backs up consented public feed metadata without device registration IDs', () => {
+        const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'rss-tracking-backup-'));
+        try {
+            const result = writeWeeklyTrackedPodcastBackup({ directory, now: new Date('2026-10-05'), trackedPodcasts: {
+                'rss:abc~device-a': { title: 'Public', feedUrl: 'https://example.com/public.xml' },
+                'rss:abc~device-b': { title: 'Public', feedUrl: 'https://example.com/public.xml' },
+                'rss:abc~device-c': { title: 'Other accepted feed', feedUrl: 'https://example.com/other.xml' },
+                '123': { title: 'Catalog', feedUrl: 'https://example.com/catalog.xml' },
+            } });
+            const text = fs.readFileSync(path.join(directory, result.filename), 'utf8');
+            const backup = JSON.parse(text);
+            const scope = require('./check-new-episodes-lib').rssScopeId('rss:abc', 'https://example.com/public.xml');
+            const otherScope = require('./check-new-episodes-lib').rssScopeId('rss:abc', 'https://example.com/other.xml');
+            assert.deepEqual(Object.keys(backup), ['123', scope, otherScope]);
+            assert.equal(backup[scope].feedUrl, 'https://example.com/public.xml');
+            assert.equal(backup[otherScope].feedUrl, 'https://example.com/other.xml');
+            assert.equal(text.includes('device-a'), false);
+            assert.equal(text.includes('device-b'), false);
+            assert.equal(text.includes('device-c'), false);
+        } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+    });
+});

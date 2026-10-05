@@ -124,6 +124,8 @@ and listen without paywalls, subscriptions, or ads.
 <!-- release-upcoming:start -->
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Imported RSS shows now refresh and support automatic and Smart Downloads. Existing imports upgrade while keeping your saved state. <a href="https://github.com/boxcreate/boxlore/pull/1098"><img src="https://img.shields.io/badge/PR-1098-6750A4?style=flat-square" alt="PR #1098" height="18"/></a></li>
+<li>Enable release notifications for public RSS feeds after confirmation. Keep notifications off for private or premium feeds because the shared checker publishes feed URLs in public backups. <a href="https://github.com/boxcreate/boxlore/pull/1098"><img src="https://img.shields.io/badge/PR-1098-6750A4?style=flat-square" alt="PR #1098" height="18"/></a></li>
 <li>Choose from sixteen new complete themes, with simple light/dark previews and clearer wallpaper and custom-color controls. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
 <li>Automatic download settings are easier to read, with grouped controls and a separate help guide. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
 <li>Backup background checks now clearly explain how they help when show notifications are off or do not arrive. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>

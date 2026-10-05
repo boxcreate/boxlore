@@ -63,6 +63,14 @@ class PodcastDaoInMemoryTest {
         assertNull(dao.getPodcast("missing"))
     }
 
+    @Test
+    fun rssNotificationMigrationIncludesDisabledAndUnsubscribedCanonicalRows() = runTest {
+        dao.upsert(createPodcast("rss:disabled", isSubscribed = true, notificationsEnabled = false))
+        dao.upsert(createPodcast("rss:removed", isSubscribed = false))
+        dao.upsert(createPodcast("123", isSubscribed = true, notificationsEnabled = true))
+        assertEquals(listOf("rss:disabled", "rss:removed"), dao.getRssNotificationRows().map { it.podcastId })
+    }
+
     @Suppress("LongParameterList")
     private fun createPodcast(
         podcastId: String,

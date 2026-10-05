@@ -467,6 +467,55 @@ class NewEpisodePushHydrationTest {
         assertNull(result)
     }
 
+    @Test fun pureRssPushRefreshesSavedFeedAndHydratesCanonicalNegativeIdWithoutCatalogLookup() = runBlocking {
+        val id = "rss:private-show"
+        val savedUrl = "https://publisher.example/feed?token=private"
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        database.podcastDao().upsert(
+            cx.aswin.boxlore.core.database.PodcastEntity(
+            id,
+                "RSS",
+                "Author",
+                "",
+                null,
+                sourceType = cx.aswin.boxlore.core.database.PodcastEntity.SOURCE_RSS,
+            isSubscribed = true,
+                feedUrl = savedUrl,
+        )
+        )
+        var body = """<rss version="2.0"><channel><title>RSS</title><item><guid>old</guid><title>Old</title><pubDate>Wed, 01 Jan 2020 00:00:00 GMT</pubDate><enclosure url="https://cdn/old.mp3"/></item></channel></rss>"""
+        var gets = 0
+        val client = object : cx.aswin.boxlore.core.rss.RssFeedClient() {
+            override suspend fun fetch(url: String): cx.aswin.boxlore.core.rss.RssFetchResult {
+                assertEquals(savedUrl, url)
+                gets++
+                return cx.aswin.boxlore.core.rss.RssFetchResult(url, null, null, body.toByteArray())
+            }
+        }
+        val rss = cx.aswin.boxlore.core.rss.RssPodcastRepository.createForTests(context, database, client)
+        rss.refreshCatalog(id).getOrThrow()
+        val oldId = rss.episodeCatalog.findByCatalogKey(id, "old", null)!!.id
+        body = """<rss version="2.0"><channel><title>RSS</title><item><guid>new</guid><title>New</title><pubDate>Thu, 02 Jan 2020 00:00:00 GMT</pubDate><enclosure url="https://cdn/new.mp3"/></item></channel></rss>"""
+        val shared = cx.aswin.boxlore.core.catalog.SubscribedEpisodeCatalog(
+            cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository.create(database, client),
+            rss.episodeCatalog,
+        )
+        val sources = NewEpisodePushHydration.Sources(
+            subscriptionRepository,
+            localEpisodeCatalog = shared,
+            loadPiBaseline = { error("Pure RSS cannot query the catalog") }
+        )
+        val matched = NewEpisodePushHydration.resolveLocalEpisode(id, "https://unrelated.example/feed", "https://cdn/new.mp3", "new", sources)!!
+        assertEquals(id, matched.podcastId)
+        assertTrue(matched.id.toLong() < 0)
+        assertEquals("https://cdn/new.mp3", matched.audioUrl)
+        assertEquals(2, gets)
+        assertEquals(oldId, rss.episodeCatalog.findByCatalogKey(id, "old", null)!!.id)
+        assertEquals(matched.id, NewEpisodePushHydration.resolveLocalEpisode(id, null, "https://cdn/new.mp3", "new", sources)!!.id)
+        assertEquals(2, gets)
+        assertNull(NewEpisodePushHydration.resolveLocalEpisode(id, null, "https://cdn/missing.mp3", "missing", sources))
+    }
+
     private fun episode(id: String, audioUrl: String = "https://cdn.example.com/ep.mp3",) = Episode(
         id = id,
         title = "Feed ep",

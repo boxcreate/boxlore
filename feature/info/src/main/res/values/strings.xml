@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="rss_notification_disclosure_title">Turn on episode notifications?</string>
+    <string name="rss_notification_disclosure_body">Turning this on will make the feed link public. Keep notifications off for private or premium feeds. You can still listen, refresh and download episodes.</string>
+    <string name="rss_notification_disclosure_confirm">Enable for public feed</string>
+    <string name="rss_notification_disclosure_dismiss">Keep notifications off</string>
     <string name="episode_selection_clear">Clear selection</string>
     <string name="episode_selection_download">Download selected episodes</string>
     <string name="episode_selection_mark_completed">Mark selected episodes completed</string>

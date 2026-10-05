@@ -525,6 +525,7 @@ class SubscriptionSyncResolverTest {
         resolver.resolveSubscription(remoteDto, syncedAt = 2000L)
 
         assertTrue(fakeNotificationPort.topicUpdates.isEmpty())
+        assertFalse(podcastDao.getPodcast("rss:custom-feed")!!.notificationsEnabled)
     }
 
     private class FakePodcastNotificationSyncPort : cx.aswin.boxlore.core.catalog.ports.PodcastNotificationSyncPort {

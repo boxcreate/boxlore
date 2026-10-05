@@ -6,6 +6,8 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 
 ## Public API
 
+- Add RSS uses a single localizable instruction to paste the podcast’s RSS feed link and add it to the library. The feed-link publication warning appears only in Podcast Info when notifications are enabled. Subscription creation enables normal foreground refresh for all supported feeds, including those without HEAD validators.
+
 - `SettingsScreen`, `SettingsViewModel`, `SettingsViewModelAssembler`, and `ProfileSettingsDestination` for the settings hub and sub-pages.
 - Shared `SettingsScaffold` headers use a smaller 36sp expanded title and naturally wrap to two lines when needed, including Cloud Sync & Backups. The expanded title smoothly reduces to 22sp on scroll; the separate compact row always uses 22sp and retains two-line support for narrow screens and larger system fonts. Material's two-row app bar measures the title height, so a hidden expanded title cannot inflate the navigation row or force a single-line ellipsis.
 - `SettingsScreenConfig` includes `isOnboarding: Boolean` (used by app navigation to keep onboarding mode active and bypass the hub on return), `onSendFeedback: (() -> Unit)?` to route to feedback, and `resolveSettingsBackAction` for deterministic back-handler actions.

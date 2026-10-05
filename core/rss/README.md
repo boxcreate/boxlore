@@ -6,6 +6,11 @@ Owns RSS feed fetching, parsing, deterministic ID generation, episode catalog ma
 
 ## Public API
 
+Failed automatic fetches record a six-hour retry boundary while keeping catalogs stale and retaining last-good rows; manual refresh and release pushes bypass it.
+
+- `RssEpisodeCatalog` adapts true RSS subscriptions to the same refresh/read contract as catalog shows, using `rss_episodes` and the saved `rss:` identity. Conditional GET supports feeds that reject HEAD; feeds without validators share the six-hour cooldown. Manual/push refresh bypasses it. Anchored playback windows continue chronologically regardless of list sort, matching the PI adapter; blank search terms return no results. Existing imports with legacy freshness capability or missing rows receive an in-place repair, without catalog matching. Refresh re-reads settings after network I/O and checks cancellation/authorization before persistence. Failed/empty feeds retain last-good rows; sticky IDs and removed-from-feed archive rows remain intact. The full-feed semaphore is shared with the PI adapter. Foreground/push persists call the download listener; background discovery suppresses that callback.
+- `restoreSubscription` keeps the saved podcast ID across feed URL redirects. Re-adding an existing feed preserves its auto-download and notification settings.
+
 - `RssFeedClient` fetches feeds, handles conditional freshness checks, and parses RSS/Atom data. HEAD 405/501 falls through to a conditional GET (`RssUnchangedLogic`) instead of treating the feed as changed.
 - `RssPodcastRepository` implements `RssSubscriptionPort` and manages RSS podcast and episode catalog operations. Refresh and subscribe remap parsed rows through `StickyRssEpisodeRemap.prepare` before writing `latestEpisode` and `rss_episodes`, so stored `episodeId`s never remint. `getEpisodesAround` queries forward-continuation episodes via `RssEpisodeDao.getEpisodesAfter` for same-show queue playback.
 - `RssPodcastRepository.legacySubscriptionRepair` exposes `LegacyRssSubscriptionRepair`. `inspect` returns a `LegacyRssFeedSnapshot` without mutating Room; `upgrade` returns a `LegacyRssUpgradeOutcome` and atomically copies a verified RSS catalog under a Podcast Index id without re-keying episodes. Both share the per-podcast refresh lock with `refreshCatalog`.
@@ -63,7 +68,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 
 - Production `RssPodcastRepository` is application-scoped through `AppContainer` and shared holders.
 - Feed fetch, parse, refresh, and database operations run through suspend APIs on IO-oriented dispatchers.
-- Freshness checks cap concurrent HEAD requests and use per-podcast locks to avoid duplicate refreshes.
+- Freshness checks share a bounded conditional GET budget and use per-podcast locks to avoid duplicate refreshes.
 
 ## Persistence & identity
 

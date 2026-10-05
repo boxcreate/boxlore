@@ -22,6 +22,7 @@ Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays
 - Do **not** hand-edit `CHANGELOG.md` or README Upcoming / What's New regions (`<!-- release-upcoming:* -->` / `<!-- release-whats-new:* -->`) — `changelog-on-merge` owns those. Write the exact bullets in the PR **Release copy** markers instead; the merge/release scripts paste them as-is and must not Groq-rewrite filled regions. Hand-edits of CHANGELOG/README are OK only for intentional release-note rewrites with matching script contracts.
 - **boxlore-only:** do not change other `boxcreate` repos or org-wide bot settings unless asked. Keep proxy/backend internals out of public Android PR text.
 - Product name in user-facing copy is **boxlore** (all lowercase), not “Boxlore” / “BoxLore”.
+- **Mandatory UX writing skill:** Before drafting or changing any text shown in the app, read and apply the available `ux-writing-content-design` skill's `SKILL.md` and relevant references, even when the user does not explicitly invoke it. This includes titles, labels, buttons, instructions, dialogs, errors, notifications, empty/loading/success states, and accessibility descriptions. Review wording in the surrounding UI and verify that it accurately describes the app's behavior.
 - Cards / panels: solid Material 3 surfaces only — no glassmorphism / translucent card backgrounds.
 
 ## Source of truth (priority order)

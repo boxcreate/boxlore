@@ -21,6 +21,7 @@ class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : Cor
         suspend fun resolveEpisode(podcastId: String, data: Map<String, String>): cx.aswin.boxlore.core.model.Episode?
         suspend fun acceptRelease(podcastId: String, episode: cx.aswin.boxlore.core.model.Episode)
         suspend fun scanCached(podcastId: String)
+        suspend fun canNotify(podcastId: String, feedUrl: String?): Boolean
         suspend fun updateNotification(podcastId: String, data: Map<String, String>, episode: cx.aswin.boxlore.core.model.Episode)
     }
 
@@ -31,28 +32,37 @@ class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : Cor
         val podcastId = FcmPayloadParser.podcastId(data) ?: return Result.failure()
         return try {
             val show = dependencies.getShow(podcastId)
-            if (show?.isSubscribed != true) return Result.success()
+            if (!acceptsRelease(show, podcastId, data)) return Result.success()
             val local = dependencies.resolveEpisode(podcastId, data)
+            val current = dependencies.getShow(podcastId)
+            if (!acceptsRelease(current, podcastId, data)) return Result.success()
             if (local != null) dependencies.acceptRelease(podcastId, local)
             dependencies.scanCached(podcastId)
-            if (show.notificationsEnabled && local != null) {
-                // Update the already posted bounded slot with the exact Room ID and artwork.
-                try {
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                        dependencies.updateNotification(podcastId, data, local)
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    android.util.Log.w("NewEpisodeDeliveryWorker", "Notification update failed", e)
-                }
-            }
+            updateAlert(podcastId, data, current, local)
             if (local == null && runAttemptCount < MAX_RETRIES) Result.retry() else Result.success()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             android.util.Log.w("NewEpisodeDeliveryWorker", "Publisher release hydration failed", e)
             if (runAttemptCount < MAX_RETRIES) Result.retry() else Result.failure()
+        }
+    }
+
+    private fun acceptsRelease(show: cx.aswin.boxlore.core.database.PodcastEntity?, podcastId: String, data: Map<String, String>): Boolean =
+        show?.isSubscribed == true && cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.acceptsRelease(podcastId, show.feedUrl, FcmPayloadParser.feedUrl(data))
+
+    private suspend fun updateAlert(podcastId: String, data: Map<String, String>, show: cx.aswin.boxlore.core.database.PodcastEntity?, local: cx.aswin.boxlore.core.model.Episode?) {
+        if (show?.notificationsEnabled != true || local == null) return
+        if (!dependencies.canNotify(podcastId, FcmPayloadParser.feedUrl(data))) return
+        // Update the already posted bounded slot with the exact Room ID and artwork.
+        try {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                dependencies.updateNotification(podcastId, data, local)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.w("NewEpisodeDeliveryWorker", "Notification update failed", e)
         }
     }
 
@@ -83,8 +93,13 @@ class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : Cor
             DownloadsDependenciesHolder.require().autoDownloadCoordinator.scanCached(podcastId)
         }
 
+        override suspend fun canNotify(podcastId: String, feedUrl: String?): Boolean =
+            SharedAppDependenciesHolder.require().subscriptionRepository.canPresentEpisodeNotification(podcastId, feedUrl)
+
         override suspend fun updateNotification(podcastId: String, data: Map<String, String>, episode: cx.aswin.boxlore.core.model.Episode) {
-            NewEpisodeNotifications.show(context, podcastId, data, episode, fetchArtwork = true)
+            NewEpisodeNotifications.show(context, podcastId, data, episode, fetchArtwork = true) {
+                kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { canNotify(podcastId, FcmPayloadParser.feedUrl(data)) }
+            }
         }
     }
 
@@ -94,6 +109,7 @@ class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : Cor
         fun workName(data: Map<String, String>): String {
             val key = listOf(
                 FcmPayloadParser.podcastId(data),
+                FcmPayloadParser.feedUrl(data),
                 FcmPayloadParser.guid(data),
                 FcmPayloadParser.enclosureUrl(data),
                 FcmPayloadParser.episodeId(data)

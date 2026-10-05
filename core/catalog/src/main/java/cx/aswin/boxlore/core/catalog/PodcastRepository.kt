@@ -456,23 +456,22 @@ class PodcastRepository(
         }
     }
 
-    suspend fun syncSubscriptions(feedIds: List<String>): Map<String, Episode> = withContext(Dispatchers.IO) {
-        try {
-            val podcastIndexIds = feedIds.filterNot { it.startsWith("rss:") }
-            if (podcastIndexIds.isEmpty()) return@withContext emptyMap()
-
-            val readyIds = podcastIndexIds.filter { isLocalCatalogReady(it) }.toSet()
-            val optedIn = loadOptedInPodcastIds()
-            val piIds = podcastIndexIds.filterNot { it in readyIds || it in optedIn }
-            val piTips = fetchPiSyncTips(piIds)
-            val catalogTips = loadLocalCatalogTips(readyIds.toList())
-            val extrasTips =
-                loadCachedFeedTips(podcastIndexIds.filter { it in optedIn && it !in readyIds })
-            piTips + catalogTips + extrasTips
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            emptyMap()
+    suspend fun syncSubscriptions(feedIds: List<String>, runPostPersistCallback: Boolean = true): Map<String, Episode> = withContext(Dispatchers.IO) {
+        kotlinx.coroutines.coroutineScope {
+            val rssTips = async { loadRssSyncTips(feedIds, runPostPersistCallback) }
+            val piTips = try {
+                val podcastIndexIds = feedIds.filterNot { it.startsWith("rss:") }
+                val readyIds = podcastIndexIds.filter { isLocalCatalogReady(it) }.toSet()
+                val optedIn = loadOptedInPodcastIds()
+                val piIds = podcastIndexIds.filterNot { it in readyIds || it in optedIn }
+                fetchPiSyncTips(piIds) + loadLocalCatalogTips(readyIds.toList()) +
+                    loadCachedFeedTips(podcastIndexIds.filter { it in optedIn && it !in readyIds })
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                emptyMap()
+            }
+            piTips + rssTips.await()
         }
     }
 

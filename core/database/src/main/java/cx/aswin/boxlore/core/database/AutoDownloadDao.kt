@@ -52,6 +52,8 @@ interface AutoDownloadDao {
         """
         INSERT OR IGNORE INTO auto_download_releases(episodeId, podcastId, state)
         SELECT episodeId, podcastId, 'handled' FROM local_episodes WHERE podcastId = :podcastId
+        UNION ALL
+        SELECT episodeId, podcastId, 'handled' FROM rss_episodes WHERE podcastId = :podcastId
     """
     )
     suspend fun seedExisting(podcastId: String)

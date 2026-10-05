@@ -346,7 +346,7 @@ class LibraryBackupManager(
             LibraryBackupImportLogic.runRestore(
                 block = {
                     rssPodcastRepository
-                        .addSubscription(feedUrl)
+                        .restoreSubscription(feedUrl, entity.podcastId)
                         .podcast
                 },
                 onFailure = { error ->

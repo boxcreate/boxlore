@@ -228,21 +228,23 @@ class SubscriptionRepositoryTest {
     }
 
     @Test
-    fun setNotificationsEnabledForRssForcesOff() = runTest {
+    fun rssNotificationsRequireDisclosureAndDoNotDisableAutoDownload() = runTest {
         repository.subscribe(podcast(id = "-3001", sourceType = Podcast.SOURCE_RSS, feedUrl = "https://feed"))
+        repository.setAutoDownloadEnabled("-3001", true)
         repository.setNotificationsEnabled(podcast(id = "-3001", sourceType = Podcast.SOURCE_RSS), true)
 
         val stored = podcastDao.getPodcast("-3001")!!
         assertFalse(stored.notificationsEnabled)
-        assertFalse(stored.autoDownloadEnabled)
+        assertTrue(stored.autoDownloadEnabled)
     }
 
     @Test
-    fun setAutoDownloadEnabledForRssForcesOff() = runTest {
+    fun setAutoDownloadEnabledForRssPersistsWithoutNotifications() = runTest {
         repository.subscribe(podcast(id = "-3002", sourceType = Podcast.SOURCE_RSS, feedUrl = "https://feed"))
         repository.setAutoDownloadEnabled("-3002", true)
 
-        assertFalse(podcastDao.getPodcast("-3002")!!.autoDownloadEnabled)
+        assertTrue(podcastDao.getPodcast("-3002")!!.autoDownloadEnabled)
+        assertFalse(podcastDao.getPodcast("-3002")!!.notificationsEnabled)
     }
 
     @Test

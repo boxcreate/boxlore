@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="home_rss_feed_source">RSS feed</string>
     <string name="home_mix_daily_title">Daily Mix</string>
     <string name="home_mix_offline_title">Offline Mix</string>
     <string name="home_mix_change_mode">Change mix</string>

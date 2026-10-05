@@ -117,7 +117,10 @@ class AppContainer(
 
     /** Single install path for RSS; production callers must not call getInstance. */
     override val rssPodcastRepository: RssPodcastRepository by lazy {
-        RssPodcastRepository.create(appContext, database).also(RssPodcastRepository::install)
+        RssPodcastRepository.create(appContext, database).also { repository ->
+            RssPodcastRepository.install(repository)
+            repository.episodeCatalog.onCatalogPersisted = { id -> autoDownloadCoordinator.scanCached(id) }
+        }
     }
 
     /**
@@ -136,6 +139,15 @@ class AppContainer(
                 DownloadRepository.relinkDownloadCache(appContext, oldId, newId)
             },
             onCatalogPersisted = { id -> autoDownloadCoordinator.scanCached(id) },
+        )
+    }
+
+    /** Shared source-aware catalog for automation, foreground sync and push hydration. */
+    val subscribedEpisodeCatalog: cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort by lazy {
+        cx.aswin.boxlore.core.catalog.SubscribedEpisodeCatalog(
+            localEpisodeCatalogRepository,
+            rssPodcastRepository.episodeCatalog,
+            isSubscribed = { id -> database.podcastDao().getPodcast(id)?.isSubscribed == true }
         )
     }
 
@@ -171,7 +183,7 @@ class AppContainer(
             context = appContext,
             rssRepository = rssPodcastRepository,
             episodeSupplementRepository = episodeSupplementRepository,
-            localEpisodeCatalog = localEpisodeCatalogRepository,
+            localEpisodeCatalog = subscribedEpisodeCatalog,
         )
     }
 
@@ -219,7 +231,7 @@ class AppContainer(
         cx.aswin.boxlore.core.downloads.AutoDownloadCoordinator.create(
             appContext,
             database,
-            localEpisodeCatalogRepository,
+            subscribedEpisodeCatalog,
             userPreferencesRepository,
             recoverFeedUrl = { id -> cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(podcastRepository.getPodcastDetails(id)?.feedUrl) },
             loadInitialBaseline = { id -> podcastRepository.loadPiEpisodesForBaseline(id, SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT) },
@@ -229,7 +241,7 @@ class AppContainer(
     override val subscriptionRepository: SubscriptionRepository by lazy {
         SubscriptionRepository(
             podcastDao = database.podcastDao(),
-            localEpisodeCatalog = localEpisodeCatalogRepository,
+            localEpisodeCatalog = subscribedEpisodeCatalog,
             lookupHttpsFeedUrl = { id ->
                 cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(
                     podcastRepository.getPodcastDetails(id)?.feedUrl,
@@ -238,6 +250,13 @@ class AppContainer(
             folderRepository = folderRepository,
             userPreferencesRepository = userPreferencesRepository,
             autoDownloadDao = database.autoDownloadDao(),
+            rssNotificationConsent = cx.aswin.boxlore.core.catalog.DeviceRssNotificationConsent(
+                java.io.File(appContext.noBackupFilesDir, "rss_notification_consent"),
+            ),
+            rssNotificationRegistrations = cx.aswin.boxlore.core.catalog.DeviceRssNotificationRegistrations(
+                java.io.File(appContext.noBackupFilesDir, "rss_notification_registrations"),
+            ),
+            requestRssNotificationSync = { cx.aswin.boxlore.fcm.RssNotificationSyncWorker.enqueue(appContext) },
         )
     }
 
@@ -246,7 +265,7 @@ class AppContainer(
             podcastRepository = podcastRepository,
             subscriptionRepository = subscriptionRepository,
             episodeSupplementPort = episodeSupplementRepository,
-            localEpisodeCatalog = localEpisodeCatalogRepository,
+            localEpisodeCatalog = subscribedEpisodeCatalog,
             scope = syncScope,
         )
     }

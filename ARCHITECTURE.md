@@ -180,7 +180,7 @@ The primary runtime stack is **playback → catalog → prefs / domain / databas
 
 `AppContainer` (in `:app`) owns the shared object graph and is created only in `BoxLoreApplication`. `MainActivity`, `BoxLoreNavHost`, and feature assemblers read `application.container`. They do not build repositories or a second graph.
 
-Home, Settings, and Info ViewModels are built through assemblers (`HomeViewModelAssembler`, `SettingsViewModelAssembler`, `InfoViewModelAssembler`). Narrow ports under `core.domain.ports` let ViewModels and workers take fakes without depending on full repositories or `BoxLoreDatabase`. Production wiring uses `RoomLocalCatalog` and `RoomEpisodeOfflineLookup` from `AppContainer`. `ListeningHistoryBackupPort` lives in `core.catalog.ports`.
+Home, Settings, and Info ViewModels are built through assemblers (`HomeViewModelAssembler`, `SettingsViewModelAssembler`, `InfoViewModelAssembler`). Source-aware `SubscribedEpisodeCatalog` composes the PI and true RSS adapters behind the existing `LocalEpisodeCatalogPort`, preserving their separate tables and show identities. Narrow ports under `core.domain.ports` let ViewModels and workers take fakes without depending on full repositories or `BoxLoreDatabase`. Production wiring uses `RoomLocalCatalog` and `RoomEpisodeOfflineLookup` from `AppContainer`. `ListeningHistoryBackupPort` lives in `core.catalog.ports`.
 
 ## Product surfaces
 
