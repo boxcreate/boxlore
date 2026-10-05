@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -78,7 +79,24 @@ internal fun LoreHaloBackground(
                         listOf(lerp(backgroundColor, accent, 0.07f), backgroundColor, lerp(backgroundColor, accent, 0.045f))
                     }
                 )
-                onDrawBehind { drawRect(brush) }
+                val spotRadius = (size.minDimension * 0.46f).coerceAtLeast(1f)
+                val upperSpotCenter = Offset(size.width * 0.98f, size.height * 0.22f)
+                val lowerSpotCenter = Offset(size.width * 0.06f, size.height * 0.83f)
+                val upperSpot = Brush.radialGradient(
+                    colors = listOf(accent.copy(alpha = if (isDarkTheme) 0.22f else 0.30f), Color.Transparent),
+                    center = upperSpotCenter,
+                    radius = spotRadius,
+                )
+                val lowerSpot = Brush.radialGradient(
+                    colors = listOf(accent.copy(alpha = if (isDarkTheme) 0.18f else 0.26f), Color.Transparent),
+                    center = lowerSpotCenter,
+                    radius = spotRadius * 0.85f,
+                )
+                onDrawBehind {
+                    drawRect(brush)
+                    drawCircle(upperSpot, spotRadius, upperSpotCenter)
+                    drawCircle(lowerSpot, spotRadius * 0.85f, lowerSpotCenter)
+                }
             }
     ) {
         Box(

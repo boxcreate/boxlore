@@ -115,6 +115,11 @@ fun CuriosityCardStack(
                 )
             }
         }
+        LoreSwipeFeedback(
+            swipeState = swipeState,
+            thresholdPx = swipeThresholdPx,
+            accentColor = artworkAccentColors[questions.first().artworkSources]?.let { Color(it) } ?: accentColor,
+        )
     }
 }
 
