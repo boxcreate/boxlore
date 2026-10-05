@@ -33,7 +33,7 @@ internal fun AutoDownloadSettingsHelp(onDismiss: () -> Unit) {
                 )
                 AutoDownloadHelpSection(
                     "While boxlore is closed",
-                    "Show notifications can trigger downloads when new episodes arrive. Optional background checks provide another way to find episodes, about every 6 hours. Android may delay those checks.",
+                    "Show notifications can trigger downloads when new episodes arrive. Backup background checks are optional: they catch new episodes if notifications are off or don't arrive. They check about every 6 hours, and Android may delay them.",
                 )
                 AutoDownloadHelpSection(
                     "Battery and network limits",

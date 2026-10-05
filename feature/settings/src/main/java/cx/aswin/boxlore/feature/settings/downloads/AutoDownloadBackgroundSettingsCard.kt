@@ -26,14 +26,14 @@ internal fun AutoDownloadBackgroundSettingsCard(
     SettingsGroup(
         title = "While boxlore is closed",
         footer = if (settings.enabled) {
-            "Uses extra battery and data. Checks pause on low battery; Android may delay them."
+            "Checks about every 6 hours; Android may delay them. Uses extra battery and data and pauses on low battery."
         } else {
             "Show notifications can still start downloads while boxlore is closed. Otherwise, new episodes are picked up when you open and refresh."
         },
     ) {
         SettingsSwitchRow(
-            title = "Background checks",
-            supportingText = "Check your selected shows about every 6 hours.",
+            title = "Backup background checks",
+            supportingText = "Find new episodes if show notifications are off or don't arrive.",
             icon = Icons.Rounded.Update,
             checked = settings.enabled,
             onCheckedChange = onEnabledChange,
