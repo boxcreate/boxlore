@@ -318,6 +318,7 @@ private fun FloatingNavigationBar(
             FloatingPrimaryNavItems(currentRoute, onNavigate, navbarLabelStyle, compactProgress)
             LoreNavActionFab(
                 selected = selectedIndex == 3,
+                indicatorIndex = indicatorIndex,
                 initialContentReady = initialContentReady,
                 onClick = { onNavigate(loreNavDestination.route) },
                 modifier = Modifier.fillMaxSize(),
@@ -501,6 +502,7 @@ private fun FloatingPrimaryNavItems(
 @Composable
 private fun LoreNavActionFab(
     selected: Boolean,
+    indicatorIndex: State<Float>,
     initialContentReady: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -509,11 +511,8 @@ private fun LoreNavActionFab(
     val pressScale = rememberNavigationPressScale(interactionSource)
     val selection = animateFloatAsState(if (selected) 1f else 0f, tween(180), label = "loreSelection")
     val launchScale = animateFloatAsState(if (initialContentReady) 1f else 0.96f, tween(180), label = "loreLaunchScale")
-    val contentColor by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-        tween(180),
-        label = "loreContentColor",
-    )
+    val scheme = MaterialTheme.colorScheme
+    val contentColor = if (selected) loreNavigationContentColor(scheme, indicatorIndex.value) else scheme.onSurfaceVariant
     Surface(
         modifier = modifier.graphicsLayer {
             scaleX = pressScale.value
