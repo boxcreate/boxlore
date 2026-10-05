@@ -22,6 +22,7 @@ import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoFolderSyncLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
+import cx.aswin.boxlore.feature.info.logic.enablePodcastNotifications
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -141,6 +142,11 @@ class PodcastInfoViewModel(
     val completedEpisodesState: StateFlow<Set<String>> = completedEpisodeIds
 
     private val userPrefs = userPreferencesRepository
+
+    val autoDownloadBackgroundChecksEnabled: StateFlow<Boolean> =
+        userPrefs.autoDownloadBackgroundSettingsStream
+            .map { it.enabled }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     val globalSkipBeginningMs: StateFlow<Long> =
         userPrefs.skipBeginningMsStream
@@ -1529,22 +1535,13 @@ class PodcastInfoViewModel(
         }
     }
 
-    fun enableBothNotificationsAndAutoDownload() {
-        val currentState = _uiState.value
-        if (currentState is PodcastInfoUiState.Success) {
-            viewModelScope.launch {
-                subscriptionRepository.setNotificationsEnabled(currentState.podcast, true)
-                subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, true)
-
-                val updatedPodcast =
-                    currentState.podcast.copy(
-                        notificationsEnabled = true,
-                        autoDownloadEnabled = true,
-                    )
-                _uiState.value = currentState.copy(podcast = updatedPodcast)
-
-                android.util.Log.d("PodcastInfoViewModel", "Enabled both notifications & auto-download for ${currentState.podcast.title}")
-            }
+    fun enableShowNotifications() {
+        viewModelScope.launch {
+            enablePodcastNotifications(
+                uiState = _uiState,
+                setNotificationsEnabled = subscriptionRepository::setNotificationsEnabled,
+                trackShowNotificationToggled = cx.aswin.boxlore.core.analytics.AnalyticsHelper::trackShowNotificationToggled,
+            )
         }
     }
 

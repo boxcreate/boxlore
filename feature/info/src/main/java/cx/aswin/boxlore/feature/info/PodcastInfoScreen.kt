@@ -115,6 +115,7 @@ fun PodcastInfoScreen(
     val isPinnedToHome by viewModel.isPinnedToHome.collectAsState()
     val globalSkipBeginningMs by viewModel.globalSkipBeginningMs.collectAsState()
     val globalSkipEndingMs by viewModel.globalSkipEndingMs.collectAsState()
+    val backgroundChecksEnabled by viewModel.autoDownloadBackgroundChecksEnabled.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -122,6 +123,11 @@ fun PodcastInfoScreen(
     // Search State
     var isSearchActive by remember { mutableStateOf(false) }
     var toolbarWarning by remember { mutableStateOf(ToolbarWarning.NONE) }
+    LaunchedEffect(backgroundChecksEnabled) {
+        if (backgroundChecksEnabled && toolbarWarning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY) {
+            toolbarWarning = ToolbarWarning.NONE
+        }
+    }
     var showMarkAllPlayedDialog by remember { mutableStateOf(false) }
     var showMarkAllUnplayedDialog by remember { mutableStateOf(false) }
     var showPodcastPlaybackSettings by remember { mutableStateOf(false) }
@@ -512,7 +518,9 @@ fun PodcastInfoScreen(
                         handleAutoDownloadToggle(
                             podcastAutoDownloadEnabled = state.podcast.autoDownloadEnabled,
                             podcastNotificationsEnabled = state.podcast.notificationsEnabled,
-                            onShowNotificationsRequiredWarning = { toolbarWarning = ToolbarWarning.NOTIFICATIONS_REQUIRED },
+                            backgroundChecksEnabled = backgroundChecksEnabled,
+                            currentWarning = toolbarWarning,
+                            onWarningChange = { toolbarWarning = it },
                             onToggleAutoDownload = { viewModel.toggleAutoDownload() },
                         )
                     },
@@ -521,18 +529,19 @@ fun PodcastInfoScreen(
                     onWarningAction = {
                         val currentWarning = toolbarWarning
                         toolbarWarning = ToolbarWarning.NONE
+                        pendingPermissionAction = if (
+                            !areAppNotificationsEnabled(context) &&
+                            (currentWarning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY || !state.podcast.notificationsEnabled)
+                        ) {
+                            { viewModel.enableShowNotifications() }
+                        } else {
+                            null
+                        }
                         handleToolbarWarningAction(
                             warning = currentWarning,
                             context = context,
                             viewModel = viewModel,
                             onRequestNotificationPermission = {
-                                if (currentWarning == ToolbarWarning.NOTIFICATIONS_REQUIRED) {
-                                    pendingPermissionAction = { viewModel.enableBothNotificationsAndAutoDownload() }
-                                } else if (!state.podcast.notificationsEnabled) {
-                                    pendingPermissionAction = { viewModel.toggleNotifications() }
-                                } else {
-                                    pendingPermissionAction = null
-                                }
                                 notifPermissionLauncher.launch(
                                     Manifest.permission.POST_NOTIFICATIONS,
                                 )

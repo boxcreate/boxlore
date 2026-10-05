@@ -6,10 +6,12 @@ import org.junit.jupiter.api.Test
 
 class PodcastInfoToolbarLogicTest {
     @Test
-    fun `toolbar warning copy for notifications required`() {
-        assertEquals("Action Required", toolbarWarningTitle(ToolbarWarning.NOTIFICATIONS_REQUIRED))
-        assertEquals("Enable Both", toolbarWarningActionText(ToolbarWarning.NOTIFICATIONS_REQUIRED))
-        assertTrue(toolbarWarningMessage(ToolbarWarning.NOTIFICATIONS_REQUIRED).contains("download"))
+    fun `auto download notice explains foreground discovery and optional show notifications`() {
+        assertEquals("Auto-download is on", toolbarWarningTitle(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY))
+        assertEquals("Turn on notifications", toolbarWarningActionText(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY))
+        val message = toolbarWarningMessage(ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY)
+        assertTrue(message.contains("open and refresh"))
+        assertTrue(message.contains("while boxlore is closed"))
     }
 
     @Test

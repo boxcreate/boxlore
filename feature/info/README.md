@@ -19,6 +19,10 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 
 - Explicit subscribed-show pull-to-refresh uses `MANUAL` to bypass the automatic six-hour cooldown. Show auto-download remains independent of notification permission and never grants background polling consent; without show push notifications or explicit polling consent, discovery occurs during normal foreground refreshes.
 
+- Enabling show auto-download while both show notifications and background checks are off displays a neutral, optional notice explaining app-open discovery. Auto-download is enabled immediately; **Turn on notifications** follows the existing system-permission flow and enables only show notifications, preserving any later auto-download choice. Background checks remain opt-in. JVM toggle tests cover all combinations of the two discovery paths and disabling auto-download.
+
+- Auto-download toggles preserve an existing system notification-permission warning instead of clearing or replacing it. `enableShowNotifications` delegates its persistence/state/analytics action to the hermetic `logic/PodcastNotificationActions` helper; after a suspended save it updates the latest matching show's state, preserving newer auto-download choices. JVM tests cover consent persistence, event order, download independence, changes during saves, and failed/no-op actions. The warning banner's header and action are separate composables to keep rendering complexity bounded.
+
 ## Internal structure
 
 ```text

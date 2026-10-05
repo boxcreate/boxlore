@@ -15,7 +15,7 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 - Appearance → Miniplayer, beside Navigation, exposes **Show seek buttons in miniplayer**, default off. `AppearanceUiState` and `AppearanceActions` carry its value and callback; app wiring owns persistence through `:core:prefs`. The existing Playback seek-duration sliders apply to the optional larger miniplayer buttons too.
 - Dialogs: `AccentColorPickerDialog`, `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
 
-- Auto-Download Settings exposes a separate off-by-default background-check switch, unmetered-network restriction and charging option. Copy explains six-hour checks, mandatory low-battery pausing, additional battery/data use, Android delays, and foreground/push behavior when polling is off. Per-show auto-download toggles never enable the switch.
+- Automatic downloads uses the shared two-line settings header and solid grouped surfaces for Downloads, Storage, and While boxlore is closed. A connected 1/2/3/5 selector replaces scrolling quota chips; a short introduction explains per-show activation. **Backup background checks** is explicitly described as optional recovery when show notifications are off or do not arrive; notifications can already trigger downloads while closed. Its network/charging controls appear only when the off-by-default switch is enabled, retaining their preferences when hidden. Concise state-dependent copy explains foreground/push discovery or battery/data costs and Android delays; the header help dialog holds the full network, consent, discovery and retention explanation. Per-show auto-download never enables background checking.
 
 ## Internal structure
 
@@ -93,6 +93,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 ## Testing notes
 
 - Unit tests live under `feature/settings/src/test`.
+- `AutoDownloadSettingsActionsTest` exercises the same action callbacks and background presentation used by the screen: all four episode limits, invalid-limit rejection, help opening/dismissal, both background-control visibility states, and retaining all network/charging combinations when checks are disabled and re-enabled. No device or screenshot automation is required.
 - `SettingsHeaderTitleTest` covers reduced expanded typography, two-line support throughout collapse, constant compact-row size, monotonic expanded size/line-height changes and invalid scroll fractions without rendering or device automation.
 - Existing coverage includes Settings ViewModel tests, Account auth helper validation, Appearance actions tracking, back navigation action resolution tests (`SettingsBackNavigationTest`), and Roborazzi golden captures for dialogs.
 - `AppearanceActionsTrackedTest` also verifies the miniplayer seek callback is forwarded in both directions through the appearance action wrapper.
