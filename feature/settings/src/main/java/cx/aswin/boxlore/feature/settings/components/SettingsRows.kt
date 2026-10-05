@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,7 +45,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import kotlin.math.roundToInt
@@ -565,82 +563,6 @@ private fun SettingsRowScaffold(
         }
         if (trailing != null) {
             trailing()
-        }
-    }
-}
-
-/** Circular color-swatch grid for accent palette selection (5 columns). */
-@Composable
-internal fun AccentSwatchGrid(
-    seeds: List<Triple<String, String, Color>>,
-    selectedKey: String,
-    onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    columns: Int = 5,
-) {
-    Column(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        seeds.chunked(columns).forEach { rowSeeds ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                rowSeeds.forEach { (key, _, color) ->
-                    AccentSwatch(
-                        color = color,
-                        selected = key == selectedKey,
-                        onClick = { onSelect(key) },
-                    )
-                }
-                // Keep trailing slots so incomplete rows stay aligned to the grid.
-                repeat(columns - rowSeeds.size) {
-                    Spacer(modifier = Modifier.size(52.dp))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AccentSwatch(
-    color: Color,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val ringColor = MaterialTheme.colorScheme.primary
-    Box(
-        modifier = Modifier.size(52.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Surface(
-            modifier =
-            Modifier
-                .size(if (selected) 44.dp else 48.dp)
-                .expressiveClickable(shape = androidx.compose.foundation.shape.CircleShape, onClick = onClick),
-            shape = androidx.compose.foundation.shape.CircleShape,
-            color = color,
-            contentColor = color.contrastColor(),
-            border =
-            if (selected) {
-                androidx.compose.foundation.BorderStroke(3.dp, ringColor)
-            } else {
-                null
-            },
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                if (selected) {
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-            }
         }
     }
 }

@@ -53,6 +53,7 @@ import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.PredictiveBackWrapper
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
+import cx.aswin.boxlore.core.designsystem.component.appMiniPlayerTopOffset
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.components.RepairProgressPopup
@@ -717,22 +718,10 @@ fun BoxLoreAppRoot(
                 val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 val chromeMetrics = navigationChromeMetrics(navigationStyle)
                 val bottomChromeClearance = chromeMetrics.bottomNavigationClearance
-                val playerSystemNavigationInset =
-                    if (navigationStyleUsesExternalSystemNavigationInset(navigationStyle)) {
-                        systemNavBarHeight
-                    } else {
-                        0.dp
-                    }
                 val containerHeight = screenHeightDp + systemNavBarHeight + 50.dp
                 val collapsedTargetY =
                     with(density) {
-                        (
-                            screenHeightDp -
-                                chromeMetrics.miniPlayerHeight -
-                                bottomChromeClearance -
-                                playerSystemNavigationInset -
-                                chromeMetrics.miniPlayerNavigationGap
-                            ).toPx()
+                        appMiniPlayerTopOffset(navigationStyle, screenHeightDp, systemNavBarHeight).toPx()
                     }
 
                 if (showBottomNav) {
@@ -822,7 +811,7 @@ fun BoxLoreAppRoot(
                             compactProgress = adaptivePlayer.progress,
                             compactTargetY = with(density) {
                                 (
-                                    screenHeightDp - bottomChromeClearance - playerSystemNavigationInset +
+                                    screenHeightDp - bottomChromeClearance - systemNavBarHeight +
                                         (chromeMetrics.navigationBarHeight - AppLoreNavigationActionSize) / 2
                                     ).toPx()
                             },

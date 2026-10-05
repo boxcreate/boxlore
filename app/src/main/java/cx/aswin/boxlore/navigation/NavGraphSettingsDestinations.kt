@@ -163,6 +163,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             onToggleDynamicColor = { enabled -> scope.launch { userPrefs.setUseDynamicColor(enabled) } },
             onSetThemeBrand = { brand -> scope.launch { userPrefs.setThemeBrand(brand) } },
             onSetSurfaceStyle = { style -> scope.launch { userPrefs.setSurfaceStyle(style) } },
+            onSetThemePreset = { key -> scope.launch { userPrefs.setThemePreset(key) } },
             onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
             onSetNavigationStyle = { style -> scope.launch { userPrefs.setNavigationStyle(style) } },
             onSetOpenAppTo = { openAppTo -> scope.launch { userPrefs.setOpenAppTo(openAppTo) } },

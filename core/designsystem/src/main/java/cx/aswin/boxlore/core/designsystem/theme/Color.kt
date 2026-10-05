@@ -59,6 +59,7 @@ fun customThemeBrandHex(themeBrand: String): String? = when {
  * Resolves a theme brand key or custom hex into a seed [Color] for scheme generation.
  */
 fun resolveThemeSeedColor(themeBrand: String): Color {
+    findThemePreset(themeBrand)?.let { return it.primary.light }
     BrandSeeds[themeBrand]?.second?.let { return it }
     val hex = customThemeBrandHex(themeBrand)
     if (hex != null) {

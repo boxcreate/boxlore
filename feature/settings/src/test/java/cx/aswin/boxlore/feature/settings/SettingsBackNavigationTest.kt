@@ -81,6 +81,25 @@ class SettingsBackNavigationTest {
     }
 
     @Test
+    fun themeReturnsToAppearanceAndCanBeOpenedDirectly() {
+        assertEquals(ProfileSettingsDestination.Theme, "theme".toSettingsDestination())
+        assertEquals(
+            SettingsBackAction.NavigateTo(ProfileSettingsDestination.Appearance),
+            resolveSettingsBackAction(false, ProfileSettingsDestination.Appearance, null),
+        )
+        assertEquals(SettingsBackAction.NavigateBack, resolveSettingsBackAction(false, null, "theme"))
+    }
+
+    @Test
+    fun nestedDestinationsAnimateForwardOnEntryAndBackTowardTheirParent() {
+        assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Theme))
+        assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.Theme, ProfileSettingsDestination.Appearance))
+        assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.SyncAndBackups, ProfileSettingsDestination.Account))
+        assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.Account, ProfileSettingsDestination.SyncAndBackups))
+        assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Hub))
+    }
+
+    @Test
     fun toSettingsDestination_resolvesSyncAndBackupsVariants() {
         assertEquals(ProfileSettingsDestination.SyncAndBackups, "sync".toSettingsDestination())
         assertEquals(ProfileSettingsDestination.SyncAndBackups, "sync_and_backups".toSettingsDestination())

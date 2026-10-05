@@ -328,6 +328,20 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
+    /** Apply a complete preset in one write without changing light/dark mode or other appearance choices. */
+    suspend fun setThemePreset(presetKey: String) {
+        syncPrefs.edit()
+            .putString("surface_style", presetKey)
+            .putString("theme_brand", presetKey)
+            .putBoolean("use_dynamic_color", false)
+            .apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.SURFACE_STYLE] = presetKey
+            preferences[Keys.THEME_BRAND] = presetKey
+            preferences[Keys.USE_DYNAMIC_COLOR] = false
+        }
+    }
+
     val surfaceStyleStream: Flow<String> =
         dataStore.data
             .catch { exception ->
