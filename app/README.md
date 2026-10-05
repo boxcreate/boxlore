@@ -7,6 +7,7 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 ## Public API
 
 - `NavGraphLibraryDestinations` routes New Episodes row and Play All snapshots through `QueueManager.playContextEpisodes`, so playback follows the visible list rather than reusing a prior show queue.
+- `LoreQueueConflictDialog` confirms **Replace your current queue?** when a Lore card's queue action encounters a non-Lore queue. Localizable copy explicitly states that **Replace queue** stops playback and replaces the current queue with the selected episode; **Keep current queue** cancels that operation. The help explains that tapping a card opens its episode details, where **Add to queue** preserves the existing queue. Queue operations and analytics result keys remain unchanged.
 
 - `BoxLoreApplication.container` exposes the process-scoped `AppContainer`.
 - On startup, `BoxLoreApplication` hydrates missing DataStore appearance keys from theme fast-cache on its IO scope, keeping restoration off the first-paint path (Google Backup can restore SharedPreferences without DataStore), and after UI readiness asks `SmartDownloadManager.reconcileScheduleWithPreferences` to keep the Smart Downloads toggle and periodic WorkManager job in sync. It also configures `LearningEventLog` via `BoxcastPrefs.resolveLearnerLogEnabled`: on by default in debug when unset; **always off in release** unless the user has explicitly persisted an opt-in from the debug screen.
