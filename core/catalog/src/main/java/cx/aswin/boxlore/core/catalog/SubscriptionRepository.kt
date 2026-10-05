@@ -494,14 +494,7 @@ class SubscriptionRepository(
     /** Migrate old device-owned rows, then replay publication and cleanup obligations. */
     suspend fun reconcileRssNotificationRegistrations(remote: RssNotificationRemote = FirebaseRssNotificationRemote()): Boolean {
         val rows = podcastDao.getRssNotificationRows()
-        val deviceId = rssNotificationConsent.registrationId
-        if (!rssNotificationRegistrations.legacyMigrationComplete) {
-            if (deviceId == null && rows.isNotEmpty()) return false
-            for (row in rows) {
-                if (deviceId != null && !rssNotificationRegistrations.remember(RssNotificationRegistration.legacy(row.podcastId, deviceId))) return false
-            }
-            if (!rssNotificationRegistrations.completeLegacyMigration()) return false
-        }
+        if (!migrateLegacyRssRegistrations(rows)) return false
         for (row in rows) {
             if (hasRssNotificationConsent(row)) {
                 if (!journalRssRegistration(row.podcastId, row.feedUrl.orEmpty())) return false
@@ -510,6 +503,16 @@ class SubscriptionRepository(
             }
         }
         return RssNotificationReconciler(rssNotificationRegistrations, podcastDao::getPodcast, rssNotificationConsent, remote).reconcile()
+    }
+
+    private fun migrateLegacyRssRegistrations(rows: List<PodcastEntity>): Boolean {
+        if (rssNotificationRegistrations.legacyMigrationComplete) return true
+        val deviceId = rssNotificationConsent.registrationId
+            ?: return rows.isEmpty() && rssNotificationRegistrations.completeLegacyMigration()
+        for (row in rows) {
+            if (!rssNotificationRegistrations.remember(RssNotificationRegistration.legacy(row.podcastId, deviceId))) return false
+        }
+        return rssNotificationRegistrations.completeLegacyMigration()
     }
 
     suspend fun updateLatestEpisode(
