@@ -5,6 +5,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -34,6 +35,7 @@ private val LoreAuroraColours = listOf(
 /** The original multicolour sweep, clipped by the single solid selection Surface. */
 @Composable
 internal fun FloatingNavigationIndicatorAurora(indicatorIndex: State<Float>, active: Boolean) {
+    val loreBase = MaterialTheme.colorScheme.primaryContainer
     val phase = remember { Animatable(0f) }
     LaunchedEffect(active) {
         if (active) {
@@ -59,6 +61,7 @@ internal fun FloatingNavigationIndicatorAurora(indicatorIndex: State<Float>, act
             onDrawBehind {
                 val blend = floatingNavigationLoreAuroraBlend(indicatorIndex.value)
                 if (blend > 0f) {
+                    drawRect(loreBase, alpha = blend)
                     // Ease the original back-and-forth sweep through its turnarounds.
                     val progress = (1f - cos(phase.value * 2f * PI.toFloat())) * 0.5f
                     val shift = progress * size.width

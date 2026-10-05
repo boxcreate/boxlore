@@ -106,7 +106,7 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 - Workers resolve dependencies through installed holders before doing background work.
 - Media3 services lazily resolve the shared graph after application startup.
 - UI composition, navigation, OPML import state, surveys, and player overlay state are Activity-scoped.
-- `BoxLoreAppRoot` stacks the mini player above designsystem’s selected navigation-style clearance contract; routes remain Home / Explore / Library / Lore (`learn`) for both presentations.
+- `BoxLoreAppRoot` stacks the mini player using designsystem's `appMiniPlayerTopOffset`, including Android's bottom system inset for both navigation styles. Classic's internally padded navbar and Floating's externally padded navbar both retain the matching player gap under gesture or three-button navigation. Compact Floating docking uses the same bottom inset. Routes remain Home / Explore / Library / Lore (`learn`) for both presentations.
 
 ## Persistence & identity
 
@@ -122,6 +122,7 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 - Unit tests live under `app/src/test`, including app container smoke coverage, sync coordinator lifecycle stability (`AppContainerSmokeTest`), `CloudSyncWorker` WorkManager execution, resolution, and periodic scheduling (`CloudSyncWorkerTest`), `CloudSyncTriggerCoordinator` auth transition handling, process start/stop debouncing, playback milestone detection, and database mutation coalescing (`CloudSyncTriggerCoordinatorTest`), worker factory mapping, FCM payload parsing (type + snake/camel ids, feedUrl/guid/enclosure), new-episode route/id, bounded slot bounds, negative-modulo non-negative floor, normalized intent `filterEquals` equivalence, and auto-download WorkManager enqueueing helpers (`NewEpisodeFcmLogicTest`), opted-in feed hydration before notify, library backup analytics error codes, import-dialog system-bar edge-to-edge (`ImportDialogSystemBarsTest`), push-target route allowlisting, bottom navigation visibility, onboarding origin derivation, and settings back navigation handling (`BottomNavPresentationTest`), cold-start destination precedence (`StartDestinationResolverTest`), launch-landing Back decisions (`LaunchSubscriptionsBackDecisionTest`), and episode navigation route building and argument decoding (`EpisodeNavRouteRegressionTest`).
 - Navigation and feature UI behavior are covered mainly in feature module tests and Maestro smoke flows.
 - `AdaptivePlayerScrollLogicTest` covers travel thresholds, reversal, source/axis filtering, gesture boundaries, player-interaction suppression, and reset behavior for adaptive chrome.
+- Shared player-anchor regression coverage lives in `:core:designsystem` (`NavigationChromePlacementTest`), including Classic navigation with 48dp system buttons and multiple densities; app assembly verifies the shell uses that helper.
 
 ```bash
 ./gradlew :app:testDebugUnitTest

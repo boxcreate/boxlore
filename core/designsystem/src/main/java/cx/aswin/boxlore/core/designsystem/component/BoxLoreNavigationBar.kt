@@ -9,12 +9,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -34,7 +36,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationItemIconPosition
 import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarArrangement
+import androidx.compose.material3.ShortNavigationBarDefaults
 import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.ShortNavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -146,17 +150,25 @@ val AppMiniPlayerHeight = FloatingNavigationChromeMetrics.miniPlayerHeight
 /** Gap between collapsed mini-player and the app navbar. */
 val AppMiniPlayerNavGap = FloatingNavigationChromeMetrics.miniPlayerNavigationGap
 
-/** Content clearance for either navigation presentation, optionally including mini-player chrome. */
-fun appBottomChromeContentPadding(style: NavigationStyle, isMiniPlayerVisible: Boolean,): androidx.compose.ui.unit.Dp {
+/** Pass system insets only for overlays whose parent has not already reserved them. */
+fun appBottomChromeContentPadding(
+    style: NavigationStyle,
+    isMiniPlayerVisible: Boolean,
+    systemNavigationInset: androidx.compose.ui.unit.Dp = 0.dp,
+): androidx.compose.ui.unit.Dp {
     val metrics = navigationChromeMetrics(style)
-    return metrics.bottomNavigationClearance +
+    return metrics.bottomNavigationClearance + systemNavigationInset.coerceAtLeast(0.dp) +
         if (isMiniPlayerVisible) metrics.miniPlayerHeight + metrics.miniPlayerNavigationGap else 0.dp
 }
 
 @Composable
-fun appBottomChromeContentPadding(isMiniPlayerVisible: Boolean): androidx.compose.ui.unit.Dp = appBottomChromeContentPadding(
+fun appBottomChromeContentPadding(
+    isMiniPlayerVisible: Boolean,
+    systemNavigationInset: androidx.compose.ui.unit.Dp = 0.dp,
+): androidx.compose.ui.unit.Dp = appBottomChromeContentPadding(
     style = LocalNavigationStyle.current,
     isMiniPlayerVisible = isMiniPlayerVisible,
+    systemNavigationInset = systemNavigationInset,
 )
 
 /** Explore For You / Top segmented control (padding + pill). */
@@ -271,6 +283,7 @@ private fun FloatingNavigationBar(
         letterSpacing = (-0.1).sp,
     )
     val outline = BorderStroke(0.75.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+    val accentColors = navigationAccentColors(MaterialTheme.colorScheme)
     Layout(
         content = {
             Surface(
@@ -294,7 +307,7 @@ private fun FloatingNavigationBar(
             Surface(
                 modifier = Modifier.clearAndSetSemantics {},
                 shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = accentColors.indicator,
                 border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
             ) {
                 FloatingNavigationIndicatorAurora(
@@ -362,7 +375,7 @@ private fun FloatingPrimaryNavItem(
         label = "navigationItemSelection",
     )
     val contentColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = if (selected) navigationAccentColors(MaterialTheme.colorScheme).content else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = tween(180),
         label = "navigationContentColor",
     )
@@ -542,6 +555,7 @@ private fun LoreNavActionFab(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ClassicNavigationBar(currentRoute: String, onNavigate: (String) -> Unit, modifier: Modifier = Modifier,) {
+    val accentColors = navigationAccentColors(MaterialTheme.colorScheme)
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -551,9 +565,10 @@ private fun ClassicNavigationBar(currentRoute: String, onNavigate: (String) -> U
     ) {
         ShortNavigationBar(
             modifier =
-            Modifier.heightIn(
+            Modifier.windowInsetsPadding(ShortNavigationBarDefaults.windowInsets).heightIn(
                 min = navigationChromeMetrics(NavigationStyle.Classic).navigationBarHeight,
             ),
+            windowInsets = WindowInsets(0, 0, 0, 0),
             containerColor = Color.Transparent,
             arrangement = ShortNavigationBarArrangement.EqualWeight,
         ) {
@@ -570,6 +585,15 @@ private fun ClassicNavigationBar(currentRoute: String, onNavigate: (String) -> U
                     },
                     label = { Text(destination.label) },
                     iconPosition = NavigationItemIconPosition.Top,
+                    colors = if (destination.route == loreNavDestination.route) {
+                        ShortNavigationBarItemDefaults.colors()
+                    } else {
+                        ShortNavigationBarItemDefaults.colors(
+                            selectedIndicatorColor = accentColors.indicator,
+                            selectedIconColor = accentColors.content,
+                            selectedTextColor = accentColors.indicator,
+                        )
+                    },
                 )
             }
         }

@@ -54,10 +54,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.component.ExploreTabSelectorFabHeight
-import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
-import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.regionDisplayLabel
@@ -210,12 +208,7 @@ fun ExploreContent(
 
     val systemNavBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomChromeHeight =
-        appBottomChromeContentPadding(isMiniPlayerVisible = isPlayerVisible) +
-            if (navigationStyleUsesExternalSystemNavigationInset(LocalNavigationStyle.current)) {
-                systemNavBarHeight
-            } else {
-                0.dp
-            }
+        appBottomChromeContentPadding(isMiniPlayerVisible = isPlayerVisible, systemNavigationInset = systemNavBarHeight)
     // Clearance above navbar/mini-player for the tab FAB.
     val tabFabBottomPadding = bottomChromeHeight + 16.dp
     // Extra FAB height so list content can scroll fully past the overlay.
