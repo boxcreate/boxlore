@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-05T09:28:10.398Z",
+  "lastRun": "2026-10-05T11:02:57.300Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f008b08c-cfc6-11f0-83c5-5382a6234e3f",
@@ -43,16 +43,16 @@
       "lastCheckedAt": 1789363039070
     },
     "55386": {
-      "lastRssKey": "gid://art19-episode-locator/V0/ucpUPmOXjL6Q6ZSCf6wNqVJZwA3neAM6zOsRbdm4Q9Y",
-      "lastEpisodeTitle": "5 Speed Reading Techniques to Read Faster and Retain More",
+      "lastRssKey": "gid://art19-episode-locator/V0/goQygCkMRjH9Z6mbZKU4UpYwAIJfHtQSb_noEWnT4oc",
+      "lastEpisodeTitle": "The Real Reason You Can’t Focus (And How to Fix It)",
       "lastEpisodeId": "60085919668",
-      "lastCheckedAt": 1790634280230
+      "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "80e790c2-c898-45c3-ba9b-1e1e220634f4",
-      "lastEpisodeTitle": "5am ET, October 05 | The latest headlines from NPR",
+      "lastRssKey": "93eda412-13e0-466a-9897-aea58e8fd341",
+      "lastEpisodeTitle": "6am ET, October 05 | The latest headlines from NPR",
       "lastEpisodeId": "61201617300",
-      "lastCheckedAt": 1791192495679
+      "lastCheckedAt": 1791198184058
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75571206",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "7a62f6e0-c09c-11f1-8d63-238165ddca55",
-      "lastEpisodeTitle": "5AM ET 10/05/2026 Newscast",
-      "lastEpisodeId": "61208616096",
-      "lastCheckedAt": 1791192512727
+      "lastRssKey": "d915def2-c0a4-11f1-b6b5-4f5ada2a6b97",
+      "lastEpisodeTitle": "6AM ET 10/05/2026 Newscast",
+      "lastEpisodeId": "61282079261",
+      "lastCheckedAt": 1791198202928
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -254,10 +254,10 @@
       "lastCheckedAt": 1791192520723
     },
     "438184": {
-      "lastRssKey": "da03e5b8-bcbf-11f1-b04e-974a137a8a44",
-      "lastEpisodeTitle": "We tested Instinct, MUSE and Grokbot. They’re ridiculous.",
+      "lastRssKey": "2e21d3e2-c0aa-11f1-84d1-9bb940564a3b",
+      "lastEpisodeTitle": "3 businesses we think are about to blow up",
       "lastEpisodeId": "60965368970",
-      "lastCheckedAt": 1790786439323
+      "lastCheckedAt": 1791198212121
     },
     "444331": {
       "lastRssKey": "1a60f922-bde5-11f1-a901-1335cef787d2",
@@ -364,10 +364,10 @@
       "lastCheckedAt": 1789508283942
     },
     "522889": {
-      "lastRssKey": "e0dcd83c-bc00-11f1-a904-97314d8c7d00",
-      "lastEpisodeTitle": "1043: I’m Using GPUI For Everything",
+      "lastRssKey": "e59d0448-bd75-11f1-be59-5746a19673d5",
+      "lastEpisodeTitle": "1044: Ruby on Rails is Dead",
       "lastEpisodeId": "61053606569",
-      "lastCheckedAt": 1790786464899
+      "lastCheckedAt": 1791198232068
     },
     "545784": {
       "lastRssKey": "acfbbc76f64713fef4dcfeb0c6e0e64f",
@@ -441,10 +441,10 @@
       "lastCheckedAt": 1790614443603
     },
     "724143": {
-      "lastRssKey": "8574d5c8-beab-11f1-9de8-bb3ffa181755",
-      "lastEpisodeTitle": "Suspeita de plano contra embaixada americana, PF investiga crédito a Flávio por mansão e o velório de Lito Sousa",
+      "lastRssKey": "63ff5bac-c0a4-11f1-a464-434191dd803d",
+      "lastEpisodeTitle": "Flávio Bolsonaro e Lula iniciam campanha no 2º turno; domínio do PL no Senado desafia STF; recorde de abstenção",
       "lastEpisodeId": "61127127234",
-      "lastCheckedAt": 1790986279395
+      "lastCheckedAt": 1791198240180
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/QVuJrSMa8305chPbnqdNV7yerKYvqRXelCzyA7VAW-M",
@@ -459,10 +459,10 @@
       "lastCheckedAt": 1791073777204
     },
     "743229": {
-      "lastRssKey": "45a7f05b-0915-41a7-8ceb-9d046acd8cbc",
-      "lastEpisodeTitle": "The Restaurant Industry Is Broken. Can It Be Fixed?",
-      "lastEpisodeId": "61239167372",
-      "lastCheckedAt": 1791117927117
+      "lastRssKey": "659a39f7-9763-4d45-bd48-825f1167e5ee",
+      "lastEpisodeTitle": "Midterm Surprise: Democrats Are Surging in Red America",
+      "lastEpisodeId": "61281104957",
+      "lastCheckedAt": 1791198244640
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -669,10 +669,10 @@
       "lastCheckedAt": 1790695454145
     },
     "1116485": {
-      "lastRssKey": "6ac368763b2db7c941e38445",
-      "lastEpisodeTitle": "Alex Scott & Endrick Liverpool Transfer Targets? | Redmen Bitesize",
-      "lastEpisodeId": "61197611236",
-      "lastCheckedAt": 1791192571989
+      "lastRssKey": "6ac37168780a7b96348b9e7e",
+      "lastEpisodeTitle": "Liverpool Reject Juventus Bid For Giovanni Leoni! | Daily News Update",
+      "lastEpisodeId": "61281925107",
+      "lastCheckedAt": 1791198271914
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -750,10 +750,10 @@
       "lastCheckedAt": 1791156602530
     },
     "1366771": {
-      "lastRssKey": "6ac310521b614c9be0914423",
-      "lastEpisodeTitle": "Morning briefing Monday 5th October",
+      "lastRssKey": "6ac37fdb24b0b631ad314043",
+      "lastEpisodeTitle": "Afternoon Briefing Monday 5th October",
       "lastEpisodeId": "61275544320",
-      "lastCheckedAt": 1791192578798
+      "lastCheckedAt": 1791198281862
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19864864",
@@ -844,10 +844,10 @@
       "lastCheckedAt": 1791005772711
     },
     "3487352": {
-      "lastRssKey": "8d394db9-7724-4659-a1aa-0c3d1106c885",
-      "lastEpisodeTitle": "The Vanishing Photograph | Tathyanveshi Vyom Bagchi Episode 1 | Hindi Horror Mystery",
+      "lastRssKey": "255723ef-5279-482e-8fbe-8412f6766223",
+      "lastEpisodeTitle": "Roychoudhury Bari Ka Raaz | Tathyanveshi Vyom Bagchi Maha Episode | Hindi Horror Mystery",
       "lastEpisodeId": "60970866126",
-      "lastCheckedAt": 1791192586040
+      "lastCheckedAt": 1791198291263
     },
     "3628391": {
       "lastRssKey": "b6cefbab-909a-4347-b822-412cfa54311b",
@@ -951,9 +951,9 @@
       "lastCheckedAt": 1791192592527
     },
     "4898105": {
-      "lastRssKey": "3618843a-be14-11f1-9dda-3319ef61cbd6",
-      "lastEpisodeTitle": "IGN Movie Review: Digger",
-      "lastCheckedAt": 1791117964590
+      "lastRssKey": "cc0da186-c068-11f1-88ab-cb3e3f3b6d5f",
+      "lastEpisodeTitle": "Will GTA 6 Encourage Studios to Charge More for Their Games?",
+      "lastCheckedAt": 1791198298743
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1044,10 +1044,10 @@
       "lastCheckedAt": 1790864064387
     },
     "5972153": {
-      "lastRssKey": "2578bc64-bfe3-11f1-86dc-87e39f649c65",
-      "lastEpisodeTitle": "Yemen's Houthi operation, Ukraine targets Russian refineries and Brazil vote",
+      "lastRssKey": "a3a043e8-c08b-11f1-abf1-27f1c62a575b",
+      "lastEpisodeTitle": "Spain early election, Yemen offensive, SCOTUS docket and Nobels",
       "lastEpisodeId": "61102393968",
-      "lastCheckedAt": 1791134390927
+      "lastCheckedAt": 1791198308199
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1299,10 +1299,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a107df-b352-79c7-81f8-6bdfa11752db",
-      "lastEpisodeTitle": "Jack Smith Reveals the Words That Could Have Buried Trump",
+      "lastRssKey": "audioboom-01a10a3e-4979-74d5-9971-1e4764697c32",
+      "lastEpisodeTitle": "Jon Ossoff Has a Blunt Message for Cynics and Whiners",
       "lastEpisodeId": "61174850642",
-      "lastCheckedAt": 1791145372926
+      "lastCheckedAt": 1791198342343
     },
     "7239415": {
       "lastRssKey": "9b4bf30a-c044-11f1-9750-bbefe9d23879",
@@ -1406,10 +1406,10 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
-      "lastRssKey": "d95de6d7-85e4-48b1-8123-6affbed42b98",
-      "lastEpisodeTitle": "Sunday, October 4, 2026 - 5 Minute AI News",
+      "lastRssKey": "20422f32-1110-47ff-92b5-e3edb978ca79",
+      "lastEpisodeTitle": "Monday, October 5, 2026 - 5 Minute AI News",
       "lastEpisodeId": "61203690546",
-      "lastCheckedAt": 1791117996660
+      "lastCheckedAt": 1791198348307
     },
     "7551349": {
       "lastRssKey": "30b5c9da-3233-4e29-ad4c-b49b014c85d1",
@@ -1506,10 +1506,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/94d9b60a-73da-599a-8d48-c8b9e24c0795",
-      "lastEpisodeTitle": "4 Toxic Techniques Narcissists Use To Win Arguments ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/754c0ef2-47de-5d2d-ae66-a474f6fbf497",
+      "lastEpisodeTitle": "Narcissistic RelationshipsCan You Understand it Without Having Lived it ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791192639702
+      "lastCheckedAt": 1791198354266
     },
     "7935877": {
       "lastRssKey": "flightcast:01M3HXKQ5NGKT1VPK6P55F4XZY",
