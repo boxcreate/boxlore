@@ -327,6 +327,149 @@ class RssParityIntegrationTest {
         }
     }
 
+    @Test fun failedRegistrationJournalWriteKeepsActivationOffAndNeverPublishes() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = File(context.noBackupFilesDir, "rss-journal-failure-${System.nanoTime()}")
+        val consentFile = File(context.noBackupFilesDir, "rss-consent-journal-${System.nanoTime()}")
+        val storage = object : AtomicFile(file) {
+            override fun startWrite(): FileOutputStream = throw IOException("disk full")
+        }
+        try {
+            val subscriptions = SubscriptionRepository(
+                database.podcastDao(),
+                rssNotificationConsent = DeviceRssNotificationConsent(consentFile),
+                rssNotificationRegistrations = DeviceRssNotificationRegistrations(storage),
+            )
+            subscriptions.setAutoDownloadEnabled(id, true)
+            val show = database.podcastDao().getPodcast(id)!!.toPodcast()
+            assertFalse(subscriptions.setNotificationsEnabled(show, true, acceptRssDisclosure = true, disclosedFeedUrl = url))
+            assertFalse(database.podcastDao().getPodcast(id)!!.notificationsEnabled)
+            assertTrue(database.podcastDao().getPodcast(id)!!.autoDownloadEnabled)
+            val remote = RegistrationRemote()
+            assertFalse(subscriptions.reconcileRssNotificationRegistrations(remote))
+            assertTrue(remote.published.isEmpty())
+        } finally {
+            storage.delete()
+            consentFile.delete()
+        }
+    }
+
+    @Test fun disabledRegistrationCleanupSurvivesRestartAndRetriesUntilRemoteAcknowledgement() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = File(context.noBackupFilesDir, "rss-registration-restart-${System.nanoTime()}")
+        val consentFile = File(context.noBackupFilesDir, "rss-consent-restart-${System.nanoTime()}")
+        try {
+            val consent = DeviceRssNotificationConsent(consentFile)
+            val store = DeviceRssNotificationRegistrations(file)
+            var scheduled = 0
+            val subscriptions = SubscriptionRepository(database.podcastDao(), rssNotificationConsent = consent, rssNotificationRegistrations = store, requestRssNotificationSync = { scheduled++ })
+            val show = database.podcastDao().getPodcast(id)!!.toPodcast()
+            assertTrue(subscriptions.setNotificationsEnabled(show, true, acceptRssDisclosure = true, disclosedFeedUrl = url))
+            val scoped = RssNotificationRegistration.scoped(id, consent.registrationId!!, url)
+            val remote = RegistrationRemote()
+            assertTrue(subscriptions.reconcileRssNotificationRegistrations(remote))
+            assertEquals(listOf(scoped.key), remote.published)
+            assertFalse(subscriptions.setNotificationsEnabled(show, false))
+            assertTrue(scheduled >= 2)
+            assertTrue(database.podcastDao().getNotificationEnabledPodcasts().isEmpty())
+            remote.failRemove = true
+            val reopened = DeviceRssNotificationRegistrations(file)
+            val restarted = SubscriptionRepository(database.podcastDao(), rssNotificationConsent = DeviceRssNotificationConsent(consentFile), rssNotificationRegistrations = reopened)
+            assertFalse(restarted.reconcileRssNotificationRegistrations(remote))
+            assertTrue(reopened.records().any { it.key == scoped.key })
+            remote.failRemove = false
+            assertTrue(restarted.reconcileRssNotificationRegistrations(remote))
+            assertTrue(reopened.records().isEmpty())
+            assertTrue(remote.removed.contains(scoped.key))
+            assertEquals(listOf(scoped.key), remote.published)
+        } finally {
+            file.delete()
+            consentFile.delete()
+        }
+    }
+
+    @Test fun lateJournalFailureReturnsTheActualDisabledStateAndKeepsCleanupReplayable() = runBlocking {
+        val consent = object : RssNotificationConsent {
+            override val registrationId = "device"
+            override fun isAccepted(podcastId: String, feedUrl: String) = true
+            override fun accept(podcastId: String, feedUrl: String) = Unit
+            override fun revoke(podcastId: String) = Unit
+        }
+        val saved = MemoryRssNotificationRegistrations()
+        var writes = 0
+        val store = object : RssNotificationRegistrationStore by saved {
+            override fun remember(record: RssNotificationRegistration): Boolean {
+                writes++
+                return writes != 2 && saved.remember(record)
+            }
+        }
+        val subscriptions = SubscriptionRepository(database.podcastDao(), rssNotificationConsent = consent, rssNotificationRegistrations = store)
+        val show = database.podcastDao().getPodcast(id)!!.toPodcast()
+        assertFalse(subscriptions.setNotificationsEnabled(show, true, acceptRssDisclosure = true, disclosedFeedUrl = url))
+        assertFalse(database.podcastDao().getPodcast(id)!!.notificationsEnabled)
+        assertEquals(1, store.records().size)
+        val remote = RegistrationRemote()
+        assertTrue(subscriptions.reconcileRssNotificationRegistrations(remote))
+        assertTrue(remote.published.isEmpty())
+        assertTrue(store.records().isEmpty())
+    }
+
+    @Test fun migrationCleansDisabledAndUnsubscribedRowsAndRestoredFlagsCannotPublishOrNotify() = runBlocking {
+        val store = MemoryRssNotificationRegistrations()
+        val consent = object : RssNotificationConsent {
+            override val registrationId = "new-device"
+            override fun isAccepted(podcastId: String, feedUrl: String) = false
+            override fun accept(podcastId: String, feedUrl: String) = Unit
+            override fun revoke(podcastId: String) = Unit
+        }
+        val saved = database.podcastDao().getPodcast(id)!!
+        database.podcastDao().upsert(saved.copy(notificationsEnabled = true))
+        database.podcastDao().upsert(saved.copy(podcastId = "rss:disabled", notificationsEnabled = false))
+        database.podcastDao().upsert(saved.copy(podcastId = "rss:unsubscribed", isSubscribed = false, sourceType = PodcastEntity.SOURCE_PODCAST_INDEX))
+        val subscriptions = SubscriptionRepository(database.podcastDao(), rssNotificationConsent = consent, rssNotificationRegistrations = store)
+        assertFalse(subscriptions.canPresentEpisodeNotification(id, url))
+        val remote = RegistrationRemote()
+        assertTrue(subscriptions.reconcileRssNotificationRegistrations(remote))
+        assertTrue(remote.published.isEmpty())
+        assertEquals(setOf("$id~new-device", "rss:disabled~new-device", "rss:unsubscribed~new-device"), remote.removed.toSet())
+        assertTrue(store.legacyMigrationComplete)
+        assertTrue(store.records().isEmpty())
+        assertFalse(database.podcastDao().getPodcast(id)!!.notificationsEnabled)
+    }
+
+    @Test fun notificationPresentationRequiresCurrentAcceptedUrlAndSubscription() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = File(context.noBackupFilesDir, "rss-presentation-${System.nanoTime()}")
+        try {
+            val consent = DeviceRssNotificationConsent(file)
+            val subscriptions = SubscriptionRepository(database.podcastDao(), rssNotificationConsent = consent)
+            val show = database.podcastDao().getPodcast(id)!!.toPodcast()
+            assertTrue(subscriptions.setNotificationsEnabled(show, true, acceptRssDisclosure = true, disclosedFeedUrl = url))
+            assertTrue(subscriptions.canPresentEpisodeNotification(id, url))
+            assertFalse(subscriptions.canPresentEpisodeNotification(id, "$url-other"))
+            assertFalse(subscriptions.canPresentEpisodeNotification(id, null))
+            database.podcastDao().setFeedUrl(id, " $url ")
+            assertTrue(subscriptions.canPresentEpisodeNotification(id, url))
+            database.podcastDao().upsert(database.podcastDao().getPodcast(id)!!.copy(isSubscribed = false))
+            assertFalse(subscriptions.canPresentEpisodeNotification(id, url))
+        } finally {
+            file.delete()
+        }
+    }
+
+    private class RegistrationRemote : RssNotificationRemote {
+        val published = mutableListOf<String>()
+        val removed = mutableListOf<String>()
+        var failRemove = false
+        override suspend fun publish(record: RssNotificationRegistration, payload: Map<String, String>) {
+            published += record.key
+        }
+        override suspend fun remove(record: RssNotificationRegistration) {
+            if (failRemove) throw IOException("offline")
+            removed += record.key
+        }
+    }
+
     private suspend fun makeDue() {
         val row = database.podcastDao().getPodcast(id)!!
         database.podcastDao().upsert(row.copy(lastRssSyncAt = System.currentTimeMillis() - 21_600_001))

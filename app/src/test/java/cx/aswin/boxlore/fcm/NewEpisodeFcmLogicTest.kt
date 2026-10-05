@@ -439,4 +439,24 @@ class NewEpisodeFcmLogicTest {
         assertEquals("\"Publisher title\"", notification.extras.getString(android.app.Notification.EXTRA_TEXT))
         assertTrue(notification.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE != 0)
     }
+
+    @Test
+    fun presentationRechecksCurrentPermissionBeforeCreatingOrUpdatingAnAlert() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val data = mapOf("podcastTitle" to "Show", "guid" to "release", "episodeTitle" to "Original")
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val id = NewEpisodeFcmLogic.EPISODE_NOTIFICATION_ID_BASE + NewEpisodeFcmLogic.episodeSlot("123")
+        var checked = false
+        NewEpisodeNotifications.show(context, "123", data) {
+            checked = true
+            false
+        }
+        assertTrue(checked)
+        assertNull(org.robolectric.Shadows.shadowOf(manager).getNotification(id))
+        NewEpisodeNotifications.show(context, "123", data)
+        val original = org.robolectric.Shadows.shadowOf(manager).getNotification(id)
+        val local = Episode("-42", "Hydrated", "", "https://cdn/release.mp3", "123")
+        NewEpisodeNotifications.show(context, "123", data, local, fetchArtwork = true) { false }
+        assertEquals(original, org.robolectric.Shadows.shadowOf(manager).getNotification(id))
+    }
 }

@@ -253,6 +253,10 @@ class AppContainer(
             rssNotificationConsent = cx.aswin.boxlore.core.catalog.DeviceRssNotificationConsent(
                 java.io.File(appContext.noBackupFilesDir, "rss_notification_consent"),
             ),
+            rssNotificationRegistrations = cx.aswin.boxlore.core.catalog.DeviceRssNotificationRegistrations(
+                java.io.File(appContext.noBackupFilesDir, "rss_notification_registrations"),
+            ),
+            requestRssNotificationSync = { cx.aswin.boxlore.fcm.RssNotificationSyncWorker.enqueue(appContext) },
         )
     }
 

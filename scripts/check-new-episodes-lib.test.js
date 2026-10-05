@@ -443,13 +443,14 @@ describe('shared RSS registrations', () => {
             'rss:abc~device-b': { title: 'Show', feedUrl: 'https://example.com/feed' },
             '123': { title: 'Catalog' },
         };
+        const scope = lib.rssScopeId('rss:abc', 'https://example.com/feed');
         const grouped = lib.groupTrackedPodcasts(rows);
-        assert.deepEqual(Object.keys(grouped).sort(), ['123', 'rss:abc']);
-        assert.equal(grouped['rss:abc'].feedUrl, 'https://example.com/feed');
+        assert.deepEqual(Object.keys(grouped).sort(), ['123', scope]);
+        assert.equal(grouped[scope].feedUrl, 'https://example.com/feed');
         delete rows['rss:abc~device-a'];
-        assert.equal(lib.groupTrackedPodcasts(rows)['rss:abc'].feedUrl, 'https://example.com/feed');
+        assert.equal(lib.groupTrackedPodcasts(rows)[scope].feedUrl, 'https://example.com/feed');
         delete rows['rss:abc~device-b'];
-        assert.equal(lib.groupTrackedPodcasts(rows)['rss:abc'], undefined);
+        assert.equal(lib.groupTrackedPodcasts(rows)[scope], undefined);
     });
 
     it('ignores disabled RSS rows while keeping valid registrations', () => {
@@ -458,7 +459,7 @@ describe('shared RSS registrations', () => {
             'rss:abc~active': { title: 'Show', feedUrl: 'https://example.com/feed' },
             'rss:invalid': { title: 'Invalid', feedUrl: 'http://example.com/feed' },
         });
-        assert.deepEqual(Object.keys(grouped), ['rss:abc']);
+        assert.deepEqual(Object.keys(grouped), [lib.rssScopeId('rss:abc', 'https://example.com/feed')]);
     });
 });
 
@@ -471,4 +472,36 @@ it('RSS reactivation after all listeners leave seeds a quiet baseline', () => {
     assert.equal(reactivated.notify, false);
     assert.equal(reactivated.reason, 'rss-baseline');
     assert.equal(lib.activeEpisodeState({ 'rss:abc': old }, { 'rss:abc': {} })['rss:abc'], old);
+});
+
+
+describe('accepted RSS URL isolation', () => {
+    const id = 'rss:012345';
+    const url = 'https://publisher.example/public.xml';
+    const other = 'https://publisher.example/other.xml';
+    it('uses the same SHA-256 topic contract as Android without exposing the URL', () => {
+        assert.equal(lib.notificationTopic(id, url), 'new_ep_rss_012345_4828c14697465b35180be700e5bc4ce4122e206d27db253f0232414f6f656026');
+        assert.notEqual(lib.notificationTopic(id, url), lib.notificationTopic(id, other));
+        assert.equal(lib.notificationTopic('123', url), 'new_ep_123');
+    });
+    it('keeps feeds sharing a restored show ID separate while grouping identical URLs', () => {
+        const groups = lib.groupTrackedPodcasts({
+            [`${id}~device-a~hash-a`]: { title: 'A', feedUrl: url },
+            [`${id}~device-b~hash-b`]: { title: 'B', feedUrl: other },
+            [`${id}~device-c`]: { title: 'A', feedUrl: url },
+        });
+        assert.equal(Object.keys(groups).length, 2);
+        assert.equal(groups[lib.rssScopeId(id, url)].feedUrl, url);
+        assert.equal(groups[lib.rssScopeId(id, other)].feedUrl, other);
+        for (const scope of Object.keys(groups)) assert.equal(lib.canonicalPodcastId(scope), id);
+    });
+    it('retires another URL scope and legacy show-only state without inheriting its baseline', () => {
+        const oldScope = lib.rssScopeId(id, url);
+        const newScope = lib.rssScopeId(id, other);
+        const prior = lib.applyPureRssCheck({ item: { guid: 'old' } }).nextState;
+        const kept = lib.activeEpisodeState({ [id]: prior, [oldScope]: prior }, { [newScope]: {} });
+        assert.equal(kept[id], undefined);
+        assert.equal(kept[oldScope], undefined);
+        assert.equal(lib.applyPureRssCheck({ existing: kept[newScope], item: { guid: 'new' } }).notify, false);
+    });
 });

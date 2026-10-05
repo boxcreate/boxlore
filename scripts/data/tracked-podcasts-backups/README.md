@@ -13,7 +13,9 @@ another retention slot.
 These public files contain `title`, `imageUrl`, and optional `feedUrl`. Feed URLs
 can carry access credentials: notification registration is therefore restricted
 to user-confirmed public feeds. RSS device registration rows are grouped into
-canonical show metadata before writing, so device IDs are not published.
+show-and-URL scopes (`rss:<show-id>~<sha256-of-trimmed-feed-url>`) before writing,
+so device IDs are not published. Different accepted URLs under one saved show
+ID remain separate; identical scopes collapse to one metadata row.
 Grouped RSS backups are not a per-device registration restore; the app must
 re-register its own accepted feed after restore. Prefer restoring an
 individual affected row or field from a snapshot. Replacing the entire RTDB

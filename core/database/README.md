@@ -7,6 +7,7 @@ Owns the main Room database, entities, DAOs, type converters, and migrations for
 ## Public API
 
 - `AutoDownloadDao.seedExisting` seeds both `local_episodes` and `rss_episodes` in the activation transaction. `RssEpisodeDao.getByAudioUrl` supports exact push hydration when a GUID is unavailable. Existing tables/keys/schema version are unchanged; `RSS_REFRESH_AUTOMATIC` is a new value in the existing freshness capability field.
+- `PodcastDao.getRssNotificationRows` includes every canonical `rss:` row, including disabled/unsubscribed rows and stale source metadata, so notification registration migration can clean up device-owned remote state. This adds no schema migration.
 
 - `PodcastScoring` provides interpretable listening, like, freshness, preference, and optional subscription-recency signals. Canonical Your Shows ranking disables its legacy subscription-recency term so `:core:ranking` can apply one bounded recency policy after normalization; other callers retain the existing `600 / (1 + hours/24)` default.
 - `BoxLoreDatabase` and its `getDatabase` factory.
@@ -73,7 +74,7 @@ src/main/java/cx/aswin/boxlore/core/database/
 ## Testing notes
 
 - Unit tests live under `core/database/src/test`.
-- `PodcastDaoInMemoryTest` verifies the in-memory Room DAO path when Android resources are available to JVM tests.
+- `PodcastDaoInMemoryTest` verifies the in-memory Room DAO path and RSS notification cleanup selection, including disabled/unsubscribed rows with stale source metadata.
 - `ListeningRollupMergeTest` covers session→rollup merge, including the empty-sessions guard. `ListeningHistoryDaoInMemoryTest` covers insert-if-absent conflict safety and playback completion updates preserving listener-owned fields such as likes.
 - `Migration36To37Test` verifies Room schema upgrade from version 36 to 37, adding `unsubscribedAt`, `isDirty`, `syncedAt` to `podcasts`, `likedAt` and indices to `listening_history`, creating `queue_metadata`, and preserving existing row data.
 - `PodcastScoringTest` covers subscribe-recency priors (peak, 72h decay, missing `subscribedAt`) and the recency-free listening prior used by canonical Your Shows scoring.

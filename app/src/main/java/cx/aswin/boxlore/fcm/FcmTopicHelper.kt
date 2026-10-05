@@ -32,6 +32,7 @@ object FcmTopicHelper {
      * After a backup restore, re-subscribe per-podcast topics once (sentinel in noBackupFilesDir).
      */
     suspend fun reconcileAfterRestoreIfNeeded(context: Context, subscriptionRepository: SubscriptionRepository,) {
+        subscriptionRepository.requestRssNotificationReconciliation()
         val sentinel = File(context.noBackupFilesDir, SENTINEL_NAME)
         if (!sentinel.exists()) {
             subscriptionRepository.reconcileFcmTopicSubscriptions()

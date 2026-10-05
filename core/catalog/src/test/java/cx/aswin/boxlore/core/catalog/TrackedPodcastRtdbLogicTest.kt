@@ -1,10 +1,30 @@
 package cx.aswin.boxlore.core.catalog
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TrackedPodcastRtdbLogicTest {
+    @Test fun acceptedFeedScopesUseTheSameHashAsTheCheckerAndKeepCatalogTopicsStable() {
+        val url = "https://publisher.example/public.xml"
+        assertEquals("new_ep_rss_012345_4828c14697465b35180be700e5bc4ce4122e206d27db253f0232414f6f656026", TrackedPodcastRtdbLogic.topic("rss:012345", url))
+        assertNotEquals(TrackedPodcastRtdbLogic.topic("rss:012345", url), TrackedPodcastRtdbLogic.topic("rss:012345", "$url?different"))
+        assertEquals("new_ep_123", TrackedPodcastRtdbLogic.topic("123", url))
+        assertNotEquals(TrackedPodcastRtdbLogic.registrationKey("rss:012345", "device", url), TrackedPodcastRtdbLogic.registrationKey("rss:012345", "device", "$url?different"))
+    }
+
+    @Test fun mismatchedOrMissingRssPayloadUrlsFailBeforePresentation() {
+        val url = "https://publisher.example/feed"
+        assertTrue(TrackedPodcastRtdbLogic.acceptsRelease("rss:one", url, url))
+        assertFalse(TrackedPodcastRtdbLogic.acceptsRelease("rss:one", url, "$url?different"))
+        assertFalse(TrackedPodcastRtdbLogic.acceptsRelease("rss:one", url, null))
+        assertFalse(TrackedPodcastRtdbLogic.acceptsRelease("rss:one", null, url))
+        assertTrue(TrackedPodcastRtdbLogic.acceptsRelease("123", null, null))
+    }
+
     @Test fun notificationTopicsKeepCatalogNamesAndMapRssColon() {
         assertEquals("new_ep_123", TrackedPodcastRtdbLogic.topic("123"))
         assertEquals("new_ep_rss_012345", TrackedPodcastRtdbLogic.topic("rss:012345"))

@@ -2,21 +2,32 @@
 
 const crypto = require('crypto');
 
-/** RSS registrations are device-local, while release state and topics use canonical show IDs. */
+function canonicalPodcastId(id) {
+    return String(id).startsWith('rss:') ? String(id).split('~')[0] : String(id);
+}
+
+function rssScopeId(podcastId, feedUrl) {
+    return `${canonicalPodcastId(podcastId)}~${crypto.createHash('sha256').update(String(feedUrl).trim(), 'utf8').digest('hex')}`;
+}
+
+/** Group only identical show + accepted URL scopes, never differing feeds under one saved ID. */
 function groupTrackedPodcasts(registrations) {
     const shows = Object.create(null);
     for (const [registrationId, data] of Object.entries(registrations || {})) {
         if (!data || typeof data !== 'object') continue;
         const pureRss = registrationId.startsWith('rss:');
-        const id = pureRss ? registrationId.split('~')[0] : registrationId;
-        if (pureRss && !usableFeedUrl(data.feedUrl)) continue;
-        if (!shows[id] || (!usableFeedUrl(shows[id].feedUrl) && usableFeedUrl(data.feedUrl))) shows[id] = data;
+        const feedUrl = usableFeedUrl(data.feedUrl);
+        if (pureRss && !feedUrl) continue;
+        const id = pureRss ? rssScopeId(registrationId, feedUrl) : registrationId;
+        if (!shows[id] || (!usableFeedUrl(shows[id].feedUrl) && feedUrl)) shows[id] = data;
     }
     return shows;
 }
 
-function notificationTopic(podcastId) {
-    return `new_ep_${String(podcastId).replace(/^rss:/, 'rss_')}`;
+function notificationTopic(podcastId, feedUrl) {
+    const id = canonicalPodcastId(podcastId);
+    const topic = `new_ep_${id.replace(/^rss:/, 'rss_')}`;
+    return id.startsWith('rss:') && usableFeedUrl(feedUrl) ? `${topic}_${rssScopeId(id, feedUrl).split('~')[1]}` : topic;
 }
 
 /** Re-enabling a feed after all listeners left starts quietly rather than alerting an archive tip. */
@@ -421,6 +432,8 @@ function buildPiFcmData({ podcastId, podcastTitle, imageUrl, piEpisode }) {
 }
 
 module.exports = {
+    canonicalPodcastId,
+    rssScopeId,
     activeEpisodeState,
     groupTrackedPodcasts,
     notificationTopic,

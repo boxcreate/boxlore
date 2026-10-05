@@ -7,6 +7,7 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 ## Public API
 
 - The composition root shares `SubscribedEpisodeCatalog` across foreground sync, subscriptions, automatic downloads and FCM hydration. Pure RSS push hydration fetches the saved URL and matches GUID/enclosure to the original negative ID without a PI lookup or newest-item guess. RSS notification disclosure consent is stored outside backups and is tied to the saved URL. No new on-device periodic notification worker is scheduled; existing optional background auto-download discovery remains independently consented.
+- RSS pushes must match the current saved feed URL before immediate display or durable hydration; the worker rechecks subscription and URL after hydration, and notification rendering rechecks local consent after artwork loading. `RssNotificationSyncWorker` reconciles journaled RTDB registrations and FCM topics with network constraints and retry backoff. Settings changes, app-root reconciliation (even with the restore sentinel present), and token changes restart this non-polling worker without waiting behind an earlier retry's backoff; incomplete cleanup survives restart and retries without a maximum-attempt cutoff.
 
 - `NavGraphLibraryDestinations` routes New Episodes row and Play All snapshots through `QueueManager.playContextEpisodes`, so playback follows the visible list rather than reusing a prior show queue.
 

@@ -62,7 +62,7 @@ async function fetchRssNewest(feedUrl) {
 }
 
 async function sendFcm(podcastId, data) {
-    const topic = lib.notificationTopic(podcastId);
+    const topic = lib.notificationTopic(podcastId, data.feedUrl);
     const messageId = await admin.messaging().send(lib.newEpisodeFcmMessage(topic, data));
     console.log(`Sent notification ${messageId} to topic: ${topic}`);
 }
@@ -108,12 +108,13 @@ async function run() {
     state.podcasts = lib.activeEpisodeState(state.podcasts, activePodcasts);
 
     // 4. Poll each tracked podcast for new episodes
-    for (const [podcastId, podcastData] of Object.entries(activePodcasts)) {
+    for (const [stateId, podcastData] of Object.entries(activePodcasts)) {
+        const podcastId = lib.canonicalPodcastId(stateId);
         if (!podcastData || typeof podcastData !== 'object') {
             continue;
         }
         const podcastTitle = podcastData.title || "Podcast";
-        const existingState = state.podcasts[podcastId];
+        const existingState = state.podcasts[stateId];
         try {
             const release = await lib.resolveTrackedRelease({
                 podcastId, podcastData, existing: existingState, fetchRssNewest, fetchPiLatest,
@@ -122,7 +123,7 @@ async function run() {
             const { decision, data } = release;
             if (decision.notify) await sendFcm(podcastId, data);
             if (decision.reason !== 'unchanged') {
-                state.podcasts[podcastId] = decision.nextState;
+                state.podcasts[stateId] = decision.nextState;
                 changeCount++;
             }
             console.log(`Checked ${podcastId}: ${decision.reason}`);

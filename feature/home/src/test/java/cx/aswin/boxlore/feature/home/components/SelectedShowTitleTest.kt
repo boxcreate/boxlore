@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home.components
 
+import android.content.Context
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
@@ -14,6 +15,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
+import cx.aswin.boxlore.feature.home.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -48,7 +51,7 @@ class SelectedShowTitleTest {
             MaterialTheme { SelectedShowTitle("Show", isRss = false, modifier = Modifier.width(160.dp)) }
         }
         composeRule.onNodeWithText("Show").assertExists()
-        composeRule.onNodeWithContentDescription("RSS feed").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(rssFeedLabel()).assertDoesNotExist()
     }
 
     private fun assertInlineLayout(title: String, fontScale: Float, direction: LayoutDirection) {
@@ -65,7 +68,7 @@ class SelectedShowTitleTest {
             }
         }
         val text = composeRule.onNodeWithText(title).fetchSemanticsNode().boundsInRoot
-        val icon = composeRule.onNodeWithContentDescription("RSS feed").fetchSemanticsNode().boundsInRoot
+        val icon = composeRule.onNodeWithContentDescription(rssFeedLabel()).fetchSemanticsNode().boundsInRoot
         val row = composeRule.onNodeWithTag("title_row").fetchSemanticsNode().boundsInRoot
         assertEquals(text.center.y, icon.center.y, 1f)
         val gap = if (direction == LayoutDirection.Ltr) icon.left - text.right else text.left - icon.right
@@ -73,4 +76,6 @@ class SelectedShowTitleTest {
         assertTrue(icon.left >= row.left && icon.right <= row.right)
         assertTrue(text.left >= row.left && text.right <= row.right)
     }
+
+    private fun rssFeedLabel(): String = ApplicationProvider.getApplicationContext<Context>().getString(R.string.home_rss_feed_source)
 }
