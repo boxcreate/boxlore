@@ -29,7 +29,7 @@ internal fun DownloadsSettingsPage(
     ) {
         SettingsGroup(
             title = "Keep episodes offline",
-            footer = "Choose how boxlore grabs episodes for you in the background.",
+            footer = "Choose which episodes boxlore keeps ready to play offline.",
         ) {
             SettingsNavigationRow(
                 title = "Smart downloads",
