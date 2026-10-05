@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_rss_feed_instruction">Paste your podcast’s RSS feed link to add it to your library.</string>
+</resources>

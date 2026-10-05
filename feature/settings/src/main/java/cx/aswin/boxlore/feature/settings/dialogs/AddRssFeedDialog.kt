@@ -20,9 +20,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.feature.settings.R
 
 /** Stable Compose [testTag] ids for Settings RSS dialog instrumentation / Maestro. */
 object SettingsRssTestTags {
@@ -62,7 +64,7 @@ internal fun AddRssFeedDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Paste an HTTPS feed URL. Adding a feed does not publish its URL. Enabling notifications publishes it in public GitHub backups. Keep notifications off for private or premium feeds.",
+                    text = stringResource(R.string.add_rss_feed_instruction),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
