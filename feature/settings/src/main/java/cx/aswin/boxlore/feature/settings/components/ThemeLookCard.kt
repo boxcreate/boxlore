@@ -40,10 +40,11 @@ internal fun ThemeLookCard(
     colors: ThemePreviewColors,
     selected: Boolean,
     onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val shape = MaterialTheme.shapes.large
     Surface(
-        modifier = Modifier.fillMaxWidth().clip(shape)
+        modifier = modifier.fillMaxWidth().clip(shape)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)
             .semantics(mergeDescendants = true) { stateDescription = if (selected) "Selected" else "Not selected" },
         shape = shape,
@@ -64,7 +65,7 @@ internal fun ThemeLookCard(
                 BasicThemePreview("Light", colors.light, Modifier.weight(1f))
                 BasicThemePreview("Dark", colors.dark, Modifier.weight(1f))
             }
-            Text(look.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(look.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, minLines = 3)
         }
     }
 }
