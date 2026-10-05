@@ -457,33 +457,21 @@ class PodcastRepository(
     }
 
     suspend fun syncSubscriptions(feedIds: List<String>, runPostPersistCallback: Boolean = true): Map<String, Episode> = withContext(Dispatchers.IO) {
-        try {
-            val rssTips = feedIds.filter { it.startsWith("rss:") }.mapNotNull { id ->
-                val row = rssRepository.getPodcast(id)
-                rssRepository.episodeCatalog.refresh(
-                    LocalEpisodeCatalogPort.RefreshRequest(
-                    id,
-                        row?.feedUrl.orEmpty(),
-                        runPostPersistCallback = runPostPersistCallback,
-                )
-                )
-                rssRepository.getPodcast(id)?.latestEpisode?.let { id to it }
-            }.toMap()
-            val podcastIndexIds = feedIds.filterNot { it.startsWith("rss:") }
-            if (podcastIndexIds.isEmpty()) return@withContext rssTips
-
-            val readyIds = podcastIndexIds.filter { isLocalCatalogReady(it) }.toSet()
-            val optedIn = loadOptedInPodcastIds()
-            val piIds = podcastIndexIds.filterNot { it in readyIds || it in optedIn }
-            val piTips = fetchPiSyncTips(piIds)
-            val catalogTips = loadLocalCatalogTips(readyIds.toList())
-            val extrasTips =
-                loadCachedFeedTips(podcastIndexIds.filter { it in optedIn && it !in readyIds })
-            piTips + catalogTips + extrasTips + rssTips
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            emptyMap()
+        kotlinx.coroutines.coroutineScope {
+            val rssTips = async { loadRssSyncTips(feedIds, runPostPersistCallback) }
+            val piTips = try {
+                val podcastIndexIds = feedIds.filterNot { it.startsWith("rss:") }
+                val readyIds = podcastIndexIds.filter { isLocalCatalogReady(it) }.toSet()
+                val optedIn = loadOptedInPodcastIds()
+                val piIds = podcastIndexIds.filterNot { it in readyIds || it in optedIn }
+                fetchPiSyncTips(piIds) + loadLocalCatalogTips(readyIds.toList()) +
+                    loadCachedFeedTips(podcastIndexIds.filter { it in optedIn && it !in readyIds })
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                emptyMap()
+            }
+            piTips + rssTips.await()
         }
     }
 

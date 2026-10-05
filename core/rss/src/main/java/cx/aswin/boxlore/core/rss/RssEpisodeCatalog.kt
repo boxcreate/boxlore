@@ -74,17 +74,19 @@ class RssEpisodeCatalog internal constructor(
                 RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
             }
         }
-        val notifyPersisted = outcome is RefreshOutcome.Success && request.runPostPersistCallback && request.reason != RefreshReason.AUTO_DOWNLOAD
-        if (notifyPersisted && request.canProceed()) {
-            try {
-                onCatalogPersisted(id)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                // Persisted releases remain available for foreground replay.
-            }
-        }
+        val shouldNotify = outcome is RefreshOutcome.Success && request.runPostPersistCallback && request.reason != RefreshReason.AUTO_DOWNLOAD
+        if (shouldNotify && request.canProceed()) notifyPersisted(id)
         outcome
+    }
+
+    private suspend fun notifyPersisted(id: String) {
+        try {
+            onCatalogPersisted(id)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            // Persisted releases remain available for foreground replay.
+        }
     }
 
     private suspend fun refreshLocked(request: RefreshRequest): RefreshOutcome {
@@ -96,18 +98,38 @@ class RssEpisodeCatalog internal constructor(
         val url = existing.feedUrl ?: return failure()
         val force = request.reason == RefreshReason.MANUAL || request.reason == RefreshReason.NEW_RELEASE
         val repair = needsRepair(existing)
-        if (!force && !repair && !isRefreshDue(id, url, System.currentTimeMillis())) return RefreshOutcome.Unchanged(newest(id, request.meta))
+        if (!force && !isRefreshDue(id, url, System.currentTimeMillis())) return RefreshOutcome.Unchanged(newest(id, request.meta))
         return PublisherFeedRefreshGate.permits.withPermit {
             if (!request.canProceed()) return@withPermit failure()
-            val fetched = if (force || repair) feedClient.fetch(url) else feedClient.fetchConditional(url, existing.feedEtag, existing.feedLastModified)
-            if (!request.canProceed()) return@withPermit failure()
+            fetchAndPersist(request, existing, force || repair)
+        }
+    }
+
+    private suspend fun fetchAndPersist(request: RefreshRequest, existing: PodcastEntity, fullFetch: Boolean): RefreshOutcome {
+        val url = existing.feedUrl ?: return failure()
+        val outcome = try {
+            val fetched = if (fullFetch) feedClient.fetch(url) else feedClient.fetchConditional(url, existing.feedEtag, existing.feedLastModified)
+            if (!request.canProceed()) return failure()
             if (fetched == null) {
                 recordUnchanged(request, url)
-                RefreshOutcome.Unchanged(newest(id, request.meta))
+                RefreshOutcome.Unchanged(newest(existing.podcastId, request.meta))
             } else {
                 persistFetched(request, existing, fetched)
             }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            failure()
         }
+        if (outcome is RefreshOutcome.Failure) recordFailedAttempt(request, existing)
+        return outcome
+    }
+
+    private suspend fun recordFailedAttempt(request: RefreshRequest, existing: PodcastEntity) = database.withTransaction {
+        val current = podcasts.getPodcast(existing.podcastId) ?: return@withTransaction
+        if (!canPersist(request, existing, current)) return@withTransaction
+        // This marks the current automatic policy, not a successful catalog ingest.
+        podcasts.upsert(current.copy(lastRssSyncAt = System.currentTimeMillis(), rssRefreshCapability = PodcastEntity.RSS_REFRESH_AUTOMATIC, rssCatalogStale = true))
     }
 
     private suspend fun needsRepair(row: PodcastEntity): Boolean =
@@ -170,7 +192,9 @@ class RssEpisodeCatalog internal constructor(
 
     override suspend fun isRefreshDue(podcastId: String, feedUrl: String, nowMillis: Long): Boolean {
         val row = podcasts.getPodcast(podcastId) ?: return false
-        return needsRepair(row) ||
+        val firstRepair = needsRepair(row) && !row.rssCatalogStale
+        return row.rssRefreshCapability != PodcastEntity.RSS_REFRESH_AUTOMATIC ||
+            firstRepair ||
             row.lastRssSyncAt <= 0L ||
             nowMillis - row.lastRssSyncAt !in 0 until LocalEpisodeCatalogRepository.QUIET_INTERVAL_MS
     }

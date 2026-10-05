@@ -6,6 +6,8 @@ Owns RSS feed fetching, parsing, deterministic ID generation, episode catalog ma
 
 ## Public API
 
+Failed automatic fetches record a six-hour retry boundary while keeping catalogs stale and retaining last-good rows; manual refresh and release pushes bypass it.
+
 - `RssEpisodeCatalog` adapts true RSS subscriptions to the same refresh/read contract as catalog shows, using `rss_episodes` and the saved `rss:` identity. Conditional GET supports feeds that reject HEAD; feeds without validators share the six-hour cooldown. Manual/push refresh bypasses it. Anchored playback windows continue chronologically regardless of list sort, matching the PI adapter; blank search terms return no results. Existing imports with legacy freshness capability or missing rows receive an in-place repair, without catalog matching. Refresh re-reads settings after network I/O and checks cancellation/authorization before persistence. Failed/empty feeds retain last-good rows; sticky IDs and removed-from-feed archive rows remain intact. The full-feed semaphore is shared with the PI adapter. Foreground/push persists call the download listener; background discovery suppresses that callback.
 - `restoreSubscription` keeps the saved podcast ID across feed URL redirects. Re-adding an existing feed preserves its auto-download and notification settings.
 

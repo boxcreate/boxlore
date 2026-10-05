@@ -73,7 +73,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             RssFetchResult(
                 finalUrl = response.request.url.toString(),
                 etag = response.header("ETag"),
-                lastModified = response.header("Last-Modified"),
+                lastModified = response.header(LAST_MODIFIED_HEADER),
                 body = readBounded(body.byteStream()),
             )
         }
@@ -87,11 +87,11 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             validateContentType(response)
             val body = response.body
             val declaredLength = body.contentLength()
-            require(declaredLength < 0L || declaredLength <= MAX_FEED_BYTES) { "Feed is too large" }
+            require(declaredLength < 0L || declaredLength <= MAX_FEED_BYTES) { "Feed is larger than ${MAX_FEED_BYTES / (1024 * 1024)} MB" }
             RssFetchResult(
                 finalUrl = response.request.url.toString(),
                 etag = response.header("ETag"),
-                lastModified = response.header("Last-Modified"),
+                lastModified = response.header(LAST_MODIFIED_HEADER),
                 body = readBounded(body.byteStream()),
             )
         }
@@ -142,7 +142,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 ),
             ) { response ->
                 val currentEtag = response.header("ETag")
-                val currentLastModified = response.header("Last-Modified")
+                val currentLastModified = response.header(LAST_MODIFIED_HEADER)
                 when {
                     response.code == HTTP_NOT_MODIFIED -> {
                         RssFreshnessResult.Unchanged(
@@ -768,6 +768,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         private const val MAX_FEED_BYTES = 25L * 1024L * 1024L
         private const val MAX_DESCRIPTION_LENGTH = 20_000
         private const val HTTP_NOT_MODIFIED = 304
+        private const val LAST_MODIFIED_HEADER = "Last-Modified"
         private const val USER_AGENT = "BoxLore/1.0 (Android; RSS reader)"
         private const val ACCEPT_HEADER =
             "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5"

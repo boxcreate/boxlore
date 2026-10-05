@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog
 
 import android.util.AtomicFile
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.util.Properties
 import java.util.UUID
@@ -23,35 +24,46 @@ interface RssNotificationConsent {
 }
 
 /** Store under Context.noBackupFilesDir; neither Android restore nor cloud sync transfers consent. */
-class DeviceRssNotificationConsent(file: File) : RssNotificationConsent {
-    private val storage = AtomicFile(file)
-    override val registrationId: String get() = deviceRegistrationId()
+class DeviceRssNotificationConsent internal constructor(private val storage: AtomicFile) : RssNotificationConsent {
+    constructor(file: File) : this(AtomicFile(file))
+
+    private val rejectedChanges = mutableSetOf<String>()
+    override val registrationId: String? get() = deviceRegistrationId()
 
     @Synchronized
-    private fun deviceRegistrationId(): String {
+    private fun deviceRegistrationId(): String? {
         val values = read()
         values.getProperty("__device_registration_id")?.let { return it }
         val id = UUID.randomUUID().toString()
         values.setProperty("__device_registration_id", id)
-        write(values)
-        return id
+        return if (writeSafely(values)) id else null
     }
 
     @Synchronized
-    override fun isAccepted(podcastId: String, feedUrl: String): Boolean = read().getProperty(podcastId) == fingerprint(feedUrl)
+    override fun isAccepted(podcastId: String, feedUrl: String): Boolean =
+        podcastId !in rejectedChanges && read().getProperty(podcastId) == fingerprint(feedUrl)
 
     @Synchronized
     override fun accept(podcastId: String, feedUrl: String) {
         val values = read()
         values.setProperty(podcastId, fingerprint(feedUrl))
-        write(values)
+        if (writeSafely(values)) rejectedChanges.remove(podcastId) else rejectedChanges.add(podcastId)
     }
 
     @Synchronized
     override fun revoke(podcastId: String) {
+        rejectedChanges.add(podcastId)
         val values = read()
         values.remove(podcastId)
+        writeSafely(values)
+    }
+
+    private fun writeSafely(values: Properties): Boolean = try {
         write(values)
+        true
+    } catch (_: IOException) {
+        // A failed change cannot authorize publication or crash the notification action.
+        false
     }
 
     private fun read(): Properties = Properties().apply {

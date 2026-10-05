@@ -6,6 +6,8 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 
 ## Public API
 
+Failed consent writes keep activation off, and local notification flags prevent a failed revoke from implicitly re-enabling after restart. RSS sync isolates each feed and runs alongside PI sync; the source adapter explicitly implements every catalog operation.
+
 - `SubscribedEpisodeCatalog` routes the shared local catalog contract by podcast ID to the PI or true RSS adapter. Shared negative IDs from a source switch resolve to the active subscription rather than a retired PI compatibility row. Foreground refresh, Home tips, Smart Downloads freshness, auto-download discovery and push hydration support RSS-only shows without PI lookups or required promotion.
 - RSS notification activation requires explicit public-feed disclosure acceptance through `setNotificationsEnabled(..., acceptRssDisclosure = true, disclosedFeedUrl = savedUrl)`. `DeviceRssNotificationConsent` stores only URL fingerprints in `noBackupFilesDir`; changed URLs, restore and remote cloud settings cannot supply acceptance. Canonical `rss:` IDs require disclosure even with stale source metadata. Refused or revoked activation also removes this device's old registration; a library cleared during acceptance cannot publish a deleted show. Notification settings remain independent of auto-download. The shared checker receives only explicitly accepted public feeds. `TrackedPodcastRtdbLogic.topic` maps `rss:` to FCM-safe `rss_` while retaining canonical IDs in payloads. JSON/cloud RSS restore retains the original saved show ID across redirects.
 

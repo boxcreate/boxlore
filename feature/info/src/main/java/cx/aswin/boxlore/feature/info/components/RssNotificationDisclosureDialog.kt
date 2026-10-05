@@ -4,16 +4,18 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import cx.aswin.boxlore.feature.info.R
 
 @Composable
 internal fun RssNotificationDisclosureDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Enable notifications for a public feed?") },
+        title = { Text(stringResource(R.string.rss_notification_disclosure_title)) },
         text = {
-            Text("Adding this RSS feed does not publish its URL. Enabling notifications sends the feed URL to boxlore’s shared checker. The URL is stored in public GitHub backups, and episode details are also published. Keep notifications off for private, premium, or token-protected feeds.")
+            Text(stringResource(R.string.rss_notification_disclosure_body))
         },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("This is a public feed · Enable") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Keep notifications off") } },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.rss_notification_disclosure_confirm)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.rss_notification_disclosure_dismiss)) } },
     )
 }

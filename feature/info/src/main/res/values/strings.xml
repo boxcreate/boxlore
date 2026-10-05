@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="rss_notification_disclosure_title">Enable notifications for a public feed?</string>
+    <string name="rss_notification_disclosure_body">Adding this RSS feed does not publish its URL. Enabling notifications sends the feed URL to boxlore’s shared checker. The URL is stored in public GitHub backups, and episode details are also published. Keep notifications off for private, premium, or token-protected feeds.</string>
+    <string name="rss_notification_disclosure_confirm">This is a public feed · Enable</string>
+    <string name="rss_notification_disclosure_dismiss">Keep notifications off</string>
     <string name="episode_selection_clear">Clear selection</string>
     <string name="episode_selection_download">Download selected episodes</string>
     <string name="episode_selection_mark_completed">Mark selected episodes completed</string>

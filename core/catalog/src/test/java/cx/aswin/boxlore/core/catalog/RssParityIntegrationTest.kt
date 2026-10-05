@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.catalog
 
 import android.content.Context
+import android.util.AtomicFile
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
@@ -14,6 +15,8 @@ import cx.aswin.boxlore.core.rss.RssFeedClient
 import cx.aswin.boxlore.core.rss.RssFetchResult
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -184,6 +187,42 @@ class RssParityIntegrationTest {
         assertNotNull(database.rssEpisodeDao().getEpisode("-1"))
     }
 
+    @Test fun failedLegacyRepairIsRateLimitedAcrossRepositoryRecreationAndExplicitRefreshBypassesIt() = runBlocking {
+        feed.rows = emptyList()
+        assertTrue(repository.episodeCatalog.refresh(request()) is RefreshOutcome.Failure)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val recreated = RssPodcastRepository.createForTests(context, database, feed).episodeCatalog
+        assertFalse(recreated.isRefreshDue(id, url, System.currentTimeMillis()))
+        assertTrue(recreated.refresh(request()) is RefreshOutcome.Unchanged)
+        assertEquals(1, feed.gets)
+        assertEquals(0, database.rssEpisodeDao().count(id))
+        assertTrue(database.podcastDao().getPodcast(id)!!.rssCatalogStale)
+        assertTrue(recreated.refresh(request(RefreshReason.MANUAL)) is RefreshOutcome.Failure)
+        assertTrue(recreated.refresh(request(RefreshReason.NEW_RELEASE)) is RefreshOutcome.Failure)
+        assertEquals(3, feed.gets)
+        makeDue()
+        feed.rows = listOf(row("-1", "release", 100))
+        assertTrue(recreated.refresh(request()) is RefreshOutcome.Success)
+        assertEquals(4, feed.gets)
+        assertFalse(database.podcastDao().getPodcast(id)!!.rssCatalogStale)
+    }
+
+    @Test fun failedNetworkRepairGetsCooldownButCancellationDoesNotRecordAttempt() = runBlocking {
+        feed.onGet = { throw IOException("unavailable") }
+        assertTrue(repository.episodeCatalog.refresh(request()) is RefreshOutcome.Failure)
+        assertTrue(repository.episodeCatalog.refresh(request()) is RefreshOutcome.Unchanged)
+        assertEquals(1, feed.gets)
+        makeDue()
+        val before = database.podcastDao().getPodcast(id)!!.lastRssSyncAt
+        feed.onGet = { throw CancellationException("cancelled") }
+        try {
+            repository.episodeCatalog.refresh(request())
+            fail("Cancellation must propagate")
+        } catch (_: CancellationException) {
+            assertEquals(before, database.podcastDao().getPodcast(id)!!.lastRssSyncAt)
+        }
+    }
+
     @Test fun restoreRetainsOriginalPodcastIdAcrossRedirects() = runBlocking {
         feed.finalUrl = "https://publisher.example/moved"
         val restored = repository.restoreSubscription(url, id)
@@ -249,6 +288,7 @@ class RssParityIntegrationTest {
 
     @Test fun clearedLibraryDuringDisclosureAcceptanceCannotRegisterTheDeletedShow() = runBlocking {
         val consent = object : RssNotificationConsent {
+            override val registrationId = "test-device"
             override fun isAccepted(podcastId: String, feedUrl: String) = true
             override fun accept(podcastId: String, feedUrl: String) = database.clearAllTables()
             override fun revoke(podcastId: String) = Unit
@@ -257,6 +297,34 @@ class RssParityIntegrationTest {
         val show = database.podcastDao().getPodcast(id)!!.toPodcast()
         assertFalse(subscriptions.setNotificationsEnabled(show, true, acceptRssDisclosure = true, disclosedFeedUrl = url))
         assertNull(database.podcastDao().getPodcast(id))
+    }
+
+    @Test fun failedConsentRevocationCannotImplicitlyReenableNotificationsAfterRestart() = runBlocking {
+        val file = File(ApplicationProvider.getApplicationContext<Context>().noBackupFilesDir, "rss-revoke-${System.nanoTime()}")
+        var failWrites = false
+        val storage = object : AtomicFile(file) {
+            override fun startWrite(): FileOutputStream {
+                if (failWrites) throw IOException("disk full")
+                return super.startWrite()
+            }
+        }
+        try {
+            val subscriptions = SubscriptionRepository(database.podcastDao(), rssNotificationConsent = DeviceRssNotificationConsent(storage))
+            val show = database.podcastDao().getPodcast(id)!!.toPodcast()
+            subscriptions.setAutoDownloadEnabled(id, true)
+            assertTrue(subscriptions.setNotificationsEnabled(show, true, acceptRssDisclosure = true, disclosedFeedUrl = url))
+            failWrites = true
+            assertFalse(subscriptions.setNotificationsEnabled(show, false))
+            val reopenedConsent = DeviceRssNotificationConsent(storage)
+            assertTrue(reopenedConsent.isAccepted(id, url)) // Old file survived the failed revoke.
+            val restarted = SubscriptionRepository(database.podcastDao(), rssNotificationConsent = reopenedConsent)
+            assertFalse(restarted.setNotificationsEnabled(show, true))
+            assertFalse(restarted.setNotificationsEnabled(show, true, acceptRssDisclosure = true, disclosedFeedUrl = url))
+            assertFalse(database.podcastDao().getPodcast(id)!!.notificationsEnabled)
+            assertTrue(database.podcastDao().getPodcast(id)!!.autoDownloadEnabled)
+        } finally {
+            storage.delete()
+        }
     }
 
     private suspend fun makeDue() {

@@ -1488,20 +1488,13 @@ class PodcastInfoViewModel(
         val currentState = _uiState.value
         if (currentState is PodcastInfoUiState.Success) {
             viewModelScope.launch {
-                val currentEnabled = currentState.podcast.notificationsEnabled
-                val newEnabled = subscriptionRepository.setNotificationsEnabled(
+                val updatedPodcast = cx.aswin.boxlore.feature.info.logic.togglePodcastNotifications(
                     currentState.podcast,
-                    !currentEnabled,
-                    acceptRssDisclosure = rssDisclosureAccepted,
-                    disclosedFeedUrl = disclosedFeedUrl,
+                    rssDisclosureAccepted,
+                    disclosedFeedUrl,
+                    subscriptionRepository::setNotificationsEnabled,
                 )
-
-                // Refresh UI State
-                val updatedPodcast =
-                    currentState.podcast.copy(
-                        notificationsEnabled = newEnabled,
-                        autoDownloadEnabled = currentState.podcast.autoDownloadEnabled,
-                    )
+                val newEnabled = updatedPodcast.notificationsEnabled
                 _uiState.value = currentState.copy(podcast = updatedPodcast)
 
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackShowNotificationToggled(
@@ -1536,14 +1529,11 @@ class PodcastInfoViewModel(
         val currentState = _uiState.value
         if (currentState is PodcastInfoUiState.Success) {
             viewModelScope.launch {
-                val notificationsEnabled = subscriptionRepository.setNotificationsEnabled(currentState.podcast, true)
-                subscriptionRepository.setAutoDownloadEnabled(currentState.podcast.id, true)
-
-                val updatedPodcast =
-                    currentState.podcast.copy(
-                        notificationsEnabled = notificationsEnabled,
-                        autoDownloadEnabled = true,
-                    )
+                val updatedPodcast = cx.aswin.boxlore.feature.info.logic.enablePodcastNotificationsAndAutoDownload(
+                    currentState.podcast,
+                    setNotifications = { podcast, enabled -> subscriptionRepository.setNotificationsEnabled(podcast, enabled) },
+                    setAutoDownload = subscriptionRepository::setAutoDownloadEnabled,
+                )
                 _uiState.value = currentState.copy(podcast = updatedPodcast)
 
                 android.util.Log.d("PodcastInfoViewModel", "Enabled both notifications & auto-download for ${currentState.podcast.title}")

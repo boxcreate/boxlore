@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort
@@ -33,4 +34,20 @@ class SubscribedEpisodeCatalogTest {
     }
 
     private fun episode(id: String, podcastId: String) = Episode(id, "Episode", "", "https://example.com/$id.mp3", duration = 10, podcastId = podcastId)
+
+    @Test fun cleanupExplicitlyVisitsBothAdapters() = runTest {
+        val visits = mutableListOf<String>()
+        val pi = object : LocalEpisodeCatalogPort by FakeLocalEpisodeCatalogPort() {
+            override suspend fun sweepExpired(nowMillis: Long) {
+                visits += "pi:$nowMillis"
+            }
+        }
+        val rss = object : LocalEpisodeCatalogPort by FakeLocalEpisodeCatalogPort() {
+            override suspend fun sweepExpired(nowMillis: Long) {
+                visits += "rss:$nowMillis"
+            }
+        }
+        SubscribedEpisodeCatalog(pi, rss).sweepExpired(123)
+        assertEquals(listOf("pi:123", "rss:123"), visits)
+    }
 }

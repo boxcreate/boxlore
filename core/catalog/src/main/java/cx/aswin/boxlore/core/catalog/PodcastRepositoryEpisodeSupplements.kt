@@ -1,7 +1,11 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.withPermit
 
 internal suspend fun PodcastRepository.mergeCachedSupplementsIntoPage(
     podcastId: String,
@@ -100,4 +104,27 @@ internal suspend fun PodcastRepository.loadCachedFeedTips(podcastIndexIds: List<
             val tip = loadCachedSupplements(id).maxByOrNull { it.publishedDate } ?: return@mapNotNull null
             id to tip
         }.toMap()
+}
+
+/** Isolate each saved RSS feed; PI sync can run while publisher requests are in flight. */
+internal suspend fun PodcastRepository.loadRssSyncTips(feedIds: List<String>, runPostPersistCallback: Boolean): Map<String, Episode> =
+    kotlinx.coroutines.coroutineScope {
+        val limit = kotlinx.coroutines.sync.Semaphore(2)
+        feedIds.filter { it.startsWith("rss:") }.distinct().map { id ->
+            async {
+                limit.withPermit { loadRssSyncTip(id, runPostPersistCallback) }
+            }
+        }.awaitAll().filterNotNull().toMap()
+    }
+
+private suspend fun PodcastRepository.loadRssSyncTip(id: String, runPostPersistCallback: Boolean): Pair<String, Episode>? = try {
+    val row = rssRepository.getPodcast(id)
+    rssRepository.episodeCatalog.refresh(
+        LocalEpisodeCatalogPort.RefreshRequest(id, row?.feedUrl.orEmpty(), runPostPersistCallback = runPostPersistCallback),
+    )
+    rssRepository.getPodcast(id)?.latestEpisode?.let { id to it }
+} catch (error: kotlinx.coroutines.CancellationException) {
+    throw error
+} catch (_: Exception) {
+    null
 }

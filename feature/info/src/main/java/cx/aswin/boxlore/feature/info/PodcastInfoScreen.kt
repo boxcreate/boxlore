@@ -526,7 +526,7 @@ fun PodcastInfoScreen(
                     onSortToggle = { viewModel.toggleSort() },
                     onSubscribeClick = { viewModel.toggleSubscription() },
                     onNotificationsToggle = {
-                        if (state.podcast.isRss && !state.podcast.notificationsEnabled) {
+                        if (cx.aswin.boxlore.feature.info.logic.requiresRssNotificationDisclosure(state.podcast)) {
                             showRssNotificationDisclosure = true
                         } else {
                             toggleNotifications(false)

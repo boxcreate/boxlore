@@ -9,7 +9,7 @@ class SubscribedEpisodeCatalog(
     private val catalog: LocalEpisodeCatalogPort,
     private val rss: LocalEpisodeCatalogPort,
     private val isSubscribed: suspend (String) -> Boolean = { false },
-) : LocalEpisodeCatalogPort by catalog {
+) : LocalEpisodeCatalogPort {
     private fun source(id: String) = if (id.startsWith("rss:")) rss else catalog
 
     override suspend fun isReady(podcastId: String) = source(podcastId).isReady(podcastId)
@@ -32,4 +32,8 @@ class SubscribedEpisodeCatalog(
     override suspend fun markFeedUrlLookup(podcastId: String, atMillis: Long) = source(podcastId).markFeedUrlLookup(podcastId, atMillis)
     override suspend fun lastFeedUrlLookupAt(podcastId: String) = source(podcastId).lastFeedUrlLookupAt(podcastId)
     override suspend fun setUnsubscribedTtl(podcastId: String, ttlExpiresAt: Long?) = source(podcastId).setUnsubscribedTtl(podcastId, ttlExpiresAt)
+    override suspend fun sweepExpired(nowMillis: Long) {
+        catalog.sweepExpired(nowMillis)
+        rss.sweepExpired(nowMillis)
+    }
 }

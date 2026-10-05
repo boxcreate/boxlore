@@ -198,7 +198,7 @@ class SubscriptionRepository(
                 podcastId = podcast.id,
                 title = podcast.title,
                 author = podcast.artist,
-                imageUrl = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: existing?.imageUrl ?: "",
+                imageUrl = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: existing?.imageUrl.orEmpty(),
                 description = podcast.description,
                 isSubscribed = true,
                 subscribedAt = validRestoredSubscribedAt
@@ -313,11 +313,12 @@ class SubscriptionRepository(
     private fun canEnableRssNotifications(current: PodcastEntity?, acceptDisclosure: Boolean, disclosedFeedUrl: String?): Boolean {
         if (current?.isSubscribed != true) return false
         val url = TrackedPodcastRtdbLogic.httpsFeedUrl(current.feedUrl) ?: return false
+        if (!acceptDisclosure && !current.notificationsEnabled) return false
         if (acceptDisclosure) {
             if (disclosedFeedUrl != url) return false
             rssNotificationConsent.accept(current.podcastId, url)
         }
-        return rssNotificationConsent.isAccepted(current.podcastId, url)
+        return rssNotificationConsent.isAccepted(current.podcastId, url) && rssNotificationConsent.registrationId != null
     }
 
     /**
@@ -350,12 +351,7 @@ class SubscriptionRepository(
     override suspend fun setNotificationTopicSubscribed(podcastId: String, subscribed: Boolean) {
         val entity = podcastDao.getPodcast(podcastId)
         if (podcastId.startsWith("rss:")) {
-            if (subscribed && (entity == null || !hasRssNotificationConsent(entity))) {
-                podcastDao.setNotificationsEnabled(podcastId, false)
-                updateFirebaseSubscription(podcastId, entity?.title.orEmpty(), entity?.imageUrl.orEmpty(), false)
-                return
-            }
-            updateFirebaseSubscription(podcastId, entity?.title.orEmpty(), entity?.imageUrl.orEmpty(), subscribed, if (subscribed) entity?.feedUrl else null)
+            syncRssNotificationTopic(podcastId, entity, subscribed)
             return
         }
         val hasValidDetails = entity != null && entity.title.isNotBlank() && entity.title != "Loading..."
@@ -393,6 +389,12 @@ class SubscriptionRepository(
             isSubscribed = subscribed,
             feedUrl = feedUrl,
         )
+    }
+
+    private suspend fun syncRssNotificationTopic(podcastId: String, entity: PodcastEntity?, subscribed: Boolean) {
+        val accepted = subscribed && hasRssNotificationConsent(entity)
+        if (subscribed && !accepted) podcastDao.setNotificationsEnabled(podcastId, false)
+        updateFirebaseSubscription(podcastId, entity?.title.orEmpty(), entity?.imageUrl.orEmpty(), accepted, if (accepted) entity?.feedUrl else null)
     }
 
     private fun updateFirebaseSubscription(
@@ -581,7 +583,7 @@ class SubscriptionRepository(
     private fun isRssSubscription(podcastId: String, sourceIsRss: Boolean): Boolean = podcastId.startsWith("rss:") || sourceIsRss
 
     private fun hasRssNotificationConsent(entity: PodcastEntity?): Boolean =
-        entity?.isSubscribed == true && entity.feedUrl?.let { rssNotificationConsent.isAccepted(entity.podcastId, it) } == true
+        entity?.isSubscribed == true && entity.notificationsEnabled && entity.feedUrl?.let { rssNotificationConsent.isAccepted(entity.podcastId, it) } == true
 
     /**
      * Writes an HTTPS publisher [feedUrl] onto the Room row so launch sync and
