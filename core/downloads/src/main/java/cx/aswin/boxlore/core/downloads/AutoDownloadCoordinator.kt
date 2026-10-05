@@ -56,7 +56,7 @@ class AutoDownloadCoordinator(
     }
 
     private suspend fun discoverShow(show: PodcastEntity, canProceed: suspend () -> Boolean): Boolean = try {
-        val feed = show.feedUrl?.takeIf { it.startsWith("https://") } ?: recoverMissingFeed(show.podcastId)
+        val feed = show.feedUrl?.takeIf { it.startsWith("https://") } ?: if (show.isRss) null else recoverMissingFeed(show.podcastId)
         var succeeded = feed != null
         if (feed != null) {
             if (feed != show.feedUrl) database.podcastDao().setFeedUrl(show.podcastId, feed)
@@ -66,7 +66,7 @@ class AutoDownloadCoordinator(
                 podcastIndexId = show.podcastId,
                     feedUrl = feed,
                     meta = meta(show),
-                loadPiBaseline = if (!ready) ({ loadInitialBaseline(show.podcastId) }) else null,
+                loadPiBaseline = if (!ready && !show.isRss) ({ loadInitialBaseline(show.podcastId) }) else null,
                 reason = LocalEpisodeCatalogPort.RefreshReason.AUTO_DOWNLOAD,
                 canProceed = canProceed,
             )
@@ -125,7 +125,7 @@ class AutoDownloadCoordinator(
     }
 
     companion object {
-        fun eligible(show: PodcastEntity): Boolean = show.isSubscribed && show.autoDownloadEnabled && !show.isRss
+        fun eligible(show: PodcastEntity): Boolean = show.isSubscribed && show.autoDownloadEnabled
         fun meta(show: PodcastEntity) = LocalEpisodeCatalogPort.PodcastMeta(show.title, show.imageUrl, show.genre, show.author)
 
         fun create(

@@ -39,6 +39,10 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE isSubscribed = 1 AND sourceType = 'rss' ORDER BY title ASC")
     suspend fun getSubscribedRssPodcasts(): List<PodcastEntity>
 
+    /** Includes disabled and unsubscribed rows for migration of device-owned notification registrations. */
+    @Query("SELECT * FROM podcasts WHERE podcastId LIKE 'rss:%' ORDER BY podcastId ASC")
+    suspend fun getRssNotificationRows(): List<PodcastEntity>
+
     @Query("SELECT * FROM podcasts WHERE isSubscribed = 1 AND sourceType = 'podcast_index' ORDER BY title ASC")
     suspend fun getSubscribedPodcastIndexPodcasts(): List<PodcastEntity>
 

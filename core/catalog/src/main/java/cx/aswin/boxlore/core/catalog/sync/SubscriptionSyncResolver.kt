@@ -34,6 +34,13 @@ class SubscriptionSyncResolver(
         }
     }
 
+    /** Remote settings cannot supply consent for publicly tracked RSS feeds. */
+    private suspend fun acceptedNotificationSetting(remote: UserSubscriptionSyncDto): Boolean {
+        if (!remote.podcastId.startsWith("rss:")) return remote.notificationsEnabled
+        val local = podcastDao.getPodcast(remote.podcastId) ?: return false
+        return remote.notificationsEnabled && local.notificationsEnabled && (remote.feedUrl == null || remote.feedUrl == local.feedUrl)
+    }
+
     private suspend fun handleNewSubscription(
         remote: UserSubscriptionSyncDto,
         remoteSubTime: Long,
@@ -60,7 +67,7 @@ class SubscriptionSyncResolver(
             sourceType = if (isRss) PodcastEntity.SOURCE_RSS else PodcastEntity.SOURCE_PODCAST_INDEX,
             feedUrl = remote.feedUrl,
             autoDownloadEnabled = remote.autoDownloadEnabled,
-            notificationsEnabled = remote.notificationsEnabled,
+            notificationsEnabled = acceptedNotificationSetting(remote),
             customGenre = remote.customGenre,
         )
         podcastDao.upsert(stubEntity)
@@ -81,7 +88,7 @@ class SubscriptionSyncResolver(
         val rssRepo = rssPodcastRepository ?: return false
         val feedUrl = remote.feedUrl?.takeIf { it.isNotBlank() } ?: return false
 
-        val result = runCatching { rssRepo.addSubscription(feedUrl) }.getOrNull() ?: return false
+        val result = runCatching { rssRepo.restoreSubscription(feedUrl, remote.podcastId) }.getOrNull() ?: return false
         val ingestedId = result.podcast.id
         val ingested = podcastDao.getPodcast(ingestedId) ?: podcastDao.getPodcast(remote.podcastId) ?: return true
 
@@ -91,7 +98,7 @@ class SubscriptionSyncResolver(
                 unsubscribedAt = 0L,
                 isSubscribed = true,
                 autoDownloadEnabled = remote.autoDownloadEnabled,
-                notificationsEnabled = remote.notificationsEnabled,
+                notificationsEnabled = acceptedNotificationSetting(remote),
                 customGenre = remote.customGenre,
                 customGenreIcon = if (remote.customGenre == null) null else ingested.customGenreIcon,
                 isDirty = false,
@@ -143,7 +150,8 @@ class SubscriptionSyncResolver(
                 folderRepository?.removePodcastFromAllFolders(local.podcastId)
                 if (local.isRss) {
                     podcastDao.deleteRssEpisodes(local.podcastId)
-                } else if (local.notificationsEnabled) {
+                }
+                if (local.notificationsEnabled) {
                     notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, false)
                 }
             } else {
@@ -190,7 +198,7 @@ class SubscriptionSyncResolver(
             isDirty = false,
             syncedAt = syncedAt,
             autoDownloadEnabled = remote.autoDownloadEnabled,
-            notificationsEnabled = remote.notificationsEnabled,
+            notificationsEnabled = acceptedNotificationSetting(remote),
             customGenre = remote.customGenre,
             customGenreIcon = if (remote.customGenre == null) null else local.customGenreIcon,
             feedUrl = remote.feedUrl ?: local.feedUrl,
@@ -220,15 +228,15 @@ class SubscriptionSyncResolver(
             customGenre = remote.customGenre,
             customGenreIcon = genreIcon,
             autoDownloadEnabled = remote.autoDownloadEnabled,
-            notificationsEnabled = remote.notificationsEnabled,
+            notificationsEnabled = acceptedNotificationSetting(remote),
             feedUrl = remote.feedUrl ?: local.feedUrl,
             subscribedAt = if (remoteSubTime > local.subscribedAt) remoteSubTime else local.subscribedAt,
             isDirty = false,
             syncedAt = syncedAt,
         )
         podcastDao.upsert(updated)
-        if (!local.isRss && remote.notificationsEnabled != local.notificationsEnabled) {
-            notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, remote.notificationsEnabled)
+        if (updated.notificationsEnabled != local.notificationsEnabled) {
+            notificationSyncPort?.setNotificationTopicSubscribed(local.podcastId, updated.notificationsEnabled)
         }
     }
 }

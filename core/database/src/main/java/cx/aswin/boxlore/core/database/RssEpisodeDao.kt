@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
 @Dao
+@Suppress("TooManyFunctions") // Bounded RSS reads and identity lookups share the same table.
 interface RssEpisodeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(episodes: List<RssEpisodeEntity>)
@@ -21,6 +22,9 @@ interface RssEpisodeDao {
         """,
     )
     suspend fun getByGuid(podcastId: String, guid: String,): RssEpisodeEntity?
+
+    @Query("SELECT * FROM rss_episodes WHERE podcastId = :podcastId AND audioUrl = :audioUrl LIMIT 1")
+    suspend fun getByAudioUrl(podcastId: String, audioUrl: String): RssEpisodeEntity?
 
     @Query(
         """

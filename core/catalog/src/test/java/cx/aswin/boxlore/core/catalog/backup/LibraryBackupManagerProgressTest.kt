@@ -129,7 +129,7 @@ class LibraryBackupManagerProgressTest {
     @Test
     fun `importLibraryFromJson rethrows coroutine CancellationException during RSS refresh`() = runTest {
         val rssShow = TestFixtures.podcast(id = "rss:feed-1", title = "RSS Show", sourceType = "rss")
-        `when`(rssPodcastRepository.addSubscription("https://example.com/rss.xml"))
+        `when`(rssPodcastRepository.restoreSubscription("https://example.com/rss.xml", "rss:feed-1"))
             .thenReturn(RssSubscriptionResult(podcast = rssShow, episodeCount = 10, automaticUpdateChecksSupported = true))
         `when`(rssPodcastRepository.refreshCatalogIfNeeded("rss:feed-1"))
             .thenAnswer { throw CancellationException("coroutine cancelled") }
@@ -165,7 +165,7 @@ class LibraryBackupManagerProgressTest {
     fun `importLibraryFromJson handles ordinary RSS refresh failure and completes`() = runTest {
         val progressEvents = mutableListOf<JsonBackupProgress>()
         val rssShow = TestFixtures.podcast(id = "rss:feed-2", title = "RSS Show 2", sourceType = "rss")
-        `when`(rssPodcastRepository.addSubscription("https://example.com/rss2.xml"))
+        `when`(rssPodcastRepository.restoreSubscription("https://example.com/rss2.xml", "rss:feed-2"))
             .thenReturn(RssSubscriptionResult(podcast = rssShow, episodeCount = 10, automaticUpdateChecksSupported = true))
         `when`(rssPodcastRepository.refreshCatalogIfNeeded("rss:feed-2"))
             .thenAnswer { throw RuntimeException("network error") }

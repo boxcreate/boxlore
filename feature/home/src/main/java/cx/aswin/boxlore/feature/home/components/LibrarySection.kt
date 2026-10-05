@@ -561,41 +561,10 @@ fun YourShowsSection(
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        ) {
-                                            Text(
-                                                text = selectedPodcast.title,
-                                                style =
-                                                MaterialTheme.typography.titleMedium.copy(
-                                                    fontWeight = GoogleSansWeight.bold,
-                                                    letterSpacing = (-0.4).sp,
-                                                    fontSize = 17.sp,
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f, fill = false),
-                                            )
-                                            if (selectedPodcast.isRss) {
-                                                Surface(
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                                ) {
-                                                    Text(
-                                                        text = "RSS",
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                        modifier =
-                                                        Modifier.padding(
-                                                            horizontal = 6.dp,
-                                                            vertical = 2.dp,
-                                                        ),
-                                                    )
-                                                }
-                                            }
-                                        }
+                                        SelectedShowTitle(
+                                            title = selectedPodcast.title,
+                                            isRss = selectedPodcast.isRss || selectedPodcast.id.startsWith("rss:"),
+                                        )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         val isOldest = (selectedPodcast.preferredSort ?: "newest") == "oldest"
                                         Text(
@@ -616,6 +585,7 @@ fun YourShowsSection(
                                     }
                                 }
 
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Surface(
                                     shape = CircleShape,
                                     color = MaterialTheme.colorScheme.primaryContainer,

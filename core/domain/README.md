@@ -6,13 +6,15 @@ Owns thin domain ports and small result types used by ViewModels, repositories, 
 
 ## Public API
 
+- `LocalEpisodeCatalogPort` also serves source-aware subscription automation through `SubscribedEpisodeCatalog` and `RssEpisodeCatalog`. The existing `RefreshRequest.podcastIndexId` field carries the canonical show ID, including `rss:` for that adapter. Subscription creation and PI extras remain separate ports; no PI baseline is requested for pure RSS.
+
 - `RssSubscriptionPort` and `RssSubscriptionResult`.
 - `EpisodeSupplementPort` and `EpisodeSupplementOutcome` (PI show feed extras; not an RSS subscription). `NewestTipRequest` / `FeedItemMatch` bundle the lighter tip-refresh path used as an FCM payload match fallback. `RefreshFromFeedRequest` optionally loads the PI baseline in parallel with the feed GET via `loadBaseline` (launch sync and FCM hydration). If that loader throws (strict PI HTTP failure), production `refreshFromFeed` returns `Failure` and does not replace stored supplement rows. `isPublisherFeedUnchanged` defaults to false (always refresh). `listDirectFeedOptIns` / `restoreDirectFeedOptIn` default to empty / no-op so fakes stay small; production restores Missing episodes? after library JSON import.
 - `RankingResetPort`.
 - `PodcastCatalogPort`.
 - `HistoryRecommendationSource`.
 - `LocalCatalogPort` for local podcast lookup and subscribed podcast upsert.
-- `LocalEpisodeCatalogPort` for the first-class subscribed-PI episode catalog (ready gate, paged windows, sticky refresh). Not an RSS subscription and not Missing-episodes extras.
+- `LocalEpisodeCatalogPort` for the first-class subscribed-PI episode catalog (ready gate, paged windows, sticky refresh). Creation is separate from RSS subscription catalog reads and Missing-episodes extras.
 - `EpisodeOfflineLookupPort` and `OfflineEpisodeSnapshot` for episode-detail download/history hydration.
 - `ConnectivityStatusPort` and connectivity status types.
 - `DeviceIdentityPort` for cross-device sync attribution.

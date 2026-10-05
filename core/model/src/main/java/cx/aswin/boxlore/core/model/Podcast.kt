@@ -61,6 +61,7 @@ data class Podcast(
         const val SOURCE_RSS = "rss"
         const val RSS_REFRESH_HEAD_VALIDATORS = "head_validators"
         const val RSS_REFRESH_MANUAL = "manual"
+        const val RSS_REFRESH_AUTOMATIC = "automatic"
     }
 }
 

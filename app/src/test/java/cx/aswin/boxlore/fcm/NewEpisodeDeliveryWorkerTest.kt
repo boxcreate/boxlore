@@ -43,7 +43,7 @@ class NewEpisodeDeliveryWorkerTest {
     fun resolvedReleaseIsAdmittedAndCachedReleasesScannedBeforeNotification() = runBlocking {
         val deps = FakeDependencies()
         assertEquals(ListenableWorker.Result.success(), worker(deps).doWork())
-        assertEquals(listOf("show", "hydrate", "accept:-42", "scan", "notify:-42"), deps.calls)
+        assertEquals(listOf("show", "hydrate", "show", "accept:-42", "scan", "notify:-42"), deps.calls)
         assertEquals(payload, deps.receivedPayload)
     }
 
@@ -51,7 +51,7 @@ class NewEpisodeDeliveryWorkerTest {
     fun notificationsOffStillAdmitsAndScansDownloads() = runBlocking {
         val deps = FakeDependencies(show = show().copy(notificationsEnabled = false))
         assertEquals(ListenableWorker.Result.success(), worker(deps).doWork())
-        assertEquals(listOf("show", "hydrate", "accept:-42", "scan"), deps.calls)
+        assertEquals(listOf("show", "hydrate", "show", "accept:-42", "scan"), deps.calls)
     }
 
     @Test
@@ -60,13 +60,13 @@ class NewEpisodeDeliveryWorkerTest {
             val deps = FakeDependencies(episode = null)
             val expected = if (attempt == 4) ListenableWorker.Result.retry() else ListenableWorker.Result.success()
             assertEquals(expected, worker(deps, attempt).doWork())
-            assertEquals(listOf("show", "hydrate", "scan"), deps.calls)
+            assertEquals(listOf("show", "hydrate", "show", "scan"), deps.calls)
         }
     }
 
     @Test
     fun hydrationAndCoordinationExceptionsUseTheSameRetryLimit() = runBlocking {
-        for (phase in listOf("show", "hydrate", "accept:-42", "scan")) {
+        for (phase in listOf("show", "hydrate", "show", "accept:-42", "scan")) {
             for (attempt in listOf(4, 5)) {
                 val deps = FakeDependencies(failAt = phase, error = IllegalStateException("temporary failure"))
                 val expected = if (attempt == 4) ListenableWorker.Result.retry() else ListenableWorker.Result.failure()
@@ -79,7 +79,7 @@ class NewEpisodeDeliveryWorkerTest {
     fun notificationFailureDoesNotRetryAnAlreadyAdmittedDownload() = runBlocking {
         val deps = FakeDependencies(failAt = "notify:-42", error = SecurityException("permission unavailable"))
         assertEquals(ListenableWorker.Result.success(), worker(deps).doWork())
-        assertEquals(listOf("show", "hydrate", "accept:-42", "scan", "notify:-42"), deps.calls)
+        assertEquals(listOf("show", "hydrate", "show", "accept:-42", "scan", "notify:-42"), deps.calls)
     }
 
     @Test
@@ -96,6 +96,44 @@ class NewEpisodeDeliveryWorkerTest {
         }
     }
 
+    @Test
+    fun foreignOrMissingRssFeedScopeNeverHydratesOrScans() = runBlocking {
+        val rss = show().copy(podcastId = "rss:one", feedUrl = "https://publisher.example/accepted")
+        for (url in listOf(null, "https://publisher.example/other")) {
+            val deps = FakeDependencies(show = rss)
+            val data = mapOf("podcastId" to rss.podcastId) + (url?.let { mapOf("feedUrl" to it) } ?: emptyMap())
+            assertEquals(ListenableWorker.Result.success(), worker(deps, data = data).doWork())
+            assertEquals(listOf("show"), deps.calls)
+        }
+    }
+
+    @Test
+    fun urlChangeOrUnsubscribeDuringHydrationCannotAdmitTheRelease() = runBlocking {
+        val rss = show().copy(podcastId = "rss:one", feedUrl = "https://publisher.example/accepted")
+        val data = mapOf("podcastId" to rss.podcastId, "feedUrl" to rss.feedUrl!!)
+        for (current in listOf(rss.copy(feedUrl = "https://publisher.example/other"), rss.copy(isSubscribed = false))) {
+            val deps = FakeDependencies(show = rss, afterHydration = current)
+            assertEquals(ListenableWorker.Result.success(), worker(deps, data = data).doWork())
+            assertEquals(listOf("show", "hydrate", "show"), deps.calls)
+        }
+    }
+
+    @Test
+    fun revokedPresentationConsentKeepsDownloadsIndependent() = runBlocking {
+        val deps = FakeDependencies(canNotify = false)
+        assertEquals(ListenableWorker.Result.success(), worker(deps).doWork())
+        assertEquals(listOf("show", "hydrate", "show", "accept:-42", "scan"), deps.calls)
+    }
+
+    @Test
+    fun sameGuidAcrossDifferentFeedScopesUsesIndependentDeliveryWork() {
+        val rss = mapOf("podcastId" to "rss:one", "guid" to "shared-guid")
+        org.junit.Assert.assertNotEquals(
+            NewEpisodeDeliveryWorker.workName(rss + ("feedUrl" to "https://publisher.example/a")),
+            NewEpisodeDeliveryWorker.workName(rss + ("feedUrl" to "https://publisher.example/b")),
+        )
+    }
+
     private fun worker(deps: FakeDependencies, attempt: Int = 0, data: Map<String, String> = payload): NewEpisodeDeliveryWorker =
         TestListenableWorkerBuilder<NewEpisodeDeliveryWorker>(context)
             .setInputData(Data.Builder().apply { data.forEach { (key, value) -> putString(key, value) } }.build())
@@ -104,6 +142,8 @@ class NewEpisodeDeliveryWorkerTest {
 
     private class FakeDependencies(
         private val show: PodcastEntity? = show(),
+        private val afterHydration: PodcastEntity? = show,
+        private val canNotify: Boolean = true,
         private val episode: Episode? = Episode("-42", "Release", "", "https://cdn/release.mp3", "123", publishedDate = 100),
         private val failAt: String? = null,
         private val error: Exception = IllegalStateException("failure"),
@@ -117,9 +157,10 @@ class NewEpisodeDeliveryWorkerTest {
         }
 
         override suspend fun getShow(podcastId: String): PodcastEntity? {
-            assertEquals("123", podcastId)
+            assertEquals(show?.podcastId ?: "123", podcastId)
+            val hydrated = "hydrate" in calls
             record("show")
-            return show
+            return if (hydrated) afterHydration else show
         }
 
         override suspend fun resolveEpisode(podcastId: String, data: Map<String, String>): Episode? {
@@ -130,6 +171,7 @@ class NewEpisodeDeliveryWorkerTest {
 
         override suspend fun acceptRelease(podcastId: String, episode: Episode) = record("accept:${episode.id}")
         override suspend fun scanCached(podcastId: String) = record("scan")
+        override suspend fun canNotify(podcastId: String, feedUrl: String?) = canNotify
         override suspend fun updateNotification(podcastId: String, data: Map<String, String>, episode: Episode) = record("notify:${episode.id}")
     }
 

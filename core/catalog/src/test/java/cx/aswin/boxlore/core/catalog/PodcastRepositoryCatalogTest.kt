@@ -4,10 +4,15 @@ import android.content.Context
 import android.content.SharedPreferences
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.PodcastDao
+import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeDao
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -19,6 +24,7 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyInt
@@ -38,6 +44,7 @@ import org.mockito.Mockito.`when`
 class PodcastRepositoryCatalogTest {
     private lateinit var server: MockWebServer
     private lateinit var repository: PodcastRepository
+    private lateinit var podcastDao: PodcastDao
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @BeforeEach
@@ -77,6 +84,46 @@ class PodcastRepositoryCatalogTest {
             server.shutdown()
         }
         RssPodcastRepository.clearInstanceForTests()
+    }
+
+    @Test
+    fun `RSS lookup failure preserves a sibling RSS tip and the PI sync result`() = runTest(testDispatcher) {
+        val tip = Episode("-99", "RSS", "", "https://audio.example/rss.mp3", duration = 10, podcastId = "rss:good")
+        `when`(podcastDao.getPodcast("rss:broken")).thenThrow(IllegalStateException("broken lookup"))
+        `when`(podcastDao.getPodcast("rss:good")).thenReturn(PodcastEntity("rss:good", "RSS", "", "", null, sourceType = PodcastEntity.SOURCE_RSS, latestEpisode = tip))
+        server.enqueue(MockResponse().setBody("""{"items":[{"id":"123","latestEpisode":{"id":321,"title":"PI","enclosureUrl":"https://audio.example/pi.mp3"}}]}"""))
+        val tips = repository.syncSubscriptions(listOf("rss:broken", "rss:good", "123"))
+        assertEquals(setOf("rss:good", "123"), tips.keys)
+        assertEquals("-99", tips["rss:good"]!!.id)
+        assertEquals("321", tips["123"]!!.id)
+        assertTrue(server.takeRequest().path!!.startsWith("/sync"))
+    }
+
+    @Test fun `slow RSS lookup does not delay the PI request`() = runTest(testDispatcher) {
+        val piStarted = CountDownLatch(1)
+        val overlapped = AtomicBoolean(false)
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                piStarted.countDown()
+                return MockResponse().setBody("""{"items":[]}""")
+            }
+        }
+        `when`(podcastDao.getPodcast("rss:slow")).thenAnswer {
+            overlapped.set(piStarted.await(3, TimeUnit.SECONDS))
+            null
+        }
+        repository.syncSubscriptions(listOf("rss:slow", "123"))
+        assertTrue(overlapped.get())
+    }
+
+    @Test fun `RSS lookup cancellation propagates from subscription sync`() = runTest(testDispatcher) {
+        `when`(podcastDao.getPodcast("rss:cancelled")).thenThrow(CancellationException("cancelled"))
+        try {
+            repository.syncSubscriptions(listOf("rss:cancelled"))
+            fail("Cancellation must propagate")
+        } catch (_: CancellationException) {
+            assertEquals(0, server.requestCount)
+        }
     }
 
     @Test
@@ -261,7 +308,8 @@ class PodcastRepositoryCatalogTest {
 
     private fun fakeDatabase(): BoxLoreDatabase {
         val database = mock(BoxLoreDatabase::class.java)
-        `when`(database.podcastDao()).thenReturn(mock(PodcastDao::class.java))
+        podcastDao = mock(PodcastDao::class.java)
+        `when`(database.podcastDao()).thenReturn(podcastDao)
         `when`(database.rssEpisodeDao()).thenReturn(mock(RssEpisodeDao::class.java))
         return database
     }

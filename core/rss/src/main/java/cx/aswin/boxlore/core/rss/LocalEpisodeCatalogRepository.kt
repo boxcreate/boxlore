@@ -45,7 +45,7 @@ class LocalEpisodeCatalogRepository private constructor(
             database = database,
             downloadCacheRelinker = downloadCacheRelinker,
         )::reconcile,
-        megaGetGate = Semaphore(MEGA_GET_PERMITS),
+        megaGetGate = PublisherFeedRefreshGate.permits,
         onCatalogPersisted = onCatalogPersisted,
     )
 

@@ -33,6 +33,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         @Suppress("DEPRECATION")
         super.onNewToken(token)
+        RssNotificationSyncWorker.enqueue(applicationContext)
         // Subscribe to the global announcements topic
         FirebaseMessaging.getInstance().subscribeToTopic("all_users")
 
@@ -99,6 +100,20 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
     private fun handleNewEpisodeMessage(data: Map<String, String>, highPriority: Boolean) {
         val podcastId = FcmPayloadParser.podcastId(data) ?: return
+        val subscriptionRepository = try {
+            SharedAppDependenciesHolder.require().subscriptionRepository
+        } catch (_: Exception) {
+            return
+        }
+        val acceptedScope = try {
+            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                val show = subscriptionRepository.getPodcastEntity(podcastId)
+                show?.isSubscribed == true && cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.acceptsRelease(podcastId, show.feedUrl, FcmPayloadParser.feedUrl(data))
+            }
+        } catch (_: Exception) {
+            false
+        }
+        if (!acceptedScope) return
         // FCM's callback lifetime is short: commit work locally before any network call.
         try {
             NewEpisodeDeliveryWorker.enqueue(applicationContext, data, highPriority).result.get(4, java.util.concurrent.TimeUnit.SECONDS)
@@ -106,11 +121,15 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             android.util.Log.e("BoxLoreFcmService", "Unable to persist episode push; discovery will catch up", e)
         }
         try {
-            val show = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-                SharedAppDependenciesHolder.require().database.podcastDao().getPodcast(podcastId)
+            val canPresent = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                subscriptionRepository.canPresentEpisodeNotification(podcastId, FcmPayloadParser.feedUrl(data))
             }
-            if (show?.isSubscribed == true && show.notificationsEnabled) {
-                NewEpisodeNotifications.show(this, podcastId, data)
+            if (canPresent) {
+                NewEpisodeNotifications.show(this, podcastId, data) {
+                    kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                        subscriptionRepository.canPresentEpisodeNotification(podcastId, FcmPayloadParser.feedUrl(data))
+                    }
+                }
             }
         } catch (e: Exception) {
             android.util.Log.w("BoxLoreFcmService", "Unable to show episode notification", e)

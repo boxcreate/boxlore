@@ -117,7 +117,7 @@ class SmartDownloadManager(
         }
     }
 
-    private suspend fun getAndSyncSubscriptions(): List<PodcastEntity> {
+    private suspend fun getAndSyncSubscriptions(isForeground: Boolean): List<PodcastEntity> {
         var subs = database.podcastDao().getSubscribedPodcastsList()
         if (subs.isEmpty()) {
             return emptyList()
@@ -125,7 +125,7 @@ class SmartDownloadManager(
 
         try {
             val feedIds = subs.map { it.podcastId }
-            val freshLatestEpisodes = podcastRepository.syncSubscriptions(feedIds)
+            val freshLatestEpisodes = podcastRepository.syncSubscriptions(feedIds, runPostPersistCallback = isForeground)
             for ((podId, ep) in freshLatestEpisodes) {
                 subscriptionRepository.updateLatestEpisode(podId, ep)
             }
@@ -458,7 +458,7 @@ class SmartDownloadManager(
         }
 
         try {
-            val subs = getAndSyncSubscriptions()
+            val subs = getAndSyncSubscriptions(isForeground || isManual)
             if (subs.isEmpty()) {
                 Log.d("SmartDownloadManager", "No subscribed podcasts found. Sync skipped.")
                 return false

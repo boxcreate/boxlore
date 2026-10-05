@@ -8,17 +8,34 @@ import kotlinx.coroutines.flow.update
 /** Notification consent must not restore an older auto-download choice after persistence. */
 internal suspend fun enablePodcastNotifications(
     uiState: MutableStateFlow<PodcastInfoUiState>,
-    setNotificationsEnabled: suspend (Podcast, Boolean) -> Unit,
+    setNotificationsEnabled: suspend (Podcast, Boolean) -> Boolean,
     trackShowNotificationToggled: (String, Boolean) -> Unit,
 ) {
     val current = uiState.value as? PodcastInfoUiState.Success ?: return
-    setNotificationsEnabled(current.podcast, true)
+    val enabled = setNotificationsEnabled(current.podcast, true)
     uiState.update { latest ->
         if (latest is PodcastInfoUiState.Success && latest.podcast.id == current.podcast.id) {
-            latest.copy(podcast = latest.podcast.copy(notificationsEnabled = true))
+            latest.copy(podcast = latest.podcast.copy(notificationsEnabled = enabled))
         } else {
             latest
         }
     }
-    trackShowNotificationToggled(current.podcast.id, true)
+    trackShowNotificationToggled(current.podcast.id, enabled)
+}
+
+/** A completed download save must not restore an older notification choice. */
+internal suspend fun togglePodcastAutoDownload(
+    uiState: MutableStateFlow<PodcastInfoUiState>,
+    setAutoDownloadEnabled: suspend (String, Boolean) -> Unit,
+) {
+    val current = uiState.value as? PodcastInfoUiState.Success ?: return
+    val enabled = !current.podcast.autoDownloadEnabled
+    setAutoDownloadEnabled(current.podcast.id, enabled)
+    uiState.update { latest ->
+        if (latest is PodcastInfoUiState.Success && latest.podcast.id == current.podcast.id) {
+            latest.copy(podcast = latest.podcast.copy(autoDownloadEnabled = enabled))
+        } else {
+            latest
+        }
+    }
 }

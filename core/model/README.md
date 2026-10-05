@@ -6,6 +6,8 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 
 ## Public API
 
+- `Podcast.RSS_REFRESH_AUTOMATIC` describes publisher subscriptions refreshed via conditional GET or cooldown-gated GET, including feeds without HEAD validators. Legacy capability strings remain readable for in-place upgrade repair.
+
 - Podcast, episode, briefing, chapter, person, transcript, and playback-adjacent model types.
 - `EpisodeMediaCacheKey`: Media3 `customCacheKey` helper — briefing keys append audio URL `v=` so same-day regenerations bust the local audio cache.
 - `ContentRegion` / `ContentRegions`: 11 chart storefronts, language allowlist/normalize/expand (`id`→`id,in`), off-market soft-warn helpers, and briefing market mapping that preserves the explicit `global` briefing tab.

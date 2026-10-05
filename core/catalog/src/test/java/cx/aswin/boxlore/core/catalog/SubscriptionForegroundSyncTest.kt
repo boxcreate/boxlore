@@ -154,9 +154,9 @@ class SubscriptionForegroundSyncTest {
         )
         assertEquals("-1", saved["opted"])
         assertEquals(1, networkCalls)
-        assertEquals(listOf(listOf("plain", "rss:other")), piSynced)
+        assertEquals(listOf(listOf("plain")), piSynced)
         assertTrue(saved.containsKey("plain"))
-        assertTrue(saved.containsKey("rss:other"))
+        assertFalse(saved.containsKey("rss:other"))
     }
 
     @Test
