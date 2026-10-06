@@ -48,8 +48,10 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.togglePlayPause
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -115,25 +117,7 @@ fun LearnScreen(
             "play" -> {
                 viewModel.trackPlayClicked(card)
                 trackLearnCardAction("play", mappedEpisode)
-                val isCurrent = playerState.currentEpisode?.id == mappedEpisode.id
-                if (isCurrent) {
-                    playbackRepository.togglePlayPause()
-                } else {
-                    val podcast = cx.aswin.boxlore.core.model.Podcast(
-                        id = mappedEpisode.podcastId ?: "learn_fallback",
-                        title = mappedEpisode.podcastTitle ?: "Podcast",
-                        artist = mappedEpisode.podcastTitle ?: "Unknown",
-                        imageUrl = mappedEpisode.imageUrl ?: ""
-                    )
-                    coroutineScope.launch {
-                        playbackRepository.playQueue(
-                            episodes = listOf(mappedEpisode),
-                            podcast = podcast,
-                            startIndex = 0,
-                            entryPoint = cx.aswin.boxlore.core.model.PlaybackEntryPoint.LEARN
-                        )
-                    }
-                }
+                playLoreEpisode(mappedEpisode, playerState, playbackRepository, coroutineScope)
             }
             "podcast" -> {
                 viewModel.trackPodcastClicked(card)
@@ -297,6 +281,33 @@ fun LearnScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/** Keep playback action branching out of the screen layout; reuse the injected player. */
+private fun playLoreEpisode(
+    episode: Episode,
+    playerState: PlayerState,
+    playbackRepository: PlaybackRepository,
+    scope: CoroutineScope,
+) {
+    if (playerState.currentEpisode?.id == episode.id) {
+        playbackRepository.togglePlayPause()
+    } else {
+        val podcast = cx.aswin.boxlore.core.model.Podcast(
+            id = episode.podcastId ?: "learn_fallback",
+            title = episode.podcastTitle ?: "Podcast",
+            artist = episode.podcastTitle ?: "Unknown",
+            imageUrl = episode.imageUrl ?: ""
+        )
+        scope.launch {
+            playbackRepository.playQueue(
+                episodes = listOf(episode),
+                podcast = podcast,
+                startIndex = 0,
+                entryPoint = cx.aswin.boxlore.core.model.PlaybackEntryPoint.LEARN
+            )
         }
     }
 }
