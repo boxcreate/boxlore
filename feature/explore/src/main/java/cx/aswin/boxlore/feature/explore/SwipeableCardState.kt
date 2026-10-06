@@ -98,9 +98,9 @@ fun rememberSwipeableCardState(
     onSwiped: (SwipeDirection) -> Unit,
 ): SwipeableCardState {
     val scope = rememberCoroutineScope()
-    val latestDrag by rememberUpdatedState(onDragStarted)
-    val latestSwipe by rememberUpdatedState(onSwiped)
-    val state = remember(key) { SwipeableCardState(scope, { latestDrag(it) }, { latestSwipe(it) }) }
+    val latestDrag = rememberUpdatedState(onDragStarted)
+    val latestSwipe = rememberUpdatedState(onSwiped)
+    val state = remember(key) { SwipeableCardState(scope, { latestDrag.value(it) }, { latestSwipe.value(it) }) }
     DisposableEffect(state) { onDispose { state.dispose() } }
     return state
 }

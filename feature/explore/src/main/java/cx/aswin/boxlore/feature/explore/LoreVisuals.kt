@@ -70,34 +70,7 @@ internal fun LoreHaloBackground(
         modifier = modifier
             .fillMaxSize()
             .clipToBounds()
-            .drawWithCache {
-                val accent = accentColor.value
-                val brush = Brush.verticalGradient(
-                    colors = if (isDarkTheme) {
-                        listOf(backgroundColor, backgroundColor)
-                    } else {
-                        listOf(lerp(backgroundColor, accent, 0.07f), backgroundColor, lerp(backgroundColor, accent, 0.045f))
-                    }
-                )
-                val spotRadius = (size.minDimension * 0.46f).coerceAtLeast(1f)
-                val upperSpotCenter = Offset(size.width * 0.98f, size.height * 0.22f)
-                val lowerSpotCenter = Offset(size.width * 0.06f, size.height * 0.83f)
-                val upperSpot = Brush.radialGradient(
-                    colors = listOf(accent.copy(alpha = if (isDarkTheme) 0.22f else 0.30f), Color.Transparent),
-                    center = upperSpotCenter,
-                    radius = spotRadius,
-                )
-                val lowerSpot = Brush.radialGradient(
-                    colors = listOf(accent.copy(alpha = if (isDarkTheme) 0.18f else 0.26f), Color.Transparent),
-                    center = lowerSpotCenter,
-                    radius = spotRadius * 0.85f,
-                )
-                onDrawBehind {
-                    drawRect(brush)
-                    drawCircle(upperSpot, spotRadius, upperSpotCenter)
-                    drawCircle(lowerSpot, spotRadius * 0.85f, lowerSpotCenter)
-                }
-            }
+            .lorePageBackground(accentColor, backgroundColor, isDarkTheme)
     ) {
         Box(
             modifier = Modifier
@@ -139,6 +112,37 @@ internal fun LoreHaloBackground(
         content()
     }
 }
+
+/** Keep page gradients separate from the animated halo layout and share its color clock. */
+private fun Modifier.lorePageBackground(accentColor: State<Color>, backgroundColor: Color, isDarkTheme: Boolean): Modifier =
+    drawWithCache {
+        val accent = accentColor.value
+        val brush = Brush.verticalGradient(
+            colors = if (isDarkTheme) {
+                listOf(backgroundColor, backgroundColor)
+            } else {
+                listOf(lerp(backgroundColor, accent, 0.07f), backgroundColor, lerp(backgroundColor, accent, 0.045f))
+            }
+        )
+        val spotRadius = (size.minDimension * 0.46f).coerceAtLeast(1f)
+        val upperSpotCenter = Offset(size.width * 0.98f, size.height * 0.22f)
+        val lowerSpotCenter = Offset(size.width * 0.06f, size.height * 0.83f)
+        val upperSpot = Brush.radialGradient(
+            colors = listOf(accent.copy(alpha = if (isDarkTheme) 0.22f else 0.30f), Color.Transparent),
+            center = upperSpotCenter,
+            radius = spotRadius,
+        )
+        val lowerSpot = Brush.radialGradient(
+            colors = listOf(accent.copy(alpha = if (isDarkTheme) 0.18f else 0.26f), Color.Transparent),
+            center = lowerSpotCenter,
+            radius = spotRadius * 0.85f,
+        )
+        onDrawBehind {
+            drawRect(brush)
+            drawCircle(upperSpot, spotRadius, upperSpotCenter)
+            drawCircle(lowerSpot, spotRadius * 0.85f, lowerSpotCenter)
+        }
+    }
 
 private fun Modifier.loreGlow(accentColor: State<Color>, alpha: Float, innerAlpha: Float = 0f): Modifier =
     clip(CircleShape).drawWithCache {
