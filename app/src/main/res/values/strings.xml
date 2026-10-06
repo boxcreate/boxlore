@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">boxlore</string>
+    <!-- Shown after a Lore card's queue action when an existing non-Lore queue would be replaced. -->
+    <string name="lore_queue_conflict_title">Start a Lore queue?</string>
+    <string name="lore_queue_conflict_message">You already have episodes in your queue. Starting a Lore queue stops playback and replaces your current queue with this episode. Swipe right on other Lore cards to add more.\n\nTo add episodes to your existing queue instead, choose Keep current queue. Then tap a card to open its details and choose Add to queue.</string>
+    <string name="lore_queue_conflict_replace">Start Lore queue</string>
+    <string name="lore_queue_conflict_keep">Keep current queue</string>
 </resources>

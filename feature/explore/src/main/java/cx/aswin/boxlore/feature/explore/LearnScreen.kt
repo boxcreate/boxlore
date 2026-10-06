@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.explore
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -30,6 +29,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -46,8 +48,10 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.togglePlayPause
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -64,6 +68,8 @@ fun LearnScreen(
     onNavigateToHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val configuration = LocalConfiguration.current
+    val compactSpacing = configuration.screenWidthDp < 360 || configuration.screenHeightDp < 720
     val uiState by viewModel.uiState.collectAsState()
     val stablePlayerState = remember(playbackRepository) {
         playbackRepository.playerState
@@ -89,19 +95,71 @@ fun LearnScreen(
     val fallbackAccent = MaterialTheme.colorScheme.primary
     val activeArtwork = cards.firstOrNull()?.artworkSources.orEmpty()
     val baseAccentColor = artworkColors[activeArtwork]?.let { Color(it) } ?: fallbackAccent
-    // Only the page eases between cards; each card keeps its own prepared artwork colour.
-    val animatedAccentColor by animateColorAsState(
-        targetValue = baseAccentColor,
-        animationSpec = tween(durationMillis = 180),
-        label = "AccentColorTransition"
-    )
+    val handleLearnCardAction: (String, LearnCuriosityCard) -> Unit = { action, card ->
+        val mappedEpisode = card.toEpisode()
+        when (action) {
+            "dismiss" -> {
+                viewModel.trackCardDismissed(card)
+                trackLearnCardAction("dismiss", mappedEpisode)
+                viewModel.dismissCuriosity(card, LearnHistoryAction.DISMISS)
+            }
+            "queue" -> {
+                viewModel.trackCardQueued(card)
+                trackLearnCardAction("queue", mappedEpisode)
+                onQueueEpisode(mappedEpisode)
+                viewModel.dismissCuriosity(card, LearnHistoryAction.QUEUE)
+            }
+            "info" -> {
+                viewModel.trackInfoClicked(card)
+                trackLearnCardAction("info", mappedEpisode)
+                onEpisodeClick(mappedEpisode)
+            }
+            "play" -> {
+                viewModel.trackPlayClicked(card)
+                trackLearnCardAction("play", mappedEpisode)
+                playLoreEpisode(mappedEpisode, playerState, playbackRepository, coroutineScope)
+            }
+            "podcast" -> {
+                viewModel.trackPodcastClicked(card)
+                trackLearnCardAction("podcast", mappedEpisode)
+                onPodcastClick(
+                    mappedEpisode.podcastId?.toLongOrNull(),
+                    null,
+                    "",
+                    mappedEpisode.podcastTitle ?: "Podcast"
+                )
+            }
+        }
+    }
+
+    val accentTransition = remember { LoreAccentTransition(baseAccentColor) }
+    val swipeThresholdPx = with(LocalDensity.current) { LoreSwipeThresholdDp.dp.toPx() }
+    val swipeState = rememberSwipeableCardState(
+        key = cards.take(2).map { it.episodeId },
+        onDragStarted = { state ->
+            val nextArtwork = cards.getOrNull(1)?.artworkSources
+            val nextAccent = if (nextArtwork == null) {
+                baseAccentColor
+            } else {
+                artworkColors[nextArtwork]?.let(::Color) ?: fallbackAccent
+            }
+            accentTransition.beginSwipe(nextAccent, state.offset, swipeThresholdPx)
+        },
+    ) { direction ->
+        cards.firstOrNull()?.let { card ->
+            handleLearnCardAction(if (direction == SwipeDirection.Left) "dismiss" else "queue", card)
+        }
+    }
+    LaunchedEffect(swipeState, baseAccentColor, swipeState.phase) {
+        if (swipeState.phase == LoreSwipePhase.Idle) accentTransition.settle(baseAccentColor)
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent
     ) { _ ->
         LoreHaloBackground(
-            accentColor = animatedAccentColor,
+            accentColor = accentTransition.color,
             modifier = Modifier.fillMaxSize()
         ) {
             val isRefreshing = when (val state = uiState) {
@@ -116,16 +174,14 @@ fun LearnScreen(
                 onRefresh = { viewModel.refresh() },
                 state = pullToRefreshState,
                 modifier = Modifier.fillMaxSize()
+                    .navigationBarsPadding()
+                    .lorePlayerClearance(bottomContentPadding + 16.dp, playerState.currentEpisode != null)
             ) {
-                // Apply a baseline 16.dp safety padding on top of the dynamic bottom content padding
-                val bottomContentPaddingCalculated = bottomContentPadding + 16.dp
-
                 when (val state = uiState) {
                     is LearnUiState.Loading -> {
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(bottom = bottomContentPaddingCalculated),
+                                .fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
                             BoxLoreLoader.Expressive(size = 64.dp)
@@ -133,10 +189,9 @@ fun LearnScreen(
                     }
                     is LearnUiState.CaughtUp -> {
                         LoreStateCard(
-                            accentColor = animatedAccentColor,
+                            accentColor = accentTransition.color,
                             title = "You’re all caught up",
-                            description = "New curiosities arrive daily. Restore a favorite from your Lore history whenever inspiration strikes.",
-                            bottomContentPadding = bottomContentPaddingCalculated
+                            description = "New curiosities arrive daily. Restore a favorite from your Lore history whenever inspiration strikes."
                         ) {
                             FilledTonalButton(
                                 onClick = viewModel::refresh,
@@ -154,81 +209,21 @@ fun LearnScreen(
                         LaunchedEffect(visibleCard?.episodeId) {
                             visibleCard?.let(viewModel::trackCardVisible)
                         }
-                        val handleLearnCardAction: (String, LearnCuriosityCard) -> Unit = { action, card ->
-                            val mappedEpisode = card.toEpisode()
-                            when (action) {
-                                "dismiss" -> {
-                                    viewModel.trackCardDismissed(card)
-                                    trackLearnCardAction("dismiss", mappedEpisode)
-                                    viewModel.dismissCuriosity(card, LearnHistoryAction.DISMISS)
-                                }
-                                "queue" -> {
-                                    viewModel.trackCardQueued(card)
-                                    trackLearnCardAction("queue", mappedEpisode)
-                                    onQueueEpisode(mappedEpisode)
-                                    viewModel.dismissCuriosity(card, LearnHistoryAction.QUEUE)
-                                }
-                                "info" -> {
-                                    viewModel.trackInfoClicked(card)
-                                    trackLearnCardAction("info", mappedEpisode)
-                                    onEpisodeClick(mappedEpisode)
-                                }
-                                "play" -> {
-                                    viewModel.trackPlayClicked(card)
-                                    trackLearnCardAction("play", mappedEpisode)
-                                    val isCurrent = playerState.currentEpisode?.id == mappedEpisode.id
-                                    if (isCurrent) {
-                                        playbackRepository.togglePlayPause()
-                                    } else {
-                                        val podcast = cx.aswin.boxlore.core.model.Podcast(
-                                            id = mappedEpisode.podcastId ?: "learn_fallback",
-                                            title = mappedEpisode.podcastTitle ?: "Podcast",
-                                            artist = mappedEpisode.podcastTitle ?: "Unknown",
-                                            imageUrl = mappedEpisode.imageUrl ?: ""
-                                        )
-                                        coroutineScope.launch {
-                                            playbackRepository.playQueue(
-                                                episodes = listOf(mappedEpisode),
-                                                podcast = podcast,
-                                                startIndex = 0,
-                                                entryPoint = cx.aswin.boxlore.core.model.PlaybackEntryPoint.LEARN
-                                            )
-                                        }
-                                    }
-                                }
-                                "podcast" -> {
-                                    viewModel.trackPodcastClicked(card)
-                                    trackLearnCardAction("podcast", mappedEpisode)
-                                    onPodcastClick(
-                                        mappedEpisode.podcastId?.toLongOrNull(),
-                                        null,
-                                        "",
-                                        mappedEpisode.podcastTitle ?: "Podcast"
-                                    )
-                                }
-                            }
-                        }
-
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .statusBarsPadding()
-                                .padding(bottom = bottomContentPaddingCalculated),
+                                .statusBarsPadding(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 4.dp)
+                                    .padding(horizontal = 20.dp, vertical = if (compactSpacing) 0.dp else 4.dp)
                             ) {
-                                Image(
-                                    painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.logo_lore),
-                                    contentDescription = "Lore",
-                                    colorFilter = ColorFilter.tint(animatedAccentColor),
-                                    modifier = Modifier
-                                        .height(34.dp)
-                                        .align(Alignment.Center)
+                                LoreLogo(
+                                    accentColor = accentTransition.color,
+                                    modifier = Modifier.height(34.dp).align(Alignment.Center)
                                 )
                                 Surface(
                                     shape = CircleShape,
@@ -246,9 +241,10 @@ fun LearnScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(30.dp))
+                            Spacer(modifier = Modifier.height(if (compactSpacing) 8.dp else 16.dp))
                             CuriosityCardStack(
                                 questions = state.questionsStack,
+                                swipeState = swipeState,
                                 playerState = playerState,
                                 onCardAction = { action, card ->
                                     val actionName = when (action) {
@@ -265,16 +261,15 @@ fun LearnScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
-                                    .padding(horizontal = 20.dp)
+                                    .padding(horizontal = if (compactSpacing) 12.dp else 20.dp)
                             )
                         }
                     }
                     is LearnUiState.Error -> {
                         LoreStateCard(
-                            accentColor = animatedAccentColor,
+                            accentColor = accentTransition.color,
                             title = "Lore lost the thread",
-                            description = state.message,
-                            bottomContentPadding = bottomContentPaddingCalculated
+                            description = state.message
                         ) {
                             FilledTonalButton(
                                 onClick = viewModel::refresh,
@@ -290,29 +285,49 @@ fun LearnScreen(
     }
 }
 
+/** Keep playback action branching out of the screen layout; reuse the injected player. */
+private fun playLoreEpisode(
+    episode: Episode,
+    playerState: PlayerState,
+    playbackRepository: PlaybackRepository,
+    scope: CoroutineScope,
+) {
+    if (playerState.currentEpisode?.id == episode.id) {
+        playbackRepository.togglePlayPause()
+    } else {
+        val podcast = cx.aswin.boxlore.core.model.Podcast(
+            id = episode.podcastId ?: "learn_fallback",
+            title = episode.podcastTitle ?: "Podcast",
+            artist = episode.podcastTitle ?: "Unknown",
+            imageUrl = episode.imageUrl ?: ""
+        )
+        scope.launch {
+            playbackRepository.playQueue(
+                episodes = listOf(episode),
+                podcast = podcast,
+                startIndex = 0,
+                entryPoint = cx.aswin.boxlore.core.model.PlaybackEntryPoint.LEARN
+            )
+        }
+    }
+}
+
 @Composable
 private fun LoreStateCard(
-    accentColor: Color,
+    accentColor: State<Color>,
     title: String,
     description: String,
-    bottomContentPadding: Dp,
     content: @Composable () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = bottomContentPadding),
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Image(
-            painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.logo_lore),
-            contentDescription = "Lore",
-            colorFilter = ColorFilter.tint(accentColor),
-            modifier = Modifier.height(38.dp)
-        )
+        LoreLogo(accentColor, Modifier.height(38.dp))
         Spacer(modifier = Modifier.height(28.dp))
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
@@ -344,6 +359,16 @@ private fun LoreStateCard(
             }
         }
     }
+}
+
+@Composable
+private fun LoreLogo(accentColor: State<Color>, modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.logo_lore),
+        contentDescription = "Lore",
+        colorFilter = ColorFilter.tint(accentColor.value),
+        modifier = modifier,
+    )
 }
 
 private fun trackLearnCardAction(

@@ -65,11 +65,19 @@ internal class AdaptivePlayerChromeController(threshold: Float) {
         this.enabled = enabled
         this.episodeId = episodeId
         this.route = route
+        updateCompactness()
     }
 
     fun onSheetInteractionChanged(busy: Boolean) {
         playerBusy = busy
-        if (busy) scroll.endGesture()
+        if (busy) scroll.endGesture() else updateCompactness()
+    }
+
+    private fun updateCompactness() {
+        // Lore borrows the compact presentation without changing ordinary browsing state.
+        if (!playerBusy || !enabled) {
+            isCompact = enabled && (route == "learn" || scroll.isCompact)
+        }
     }
 
     val scrollConnection = object : NestedScrollConnection {
@@ -86,13 +94,19 @@ internal class AdaptivePlayerChromeController(threshold: Float) {
             val before = preAvailable.takeIf { preSource == source }
             preAvailable = null
             preSource = null
-            isCompact = scroll.onScroll(
+            if (route == "learn") {
+                scroll.endGesture()
+                updateCompactness()
+                return Offset.Zero
+            }
+            scroll.onScroll(
                 consumedX = browsingConsumedDelta(before?.x, consumed.x, available.x),
                 consumedY = browsingConsumedDelta(before?.y, consumed.y, available.y),
                 userInput = source == NestedScrollSource.UserInput,
                 enabled = enabled,
                 playerBusy = playerBusy,
             )
+            updateCompactness()
             return Offset.Zero
         }
 

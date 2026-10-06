@@ -17,7 +17,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
@@ -47,15 +49,14 @@ fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, 
         },
         title = {
             Text(
-                text = "Start a Lore queue?",
+                text = stringResource(R.string.lore_queue_conflict_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = GoogleSansWeight.bold,
             )
         },
         text = {
             Text(
-                text = "This starts a fresh Lore queue and clears your current queue. " +
-                    "To keep it, open the episode and use Add to Queue instead.",
+                text = stringResource(R.string.lore_queue_conflict_message),
                 style = MaterialTheme.typography.bodyLarge,
             )
         },
@@ -77,7 +78,7 @@ fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, 
                 },
                 shape = CircleShape,
             ) {
-                Text("Start Lore queue")
+                Text(stringResource(R.string.lore_queue_conflict_replace))
             }
         },
         dismissButton = {
@@ -90,7 +91,7 @@ fun LoreQueueConflictDialog(pendingLoreEpisode: Episode, onDismiss: () -> Unit, 
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
             ) {
-                Text("Keep current queue")
+                Text(stringResource(R.string.lore_queue_conflict_keep))
             }
         },
         shape = MaterialTheme.shapes.extraLarge,

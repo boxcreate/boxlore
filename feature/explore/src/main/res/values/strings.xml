@@ -1,0 +1,11 @@
+<resources>
+    <string name="lore_action_skip">Skip</string>
+    <string name="lore_action_details">Details</string>
+    <string name="lore_action_add_to_queue">Add to queue</string>
+    <string name="lore_play_episode">Play episode</string>
+    <string name="lore_resume_episode">Resume episode</string>
+    <string name="lore_pause_episode">Pause episode</string>
+    <string name="lore_loading_episode">Loading episode</string>
+    <string name="lore_open_podcast">Open podcast: %1$s</string>
+    <string name="lore_podcast_fallback">Podcast</string>
+</resources>
