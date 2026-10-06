@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-06T14:23:15.328Z",
+  "lastRun": "2026-10-06T19:42:50.355Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f008b08c-cfc6-11f0-83c5-5382a6234e3f",
@@ -49,16 +49,16 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "fe5843f9-a249-4728-aa99-117ea748fbc1",
-      "lastEpisodeTitle": "10am ET, October 06 | The latest headlines from NPR",
+      "lastRssKey": "616c5fd2-558c-402b-9889-a05c4ba5d40a",
+      "lastEpisodeTitle": "3pm ET, October 06 | The latest headlines from NPR",
       "lastEpisodeId": "61201617300",
-      "lastCheckedAt": 1791296600576
+      "lastCheckedAt": 1791315775068
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75587167",
-      "lastEpisodeTitle": "CJP's Mumbai protest, lung cancer concerns, and Hanuman Ansh effect",
-      "lastEpisodeId": "61295843546",
-      "lastCheckedAt": 1791246977954
+      "lastRssKey": "https://api.spreaker.com/episode/75600461",
+      "lastEpisodeTitle": "The Catch Up: Protests against Gyanesh Kumar (6 October)",
+      "lastEpisodeId": "61352118361",
+      "lastCheckedAt": 1791315775910
     },
     "78573": {
       "lastRssKey": "87b9804a-0657-402f-9924-e771f51a0f27",
@@ -97,10 +97,10 @@
       "lastCheckedAt": 1789848367126
     },
     "199250": {
-      "lastRssKey": "9a2f2022-3bfd-4fc3-a498-5accc8f596aa",
-      "lastEpisodeTitle": "The Big Mail",
+      "lastRssKey": "bd9bea8e-3a4f-4914-8da6-8ff16806fd6a",
+      "lastEpisodeTitle": "The Big Shakedown",
       "lastEpisodeId": "33774316304",
-      "lastCheckedAt": 1790974511322
+      "lastCheckedAt": 1791315779237
     },
     "204808": {
       "lastRssKey": "110f325b-ac3b-4948-8787-7c2431003b58",
@@ -170,10 +170,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "10e29d6e-b823-11f1-957c-cf0cc7b0150a",
-      "lastEpisodeTitle": "Why Did Another OpenAI Safety Insider Quit?",
+      "lastRssKey": "113a3e3e-b823-11f1-957c-4febf842f8e2",
+      "lastEpisodeTitle": "Le Chonk",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1791225991873
+      "lastCheckedAt": 1791315786503
     },
     "353744": {
       "lastRssKey": "flightcast:01M4195XGS3GTZ68XYBCHCSQZ0",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "8a8c7142-c18f-11f1-b65c-8357d429fd57",
-      "lastEpisodeTitle": "10AM ET 10/06/2026 Newscast",
+      "lastRssKey": "735bac8e-c1b9-11f1-9907-bf5e1ff724b5",
+      "lastEpisodeTitle": "3PM ET 10/06/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791296612426
+      "lastCheckedAt": 1791315787201
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -212,10 +212,10 @@
       "lastCheckedAt": 1790786432605
     },
     "415434": {
-      "lastRssKey": "49e0eaae-6e7b-11f1-94bf-0b3f490dfea3",
-      "lastEpisodeTitle": "We hear pitches on the best vibe-coded apps",
+      "lastRssKey": "ca7317c8-c3c7-11f0-8340-171c0dbf8e62",
+      "lastEpisodeTitle": "How much should you tell your AI agent?",
       "lastEpisodeId": "61122767217",
-      "lastCheckedAt": 1791246992927
+      "lastCheckedAt": 1791315789870
     },
     "419624": {
       "lastRssKey": "23f91c0d-b9ca-4a5e-97aa-cfb82484f691",
@@ -224,10 +224,10 @@
       "lastCheckedAt": 1791156533475
     },
     "431205": {
-      "lastRssKey": "49acef50-f39b-46cf-aaf3-61c7257f402e",
-      "lastEpisodeTitle": "A New Normal, From Wall Street to Y’all Street, and “Net” Bets 10/5/26",
-      "lastEpisodeId": "61300122026",
-      "lastCheckedAt": 1791225997305
+      "lastRssKey": "6204b12b-cf19-4809-8565-8cbdd35e1db9",
+      "lastEpisodeTitle": "Stocks at Record Highs, The Bullish Case for Bonds, and NYC’s AI Safety Push 10/6/26",
+      "lastEpisodeId": "61350970658",
+      "lastCheckedAt": 1791315791925
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -236,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M48GBSSBJR63M3XAH4WXA1X0",
-      "lastEpisodeTitle": "Is college even worth it these days?",
+      "lastRssKey": "01M48SYPMM4TDDATP8R92ACH2A",
+      "lastEpisodeTitle": "Russian refineries and the price of diesel",
       "lastEpisodeId": "61339864729",
-      "lastCheckedAt": 1791296617765
+      "lastCheckedAt": 1791315792584
     },
     "432535": {
       "lastRssKey": "3b66721e-6186-40aa-9192-c996dc796c7d",
@@ -277,10 +277,10 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
-      "lastRssKey": "89c18b96-20d3-4e9e-acb0-628dc22708c5",
-      "lastEpisodeTitle": "Tesla &#34;Invents&#34; EVJect | Tesla Time News 684",
+      "lastRssKey": "917ec013-c7ba-4880-a447-761bc383fb65",
+      "lastEpisodeTitle": "Netflix Star promotes Tesla FSD | Tesla Time News 685",
       "lastEpisodeId": "61255401907",
-      "lastCheckedAt": 1791145271414
+      "lastCheckedAt": 1791315795534
     },
     "462634": {
       "lastRssKey": "gid://art19-episode-locator/V0/ezDhuk2f202w9qRV909F1Pr6BUtG9ISytIhjoFLdzeY",
@@ -304,10 +304,10 @@
       "lastCheckedAt": 1790958626535
     },
     "483834": {
-      "lastRssKey": "6ac3e89c6c844f245f90f3db",
-      "lastEpisodeTitle": "Fast and Furious TV Series Greenlit, Harvey Awards Hall of Fame Honors — October 5th, 2026",
+      "lastRssKey": "6ac54c863dc1c1be4a5ec703",
+      "lastEpisodeTitle": "The Batman Part II Pauses Production, RuneScape Inspired Animated Series in Development — October 6th, 2026",
       "lastEpisodeId": "61214226729",
-      "lastCheckedAt": 1791226008662
+      "lastCheckedAt": 1791315798418
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -518,10 +518,10 @@
       "lastCheckedAt": 1790898155971
     },
     "808826": {
-      "lastRssKey": "6aaa3cff7f8a8df4338bea9e",
-      "lastEpisodeTitle": "Silent Butt, Deadly - A lesson in chairing",
+      "lastRssKey": "6aac94ad8a1508074dd64bc3",
+      "lastEpisodeTitle": "The Crossover Event Of The Century",
       "lastEpisodeId": "60428476792",
-      "lastCheckedAt": 1790712519819
+      "lastCheckedAt": 1791315815752
     },
     "827592": {
       "lastEpisodeId": "61333440910",
@@ -554,10 +554,10 @@
       "lastCheckedAt": 1790815340873
     },
     "902798": {
-      "lastRssKey": "1135bf95-1435-4942-8a69-0bec5a4b18b4",
-      "lastEpisodeTitle": "NYU Professor: The Middle Class Is A Lie & How To Escape It | Scott Galloway | FO570 Raj Shamani",
+      "lastRssKey": "4ca28227-b907-4dc6-bf89-f765d0fd0283",
+      "lastEpisodeTitle": "Memory Explained: Why We Forget & How to Make It Sharper | Nikolay Kukushkin | FO571 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1791053289697
+      "lastCheckedAt": 1791315818026
     },
     "906591": {
       "lastRssKey": "dfbc55d2-c154-11f1-91dd-4b8abe9c7a87",
@@ -595,10 +595,10 @@
       "lastCheckedAt": 1790986292655
     },
     "980370": {
-      "lastRssKey": "6abfc88f5dd8db805ee8e56b",
-      "lastEpisodeTitle": "The secret to lasting love | Eli J Finkel",
+      "lastRssKey": "6ac3ba163b662ae0dba27e87",
+      "lastEpisodeTitle": "The wonder of weightlifting | Jaime Seeman (re-release)",
       "lastEpisodeId": "61295431950",
-      "lastCheckedAt": 1791226037916
+      "lastCheckedAt": 1791315821873
     },
     "998969": {
       "lastRssKey": "audioboom-01a10723-6f2f-7186-9cfe-171448e40672",
@@ -640,9 +640,9 @@
       "lastCheckedAt": 1791226044665
     },
     "1047865": {
-      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-twisting-the-truth-without-telling-a-lie",
-      "lastEpisodeTitle": "Twisting the Truth Without Telling a Lie",
-      "lastCheckedAt": 1791025865419
+      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-she-never-planned-to-wear-hijab-until-this-moment-remarkable-stories",
+      "lastEpisodeTitle": "She Never Planned To Wear Hijab - Until This Moment - Remarkable Stories",
+      "lastCheckedAt": 1791315825823
     },
     "1065434": {
       "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1122",
@@ -669,10 +669,10 @@
       "lastCheckedAt": 1791296669065
     },
     "1116485": {
-      "lastRssKey": "6ac4c8debe5ba28cfff3bc75",
-      "lastEpisodeTitle": "Why Liverpool Fans Are Excited About Oli O'Connor & Will Wright",
+      "lastRssKey": "6ac5069b1a8184c011688908",
+      "lastEpisodeTitle": "Decoding Maresca’s System | Liverpool v Man City Tactical Preview | The Deep Dive",
       "lastEpisodeId": "61341787893",
-      "lastCheckedAt": 1791296670134
+      "lastCheckedAt": 1791315831193
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -692,10 +692,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "d4feeb64-c0f0-11f1-ac7c-dbb62978c300",
-      "lastEpisodeTitle": "A Necessary Wake Up Call For The Habs | The Sick Podcast with Tony Marinaro October 5 2026",
-      "lastEpisodeId": "61190362263",
-      "lastCheckedAt": 1791270846470
+      "lastRssKey": "f3eafc86-c19d-11f1-a3ec-f37bc96eed72",
+      "lastEpisodeTitle": "Demidov Blessé & Match D'Ouverture Au Centre Bell Ce Soir | Le Sick Podcast Avec Tony Marinaro 06/10/26",
+      "lastEpisodeId": "61348655131",
+      "lastCheckedAt": 1791315833792
     },
     "1199730": {
       "lastRssKey": "8ea61c5d-22ee-41a3-bce9-adafc5136fa2",
@@ -750,10 +750,10 @@
       "lastCheckedAt": 1791156602530
     },
     "1366771": {
-      "lastRssKey": "6ac4cc727c84f5d4ddaec567",
-      "lastEpisodeTitle": "Afternoon Briefing Tuesday 6th October",
-      "lastEpisodeId": "61335510459",
-      "lastCheckedAt": 1791296677285
+      "lastRssKey": "6ac52181e6c66aa8d2788ef3",
+      "lastEpisodeTitle": "Evening briefing Tuesday 6th October",
+      "lastEpisodeId": "61350864715",
+      "lastCheckedAt": 1791315836426
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19912886",
@@ -797,10 +797,10 @@
       "lastCheckedAt": 1789657919557
     },
     "2407094": {
-      "lastRssKey": "6ac3d37e23797e6edc64226e",
-      "lastEpisodeTitle": "(Pop) Youtube, podcasts : de nouvelles règles pourraient être mise en place pour la présidentielle de 2027… HugoDécrypte",
+      "lastRssKey": "6ac543ea4bf67329b9019985",
+      "lastEpisodeTitle": "Des centaines de milliers de personnes manifestent, le gouvernement répond",
       "lastEpisodeId": "61194740865",
-      "lastCheckedAt": 1791270854547
+      "lastCheckedAt": 1791315840183
     },
     "2574026": {
       "lastRssKey": "0682bec8-bd26-11f1-9529-aba7f383686d",
@@ -1299,10 +1299,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a10e84-9fac-72ee-8ba2-3dc8b8fd3fc7",
-      "lastEpisodeTitle": "Trump’s Corporate Enablers Should Be VERY Worried About 2027",
-      "lastEpisodeId": "61174850642",
-      "lastCheckedAt": 1791296728169
+      "lastRssKey": "audioboom-01a111c9-e623-7b08-8875-b3ca2b707918",
+      "lastEpisodeTitle": "Morning Shots: Republicans are Worried They'll Lose South Carolina",
+      "lastEpisodeId": "61346163939",
+      "lastCheckedAt": 1791315882970
     },
     "7239415": {
       "lastRssKey": "9b4bf30a-c044-11f1-9750-bbefe9d23879",
@@ -1359,10 +1359,10 @@
       "lastCheckedAt": 1790239315290
     },
     "7437277": {
-      "lastRssKey": "affd5cd3-a869-4e03-9ba8-5d57221a68a1",
-      "lastEpisodeTitle": "We're cursed??",
+      "lastRssKey": "bc1df22a-fe24-4420-9e85-4b9f7ce1b3f0",
+      "lastEpisodeTitle": "Truth or Damage?",
       "lastEpisodeId": "60440726220",
-      "lastCheckedAt": 1790712593005
+      "lastCheckedAt": 1791315885085
     },
     "7447848": {
       "lastRssKey": "06d3648c-a469-469a-8d8c-09aaf4e4f9c5",
@@ -1506,10 +1506,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/aa71fd03-3af1-52f5-9d87-c0aa744796fa",
-      "lastEpisodeTitle": "This AGE DEFYING life hack WONT work for people in narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/aef78eb4-2b88-52fb-abc0-5c7a919c3365",
+      "lastEpisodeTitle": "Narcissism Expert Breaks Down Succession S4 E2 ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791296739153
+      "lastCheckedAt": 1791315890801
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
