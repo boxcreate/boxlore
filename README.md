@@ -124,6 +124,9 @@ and listen without paywalls, subscriptions, or ads.
 <!-- release-upcoming:start -->
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Lore colors now blend as you swipe between cards. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
+<li>Lore cards have more reading room, larger playback controls, and clearer swipe feedback. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
+<li>The Lore queue prompt explains how to start a new queue or add episodes to your current one. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
 <li>Imported RSS shows now refresh and support automatic and Smart Downloads. Existing imports upgrade while keeping your saved state. <a href="https://github.com/boxcreate/boxlore/pull/1098"><img src="https://img.shields.io/badge/PR-1098-6750A4?style=flat-square" alt="PR #1098" height="18"/></a></li>
 <li>Enable release notifications for public RSS feeds after confirmation. Keep notifications off for private or premium feeds because the shared checker publishes feed URLs in public backups. <a href="https://github.com/boxcreate/boxlore/pull/1098"><img src="https://img.shields.io/badge/PR-1098-6750A4?style=flat-square" alt="PR #1098" height="18"/></a></li>
 <li>Choose from sixteen new complete themes, with simple light/dark previews and clearer wallpaper and custom-color controls. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>

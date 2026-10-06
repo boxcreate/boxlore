@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support automatic refresh, auto-downloads, Smart Downloads and explicitly opted-in public-feed notifications for RSS-only subscriptions. ([#1098](https://github.com/boxcreate/boxlore/pull/1098)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Changed
+- Link Lore background and logo colors to swipe progress, including cancelled gestures and late artwork palettes. ([#1101](https://github.com/boxcreate/boxlore/pull/1101)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Refine Lore cards with measured text fitting, a compact podcast footer, larger playback controls, matching swipe cues, and a wavy playback loader. ([#1101](https://github.com/boxcreate/boxlore/pull/1101)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Temporarily compact the Floating mini-player on the main Lore screen and restore the previous browsing state on exit. ([#1101](https://github.com/boxcreate/boxlore/pull/1101)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Clarify Lore queue replacement and the details-page action for adding episodes to the existing queue. ([#1101](https://github.com/boxcreate/boxlore/pull/1101)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -41,6 +45,13 @@ readme-copy:end pr=1098 -->
 ### Fixes
 - Navigation highlights match your chosen accent, and the miniplayer stays above the navbar when Android navigation buttons are enabled.
 readme-copy:end pr=1099 -->
+
+<!-- readme-copy:start pr=1101
+### Improvements
+- Lore colors now blend as you swipe between cards.
+- Lore cards have more reading room, larger playback controls, and clearer swipe feedback.
+- The Lore queue prompt explains how to start a new queue or add episodes to your current one.
+readme-copy:end pr=1101 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
