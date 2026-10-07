@@ -10,7 +10,7 @@ The graph is layered so playback and features depend inward on catalog and lower
 
 ### Decoupling and module granularity
 
-When a domain, presentation flow, or capability is significant enough to form a cohesive domain (such as the settings hub, listening history timeline, or authentication SDK), **keep it decoupled in its own standalone module**. Avoid co-locating unrelated subsystems inside general-purpose modules (e.g., settings inside `:feature:home`, history inside `:feature:library`, or auth credentials inside `:core:network`). If something is significant enough and makes architectural sense to decouple, keep it separate. Any module extractions or architectural decoupling must strictly be executed **only post explicit confirmation and approval from the user**.
+Keep cohesive domains and flows in focused modules: settings belongs in `:feature:settings`, listening history in `:feature:history`, and authentication in `:core:auth`. Avoid placing unrelated capabilities in general-purpose modules. Obtain explicit maintainer approval before extracting modules or changing architectural boundaries.
 
 ## Identity and storage
 

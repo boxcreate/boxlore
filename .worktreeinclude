@@ -1,0 +1,4 @@
+# Copy private guidance into local Codex-managed worktrees; keep it out of Git.
+AGENTS.internal.md
+.codex/hooks.json
+.codex/hooks/

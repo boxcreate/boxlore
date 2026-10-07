@@ -1,64 +1,56 @@
-# scripts/ — **READ BEFORE EDITING (agents)**
+# Scripts
 
-> **Stop.** If you are about to change anything under `scripts/sync/`, read this file first.
-> Shipping sync code to GitHub alone does **not** run the catalog pipeline.
+Development guidance for catalog synchronization, notification checks, feed repair, and CI helpers. Read this file and the current [`sync/lib/config.js`](sync/lib/config.js) before changing catalog sync.
 
-## Sync does **not** run on GitHub
+## Catalog sync and deployment
 
-- The old GitHub Actions workflow **`sync-pi-data`** is **sunset / removed**.
-- There is **no** GHA cron that refreshes charts, imports podcasts, syncs episodes, or vectorizes.
-- Do **not** re-add a GitHub sync workflow unless the user explicitly asks.
-- Do **not** assume `git push` to `master` updates the live pipeline by itself.
+Catalog sync refreshes charts, imports podcasts, syncs episodes, and vectorizes content. It runs outside GitHub Actions; the former `sync-pi-data` workflow has been removed. Adding a replacement GitHub sync workflow requires explicit maintainer approval.
 
-## Sync runs on the Netcup VPS
+A Git push does not deploy this pipeline. Changes to `scripts/sync/` or `scripts/package.json` require a separate deployment and verification that the active runner uses the updated code and configuration. Read the production runbook in root `AGENTS.internal.md` before deployment. If it is unavailable, obtain it from the maintainer before performing production operations.
 
-| What | Where |
-| :--- | :--- |
-| Live runner root | `/opt/boxlore-sync/` |
-| **Code the cron executes** | `/opt/boxlore-sync/repo/scripts/sync/` (`run-sync.sh` → `cd $REPO`) |
-| Orchestrator | `/opt/boxlore-sync/run-sync.sh` (systemd timers; panel install from `netcup-panel`) |
-| Secrets / budgets | `/opt/boxlore-sync/.env` (never commit) |
-| Run logs | `/opt/boxlore-sync/logs/runs/` |
-| Local Turso / Qdrant | `/opt/boxlore-stack` (sqld + qdrant on the same box) |
-
-**Deploy rule:** after changing `scripts/sync/` (or `scripts/package.json`), you must **redeploy to the VPS `repo` tree** (rsync/pull into `/opt/boxlore-sync/repo`) or the live job keeps running the old code. GitHub is the source of truth for *what to deploy*, not the runner itself.
-
-A second tree `/opt/boxlore-sync/boxlore-src` may exist as a snapshot — **cron does not use it**. Only `repo` matters for the live sync.
-
-## Tagged surfaces (edit with care)
+## Catalog components
 
 | Path | Role |
 | :--- | :--- |
-| [`scripts/sync/lib/config.js`](sync/lib/config.js) | **Countries, tiers, check cadence, embed provider, budgets** — Phase-2 country list lives here only |
-| [`scripts/sync/01-refresh-charts.js`](sync/01-refresh-charts.js) … [`07-record-stats.js`](sync/07-record-stats.js) | Staged pipeline (charts → import → episodes → **cleanup before vectors on CLEANUP=1** → stats) |
+| [`scripts/sync/lib/config.js`](sync/lib/config.js) | Countries, tiers, check cadence, embedding provider, and budgets; the country list is defined here |
+| [`scripts/sync/01-refresh-charts.js`](sync/01-refresh-charts.js) … [`07-record-stats.js`](sync/07-record-stats.js) | Staged pipeline: charts → import → episodes → cleanup before vectors when `CLEANUP=1` → stats |
 | [`scripts/sync/lib/tip-queue.js`](sync/lib/tip-queue.js) | Turso `ep_vec_tip_queue` — durable tip lane (IDs); stage 3 upsert, stage 4 delete on complete |
 | [`scripts/sync/lib/vectorize-lanes.js`](sync/lib/vectorize-lanes.js) | Tip-first drain order + partial-complete flag rules for stage 4 |
 | [`scripts/sync/lib/pi-handoff.js`](sync/lib/pi-handoff.js) | Same-run episode payloads stage 3→4 (not cross-run durable) |
 | [`scripts/sync/lib/turso.js`](sync/lib/turso.js) + [`turso-page.js`](sync/lib/turso-page.js) | HTTP Turso client; **always page** large SELECTs (`RESPONSE_TOO_LARGE`) |
 | [`scripts/sync/lib/staleness.js`](sync/lib/staleness.js) | Core vs relaxed episode-check windows |
 | [`scripts/sync/lib/episode-caps.js`](sync/lib/episode-caps.js) | Per-storefront episode vector caps |
-| [`scripts/sync/lib/embedder.js`](sync/lib/embedder.js) | `bge` (default) vs `qwen` on VPS |
+| [`scripts/sync/lib/embedder.js`](sync/lib/embedder.js) | Embedding providers: `bge` (default) and `qwen` |
 | [`scripts/sync/lib/podcast-index.js`](sync/lib/podcast-index.js) | PI API client — Retry-After / global cooldown failsafes |
 | [`scripts/sync/lib/text.js`](sync/lib/text.js) | Description cleaning + embed text (**uncapped**; `PAYLOAD_DESCRIPTION_MAX` null) |
 | [`scripts/sync/lib/scalars.js`](sync/lib/scalars.js) | Scrub non-scalars before Qdrant/Turso writes |
 | [`scripts/package.json`](package.json) | Sync Node deps + `npm run test:sync` |
 
-## Agent checklist before sync edits
+## Changing catalog sync
 
-1. Read this README + current [`sync/lib/config.js`](sync/lib/config.js) country list.
-2. Prefer hermetic tests under `scripts/sync/lib/*.test.js` (`npm run test:sync` from `scripts/`).
-3. Keep large Turso reads on `fetchAllPaged` / country×category pages — do not reintroduce unbounded wide SELECTs.
-3b. **Never** join/filter charts with `CAST(c.itunes_id AS INTEGER)` (charts column is TEXT). That disables the index and can turn candidate / pending scans into huge `rows_read`. Use `c.itunes_id = CAST(p.itunes_id AS TEXT)`, [`sync/lib/chart-countries.js`](sync/lib/chart-countries.js) (`loadCountriesByItunesId` + JS filter), or page podcasts by `id` and normalize itunes ids in JS. Stages 2/4/5/remediate must follow the same rule as Stage 3.
-4. After commit/push (when asked): **deploy to `/opt/boxlore-sync/repo`** and confirm the runner sees the new countries/flags (`node -e '…require config…'` on the VPS).
-5. Never commit `.env`, PI keys, Turso tokens, or Telegram secrets.
+- Extend hermetic tests under `sync/lib/*.test.js` and run `npm run test:sync` from `scripts/`.
+- Keep large Turso reads on `fetchAllPaged` or country/category pages; avoid unbounded wide SELECTs.
+- Preserve the chart index: `charts.itunes_id` is TEXT, so casting that column to INTEGER disables the index and inflates `rows_read`. Use `c.itunes_id = CAST(p.itunes_id AS TEXT)`, [`sync/lib/chart-countries.js`](sync/lib/chart-countries.js) (`loadCountriesByItunesId` plus a JavaScript filter), or page podcasts by `id` and normalize IDs in JavaScript. This applies to stages 2, 3, 4, 5, and remediation.
+- Keep credentials and environment files out of Git, including `.env`, Podcast Index keys, Turso tokens, and Telegram secrets.
 
-## Other things under `scripts/`
+Use Node.js 20 to match the script workflows. From the repository root:
 
-Non-sync helpers (CI stubs, one-offs, data files) may also live here. They are unrelated to the VPS catalog cron unless documented otherwise. When in doubt, ask before assuming GHA runs them.
+```bash
+npm ci --prefix scripts
+npm run test:sync --prefix scripts
+npm run test:check-new-episodes --prefix scripts
+node --test scripts/backfill-tracked-podcast-feeds-lib.test.js
+```
 
-### Check New Episodes (GitHub Actions — not VPS catalog sync)
+These commands test local logic; running a production script requires the internal runbook and deployment authorization. The catalog suite is a local check and is not scheduled by GitHub Actions.
 
-[`.github/workflows/new-episode-check.yml`](../.github/workflows/new-episode-check.yml) still runs on a ~30 minute cron. It is **not** the sunset catalog pipeline.
+## Other scripts
+
+CI configuration helpers, maintenance tools, and data files also live here. Check the owning workflow or runbook before using a tool; its presence in this directory does not mean it runs automatically.
+
+### Check New Episodes
+
+[`.github/workflows/new-episode-check.yml`](../.github/workflows/new-episode-check.yml) runs approximately every 30 minutes on GitHub Actions. It polls notification registrations independently of catalog sync.
 
 | What | Where |
 | :--- | :--- |
@@ -67,12 +59,26 @@ Non-sync helpers (CI stubs, one-offs, data files) may also live here. They are u
 | Last-notified state | [`scripts/data/episode-tracker.json`](data/episode-tracker.json) (the Action commits this) |
 | Tests | `npm ci` then `npm run test:check-new-episodes` from `scripts/` (the Check New Episodes workflow runs the same script after `npm ci`) |
 
-If a tracked row has HTTPS `feedUrl`, the checker polls that RSS/Atom feed and compares `lastRssKey` (guid, else enclosure). This selection is independent of the phone's Missing episodes? cache setting. Otherwise catalogue rows keep Podcast Index `episodes/byfeedid?max=1` vs `lastEpisodeId`. With no saved state, the first check quietly seeds a baseline. When a catalogue row already has `lastEpisodeId` but no `lastRssKey`, its first RSS check can notify if the newest feed item matches a PI episode with a different ID. For catalogue shows, RSS fetch failure falls back to Podcast Index and does not wipe `lastRssKey`. Publisher feeds may be tens of MB (The Daily ~18 MB); the checker uses the same **25 MB** hard cap as Android `RssFeedClient` and reads the complete bounded body, so oldest-first feeds can put the newest episode at the end. Interrupted, oversized or failed reads retain the last-good release baseline. RSS/Atom parsing accepts playable enclosures regardless of attribute order and ignores non-media/untitled entries, matching Android release hydration. The Action never mints negative episode ids; unmatched feed-only drops omit `episodeId` and deep-link the podcast page. The phone persists the raw GUID/enclosure hint before hydration and resolves the release in its publisher-feed Room catalog. Visible release alerts request high Android FCM priority; foreground discovery recovers missed episodes on the phone by default. Background auto-download discovery is off by default and requires separate user consent; there is no periodic phone notification worker.
+Release selection and recovery:
+
+- A tracked HTTPS `feedUrl` selects RSS/Atom and compares `lastRssKey` (GUID, otherwise enclosure), independently of the phone's Missing episodes? cache setting. Other catalog rows use Podcast Index `episodes/byfeedid?max=1` and `lastEpisodeId`.
+- The first check without saved state quietly seeds a baseline. When an existing catalog row has `lastEpisodeId` but no `lastRssKey`, its first RSS check can notify if the newest feed item matches a PI episode with a different ID. Catalog RSS failures fall back to Podcast Index without clearing `lastRssKey`.
+- Read the complete body within the **25 MB** cap shared with Android `RssFeedClient`; oldest-first feeds may put the newest release at the end. Interrupted, oversized, or failed reads retain the last-good baseline. Parsing accepts playable enclosures regardless of attribute order and ignores non-media or untitled entries.
+- The Action never creates negative episode IDs. Unmatched feed-only releases omit `episodeId` and open the podcast page. The phone persists the raw GUID/enclosure hint before hydration and resolves the release in its publisher-feed Room catalog.
+- Visible alerts request high Android FCM priority. Foreground discovery recovers missed episodes by default. Background auto-download discovery is off by default and requires separate consent; the phone has no periodic notification worker.
+
+### Public RSS notification registrations
+
+The checker supports explicitly opted-in public `rss:` subscriptions from RTDB. Topics use `new_ep_rss_<id>_<sha256-of-trimmed-feed-url>` and payloads retain `rss:<id>`. Pure RSS failures or disabled URLs preserve the last-good state for retry and never fall back to PI. Each new URL scope quietly seeds a baseline; repeated keys remain quiet and FCM failures do not advance it.
+
+RSS-only Git state uses `rss:<id>~<url-hash>` keys with a SHA-256 episode-key digest and episode title, excluding the feed URL, raw GUID, and enclosure. Inactive and legacy show-only scopes are retired. Feed URLs remain in RTDB and push payloads and are published by the weekly backup workflow, so this shared checker is unsuitable for private or premium feeds. These registrations do not require catalog sync changes.
+
+Device RTDB rows use `rss:<show-id>~<registration-id>~<url-hash>`. Group only matching show IDs and exact trimmed feed URLs: different URLs under a preserved show ID have independent topics and release histories. The device journals registration and cleanup before publication, awaits RTDB and FCM acknowledgements, and retries failed cleanup through event-driven WorkManager work even when notifications are disabled. Migration removes legacy device rows and show-only topic subscriptions.
 
 ### Weekly tracked-podcast feed repair
 
-[`backfill-tracked-podcast-feeds.yml`](../.github/workflows/backfill-tracked-podcast-feeds.yml) runs weekly and can be dispatched manually. It shares the `tracked-podcast-rtdb-maintenance` concurrency group with the new-episode checker, so the two RTDB jobs never run at the same time. Before mutation, [`backfill-tracked-podcast-feeds.js`](backfill-tracked-podcast-feeds.js) writes numeric registrations and aggregated public RSS show metadata to [`data/tracked-podcasts-backups/`](data/tracked-podcasts-backups/) and retains one file per UTC ISO week for the latest 10 weeks; the workflow must commit the changed snapshot to `master` successfully before its repair step can start. It then resolves only rows without a valid HTTPS `feedUrl` through the authenticated boxlore `/podcast` endpoint, probes HTTPS upgrades for legacy HTTP feeds, and uses an exact-title Apple directory match only when the API cannot supply a secure URL. Each result is written with a transaction to the individual `feedUrl` leaf, so a newer app write wins and `title` / `imageUrl` cannot be replaced. Unresolved rows are logged and retried on the next run.
+[`backfill-tracked-podcast-feeds.yml`](../.github/workflows/backfill-tracked-podcast-feeds.yml) runs weekly and supports manual dispatch. Its `tracked-podcast-rtdb-maintenance` concurrency group prevents overlap with the notification checker.
 
-- Check New Episodes supports explicitly opted-in public `rss:` subscriptions from RTDB. Their topics map to `new_ep_rss_<id>_<sha256-of-trimmed-feed-url>`; payloads keep `rss:<id>`. Pure RSS failures/disabled URLs never fall back to PI and preserve last-good state for retry. Each new URL scope quietly seeds a baseline, repeated keys stay quiet, and FCM failures do not advance it. RSS-only Git state uses `rss:<id>~<url-hash>` keys and stores a SHA-256 episode-key digest and episode title, never the feed URL/raw GUID/enclosure. Inactive and legacy show-only scopes are retired; changing a URL starts a separate baseline. Feed URLs remain in RTDB/push payloads and are published by the weekly RTDB backup workflow, so this shared checker is unsuitable for private/premium feeds. No change to the VPS catalog sync pipeline is needed.
+Before mutation, [`backfill-tracked-podcast-feeds.js`](backfill-tracked-podcast-feeds.js) saves numeric registrations and aggregated public RSS show metadata to [`data/tracked-podcasts-backups/`](data/tracked-podcasts-backups/), retaining one snapshot per UTC ISO week for the latest 10 weeks. The workflow must successfully commit a changed snapshot to `master` before repairing rows. Backups preserve every accepted public URL scope without publishing device registration IDs.
 
-RSS tracking uses per-device `rss:<show-id>~<registration-id>~<url-hash>` RTDB rows. The checker groups only matching show IDs and exact trimmed feed URLs, so different URLs under a preserved ID have independent topics and release histories. The device journals registration and cleanup before publication, awaits both RTDB and FCM acknowledgements, and retries failed cleanup with event-driven WorkManager work even when no notifications are enabled. Legacy device rows and show-only topic subscriptions are removed during migration. Weekly backups retain every accepted public URL scope without publishing device registration IDs. Feed URL repair skips RSS rows instead of searching for private/premium shows in the catalog.
+Repair considers catalog rows without a valid HTTPS `feedUrl`. It uses the authenticated boxlore `/podcast` endpoint, probes HTTPS upgrades for legacy HTTP feeds, and falls back to an exact-title Apple directory match when the API cannot supply a secure URL. Transactions update only the `feedUrl` leaf, preserving newer app writes, `title`, and `imageUrl`. Unresolved rows are logged and retried next run. RSS rows are skipped rather than searched in the catalog.
