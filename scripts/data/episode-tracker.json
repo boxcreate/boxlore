@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-06T23:35:11.110Z",
+  "lastRun": "2026-10-07T04:30:03.819Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f008b08c-cfc6-11f0-83c5-5382a6234e3f",
@@ -49,16 +49,16 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "eb360f86-6d13-4cae-a60d-ce0cde0f13e3",
-      "lastEpisodeTitle": "7pm ET, October 06 | The latest headlines from NPR",
+      "lastRssKey": "0211df3a-aa12-4fe6-8a45-da820b65e499",
+      "lastEpisodeTitle": "12am ET, October 07 | The latest headlines from NPR",
       "lastEpisodeId": "61361549150",
-      "lastCheckedAt": 1791329717951
+      "lastCheckedAt": 1791347410073
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75600461",
-      "lastEpisodeTitle": "The Catch Up: Protests against Gyanesh Kumar (6 October)",
-      "lastEpisodeId": "61352118361",
-      "lastCheckedAt": 1791315775910
+      "lastRssKey": "https://api.spreaker.com/episode/75600184",
+      "lastEpisodeTitle": "Deep Dive: The anatomy of a govt job racket",
+      "lastEpisodeId": "61363937885",
+      "lastCheckedAt": 1791347410864
     },
     "78573": {
       "lastRssKey": "87b9804a-0657-402f-9924-e771f51a0f27",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "fdc41c3c-c1da-11f1-b3ce-870f38b91262",
-      "lastEpisodeTitle": "7PM ET 10/06/2026 Newscast",
+      "lastRssKey": "e701d8d4-c204-11f1-a6fd-e3e6896e9c2f",
+      "lastEpisodeTitle": "12AM ET 10/07/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791329733647
+      "lastCheckedAt": 1791347454431
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -206,10 +206,10 @@
       "lastCheckedAt": 1791270781831
     },
     "399669": {
-      "lastRssKey": "994a7e22-456a-44be-a17c-9da908d0d1db",
-      "lastEpisodeTitle": "The Zodiac Killer? /// Part 1 /// 960",
-      "lastEpisodeId": "61360615444",
-      "lastCheckedAt": 1791329736344
+      "lastRssKey": "580335fb-d663-4692-a0e3-6f8f06cefd0a",
+      "lastEpisodeTitle": "The Zodiac Killer? /// Part 2 /// 961",
+      "lastEpisodeId": "61362597376",
+      "lastCheckedAt": 1791347456577
     },
     "415434": {
       "lastRssKey": "ca7317c8-c3c7-11f0-8340-171c0dbf8e62",
@@ -266,10 +266,10 @@
       "lastCheckedAt": 1791296621447
     },
     "444785": {
-      "lastRssKey": "b0aaf62a-902e-4d9d-8f0e-14dbe50e9b8e",
-      "lastEpisodeTitle": "Montreal Canadiens REVENGE in Hurricanes rematch—Habs TARGET 3 wins this week, who will be X-factor?",
-      "lastEpisodeId": "61320100739",
-      "lastCheckedAt": 1791270790946
+      "lastRssKey": "d5348a87-dce1-4ac1-8f9b-8ed1b4703a47",
+      "lastEpisodeTitle": "Montreal Canadiens STUMBLE In Playoff REMATCH vs. Carolina | Demidov OUT: Slafkovsky MUST Step Up",
+      "lastEpisodeId": "61370534318",
+      "lastCheckedAt": 1791347464167
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -370,10 +370,10 @@
       "lastCheckedAt": 1791198232068
     },
     "545784": {
-      "lastRssKey": "b17d3428595ce7ed50b73987a470b9f5",
-      "lastEpisodeTitle": "Bolsohnaro",
-      "lastEpisodeId": "61318213953",
-      "lastCheckedAt": 1791270809707
+      "lastRssKey": "9f1a63e0cb28d712530ab2d5ca67297e",
+      "lastEpisodeTitle": "The Eye of the Keiler (Alev Doğan macht Auge auf Merz)",
+      "lastEpisodeId": "61368582433",
+      "lastCheckedAt": 1791347482904
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/cap/twit_1104/b1e10584-ef12-4a62-be38-36b46710da62.mp3",
@@ -393,10 +393,10 @@
       "lastCheckedAt": 1791270811306
     },
     "570903": {
-      "lastRssKey": "urn:bbc:podcast:m0031m2q",
-      "lastEpisodeTitle": "Series 13: Marquis de Sade",
+      "lastRssKey": "urn:bbc:podcast:m0031m2t",
+      "lastEpisodeTitle": "Series 13: Chuck Berry",
       "lastEpisodeId": "58699345714",
-      "lastCheckedAt": 1790786468967
+      "lastCheckedAt": 1791347484598
     },
     "573431": {
       "lastRssKey": "gid://art19-episode-locator/V0/tVDrn_X1p7IN78COEh9ybhhx0lcWJNqIqMTFoUfl-gU",
@@ -554,10 +554,10 @@
       "lastCheckedAt": 1790815340873
     },
     "902798": {
-      "lastRssKey": "1135bf95-1435-4942-8a69-0bec5a4b18b4",
-      "lastEpisodeTitle": "NYU Professor: The Middle Class Is A Lie & How To Escape It | Scott Galloway | FO570 Raj Shamani",
+      "lastRssKey": "4ca28227-b907-4dc6-bf89-f765d0fd0283",
+      "lastEpisodeTitle": "Memory Explained: Why We Forget & How to Make It Sharper | Nikolay Kukushkin | FO571 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1791329781406
+      "lastCheckedAt": 1791347497942
     },
     "906591": {
       "lastRssKey": "dfbc55d2-c154-11f1-91dd-4b8abe9c7a87",
@@ -566,10 +566,10 @@
       "lastCheckedAt": 1791296652881
     },
     "928708": {
-      "lastRssKey": "7245d7ba-bf17-11f1-b668-b304ae89b2d7",
-      "lastEpisodeTitle": "History Today - Oct. 6",
+      "lastRssKey": "ed404da4-c03b-11f1-a46d-e336f652f904",
+      "lastEpisodeTitle": "History Today - Oct. 7",
       "lastEpisodeId": "61274594589",
-      "lastCheckedAt": 1791270828159
+      "lastCheckedAt": 1791347499148
     },
     "946758": {
       "lastRssKey": "10f30bcc-77b5-11f0-8752-7b07bcd8ee21",
@@ -651,10 +651,10 @@
       "lastCheckedAt": 1790898166465
     },
     "1070334": {
-      "lastRssKey": "63847778-bda4-11f1-8538-431aaea78864",
-      "lastEpisodeTitle": "Never Had a Dream",
-      "lastEpisodeId": "61264385323",
-      "lastCheckedAt": 1791166830755
+      "lastRssKey": "593c6d4c-c1a1-11f1-ae8f-57f5b8c1fa6a",
+      "lastEpisodeTitle": "Frank Skinner's Radio Days: The Halitosians",
+      "lastEpisodeId": "61366950093",
+      "lastCheckedAt": 1791347513472
     },
     "1076260": {
       "lastRssKey": "81146d81-a3ea-4b59-b0ae-b4d701118a48",
@@ -692,10 +692,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "f3eafc86-c19d-11f1-a3ec-f37bc96eed72",
-      "lastEpisodeTitle": "Demidov Blessé & Match D'Ouverture Au Centre Bell Ce Soir | Le Sick Podcast Avec Tony Marinaro 06/10/26",
+      "lastRssKey": "ad80ea74-c1fe-11f1-98cc-0fd74a4692b0",
+      "lastEpisodeTitle": "Déjà Vu For The Habs At The Bell Centre | The Sick Podcast with Tony Marinaro October 6 2026",
       "lastEpisodeId": "61348655131",
-      "lastCheckedAt": 1791315833792
+      "lastCheckedAt": 1791347519552
     },
     "1199730": {
       "lastRssKey": "8ea61c5d-22ee-41a3-bce9-adafc5136fa2",
@@ -750,10 +750,10 @@
       "lastCheckedAt": 1791156602530
     },
     "1366771": {
-      "lastRssKey": "6ac52181e6c66aa8d2788ef3",
-      "lastEpisodeTitle": "Evening briefing Tuesday 6th October",
+      "lastRssKey": "6ac5ade229b9fbfbe225a109",
+      "lastEpisodeTitle": "Morning briefing Wednesday 7th October",
       "lastEpisodeId": "61350864715",
-      "lastCheckedAt": 1791315836426
+      "lastCheckedAt": 1791347522714
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19912886",
@@ -785,10 +785,10 @@
       "lastCheckedAt": 1790385270880
     },
     "2136580": {
-      "lastRssKey": "352ef84c-bb84-4e49-b84d-b74ff251a29a",
-      "lastEpisodeTitle": "Episode 391: CANADIENS CAN'T COMPLETE COMEBACK IN OVERTIME vs PENGUINS!",
+      "lastRssKey": "6423d731-762b-4375-813f-0245b72f6060",
+      "lastEpisodeTitle": "Episode 392: THE HURRICANES DEFEAT THE CANADIENS IN THEIR HOME OPENER!",
       "lastEpisodeId": "61173312933",
-      "lastCheckedAt": 1791094550516
+      "lastCheckedAt": 1791347525397
     },
     "2136949": {
       "lastRssKey": "6ac553a0eea51f2aa345497e",
@@ -1079,10 +1079,10 @@
       "lastCheckedAt": 1791296703141
     },
     "6456494": {
-      "lastRssKey": "6abc529cf560f37dfc52823a",
-      "lastEpisodeTitle": "Smartphone Rorschach Test",
+      "lastRssKey": "6ac5b9e18f3407888940c1c5",
+      "lastEpisodeTitle": "Googlebook: Taste the Rainbow",
       "lastEpisodeId": "60723261591",
-      "lastCheckedAt": 1790741433849
+      "lastCheckedAt": 1791347547291
     },
     "6467886": {
       "lastRssKey": "a3ac9cb0-c02c-11f1-a655-3f81a38ce35b",
@@ -1091,10 +1091,10 @@
       "lastCheckedAt": 1791226082563
     },
     "6559880": {
-      "lastRssKey": "d5ba6282-c027-11f1-bba1-57663ab460f3",
-      "lastEpisodeTitle": "Exquisite England Hammer Calamitous Croatia",
+      "lastRssKey": "cf5765b0-c1ef-11f1-93a8-ffcb86792eaa",
+      "lastEpisodeTitle": "England Excel Again & The Cristiano Ronaldo Saga",
       "lastEpisodeId": "60944555813",
-      "lastCheckedAt": 1791166864741
+      "lastCheckedAt": 1791347548089
     },
     "6602135": {
       "lastRssKey": "15094733-de70-40e9-9d5d-b9b1cce37a31",
@@ -1203,10 +1203,10 @@
       "lastCheckedAt": 1791134398922
     },
     "6872190": {
-      "lastEpisodeId": "61311147860",
-      "lastEpisodeTitle": "Escucha ESTO cuando te sientas ANSIOSO - ESTOICISMO y vuelve a tomar el control de tu mente",
-      "lastRssKey": "https://api.spreaker.com/episode/75587382",
-      "lastCheckedAt": 1791247085574
+      "lastEpisodeId": "61361883453",
+      "lastEpisodeTitle": "OBLÍGATE A CONSTRUIR UNA AUTOESTIMA DE ACERO - LECCIONES de ESTOICISMO para dejar de depender de la aprobación ajena",
+      "lastRssKey": "https://api.spreaker.com/episode/75603983",
+      "lastCheckedAt": 1791347568732
     },
     "6894068": {
       "lastRssKey": "0943a678-bd0c-11f1-bbf1-0366c63b3d39",
@@ -1233,10 +1233,10 @@
       "lastCheckedAt": 1790986345475
     },
     "6956562": {
-      "lastRssKey": "3720d0d6-cf1b-4eff-b07d-e753a8b453e0",
-      "lastEpisodeTitle": "Why isn't gas connection enough in India?",
-      "lastEpisodeId": "61318821150",
-      "lastCheckedAt": 1791270896695
+      "lastRssKey": "05f0df47-d140-4d31-aef3-dd166f3e8b8c",
+      "lastEpisodeTitle": "Does Indian steel really need so much protection?",
+      "lastEpisodeId": "61367095333",
+      "lastCheckedAt": 1791347570355
     },
     "6959250": {
       "lastRssKey": "99f92a05-76b6-4edd-b507-b1ad2cda5d61",
@@ -1305,10 +1305,10 @@
       "lastCheckedAt": 1791329857577
     },
     "7239415": {
-      "lastRssKey": "9b4bf30a-c044-11f1-9750-bbefe9d23879",
-      "lastEpisodeTitle": "This just took a VERY interesting turn...",
-      "lastEpisodeId": "61241753292",
-      "lastCheckedAt": 1791156646839
+      "lastRssKey": "67af6ee8-c1fa-11f1-b224-878b29e94aad",
+      "lastEpisodeTitle": "You can't ignore it...",
+      "lastEpisodeId": "61368532185",
+      "lastCheckedAt": 1791347577497
     },
     "7248222": {
       "lastRssKey": "b2d7996c-c1ce-11f1-840a-4baa31f7b90d",
@@ -1341,16 +1341,16 @@
       "lastCheckedAt": 1791192629805
     },
     "7348627": {
-      "lastRssKey": "287b0aeb-e371-4b76-8084-41caa5a02ff5",
-      "lastEpisodeTitle": "Chilling Cases That Detectives Can't Crack | 324",
-      "lastEpisodeId": "61238104179",
-      "lastCheckedAt": 1791247095349
+      "lastRssKey": "a663d949-1ce4-47a9-9e4a-442636738ba7",
+      "lastEpisodeTitle": "Brian Shaffer and Janice Weston: 2 High Profile Unsolved Cases | 325",
+      "lastEpisodeId": "61364044131",
+      "lastCheckedAt": 1791347578787
     },
     "7376606": {
-      "lastRssKey": "b6eceece-1abc-4de9-b243-abe0de65b69c",
-      "lastEpisodeTitle": "The Silk Road Explained 🐪🏺 | The Ancient Route That Connected Civilizations | Boring History for Sleep",
-      "lastEpisodeId": "61320782684",
-      "lastCheckedAt": 1791296730168
+      "lastRssKey": "259c8e20-ae5d-4505-80a5-03bd19f987a9",
+      "lastEpisodeTitle": "Apollo 11 — The Complete Story of Humanity’s First Moon Landing 🚀🌕 | Boring History for Sleep",
+      "lastEpisodeId": "61364683912",
+      "lastCheckedAt": 1791347579139
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031jzh",
@@ -1506,10 +1506,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/1e1d6c9a-f81c-5416-b996-51e4e9c01e51",
-      "lastEpisodeTitle": "Suing the Narcissist for Destruction of Property ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/94c6165a-6fd9-53c5-8270-4210cb50edfb",
+      "lastEpisodeTitle": "Succession S4 E1Therapist ReactsSPOILER ALERT ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791329870971
+      "lastCheckedAt": 1791347588473
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
