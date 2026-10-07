@@ -1,121 +1,47 @@
-# AGENTS.md — Boxlore agent contract
+# Working on boxlore
 
-Short entrypoint for Cursor / Codex / cloud agents. Prefer this over long essays.
+Before planning or editing, check for `AGENTS.internal.md` in the repository root and load it when present. Report missing internal guidance. Do not perform production deployments or repository-administration operations without the relevant internal instructions. In a configured maintainer environment, missing internal guidance restricts work to read-only investigation until restored.
 
-## Non-negotiables
+When installed and trusted, local Codex hooks load the internal document at session/subagent start and after compaction. Verify loading rather than assuming that a file's presence enables it. The tracked `.worktreeinclude` copies ignored local instructions and hooks into new local Codex-managed worktrees; ordinary Git worktrees and cloud environments require separate provisioning.
 
-- Read [`ARCHITECTURE.md`](ARCHITECTURE.md) + the touched module `README.md` before editing; **ARCHITECTURE wins** on conflicts.
-- Before editing `scripts/sync/` (catalog pipeline): read [`scripts/README.md`](scripts/README.md) **and** the **Catalog sync** section below. Sync **does not** run on GitHub Actions — only on the Netcup VPS. A `git push` alone does **not** update the live runner.
-- No feature→feature deps/imports; no PostHog in features (use `:core:analytics`); no Hilt/Koin/MockK.
-- **Decoupling principle**: If a domain, flow, or subsystem is significant enough and makes architectural sense to decouple (e.g. settings, history, auth), keep it separate in its own focused module rather than bloating general-purpose modules. Module extractions and decoupling can **strictly only be performed post explicit confirmation from the user**.
-- Never break identity/storage contracts (`applicationId`, DataStore `user_preferences`, Room names, `rss:` IDs, single `PlaybackRepository`, smart-queue refill ownership). See ARCHITECTURE identity table.
-- Update the touched module README in the same change (template: [`docs/MODULE_README_TEMPLATE.md`](docs/MODULE_README_TEMPLATE.md)).
-- Extend JVM `src/test` for touched logic; **bug fix ⇒ regression test** (same failure mode app-wide when shared). No Compose `androidTest` / emulator CI.
-- Commit / push / open a PR **only when the user asks**. Conventional Commits titles.
-- Every PR needs **exactly one** user-impact label (`user-impact-critical|high|medium|low` or `no-user-impact`); optional `backend-change`. Changelog / README upcoming workflows depend on these — see [`.cursor/rules/pr-impact-labels.mdc`](.cursor/rules/pr-impact-labels.mdc). For `user-impact-critical`, fill the PR **Release copy** regions (CHANGELOG + README); those are pasted verbatim and must not be Groq-rewritten.
-- Merge when required checks are green (squash). Required checks: **`testDebugUnitTest`** + **`coderabbit-threads-resolved`**. SonarCloud / Gitleaks / CodeRabbit apps still run on PRs (fix Sonar issues). Unit suite cancels prior in-progress runs on new commits; `[skip unit]` / `[skip changelog]` only when appropriate. No merge queue / `merge-ci`.
-- CodeRabbit (mandatory for agents):
-  - Address every CodeRabbit finding and mark **every** CodeRabbit review thread **Resolved** before merge. Do not rely on the bare `CodeRabbit` status (that only means the review job finished). The hard gate is **`coderabbit-threads-resolved`**.
-  - If the PR review decision is **`CHANGES_REQUESTED`** (CodeRabbit or anyone with write access): **stop**. Do **not** dismiss the review, do **not** force-merge / queue merge. Tell the user the PR is blocked on requested changes and ask them to merge (or dismiss) manually.
-- SonarCloud: **0 new-code issues** on the PR (App quality gate). Fix Sonar findings; do not treat a missing Sonar ruleset requirement as permission to ignore them.
-- Never commit secrets (`local.properties`, `.env`, keystores, `google-services.json`).
-- Do **not** hand-edit `CHANGELOG.md` or README Upcoming / What's New regions (`<!-- release-upcoming:* -->` / `<!-- release-whats-new:* -->`) — `changelog-on-merge` owns those. Write the exact bullets in the PR **Release copy** markers instead; the merge/release scripts paste them as-is and must not Groq-rewrite filled regions. Hand-edits of CHANGELOG/README are OK only for intentional release-note rewrites with matching script contracts.
-- **boxlore-only:** do not change other `boxcreate` repos or org-wide bot settings unless asked. Keep proxy/backend internals out of public Android PR text.
-- Product name in user-facing copy is **boxlore** (all lowercase), not “Boxlore” / “BoxLore”.
-- **Mandatory UX writing skill:** Before drafting or changing any text shown in the app, read and apply the available `ux-writing-content-design` skill's `SKILL.md` and relevant references, even when the user does not explicitly invoke it. This includes titles, labels, buttons, instructions, dialogs, errors, notifications, empty/loading/success states, and accessibility descriptions. Review wording in the surrounding UI and verify that it accurately describes the app's behavior.
-- Cards / panels: solid Material 3 surfaces only — no glassmorphism / translucent card backgrounds.
+## Project context
 
-## Source of truth (priority order)
+boxlore is a Kotlin Android app with `:app`, `:core:*`, and `:feature:*` modules. `AppContainer` owns dependency wiring. The external backend is not part of this repository; build and launch setup is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-1. Latest user message (explicit overrides win)
-2. This file + [`.cursor/rules/*.mdc`](.cursor/rules/)
-3. [`ARCHITECTURE.md`](ARCHITECTURE.md)
-4. Touched module `README.md`
-5. [`docs/TESTING.md`](docs/TESTING.md) and [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md)
+## Engineering constraints
 
-## Where to look
+- Read [ARCHITECTURE.md](ARCHITECTURE.md) and the affected module README before changing code. Architecture owns module boundaries and identity/storage contracts; module READMEs describe local behavior.
+- Features must not depend on or import other features. Use `:core:analytics` instead of PostHog directly in features. Do not add Hilt, Koin, Dagger, or MockK.
+- Keep cohesive capabilities in focused modules. Obtain explicit maintainer approval before module extraction or architectural decoupling.
+- Preserve application/storage names, legacy worker and service identities, deep links, `rss:`/negative IDs, and cache-key contracts. Keep one UI-scoped `PlaybackRepository` and service-owned Smart Queue refill.
+- Update the affected module README in the same change using [the module template](docs/MODULE_README_TEMPLATE.md).
+- Add or extend hermetic JVM `src/test` coverage for changed logic. Bug fixes require a regression test for the failure mode, including shared behavior where applicable. Do not add Compose instrumentation or emulator CI.
+- Before changing catalog scripts, read [scripts/README.md](scripts/README.md). Catalog sync runs outside GitHub Actions; pushing code does not deploy it. Production operations require the internal runbook.
+- Keep work scoped to this repository. Preserve unrelated edits and avoid destructive cleanup of developer checkouts.
 
-| Topic | Doc |
+## Product and data safeguards
+
+- Use **boxlore** in user-facing copy. Keep wording concise, consistent with surrounding UI, and accurate about the resulting behavior. Apply available UX writing guidance; maintainer skill requirements are in the internal document.
+- Use solid Material 3 surfaces for cards and panels.
+- Keep secrets and local configuration out of Git, including `.env`, `local.properties`, keystores, and `google-services.json`.
+- Release workflows own `CHANGELOG.md` and the root README's generated Upcoming/What's New regions. Put exact release wording in the PR template's release-copy regions. Intentional release-note rewrites require matching script contracts.
+- Keep private operational details out of public documentation and Android PR descriptions.
+
+## Validation and review
+
+Use [docs/TESTING.md](docs/TESTING.md) to select relevant checks and distinguish local verification from remote CI or device verification. Use the Gradle wrapper.
+
+Follow [the PR template](.github/PULL_REQUEST_TEMPLATE.md) for Conventional Commit titles, exactly one user-impact label, release copy, and review requirements. Before an authorized squash merge, required checks must be green, every CodeRabbit finding addressed and thread resolved, and SonarCloud must have zero new-code issues. Agents must not dismiss requested-change reviews or bypass merge checks.
+
+## Documentation map
+
+| Topic | Source |
 | :--- | :--- |
-| Module graph, DI, identity | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
-| Unit / Kover / Konsist / CI | [`docs/TESTING.md`](docs/TESTING.md) |
-| Catalog sync pipeline (VPS, not GHA) | [`scripts/README.md`](scripts/README.md) |
-| Always-on agent rules | [`.cursor/rules/`](.cursor/rules/) |
-| PR body / merge checklist | [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) |
-| Impact labels + merge gate | [`.cursor/rules/pr-impact-labels.mdc`](.cursor/rules/pr-impact-labels.mdc) |
+| Local setup and build versus runtime configuration | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Architecture, dependency direction, stable identities | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Commands, test selection, coverage, CI | [docs/TESTING.md](docs/TESTING.md) |
+| Script responsibilities and development checks | [scripts/README.md](scripts/README.md) |
+| Module documentation format | [docs/MODULE_README_TEMPLATE.md](docs/MODULE_README_TEMPLATE.md) |
+| PR labels, release copy, review and merge process | [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) |
 
-## Catalog sync (VPS — not GitHub Actions)
-
-**Hard stop before editing `scripts/sync/`.** Full detail: [`scripts/README.md`](scripts/README.md).
-
-### Sync does not run on GitHub
-
-- The old GHA workflow **`sync-pi-data` is sunset / removed**.
-- There is **no** GitHub cron for charts, PI import, episode sync, or vectorization.
-- Do **not** re-add a GitHub sync workflow unless the user explicitly asks.
-- Do **not** assume `git push` to `master` updates the live pipeline by itself.
-
-### Sync runs on the Netcup VPS
-
-| What | Where |
-| :--- | :--- |
-| Live runner root | `/opt/boxlore-sync/` |
-| **Code the cron executes** | `/opt/boxlore-sync/repo/scripts/sync/` (`run-sync.sh` → `cd $REPO`) |
-| Orchestrator | `/opt/boxlore-sync/run-sync.sh` (systemd timers; panel install from `netcup-panel`) |
-| Secrets / budgets | `/opt/boxlore-sync/.env` (never commit) |
-| Run logs | `/opt/boxlore-sync/logs/runs/` |
-| Local Turso / Qdrant | `/opt/boxlore-stack` |
-
-**Deploy rule:** after changing `scripts/sync/` or `scripts/package.json`, **redeploy into `/opt/boxlore-sync/repo`** (rsync/pull) or the live job keeps old code. GitHub is deploy source of truth; **`repo` is the runner**. Ignore `/opt/boxlore-sync/boxlore-src` for cron — only `repo` matters.
-
-### Tagged files
-
-| Path | Role |
-| :--- | :--- |
-| `scripts/sync/lib/config.js` | Countries, tiers, check cadence, embed provider, budgets |
-| `scripts/sync/01-…` … `07-…` | Staged pipeline |
-| `scripts/sync/lib/turso.js` + `turso-page.js` | Page large SELECTs (`RESPONSE_TOO_LARGE`) |
-| `scripts/sync/lib/staleness.js` / `episode-caps.js` | Core vs relaxed checks; per-storefront caps |
-| `scripts/sync/lib/embedder.js` / `scalars.js` / `podcast-index.js` | `bge` vs `qwen`; scrub non-scalars; PI rate-limit failsafes |
-| `scripts/package.json` | Sync Node deps + `npm run test:sync` |
-
-### Checklist
-
-1. Read [`scripts/README.md`](scripts/README.md) + current `config.js` country list.
-2. Run `npm run test:sync` from `scripts/` when touching sync lib logic.
-3. Keep large Turso reads on `fetchAllPaged` / country×category pages.
-4. When asked to ship: commit/push **and** deploy to `/opt/boxlore-sync/repo`, then verify on the VPS.
-5. Never commit sync `.env` / PI / Turso / Telegram secrets.
-
-## Large refactors / P1 batches (hard stop)
-
-For large refactors or multi-issue P1 batches: **propose in plain English → wait for explicit user OK → then branch and code**. Do not start implementation on approval-shaped silence. Details: [`.cursor/rules/p1-workflow.mdc`](.cursor/rules/p1-workflow.mdc).
-
-## Default local loop
-
-After UI / app-behavior changes: `./gradlew installDebug` on a connected device when available. Do not run device automation (taps, screenshots, layout dumps) unless the user asks. Gradle must use the real `GRADLE_USER_HOME` — see [`.cursor/rules/gradle-no-sandbox.mdc`](.cursor/rules/gradle-no-sandbox.mdc).
-
-## Cursor Cloud specific instructions
-
-boxlore is a single-product **Android app** (Kotlin, multi-module Gradle: `:app`, `:core:*`, `:feature:*`). There is no server to run — "running" the product means building the debug APK and launching it on an Android emulator. The "smart" backend (search/recommendations/briefing) is a private external service and is not in this repo; without it the app still works as a standard podcast client (offline library, RSS, OPML).
-
-### Environment (already provisioned in the snapshot)
-- JDK 17 at `/usr/lib/jvm/java-17-openjdk-amd64` (the repo requires 17; the base image also ships JDK 21 — do not let Gradle pick 21).
-- Android SDK at `~/Android/Sdk` with `platform-tools`, `build-tools;36.0.0`, `platforms;android-36`, `emulator`, and system images `android-34;google_apis;x86_64` and `android-34;default;x86_64`.
-- `~/.bashrc` exports `JAVA_HOME`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `PATH`. New non-login shells may not source it — if `java -version` shows 21 or `sdkmanager` is missing, `source ~/.bashrc` first.
-- The update script runs `scripts/ci/write-cloud-agent-local-config.sh`, which writes `local.properties` (`sdk.dir`) and a non-secret stub `app/google-services.json`. Both are gitignored and are NOT secrets.
-
-### Build / test / lint (no device needed)
-Standard commands, all via the Gradle wrapper (see also `.github/workflows/unit-tests.yml`):
-- Build debug APK: `./gradlew assembleDebug` (first run downloads Gradle 9.6.1 + deps, ~4–5 min).
-- Unit tests: `./gradlew testDebugUnitTest --continue`
-- Lint: `./gradlew detekt ktlintCheck lintDebug`
-- Coverage floor / dep guard: `./gradlew :koverVerifyMerged :app:dependencyGuard`
-- Optional local screenshot goldens (not CI-gated): `./gradlew :feature:home:recordRoborazziDebug` → PNGs under `screenshots/baselines/`.
-
-### Running the app on the emulator (non-obvious gotchas)
-- There is **no `/dev/kvm`** here, so the emulator runs with software CPU emulation (`-no-accel -gpu swiftshader_indirect -no-window`). It is usable but very slow: boot takes several minutes and the starved CPU triggers frequent system-wide "System UI / Process system isn't responding" ANR dialogs. These are environment slowness, not app bugs — dismiss with "Wait" and give screens 60–90s to settle.
-- Prefer the lighter **AOSP image** (`system-images;android-34;default;x86_64`, AVD `boxlore_aosp`) over `google_apis`: Play Services background work on the google_apis image makes ANRs much worse.
-- After install, run `adb shell cmd package compile -m speed -f cx.aswin.boxlore` to AOT-compile — this removes the runtime class-verification overhead that otherwise causes a playback-service ANR on the slow CPU.
-- The launcher activity is `cx.aswin.boxlore/.MainActivity`.
-- **The app requires a syntactically valid `BOXLORE_API_BASE_URL` to launch.** `PodcastRepository` eagerly builds a Retrofit client from it, so an empty value (the default in the stub config) crashes at startup with `IllegalArgumentException: Expected URL scheme 'http' or 'https'`. To launch the UI offline, add to `local.properties`: `BOXLORE_API_BASE_URL=https://api.boxlore.example` (and optionally `BOXLORE_PUBLIC_KEY=demo-placeholder-key`), then rebuild. With a placeholder URL, backend-dependent screens (Explore search, Lore/curiosity, briefing) show graceful "failed to load" states; offline features (onboarding, Library/Downloads, RSS/OPML) work normally. For real backend functionality, set the private `BOXLORE_API_BASE_URL`/`BOXLORE_PUBLIC_KEY` as secrets.
+`AGENTS.internal.md` supplements these public contracts with local authorization, skills, environment setup, and operations. It is intentionally absent from public clones and must remain untracked.

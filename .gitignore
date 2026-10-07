@@ -38,15 +38,14 @@ bench_node.js
 *.log
 *_logcat.txt
 
-# Standalone Proxy — lives in github.com/ashwkun/Proxy
+# Local standalone backend checkout
 proxy/
 
 # Sub-projects (local only)
 admin-panel/
 telemetry-worker/
 
-# Hosting lives in aswin.cx / ashwkun/aswin-cx — ignore any leftover local docs/web.
-# Only the web site — not the rest of docs/.
+# Local website checkout; keep the rest of docs/ tracked.
 docs/web/
 
 # Transformers model cache
@@ -75,8 +74,11 @@ posthog-setup-report.md
 # Editor / agent settings
 .vscode/
 .claude/
-# Local agent/editor noise (AGENTS.md + .cursor/rules are committed)
+# Local agent/editor cache
 .agents/**/cache/
-.cursor/debug-*.log
-.cursor/plans/
-.cursor/settings.json
+/.cursor/
+
+# Maintainer-only instructions and Codex hooks
+/AGENTS.internal.md
+/.codex/hooks.json
+/.codex/hooks/

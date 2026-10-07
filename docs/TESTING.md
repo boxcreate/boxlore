@@ -15,7 +15,7 @@ How Boxlore is tested: layers, commands, coverage floors, architecture gates, an
 
 Automated coverage focused on **hermetic JVM** for product logic (queue fill, ranking, catalog, prefs, feature `logic/`). High Kover floors fail CI on drop. Architecture guards fail the unit PR job on graph drift.
 
-**Strategy:** constructors, domain ports, shared fakes in `:core:testing`, assemblers, Turbine. No MockK/Hilt. No Application-backed Home/Info suites. Media3 service / `PlaybackRepository` stay out of the line gate; covered by policy unit tests. Maestro YAML is validated nightly (no paid Maestro Cloud device runs).
+**Strategy:** constructors, domain ports, shared fakes in `:core:testing`, assemblers, Turbine. No MockK/Hilt. No Application-backed Home/Info suites. Media3 service / `PlaybackRepository` stay out of the line gate; covered by policy unit tests. Maestro YAML is validated nightly; the existing optional Cloud job runs only when its credentials are configured and is not a PR gate.
 
 ## Layers
 
@@ -27,10 +27,29 @@ Automated coverage focused on **hermetic JVM** for product logic (queue fill, ra
 | Android lint | `./gradlew lintDebug` | Manifest / resource / API lint | Done |
 | Coverage (Kover) | `./gradlew :koverVerifyMerged` | Merged floor (ratchet toward 80%) | WIP |
 | Screenshots | `screenshots/baselines/` + optional Roborazzi (local) | Visual regressions | Optional |
-
 | Maestro | `maestro/` YAML validate | Flow file presence/syntax | Done |
 
 Architecture boundaries: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
+
+## Choose checks for a change
+
+Run commands from the repository root. Start with the affected behavior and broaden to shared consumers when a change crosses module boundaries. See [local setup](../CONTRIBUTING.md#local-development--personal-use) for tool and configuration requirements.
+
+| Change | Checks |
+| :--- | :--- |
+| Android logic or state | Add or extend JVM regression coverage; run `./gradlew :<module>:testDebugUnitTest` for affected modules (for example, `:core:playback:testDebugUnitTest`), then `./gradlew testDebugUnitTest --continue` for shared behavior |
+| Module boundaries, dependencies, or composition | Run both `scripts/ci/check-feature-no-boxlore-database.sh` and `scripts/ci/check-feature-no-posthog.sh` with Bash; run `./gradlew :core:testing:testDebugUnitTest :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard` |
+| Kotlin, Android resources, or manifests | Run `./gradlew detekt ktlintCheck lintDebug`; include affected JVM tests for changed behavior |
+| App UI or runtime behavior | Build/install with `./gradlew installDebug` on an available device; verify the affected screen and action; use optional local Roborazzi when appropriate |
+| Catalog sync logic | Run `npm ci --prefix scripts` once, then `npm run test:sync --prefix scripts`; deployment is a separate operation requiring the internal runbook |
+| New-episode notification checker | Run `npm ci --prefix scripts` once, then `npm run test:check-new-episodes --prefix scripts` |
+| Tracked-feed repair | Run `npm ci --prefix scripts` once, then `node --test scripts/backfill-tracked-podcast-feeds-lib.test.js` |
+| Changelog or release tooling | Run `python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v` |
+| Documentation only | Review local links and instruction destinations; run `git diff --check` |
+
+For Android code changes, the full CI command is `./gradlew detekt testDebugUnitTest :koverVerifyMerged :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard --continue`, with `./gradlew lintDebug` in a separate job. The unit workflow also runs the architecture shell guards and Python release-tooling tests. `ktlintCheck` is a local check; it is not part of the current PR workflow.
+
+Report which checks completed and distinguish automated coverage from manual checks or paths that still need verification. Script tests exercise local logic; they do not verify a production deployment.
 
 ## Stack
 
@@ -119,6 +138,7 @@ bash scripts/ci/check-feature-no-posthog.sh
 
 Detekt: `config/detekt/{detekt.yml,baseline.xml}`.  
 ktlint: per-project baselines under `config/ktlint/`.
+Use the root `detekt` task; individual modules do not all define one. These commands do not rewrite source files.
 
 ## Module × layer checklist
 
@@ -152,7 +172,7 @@ Application-backed Home/Info suites are **not** pursued; hermetic `logic/` + ass
 | :--- | :--- |
 | Flow YAML under `maestro/` | Done |
 | Nightly YAML validate | Done |
-| Maestro Cloud device runs | Out of scope (not subscribed) |
+| Maestro Cloud device runs | Optional; requires configured service credentials |
 
 See [`maestro/README.md`](../maestro/README.md).
 
@@ -170,12 +190,14 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 
 | Workflow | Runs | When | Status |
 | :--- | :--- | :--- | :--- |
-| `unit-tests.yml` | Architecture + detekt + unit + Kover + lint + Dependency Guard | PR / dispatch | Done |
+| `unit-tests.yml` | Architecture + detekt + unit + Kover + lint + Dependency Guard + Python release tests | PR / master push / dispatch | Done |
 | `coderabbit-threads-resolved.yml` | Fail unless all non-outdated CodeRabbit review threads are Resolved | PR / review | Done |
 | `gitleaks.yml` | Secret scan | PR / push to master | Done |
-| `maestro-nightly.yml` | Validate Maestro YAML | Nightly / manual | Done |
+| `maestro-nightly.yml` | Validate Maestro YAML; optional Cloud device job when configured | Nightly / manual | Done |
 
-**Merge gate:** master uses a branch ruleset (no merge queue). Required checks: **`testDebugUnitTest`** and **`coderabbit-threads-resolved`**. SonarCloud / CodeRabbit / Gitleaks still run on PRs (fix Sonar new-code issues; resolve CodeRabbit threads — the bare `CodeRabbit` status only means the review finished). The unit suite cancels prior in-progress runs on each PR push (or via Actions → Run workflow). Put `[skip unit]` in the PR title to no-op that job for docs/chore-only changes (still reports green; `workflow_dispatch` always runs full). Bots push to master via **boxlore-master-pusher** (ruleset Integration bypass).
+**Merge gate:** master uses a branch ruleset with no merge queue. Required checks are **`testDebugUnitTest`** and **`coderabbit-threads-resolved`**. SonarCloud, CodeRabbit, and Gitleaks also run on PRs. Fix all Sonar new-code issues and address every CodeRabbit finding, marking every review thread Resolved; the bare CodeRabbit status only confirms that the review completed.
+
+The unit suite cancels prior in-progress runs on each PR push. `[skip unit]` in the PR title no-ops that job only for docs/chore changes with no logic risk; it still reports green. Actions → Run workflow always runs the full suite. If the review decision is `CHANGES_REQUESTED`, stop automated merging and have a maintainer handle the review or merge manually. Otherwise squash-merge only after the required checks are green and review requirements are satisfied. Repository-administration procedures belong in root `AGENTS.internal.md`.
 
 Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secret stub.
 

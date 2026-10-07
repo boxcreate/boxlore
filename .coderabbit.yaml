@@ -1,6 +1,6 @@
 # CodeRabbit configuration for boxlore (Android / Kotlin / Jetpack Compose).
 # Docs: https://docs.coderabbit.ai/reference/configuration
-# Aligns with AGENTS.md, ARCHITECTURE.md, and .cursor/rules/*.mdc
+# Aligns with AGENTS.md, ARCHITECTURE.md, and docs/TESTING.md.
 
 language: en-US
 
