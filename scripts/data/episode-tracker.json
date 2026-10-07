@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-07T17:55:21.056Z",
+  "lastRun": "2026-10-07T22:46:15.881Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f008b08c-cfc6-11f0-83c5-5382a6234e3f",
@@ -49,16 +49,16 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "d7871677-e0f4-460d-b75d-1697096fc715",
-      "lastEpisodeTitle": "1pm ET, October 07 | The latest headlines from NPR",
+      "lastRssKey": "5c9cfc9a-6870-4cbc-910f-1f2afae4686e",
+      "lastEpisodeTitle": "6pm ET, October 07 | The latest headlines from NPR",
       "lastEpisodeId": "61361549150",
-      "lastCheckedAt": 1791395725888
+      "lastCheckedAt": 1791413179544
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75600184",
-      "lastEpisodeTitle": "Deep Dive: The anatomy of a govt job racket",
-      "lastEpisodeId": "61363937885",
-      "lastCheckedAt": 1791347410864
+      "lastRssKey": "https://api.spreaker.com/episode/75625443",
+      "lastEpisodeTitle": "The Catch Up: 'Won’t stop till Gyanesh Kumar quits' says Rahul Gandhi (7 October)",
+      "lastEpisodeId": "61400735046",
+      "lastCheckedAt": 1791413180080
     },
     "78573": {
       "lastRssKey": "87b9804a-0657-402f-9924-e771f51a0f27",
@@ -103,9 +103,9 @@
       "lastCheckedAt": 1791315779237
     },
     "204808": {
-      "lastRssKey": "110f325b-ac3b-4948-8787-7c2431003b58",
-      "lastEpisodeTitle": "Panthers ein Contender? Broncos haben ein Problem! MONTALK WEEK 4",
-      "lastCheckedAt": 1791225987955
+      "lastRssKey": "36c28dfb-6a6f-47a9-b70e-4c9e27d3c569",
+      "lastEpisodeTitle": "NFL WEEK 5 PREVIEW",
+      "lastCheckedAt": 1791413185343
     },
     "207877": {
       "lastRssKey": "Ixpor0JqsOgzpQzsCkGJx5OzljlmwItn",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "dd538496-c271-11f1-a149-cb70b5da341e",
-      "lastEpisodeTitle": "1PM ET 10/07/2026 Newscast",
+      "lastRssKey": "c684d7cc-c29b-11f1-b92a-c386f35df3c1",
+      "lastEpisodeTitle": "6PM ET 10/07/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791395744812
+      "lastCheckedAt": 1791413189171
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -212,10 +212,10 @@
       "lastCheckedAt": 1791347456577
     },
     "415434": {
-      "lastRssKey": "ca7317c8-c3c7-11f0-8340-171c0dbf8e62",
-      "lastEpisodeTitle": "How much should you tell your AI agent?",
+      "lastRssKey": "49fcf4c4-6e7b-11f1-94bf-5737d233658f",
+      "lastEpisodeTitle": "The hot new thing in headphones",
       "lastEpisodeId": "61122767217",
-      "lastCheckedAt": 1791315789870
+      "lastCheckedAt": 1791413192435
     },
     "419624": {
       "lastRssKey": "23f91c0d-b9ca-4a5e-97aa-cfb82484f691",
@@ -224,10 +224,10 @@
       "lastCheckedAt": 1791156533475
     },
     "431205": {
-      "lastRssKey": "6204b12b-cf19-4809-8565-8cbdd35e1db9",
-      "lastEpisodeTitle": "Stocks at Record Highs, The Bullish Case for Bonds, and NYC’s AI Safety Push 10/6/26",
-      "lastEpisodeId": "61350970658",
-      "lastCheckedAt": 1791315791925
+      "lastRssKey": "dc311bb1-1294-42ac-af71-1f6891f80f6d",
+      "lastEpisodeTitle": "Bond Bull, Un-Freezing Housing, and Under-the-Radar AI Names 10/7/26",
+      "lastEpisodeId": "61401023890",
+      "lastCheckedAt": 1791413194400
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -236,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4BFG4Y621DHSPRKNGS63B54",
-      "lastEpisodeTitle": "A check-in on the hobby economy",
+      "lastRssKey": "01M4BSZ93CKHX797BH8RSW3328",
+      "lastEpisodeTitle": "How's the stock market doing, minus AI?",
       "lastEpisodeId": "61397993650",
-      "lastCheckedAt": 1791395748786
+      "lastCheckedAt": 1791413195346
     },
     "432535": {
       "lastRssKey": "3b66721e-6186-40aa-9192-c996dc796c7d",
@@ -304,10 +304,10 @@
       "lastCheckedAt": 1790958626535
     },
     "483834": {
-      "lastRssKey": "6ac54c863dc1c1be4a5ec703",
-      "lastEpisodeTitle": "The Batman Part II Pauses Production, RuneScape Inspired Animated Series in Development — October 6th, 2026",
-      "lastEpisodeId": "61214226729",
-      "lastCheckedAt": 1791315798418
+      "lastRssKey": "6ac687257ce338e8cd997a14",
+      "lastEpisodeTitle": "Vampire Carnival now playing in theaters, Lanterns Episode 8 inside look — October 7th, 2026",
+      "lastEpisodeId": "61405464511",
+      "lastCheckedAt": 1791413200690
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -441,10 +441,10 @@
       "lastCheckedAt": 1791226023394
     },
     "724143": {
-      "lastRssKey": "94891de6-c237-11f1-83d1-57347a503927",
-      "lastEpisodeTitle": "Flávio fala em ‘mudar Constituição’; Lula recebe deputadas ‘influencers’; 3 anos de Israel x Hamas",
+      "lastRssKey": "95d1cf7e-c299-11f1-880b-eb281e55bea6",
+      "lastEpisodeTitle": "Flávio justifica fala sobre Constituição, Lula critica desorganização da campanha e PF arquiva apuração contra EUA",
       "lastEpisodeId": "61359754036",
-      "lastCheckedAt": 1791371920934
+      "lastCheckedAt": 1791413210794
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/QVuJrSMa8305chPbnqdNV7yerKYvqRXelCzyA7VAW-M",
@@ -548,10 +548,10 @@
       "lastCheckedAt": 1791226032900
     },
     "889671": {
-      "lastRssKey": "db4f32d5-5812-47e4-a887-dd6d8d7dea56",
-      "lastEpisodeTitle": "Qualcomm ❤️ Linux, F-Droid 2.0, VST3 Plugins In OBS!",
+      "lastRssKey": "aa6a7950-7ac7-4cb0-bd90-159917d3fa97",
+      "lastEpisodeTitle": "Bloodborne On Linux, 2GB Pi Increases, and Snappy Steam Dragons",
       "lastEpisodeId": "59241576400",
-      "lastCheckedAt": 1790815340873
+      "lastCheckedAt": 1791413218426
     },
     "902798": {
       "lastRssKey": "4ca28227-b907-4dc6-bf89-f765d0fd0283",
@@ -1068,10 +1068,10 @@
       "lastCheckedAt": 1791371985938
     },
     "6280366": {
-      "lastRssKey": "ccd5b7ac-a102-4b83-a99a-e62c2e10ee9e",
-      "lastEpisodeTitle": "Point-Counterpoint: Consumers Will Never Pay for AI",
+      "lastRssKey": "c41016e9-103e-4d92-aae0-26851471d374",
+      "lastEpisodeTitle": "The Best Way to Test New AI Models",
       "lastEpisodeId": "61310399725",
-      "lastCheckedAt": 1791329836364
+      "lastCheckedAt": 1791413253178
     },
     "6413946": {
       "lastRssKey": "fdfb0163-fe58-428d-8c63-41db78ac2d3c",
@@ -1300,22 +1300,22 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a1170f-b078-77de-af74-4300856454de",
-      "lastEpisodeTitle": "Hegseth’s Grand Plan for the Military Raises Major Red Flags",
-      "lastEpisodeId": "61346163939",
-      "lastCheckedAt": 1791395823100
+      "lastRssKey": "audioboom-01a11785-91e7-7948-84cd-20fd9707359c",
+      "lastEpisodeTitle": "Republicans Are Panicking Over the Kansas Senate Race",
+      "lastEpisodeId": "61403745020",
+      "lastCheckedAt": 1791413274041
     },
     "7239415": {
-      "lastRssKey": "67af6ee8-c1fa-11f1-b224-878b29e94aad",
-      "lastEpisodeTitle": "You can't ignore it...",
+      "lastRssKey": "7dff96dc-c29a-11f1-903a-f39e6576093f",
+      "lastEpisodeTitle": "They ACTUALLY did it...",
       "lastEpisodeId": "61368532185",
-      "lastCheckedAt": 1791347577497
+      "lastCheckedAt": 1791413274495
     },
     "7248222": {
-      "lastRssKey": "b2d7996c-c1ce-11f1-840a-4baa31f7b90d",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Martes 06 de octubre de 2026",
+      "lastRssKey": "9722be4e-c29c-11f1-8029-975eafe1a1cc",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Miércoles 07 de octubre de 2026",
       "lastEpisodeId": "61360194267",
-      "lastCheckedAt": 1791329858928
+      "lastCheckedAt": 1791413275044
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1507,10 +1507,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/d5df56ea-7841-50c1-9fd7-460ec33fbb5e",
-      "lastEpisodeTitle": "How Anger Can Coexist with Empathy in Narcissistic Relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/b2cde3fb-cace-57b7-84e9-05f1c37f941d",
+      "lastEpisodeTitle": "How to manage narcissistic relationships at different levels of severity ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791395830166
+      "lastCheckedAt": 1791413281739
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
