@@ -9,29 +9,28 @@ internal data class ShareBrandingLayout(
     val contentGap: Float,
     val labelSize: Float,
     val logoWidth: Int,
-    val listenNowGap: Float,
-    val listenNowSize: Float,
-    val showListenNow: Boolean,
+    val inline: Boolean,
 )
 
 internal fun shareBrandingLayout(isStory: Boolean): ShareBrandingLayout = if (isStory) {
     ShareBrandingLayout(
-        contentGap = 112f,
-        labelSize = 28f,
-        logoWidth = 400,
-        listenNowGap = 18f,
-        listenNowSize = 28f,
-        showListenNow = true,
+        contentGap = 80f,
+        labelSize = 36f,
+        logoWidth = 280,
+        inline = false,
     )
 } else {
     ShareBrandingLayout(
-        contentGap = 64f,
-        labelSize = 24f,
-        logoWidth = 340,
-        listenNowGap = 0f,
-        listenNowSize = 0f,
-        showListenNow = false,
+        contentGap = 48f,
+        labelSize = 40f,
+        logoWidth = 280,
+        inline = true,
     )
+}
+
+internal fun shareBrandingTop(isStory: Boolean, contentBottom: Float, brandingHeight: Float): Float {
+    val preferredTop = if (isStory) 1_440f else 1_200f - 96f - brandingHeight
+    return maxOf(preferredTop, contentBottom + shareBrandingLayout(isStory).contentGap)
 }
 
 /** Bitmap card composition for [ShareManager] share sheets / Instagram stories. */
@@ -96,12 +95,9 @@ internal object ShareCardRenderer {
                 context = context,
                 canvas = canvas,
                 canvasWidth = width,
-                brandingTop = textBottom + brandingLayout.contentGap,
-                brandingLabelSize = brandingLayout.labelSize,
-                logoWidth = brandingLayout.logoWidth,
-                listenNowGap = brandingLayout.listenNowGap,
-                listenNowSize = brandingLayout.listenNowSize,
-                showListenNow = brandingLayout.showListenNow,
+                contentBottom = textBottom,
+                isStory = true,
+                layout = brandingLayout,
             )
         } else {
             val textBottom =
@@ -121,12 +117,9 @@ internal object ShareCardRenderer {
                 context = context,
                 canvas = canvas,
                 canvasWidth = width,
-                brandingTop = textBottom + brandingLayout.contentGap,
-                brandingLabelSize = brandingLayout.labelSize,
-                logoWidth = brandingLayout.logoWidth,
-                listenNowGap = brandingLayout.listenNowGap,
-                listenNowSize = brandingLayout.listenNowSize,
-                showListenNow = brandingLayout.showListenNow,
+                contentBottom = textBottom,
+                isStory = false,
+                layout = brandingLayout,
             )
         }
 
@@ -206,61 +199,35 @@ internal object ShareCardRenderer {
         context: Context,
         canvas: android.graphics.Canvas,
         canvasWidth: Int,
-        brandingTop: Float,
-        brandingLabelSize: Float,
-        logoWidth: Int,
-        listenNowGap: Float,
-        listenNowSize: Float,
-        showListenNow: Boolean,
+        contentBottom: Float,
+        isStory: Boolean,
+        layout: ShareBrandingLayout,
     ) {
-        val brandingLeft = (canvasWidth - logoWidth) / 2f
-        val brandingRight = brandingLeft + logoWidth
         val textPaint =
             android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
                 color = android.graphics.Color.WHITE
-                textSize = brandingLabelSize
-                typeface = googleSansTypeface(context, android.graphics.Typeface.BOLD)
+                textSize = layout.labelSize
+                typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL)
+                textAlign = if (layout.inline) android.graphics.Paint.Align.LEFT else android.graphics.Paint.Align.CENTER
             }
-        val label = "is better on"
-        val labelBaseline = brandingTop - textPaint.fontMetrics.ascent
-        canvas.drawText(label, brandingLeft, labelBaseline, textPaint)
-
-        val waveStart = brandingLeft + textPaint.measureText(label) + 20f
-        val waveCenter =
-            brandingTop + (
-                textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
-                ) / 2f
-        if (brandingRight > waveStart) {
-            val path = android.graphics.Path()
-            val amplitude = 9f
-            val wavelength = 72f
-            var x = waveStart
-            path.moveTo(x, waveCenter)
-            while (x < brandingRight) {
-                x = (x + 3f).coerceAtMost(brandingRight)
-                val y =
-                    waveCenter + amplitude *
-                        kotlin.math.sin(
-                            ((x - waveStart) / wavelength) * 2f * kotlin.math.PI.toFloat(),
-                        )
-                path.lineTo(x, y)
-            }
-            canvas.drawPath(
-                path,
-                android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-                    color = android.graphics.Color.WHITE
-                    style = android.graphics.Paint.Style.STROKE
-                    strokeWidth = 4f
-                    strokeCap = android.graphics.Paint.Cap.ROUND
-                    strokeJoin = android.graphics.Paint.Join.ROUND
-                },
-            )
-        }
-
+        val label = context.getString(cx.aswin.boxlore.core.designsystem.R.string.share_listen_on)
         val labelHeight = textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
-        val logoTop = (brandingTop + labelHeight + 18f).toInt()
-        val logoHeight = (logoWidth * 110f / 805f).toInt()
-        val logoLeft = (canvasWidth - logoWidth) / 2
+        val logoHeight = layout.logoWidth / cx.aswin.boxlore.core.designsystem.components.BoxLoreLogoAspectRatio
+        val brandingHeight = if (layout.inline) maxOf(labelHeight, logoHeight) else labelHeight + 12f + logoHeight
+        val brandingTop = shareBrandingTop(isStory, contentBottom, brandingHeight)
+        val labelWidth = textPaint.measureText(label)
+        val rowLeft = (canvasWidth - labelWidth - 18f - layout.logoWidth) / 2f
+        val labelX = if (layout.inline) rowLeft else canvasWidth / 2f
+        val labelTop = if (layout.inline) brandingTop + (brandingHeight - labelHeight) / 2f else brandingTop
+        canvas.drawText(label, labelX, labelTop - textPaint.fontMetrics.ascent, textPaint)
+
+        val logoTop =
+            if (layout.inline) {
+                brandingTop + (brandingHeight - logoHeight) / 2f
+            } else {
+                brandingTop + labelHeight + 12f
+            }
+        val logoLeft = if (layout.inline) rowLeft + labelWidth + 18f else (canvasWidth - layout.logoWidth) / 2f
         androidx.core.content.ContextCompat
             .getDrawable(
                 context,
@@ -269,27 +236,13 @@ internal object ShareCardRenderer {
             ?.apply {
                 setTint(android.graphics.Color.WHITE)
                 setBounds(
-                    logoLeft,
-                    logoTop,
-                    logoLeft + logoWidth,
-                    logoTop + logoHeight,
+                    logoLeft.toInt(),
+                    logoTop.toInt(),
+                    (logoLeft + layout.logoWidth).toInt(),
+                    (logoTop + logoHeight).toInt(),
                 )
                 draw(canvas)
             }
-        if (!showListenNow) return
-
-        val listenNowTop = logoTop + logoHeight + listenNowGap
-        drawCenteredTextBlock(
-            canvas = canvas,
-            canvasWidth = canvasWidth,
-            text = "listen now",
-            top = listenNowTop,
-            width = logoWidth,
-            textSize = listenNowSize,
-            maxLines = 1,
-            color = android.graphics.Color.parseColor("#DCDCF8"),
-            typeface = googleSansTypeface(context, android.graphics.Typeface.NORMAL),
-        )
     }
 
     private fun drawShareText(

@@ -3,4 +3,6 @@
     <string name="engagement_sheet_close">Close</string>
     <string name="repair_progress_title">Library repair in progress</string>
     <string name="repair_progress_body">Please keep boxlore open until this finishes.</string>
+    <string name="feed_media_new">New</string>
+    <string name="share_listen_on">Listen on</string>
 </resources>

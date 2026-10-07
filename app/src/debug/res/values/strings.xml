@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_notification_channel">Notification tests</string>
+    <string name="debug_notification_title">Test notification</string>
+    <string name="debug_notification_body">Testing the updated boxlore app icon.</string>
+</resources>

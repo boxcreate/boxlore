@@ -15,11 +15,16 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 - `icon.GenreSuggestions`: Real-time keyword-driven suggestions and fuzzy ranking helpers (`GenreSuggestion`, `ALL_GENRE_SUGGESTIONS`, `filterGenreSuggestions`, `findSuggestedIcons`, `buildFolderSuggestionsWithLibrary`, `buildGenreSuggestionsWithFolders`) for genre tagging and folder creation with library prioritization.
 - `icon.GenreExactMatchResolver`: Exact case-insensitive matching (`findExactGenreIconKey`) that auto-switches folder icons in real time as the user types matching genre names or topic keywords without waiting for manual chip or grid taps.
 - `PredictiveBackWrapper` peeks the NavHost (scale 1.0 → 0.9) during system Back. Progress always returns to rest after commit or cancel so a Back that replaces the start destination (cold-start Subscriptions → Home) does not leave Home scaled down.
-- Shared discovery poster cards: `FeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`, and `FeedPosterSpacing` (Home “Based on Your Taste” and Explore For You).
+- Shared discovery cards: `FeedMediaCard`, `CuratedEpisodeCard`, `EqualHeightPosterGrid`, and `FeedPosterSpacing`. `FeedMediaCardPresentation.Default` retains the existing outlined presentation. Explicit `ExpressivePoster` and `ExpressiveFeatured` variants use native clickable cards with a three-line title-only foot that vertically centers shorter titles and grows with font scale. Posters use solid surface-container cards with 24dp corners, 14sp/20sp text, and restored 16dp lower artwork corners. Featured cards use a title-first split composition on solid tertiary-container: a 16sp/24sp three-line title and standalone 24dp forward arrow at the start, with artwork occupying 44% of the width (capped at 176dp) and running flush to the end edge. A sweeping 72dp artwork corner and asymmetric 28dp/12dp outer corners define the silhouette; the composition mirrors in RTL. The arrow belongs to the same native card action, 12dp below the reserved title area. Featured artwork omits promotional overlays. Their normal-text height is 152dp; enlarged text grows the layout. `FeedMediaCardSkeleton` shares the loaded layout and a measured three-line paragraph, covering nonlinear font scaling and keeping placeholders equal to loaded cards. `DiscoveryExpressiveTheme` scopes expressive Material motion while inheriting the existing color scheme, typography, shapes and appearance preferences; it does not change the application theme.
 - `ProgressiveSearchScrollLogic` decides when a progressive Find-a-show list should pin to the top (query change, new top hit, or Matches header). Used by onboarding search and Explore Find-a-show; Ask anything does not use it.
 - `LazyListKeyPolicy` provides safe deduplication and collision-free key generation for LazyColumn, LazyRow, and LazyGrid lists, preventing `IllegalArgumentException: Key was already used` crashes from duplicate backend feeds or search hits.
 - `share.ShareManager` for composite share cards and the system share sheet; emits glossary `share_content` via `:core:analytics`. `ShareBottomSheet` presents a clear content preview, a switch-style timestamp option, a primary artwork share action, and separate link/story actions.
-- `share.ShareCardRenderer` builds the share-card bitmaps used by `ShareManager`. Stories separate episode/show details from a reduced branding block and retain the “listen now” prompt; square message artwork uses smaller branding without that prompt.
+- `share.ShareCardRenderer` builds the share-card bitmaps used by `ShareManager`. Stories and square artwork separate episode/show details from a compact “Listen on” label and upright boxlore wordmark.
+
+## Brand identity
+
+- boxlore classic uses the authored iris, slate and seafoam light/dark palette. A rich iris primary in light mode and luminous iris in dark mode lead the quieter slate and seafoam supporting accents. Wallpaper colours and custom accents retain their selection, with the updated classic neutral surfaces.
+- The top-bar wordmark uses the full-size plain B vector for readability at chrome sizes. LORE page/navigation marks and the boxlore brief serif masthead are tintable vectors from the new brand kit; UI typography remains Google Sans Flex. Share artwork follows the wordmark’s updated aspect ratio.
 
 ## Internal structure
 
@@ -76,6 +81,7 @@ Classic navigation applies its system insets outside the minimum 80dp content he
 - `FloatingNavigationChromeTest` covers presentation clearance, root/query selection, fixed floating pill / player-slot geometry, Lore's fourth-slot placement, non-overlapping 48dp targets throughout the morph at supported widths, and safe progress clamping.
 - `NavigationAccentColorsTest` covers every preset's authored primary in both modes, exact accent overrides with different container colors, and wallpaper-style palettes with unrelated secondary roles. `NavigationChromePlacementTest` covers Classic's 48dp button area, gesture/zero/larger insets, both styles at multiple densities, player/selector gaps, unchanged already-inset content padding, and constrained windows.
 - `AdaptivePlayerOverlayOffsetTest` covers selector/Play All clearance, eased contraction-before-descent timing with zero slope at phase boundaries, reverse motion, Classic/no-player behavior, and invalid progress. `NavigationIndicatorMotionTest` covers the production indicator route/target logic and motion spec: direct Lore-to-Library movement, retained positions while hidden, immediate direction changes from the current position when interrupted, and position-linked Lore aurora blending with bounded/invalid inputs. `FloatingNavigationChromeTest` checks the single indicator path, external/compact Lore geometry, and matching mirrored bounds throughout the player morph. These are JVM logic checks without screenshots or device automation.
+- Home JVM `HomeDiscoveryCardTest` checks the expressive card/skeleton geometry at phone widths, enlarged fonts and RTL, centered short titles, three-line ellipsis, curved artwork, compact/regular rail sizing, legacy default sizing, and actual light/dark/dynamic/pure-black surface rendering. `HomeDiscoveryInteractionTest` checks title-only episode semantics and independent native click targets. No device automation or saved screenshots are required.
 - Screenshot goldens (optional local Roborazzi) live in feature modules (see `:feature:home`).
 
 ```bash
@@ -92,3 +98,10 @@ Classic navigation applies its system insets outside the minimum 80dp content he
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:app` README](../../app/README.md)
+
+- The shared top-bar wordmark uses the plain B without a microphone, retaining its dimensions and theme tint.
+
+
+### Upright brand wordmarks
+
+- Extended brand wordmarks and the LORE navigation brain are upright. Share cards use the plain upright wordmark at 280px wide. Stories stack “Listen on” above it in a centred signature below the content, clear of bottom story controls. Square message cards place the label and wordmark in one centred footer row with a 96px bottom inset. Labels retain a 12px size when the full export is displayed at 360px wide; artwork and title remain the main focus.

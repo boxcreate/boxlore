@@ -146,3 +146,13 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 - [`:core:catalog` README](../core/catalog/README.md)
 - [`:core:downloads` README](../core/downloads/README.md)
 - [`:core:playback` README](../core/playback/README.md)
+
+- Launch branding uses the white B/microphone vector on electric purple (#573DF5) for the system splash and adaptive launcher icon. The foreground is inset for launcher masks and also supplies the themed monochrome icon.
+
+### Upright brand wordmarks
+
+- Notification small icons use the monochrome italic B-and-microphone app mark; launcher and splash branding remain italic.
+
+### Debug notification preview
+
+Debug builds include an ADB-only `TestNotificationReceiver`, protected by `android.permission.DUMP`. With notification permission enabled, run `adb shell am broadcast -n cx.aswin.boxlore/.debug.TestNotificationReceiver -a cx.aswin.boxlore.DEBUG_TEST_NOTIFICATION` to preview the app notification mark. The receiver and its channel strings are excluded from release builds.
