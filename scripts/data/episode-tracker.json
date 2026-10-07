@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-07T11:17:49.072Z",
+  "lastRun": "2026-10-07T17:55:21.056Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f008b08c-cfc6-11f0-83c5-5382a6234e3f",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "4353e52e-d867-45e7-af70-916f54c7db48",
-      "lastEpisodeTitle": "7am ET, October 07 | The latest headlines from NPR",
+      "lastRssKey": "d7871677-e0f4-460d-b75d-1697096fc715",
+      "lastEpisodeTitle": "1pm ET, October 07 | The latest headlines from NPR",
       "lastEpisodeId": "61361549150",
-      "lastCheckedAt": 1791371876209
+      "lastCheckedAt": 1791395725888
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75600184",
@@ -108,10 +108,10 @@
       "lastCheckedAt": 1791225987955
     },
     "207877": {
-      "lastRssKey": "suKbHzKDo586w0EsyuHF0RKfnuBj0785",
-      "lastEpisodeTitle": "Rewind: Episode 06",
+      "lastRssKey": "Ixpor0JqsOgzpQzsCkGJx5OzljlmwItn",
+      "lastEpisodeTitle": "Radio Rental Returns October 23rd!",
       "lastEpisodeId": "59619511465",
-      "lastCheckedAt": 1790239203594
+      "lastCheckedAt": 1791395740400
     },
     "212882": {
       "lastRssKey": "45290842-a7f8-11f0-954a-a7e538f708c0",
@@ -170,10 +170,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "113a3e3e-b823-11f1-957c-4febf842f8e2",
-      "lastEpisodeTitle": "Le Chonk",
+      "lastRssKey": "11928f08-b823-11f1-957c-37bc71f9e085",
+      "lastEpisodeTitle": "Did OpenAI's Secret Model Just Crack Math?",
       "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1791315786503
+      "lastCheckedAt": 1791395744109
     },
     "353744": {
       "lastRssKey": "flightcast:01M4195XGS3GTZ68XYBCHCSQZ0",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "8fccbdc8-c23f-11f1-b46e-e3ab2344a3c4",
-      "lastEpisodeTitle": "7AM ET 10/07/2026 Newscast",
+      "lastRssKey": "dd538496-c271-11f1-a149-cb70b5da341e",
+      "lastEpisodeTitle": "1PM ET 10/07/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791371890869
+      "lastCheckedAt": 1791395744812
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -236,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M499XSJZM4M4AXM18HMV6SX4",
-      "lastEpisodeTitle": "AI spending takes center stage ahead of midterms",
-      "lastEpisodeId": "61382841657",
-      "lastCheckedAt": 1791371897332
+      "lastRssKey": "01M4BFG4Y621DHSPRKNGS63B54",
+      "lastEpisodeTitle": "A check-in on the hobby economy",
+      "lastEpisodeId": "61397993650",
+      "lastCheckedAt": 1791395748786
     },
     "432535": {
       "lastRssKey": "3b66721e-6186-40aa-9192-c996dc796c7d",
@@ -524,10 +524,10 @@
       "lastCheckedAt": 1791315815752
     },
     "827592": {
-      "lastEpisodeId": "61333440910",
-      "lastEpisodeTitle": "Stand-Up Comedy Pt I",
-      "lastRssKey": "6badb8c6-5351-4a96-924b-b4d60123f7fe",
-      "lastCheckedAt": 1791296649600
+      "lastEpisodeId": "61391027980",
+      "lastEpisodeTitle": "Short Stuff: The Style Cycle",
+      "lastRssKey": "551d1c25-8c6b-40c8-8a0a-b4db011ecd2e",
+      "lastCheckedAt": 1791395771540
     },
     "837535": {
       "lastRssKey": "beb250d6-be65-11f1-bd4c-cbf9aec7bfb5",
@@ -595,15 +595,15 @@
       "lastCheckedAt": 1790986292655
     },
     "980370": {
-      "lastRssKey": "6ac3ba163b662ae0dba27e87",
-      "lastEpisodeTitle": "The wonder of weightlifting | Jaime Seeman (re-release)",
-      "lastEpisodeId": "61295431950",
-      "lastCheckedAt": 1791315821873
+      "lastRssKey": "6ac50a9bfba456483104cf1e",
+      "lastEpisodeTitle": "What my politically divided family teaches me | Tami Pyfer",
+      "lastEpisodeId": "61397494100",
+      "lastCheckedAt": 1791395777075
     },
     "998969": {
-      "lastRssKey": "audioboom-01a10723-6f2f-7186-9cfe-171448e40672",
-      "lastEpisodeTitle": "Episode 369: The Mummy Files",
-      "lastCheckedAt": 1791145311153
+      "lastRssKey": "audioboom-01a11655-c906-766b-8604-b0703d7a5f9d",
+      "lastEpisodeTitle": "Midweek Mini: Big Week for Spotters!",
+      "lastCheckedAt": 1791395777759
     },
     "1015378": {
       "lastRssKey": "16094471-70e5-4698-9bac-3958d237b7b7",
@@ -634,10 +634,10 @@
       "lastCheckedAt": 1791226044151
     },
     "1047718": {
-      "lastRssKey": "6ac340068f085bd691f92363",
-      "lastEpisodeTitle": "England hammer Croatia and Manchester City get their appeal on: Football Weekly",
-      "lastEpisodeId": "61289649788",
-      "lastCheckedAt": 1791226044665
+      "lastRssKey": "6ac5e8af8f08372e7252fd98",
+      "lastEpisodeTitle": "Kane makes more England history and Ronaldo claps back – Football Weekly",
+      "lastEpisodeId": "61388254202",
+      "lastCheckedAt": 1791395781823
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-she-never-planned-to-wear-hijab-until-this-moment-remarkable-stories",
@@ -681,9 +681,10 @@
       "lastCheckedAt": 1786559324168
     },
     "1183952": {
-      "lastRssKey": "10feea55-565d-4aa0-8338-7737ffe21f4b",
-      "lastEpisodeTitle": "【呱吉】新資料夾(303)：一起慢慢變笨",
-      "lastCheckedAt": 1790914542734
+      "lastRssKey": "710fe406-28d0-480e-a115-8488c8da0900",
+      "lastEpisodeTitle": "【呱吉直播】呱吉電台EP259：你不需要對所有事情都有看法",
+      "lastEpisodeId": "61398670344",
+      "lastCheckedAt": 1791395788033
     },
     "1186507": {
       "lastRssKey": "729f6f33d4e683caa9d29d7d192c7371",
@@ -692,10 +693,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "ad80ea74-c1fe-11f1-98cc-0fd74a4692b0",
-      "lastEpisodeTitle": "Déjà Vu For The Habs At The Bell Centre | The Sick Podcast with Tony Marinaro October 6 2026",
+      "lastRssKey": "4bc4c272-c269-11f1-93f1-7f78e2c5d8f4",
+      "lastEpisodeTitle": "Effort Gênant Au Centre Bell & Déjà Des Signes Inquiétants | Le Sick Podcast Avec Tony Marinaro 07/10/26",
       "lastEpisodeId": "61348655131",
-      "lastCheckedAt": 1791347519552
+      "lastCheckedAt": 1791395790223
     },
     "1199730": {
       "lastRssKey": "8ea61c5d-22ee-41a3-bce9-adafc5136fa2",
@@ -704,10 +705,10 @@
       "lastCheckedAt": 1791226054426
     },
     "1208307": {
-      "lastRssKey": "6ac5257d31b1afd05e549a9e",
-      "lastEpisodeTitle": "Mailbag: Is the Red Bull recovery real?",
-      "lastEpisodeId": "61116848199",
-      "lastCheckedAt": 1791329803974
+      "lastRssKey": "6ac6366d29b9fbfbe249bdf1",
+      "lastEpisodeTitle": "Where's the Antonelli hype? Buxton and Daly have their say on F1's champion-elect",
+      "lastEpisodeId": "61389785565",
+      "lastCheckedAt": 1791395790677
     },
     "1258562": {
       "lastRssKey": "6ac22edf52f9e4485fc03f23",
@@ -750,10 +751,10 @@
       "lastCheckedAt": 1791156602530
     },
     "1366771": {
-      "lastRssKey": "6ac61411f38f25c0f0fb6ee6",
-      "lastEpisodeTitle": "Afternoon Briefing Wednesday 7th October",
+      "lastRssKey": "6ac67f0bd3bfab176ea9d822",
+      "lastEpisodeTitle": "Evening briefing  Wednesday 7th October",
       "lastEpisodeId": "61350864715",
-      "lastCheckedAt": 1791371957732
+      "lastCheckedAt": 1791395793037
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19912886",
@@ -797,10 +798,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6ac523ad8298b7f22e80da31",
-      "lastEpisodeTitle": "(Pop) L’Australie alerte sur les failles de sécurité de Fortnite, Minecraft et Roblox… HugoDécrypte",
+      "lastRssKey": "6ac6850d2115277489f07e38",
+      "lastEpisodeTitle": "La peste suspectée en Russie, l'OMS réagit (07/10)",
       "lastEpisodeId": "61381280520",
-      "lastCheckedAt": 1791371961607
+      "lastCheckedAt": 1791395795128
     },
     "2574026": {
       "lastRssKey": "0682bec8-bd26-11f1-9529-aba7f383686d",
@@ -880,10 +881,10 @@
       "lastCheckedAt": 1787712428218
     },
     "4068658": {
-      "lastRssKey": "417d9b6a-bcef-11f1-80ef-9766c82bb3b7",
-      "lastEpisodeTitle": "Ep. 270 - The Influencers Are Here",
+      "lastRssKey": "a2ea6e4a-c277-11f1-91e0-5ffad78193bb",
+      "lastEpisodeTitle": "Ep. 271 - AI Is Ruining Video Games",
       "lastEpisodeId": "61072429139",
-      "lastCheckedAt": 1790802867355
+      "lastCheckedAt": 1791395799743
     },
     "4112681": {
       "lastRssKey": "Buzzsprout-19909217",
@@ -1014,10 +1015,10 @@
       "lastCheckedAt": 1790914567742
     },
     "5731394": {
-      "lastRssKey": "67e0b5ac-c114-11f1-bbd8-f3c65b358593",
-      "lastEpisodeTitle": "Ovi Announces This Is His Last Season And The NHL Will Never Be The Same",
+      "lastRssKey": "0f3440f2-c26a-11f1-8fa1-b761a8862466",
+      "lastEpisodeTitle": "Sci Fi Section Ep 11: Golden Son Chapters 18-24",
       "lastEpisodeId": "60007884583",
-      "lastCheckedAt": 1791296697871
+      "lastCheckedAt": 1791395808693
     },
     "5815838": {
       "lastRssKey": "12f3ff10-3a72-4da0-963d-73fe5b61d842",
@@ -1085,10 +1086,10 @@
       "lastCheckedAt": 1791347547291
     },
     "6467886": {
-      "lastRssKey": "a3ac9cb0-c02c-11f1-a655-3f81a38ce35b",
-      "lastEpisodeTitle": "#338 - AfD-Verbot: Ich diskutiere mit einem linken Journalisten",
+      "lastRssKey": "5520ceb2-c1b3-11f1-943d-dbb72c49f112",
+      "lastEpisodeTitle": "#339 - Unsichtbare Kräfte wirken in dir (Wunder sind möglich)",
       "lastEpisodeId": "61300627866",
-      "lastCheckedAt": 1791226082563
+      "lastCheckedAt": 1791395813146
     },
     "6559880": {
       "lastRssKey": "cf5765b0-c1ef-11f1-93a8-ffcb86792eaa",
@@ -1103,10 +1104,10 @@
       "lastCheckedAt": 1790974614176
     },
     "6628686": {
-      "lastRssKey": "flightcast:01M3X86XCTB0CW4J38KFDRHN4A",
-      "lastEpisodeTitle": "Want Better Erections Without Pills? This May Work as Well as Viagra",
+      "lastRssKey": "afae6aec-a04d-11f1-b6e7-8376fc029dc4",
+      "lastEpisodeTitle": "Moment: Do You REALLY Need Hormones in Perimenopause If You Feel Fine?",
       "lastEpisodeId": "60835585667",
-      "lastCheckedAt": 1790958705861
+      "lastCheckedAt": 1791395813966
     },
     "6634680": {
       "lastRssKey": "cb571878-467a-49c1-bb3a-a9e6128a2f0b",
@@ -1299,10 +1300,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a1131c-8ff8-73a7-98dc-ab17fb85709a",
-      "lastEpisodeTitle": "Ex-CIA Officer Reacts to Insane Spy Scandal Rocking the Intelligence World",
+      "lastRssKey": "audioboom-01a1170f-b078-77de-af74-4300856454de",
+      "lastEpisodeTitle": "Hegseth’s Grand Plan for the Military Raises Major Red Flags",
       "lastEpisodeId": "61346163939",
-      "lastCheckedAt": 1791329857577
+      "lastCheckedAt": 1791395823100
     },
     "7239415": {
       "lastRssKey": "67af6ee8-c1fa-11f1-b224-878b29e94aad",
@@ -1506,10 +1507,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/8f855a49-23a0-5402-ac1a-ee04e06d3ee4",
-      "lastEpisodeTitle": "Is Being a Giver a Set Up for Narcissistic Relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/d5df56ea-7841-50c1-9fd7-460ec33fbb5e",
+      "lastEpisodeTitle": "How Anger Can Coexist with Empathy in Narcissistic Relationships ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791372031339
+      "lastCheckedAt": 1791395830166
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
