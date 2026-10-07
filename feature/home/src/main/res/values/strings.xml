@@ -13,4 +13,21 @@
     <string name="home_mix_caught_up_title">You’re all caught up</string>
     <string name="home_mix_caught_up_body">New drops and active sessions will show up here.</string>
     <string name="home_mix_view_all_downloads">All downloads</string>
+    <string name="home_because_you_like">Because you like</string>
+    <string name="home_change_recommendation_show">Change show for recommendations</string>
+    <string name="home_similar_shows">Similar shows</string>
+    <string name="home_recommended_episodes">Episodes to try</string>
+    <string name="home_popular_region">Popular in your region</string>
+    <string name="home_picked_for_you">Picked for you</string>
+    <string name="home_recommendations_see_all">Browse recommended episodes</string>
+    <string name="home_discovery_see_all">Browse more episodes</string>
+    <string name="home_explore_shows">Explore shows</string>
+    <string name="home_shows_see_all">Browse shows</string>
+    <string name="home_view_more_in">View more in %1$s</string>
+    <string name="home_view_more_shows">View more shows</string>
+    <string name="home_video_type">Video</string>
+    <string name="home_genres_top">Top</string>
+    <string name="home_genres_more">More</string>
+    <string name="home_browse_genres">Browse genres</string>
+    <string name="home_your_shows_heading">Your shows</string>
 </resources>

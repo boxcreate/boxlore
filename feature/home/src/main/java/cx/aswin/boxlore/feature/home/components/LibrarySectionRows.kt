@@ -117,7 +117,7 @@ internal fun SelectorCover(
         ) {
             OptimizedImage(
                 url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
-                proxyWidth = 120,
+                proxyWidth = 320,
                 contentDescription = podcast.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().alpha(alpha),

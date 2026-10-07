@@ -196,8 +196,8 @@ fun DailyBriefingCard(
                     Brush.verticalGradient(
                         colorStops =
                         arrayOf(
-                            0.0f to Color.Black.copy(alpha = 0.45f),
-                            0.3f to Color.Black.copy(alpha = 0.6f),
+                            0.0f to Color.Black.copy(alpha = 0.65f),
+                            0.3f to Color.Black.copy(alpha = 0.65f),
                             0.55f to Color.Black.copy(alpha = 0.8f),
                             1.0f to Color.Black.copy(alpha = 0.95f),
                         ),
@@ -231,10 +231,9 @@ fun DailyBriefingCard(
                 verticalAlignment = Alignment.Top,
             ) {
                 // Boxlore Brief logo and date column
-                val primaryColor = MaterialTheme.colorScheme.primary
-
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     androidx.compose.foundation.Image(
                         painter =
@@ -242,32 +241,20 @@ fun DailyBriefingCard(
                             id = cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_brief_logo,
                         ),
                         contentDescription = "The Boxlore Brief",
-                        modifier = Modifier.height(48.dp),
+                        modifier = Modifier.height(72.dp),
+                        alignment = Alignment.CenterStart,
                         colorFilter =
                         androidx.compose.ui.graphics.ColorFilter
                             .tint(Color.White),
                     )
 
-                    // Date chip: using opaque Material 3 container colors to avoid transparency visibility issues on dark backdrop
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        border =
-                        androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            primaryColor,
-                        ),
-                        modifier = Modifier.padding(start = 4.dp),
-                    ) {
-                        Text(
-                            text = formattedDate,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = GoogleSansWeight.bold,
-                            letterSpacing = 0.3.sp,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        )
-                    }
+                    Text(
+                        text = formattedDate,
+                        color = Color.White.copy(alpha = 0.82f),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Normal,
+                        letterSpacing = 0.2.sp,
+                    )
                 }
 
                 // Dismiss / Cancel button
@@ -305,7 +292,7 @@ fun DailyBriefingCard(
             }
 
             // Static Spacer for the art to breathe
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(64.dp))
 
             // Animated body content
             AnimatedContent(

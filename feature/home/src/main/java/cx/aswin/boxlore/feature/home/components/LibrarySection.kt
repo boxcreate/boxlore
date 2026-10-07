@@ -34,12 +34,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +57,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -72,6 +71,7 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 import cx.aswin.boxlore.feature.home.StablePlaybackStateMap
@@ -216,18 +216,18 @@ fun YourShowsSection(
                 },
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Bookmark,
+                    imageVector = Icons.Outlined.Bookmarks,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Your Shows",
+                    text = stringResource(R.string.home_your_shows_heading),
                     style =
-                    MaterialTheme.typography.headlineSmall.copy(
+                    MaterialTheme.typography.headlineMedium.copy(
                         fontFamily = rememberSectionHeaderFontFamily(),
-                        fontWeight = FontWeight.Normal,
+                        fontWeight = GoogleSansWeight.semiBold,
                     ),
                     letterSpacing = (-0.5).sp,
                 )
@@ -263,17 +263,12 @@ fun YourShowsSection(
                 }
             }
 
-            FilledTonalIconButton(
+            HomeChapterBrowseButton(
+                chapter = HomeDiscoveryChapter.LIBRARY,
+                description = "View Library",
                 onClick = onViewLibrary,
-                modifier = Modifier.size(32.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = "View Library",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
+                icon = Icons.Rounded.ChevronRight,
+            )
         }
 
         // --- The Selector Grid ---
@@ -551,7 +546,7 @@ fun YourShowsSection(
                                 ) {
                                     OptimizedImage(
                                         url = (selectedPodcast.imageUrl.takeIf { it.isNotEmpty() } ?: selectedPodcast.fallbackImageUrl),
-                                        proxyWidth = 88,
+                                        proxyWidth = 256,
                                         contentDescription = selectedPodcast.title,
                                         contentScale = ContentScale.Crop,
                                         modifier =
