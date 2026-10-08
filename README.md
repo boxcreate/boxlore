@@ -124,6 +124,9 @@ and listen without paywalls, subscriptions, or ads.
 <!-- release-upcoming:start -->
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Browse Home with clearer sections, sharper artwork and refreshed Daily Mix cards. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
+<li>Enjoy updated colours and logos, with time-of-day animations that wait until the heading is in view. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
+<li>Share episodes with cleaner “Listen on boxlore” branding. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
 <li>Lore colors now blend as you swipe between cards. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
 <li>Lore cards have more reading room, larger playback controls, and clearer swipe feedback. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
 <li>The Lore queue prompt explains how to start a new queue or add episodes to your current one. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
@@ -135,6 +138,8 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Daily Mix now uses show artwork when an episode has none. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
+<li>A caught-up Daily Mix takes up less space. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
 <li>Navigation highlights match your chosen accent, and the miniplayer stays above the navbar when Android navigation buttons are enabled. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
 <li>When automatic downloads depend on opening boxlore, a notice explains this and offers to turn on show notifications. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
 </ul>
