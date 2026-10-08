@@ -265,7 +265,7 @@ fun YourShowsSection(
 
             HomeChapterBrowseButton(
                 chapter = HomeDiscoveryChapter.LIBRARY,
-                description = "View Library",
+                description = stringResource(R.string.home_view_library),
                 onClick = onViewLibrary,
                 icon = Icons.Rounded.ChevronRight,
             )

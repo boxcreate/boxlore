@@ -13,6 +13,7 @@
     <string name="home_mix_caught_up_title">You’re all caught up</string>
     <string name="home_mix_caught_up_body">New drops and active sessions will show up here.</string>
     <string name="home_mix_view_all_downloads">All downloads</string>
+    <string name="home_mix_minutes_left">%1$dm left</string>
     <string name="home_because_you_like">Because you like</string>
     <string name="home_change_recommendation_show">Change show for recommendations</string>
     <string name="home_similar_shows">Similar shows</string>
@@ -30,4 +31,5 @@
     <string name="home_genres_more">More</string>
     <string name="home_browse_genres">Browse genres</string>
     <string name="home_your_shows_heading">Your shows</string>
+    <string name="home_view_library">View library</string>
 </resources>

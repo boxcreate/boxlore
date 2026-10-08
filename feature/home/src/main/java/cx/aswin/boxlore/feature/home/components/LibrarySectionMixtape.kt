@@ -801,9 +801,7 @@ internal fun MixtapeEpisodeCard(
                         val m = (episode.duration % 3600) / 60
                         val timeText =
                             if (isInProgress && progress > 0f) {
-                                val remaining = ((1f - progress) * episode.duration).toInt()
-                                val rm = (remaining % 3600) / 60
-                                "${rm}m left"
+                                stringResource(R.string.home_mix_minutes_left, remainingMixMinutes(episode.duration, progress))
                             } else {
                                 if (h > 0) "${h}h ${m}m" else "${m}m"
                             }
