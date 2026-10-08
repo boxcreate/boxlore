@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-08T17:29:59.875Z",
+  "lastRun": "2026-10-08T22:22:31.272Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
@@ -31,10 +31,10 @@
       "lastCheckedAt": 1791371872152
     },
     "44367": {
-      "lastRssKey": "s3ppazy4c2tecgq0",
-      "lastEpisodeTitle": "711: Hot Dog on an Actuator",
-      "lastEpisodeId": "60522510368",
-      "lastCheckedAt": 1790863953968
+      "lastRssKey": "uk11wutvrngxukrp",
+      "lastEpisodeTitle": "712: Mildly Technologically Traumatized",
+      "lastEpisodeId": "61459013244",
+      "lastCheckedAt": 1791498155050
     },
     "48166": {
       "lastRssKey": "68b66323-6e74-4c90-8157-ef3f1ed0d042",
@@ -49,16 +49,16 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "3bf9aa31-e908-4e69-919c-4be8eedfffc4",
-      "lastEpisodeTitle": "1pm ET, October 08 | The latest headlines from NPR",
+      "lastRssKey": "17280ccf-4b1a-472b-a697-f4e2e7a8d2e5",
+      "lastEpisodeTitle": "6pm ET, October 08 | The latest headlines from NPR",
       "lastEpisodeId": "61431584179",
-      "lastCheckedAt": 1791480605585
+      "lastCheckedAt": 1791498157333
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75628511",
-      "lastEpisodeTitle": "Drought's toll on women, India-Swiss ties, and illicit liquor crackdown",
-      "lastEpisodeId": "61413700648",
-      "lastCheckedAt": 1791426784393
+      "lastRssKey": "https://api.spreaker.com/episode/75647645",
+      "lastEpisodeTitle": "The Catch Up: Opposition’s silent protest at Raj Ghat (8 October)",
+      "lastEpisodeId": "61450669809",
+      "lastCheckedAt": 1791498157905
     },
     "78573": {
       "lastRssKey": "87b9804a-0657-402f-9924-e771f51a0f27",
@@ -170,10 +170,10 @@
       "lastCheckedAt": 1790028455041
     },
     "331078": {
-      "lastRssKey": "11928f08-b823-11f1-957c-37bc71f9e085",
-      "lastEpisodeTitle": "Did OpenAI's Secret Model Just Crack Math?",
-      "lastEpisodeId": "60515541283",
-      "lastCheckedAt": 1791395744109
+      "lastRssKey": "11e7c234-b823-11f1-957c-1710071ce28d",
+      "lastEpisodeTitle": "Are AI Labs Trying to Break Encryption?",
+      "lastEpisodeId": "61458072433",
+      "lastCheckedAt": 1791498179836
     },
     "353744": {
       "lastRssKey": "flightcast:01M4195XGS3GTZ68XYBCHCSQZ0",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "07e23814-c33b-11f1-8cbf-4f40c1749467",
-      "lastEpisodeTitle": "1PM ET 10/08/2026 Newscast",
+      "lastRssKey": "f0fb8eaa-c364-11f1-a3e3-8f0d868e39d9",
+      "lastEpisodeTitle": "Isaias strengthens into a Category 2 hurricane as it heads toward the Gulf Coast.",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791480643600
+      "lastCheckedAt": 1791498180558
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -212,10 +212,10 @@
       "lastCheckedAt": 1791347456577
     },
     "415434": {
-      "lastRssKey": "49fcf4c4-6e7b-11f1-94bf-5737d233658f",
-      "lastEpisodeTitle": "The hot new thing in headphones",
-      "lastEpisodeId": "61122767217",
-      "lastCheckedAt": 1791413192435
+      "lastRssKey": "4a1922ac-6e7b-11f1-94bf-3f97b2f47f48",
+      "lastEpisodeTitle": "The many pluses and minuses of Alexa Plus",
+      "lastEpisodeId": "61459589313",
+      "lastCheckedAt": 1791498183056
     },
     "419624": {
       "lastRssKey": "23f91c0d-b9ca-4a5e-97aa-cfb82484f691",
@@ -224,10 +224,10 @@
       "lastCheckedAt": 1791156533475
     },
     "431205": {
-      "lastRssKey": "dc311bb1-1294-42ac-af71-1f6891f80f6d",
-      "lastEpisodeTitle": "Bond Bull, Un-Freezing Housing, and Under-the-Radar AI Names 10/7/26",
-      "lastEpisodeId": "61401023890",
-      "lastCheckedAt": 1791413194400
+      "lastRssKey": "71efac07-6fb5-4d0a-b00d-fa9ff9f2bcd1",
+      "lastEpisodeTitle": "Oil Spike, The Technical Take, and Oppormunities 10/8/26",
+      "lastEpisodeId": "61450275751",
+      "lastCheckedAt": 1791498185414
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -277,10 +277,10 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
-      "lastRssKey": "917ec013-c7ba-4880-a447-761bc383fb65",
-      "lastEpisodeTitle": "Netflix Star promotes Tesla FSD | Tesla Time News 685",
-      "lastEpisodeId": "61255401907",
-      "lastCheckedAt": 1791315795534
+      "lastRssKey": "ebe27b04-486f-4fdf-9fb1-301da06e23ab",
+      "lastEpisodeTitle": "Your Tesla Can now Backup Your House! | Tesla Time News 686",
+      "lastEpisodeId": "61452303719",
+      "lastCheckedAt": 1791498189203
     },
     "462634": {
       "lastRssKey": "gid://art19-episode-locator/V0/ezDhuk2f202w9qRV909F1Pr6BUtG9ISytIhjoFLdzeY",
@@ -289,14 +289,21 @@
       "lastCheckedAt": 1791247002093
     },
     "466583": {
-      "lastRssKey": "38a475ec-bea0-11f1-8284-dfd492f9d2ba",
-      "lastEpisodeTitle": "Secret Agent Scam: The Lies, Lives, and Wives of Will Jordan",
-      "lastCheckedAt": 1791192524389
+      "lastEpisodeId": "61190483391",
+      "lastEpisodeTitle": "Chicago's Shocking Sausage Vat Murder",
+      "lastRssKey": "f16cf926-b92a-11f1-aa05-279bcac26b0e",
+      "lastCheckedAt": 1791498189629
     },
     "467929": {
       "lastRssKey": "10f7a3df-a75d-4971-83f8-25809d69b595",
       "lastEpisodeTitle": "709: Vanessa Van Edwards - How to Connect with Anyone, Master Small Talk, and Ask the 9 Power Questions That Deepen Every Relationship",
       "lastCheckedAt": 1791156540174
+    },
+    "469432": {
+      "lastRssKey": "8e6ef410-3c32-4bdc-a0fd-8ef405e17adb",
+      "lastEpisodeTitle": "Home E06 خانه",
+      "lastEpisodeId": "36468896233",
+      "lastCheckedAt": 1791498191675
     },
     "470695": {
       "lastRssKey": "https://muslimcentral.com/abu-bakr-zoud-a-call-from-paradise-the-story-of-the-believer-from-surah-yaseen",
@@ -429,10 +436,10 @@
       "lastCheckedAt": 1791371919336
     },
     "640518": {
-      "lastRssKey": "6abcd2de4b9baaeac0df4dbc",
-      "lastEpisodeTitle": "Gude Käse",
+      "lastRssKey": "6ac76b0c39599f7c562948d7",
+      "lastEpisodeTitle": "Ab in den Urlaub mit Luftzahnsa",
       "lastEpisodeId": "60793415595",
-      "lastCheckedAt": 1790898149120
+      "lastCheckedAt": 1791498204956
     },
     "665403": {
       "lastRssKey": "57340057-5c83-44c2-9bea-79fc4fda70e0",
@@ -441,10 +448,10 @@
       "lastCheckedAt": 1791226023394
     },
     "724143": {
-      "lastRssKey": "61673e74-c300-11f1-b9c6-e7a76d777d46",
-      "lastEpisodeTitle": "Reforços nas campanhas de Lula e Flávio; eleição no RJ sob análise do TSE; diretrizes sobre obesidade infantil",
+      "lastRssKey": "be714662-c366-11f1-99f6-f3c9f0f62c1e",
+      "lastEpisodeTitle": "Flávio e Lula em empate técnico, apoio de Augusto Cury a Flávio e votos de Garotinho anulados",
       "lastEpisodeId": "61444678924",
-      "lastCheckedAt": 1791480672821
+      "lastCheckedAt": 1791498206175
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/QVuJrSMa8305chPbnqdNV7yerKYvqRXelCzyA7VAW-M",
@@ -785,6 +792,12 @@
       "lastEpisodeId": "57421560583",
       "lastCheckedAt": 1790385270880
     },
+    "1963447": {
+      "lastEpisodeId": "61286823426",
+      "lastEpisodeTitle": "ATRD Ep. 234 - 18 True Scary Stories (Paranormal & Past life)",
+      "lastRssKey": "f6e7d836-c01d-11f1-a8d3-0f89569aaf82",
+      "lastCheckedAt": 1791498237661
+    },
     "2136580": {
       "lastRssKey": "6423d731-762b-4375-813f-0245b72f6060",
       "lastEpisodeTitle": "Episode 392: THE HURRICANES DEFEAT THE CANADIENS IN THEIR HOME OPENER!",
@@ -798,10 +811,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6ac75e9222d5e8fe42a3ec15",
-      "lastEpisodeTitle": "J’ai interrogé le ministre sur la colère des lycéens",
-      "lastEpisodeId": "61381280520",
-      "lastCheckedAt": 1791453912861
+      "lastRssKey": "6ac7f29f0b812ac8d5bb0dab",
+      "lastEpisodeTitle": "L'essence explose, le gouvernement fait des annonce (08/10)",
+      "lastEpisodeId": "61454132513",
+      "lastCheckedAt": 1791498238574
     },
     "2574026": {
       "lastRssKey": "0682bec8-bd26-11f1-9529-aba7f383686d",
@@ -917,10 +930,10 @@
       "lastCheckedAt": 1786559328886
     },
     "4458818": {
-      "lastRssKey": "bada2c3d-dafe-48ee-bbba-2191efb080ab",
-      "lastEpisodeTitle": "Mickaël Jouis : une très étrange chute",
+      "lastRssKey": "070785eb-6738-430e-8716-29ce4ae44887",
+      "lastEpisodeTitle": "Loïc Goudard : chute mortelle à Majorque",
       "lastEpisodeId": "61419712254",
-      "lastCheckedAt": 1791480721542
+      "lastCheckedAt": 1791498246904
     },
     "4507961": {
       "lastRssKey": "3c83e181-b018-4ac3-bc41-9cbb626afaea",
@@ -1144,10 +1157,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "a3f2e5d2-c250-11f1-9c8e-5bbd495feee4",
-      "lastEpisodeTitle": "Prince Andrew: The Disney+ Era",
+      "lastRssKey": "474368e8-c32c-11f1-b6e1-ef53096edff9",
+      "lastEpisodeTitle": "“Hannah’s Big Mistake” - Celeb Traitors Reaction (Episode 3)",
       "lastEpisodeId": "61180961222",
-      "lastCheckedAt": 1791426898909
+      "lastCheckedAt": 1791498262313
     },
     "6725294": {
       "lastRssKey": "cmur7w99f01ou01oxe3it5bpn",
@@ -1210,10 +1223,10 @@
       "lastCheckedAt": 1791134398922
     },
     "6872190": {
-      "lastEpisodeId": "61415792779",
-      "lastEpisodeTitle": "SI SE TE IGNORA Y SE DISTANCIA, HAZ ESTO... | ESTOICISMO Sin Rogar, Sin Perseguir y Sin Perder Tu Paz",
-      "lastRssKey": "https://api.spreaker.com/episode/75630621",
-      "lastCheckedAt": 1791426914408
+      "lastEpisodeId": "61459207224",
+      "lastEpisodeTitle": "CONTROLA TUS PENSAMIENTOS NEGATIVOS CON ESTE EPISODIO - LECCIONES de ESTOICISMO para recuperar tu calma interior",
+      "lastRssKey": "https://api.spreaker.com/episode/75655512",
+      "lastCheckedAt": 1791498278713
     },
     "6894068": {
       "lastRssKey": "0943a678-bd0c-11f1-bbf1-0366c63b3d39",
@@ -1318,10 +1331,10 @@
       "lastCheckedAt": 1791413274495
     },
     "7248222": {
-      "lastRssKey": "9722be4e-c29c-11f1-8029-975eafe1a1cc",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Miércoles 07 de octubre de 2026",
+      "lastRssKey": "f46fa032-c362-11f1-abab-bfe7509edb08",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Jueves 08 de octubre de 2026",
       "lastEpisodeId": "61360194267",
-      "lastCheckedAt": 1791413275044
+      "lastCheckedAt": 1791498285650
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1514,10 +1527,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/9bab7db0-9b51-55ac-8c62-5381c722186c",
-      "lastEpisodeTitle": "Is it ever okay to let the narcissist AVE IT ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/2330575e-7745-559e-9fcb-78a92cf08dba",
+      "lastEpisodeTitle": "Why neurotic people are AT RISK of getting into a narcissistic relationship ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791480775889
+      "lastCheckedAt": 1791498296523
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
