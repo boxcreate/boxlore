@@ -52,7 +52,7 @@ object SurfaceStyles {
 
     /** Display labels for the settings UI. */
     val entries = listOf(
-        Entry(CLASSIC_DYNAMIC, "boxlore classic", "Gentle gray when dark, warm cream when light."),
+        Entry(CLASSIC_DYNAMIC, "boxlore classic", "Rich iris and seafoam on cool neutral surfaces."),
         Entry(STANDARD, "Material You Soft", "Colored surfaces from your wallpaper or accent."),
         Entry(CLASSIC_DARK, "Blackish", "Soft dark gray · stays dark."),
         Entry(CLASSIC_LIGHT, "Whitish", "Soft cream · stays light."),
@@ -114,6 +114,9 @@ fun resolveBoxLoreColorScheme(
 /** Shared fixed-colour resolution for app chrome, widgets and Appearance previews. */
 fun resolveFixedThemeColorScheme(themeBrand: String, darkTheme: Boolean, surfaceStyle: String): ColorScheme {
     val effectiveDarkTheme = computeEffectiveDarkTheme(surfaceStyle, darkTheme)
+    if (themeBrand == "violet" && isClassicSurface(surfaceStyle)) {
+        return if (effectiveDarkTheme) ClassicBrandColors.dark else ClassicBrandColors.light
+    }
     val seed = resolveThemeSeedColor(themeBrand)
     val scheme = generateBrandColorScheme(seed, effectiveDarkTheme, surfaceStyle)
     val preset = findThemePreset(themeBrand)
@@ -175,43 +178,30 @@ fun BoxLoreTheme(
 /**
  * Applies surface style overrides to an existing ColorScheme (used for dynamic color schemes).
  */
-private fun applyClassicOverrides(base: ColorScheme, isDark: Boolean): ColorScheme = if (isDark) {
-    base.copy(
-        background = Color(0xFF111316),
-        surface = Color(0xFF111316),
-        surfaceContainerLowest = Color(0xFF111316),
-        surfaceContainerLow = Color(0xFF181B20),
-        surfaceContainer = Color(0xFF181B20),
-        surfaceContainerHigh = Color(0xFF21252B),
-        surfaceContainerHighest = Color(0xFF21252B),
-        onBackground = Color(0xFFE8EAED),
-        onSurface = Color(0xFFE8EAED),
-        surfaceVariant = Color(0xFF181B20),
-        onSurfaceVariant = Color(0xFFA4AAB2),
-        outline = Color(0xFF2C313A),
-        outlineVariant = Color(0xFF2C313A),
-        tertiary = Color(0xFF4FB587),
-        tertiaryContainer = Color(0xFF1E352A),
-        onTertiaryContainer = Color(0xFF4FB587)
-    )
-} else {
-    base.copy(
-        background = Color(0xFFF0EBE0),
-        surface = Color(0xFFF0EBE0),
-        surfaceContainerLowest = Color(0xFFFFFFFF),
-        surfaceContainerLow = Color(0xFFFBF8F1),
-        surfaceContainer = Color(0xFFFBF8F1),
-        surfaceContainerHigh = Color(0xFFFFFFFF),
-        surfaceContainerHighest = Color(0xFFFFFFFF),
-        onBackground = Color(0xFF211D15),
-        onSurface = Color(0xFF211D15),
-        surfaceVariant = Color(0xFFFBF8F1),
-        onSurfaceVariant = Color(0xFF5F5A50),
-        outline = Color(0xFFE6DFCF),
-        outlineVariant = Color(0xFFE6DFCF),
-        tertiary = Color(0xFF3E9B6E),
-        tertiaryContainer = Color(0xFFE8F5EE),
-        onTertiaryContainer = Color(0xFF3E9B6E)
+private fun isClassicSurface(style: String): Boolean = style == SurfaceStyles.CLASSIC_DYNAMIC ||
+    style == SurfaceStyles.CLASSIC_DARK ||
+    style == SurfaceStyles.CLASSIC_LIGHT
+
+private fun applyClassicOverrides(base: ColorScheme, isDark: Boolean): ColorScheme {
+    val colors = if (isDark) ClassicBrandColors.dark else ClassicBrandColors.light
+    return base.copy(
+        background = colors.background,
+        onBackground = colors.onBackground,
+        surface = colors.surface,
+        onSurface = colors.onSurface,
+        surfaceVariant = colors.surfaceVariant,
+        onSurfaceVariant = colors.onSurfaceVariant,
+        outline = colors.outline,
+        outlineVariant = colors.outlineVariant,
+        surfaceDim = colors.surfaceDim,
+        surfaceBright = colors.surfaceBright,
+        surfaceContainerLowest = colors.surfaceContainerLowest,
+        surfaceContainerLow = colors.surfaceContainerLow,
+        surfaceContainer = colors.surfaceContainer,
+        surfaceContainerHigh = colors.surfaceContainerHigh,
+        surfaceContainerHighest = colors.surfaceContainerHighest,
+        inverseSurface = colors.inverseSurface,
+        inverseOnSurface = colors.inverseOnSurface,
     )
 }
 
@@ -382,7 +372,8 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
             surfaceContainerHighest = surfaceLevels.containerHighest
         )
     }
-    return findThemePreset(surfaceStyle)?.let { scheme.withPresetBackground(it, isDark) } ?: scheme
+    val styled = if (isClassicSurface(surfaceStyle)) applyClassicOverrides(scheme, isDark) else scheme
+    return findThemePreset(surfaceStyle)?.let { styled.withPresetBackground(it, isDark) } ?: styled
 }
 
 /**

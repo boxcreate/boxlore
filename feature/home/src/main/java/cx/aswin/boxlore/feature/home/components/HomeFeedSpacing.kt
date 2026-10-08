@@ -6,13 +6,23 @@ import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
 
 /** Shared Home discovery spacing — rails, grids, and card feet. */
 internal object HomeFeedSpacing {
-    /** Two complete cards plus a clear preview of card three on every phone width. */
-    const val RAIL_CARD_WIDTH_FRACTION = 0.41f
+    /** Phone time rails expose a partial second card to make horizontal scrolling visible. */
+    const val RAIL_CARD_WIDTH_FRACTION = 0.52f
+    val RailCardMaxWidth = 208.dp
+    const val COMPACT_RAIL_CARD_WIDTH_FRACTION = 0.42f
+    val CompactRailCardMaxWidth = 176.dp
     val RailItemGap = 16.dp
     val GridGap = FeedPosterSpacing.GridGap
+    val SectionGap = 32.dp
+    val RelatedRailGap = 20.dp
+    val HeaderContentGap = 12.dp
 
-    /** 18sp line height reserved per title line in equal-height rail feet. */
-    val RailTitleLineHeight = FeedPosterSpacing.TitleLineHeight
+    fun railCardWidth(viewportWidth: Dp, compact: Boolean = false): Dp =
+        if (compact) {
+            (viewportWidth * COMPACT_RAIL_CARD_WIDTH_FRACTION).coerceAtMost(CompactRailCardMaxWidth)
+        } else {
+            (viewportWidth * RAIL_CARD_WIDTH_FRACTION).coerceAtMost(RailCardMaxWidth)
+        }
 
     val CardTextPadding = FeedPosterSpacing.CardTextPadding
 
@@ -20,6 +30,4 @@ internal object HomeFeedSpacing {
     const val ForYouTotalCap = 9
     const val ForYouBodyCount = 8
     const val ExploreGridCap = 6
-
-    fun railTextFootHeight(titleMaxLines: Int): Dp = FeedPosterSpacing.textFootHeight(titleMaxLines)
 }

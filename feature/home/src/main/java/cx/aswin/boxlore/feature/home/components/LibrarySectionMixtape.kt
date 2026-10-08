@@ -125,13 +125,24 @@ internal fun HomeMixModule(
         }
     val visibleItemCount =
         when (mode) {
-            HomeMixMode.DAILY -> dailyPodcasts.size
+            HomeMixMode.DAILY -> dailyPodcasts.count { it.latestEpisode != null }
             HomeMixMode.OFFLINE -> visibleDownloads.size
         }
+    if (mode == HomeMixMode.DAILY && visibleItemCount == 0) {
+        HomeMixDropdownHeading(
+            mode = mode,
+            subtitle = stringResource(R.string.home_mix_caught_up_title),
+            enabled = canOfferOffline,
+            onModeSelected = onModeChanged,
+            modifier = modifier.fillMaxWidth().padding(vertical = HomeMixLayout.VerticalPadding, horizontal = 18.dp),
+        )
+        return
+    }
     Column(
         modifier =
         modifier
             .fillMaxWidth()
+            .homeMixBackdrop(enabled = visibleItemCount > 0)
             .padding(vertical = HomeMixLayout.VerticalPadding),
     ) {
         HomeMixHeader(
@@ -580,7 +591,7 @@ private fun ViewAllDownloadsCard(onClick: () -> Unit) {
         modifier =
         Modifier
             .width(148.dp)
-            .height(116.dp)
+            .height(HomeMixLayout.CardHeight)
             .expressiveClickable(
                 shape = RoundedCornerShape(20.dp),
                 onClick = onClick,
@@ -596,7 +607,7 @@ private fun ViewAllDownloadsCard(onClick: () -> Unit) {
         ) {
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(40.dp),
             ) {
@@ -704,40 +715,43 @@ internal fun MixtapeEpisodeCard(
     val isCompleted = status == EpisodeStatus.COMPLETED
     val isCurrentPlaying = currentPlayingEpisodeId == episode.id && isPlaying
 
+    val cardShape = RoundedCornerShape(24.dp)
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = cardShape,
         colors =
         CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = if (isCurrentPlaying) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         ),
         modifier =
         modifier
-            .width(264.dp)
-            .height(116.dp)
-            .expressiveClickable(shape = RoundedCornerShape(20.dp), onClick = onClick),
+            .width(HomeMixLayout.CardWidth)
+            .height(HomeMixLayout.CardHeight)
+            .expressiveClickable(shape = cardShape, onClick = onClick),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Row(
+            Column(
                 modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                // Left: Cover art with download & played badges
+                // Artwork with duration, playback and status controls.
                 Box(
                     modifier =
                     Modifier
-                        .size(76.dp)
-                        .clip(RoundedCornerShape(14.dp)),
+                        .fillMaxWidth()
+                        .height(112.dp)
+                        .clip(RoundedCornerShape(12.dp)),
                 ) {
                     OptimizedImage(
-                        url = (
-                            episode.imageUrl?.takeIf { it.isNotEmpty() } ?: podcast.imageUrl.takeIf { it.isNotEmpty() }
-                                ?: podcast.fallbackImageUrl
-                            ),
-                        proxyWidth = 152,
+                        url = resolveMixArtwork(
+                            episode.imageUrl,
+                            episode.podcastImageUrl,
+                            podcast.imageUrl,
+                            podcast.fallbackImageUrl,
+                        ),
+                        proxyWidth = 512,
                         contentDescription = episode.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
@@ -762,11 +776,11 @@ internal fun MixtapeEpisodeCard(
                         }
                     }
 
-                    if (isDownloaded) {
+                    if (isDownloaded && !isCompleted) {
                         Box(
                             modifier =
                             Modifier
-                                .align(Alignment.TopStart)
+                                .align(Alignment.TopEnd)
                                 .padding(4.dp)
                                 .size(18.dp)
                                 .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
@@ -782,58 +796,66 @@ internal fun MixtapeEpisodeCard(
                         }
                     }
 
-                    Box(
-                        modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(4.dp),
-                    ) {
-                        Surface(
-                            onClick = onPlay,
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            shadowElevation = 2.dp,
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize(),
-                            ) {
-                                Icon(
-                                    imageVector =
-                                    if (isCurrentPlaying) {
-                                        Icons.Rounded.Pause
-                                    } else {
-                                        Icons.Rounded.PlayArrow
-                                    },
-                                    contentDescription = if (isCurrentPlaying) "Pause" else "Play",
-                                    modifier = Modifier.size(19.dp),
-                                )
+                    if (episode.duration > 0) {
+                        val h = episode.duration / 3600
+                        val m = (episode.duration % 3600) / 60
+                        val timeText =
+                            if (isInProgress && progress > 0f) {
+                                stringResource(R.string.home_mix_minutes_left, remainingMixMinutes(episode.duration, progress))
+                            } else {
+                                if (h > 0) "${h}h ${m}m" else "${m}m"
                             }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+                        ) {
+                            Text(
+                                text = timeText,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = GoogleSansWeight.medium,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                            )
+                        }
+                    }
+
+                    Surface(
+                        onClick = onPlay,
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shadowElevation = 0.dp,
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).size(48.dp),
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            Icon(
+                                imageVector =
+                                if (isCurrentPlaying) {
+                                    Icons.Rounded.Pause
+                                } else {
+                                    Icons.Rounded.PlayArrow
+                                },
+                                contentDescription = if (isCurrentPlaying) "Pause" else "Play",
+                                modifier = Modifier.size(24.dp),
+                            )
                         }
                     }
                 }
 
-                // Center: Info Column (Titles + Metadata)
+                // Center the titles in the space remaining above any progress indicator.
                 Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                 ) {
-                    Text(
-                        text = podcast.title,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = GoogleSansWeight.medium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-
                     Text(
                         text = episode.title,
                         style =
                         MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = GoogleSansWeight.bold,
+                            fontWeight = GoogleSansWeight.semiBold,
                             lineHeight = 18.sp,
                         ),
                         maxLines = 2,
@@ -841,92 +863,25 @@ internal fun MixtapeEpisodeCard(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        val isNew =
-                            status == EpisodeStatus.UNPLAYED &&
-                                podcast.subscribedAt > 0L &&
-                                episode.publishedDate > (podcast.subscribedAt / 1000L - 7 * 24 * 3600L)
-                        if (isNew) {
-                            Box(
-                                modifier =
-                                Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .padding(horizontal = 5.dp, vertical = 1.dp),
-                            ) {
-                                Text(
-                                    text = "NEW",
-                                    style =
-                                    MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = GoogleSansWeight.bold,
-                                        fontSize = 9.sp,
-                                        letterSpacing = 0.4.sp,
-                                    ),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                            }
-                        }
-
-                        val relativeDate = formatRelativeDate(episode.publishedDate)
-                        if (relativeDate.isNotEmpty()) {
-                            val prefix = if (isNew) "• " else ""
-                            Text(
-                                text = "$prefix$relativeDate",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            if (episode.duration > 0) {
-                                Text(
-                                    text = "•",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
-                            }
-                        }
-
-                        if (episode.duration > 0) {
-                            val h = episode.duration / 3600
-                            val m = (episode.duration % 3600) / 60
-                            val timeText =
-                                if (isInProgress && progress > 0f) {
-                                    val remaining = ((1f - progress) * episode.duration).toInt()
-                                    val rm = (remaining % 3600) / 60
-                                    "${rm}m left"
-                                } else {
-                                    if (h > 0) "${h}h ${m}m" else "${m}m"
-                                }
-                            Text(
-                                text = timeText,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = GoogleSansWeight.medium,
-                                color =
-                                if (isInProgress) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
-                        }
-                    }
+                    Text(
+                        text = podcast.title,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = GoogleSansWeight.medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
-            }
 
-            // Absolute Bottom: Progress Bar spanning full card width
-            if (isInProgress && progress > 0f) {
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(3.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                    drawStopIndicator = {},
-                )
+                if (isInProgress && progress > 0f) {
+                    LinearProgressIndicator(
+                        progress = { progress.coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth().height(4.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.secondaryContainer,
+                        drawStopIndicator = {},
+                    )
+                }
             }
         }
     }

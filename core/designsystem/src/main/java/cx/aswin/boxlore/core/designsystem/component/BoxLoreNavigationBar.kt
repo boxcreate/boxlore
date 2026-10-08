@@ -213,8 +213,8 @@ private val loreNavDestination =
         label = "Lore",
         selectedIcon = Icons.Filled.Psychology,
         unselectedIcon = Icons.Outlined.Psychology,
-        selectedIconRes = cx.aswin.boxlore.core.designsystem.R.drawable.ic_neurology_filled,
-        unselectedIconRes = cx.aswin.boxlore.core.designsystem.R.drawable.ic_neurology,
+        selectedIconRes = cx.aswin.boxlore.core.designsystem.R.drawable.ic_lore_brand,
+        unselectedIconRes = cx.aswin.boxlore.core.designsystem.R.drawable.ic_lore_brand,
     )
 
 private val classicNavDestinations = primaryNavDestinations + loreNavDestination

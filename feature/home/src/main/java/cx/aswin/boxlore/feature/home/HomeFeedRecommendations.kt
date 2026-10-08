@@ -3,30 +3,31 @@ package cx.aswin.boxlore.feature.home
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.NightsStay
-import androidx.compose.material.icons.rounded.WbSunny
-import androidx.compose.material.icons.rounded.WbTwilight
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.catalog.content.ContentDaypart
+import cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme
 import cx.aswin.boxlore.core.designsystem.components.EqualHeightPosterGrid
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
+import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.feature.home.components.BecauseYouLikeSection
-import cx.aswin.boxlore.feature.home.components.GridSkeletonItem
+import cx.aswin.boxlore.feature.home.components.HomeDiscoveryChapter
 import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
+import cx.aswin.boxlore.feature.home.components.HomeMediaCardSkeleton
+import cx.aswin.boxlore.feature.home.components.HomePersonalRecommendationsHeader
 import cx.aswin.boxlore.feature.home.components.HomeTopLevelSectionHeader
 import cx.aswin.boxlore.feature.home.components.PodcastCard
 import cx.aswin.boxlore.feature.home.components.forYouItems
@@ -40,7 +41,9 @@ internal fun LazyStaggeredGridScope.curatedForYouItems(
     derivedState: PodcastFeedDerivedState,
 ) {
     if (!derivedState.hasBecauseYouLike && !derivedState.hasRecommendations) return
-    curatedHeaderItem(callbacks)
+    if (!derivedState.hasBecauseYouLike) {
+        curatedHeaderItem(callbacks, recommendationState.isRecommendationsFallback)
+    }
     becauseYouLikeItem(feedState, recommendationState, playback, callbacks, derivedState)
     if (derivedState.hasRecommendations) {
         forYouItems(
@@ -49,24 +52,24 @@ internal fun LazyStaggeredGridScope.curatedForYouItems(
                 callbacks.onEpisodeClick?.invoke(episode, podcast, "home_for_you")
             },
             discoveryContextTitle = feedState.discoveryGreeting.title,
+            onBrowseRecommendations = {
+                callbacks.onNavigateToExplore?.invoke(null, "home_for_you_see_all", "foryou")
+            },
             showTasteHeader = derivedState.hasBecauseYouLike,
             isFallback = recommendationState.isRecommendationsFallback,
         )
     }
 }
 
-private fun LazyStaggeredGridScope.curatedHeaderItem(callbacks: HomeFeedCallbacks) {
+private fun LazyStaggeredGridScope.curatedHeaderItem(
+    callbacks: HomeFeedCallbacks,
+    isFallback: Boolean,
+) {
     item(span = StaggeredGridItemSpan.FullLine, key = "curated_header", contentType = "section_header") {
-        HomeTopLevelSectionHeader(
-            title = "Curated For You",
-            icon = Icons.Rounded.AutoAwesome,
-            seeAllIcon = Icons.Rounded.ChevronRight,
-            seeAllContentDescription = "See all curated recommendations",
-            onSeeAllClick = {
-                callbacks.onNavigateToExplore?.invoke(null, "home_for_you_see_all", "foryou")
-            },
-            modifier = Modifier.padding(top = 4.dp),
-        )
+        val onBrowse: () -> Unit = { callbacks.onNavigateToExplore?.invoke(null, "home_for_you_see_all", "foryou") }
+        // The unchanged upper cards already reserve 12dp after their content.
+        val modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap - 12.dp)
+        HomePersonalRecommendationsHeader(isFallback, onBrowse, modifier)
     }
 }
 
@@ -95,7 +98,10 @@ private fun LazyStaggeredGridScope.becauseYouLikeItem(
                     callbacks.onPodcastClick(clickedPodcast, "home_because_you_like", null, null)
                 },
                 onChangePodcastClick = recommendationState.onChangePodcastClick,
-                modifier = Modifier.padding(bottom = 16.dp),
+                modifier = Modifier.padding(
+                    top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap - 12.dp,
+                    bottom = if (derivedState.hasRecommendations) HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap else 0.dp,
+                ),
             )
         }
     }
@@ -115,7 +121,7 @@ internal fun LazyStaggeredGridScope.discoveryGreetingItem(
             onSeeAllClick = {
                 callbacks.onNavigateToExplore?.invoke(null, "home_discovery_greeting", "foryou")
             },
-            modifier = Modifier.padding(top = 16.dp),
+            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap),
         )
     }
 }
@@ -134,7 +140,7 @@ internal fun LazyStaggeredGridScope.discoverFeedItems(
             item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid_$row", contentType = "discover_grid") {
                 EqualHeightPosterGrid {
                     repeat(2) {
-                        GridSkeletonItem()
+                        HomeMediaCardSkeleton()
                     }
                 }
             }
@@ -151,7 +157,7 @@ private fun LazyStaggeredGridScope.discoverHeaderItem(
             selectedCategory = feedState.selectedCategory,
             onCategorySelected = callbacks.onSelectCategory,
             onHeaderClick = { callbacks.onNavigateToExplore?.invoke(feedState.selectedCategory ?: "All", "home_discover_header", null) },
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap),
         )
     }
 }
@@ -170,6 +176,7 @@ private fun LazyStaggeredGridScope.discoverPodcastItems(
                         showGenreChip = false,
                         showSubtitle = false,
                         density = FeedMediaCardDensity.Grid,
+                        presentation = FeedMediaCardPresentation.ExpressivePoster,
                         onClick = {
                             callbacks.onPodcastClick(
                                 podcast,
@@ -197,16 +204,22 @@ private fun LazyStaggeredGridScope.discoverViewMoreItem(
                 .padding(vertical = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
-            androidx.compose.material3.FilledTonalButton(
-                onClick = { callbacks.onNavigateToExplore?.invoke(feedState.selectedCategory ?: "All", "home_discover_view_all_button", null) },
-            ) {
-                Text("View more in ${feedState.selectedCategory ?: "Explore"}")
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
+            DiscoveryExpressiveTheme {
+                androidx.compose.material3.FilledTonalButton(
+                    onClick = { callbacks.onNavigateToExplore?.invoke(feedState.selectedCategory ?: "All", "home_discover_view_all_button", null) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                ) {
+                    Text(
+                        feedState.selectedCategory?.let { stringResource(R.string.home_view_more_in, it) }
+                            ?: stringResource(R.string.home_view_more_shows),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
         }
     }
@@ -218,20 +231,12 @@ private fun DiscoveryGreetingHeader(
     onSeeAllClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val icon =
-        when (greeting.daypart) {
-            ContentDaypart.MORNING,
-            ContentDaypart.AFTERNOON,
-            -> Icons.Rounded.WbSunny
-            ContentDaypart.EVENING -> Icons.Rounded.WbTwilight
-            ContentDaypart.LATE_NIGHT -> Icons.Rounded.NightsStay
-        }
     HomeTopLevelSectionHeader(
         title = greeting.title,
-        icon = icon,
-        seeAllIcon = Icons.Rounded.ChevronRight,
-        seeAllContentDescription = "See all discoveries",
+        seeAllContentDescription = stringResource(R.string.home_discovery_see_all),
         onSeeAllClick = onSeeAllClick,
+        chapter = HomeDiscoveryChapter.MOMENT,
+        daypart = greeting.daypart,
         modifier = modifier,
     )
 }

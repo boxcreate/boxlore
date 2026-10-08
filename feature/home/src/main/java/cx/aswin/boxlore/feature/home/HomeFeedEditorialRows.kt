@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -14,9 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
+import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.feature.home.components.EditorialRowSkeleton
 import cx.aswin.boxlore.feature.home.components.HomeChildHeaderTone
 import cx.aswin.boxlore.feature.home.components.HomeChildSectionHeader
+import cx.aswin.boxlore.feature.home.components.HomeDiscoveryRail
 import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 import cx.aswin.boxlore.feature.home.logic.editorialRowDefinitionsFor
 
@@ -34,7 +36,12 @@ internal fun LazyStaggeredGridScope.editorialFeedItems(
                 key = "editorial_${definition.providerId}",
                 contentType = "editorial_row",
             ) {
-                EditorialRowSkeleton(isLast = index == definitions.lastIndex)
+                EditorialRowSkeleton(
+                    title = definition.title,
+                    icon = definition.icon.toHomeEditorialIcon(),
+                    isLast = index == definitions.lastIndex,
+                    tone = HomeChildHeaderTone.PRIMARY,
+                )
             }
         }
     }
@@ -46,13 +53,8 @@ internal fun LazyStaggeredGridScope.editorialFeedItems(
         ) {
             EditorialRow(
                 row = row,
-                tone =
-                if (index % 2 == 0) {
-                    HomeChildHeaderTone.PRIMARY
-                } else {
-                    HomeChildHeaderTone.TERTIARY
-                },
                 isLast = index == content.editorialRows.list.lastIndex,
+                tone = HomeChildHeaderTone.PRIMARY,
                 callbacks = callbacks,
             )
         }
@@ -62,8 +64,8 @@ internal fun LazyStaggeredGridScope.editorialFeedItems(
 @Composable
 private fun EditorialRow(
     row: HomeEditorialRow,
-    tone: HomeChildHeaderTone,
     isLast: Boolean,
+    tone: HomeChildHeaderTone,
     callbacks: HomeFeedCallbacks,
 ) {
     LaunchedEffect(row.providerId) {
@@ -76,17 +78,15 @@ private fun EditorialRow(
         modifier =
         Modifier
             .fillMaxWidth()
-            .padding(bottom = if (isLast) 20.dp else 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(bottom = if (isLast) 0.dp else HomeFeedSpacing.RelatedRailGap - HomeFeedSpacing.GridGap),
+        verticalArrangement = Arrangement.spacedBy(HomeFeedSpacing.HeaderContentGap),
     ) {
         HomeChildSectionHeader(
             title = row.title,
             icon = row.icon.toHomeEditorialIcon(),
             tone = tone,
         )
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap),
-        ) {
+        HomeDiscoveryRail { cardWidth ->
             itemsIndexed(
                 items = row.podcasts,
                 key = { _, podcast ->
@@ -116,7 +116,8 @@ private fun EditorialRow(
                         )
                     },
                     showSubtitle = false,
-                    modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION),
+                    modifier = Modifier.width(cardWidth),
+                    presentation = FeedMediaCardPresentation.ExpressivePoster,
                 )
             }
         }

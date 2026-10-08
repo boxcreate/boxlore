@@ -1,45 +1,30 @@
 package cx.aswin.boxlore.feature.home.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Videocam
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.EqualHeightPosterGrid
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
+import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 
 /**
  * Emits the "For You" section into a [LazyStaggeredGridScope].
- * Hero stays full-line; body cards load one [EqualHeightPosterGrid] row at a time
- * with fixed 3-line title feet.
+ * The first recommendation stays full-line; body cards load one [EqualHeightPosterGrid]
+ * row at a time with font-scaled three-line title feet.
  */
 fun LazyStaggeredGridScope.forYouItems(
     recommendations: StableEpisodeList,
     onEpisodeClick: (Episode, Podcast) -> Unit,
     discoveryContextTitle: String,
+    onBrowseRecommendations: () -> Unit,
     showTasteHeader: Boolean = true,
     isFallback: Boolean = true,
 ) {
@@ -47,10 +32,7 @@ fun LazyStaggeredGridScope.forYouItems(
 
     if (showTasteHeader) {
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_header", contentType = "for_you_header") {
-            HomeChildSectionHeader(
-                title = if (isFallback) "Popular in your Region" else "Based on Your Taste",
-                icon = Icons.Rounded.AutoAwesome,
-            )
+            HomePersonalRecommendationsHeader(isFallback, onBrowseRecommendations)
         }
     }
 
@@ -77,10 +59,11 @@ fun LazyStaggeredGridScope.forYouItems(
                 description = "",
                 genre = ep.podcastGenre ?: "Podcast",
             )
-        ForYouHeroCard(
+        CuratedEpisodeCard(
             episode = ep,
-            parentPodcast = parentPodcast,
-            isFallback = isFallback,
+            podcast = parentPodcast,
+            showSubtitle = false,
+            presentation = FeedMediaCardPresentation.ExpressiveFeatured,
             onClick = {
                 AnalyticsHelper.trackHomeRecommendationCardTapped(
                     episodeId = ep.id,
@@ -128,347 +111,39 @@ fun LazyStaggeredGridScope.forYouItems(
                             onEpisodeClick(ep, parentPodcast)
                         },
                         showSubtitle = false,
+                        presentation = FeedMediaCardPresentation.ExpressivePoster,
                     )
                 }
             }
         }
     }
+}
+
+/** A personal chapter keeps its identity even when show-based recommendations are absent. */
+@Composable
+internal fun HomePersonalRecommendationsHeader(
+    isFallback: Boolean,
+    onBrowse: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    HomeTopLevelSectionHeader(
+        title = stringResource(if (isFallback) R.string.home_popular_region else R.string.home_picked_for_you),
+        seeAllContentDescription = stringResource(R.string.home_recommendations_see_all),
+        onSeeAllClick = onBrowse,
+        chapter = HomeDiscoveryChapter.PERSONAL,
+        modifier = modifier,
+    )
 }
 
 private fun LazyStaggeredGridScope.forYouSkeletonItems() {
     item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero", contentType = "for_you_hero") {
-        val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-        val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-        ForYouHeroSkeleton(baseColor = baseColor, highlightColor = highlightColor)
+        HomeMediaCardSkeleton(presentation = FeedMediaCardPresentation.ExpressiveFeatured)
     }
     repeat((HomeFeedSpacing.ForYouBodyCount + 1) / 2) { row ->
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_$row", contentType = "for_you_body") {
             EqualHeightPosterGrid {
-                repeat(2) { GridSkeletonItem() }
+                repeat(2) { HomeMediaCardSkeleton() }
             }
         }
     }
-}
-
-@Composable
-private fun ForYouHeroCard(
-    episode: Episode,
-    parentPodcast: Podcast,
-    isFallback: Boolean = true,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .expressiveClickable(shape = RoundedCornerShape(20.dp), onClick = onClick),
-    ) {
-        // Full-bleed artwork background
-        OptimizedImage(
-            url = episode.imageUrl?.takeIf { it.isNotBlank() } ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
-            proxyWidth = 600,
-            contentDescription = episode.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // Dark gradient scrim — heavier at bottom for text legibility (Option A)
-        Box(
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colorStops =
-                        arrayOf(
-                            0.0f to Color.Transparent,
-                            0.3f to Color.Black.copy(alpha = 0.15f),
-                            0.6f to Color.Black.copy(alpha = 0.65f),
-                            1.0f to Color.Black,
-                        ),
-                    ),
-                ),
-        )
-
-        // Premium tag for the Hero card
-        Box(
-            modifier =
-            Modifier
-                .padding(14.dp)
-                .align(Alignment.TopStart)
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                    shape = RoundedCornerShape(12.dp),
-                ).padding(horizontal = 8.dp, vertical = 4.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.AutoAwesome,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(12.dp),
-                )
-                Text(
-                    text = if (isFallback) "POPULAR IN YOUR REGION" else "FEATURED RECOMMENDATION",
-                    style =
-                    MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontSize = 9.sp,
-                        fontWeight = GoogleSansWeight.bold,
-                        letterSpacing = 0.5.sp,
-                    ),
-                )
-            }
-        }
-
-        // Metadata anchored to bottom
-        Column(
-            modifier =
-            Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            // Podcast name
-            Text(
-                text = episode.podcastTitle ?: "",
-                style =
-                MaterialTheme.typography.labelMedium.copy(
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 11.sp,
-                    fontWeight = GoogleSansWeight.semiBold,
-                    letterSpacing = 0.4.sp,
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            // Episode title (larger font since it's the hero card)
-            Text(
-                text = episode.title,
-                style =
-                MaterialTheme.typography.titleMedium.copy(
-                    color = Color.White,
-                    fontWeight = GoogleSansWeight.bold,
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp,
-                ),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            // Duration & additional context
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (episode.duration > 0) {
-                    val minutes = episode.duration / 60
-                    Text(
-                        text = "$minutes min listen",
-                        style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 10.sp,
-                            fontWeight = GoogleSansWeight.medium,
-                        ),
-                    )
-                }
-
-                val genre = episode.podcastGenre ?: parentPodcast.genre
-                if (!genre.isNullOrBlank()) {
-                    Text(
-                        text = "•",
-                        color = Color.White.copy(alpha = 0.4f),
-                        fontSize = 10.sp,
-                    )
-                    Text(
-                        text = genre,
-                        style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 10.sp,
-                            fontWeight = GoogleSansWeight.medium,
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ForYouHeroSkeleton(
-    baseColor: Color,
-    highlightColor: Color,
-) {
-    Box(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(20.dp)),
-    )
-}
-
-@Composable
-private fun ForYouHorizontalBentoCard(
-    episode: Episode,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .height(115.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .expressiveClickable(onClick = onClick),
-    ) {
-        // Full-bleed artwork background
-        OptimizedImage(
-            url = episode.imageUrl?.takeIf { it.isNotBlank() } ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
-            proxyWidth = 600,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // Heavy dark gradient scrim for pristine text contrast
-        Box(
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colorStops =
-                        arrayOf(
-                            0.0f to Color.Transparent,
-                            0.4f to Color.Black.copy(alpha = 0.3f),
-                            1.0f to Color.Black.copy(alpha = 0.85f),
-                        ),
-                    ),
-                ),
-        )
-
-        // Duration chip — top left
-        if (episode.duration > 0) {
-            val minutes = episode.duration / 60
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = Color.Black.copy(alpha = 0.6f),
-                modifier =
-                Modifier
-                    .padding(10.dp)
-                    .align(Alignment.TopStart),
-            ) {
-                Text(
-                    text = "$minutes min",
-                    style =
-                    MaterialTheme.typography.labelSmall.copy(
-                        color = Color.White,
-                        fontSize = 9.sp,
-                        fontWeight = GoogleSansWeight.bold,
-                    ),
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                )
-            }
-        }
-
-        // Genre chip — top right (or video badge if video)
-        val genre = episode.podcastGenre
-        if (episode.enclosureType?.startsWith("video/") == true) {
-            Surface(
-                shape = androidx.compose.foundation.shape.CircleShape,
-                color = Color.Black.copy(alpha = 0.6f),
-                modifier =
-                Modifier
-                    .padding(10.dp)
-                    .align(Alignment.TopEnd),
-            ) {
-                Box(
-                    modifier = Modifier.padding(4.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Videocam,
-                        contentDescription = "Video",
-                        tint = Color.White,
-                        modifier = Modifier.size(12.dp),
-                    )
-                }
-            }
-        } else if (!genre.isNullOrBlank()) {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = Color.Black.copy(alpha = 0.6f),
-                modifier =
-                Modifier
-                    .padding(10.dp)
-                    .align(Alignment.TopEnd),
-            ) {
-                Text(
-                    text = genre,
-                    style =
-                    MaterialTheme.typography.labelSmall.copy(
-                        color = Color.White,
-                        fontSize = 9.sp,
-                        fontWeight = GoogleSansWeight.bold,
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                )
-            }
-        }
-
-        // Episode title — bottom aligned
-        Column(
-            modifier =
-            Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = episode.title,
-                style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = GoogleSansWeight.bold,
-                    fontSize = 14.sp,
-                    lineHeight = 18.sp,
-                    color = Color.White,
-                ),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ForYouHorizontalBentoSkeleton(
-    baseColor: Color,
-    highlightColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .height(115.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(20.dp)),
-    )
 }

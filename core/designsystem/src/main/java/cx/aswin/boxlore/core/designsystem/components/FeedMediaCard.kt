@@ -34,7 +34,15 @@ enum class FeedMediaCardDensity {
     Grid,
 }
 
+/** Explicit opt-in keeps existing discovery screens visually unchanged. */
+enum class FeedMediaCardPresentation {
+    Default,
+    ExpressivePoster,
+    ExpressiveFeatured,
+}
+
 @Composable
+@Suppress("LongParameterList") // Keep the opt-in presentation alongside the existing source-compatible parameters.
 fun FeedMediaCard(
     imageUrl: String,
     title: String,
@@ -42,8 +50,13 @@ fun FeedMediaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     titleMaxLines: Int = 2,
+    presentation: FeedMediaCardPresentation = FeedMediaCardPresentation.Default,
     imageChrome: @Composable (BoxScope.() -> Unit)? = null,
 ) {
+    if (presentation != FeedMediaCardPresentation.Default) {
+        ExpressiveFeedMediaCard(imageUrl, title, onClick, presentation, modifier, imageChrome)
+        return
+    }
     val lines = titleMaxLines.coerceAtLeast(1)
     val showSubtitle = !subtitle.isNullOrBlank()
 

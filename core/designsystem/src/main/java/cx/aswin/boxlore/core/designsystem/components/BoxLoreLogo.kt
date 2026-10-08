@@ -11,6 +11,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+const val BoxLoreLogoAspectRatio = 7.576829f
+
 /**
  * Reusable boxlore wordmark from the vector drawable.
  *
@@ -25,6 +27,6 @@ fun BoxLoreLogo(modifier: Modifier = Modifier, textColor: Color = MaterialTheme.
         modifier =
         modifier
             .height(height)
-            .aspectRatio(805f / 110f),
+            .aspectRatio(BoxLoreLogoAspectRatio),
     )
 }

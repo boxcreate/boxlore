@@ -13,12 +13,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
+import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.home.R
 
 @Composable
 fun PodcastCard(
@@ -28,6 +31,7 @@ fun PodcastCard(
     showGenreChip: Boolean = false,
     showSubtitle: Boolean = true,
     density: FeedMediaCardDensity = FeedMediaCardDensity.Grid,
+    presentation: FeedMediaCardPresentation = FeedMediaCardPresentation.Default,
 ) {
     FeedMediaCard(
         imageUrl = podcast.imageUrl,
@@ -35,8 +39,10 @@ fun PodcastCard(
         subtitle = if (showSubtitle) podcast.artist.replace("+", " ") else null,
         onClick = onClick,
         modifier = modifier,
+        presentation = presentation,
         titleMaxLines =
         when {
+            presentation != FeedMediaCardPresentation.Default -> 3
             showSubtitle -> 2
             density == FeedMediaCardDensity.Rail -> 2
             else -> 3
@@ -65,7 +71,7 @@ fun PodcastCard(
             if (podcast.medium == "video" || podcast.latestEpisode?.enclosureType?.startsWith("video/") == true) {
                 Surface(
                     shape = androidx.compose.foundation.shape.CircleShape,
-                    color = Color.Black.copy(alpha = 0.55f),
+                    color = if (presentation == FeedMediaCardPresentation.Default) Color.Black.copy(alpha = 0.55f) else MaterialTheme.colorScheme.secondaryContainer,
                     modifier =
                     Modifier
                         .padding(8.dp)
@@ -77,8 +83,8 @@ fun PodcastCard(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Videocam,
-                            contentDescription = "Video",
-                            tint = Color.White,
+                            contentDescription = stringResource(R.string.home_video_type),
+                            tint = if (presentation == FeedMediaCardPresentation.Default) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(16.dp),
                         )
                     }

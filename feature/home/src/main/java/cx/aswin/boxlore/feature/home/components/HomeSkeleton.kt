@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
+import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardSkeleton
 import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 
@@ -118,7 +120,7 @@ fun RisingSkeleton() {
 
 fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.GridSkeletonItems() {
     items(6) {
-        GridSkeletonItem()
+        HomeMediaCardSkeleton()
     }
 }
 
@@ -303,24 +305,34 @@ fun YourShowsSkeleton(
 
 /** One loading rail occupies the same keyed section as its eventual editorial row. */
 @Composable
-fun EditorialRowSkeleton(isLast: Boolean = false, modifier: Modifier = Modifier) {
-    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+fun EditorialRowSkeleton(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isLast: Boolean = false,
+    modifier: Modifier = Modifier,
+    tone: HomeChildHeaderTone = HomeChildHeaderTone.PRIMARY,
+) {
     Column(
-        modifier = modifier.padding(bottom = if (isLast) 20.dp else 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = modifier.padding(bottom = if (isLast) 0.dp else HomeFeedSpacing.RelatedRailGap - HomeFeedSpacing.GridGap),
+        verticalArrangement = Arrangement.spacedBy(HomeFeedSpacing.HeaderContentGap),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(36.dp).m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.medium),
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            SkeletonBlock(width = 132.dp, height = 17.dp, baseColor = baseColor, highlightColor = highlightColor)
-        }
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.RailItemGap)) {
+        HomeChildSectionHeader(title = title, icon = icon, tone = tone)
+        HomeDiscoveryRail { cardWidth ->
             items(4) {
-                GridSkeletonItem(modifier = Modifier.fillParentMaxWidth(HomeFeedSpacing.RAIL_CARD_WIDTH_FRACTION))
+                HomeMediaCardSkeleton(modifier = Modifier.width(cardWidth))
             }
         }
+    }
+}
+
+@Composable
+internal fun HomeMediaCardSkeleton(
+    modifier: Modifier = Modifier,
+    presentation: FeedMediaCardPresentation = FeedMediaCardPresentation.ExpressivePoster,
+) {
+    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+    FeedMediaCardSkeleton(modifier = modifier, presentation = presentation) { placeholderModifier ->
+        Box(placeholderModifier.m3Shimmer(baseColor, highlightColor))
     }
 }
