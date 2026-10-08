@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-08T10:03:27.851Z",
+  "lastRun": "2026-10-08T17:29:59.875Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "e28cc1d9-1321-416e-aa2d-25de3724cca3",
-      "lastEpisodeTitle": "5am ET, October 08 | The latest headlines from NPR",
+      "lastRssKey": "3bf9aa31-e908-4e69-919c-4be8eedfffc4",
+      "lastEpisodeTitle": "1pm ET, October 08 | The latest headlines from NPR",
       "lastEpisodeId": "61431584179",
-      "lastCheckedAt": 1791453812956
+      "lastCheckedAt": 1791480605585
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75628511",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "f79f92aa-c2f7-11f1-b3d2-97f552bce5bd",
-      "lastEpisodeTitle": "5AM ET 10/08/2026 Newscast",
+      "lastRssKey": "07e23814-c33b-11f1-8cbf-4f40c1749467",
+      "lastEpisodeTitle": "1PM ET 10/08/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791453844324
+      "lastCheckedAt": 1791480643600
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -236,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4C270SQ0Q1S5GDZ8RWJW6S2",
-      "lastEpisodeTitle": "How a Meta AI prompt changed one mom’s approach to online privacy",
+      "lastRssKey": "01M4DYPJVQ0AJW0GDDVZWNDPSC",
+      "lastEpisodeTitle": "What AI is doing to jobs in creative fields",
       "lastEpisodeId": "61397993650",
-      "lastCheckedAt": 1791453850197
+      "lastCheckedAt": 1791480649153
     },
     "432535": {
       "lastRssKey": "3b66721e-6186-40aa-9192-c996dc796c7d",
@@ -304,10 +304,10 @@
       "lastCheckedAt": 1790958626535
     },
     "483834": {
-      "lastRssKey": "6ac687257ce338e8cd997a14",
-      "lastEpisodeTitle": "Vampire Carnival now playing in theaters, Lanterns Episode 8 inside look — October 7th, 2026",
+      "lastRssKey": "6ac7d1628f34078889b55f13",
+      "lastEpisodeTitle": "Star Wars: Galactic Racer Launch Trailer, Timothy Zahn to Write Star Trek Graphic Novel — October 8th, 2026",
       "lastEpisodeId": "61405464511",
-      "lastCheckedAt": 1791413200690
+      "lastCheckedAt": 1791480658192
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -316,10 +316,10 @@
       "lastCheckedAt": 1790540283432
     },
     "491579": {
-      "lastRssKey": "6abe6006fa77186ceb58628f",
-      "lastEpisodeTitle": "You Know What You Are | The Square Ball",
+      "lastRssKey": "6ac7925068b7ce6ffb3ac829",
+      "lastEpisodeTitle": "Proper Northern Sausages | The Square Ball",
       "lastEpisodeId": "60811874133",
-      "lastCheckedAt": 1790863982072
+      "lastCheckedAt": 1791480659387
     },
     "497129": {
       "lastRssKey": "12381::3575505",
@@ -441,10 +441,10 @@
       "lastCheckedAt": 1791226023394
     },
     "724143": {
-      "lastRssKey": "95d1cf7e-c299-11f1-880b-eb281e55bea6",
-      "lastEpisodeTitle": "Flávio justifica fala sobre Constituição, Lula critica desorganização da campanha e PF arquiva apuração contra EUA",
-      "lastEpisodeId": "61359754036",
-      "lastCheckedAt": 1791413210794
+      "lastRssKey": "61673e74-c300-11f1-b9c6-e7a76d777d46",
+      "lastEpisodeTitle": "Reforços nas campanhas de Lula e Flávio; eleição no RJ sob análise do TSE; diretrizes sobre obesidade infantil",
+      "lastEpisodeId": "61444678924",
+      "lastCheckedAt": 1791480672821
     },
     "739525": {
       "lastRssKey": "gid://art19-episode-locator/V0/QVuJrSMa8305chPbnqdNV7yerKYvqRXelCzyA7VAW-M",
@@ -524,10 +524,10 @@
       "lastCheckedAt": 1791315815752
     },
     "827592": {
-      "lastEpisodeId": "61391027980",
-      "lastEpisodeTitle": "Short Stuff: The Style Cycle",
-      "lastRssKey": "551d1c25-8c6b-40c8-8a0a-b4db011ecd2e",
-      "lastCheckedAt": 1791395771540
+      "lastEpisodeId": "61433681806",
+      "lastEpisodeTitle": "Stand-Up Pt II",
+      "lastRssKey": "165c6213-d25c-418d-89f3-b4d601257f1e",
+      "lastCheckedAt": 1791480679221
     },
     "837535": {
       "lastRssKey": "ff794dd0-c19a-11f1-8de5-43e0bda9d228",
@@ -548,16 +548,16 @@
       "lastCheckedAt": 1791226032900
     },
     "889671": {
-      "lastRssKey": "db4f32d5-5812-47e4-a887-dd6d8d7dea56",
-      "lastEpisodeTitle": "Qualcomm ❤️ Linux, F-Droid 2.0, VST3 Plugins In OBS!",
-      "lastEpisodeId": "59241576400",
-      "lastCheckedAt": 1791453884808
+      "lastRssKey": "aa6a7950-7ac7-4cb0-bd90-159917d3fa97",
+      "lastEpisodeTitle": "Bloodborne On Linux, 2GB Pi Increases, and Snappy Steam Dragons",
+      "lastEpisodeId": "61420731363",
+      "lastCheckedAt": 1791480681883
     },
     "902798": {
-      "lastRssKey": "4ca28227-b907-4dc6-bf89-f765d0fd0283",
-      "lastEpisodeTitle": "Memory Explained: Why We Forget & How to Make It Sharper | Nikolay Kukushkin | FO571 Raj Shamani",
+      "lastRssKey": "b466342a-749e-4855-9d1b-7913ae4b74cd",
+      "lastEpisodeTitle": "Startup Ideas, Timing & AI: How To Build The Next Big Thing | Sravanth Aluru | FO572 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1791347497942
+      "lastCheckedAt": 1791480682865
     },
     "906591": {
       "lastRssKey": "e2b2d782-c2e6-11f1-8a2c-d7eda3deee0f",
@@ -595,10 +595,10 @@
       "lastCheckedAt": 1790986292655
     },
     "980370": {
-      "lastRssKey": "6ac50a9bfba456483104cf1e",
-      "lastEpisodeTitle": "What my politically divided family teaches me | Tami Pyfer",
+      "lastRssKey": "6ac7ae48e2a72faefc1e8d0f",
+      "lastEpisodeTitle": "How imaginary worlds help kids learn | Anna Rainio",
       "lastEpisodeId": "61397494100",
-      "lastCheckedAt": 1791395777075
+      "lastCheckedAt": 1791480689116
     },
     "998969": {
       "lastRssKey": "audioboom-01a11655-c906-766b-8604-b0703d7a5f9d",
@@ -634,10 +634,10 @@
       "lastCheckedAt": 1791226044151
     },
     "1047718": {
-      "lastRssKey": "6ac5e8af8f08372e7252fd98",
-      "lastEpisodeTitle": "Kane makes more England history and Ronaldo claps back – Football Weekly",
-      "lastEpisodeId": "61388254202",
-      "lastCheckedAt": 1791395781823
+      "lastRssKey": "6ac733c08f08995753e19028",
+      "lastEpisodeTitle": "Manchester City’s trip to Anfield and is Eckert’s Spygate ban too lenient? – Football Weekly podcast",
+      "lastEpisodeId": "61446000362",
+      "lastCheckedAt": 1791480696239
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-the-future-of-my-quran-study-bayyinahs-upcoming-projects",
@@ -669,10 +669,10 @@
       "lastCheckedAt": 1791296669065
     },
     "1116485": {
-      "lastRssKey": "6ac765e66e1c697d81224301",
-      "lastEpisodeTitle": "€70M BUY-BACK OPTION! Liverpool To RE-SIGN Jarell Quansah Next Summer? | Daily News Update",
+      "lastRssKey": "6ac79f625e8e5436b0f1fc7f",
+      "lastEpisodeTitle": "Andoni Iraola Will See THE POWER OF ANFIELD | What To Expect Ahead Of Liverpool v Man City",
       "lastEpisodeId": "61384493127",
-      "lastCheckedAt": 1791453901879
+      "lastCheckedAt": 1791480702914
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -693,10 +693,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "feb59776-c29b-11f1-9746-678e78d7bcb8",
-      "lastEpisodeTitle": "The Habs’ Defensive Struggles Are NOT Normal! | The Sick Podcast with Tony Marinaro October 7 2026",
-      "lastEpisodeId": "61348655131",
-      "lastCheckedAt": 1791453905860
+      "lastRssKey": "8c090efe-c333-11f1-8544-17435100d8f6",
+      "lastEpisodeTitle": "Une Occasion À Saisir Pour Fowler | Le Sick Podcast Avec Tony Marinaro 08/10/26",
+      "lastEpisodeId": "61448692210",
+      "lastCheckedAt": 1791480705593
     },
     "1199730": {
       "lastRssKey": "8ea61c5d-22ee-41a3-bce9-adafc5136fa2",
@@ -705,10 +705,10 @@
       "lastCheckedAt": 1791226054426
     },
     "1208307": {
-      "lastRssKey": "6ac6366d29b9fbfbe249bdf1",
-      "lastEpisodeTitle": "Where's the Antonelli hype? Buxton and Daly have their say on F1's champion-elect",
-      "lastEpisodeId": "61389785565",
-      "lastCheckedAt": 1791395790677
+      "lastRssKey": "6ac760ac68b7ce6ffb30ba91",
+      "lastEpisodeTitle": "F1 Rewind: How his Dad's F1 failure made Max Verstappen an F1 great",
+      "lastEpisodeId": "61447290477",
+      "lastCheckedAt": 1791480706471
     },
     "1258562": {
       "lastRssKey": "6ac22edf52f9e4485fc03f23",
@@ -751,16 +751,16 @@
       "lastCheckedAt": 1791426872116
     },
     "1366771": {
-      "lastRssKey": "6ac6f4fa5f788808a7490d91",
-      "lastEpisodeTitle": "Morning briefing Thursday 8th October",
+      "lastRssKey": "6ac7d05f39599f7c563be07d",
+      "lastEpisodeTitle": "Evening briefing Thursday 8th October",
       "lastEpisodeId": "61350864715",
-      "lastCheckedAt": 1791426872802
+      "lastCheckedAt": 1791480709122
     },
     "1380325": {
-      "lastRssKey": "Buzzsprout-19912886",
-      "lastEpisodeTitle": "MacArthur Q&A: Part VI",
-      "lastEpisodeId": "61296125050",
-      "lastCheckedAt": 1791226058248
+      "lastRssKey": "Buzzsprout-19823766",
+      "lastEpisodeTitle": "MacArthur and the National Football Foundation",
+      "lastEpisodeId": "61445447578",
+      "lastCheckedAt": 1791480710030
     },
     "1388001": {
       "lastRssKey": "4b23ed6c-a2a0-4d3b-b155-9d90071f6b03",
@@ -916,6 +916,12 @@
       "lastEpisodeId": "55631248416",
       "lastCheckedAt": 1786559328886
     },
+    "4458818": {
+      "lastRssKey": "bada2c3d-dafe-48ee-bbba-2191efb080ab",
+      "lastEpisodeTitle": "Mickaël Jouis : une très étrange chute",
+      "lastEpisodeId": "61419712254",
+      "lastCheckedAt": 1791480721542
+    },
     "4507961": {
       "lastRssKey": "3c83e181-b018-4ac3-bc41-9cbb626afaea",
       "lastEpisodeTitle": "237 - MySudo VoIP",
@@ -1027,10 +1033,10 @@
       "lastCheckedAt": 1791329833421
     },
     "5848065": {
-      "lastRssKey": "6abe8aef90f8a952d487679a",
-      "lastEpisodeTitle": "وریا امیری | خدا انسان را آفرید، یا انسان خدا را؟",
+      "lastRssKey": "6ac7bef9937a3c900ff1bcae",
+      "lastEpisodeTitle": "رویافروشی | صنعتی که از آرزوهای تو پول درمیاره",
       "lastEpisodeId": "60515874671",
-      "lastCheckedAt": 1790883771483
+      "lastCheckedAt": 1791480732412
     },
     "5930143": {
       "lastRssKey": "4b23ed6c-a2a0-4d3b-b155-9d90071f6b03",
@@ -1045,10 +1051,10 @@
       "lastCheckedAt": 1790864064387
     },
     "5972153": {
-      "lastRssKey": "2f355854-c220-11f1-b86e-b7edd6532564",
-      "lastEpisodeTitle": "France riots, Christa Pike conscious, October 7 and Messi",
-      "lastEpisodeId": "61336451761",
-      "lastCheckedAt": 1791371984906
+      "lastRssKey": "71162442-c2e3-11f1-9b0e-f3b95a3c9778",
+      "lastEpisodeTitle": "Saudi airport attacks, evicted Spanish woman dies and Christa Pike evidence",
+      "lastEpisodeId": "61436812330",
+      "lastCheckedAt": 1791480733694
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1074,10 +1080,10 @@
       "lastCheckedAt": 1791413253178
     },
     "6413946": {
-      "lastRssKey": "fdfb0163-fe58-428d-8c63-41db78ac2d3c",
-      "lastEpisodeTitle": "EP 838: Clima de inversión empeora tras la reforma judicial, Siguen las peleas dentro de Morena por candidaturas y Revelan sobornos de empresario en red de huachicol fiscal",
-      "lastEpisodeId": "61385037213",
-      "lastCheckedAt": 1791371986923
+      "lastRssKey": "fe2c1b55-c329-42fb-b9a8-b3a42bd10224",
+      "lastEpisodeTitle": "EP 839: Estados Unidos recorta suministro de gas natural a México, La crisis del agua en Guadalajara y Avanza ley para restringir uso de efectivo",
+      "lastEpisodeId": "61442343769",
+      "lastCheckedAt": 1791480734917
     },
     "6456494": {
       "lastRssKey": "6ac5b9e18f3407888940c1c5",
@@ -1126,10 +1132,10 @@
       "lastCheckedAt": 1790864068120
     },
     "6655297": {
-      "lastRssKey": "indieventurepodcast.podbean.com/fe9c8645-ccb9-3b6d-8558-9f6a5bdcf84e",
-      "lastEpisodeTitle": "SIDE QUEST: Indieventure Goes to the Movies (Tomb Raider 2001 vs Return to Silent Hill)",
+      "lastRssKey": "indieventurepodcast.podbean.com/b685cee1-6305-3d57-a43b-566efee0c3e8",
+      "lastEpisodeTitle": "EXTRA: The Ed Thorn Within 3",
       "lastEpisodeId": "60509388415",
-      "lastCheckedAt": 1790864068755
+      "lastCheckedAt": 1791480737075
     },
     "6686930": {
       "lastRssKey": "661671f397ce6d00176628b4",
@@ -1180,16 +1186,16 @@
       "lastCheckedAt": 1787770938932
     },
     "6841381": {
-      "lastRssKey": "6abe6a2aa195b13a1abd2ba7",
-      "lastEpisodeTitle": "Meta’s New VR Glasses Could Change Everything",
+      "lastRssKey": "6ac79b86eea51f2aa3cfa899",
+      "lastEpisodeTitle": "Why Retro Tech Is Taking Over Again",
       "lastEpisodeId": "60775756310",
-      "lastCheckedAt": 1790883789938
+      "lastCheckedAt": 1791480751615
     },
     "6852067": {
-      "lastRssKey": "a6753e46-c128-11f1-93a2-5bca8bc74679",
-      "lastEpisodeTitle": "ELF Cosmetics: cómo el maquillaje de $1 dólar terminó comprando Rhode, la marca de Hailey Bieber",
-      "lastEpisodeId": "60995722405",
-      "lastCheckedAt": 1791270891750
+      "lastRssKey": "393118f6-c32a-11f1-9790-5f3434920b51",
+      "lastEpisodeTitle": "Emprender en México: La Historia del Crédito en México",
+      "lastEpisodeId": "61447816610",
+      "lastCheckedAt": 1791480752163
     },
     "6866470": {
       "lastRssKey": "https://api.spreaker.com/episode/75566609",
@@ -1300,10 +1306,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a1191d-9441-7e87-90f7-d51c885d68a7",
-      "lastEpisodeTitle": "BOMBSHELL: Leaked Kimberly Guilfoyle Texts Reveal Brazen Corruption",
+      "lastRssKey": "audioboom-01a11c73-b2f3-7e30-88e6-5ac794232e02",
+      "lastEpisodeTitle": "We Spoke to the Guy Who Snitched on Kimberly Guilfoyle (w/ Eric Deters)",
       "lastEpisodeId": "61403745020",
-      "lastCheckedAt": 1791426923255
+      "lastCheckedAt": 1791480762686
     },
     "7239415": {
       "lastRssKey": "7dff96dc-c29a-11f1-903a-f39e6576093f",
@@ -1407,10 +1413,10 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
-      "lastRssKey": "2e6bab7f-5bd9-4e72-a766-e033c5157a0f",
-      "lastEpisodeTitle": "Wednesday, October 7, 2026 - 5 Minute AI News",
+      "lastRssKey": "0290ddf0-f461-4112-a961-de8f1fb78a83",
+      "lastEpisodeTitle": "Thursday, October 8, 2026 - 5 Minute AI News",
       "lastEpisodeId": "61203690546",
-      "lastCheckedAt": 1791372028450
+      "lastCheckedAt": 1791480769472
     },
     "7551349": {
       "lastRssKey": "17448f4e-0e2a-4a64-80e4-b4dc0155cd7c",
@@ -1508,10 +1514,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/19b436b6-8d7a-524e-ab16-0ed729d6bc5d",
-      "lastEpisodeTitle": "Being pressured to make SACRIFICES for the golden child ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/9bab7db0-9b51-55ac-8c62-5381c722186c",
+      "lastEpisodeTitle": "Is it ever okay to let the narcissist AVE IT ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791453972859
+      "lastCheckedAt": 1791480775889
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
