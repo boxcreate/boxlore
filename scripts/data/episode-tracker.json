@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-10-08T02:32:56.480Z",
+  "lastRun": "2026-10-08T10:03:27.851Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "f008b08c-cfc6-11f0-83c5-5382a6234e3f",
-      "lastEpisodeTitle": "Adam Schiff on AI regulation, free speech, and impeaching Trump one more time",
+      "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
+      "lastEpisodeTitle": "OpenAI has a Muse problem",
       "lastEpisodeId": "61107324187",
-      "lastCheckedAt": 1791192491021
+      "lastCheckedAt": 1791453808382
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7j",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "57231378-f64a-46d8-bc9a-46c0e586ec4c",
-      "lastEpisodeTitle": "10pm ET, October 07 | The latest headlines from NPR",
-      "lastEpisodeId": "61361549150",
-      "lastCheckedAt": 1791426783275
+      "lastRssKey": "e28cc1d9-1321-416e-aa2d-25de3724cca3",
+      "lastEpisodeTitle": "5am ET, October 08 | The latest headlines from NPR",
+      "lastEpisodeId": "61431584179",
+      "lastCheckedAt": 1791453812956
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75628511",
@@ -132,10 +132,10 @@
       "lastCheckedAt": 1790974515604
     },
     "229239": {
-      "lastRssKey": "9ccaf1e0-2c74-11f1-bcd4-1bb68a562da5",
-      "lastEpisodeTitle": "4 Men Share How They Hit Rock Bottom (and got out) - Dr K, Joe Hudson & Connor Beaton - #1159",
-      "lastEpisodeId": "61092337315",
-      "lastCheckedAt": 1791192508187
+      "lastRssKey": "ae78671a-2c74-11f1-959e-4baa8f70af42",
+      "lastEpisodeTitle": "CIA Whistleblower: “The Shadow Government Is Real” - John Kiriakou - #1160",
+      "lastEpisodeId": "61426794091",
+      "lastCheckedAt": 1791453840661
     },
     "230598": {
       "lastRssKey": "b8bef2fe-a54a-11f0-b1fc-67a9d5f21292",
@@ -158,10 +158,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "CFFD31A8-B7D6-44EC-A5B7-22BF35B8280F",
-      "lastEpisodeTitle": "Inside the New York City Council’s Marathon AI Hearing",
+      "lastRssKey": "D6408A61-F1AA-451C-8CF6-8CC40EE4460E",
+      "lastEpisodeTitle": "Why Cute Mascots Are the New Faces of AI",
       "lastEpisodeId": "61108443091",
-      "lastCheckedAt": 1791371889143
+      "lastCheckedAt": 1791453843018
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "4a69cdd8-c2bd-11f1-a036-d7988ab5169b",
-      "lastEpisodeTitle": "10PM ET 10/07/2026 Newscast",
+      "lastRssKey": "f79f92aa-c2f7-11f1-b3d2-97f552bce5bd",
+      "lastEpisodeTitle": "5AM ET 10/08/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791426813777
+      "lastCheckedAt": 1791453844324
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -236,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4BSZ93CKHX797BH8RSW3328",
-      "lastEpisodeTitle": "How's the stock market doing, minus AI?",
+      "lastRssKey": "01M4C270SQ0Q1S5GDZ8RWJW6S2",
+      "lastEpisodeTitle": "How a Meta AI prompt changed one mom’s approach to online privacy",
       "lastEpisodeId": "61397993650",
-      "lastCheckedAt": 1791413195346
+      "lastCheckedAt": 1791453850197
     },
     "432535": {
       "lastRssKey": "3b66721e-6186-40aa-9192-c996dc796c7d",
@@ -248,10 +248,10 @@
       "lastCheckedAt": 1791246998080
     },
     "437685": {
-      "lastRssKey": "6d39cf16-bc91-11f1-84e4-27f5dc6ac71a",
-      "lastEpisodeTitle": "The History of Ben-Hur",
-      "lastEpisodeId": "61380542889",
-      "lastCheckedAt": 1791371899369
+      "lastRssKey": "6d19fe7a-bc91-11f1-84e4-a774dbf607a6",
+      "lastEpisodeTitle": "Queen Ranavalona I of Madagascar",
+      "lastEpisodeId": "61430677165",
+      "lastCheckedAt": 1791453852151
     },
     "438184": {
       "lastRssKey": "2dc11bae-c1ec-11f1-a2e6-c7b6aef46cad",
@@ -266,10 +266,10 @@
       "lastCheckedAt": 1791296621447
     },
     "444785": {
-      "lastRssKey": "d5348a87-dce1-4ac1-8f9b-8ed1b4703a47",
-      "lastEpisodeTitle": "Montreal Canadiens STUMBLE In Playoff REMATCH vs. Carolina | Demidov OUT: Slafkovsky MUST Step Up",
-      "lastEpisodeId": "61370534318",
-      "lastCheckedAt": 1791347464167
+      "lastRssKey": "8c4e6f99-5875-4b7b-9681-98346850bf85",
+      "lastEpisodeTitle": "Montreal Canadiens' Montembeault injured | Fowler called up | Rumor Roundup | Predators game preview",
+      "lastEpisodeId": "61420125868",
+      "lastCheckedAt": 1791453853626
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -328,16 +328,16 @@
       "lastCheckedAt": 1791134332225
     },
     "499394": {
-      "lastRssKey": "flightcast:01M26N4N40D24TJPZ6V4N7JMTY",
-      "lastEpisodeTitle": "Dana White: This Generation Thinks You Can Build A Business From Home, It&#39;s Impossible!",
+      "lastRssKey": "flightcast:01M46YN191EJ0V3NPANXPEM9WA",
+      "lastEpisodeTitle": "AI Safety Whistleblower: 700 AI Agents Attacked A Company To Cover Their Tracks! | Jeffrey Ladish",
       "lastEpisodeId": "61272855925",
-      "lastCheckedAt": 1791192531377
+      "lastCheckedAt": 1791453862809
     },
     "503644": {
-      "lastRssKey": "40e67dbb-6427-43bd-b55d-a3c8cab4c280",
-      "lastEpisodeTitle": "Owen Wilson",
-      "lastEpisodeId": "61270050556",
-      "lastCheckedAt": 1791192532088
+      "lastRssKey": "d8b51d18-5889-4c53-9ec2-1cae8fb524d9",
+      "lastEpisodeTitle": "Conan O’Brien Must Go: Season 3 Roundtable Discussion Part II",
+      "lastEpisodeId": "61420362035",
+      "lastCheckedAt": 1791453863379
     },
     "509873": {
       "lastRssKey": "1940d733-84bf-4bc3-84d5-d7ee5f82c3fd",
@@ -370,10 +370,10 @@
       "lastCheckedAt": 1791371911919
     },
     "545784": {
-      "lastRssKey": "9f1a63e0cb28d712530ab2d5ca67297e",
-      "lastEpisodeTitle": "The Eye of the Keiler (Alev Doğan macht Auge auf Merz)",
-      "lastEpisodeId": "61368582433",
-      "lastCheckedAt": 1791347482904
+      "lastRssKey": "54e339824b2d179aba14431977773e5f",
+      "lastEpisodeTitle": "Hasta la pistoria siempre! (mit Helge Fuhst)",
+      "lastEpisodeId": "61418169376",
+      "lastCheckedAt": 1791453868567
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/cap/twit_1104/b1e10584-ef12-4a62-be38-36b46710da62.mp3",
@@ -459,10 +459,10 @@
       "lastCheckedAt": 1791073777204
     },
     "743229": {
-      "lastRssKey": "b587b66a-193d-4669-af69-2003af848d97",
-      "lastEpisodeTitle": "Three Vans, a Startled Farmer and an Iranian Plot Against the U.S.",
-      "lastEpisodeId": "61382101880",
-      "lastCheckedAt": 1791371925245
+      "lastRssKey": "94855b15-9742-4344-bf6c-d6a1e0df51ea",
+      "lastEpisodeTitle": "A Failed Execution and the Future of the Death Penalty",
+      "lastEpisodeId": "61432078491",
+      "lastCheckedAt": 1791453879140
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -530,10 +530,10 @@
       "lastCheckedAt": 1791395771540
     },
     "837535": {
-      "lastRssKey": "beb250d6-be65-11f1-bd4c-cbf9aec7bfb5",
-      "lastEpisodeTitle": "Was Aktienrückkäufe für DICH bedeuten (#746)",
-      "lastEpisodeId": "61272439733",
-      "lastCheckedAt": 1791192554222
+      "lastRssKey": "ff794dd0-c19a-11f1-8de5-43e0bda9d228",
+      "lastEpisodeTitle": "Wie wird Heizen wieder bezahlbar, Malte Küper? (#747)",
+      "lastEpisodeId": "61418269095",
+      "lastCheckedAt": 1791453882840
     },
     "838740": {
       "lastRssKey": "3ac3fecc-c1ef-11f1-be45-1b798d79c396",
@@ -548,10 +548,10 @@
       "lastCheckedAt": 1791226032900
     },
     "889671": {
-      "lastRssKey": "aa6a7950-7ac7-4cb0-bd90-159917d3fa97",
-      "lastEpisodeTitle": "Bloodborne On Linux, 2GB Pi Increases, and Snappy Steam Dragons",
+      "lastRssKey": "db4f32d5-5812-47e4-a887-dd6d8d7dea56",
+      "lastEpisodeTitle": "Qualcomm ❤️ Linux, F-Droid 2.0, VST3 Plugins In OBS!",
       "lastEpisodeId": "59241576400",
-      "lastCheckedAt": 1791413218426
+      "lastCheckedAt": 1791453884808
     },
     "902798": {
       "lastRssKey": "4ca28227-b907-4dc6-bf89-f765d0fd0283",
@@ -560,16 +560,16 @@
       "lastCheckedAt": 1791347497942
     },
     "906591": {
-      "lastRssKey": "dfbc55d2-c154-11f1-91dd-4b8abe9c7a87",
-      "lastEpisodeTitle": "Russia's Got a New Plague?!",
+      "lastRssKey": "e2b2d782-c2e6-11f1-8a2c-d7eda3deee0f",
+      "lastEpisodeTitle": "LA & San Diego Getting Blown Up Is \"A Small Price To Pay\"???",
       "lastEpisodeId": "61337866148",
-      "lastCheckedAt": 1791296652881
+      "lastCheckedAt": 1791453886209
     },
     "928708": {
-      "lastRssKey": "ed404da4-c03b-11f1-a46d-e336f652f904",
-      "lastEpisodeTitle": "History Today - Oct. 7",
-      "lastEpisodeId": "61274594589",
-      "lastCheckedAt": 1791347499148
+      "lastRssKey": "8989d0b4-c10d-11f1-8dc7-fb13c6c4e763",
+      "lastEpisodeTitle": "History Today - Oct. 8",
+      "lastEpisodeId": "61420549049",
+      "lastCheckedAt": 1791453886989
     },
     "946758": {
       "lastRssKey": "10f30bcc-77b5-11f0-8752-7b07bcd8ee21",
@@ -584,9 +584,9 @@
       "lastCheckedAt": 1791296654163
     },
     "952276": {
-      "lastRssKey": "aea2ef01-7ae1-494c-910a-103e1742518e",
-      "lastEpisodeTitle": "447: Part 2: The Shady Truth About Nichol Kessinger & The Watts Family Murders",
-      "lastCheckedAt": 1791192558112
+      "lastRssKey": "75659f05-83f0-4f9f-986f-5f64243db8ca",
+      "lastEpisodeTitle": "448: Christa Pike, Gypsy Rose, Cornell 7 & Reddington’s New Statements",
+      "lastCheckedAt": 1791453888094
     },
     "959112": {
       "lastRssKey": "https://9to5google.com/?p=732362",
@@ -640,9 +640,9 @@
       "lastCheckedAt": 1791395781823
     },
     "1047865": {
-      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-she-never-planned-to-wear-hijab-until-this-moment-remarkable-stories",
-      "lastEpisodeTitle": "She Never Planned To Wear Hijab - Until This Moment - Remarkable Stories",
-      "lastCheckedAt": 1791315825823
+      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-the-future-of-my-quran-study-bayyinahs-upcoming-projects",
+      "lastEpisodeTitle": "The Future of My Quran Study - Bayyinah’s Upcoming Projects",
+      "lastCheckedAt": 1791453895912
     },
     "1065434": {
       "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1122",
@@ -669,10 +669,10 @@
       "lastCheckedAt": 1791296669065
     },
     "1116485": {
-      "lastRssKey": "6ac6161ced362151b382a220",
-      "lastEpisodeTitle": "Gilberto Mora Bid Made By LFC? | Redmen Bitesize",
+      "lastRssKey": "6ac765e66e1c697d81224301",
+      "lastEpisodeTitle": "€70M BUY-BACK OPTION! Liverpool To RE-SIGN Jarell Quansah Next Summer? | Daily News Update",
       "lastEpisodeId": "61384493127",
-      "lastCheckedAt": 1791371950423
+      "lastCheckedAt": 1791453901879
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -693,10 +693,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "4bc4c272-c269-11f1-93f1-7f78e2c5d8f4",
-      "lastEpisodeTitle": "Effort Gênant Au Centre Bell & Déjà Des Signes Inquiétants | Le Sick Podcast Avec Tony Marinaro 07/10/26",
+      "lastRssKey": "feb59776-c29b-11f1-9746-678e78d7bcb8",
+      "lastEpisodeTitle": "The Habs’ Defensive Struggles Are NOT Normal! | The Sick Podcast with Tony Marinaro October 7 2026",
       "lastEpisodeId": "61348655131",
-      "lastCheckedAt": 1791395790223
+      "lastCheckedAt": 1791453905860
     },
     "1199730": {
       "lastRssKey": "8ea61c5d-22ee-41a3-bce9-adafc5136fa2",
@@ -739,10 +739,10 @@
       "lastCheckedAt": 1790672056110
     },
     "1365758": {
-      "lastRssKey": "d1b20f5e-c064-11f1-b13f-df298254fbfd",
-      "lastEpisodeTitle": "Bringing Extinct Species Back to Life | Dr. Beth Shapiro",
+      "lastRssKey": "aaccd642-c2b9-11f1-a1ef-2385c10f4819",
+      "lastEpisodeTitle": "Essentials: Manage Stress & Build Resilience | Dr. Elissa Epel",
       "lastEpisodeId": "60661458183",
-      "lastCheckedAt": 1791192577412
+      "lastCheckedAt": 1791453908477
     },
     "1365765": {
       "lastRssKey": "fc5f8712-c24a-11f1-a95a-9bafcc33d507",
@@ -763,10 +763,10 @@
       "lastCheckedAt": 1791226058248
     },
     "1388001": {
-      "lastRssKey": "33b584fc-0c1a-4173-9ac6-530aaf140ebf",
-      "lastEpisodeTitle": "Trois ans après le 7 octobre, une région entière plongée dans les guerres et la tragédie",
-      "lastEpisodeId": "61382143254",
-      "lastCheckedAt": 1791371958542
+      "lastRssKey": "4b23ed6c-a2a0-4d3b-b155-9d90071f6b03",
+      "lastEpisodeTitle": "Chine-Europe : menace de guerre commerciale",
+      "lastEpisodeId": "61425278460",
+      "lastCheckedAt": 1791453910322
     },
     "1545709": {
       "lastRssKey": "audioboom-01a0fcf5-f530-79ed-8abb-80f1b2551293",
@@ -798,10 +798,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6ac6850d2115277489f07e38",
-      "lastEpisodeTitle": "La peste suspectée en Russie, l'OMS réagit (07/10)",
+      "lastRssKey": "6ac75e9222d5e8fe42a3ec15",
+      "lastEpisodeTitle": "J’ai interrogé le ministre sur la colère des lycéens",
       "lastEpisodeId": "61381280520",
-      "lastCheckedAt": 1791395795128
+      "lastCheckedAt": 1791453912861
     },
     "2574026": {
       "lastRssKey": "0682bec8-bd26-11f1-9529-aba7f383686d",
@@ -827,10 +827,10 @@
       "lastCheckedAt": 1789135539229
     },
     "3237767": {
-      "lastRssKey": "91c2fab4-7048-4f63-88fd-281ff65418c4",
-      "lastEpisodeTitle": "NFL Week 4 Recap: Bryce Young Puts on a Show Against the Lions on SNF",
-      "lastEpisodeId": "61287292729",
-      "lastCheckedAt": 1791226063873
+      "lastRssKey": "1f4cd120-6458-42fd-b1ce-fccda9d6d7dd",
+      "lastEpisodeTitle": "Are the Eagles Punting on the Season? - NFL Week 4 Recap Cont.",
+      "lastEpisodeId": "61432063783",
+      "lastCheckedAt": 1791453915689
     },
     "3353685": {
       "lastRssKey": "44990278-c2ba-11f1-a61e-9ba0bb051d72",
@@ -946,15 +946,15 @@
       "lastCheckedAt": 1791192592076
     },
     "4894842": {
-      "lastRssKey": "464fd06d-b486-45ac-b3e8-56c0305b3c72",
-      "lastEpisodeTitle": "The Nightmare Cure (PODCAST EXCLUSIVE EPISODE)",
-      "lastEpisodeId": "61376395365",
-      "lastCheckedAt": 1791371974471
+      "lastRssKey": "f5e2b03b-4af9-453b-b58c-12a9968bb5bf",
+      "lastEpisodeTitle": "From Beyond Vol. III",
+      "lastEpisodeId": "61426228624",
+      "lastCheckedAt": 1791453923733
     },
     "4898105": {
-      "lastRssKey": "c695c8f8-c204-11f1-b8e9-1fd552af6840",
-      "lastEpisodeTitle": "Former PlayStation Boss Questions Sony's Decision to Kill Discs",
-      "lastCheckedAt": 1791371975120
+      "lastRssKey": "d94bce92-c2c8-11f1-82bc-1b3e6bb61bf7",
+      "lastEpisodeTitle": "The Odyssey Returns to IMAX",
+      "lastCheckedAt": 1791453924493
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -985,16 +985,16 @@
       "lastCheckedAt": 1791296693492
     },
     "5650484": {
-      "lastRssKey": "40b8efe3-752d-43e3-a889-0e99638603ed",
-      "lastEpisodeTitle": "113: Rediscovered Organs & Bird Watching",
-      "lastEpisodeId": "59561995429",
-      "lastCheckedAt": 1790239290221
+      "lastRssKey": "4e54ee28-78b5-4fc4-ad67-74f688e8474b",
+      "lastEpisodeTitle": "114: La Brea's Bone Count & Giant Pumpkins",
+      "lastEpisodeId": "61424214156",
+      "lastCheckedAt": 1791453925650
     },
     "5698881": {
-      "lastRssKey": "4c1c6de3-7bfc-4fd6-bd50-4718f96bc15b",
-      "lastEpisodeTitle": "The Ultimate Life Advice: How to Get Motivated, Build Confidence & Create Better Relationships",
-      "lastEpisodeId": "61270030406",
-      "lastCheckedAt": 1791192594405
+      "lastRssKey": "47f3d551-b6f1-463a-bbaa-6814ba49ab3f",
+      "lastEpisodeTitle": "The Ultimate Guide to Male Hormones & Men’s Health",
+      "lastEpisodeId": "61420329506",
+      "lastCheckedAt": 1791453926278
     },
     "5716308": {
       "lastRssKey": "urn:bbc:podcast:p0pf2bpp",
@@ -1015,10 +1015,10 @@
       "lastCheckedAt": 1790914567742
     },
     "5731394": {
-      "lastRssKey": "0f3440f2-c26a-11f1-8fa1-b761a8862466",
-      "lastEpisodeTitle": "Sci Fi Section Ep 11: Golden Son Chapters 18-24",
+      "lastRssKey": "9ed3c9a6-c2b7-11f1-89d2-47722c89134a",
+      "lastEpisodeTitle": "Gavin McKenna Gets His First NHL Goal And The Leafs Are Back!",
       "lastEpisodeId": "60007884583",
-      "lastCheckedAt": 1791395808693
+      "lastCheckedAt": 1791453931517
     },
     "5815838": {
       "lastRssKey": "12f3ff10-3a72-4da0-963d-73fe5b61d842",
@@ -1033,10 +1033,10 @@
       "lastCheckedAt": 1790883771483
     },
     "5930143": {
-      "lastRssKey": "33b584fc-0c1a-4173-9ac6-530aaf140ebf",
-      "lastEpisodeTitle": "Trois ans après le 7 octobre, une région entière plongée dans les guerres et la tragédie",
+      "lastRssKey": "4b23ed6c-a2a0-4d3b-b155-9d90071f6b03",
+      "lastEpisodeTitle": "Chine-Europe : menace de guerre commerciale",
       "lastEpisodeId": "61378210074",
-      "lastCheckedAt": 1791371983659
+      "lastCheckedAt": 1791453934533
     },
     "5945547": {
       "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
@@ -1216,10 +1216,10 @@
       "lastCheckedAt": 1790937654636
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779917",
-      "lastEpisodeTitle": "The Adventures of Maisie - The Green Suit Bank Job",
+      "lastRssKey": "https://api.spreaker.com/episode/59779919",
+      "lastEpisodeTitle": "Radio City Playhouse - Correction",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1791372019542
+      "lastCheckedAt": 1791453955252
     },
     "6912659": {
       "lastRssKey": "ad6ac5f1-6717-435e-8595-89a8974680c0",
@@ -1258,10 +1258,10 @@
       "lastCheckedAt": 1787910227743
     },
     "7023146": {
-      "lastRssKey": "5edd7936-834e-11f0-ac1d-f7254db38830",
-      "lastEpisodeTitle": "SERIAL KILLER: The Axeman of New Orleans Pt. 1",
-      "lastEpisodeId": "61135460888",
-      "lastCheckedAt": 1791192624016
+      "lastRssKey": "5f607b60-834e-11f0-ac1d-8fa451ed62df",
+      "lastEpisodeTitle": "SERIAL KILLER: The Axeman of New Orleans Pt. 2",
+      "lastEpisodeId": "61432000869",
+      "lastCheckedAt": 1791453958983
     },
     "7045713": {
       "lastRssKey": "sonsofpatriarchy.podbean.com/8c867280-f689-387b-acd9-e385184f81ee",
@@ -1270,10 +1270,10 @@
       "lastCheckedAt": 1786559335991
     },
     "7064213": {
-      "lastRssKey": "d5be02fb-145f-4b74-bf87-ad70fea5a8e5",
-      "lastEpisodeTitle": "205. Rajeev Kapur: How AI Is Transforming Healthcare",
+      "lastRssKey": "f531485f-d842-48a4-90a8-b31009d0ac93",
+      "lastEpisodeTitle": "206. Dr. Pamela Smith: The Truth About Hormone Replacement Therapy—HRT, Menopause & Cancer Risk",
       "lastEpisodeId": "61334999780",
-      "lastCheckedAt": 1791296725782
+      "lastCheckedAt": 1791453960247
     },
     "7098500": {
       "lastRssKey": "66bb84b96ceb55ab6dbacb631fecaac54ddbcff7",
@@ -1342,10 +1342,10 @@
       "lastCheckedAt": 1791192629805
     },
     "7348627": {
-      "lastRssKey": "a663d949-1ce4-47a9-9e4a-442636738ba7",
-      "lastEpisodeTitle": "Brian Shaffer and Janice Weston: 2 High Profile Unsolved Cases | 325",
-      "lastEpisodeId": "61364044131",
-      "lastCheckedAt": 1791347578787
+      "lastRssKey": "bb76c6ed-ce39-40e6-85e0-a1bd4fb50d24",
+      "lastEpisodeTitle": "10 Chilling TEXAS Cold Cases | 326",
+      "lastEpisodeId": "61420794829",
+      "lastCheckedAt": 1791453964296
     },
     "7376606": {
       "lastRssKey": "0bd21b4a-b268-4340-971a-13217f60b50c",
@@ -1413,9 +1413,10 @@
       "lastCheckedAt": 1791372028450
     },
     "7551349": {
-      "lastRssKey": "30b5c9da-3233-4e29-ad4c-b49b014c85d1",
-      "lastEpisodeTitle": "Paradise Prison: Chapter 3",
-      "lastCheckedAt": 1790350064972
+      "lastRssKey": "17448f4e-0e2a-4a64-80e4-b4dc0155cd7c",
+      "lastEpisodeTitle": "Announcing: Blood Trails, Season Three",
+      "lastEpisodeId": "61431506083",
+      "lastCheckedAt": 1791453968898
     },
     "7584644": {
       "lastRssKey": "6abb4c73f4720dfefb5d2ea6",
@@ -1507,10 +1508,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/f1cb4e85-b2b3-5050-af01-7ac373be6481",
-      "lastEpisodeTitle": "Dr. Ramani vs The New York Times Ethics Column (THE AUTHOR DOESNT ETTOXIC BEHAVIOR) ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/19b436b6-8d7a-524e-ab16-0ed729d6bc5d",
+      "lastEpisodeTitle": "Being pressured to make SACRIFICES for the golden child ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791426935828
+      "lastCheckedAt": 1791453972859
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
