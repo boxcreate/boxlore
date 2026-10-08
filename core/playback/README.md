@@ -97,6 +97,8 @@ Files under `core/data/service` are compatibility stubs for old service class na
 
 `CoilBitmapLoader` dispatches both byte-array decoding and URI artwork loading to IO in the service scope. Media3 callers receive a cancellable future immediately; decode errors complete that future exceptionally. Notification covers request at most 512×512 pixels and software bitmaps. `CoilBitmapLoaderTest` covers asynchronous decoding, invalid data and service cancellation.
 
+- Release runtime dependency snapshots include Jsoup through `:core:catalog`, which owns shared show-notes resource and chapter parsing. No direct parser-library dependency is added here.
+
 ## Threading / lifecycle
 
 - `PlaybackRepository`, `QueueRepository`, and `QueueManager` are application-scoped through `AppContainer`.

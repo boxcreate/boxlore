@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.info
 
-import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -9,10 +8,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,31 +16,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.rounded.Label
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.rounded.CalendarToday
-import androidx.compose.material.icons.rounded.Label
-import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.Tag
-import androidx.compose.material.icons.rounded.Videocam
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -59,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -69,27 +51,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
-import androidx.palette.graphics.Palette
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.ControlStyle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import kotlinx.coroutines.delay
-
-// Color extraction helper
-private fun extractDominantColor(bitmap: android.graphics.Bitmap): Color {
-    val palette = Palette.from(bitmap).generate()
-    val vibrant = palette.vibrantSwatch?.rgb
-    val muted = palette.mutedSwatch?.rgb
-    val dominant = palette.dominantSwatch?.rgb
-    val colorInt = vibrant ?: muted ?: dominant ?: 0xFF6200EE.toInt()
-    return Color(colorInt)
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -118,16 +83,13 @@ fun EpisodeInfoScreen(
     val completedEpisodeIds by viewModel.completedEpisodeIds.collectAsState()
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
     val listState = rememberLazyListState()
+    val isMoreFromScrolling by remember {
+        derivedStateOf {
+            listState.isScrollInProgress && listState.layoutInfo.visibleItemsInfo.any { it.key == "more_from_podcast" }
+        }
+    }
     val context = LocalContext.current
     val density = LocalDensity.current
-
-    // Dynamic color extraction
-    var extractedColor by remember { mutableStateOf(Color.Transparent) }
-    val accentColor by animateColorAsState(
-        targetValue = if (extractedColor != Color.Transparent) extractedColor else MaterialTheme.colorScheme.primary,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "accent_color",
-    )
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -214,649 +176,275 @@ fun EpisodeInfoScreen(
 
     // Horizontal padding in header
     val titleHorizontalPadding by animateDpAsState(
-        targetValue = 64.dp,
+        targetValue = 76.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "titlePadding",
     )
 
-    when (val state = uiState) {
-        is EpisodeInfoUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                BoxLoreLoader.Expressive(size = 80.dp)
-            }
-        }
-        is EpisodeInfoUiState.Error -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("Failed to load episode", color = MaterialTheme.colorScheme.error)
-            }
-        }
-        is EpisodeInfoUiState.Success -> {
-            // Color extraction
-            val painter =
-                rememberAsyncImagePainter(
-                    model =
-                    ImageRequest
-                        .Builder(context)
-                        .data(state.episode.podcastImageUrl?.ifEmpty { state.episode.imageUrl?.ifEmpty { null } })
-                        .allowHardware(false)
-                        .build(),
-                )
-            LaunchedEffect(painter.state) {
-                val painterState = painter.state
-                if (painterState is AsyncImagePainter.State.Success) {
-                    val bitmap = (painterState.result.drawable as? BitmapDrawable)?.bitmap
-                    if (bitmap != null) {
-                        extractedColor = extractDominantColor(bitmap)
-                    }
+    cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme {
+        when (val state = uiState) {
+            is EpisodeInfoUiState.Loading -> {
+                Box(
+                    modifier = modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BoxLoreLoader.Expressive(size = 80.dp)
                 }
             }
+            is EpisodeInfoUiState.Error -> {
+                Box(
+                    modifier = modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(androidx.compose.ui.res.stringResource(R.string.episode_info_load_error), color = MaterialTheme.colorScheme.error)
+                }
+            }
+            is EpisodeInfoUiState.Success -> {
+                Box(modifier = modifier.fillMaxSize()) {
+                    // Blurred Background Header
+                    Box(
+                        modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(collapsedHeaderHeight + 400.dp)
+                            .clipToBounds()
+                            .graphicsLayer {
+                                translationY = -scrollOffset * 0.5f
+                                alpha = 1f - scrollFraction
+                            },
+                    ) {
+                        OptimizedImage(
+                            url = state.episode.imageUrl?.takeIf(String::isNotBlank) ?: state.episode.podcastImageUrl,
+                            proxyWidth = 400,
+                            contentDescription = null,
+                            modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .alpha(0.48f)
+                                .blur(80.dp, edgeTreatment = androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded),
+                            contentScale = ContentScale.Crop,
+                        )
+                        // Gradient overlay to blend into the background
+                        Box(
+                            modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(
+                                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                                        colors =
+                                        listOf(
+                                            androidx.compose.ui.graphics.Color.Transparent,
+                                            androidx.compose.ui.graphics.Color.Transparent,
+                                            MaterialTheme.colorScheme.background,
+                                        ),
+                                    ),
+                                ),
+                        )
+                    }
+                    // Content List
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding =
+                        PaddingValues(
+                            top = collapsedHeaderHeight + 16.dp,
+                            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 160.dp, // Extra for miniplayer
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        item {
+                            cx.aswin.boxlore.feature.info.components.EpisodeInfoHero(
+                                episode = state.episode,
+                                podcastTitle = state.podcastTitle,
+                                onPodcastClick = {
+                                    viewModel.onPodcastLinkClicked()
+                                    onPodcastClick(state.podcastId)
+                                },
+                                completionState = cx.aswin.boxlore.feature.info.components.EpisodeCompletionState(
+                                    isCompleted = state.episode.id in completedEpisodeIds,
+                                    showTip = showMarkPlayedTip,
+                                ),
+                                onToggleCompletion = viewModel::onToggleCompletion,
+                                modifier = Modifier.padding(horizontal = 22.dp),
+                                onMarkPlayedTipDismissed = onMarkPlayedTipDismissed,
+                            )
+                        }
+                        item {
+                            cx.aswin.boxlore.feature.info.components.EpisodeActionRail(
+                                state = cx.aswin.boxlore.feature.info.components.EpisodeActionRailState(
+                                    isPlaying = state.isPlaying,
+                                    isPlaybackLoading = state.isPlaybackLoading,
+                                    isLiked = state.episode.id in likedEpisodeIds,
+                                    isDownloaded = isDownloaded,
+                                    isDownloading = isDownloading,
+                                    isQueued = state.episode.id in queuedEpisodeIds,
+                                    isCompleted = state.episode.id in completedEpisodeIds,
+                                    positionMs = state.resumePositionMs,
+                                    durationMs = state.durationMs,
+                                ),
+                                callbacks = cx.aswin.boxlore.feature.info.components.EpisodeActionRailCallbacks(
+                                    onMainActionClick = { viewModel.onMainActionClick(entryPointContext) },
+                                    onLikeClick = { viewModel.onToggleLike(state.episode) },
+                                    onDownloadClick = { viewModel.toggleDownload(state.episode) },
+                                    onQueueClick = viewModel::toggleQueue,
+                                ),
+                                modifier = Modifier.padding(horizontal = 22.dp),
+                            )
+                        }
 
-            Box(modifier = modifier.fillMaxSize()) {
-                // Blurred Background Header
+                        // CROSS-PROMOTION CARD
+                        state.crossPromotion?.let { crossPromo ->
+                            item {
+                                CrossPromotionCard(
+                                    crossPromotion = crossPromo,
+                                    onPodcastClick = onPodcastClick,
+                                    modifier =
+                                    Modifier
+                                        .padding(horizontal = 16.dp),
+                                )
+                            }
+                        }
+
+                        if (state.chapters.isNotEmpty()) {
+                            item {
+                                cx.aswin.boxlore.feature.info.components.EpisodeChaptersSection(
+                                    episodeId = state.episode.id,
+                                    chapters = state.chapters,
+                                    positionMs = state.resumePositionMs,
+                                    onSeekTo = viewModel::seekToPosition,
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                )
+                            }
+                        }
+                        state.showNotes?.let { notes ->
+                            if (state.episode.description.isNotEmpty()) {
+                                item {
+                                    EpisodeDescriptionCard(
+                                        notes = notes,
+                                        location = state.location,
+                                        license = state.license,
+                                        persons = state.episode.persons,
+                                        onSeekTo = viewModel::seekToPosition,
+                                    )
+                                }
+                            }
+                            if (notes.links.isNotEmpty()) {
+                                item { EpisodeLinksSection(notes.links, state.podcastTitle) }
+                            }
+                        }
+
+                        // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
+                        if (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty()) {
+                            item {
+                                cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreLikeThisCard(
+                                    state = state,
+                                    onEpisodeClick = onEpisodeClick,
+                                )
+                            }
+                        }
+
+                        // Latest episodes from this show, sharing the page's vertical scroll.
+                        item(key = "more_from_podcast") {
+                            cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreFromPodcastCard(
+                                state = state,
+                                onPodcastClick = onPodcastClick,
+                                onEpisodeClick = onEpisodeClick,
+                                onPodcastLinkClicked = viewModel::onPodcastLinkClicked,
+                                onRelatedEpisodesScrolled = viewModel::onRelatedEpisodesScrolled,
+                                isPageScrolling = isMoreFromScrolling,
+                                onRelatedEpisodeClicked = viewModel::onRelatedEpisodeClicked,
+                            )
+                        }
+                    }
+                }
+
+                // HEADER OVERLAY (Back button + animated background)
                 Box(
                     modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(collapsedHeaderHeight + 240.dp)
+                        .height(collapsedHeaderHeight)
+                        .background(headerColor)
+                        .statusBarsPadding(),
+                ) {
+                    // Back Button
+                    cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
+                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                        label = androidx.compose.ui.res.stringResource(R.string.episode_info_back),
+                        onClick = onBack,
+                        modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp),
+                    )
+
+                    // Share Button
+                    var showShareSheet by remember { mutableStateOf(false) }
+                    cx.aswin.boxlore.feature.info.components.EpisodeInfoHeaderButton(
+                        icon = Icons.Rounded.Share,
+                        label = androidx.compose.ui.res.stringResource(R.string.episode_info_share),
+                        onClick = { showShareSheet = true },
+                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
+                    )
+
+                    if (showShareSheet) {
+                        val currentSuccessState = uiState as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
+                        val shareEpisode =
+                            currentSuccessState?.episode ?: cx.aswin.boxlore.core.model.Episode(
+                                id = episodeId,
+                                title = episodeTitle,
+                                description = episodeDescription,
+                                audioUrl = episodeAudioUrl,
+                                imageUrl = episodeImageUrl,
+                                duration = episodeDuration,
+                            )
+                        cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
+                            id = shareEpisode.id,
+                            type = "episode",
+                            title = shareEpisode.title,
+                            subtitle = podcastTitle,
+                            imageUrl = shareEpisode.imageUrl ?: shareEpisode.podcastImageUrl,
+                            onDismissRequest = { showShareSheet = false },
+                            durationMs = shareEpisode.duration * 1000L,
+                            currentPositionMs = currentSuccessState?.resumePositionMs ?: 0L,
+                            showTimestampOption = false,
+                            onShare = { _, _, timestamp, target ->
+                                cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
+                                    context = context,
+                                    episode = shareEpisode,
+                                    podcastTitle = podcastTitle,
+                                    timestampMs = timestamp,
+                                    target = target,
+                                )
+                            },
+                        )
+                    }
+                }
+
+                // FLOATING TITLE - physically moves from body to header
+                Text(
+                    text = state.episode.title,
+                    fontSize = titleFontSize,
+                    fontWeight = GoogleSansWeight.bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = titleMaxLines,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = titleHorizontalPadding)
                         .graphicsLayer {
-                            translationY = -scrollOffset * 0.5f
-                            alpha = 1f - scrollFraction
+                            translationY = titleTranslationY
+                            alpha = titleAlpha
                         },
-                ) {
-                    OptimizedImage(
-                        url = state.episode.imageUrl?.ifEmpty { state.episode.podcastImageUrl },
-                        proxyWidth = 200,
-                        contentDescription = null,
-                        modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .alpha(0.5f)
-                            .blur(50.dp, edgeTreatment = androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded),
-                        contentScale = ContentScale.Crop,
-                    )
-                    // Gradient overlay to blend into the background
-                    Box(
-                        modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(
-                                androidx.compose.ui.graphics.Brush.verticalGradient(
-                                    colors =
-                                    listOf(
-                                        androidx.compose.ui.graphics.Color.Transparent,
-                                        MaterialTheme.colorScheme.background,
-                                    ),
-                                ),
-                            ),
-                    )
-                }
-                // Content List
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding =
-                    PaddingValues(
-                        top = collapsedHeaderHeight + 16.dp,
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + bottomContentPadding + 160.dp, // Extra for miniplayer
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    // HERO SECTION (Artwork + Title + Podcast Link + Metadata)
-                    item {
-                        Column(
-                            modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            // Artwork
-                            Box(modifier = Modifier.size(180.dp)) {
-                                Surface(
-                                    modifier = Modifier.fillMaxSize(),
-                                    shape = MaterialTheme.shapes.extraLarge, // Match PodcastInfoScreen
-                                    shadowElevation = 8.dp,
-                                ) {
-                                    OptimizedImage(
-                                        url = state.episode.imageUrl?.ifEmpty { null },
-                                        proxyWidth = 600, // 180dp * ~3x density
-                                        contentDescription = state.episode.title,
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop,
-                                    )
-                                }
-
-                                if (state.episode.enclosureType?.startsWith("video/") == true) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = Color.Black.copy(alpha = 0.55f),
-                                        modifier =
-                                        Modifier
-                                            .padding(8.dp)
-                                            .align(Alignment.TopEnd),
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.padding(6.dp),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Videocam,
-                                                contentDescription = "Video",
-                                                tint = Color.White,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Episode Title
-                            Text(
-                                text = state.episode.title,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                fontWeight = GoogleSansWeight.bold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Podcast Title (clickable)
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                                modifier =
-                                Modifier
-                                    .expressiveClickable {
-                                        viewModel.onPodcastLinkClicked()
-                                        onPodcastClick(state.podcastId)
-                                    }.padding(vertical = 4.dp, horizontal = 8.dp),
-                            ) {
-                                Text(
-                                    text = state.podcastTitle,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = GoogleSansWeight.medium,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f, fill = false), // shrink text, never push > off screen
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                                    contentDescription = "Go to podcast",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Metadata Row (Chips matching PodcastInfoScreen)
-                            fun formatDuration(seconds: Int): String {
-                                val hours = seconds / 3600
-                                val minutes = (seconds % 3600) / 60
-                                return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-                            }
-
-                            fun formatRelativeDate(timestampSeconds: Long): String {
-                                if (timestampSeconds == 0L) return ""
-                                val now = System.currentTimeMillis() / 1000
-                                val diff = now - timestampSeconds
-                                return when {
-                                    diff < 3600 -> "${diff / 60}m ago"
-                                    diff < 86400 -> "${diff / 3600}h ago"
-                                    diff < 604800 -> "${diff / 86400}d ago"
-                                    diff < 2592000 -> "${diff / 604800}w ago"
-                                    diff < 31536000 -> "${diff / 2592000}mo ago"
-                                    else -> "${diff / 31536000}y ago"
-                                }
-                            }
-
-                            androidx.compose.foundation.lazy.LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                                contentPadding = PaddingValues(horizontal = 0.dp),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                // Video Pill
-                                if (state.episode.enclosureType?.startsWith("video/") == true) {
-                                    item {
-                                        Surface(
-                                            shape = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.Pill,
-                                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        ) {
-                                            Box(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Videocam,
-                                                    contentDescription = "Video",
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = accentColor,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Duration Pill
-                                item {
-                                    Surface(
-                                        shape = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.Pill,
-                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Icon(
-                                                imageVector = androidx.compose.material.icons.Icons.Rounded.Schedule,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.primary,
-                                            )
-                                            Text(
-                                                text = formatDuration(episodeDuration),
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = GoogleSansWeight.medium,
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // Date Pill
-                                val dateText = formatRelativeDate(state.episode.publishedDate)
-                                if (dateText.isNotEmpty()) {
-                                    item {
-                                        Surface(
-                                            shape = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.Pill,
-                                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Rounded.CalendarToday,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                )
-                                                Text(
-                                                    text = dateText,
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = GoogleSansWeight.medium,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Season/Episode Pill
-                                val season = state.episode.seasonNumber
-                                val episode = state.episode.episodeNumber
-                                val seLabel =
-                                    buildString {
-                                        if (season != null && season > 0) {
-                                            append("S$season ")
-                                        }
-                                        if (episode != null && episode > 0) {
-                                            append("E$episode")
-                                        }
-                                    }.trim()
-                                if (seLabel.isNotEmpty()) {
-                                    item {
-                                        Surface(
-                                            shape = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.Pill,
-                                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Rounded.Tag,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                )
-                                                Text(
-                                                    text = seLabel,
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = GoogleSansWeight.medium,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Type Pill
-                                if (state.episode.episodeType != null && state.episode.episodeType != "full") {
-                                    item {
-                                        Surface(
-                                            shape = cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes.Pill,
-                                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Rounded.Label,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                )
-                                                Text(
-                                                    text = state.episode.episodeType!!.replaceFirstChar { it.uppercase() },
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = GoogleSansWeight.medium,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // ACTION ROW (Play Button + Progress) - Flat design
-                    item {
-                        Column(
-                            modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp)
-                                .padding(top = 16.dp),
-                        ) {
-                            // Prepare Progress Data
-                            val progress =
-                                if (state.durationMs >
-                                    0
-                                ) {
-                                    (state.resumePositionMs.toFloat() / state.durationMs).coerceIn(0f, 1f)
-                                } else {
-                                    0f
-                                }
-                            val remainingSeconds = if (state.durationMs > 0) (state.durationMs - state.resumePositionMs) / 1000 else 0
-
-                            fun formatRemaining(totalSeconds: Long): String? {
-                                if (totalSeconds <= 0) return null
-                                val hours = totalSeconds / 3600
-                                val minutes = (totalSeconds % 3600) / 60
-                                return if (hours > 0) "${hours}h ${minutes}m left" else "${minutes}m left"
-                            }
-
-                            val isPlaying = state.isPlaying
-                            val isLiked = likedEpisodeIds.contains(state.episode.id)
-                            val isCompleted = completedEpisodeIds.contains(state.episode.id)
-
-                            // Single Elegant Row Layout (M3 standard: actions left, FAB right)
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier =
-                                Modifier
-                                    .fillMaxWidth(),
-                            ) {
-                                // Action Buttons Row (Material3 Tonal) on the Left
-                                cx.aswin.boxlore.core.designsystem.components.AdvancedPlayerControls(
-                                    isLiked = isLiked,
-                                    isDownloaded = isDownloaded,
-                                    isDownloading = isDownloading,
-                                    colorScheme = MaterialTheme.colorScheme,
-                                    onLikeClick = { viewModel.onToggleLike(state.episode) },
-                                    onDownloadClick = { viewModel.toggleDownload(state.episode) },
-                                    onQueueClick = { viewModel.toggleQueue() },
-                                    style = cx.aswin.boxlore.core.designsystem.components.ControlStyle.Material3, // Circular M3
-                                    overrideColor = accentColor, // Enforce accent color for active states
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp), // Tighter spacing
-                                    showAddQueueIcon = true,
-                                    isQueued = queuedEpisodeIds.contains(state.episode.id),
-                                    showShareButton = false,
-                                    isPlayed = isCompleted,
-                                    onMarkPlayedClick = { viewModel.onToggleCompletion() },
-                                    controlSize = 40.dp, // Smaller size to fit all 4 buttons + Play button
-                                    modifier = Modifier.wrapContentWidth(unbounded = true), // Guarantee it won't shrink
-                                )
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                // Prominent Play Button (Right)
-                                cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton(
-                                    onClick = { viewModel.onMainActionClick(entryPointContext) },
-                                    state =
-                                    cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState(
-                                        isPlaying = isPlaying,
-                                        isResume = state.resumePositionMs > 0,
-                                        isLoading = state.isPlaybackLoading,
-                                        progress = progress,
-                                        timeText = formatRemaining(remainingSeconds),
-                                    ),
-                                    accentColor = accentColor, // Use extracted album art color
-                                    modifier =
-                                    Modifier
-                                        .height(56.dp)
-                                        .weight(1f), // Takes up remaining width (lots of area for Resume text)
-                                )
-                            }
-                        }
-                    }
-
-                    // One-time mark-played tooltip
-                    if (showMarkPlayedTip) {
-                        item {
-                            var tipVisible by remember { mutableStateOf(true) }
-
-                            LaunchedEffect(Unit) {
-                                delay(4000)
-                                tipVisible = false
-                                onMarkPlayedTipDismissed()
-                            }
-
-                            androidx.compose.animation.AnimatedVisibility(
-                                visible = tipVisible,
-                                enter =
-                                androidx.compose.animation.fadeIn(
-                                    androidx.compose.animation.core
-                                        .tween(300),
-                                ) +
-                                    androidx.compose.animation.slideInVertically(initialOffsetY = { -it / 2 }),
-                                exit =
-                                androidx.compose.animation.fadeOut(
-                                    androidx.compose.animation.core
-                                        .tween(500),
-                                ),
-                            ) {
-                                Box(
-                                    modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 24.dp, bottom = 8.dp),
-                                    // Align with the controls on the left
-                                    contentAlignment = Alignment.CenterStart,
-                                ) {
-                                    Surface(
-                                        shape = MaterialTheme.shapes.small,
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        shadowElevation = 4.dp,
-                                    ) {
-                                        Text(
-                                            text = "↑ Tap to mark completed",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = GoogleSansWeight.bold,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // CROSS-PROMOTION CARD
-                    state.crossPromotion?.let { crossPromo ->
-                        item {
-                            CrossPromotionCard(
-                                crossPromotion = crossPromo,
-                                onPodcastClick = onPodcastClick,
-                                modifier =
-                                Modifier
-                                    .padding(horizontal = 16.dp),
-                            )
-                        }
-                    }
-
-                    // DESCRIPTION CARD with Social Links
-                    if (state.episode.description.isNotEmpty()) {
-                        item {
-                            EpisodeDescriptionCard(
-                                description = state.episode.description,
-                                accentColor = accentColor,
-                                location = state.location,
-                                license = state.license,
-                                persons = state.episode.persons,
-                                onSeekTo = viewModel::seekToPosition,
-                            )
-                        }
-                    }
-
-                    // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
-                    if (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty()) {
-                        item {
-                            cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreLikeThisCard(
-                                state = state,
-                                onEpisodeClick = onEpisodeClick,
-                            )
-                        }
-                    }
-
-                    // UNIFIED "MORE FROM PODCAST" SECTION -> Card
-                    item {
-                        cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreFromPodcastCard(
-                            state = state,
-                            onPodcastClick = onPodcastClick,
-                            onEpisodeClick = onEpisodeClick,
-                            onPodcastLinkClicked = viewModel::onPodcastLinkClicked,
-                            onRelatedEpisodesScrolled = viewModel::onRelatedEpisodesScrolled,
-                            onRelatedEpisodeClicked = viewModel::onRelatedEpisodeClicked,
-                        )
-                    }
-                }
+                )
             }
-
-            // HEADER OVERLAY (Back button + animated background)
-            Box(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(collapsedHeaderHeight)
-                    .background(headerColor)
-                    .statusBarsPadding(),
-            ) {
-                // Back Button
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-
-                // Share Button
-                var showShareSheet by remember { mutableStateOf(false) }
-                IconButton(
-                    onClick = { showShareSheet = true },
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Share,
-                        contentDescription = "Share",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-
-                if (showShareSheet) {
-                    val currentSuccessState = uiState as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
-                    val shareEpisode =
-                        currentSuccessState?.episode ?: cx.aswin.boxlore.core.model.Episode(
-                            id = episodeId,
-                            title = episodeTitle,
-                            description = episodeDescription,
-                            audioUrl = episodeAudioUrl,
-                            imageUrl = episodeImageUrl,
-                            duration = episodeDuration,
-                        )
-                    cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
-                        id = shareEpisode.id,
-                        type = "episode",
-                        title = shareEpisode.title,
-                        subtitle = podcastTitle,
-                        imageUrl = shareEpisode.imageUrl ?: shareEpisode.podcastImageUrl,
-                        onDismissRequest = { showShareSheet = false },
-                        durationMs = shareEpisode.duration * 1000L,
-                        currentPositionMs = currentSuccessState?.resumePositionMs ?: 0L,
-                        showTimestampOption = false,
-                        onShare = { _, _, timestamp, target ->
-                            cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
-                                context = context,
-                                episode = shareEpisode,
-                                podcastTitle = podcastTitle,
-                                timestampMs = timestamp,
-                                target = target,
-                            )
-                        },
-                    )
-                }
-            }
-
-            // FLOATING TITLE - physically moves from body to header
-            Text(
-                text = episodeTitle,
-                fontSize = titleFontSize,
-                fontWeight = GoogleSansWeight.bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = titleMaxLines,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = titleHorizontalPadding)
-                    .graphicsLayer {
-                        translationY = titleTranslationY
-                        alpha = titleAlpha
-                    },
-            )
         }
-    }
 
-    if (showRemoveDownloadDialog) {
-        RemoveDownloadConfirmationDialog(
-            episodeTitle = (uiState as? EpisodeInfoUiState.Success)?.episode?.title ?: episodeTitle,
-            onConfirm = viewModel::confirmDownloadRemoval,
-            onDismiss = viewModel::dismissDownloadRemoval,
-        )
+        if (showRemoveDownloadDialog) {
+            RemoveDownloadConfirmationDialog(
+                episodeTitle = (uiState as? EpisodeInfoUiState.Success)?.episode?.title ?: episodeTitle,
+                onConfirm = viewModel::confirmDownloadRemoval,
+                onDismiss = viewModel::dismissDownloadRemoval,
+            )
+    }
     }
 }
