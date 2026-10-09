@@ -292,6 +292,7 @@ org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3
 org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.7.3
 org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3
 org.jetbrains:annotations:23.0.0
+org.jsoup:jsoup:1.23.2
 org.jspecify:jspecify:1.0.0
 sh.calvin.reorderable:reorderable-android:2.5.1
 sh.calvin.reorderable:reorderable:2.5.1

@@ -36,6 +36,9 @@ Failed consent writes keep activation off, and local notification flags prevent 
 
 - The two-request concurrency cap applies to publisher-feed refreshes. Podcast Index chunk sync for not-ready shows and missing-feed-URL recovery retain their independent six-request limit.
 
+- `shownotes/ShowNotesParser` interprets publisher HTML with Jsoup without fetching pages. It preserves meaningful anchor labels, resolves relative URLs only with a known base, classifies real domain boundaries and routes, filters infrastructure/media links, and deduplicates tracking variants while retaining case-sensitive paths, query values, and fragments. `EpisodeLinkTitles` removes destination-platform labels (including aliases and generic actions) so they cannot override a URL's profile handle. Social handles use platform-specific profile routes; login, sharing, and other reserved routes are not usernames. Description chapters require at least two valid timestamp/title lines; generated seek links never rewrite existing anchors, attributes, code, or prose clock times. `ChapterRepository` delegates description parsing to this shared parser.
+- `crosspromo/CrossPromotionDetector` requires explicit feed-exchange wording or corroborated introduction/description evidence; Bonus metadata and missing episode numbering do not establish a promotion. A named introduction can be corroborated by a matching listening/following invitation even in long sentences with weekday schedules, without relying on short duration or Trailer metadata. Self-show comparison uses normalized whole names (including `and`/`&`) rather than substrings. `CrossPromotionResolver` retains the full extracted name, excludes the host, rejects ambiguous matches, and prefers an unambiguous Apple Podcasts destination. A lone unnamed Apple link must resolve to a matching title before it can be used; unrelated links fall back to search. Cancellation propagates and transient search failures remain retryable. Its bounded cache expires empty searches after one minute and successful matches after one hour.
+
 ## Internal structure
 
 ```text
@@ -58,6 +61,14 @@ src/main/java/cx/aswin/boxlore/core/catalog/
   EpisodeMapper.kt
   SubscriptionRepository.kt
   ChapterRepository.kt
+  shownotes/
+    ShowNotesParser.kt
+    EpisodeLinkTitles.kt
+    DescriptionChapters.kt
+    EpisodeLinkClassifier.kt
+  crosspromo/
+    CrossPromotionDetector.kt
+    CrossPromotionResolver.kt
   TranscriptRepository.kt
   SharedAppDependencies.kt
   SubscriptionForegroundSync.kt
@@ -89,6 +100,8 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 - Libraries: Retrofit, OkHttp, Gson, coroutines, DataStore, Firebase Database, Firebase Messaging, and Install Referrer.
 - Reverse-edge rule: catalog must not depend on playback, downloads, designsystem, analytics, or feature modules.
 
+- Show-notes HTML parsing uses Jsoup; the library stays inside `:core:catalog` and shared values remain in `:core:model`.
+
 ## Threading / lifecycle
 
 - Production repositories are application-scoped through `AppContainer` and `SharedAppDependenciesHolder`.
@@ -114,6 +127,8 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 ./gradlew :core:catalog:testDebugUnitTest --tests 'cx.aswin.boxlore.core.catalog.PodcastRepositoryCatalogTest'
 ```
 
+- `ShowNotesParserTest`, `CrossPromotionDetectorTest`, and `CrossPromotionResolverTest` cover malformed/relative anchors, platform-label/handle separation, reserved profile routes, destination purpose and spoof domains, URL deduplication, safe timestamp linking, chapter boundaries, weekday-scheduled full-length introductions, false promotions and shorter-name prefixes, full-title matching, ambiguous/host matches, verified unnamed Apple links, retry, cancellation, and cache expiry.
+
 ## CI relevance
 
 - `unit-tests.yml` runs catalog JVM tests.
@@ -128,3 +143,5 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 - [`:core:ranking` README](../ranking/README.md)
 - [`:core:prefs` README](../prefs/README.md)
 - [`:core:playback` README](../playback/README.md)
+
+- Promotion description extraction separates invitation phrases, optional show prefixes, quoted names and schedule boundaries instead of using one nested pattern. Show-notes generic labels use fixed actions and focused website/URL patterns. Chapter link validation remains separate from DOM rewriting; regression tests preserve wrapped feed-drop titles, weekday invitations, generic link labels and blank publisher markup.

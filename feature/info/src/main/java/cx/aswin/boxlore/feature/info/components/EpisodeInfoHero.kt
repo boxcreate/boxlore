@@ -1,281 +1,163 @@
 package cx.aswin.boxlore.feature.info.components
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.MarqueeSpacing
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.rounded.Label
-import androidx.compose.material.icons.rounded.CalendarToday
-import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.Tag
-import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
-
-@Composable
-internal fun EpisodeArtworkBackdrop(
-    imageUrl: String?,
-    scrollOffset: Float,
-    collapseFraction: Float,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-        modifier
-            .graphicsLayer {
-                translationY = -scrollOffset * 0.5f
-                alpha = 1f - collapseFraction
-            },
-    ) {
-        OptimizedImage(
-            url = imageUrl,
-            proxyWidth = 200,
-            contentDescription = null,
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .alpha(0.5f)
-                .blur(50.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded),
-            contentScale = ContentScale.Crop,
-        )
-        Box(
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors =
-                        listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.background,
-                        ),
-                    ),
-                ),
-        )
-    }
-}
+import cx.aswin.boxlore.feature.info.R
+import java.text.DateFormat
+import java.util.Date
+import kotlinx.coroutines.delay
 
 @Composable
 internal fun EpisodeInfoHero(
     episode: Episode,
     podcastTitle: String,
-    accentColor: Color,
-    collapseFraction: Float,
     onPodcastClick: () -> Unit,
+    completionState: EpisodeCompletionState,
+    onToggleCompletion: () -> Unit,
     modifier: Modifier = Modifier,
+    onMarkPlayedTipDismissed: () -> Unit = {},
 ) {
-    androidx.compose.foundation.layout.Column(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                alpha = 1f - collapseFraction * 0.18f
-                translationY = -collapseFraction * 20.dp.toPx()
-            },
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(204.dp),
-            contentAlignment = Alignment.Center,
+    Column(modifier.fillMaxWidth().animateContentSize()) {
+        Surface(
+            modifier = Modifier.size(200.dp).align(Alignment.CenterHorizontally),
+            shape = RoundedCornerShape(30.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
-            Box(
-                modifier = Modifier.size(184.dp),
-            ) {
-                Surface(
+            Box(Modifier.fillMaxSize()) {
+                OptimizedImage(
+                    url = episode.imageUrl?.takeIf(String::isNotBlank) ?: episode.podcastImageUrl,
+                    proxyWidth = 640,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shadowElevation = 6.dp,
-                ) {
-                    OptimizedImage(
-                        url =
-                        episode.imageUrl?.takeIf(String::isNotBlank)
-                            ?: episode.podcastImageUrl,
-                        proxyWidth = 640,
-                        contentDescription = episode.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                }
-                if (episode.enclosureType?.startsWith("video/") == true) {
-                    Surface(
-                        modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(bottom = 2.dp),
-                        shape = ExpressiveShapes.Pill,
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                        shadowElevation = 6.dp,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Rounded.Videocam, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("Video", style = MaterialTheme.typography.labelLarge, fontWeight = GoogleSansWeight.bold)
-                        }
-                    }
-                }
+                )
+                EpisodeArtworkTags(episode, Modifier.align(Alignment.TopStart).fillMaxWidth().padding(12.dp))
             }
         }
-
-        Text(
-            text = episode.title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = GoogleSansWeight.extraBold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 24.dp),
-        )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(20.dp))
         Row(
-            modifier =
-            Modifier
-                .expressiveClickable(onClick = onPodcastClick)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).expressiveClickable(onClick = onPodcastClick),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
-                text = podcastTitle,
+                podcastTitle,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = GoogleSansWeight.bold,
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
-            Spacer(Modifier.width(2.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                contentDescription = "Open podcast",
-                tint = accentColor,
-                modifier = Modifier.size(20.dp),
-            )
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.episode_info_open_show, podcastTitle), modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
         }
-        Spacer(Modifier.height(12.dp))
-        EpisodeMetadataChipsRow(episode)
+        EpisodeExpandableTitle(episode.id, episode.title)
+        Spacer(Modifier.height(8.dp))
+        EpisodeMetadata(episode, completionState.isCompleted, onToggleCompletion)
+        if (completionState.showTip) {
+            Text(stringResource(R.string.episode_info_mark_tip), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            LaunchedEffect(episode.id) {
+                delay(4_000)
+                onMarkPlayedTipDismissed()
+            }
+        }
     }
 }
-
-private data class EpisodeMetadataChip(
-    val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-)
 
 @Composable
-private fun EpisodeMetadataChipsRow(episode: Episode) {
-    val metadata =
-        buildList {
-            if (episode.enclosureType?.startsWith("video/") == true) {
-                add(EpisodeMetadataChip("Video", Icons.Rounded.Videocam))
-            }
-            formatEpisodeDuration(episode.duration)
-                .takeIf(String::isNotBlank)
-                ?.let { add(EpisodeMetadataChip(it, Icons.Rounded.Schedule)) }
-            formatRelativeDate(episode.publishedDate)?.let {
-                add(EpisodeMetadataChip(it, Icons.Rounded.CalendarToday))
-            }
-            formatSeasonAndEpisode(episode)?.let {
-                add(EpisodeMetadataChip(it, Icons.Rounded.Tag))
-            }
-            episode.episodeType
-                ?.takeUnless { it.equals("full", ignoreCase = true) }
-                ?.let {
-                    add(
-                        EpisodeMetadataChip(
-                            it.replaceFirstChar(Char::uppercase),
-                            Icons.AutoMirrored.Rounded.Label,
-                        ),
-                    )
-                }
+private fun EpisodeMetadata(episode: Episode, isCompleted: Boolean, onToggleCompletion: () -> Unit) {
+    val date = remember(episode.publishedDate) {
+        episode.publishedDate.takeIf { it > 0L }?.let { DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it * 1_000L)) }
+    }
+    val number = episodeNumberLabel(episode)
+    val metadata = listOfNotNull(date, formatEpisodeDuration(episode.duration).takeIf(String::isNotBlank), number).joinToString(" · ")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (metadata.isNotEmpty()) {
+            Text(
+                metadata,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier.weight(1f).clipToBounds().basicMarquee(
+                    iterations = Int.MAX_VALUE,
+                    initialDelayMillis = 2_500,
+                    repeatDelayMillis = 2_000,
+                    spacing = MarqueeSpacing(32.dp),
+                    velocity = 24.dp,
+                ),
+            )
+        } else {
+            Spacer(Modifier.weight(1f))
         }
-
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        items(metadata) { item ->
-            Surface(
-                shape = ExpressiveShapes.Pill,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = item.label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = GoogleSansWeight.bold,
-                    )
-                }
-            }
-        }
+        EpisodeCompletionPill(isCompleted, onToggleCompletion)
     }
 }
 
-private fun formatRelativeDate(timestampSeconds: Long): String? {
-    if (timestampSeconds <= 0L) return null
-    val difference = ((System.currentTimeMillis() / 1000L) - timestampSeconds).coerceAtLeast(0L)
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EpisodeArtworkTags(episode: Episode, modifier: Modifier = Modifier) {
+    FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        val type = when (episode.episodeType?.lowercase()) {
+            "bonus" -> R.string.episode_info_bonus
+            "trailer" -> R.string.episode_info_trailer
+            else -> null
+        }
+        type?.let { QuietMetadataChip(stringResource(it)) }
+        if (episode.enclosureType?.startsWith("video/") == true) QuietMetadataChip(stringResource(R.string.episode_info_video))
+    }
+}
+
+@Composable
+private fun episodeNumberLabel(episode: Episode): String? {
+    val season = episode.seasonNumber ?: 0
+    val number = episode.episodeNumber ?: 0
     return when {
-        difference < 3_600L -> "${difference / 60L}m ago"
-        difference < 86_400L -> "${difference / 3_600L}h ago"
-        difference < 604_800L -> "${difference / 86_400L}d ago"
-        difference < 2_592_000L -> "${difference / 604_800L}w ago"
-        difference < 31_536_000L -> "${difference / 2_592_000L}mo ago"
-        else -> "${difference / 31_536_000L}y ago"
+        season > 0 && number > 0 -> stringResource(R.string.episode_info_season_episode, season, number)
+        number > 0 -> stringResource(R.string.episode_info_number, number)
+        season > 0 -> stringResource(R.string.episode_info_season, season)
+        else -> null
     }
 }
 
-private fun formatSeasonAndEpisode(episode: Episode): String? = buildString {
-    episode.seasonNumber?.takeIf { it > 0 }?.let { append("S$it") }
-    episode.episodeNumber?.takeIf { it > 0 }?.let {
-        if (isNotEmpty()) append(" ")
-        append("E$it")
+@Composable
+private fun QuietMetadataChip(label: String) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurface, shadowElevation = 1.dp) {
+        Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
     }
-}.ifBlank { null }
+}

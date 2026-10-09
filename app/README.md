@@ -104,6 +104,8 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 
 `StartupWorkGate` is process-scoped and releases optional cloud coordinator initialization, periodic sync scheduling, Smart Downloads scheduling/catch-up, foreground subscription sync and legacy RSS repair after the initial screen commits. Optional initialization uses a suspending mutex so ready does not release a burst of initializers. Home signals after loaded local content and two frames; other initial routes release after their first two frames. A headless worker/widget launch releases at the first idle main queue; `MainActivity` identifies a UI launch before creating content. If the first Activity stops before content is ready, background startup also releases; configuration recreation waits for the replacement UI. Recreated roots reuse the same gate. Repeated signals and cancelled initializers are safe (`StartupWorkGateTest`). Adaptive ranking telemetry also waits for readiness. Appearance flows use restored fast-cache values while background hydration fills missing DataStore keys; existing choices are never overwritten. Play update checks begin after the first two Compose frames. Playback/session restoration and preference identity remain owned by the existing composition root.
 
+- Release runtime dependency snapshots include Jsoup through `:core:catalog`, which owns shared show-notes resource and chapter parsing. No direct parser-library dependency is added here.
+
 ## Threading / lifecycle
 
 - `AppContainer` is created once from `BoxLoreApplication.onCreate` and is application-scoped.

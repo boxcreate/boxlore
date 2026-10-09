@@ -1,0 +1,6 @@
+<!-- Simple Icons (youtube), 98820a4dc8c363ca72fa2c0d294ea4a0a9bba75d; CC0-1.0. See licenses/SimpleIcons.md. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FF000000" android:pathData="M23.498 6.186 a3.016 3.016 0 0 0 -2.122 -2.136 C19.505 3.545 12 3.545 12 3.545 s-7.505 0 -9.377 .505 A3.017 3.017 0 0 0 .502 6.186 C0 8.07 0 12 0 12 s0 3.93 .502 5.814 a3.016 3.016 0 0 0 2.122 2.136 c1.871 .505 9.376 .505 9.376 .505 s7.505 0 9.377 -.505 a3.015 3.015 0 0 0 2.122 -2.136 C24 15.93 24 12 24 12 s0 -3.93 -.502 -5.814 z M9.545 15.568 V8.432 L15.818 12 l-6.273 3.568 z" />
+</vector>

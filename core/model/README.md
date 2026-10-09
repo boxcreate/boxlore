@@ -18,6 +18,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - `AutoTranscriptState`.
 - `PodcastGenres` and `RankingAggregateTelemetry`.
 - Cross-promotion model types.
+- `ShowNotes`, `EpisodeLink`, and `EpisodeLinkKind` carry locally parsed plain text, publisher HTML, chapters, resource purpose, destination, and publisher labels without UI or parser-library dependencies.
 - `Podcast.isLatestEpisodeNew`: shared NEW badge. Room `rssHasNewEpisodes` is true for true-RSS freshness **and** for Podcast Index direct-feed tip promotions (`updateLatestEpisode(..., markAsNew = true)`). Opening the show clears the flag. Otherwise the 48h window / last-seen id rules apply.
 - `Podcast.effectiveGenre`: resolves user `customGenre` override when non-blank, falling back to default catalog `genre`. Companion `customGenreIcon` stores the icon identifier for custom tags.
 - `Podcast.recommendationGenre`: resolves canonicalized `customGenre` via `PodcastGenres.canonicalize` so valid standard reclassifications adapt personalized recommendations and Smart Queue, falling back to `genre` when the tag is arbitrary.
@@ -38,6 +39,7 @@ src/main/java/cx/aswin/boxlore/core/model/
   PodcastGenres.kt
   RankingAggregateTelemetry.kt
   ShareLinkBuilder.kt
+  ShowNotes.kt
   SleepTimerConstants.kt
   Transcript.kt
   ContentRegion.kt

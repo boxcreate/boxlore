@@ -95,6 +95,7 @@ dependencies {
 
     // JSON Streaming
     implementation(libs.gson)
+    implementation(libs.jsoup)
     implementation(libs.okhttp)
     // Firebase (database and messaging — SubscriptionRepository uses firebase.database + messaging)
     implementation(platform(libs.firebase.bom))

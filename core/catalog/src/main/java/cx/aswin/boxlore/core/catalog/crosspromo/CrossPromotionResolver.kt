@@ -1,113 +1,79 @@
 package cx.aswin.boxlore.core.catalog.crosspromo
 
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.model.EpisodeLink
+import cx.aswin.boxlore.core.model.EpisodeLinkKind
 import cx.aswin.boxlore.core.model.Podcast
+import kotlinx.coroutines.CancellationException
 
-class CrossPromotionResolver(private val podcastRepository: PodcastRepository) {
-    private val resolutionCache = mutableMapOf<String, Podcast?>()
-    private val cacheLock = Any()
+class CrossPromotionResolver internal constructor(
+    private val search: suspend (String) -> List<Podcast>,
+    private val lookup: suspend (String) -> Podcast?,
+    private val now: () -> Long = System::currentTimeMillis,
+) {
+    constructor(repository: PodcastRepository) : this(repository::searchPodcasts, repository::getPodcastDetails)
+    private data class Cached(val podcast: Podcast?, val expiresAt: Long)
+    private val cache = linkedMapOf<String, Cached>()
 
-    suspend fun resolve(extractedName: String): Podcast? {
-        if (extractedName.isBlank()) return null
-        val cleanExtracted = extractedName.trim().lowercase()
-
-        synchronized(cacheLock) {
-            if (resolutionCache.containsKey(cleanExtracted)) {
-                return resolutionCache[cleanExtracted]
+    suspend fun resolve(extractedName: String, hostPodcastId: String? = null, links: List<EpisodeLink> = emptyList()): Podcast? {
+        val name = extractedName.trim().trim('"', '“', '”')
+        if (name.isBlank()) return null
+        val podcastLinks = links.filter { it.kind == EpisodeLinkKind.PODCAST }
+        val namedLinks = podcastLinks.filter { it.title?.let { title -> CrossPromotionDetector.sameShow(title, name) } == true }
+        val contextualLinks = podcastLinks.filter { it.title == null && CrossPromotionDetector.normalizedName(it.context).contains(CrossPromotionDetector.normalizedName(name)) }
+        // A lone unnamed destination is usable only after its resolved title matches the promoted show.
+        val unnamedLink = podcastLinks.singleOrNull()?.takeIf { it.title == null }
+        val targetLinks = namedLinks.ifEmpty { contextualLinks.takeIf { it.size == 1 } ?: listOfNotNull(unnamedLink) }
+        val key = "${CrossPromotionDetector.normalizedName(name)}|$hostPodcastId|${targetLinks.joinToString { it.url }}"
+        synchronized(cache) { cache[key]?.takeIf { it.expiresAt > now() }?.let { return it.podcast } }
+        val result = try {
+            val appleIds = targetLinks.filter { it.platform == "Apple Podcasts" }
+                .mapNotNull { Regex("/id(\\d+)").find(it.url)?.groupValues?.get(1) }.distinct()
+            val direct = appleIds.singleOrNull()?.let { id -> lookupSafely("itunes:$id") }?.takeIf {
+                it.id != hostPodcastId && (namedLinks.isNotEmpty() || bestMatch(listOf(it), name, hostPodcastId) != null)
             }
-        }
-
-        // 1. Try to extract quoted text if present (e.g. 'History Daily')
-        val quotedMatch = quotedTextRegex.find(extractedName)
-        var cleanedName = if (quotedMatch != null) {
-            quotedMatch.groupValues[1].trim()
-        } else {
-            extractedName.trim()
-        }
-
-        // 2. Remove noise suffixes (e.g. "from host Lindsay Graham", "from Wondery")
-        cleanedName = noiseSuffixRegex.replace(cleanedName, "").trim()
-
-        // 3. Remove subtitle/season suffixes after colons (e.g. "Dr. Death: The Cowboy" -> "Dr. Death")
-        if (cleanedName.contains(":")) {
-            cleanedName = cleanedName.substringBefore(":").trim()
-        }
-
-        // 4. Clean query by removing season/series/part suffixes for better search indexing
-        val searchQuery = seasonSuffixRegex.replace(cleanedName, "").trim()
-        if (searchQuery.isBlank()) {
-            synchronized(cacheLock) {
-                resolutionCache[cleanExtracted] = null
-            }
-            return null
-        }
-
-        val resolved = try {
-            val results = podcastRepository.searchPodcasts(searchQuery)
-            pickBestMatch(results, cleanedName, searchQuery)
+            direct ?: bestMatch(search(name), name, hostPodcastId)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (_: Exception) {
-            null
+            return null // Transient failures remain retryable.
         }
-
-        synchronized(cacheLock) {
-            resolutionCache[cleanExtracted] = resolved
+        val lifetime = cacheLifetime(result)
+        synchronized(cache) {
+            cache.entries.removeAll { it.value.expiresAt <= now() }
+            cache[key] = Cached(result, now() + lifetime)
+            while (cache.size > 50) cache.remove(cache.keys.first())
         }
-        return resolved
+        return result
     }
 
-    private fun pickBestMatch(results: List<Podcast>, cleanedName: String, searchQuery: String): Podcast? {
-        if (results.isEmpty()) return null
+    private fun cacheLifetime(podcast: Podcast?): Long = podcast?.let { 3_600_000L } ?: 60_000L
 
-        val normalizedCleaned = normalizeForComparison(cleanedName)
-        val normalizedQuery = normalizeForComparison(searchQuery)
+    private suspend fun lookupSafely(id: String): Podcast? = try {
+        lookup(id)
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        null // Search can still resolve the explicitly named show.
+    }
 
-        data class Scored(val podcast: Podcast, val score: Int)
-
-        val scored = results.take(8).mapNotNull { podcast ->
-            val title = normalizeForComparison(podcast.title)
+    internal fun bestMatch(results: List<Podcast>, name: String, hostId: String?): Podcast? {
+        val query = CrossPromotionDetector.normalizedName(name)
+        val queryTokens = query.split(' ').toSet()
+        val scored = results.distinctBy { it.id }.filter { it.id != hostId }.mapNotNull { podcast ->
+            val title = CrossPromotionDetector.normalizedName(podcast.title)
+            val titleTokens = title.split(' ').toSet()
+            val shared = queryTokens.intersect(titleTokens).size.toFloat()
             val score = when {
-                title == normalizedCleaned || title == normalizedQuery -> 100
-                title.startsWith(normalizedCleaned) || normalizedCleaned.startsWith(title) -> 85
-                title.contains(normalizedCleaned) || normalizedCleaned.contains(title) -> 70
-                title.startsWith(normalizedQuery) || normalizedQuery.startsWith(title) -> 60
-                title.contains(normalizedQuery) || normalizedQuery.contains(title) -> 50
-                // Token overlap for multi-word shows
-                else -> {
-                    val titleTokens = title.split(' ').filter { it.length > 2 }.toSet()
-                    val queryTokens = normalizedCleaned.split(' ').filter { it.length > 2 }.toSet()
-                    if (queryTokens.isEmpty() || titleTokens.isEmpty()) return@mapNotNull null
-                    val overlap = queryTokens.intersect(titleTokens).size.toFloat() / queryTokens.size
-                    if (overlap >= 0.75f) (40 + (overlap * 20).toInt()) else return@mapNotNull null
-                }
+                query == title -> 100
+                queryTokens.size >= 2 && titleTokens.size >= 2 && (name.startsWith("${podcast.title}:", true) || podcast.title.startsWith("$name:", true)) -> 80
+                queryTokens.size >= 2 && shared / queryTokens.size >= .8f && shared / titleTokens.size >= .8f -> 75
+                else -> return@mapNotNull null
             }
-            Scored(podcast, score)
-        }
-
-        return scored.maxByOrNull { it.score }?.takeIf { it.score >= 50 }?.podcast
+            podcast to score
+        }.sortedByDescending { it.second }
+        val best = scored.firstOrNull() ?: return null
+        if (scored.getOrNull(1)?.let { best.second - it.second < 15 } == true) return null
+        return best.first
     }
-
-    private val quotedTextRegex = Regex(
-        """['"‘“]([^'"’”]+)[''’”]"""
-    )
-
-    private val noiseSuffixRegex = Regex(
-        """\s+(?:from\s+host|hosted\s+by|from|with|by)\b.+""",
-        RegexOption.IGNORE_CASE
-    )
-
-    private val seasonSuffixRegex = Regex(
-        """\s+(?:brand\s+new\s+season|brand\s+new\s+sesson|brand\s+new|new\s+season|new\s+sesson|next\s+seaton|next\s+sesson|next\s+season|season|sesson|seaton|series|s|part)\b(?:\s*\d+.*)?$""",
-        RegexOption.IGNORE_CASE
-    )
-
-    private fun normalizeForComparison(text: String): String = text.lowercase()
-        .replace("’", "'")
-        .replace("‘", "'")
-        .replace("“", "\"")
-        .replace("”", "\"")
-        .replace(":", "")
-        .replace("-", "")
-        .replace(",", "")
-        .replace(Regex("""\s+"""), " ")
-        .trim()
 }

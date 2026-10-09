@@ -1,85 +1,65 @@
 package cx.aswin.boxlore.feature.info.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAddCheck
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.DownloadDone
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.DownloadDone
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButtonDefaults
+import androidx.compose.material3.TonalToggleButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton
-import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.contrastColor
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import kotlinx.coroutines.delay
+import cx.aswin.boxlore.feature.info.R
 
 internal data class EpisodeActionRailState(
-    val title: String,
-    val imageUrl: String?,
     val isPlaying: Boolean,
     val isPlaybackLoading: Boolean,
-    val isResume: Boolean,
     val isLiked: Boolean,
     val isDownloaded: Boolean,
     val isDownloading: Boolean,
     val isQueued: Boolean,
     val isCompleted: Boolean,
-    val progress: Float,
-    val remainingTimeText: String?,
+    val positionMs: Long,
+    val durationMs: Long,
 )
 
 internal data class EpisodeActionRailCallbacks(
@@ -87,297 +67,156 @@ internal data class EpisodeActionRailCallbacks(
     val onLikeClick: () -> Unit,
     val onDownloadClick: () -> Unit,
     val onQueueClick: () -> Unit,
-    val onMarkPlayedClick: () -> Unit,
 )
 
 @Composable
-internal fun EpisodeActionRail(
-    state: EpisodeActionRailState,
-    callbacks: EpisodeActionRailCallbacks,
-    accentColor: Color,
-    showMarkPlayedTip: Boolean,
-    onMarkPlayedTipDismissed: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        ExpressivePlayButton(
-            onClick = callbacks.onMainActionClick,
-            state = ExpressivePlayButtonState(
-                isPlaying = state.isPlaying,
-                isLoading = state.isPlaybackLoading,
-                isResume = state.isResume,
-                progress = state.progress,
-                timeText = state.remainingTimeText,
-            ),
-            accentColor = accentColor,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(
-                space = 8.dp,
-                alignment = Alignment.CenterHorizontally,
-            ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            EpisodeToolbarActionButton(
-                isActive = state.isCompleted,
-                activeIcon = Icons.Rounded.CheckCircle,
-                inactiveIcon = Icons.Outlined.CheckCircle,
-                contentDescription = if (state.isCompleted) "Mark unplayed" else "Mark played",
-                onClick = callbacks.onMarkPlayedClick,
-            )
-            EpisodeToolbarActionButton(
-                isActive = state.isLiked,
-                activeIcon = Icons.Filled.Favorite,
-                inactiveIcon = Icons.Outlined.FavoriteBorder,
-                contentDescription = if (state.isLiked) "Unlike" else "Like",
-                onClick = callbacks.onLikeClick,
-            )
-            EpisodeToolbarActionButton(
-                isActive = state.isDownloaded,
-                isLoading = state.isDownloading,
-                activeIcon = Icons.Outlined.DownloadDone,
-                inactiveIcon = Icons.Outlined.Download,
-                contentDescription = if (state.isDownloaded) "Remove download" else "Download",
-                onClick = callbacks.onDownloadClick,
-            )
-            EpisodeToolbarActionButton(
-                isActive = state.isQueued,
-                activeIcon = Icons.AutoMirrored.Rounded.PlaylistAddCheck,
-                inactiveIcon = Icons.AutoMirrored.Rounded.PlaylistAdd,
-                contentDescription = if (state.isQueued) "Remove from queue" else "Add to queue",
-                onClick = callbacks.onQueueClick,
-            )
+internal fun EpisodeActionRail(state: EpisodeActionRailState, callbacks: EpisodeActionRailCallbacks, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Independent actions form one connected row; Play has more room than the tonal toggles.
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+            EpisodeSecondaryActions(state, callbacks)
+            EpisodePlayButton(state, callbacks.onMainActionClick, Modifier.weight(2.1f))
         }
-        MarkPlayedCoachmark(
-            visible = showMarkPlayedTip,
-            onDismissed = onMarkPlayedTipDismissed,
-        )
+        if (state.positionMs > 0 && state.durationMs > 0 && !state.isCompleted) EpisodeProgressSummary(state.positionMs, state.durationMs)
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun EpisodeToolbarActionButton(
-    isActive: Boolean,
-    activeIcon: ImageVector,
-    inactiveIcon: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-    isLoading: Boolean = false,
-) {
-    val containerColor by animateColorAsState(
-        targetValue = if (isActive) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerLow
-        },
-        label = "episode_toolbar_container",
+private fun EpisodePlayButton(state: EpisodeActionRailState, onClick: () -> Unit, modifier: Modifier) {
+    val playLabel = stringResource(
+        when {
+            state.isPlaybackLoading -> R.string.episode_info_loading
+            state.isPlaying -> R.string.episode_info_pause
+            state.isCompleted -> R.string.episode_info_play
+            state.positionMs > 0 -> R.string.episode_info_resume
+            else -> R.string.episode_info_play
+        }
     )
-    val contentColor by animateColorAsState(
-        targetValue = if (isActive) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
-        label = "episode_toolbar_content",
-    )
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(48.dp)
-            .semantics {
-                this.contentDescription = contentDescription
-                if (isLoading) stateDescription = "Loading"
-            }
-            .expressiveClickable(
-                enabled = !isLoading,
-                shape = ExpressiveShapes.Pill,
-                onClick = onClick,
-            )
-            .background(containerColor, ExpressiveShapes.Pill),
-    ) {
-        if (isLoading) {
-            BoxLoreLoader.CircularWavy(
-                size = 22.dp,
-                color = contentColor,
-            )
-        } else {
-            Icon(
-                imageVector = if (isActive) activeIcon else inactiveIcon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(22.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun MarkPlayedCoachmark(
-    visible: Boolean,
-    onDismissed: () -> Unit,
-) {
-    var isVisible by remember(visible) { mutableStateOf(visible) }
-    LaunchedEffect(isVisible) {
-        if (isVisible) {
-            delay(4_000)
-            isVisible = false
-            onDismissed()
-        }
-    }
-    AnimatedVisibility(
-        visible = isVisible,
-        enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
-        exit = fadeOut() + scaleOut(targetScale = 0.92f),
-    ) {
-        Surface(
-            shape = ExpressiveShapes.Pill,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ) {
-            Text(
-                text = "Tip: tap the check to mark this episode complete",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = GoogleSansWeight.bold,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
-            )
-        }
-    }
-}
-
-@Composable
-internal fun CompactEpisodeActionRail(
-    state: EpisodeActionRailState,
-    callbacks: EpisodeActionRailCallbacks,
-    accentColor: Color,
-    visible: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter = fadeIn(ExpressiveMotion.SleekFadeSpec) +
-            slideInVertically(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = 200f,
-                ),
-            ) { -it / 3 } +
-            scaleIn(animationSpec = ExpressiveMotion.SpatialLargeSpring, initialScale = 0.96f),
-        exit = fadeOut(ExpressiveMotion.SleekFadeSpec) +
-            slideOutVertically(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = 200f,
-                ),
-            ) { -it / 3 } +
-            scaleOut(animationSpec = ExpressiveMotion.SpatialLargeSpring, targetScale = 0.96f),
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shadowElevation = 10.dp,
-            tonalElevation = 6.dp,
-        ) {
-            Row(
-                modifier = Modifier.padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OptimizedImage(
-                    url = state.imageUrl,
-                    proxyWidth = 144,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(MaterialTheme.shapes.large),
-                    contentScale = ContentScale.Crop,
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = state.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = GoogleSansWeight.bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                CompactPlayButton(
-                    isPlaying = state.isPlaying,
-                    isLoading = state.isPlaybackLoading,
-                    progress = state.progress,
-                    accentColor = accentColor,
-                    onClick = callbacks.onMainActionClick,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CompactPlayButton(
-    isPlaying: Boolean,
-    isLoading: Boolean,
-    progress: Float,
-    accentColor: Color,
-    onClick: () -> Unit,
-) {
-    val contentDescription = if (isPlaying) "Pause" else "Play"
-    Surface(
-        modifier = Modifier
-            .padding(start = 4.dp)
-            .size(52.dp)
-            .semantics {
-                this.contentDescription = contentDescription
-                if (isLoading) stateDescription = "Loading"
-            }
-            .expressiveClickable(
-                enabled = !isLoading,
-                shape = CircleShape,
-                isolate = true,
-                onClick = onClick,
+    val textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold)
+    val textWidth = rememberTextMeasurer().measure(playLabel, style = textStyle).size.width
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier.height(56.dp)) {
+        // On narrow screens or with larger text, retain a labelled icon rather than clipping a word.
+        val showLabel = with(density) { textWidth.toDp() + 48.dp <= maxWidth }
+        Button(
+            onClick = onClick,
+            enabled = !state.isPlaybackLoading,
+            shapes = ButtonDefaults.shapes(
+                shape = RoundedCornerShape(topStart = 9.dp, topEnd = 28.dp, bottomEnd = 28.dp, bottomStart = 9.dp),
+                pressedShape = RoundedCornerShape(20.dp),
             ),
-        shape = CircleShape,
-        color = accentColor,
-        contentColor = accentColor.contrastColor(),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (isLoading) {
-                BoxLoreLoader.CircularWavy(
-                    size = 27.dp,
-                    color = accentColor.contrastColor(),
-                )
-            } else {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(27.dp),
-                )
-            }
-            if (progress > 0f) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.BottomCenter,
-                ) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp),
-                        color = accentColor.contrastColor(alpha = 0.62f),
-                        trackColor = Color.Transparent,
-                        drawStopIndicator = {},
-                    )
+            colors = ButtonDefaults.buttonColors(
+                disabledContainerColor = MaterialTheme.colorScheme.primary,
+                disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
+            contentPadding = PaddingValues(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+                .semantics { contentDescription = playLabel },
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (state.isPlaybackLoading) {
+                        BoxLoreLoader.CircularWavy(size = 24.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Icon(if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, modifier = Modifier.size(26.dp))
+                    }
+                    if (showLabel) Text(playLabel, style = textStyle, maxLines = 1)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EpisodeListeningProgress(positionMs: Long, durationMs: Long) {
+    val progress by animateFloatAsState((positionMs.toFloat() / durationMs).coerceIn(0f, 1f), label = "episode_listening_progress")
+    LinearProgressIndicator(
+        progress = { progress },
+        modifier = Modifier.fillMaxWidth().height(6.dp),
+        color = MaterialTheme.colorScheme.primary,
+        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        strokeCap = StrokeCap.Round,
+        gapSize = 4.dp,
+        drawStopIndicator = {},
+    )
+}
+
+@Composable
+private fun RowScope.EpisodeSecondaryActions(state: EpisodeActionRailState, callbacks: EpisodeActionRailCallbacks) {
+    RailAction(
+        state.isLiked,
+        if (state.isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+        stringResource(if (state.isLiked) R.string.episode_info_unlike else R.string.episode_info_like),
+        callbacks.onLikeClick,
+        modifier = Modifier.weight(1f),
+        leading = true,
+    )
+    RailAction(
+        state.isDownloaded,
+        if (state.isDownloaded) Icons.Rounded.DownloadDone else Icons.Rounded.Download,
+        stringResource(if (state.isDownloaded) R.string.episode_info_remove_download else R.string.episode_info_download),
+        callbacks.onDownloadClick,
+        modifier = Modifier.weight(1f),
+        loading = state.isDownloading,
+    )
+    RailAction(
+        state.isQueued,
+        if (state.isQueued) Icons.AutoMirrored.Rounded.PlaylistAddCheck else Icons.AutoMirrored.Rounded.PlaylistAdd,
+        stringResource(if (state.isQueued) R.string.episode_info_remove_queue else R.string.episode_info_add_queue),
+        callbacks.onQueueClick,
+        modifier = Modifier.weight(1f),
+    )
+}
+
+@Composable
+private fun EpisodeProgressSummary(positionMs: Long, durationMs: Long) {
+    val lessMinute = stringResource(R.string.episode_info_less_minute)
+    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.episode_info_played_time, formatEpisodeDuration((positionMs / 1_000).toInt()).ifEmpty { lessMinute }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.episode_info_time_left, formatEpisodeDuration(((durationMs - positionMs).coerceAtLeast(0) / 1_000).toInt()).ifEmpty { lessMinute }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+        }
+        EpisodeListeningProgress(positionMs, durationMs)
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun RailAction(active: Boolean, icon: ImageVector, actionLabel: String, onClick: () -> Unit, modifier: Modifier, leading: Boolean = false, loading: Boolean = false) {
+    val downloading = stringResource(R.string.episode_info_downloading)
+    val shapes = if (leading) {
+        ButtonGroupDefaults.connectedLeadingButtonShapes(
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 9.dp, bottomEnd = 9.dp, bottomStart = 28.dp),
+            pressedShape = RoundedCornerShape(18.dp),
+        )
+    } else {
+        ButtonGroupDefaults.connectedMiddleButtonShapes(
+            shape = RoundedCornerShape(9.dp),
+            pressedShape = RoundedCornerShape(18.dp),
+        )
+    }
+    TonalToggleButton(
+        checked = active,
+        onCheckedChange = { onClick() },
+        enabled = !loading,
+        shapes = shapes,
+        colors = ToggleButtonDefaults.tonalToggleButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+        contentPadding = PaddingValues(0.dp),
+        modifier = modifier.height(56.dp).semantics {
+            contentDescription = actionLabel
+            if (loading) stateDescription = downloading
+        },
+    ) {
+        if (loading) {
+            BoxLoreLoader.CircularWavy(size = 22.dp, color = MaterialTheme.colorScheme.primary)
+        } else {
+            Icon(icon, null, modifier = Modifier.size(23.dp))
         }
     }
 }
