@@ -92,3 +92,5 @@ src/main/java/cx/aswin/boxlore/feature/info/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:catalog` README](../../core/catalog/README.md)
 - [`:app` README](../../app/README.md)
+
+- Episode notes loading coalesces unchanged title/description/duration/type/chapter-source and host inputs; unrelated image metadata does not restart parsing or promotion resolution. A same-episode refresh retains its resolved promotion card until the new result arrives. Blank parsed notes omit About, and timestamp links seek to the matched chapter's precise millisecond start. More-from scroll analytics requires active scrolling with at least 60% of the section (or viewport, for taller sections) visible, excluding partial pass-throughs. `EpisodeDescriptionLogicTest` and `EpisodeInfoNotesLoaderTest` cover these regressions.

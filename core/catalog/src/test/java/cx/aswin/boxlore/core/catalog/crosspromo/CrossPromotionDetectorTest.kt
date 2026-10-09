@@ -110,4 +110,14 @@ class CrossPromotionDetectorTest {
         }
         assertFalse(detector.detect(episode("Morning headlines", duration = 90, description = "Listen to Another Show every Wednesday."), "Host").isCrossPromotion)
     }
+
+    @Test
+    fun `wrapped feed exchanges and quoted or scheduled descriptions keep their names`() {
+        listOf("[Feed Drop]: Another Show", "(Feed Drop): Another Show", "*Feed Drop*: Another Show").forEach {
+            assertEquals("Another Show", detector.detect(episode(it), "Host").extractedShowName)
+        }
+        listOf("Follow our new podcast Another Show every Monday", "Listen to Another Show on Apple Podcasts", "Check out our show Another Show for more stories", "Introducing our new podcast “Another Show” today").forEach {
+            assertEquals("Another Show", detector.detect(episode("A special preview", type = "trailer", description = it), "Host").extractedShowName, it)
+        }
+    }
 }

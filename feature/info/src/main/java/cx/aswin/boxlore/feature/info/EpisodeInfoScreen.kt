@@ -85,7 +85,15 @@ fun EpisodeInfoScreen(
     val listState = rememberLazyListState()
     val isMoreFromScrolling by remember {
         derivedStateOf {
-            listState.isScrollInProgress && listState.layoutInfo.visibleItemsInfo.any { it.key == "more_from_podcast" }
+            val layout = listState.layoutInfo
+            val section = layout.visibleItemsInfo.firstOrNull { it.key == "more_from_podcast" }
+            cx.aswin.boxlore.feature.info.logic.relatedSectionScrollEngaged(
+                listState.isScrollInProgress,
+                section?.offset,
+                section?.size ?: 0,
+                layout.viewportStartOffset,
+                layout.viewportEndOffset,
+            )
         }
     }
     val context = LocalContext.current
@@ -317,7 +325,7 @@ fun EpisodeInfoScreen(
                             }
                         }
                         state.showNotes?.let { notes ->
-                            if (state.episode.description.isNotEmpty()) {
+                            if (notes.plainText.isNotBlank()) {
                                 item {
                                     EpisodeDescriptionCard(
                                         notes = notes,
@@ -351,7 +359,7 @@ fun EpisodeInfoScreen(
                                 onEpisodeClick = onEpisodeClick,
                                 onPodcastLinkClicked = viewModel::onPodcastLinkClicked,
                                 onRelatedEpisodesScrolled = viewModel::onRelatedEpisodesScrolled,
-                                isPageScrolling = isMoreFromScrolling,
+                                isSectionScrollEngaged = isMoreFromScrolling,
                                 onRelatedEpisodeClicked = viewModel::onRelatedEpisodeClicked,
                             )
                         }

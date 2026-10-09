@@ -82,4 +82,44 @@ class EpisodeInfoNotesLoaderTest {
         advanceUntilIdle()
         assertEquals(false, notesPublished)
     }
+
+    @Test
+    fun `identical and unrelated metadata refreshes do not restart parsing or promotion`() = runTest {
+        var started = 0
+        var promotions = 0
+        var notes = 0
+        val loader = EpisodeInfoNotesLoader(this, { emptyList() }, { _, _, _, _ ->
+            promotions++
+            null
+        }, StandardTestDispatcher(testScheduler))
+        val episode = TestFixtures.episode(description = "Notes")
+        fun load(value: cx.aswin.boxlore.core.model.Episode) = loader.load(value, "host", "Host", { notes++ }, {}, {}, { started++ })
+        load(episode)
+        load(episode.copy(imageUrl = "https://example.org/new.png"))
+        advanceUntilIdle()
+        load(episode)
+        advanceUntilIdle()
+        assertEquals(1, started)
+        assertEquals(1, promotions)
+        assertEquals(1, notes)
+        loader.cancel()
+        load(episode)
+        advanceUntilIdle()
+        assertEquals(2, promotions)
+    }
+
+    @Test
+    fun `promotion inputs and remote chapter URL changes trigger fresh requests`() = runTest {
+        var started = 0
+        val loader = EpisodeInfoNotesLoader(this, { emptyList() }, { _, _, _, _ -> null }, StandardTestDispatcher(testScheduler))
+        val episode = TestFixtures.episode(description = "Original notes")
+        val inputs = listOf(episode, episode.copy(title = "Changed"), episode.copy(description = "Changed"), episode.copy(duration = 90), episode.copy(episodeType = "trailer"), episode.copy(chaptersUrl = "https://example.org/chapters"))
+        inputs.forEach { value ->
+            loader.load(value, "host", "Host", {}, {}, {}, { started++ })
+            advanceUntilIdle()
+        }
+        loader.load(inputs.last(), "host", "Changed host", {}, {}, {}, { started++ })
+        advanceUntilIdle()
+        assertEquals(inputs.size + 1, started)
+    }
 }

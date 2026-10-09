@@ -57,9 +57,9 @@ internal fun EpisodeDescriptionCard(notes: ShowNotes, modifier: Modifier = Modif
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
                     onLinkClicked = { url ->
-                        val seconds = url.removePrefix("play-position:").toLongOrNull()
-                        if (url.startsWith("play-position:") && seconds != null && notes.chapters.any { it.startTime.toLong() == seconds }) {
-                            onSeekTo?.invoke(seconds * 1_000L)
+                        val position = cx.aswin.boxlore.feature.info.logic.chapterLinkPositionMs(url, notes.chapters)
+                        if (position != null) {
+                            onSeekTo?.invoke(position)
                         } else {
                             openEpisodeLink(context, url)
                         }

@@ -38,13 +38,16 @@ class CrossPromotionResolver internal constructor(
         } catch (_: Exception) {
             return null // Transient failures remain retryable.
         }
+        val lifetime = cacheLifetime(result)
         synchronized(cache) {
             cache.entries.removeAll { it.value.expiresAt <= now() }
-            cache[key] = Cached(result, now() + if (result == null) 60_000L else 3_600_000L)
+            cache[key] = Cached(result, now() + lifetime)
             while (cache.size > 50) cache.remove(cache.keys.first())
         }
         return result
     }
+
+    private fun cacheLifetime(podcast: Podcast?): Long = podcast?.let { 3_600_000L } ?: 60_000L
 
     private suspend fun lookupSafely(id: String): Podcast? = try {
         lookup(id)

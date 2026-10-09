@@ -10,7 +10,7 @@ import org.jsoup.select.NodeVisitor
 internal object DescriptionChapters {
     private val timestamp = Regex("""(?<![\d:])(?:(\d{1,3}):)?(\d{1,3}):(\d{2})(?![\d:])""")
     private val separators = Regex("""^[\s\[\]()–—\-:•]+$""")
-    private val trimTitle = Regex("""^[\s\[\]()–—\-:•]+|[\s\[\]()–—\-:•]+$""")
+    private val trimTitle = Regex("""(?:^[\s\[\]()–—\-:•]+)|(?:[\s\[\]()–—\-:•]+$)""")
 
     fun parse(plain: String, durationSeconds: Int): List<Chapter> {
         val chapters = plain.lines().mapNotNull { parseLine(it, durationSeconds) }
@@ -57,19 +57,7 @@ internal object DescriptionChapters {
         textNodes.forEach { node ->
             val text = node.wholeText
             val matches = timestamp.findAll(text).filter { match ->
-                val chapter = valid[seconds(match)] ?: return@filter false
-                val lineStart = text.lastIndexOf('\n', match.range.first).let { if (it < 0) 0 else it + 1 }
-                val lineEnd = text.indexOf('\n', match.range.last + 1).let { if (it < 0) text.length else it }
-                val line = text.substring(lineStart, lineEnd)
-                val parsed = parseLine(line)
-                if (parsed != null) {
-                    parsed == chapter
-                } else if (line.trim() == match.value) {
-                    node.noteAncestors().firstOrNull { it.normalName() in setOf("p", "li", "div") }
-                        ?.wholeText()?.lines()?.any { parseLine(it) == chapter } == true
-                } else {
-                    false
-                }
+                valid[seconds(match)]?.let { chapter -> isChapterTimestamp(node, text, match, chapter) } == true
             }.toList()
             if (matches.isEmpty()) return@forEach
             var offset = 0
@@ -81,5 +69,14 @@ internal object DescriptionChapters {
             node.before(TextNode(text.substring(offset)))
             node.remove()
         }
+    }
+    private fun isChapterTimestamp(node: TextNode, text: String, match: MatchResult, chapter: Chapter): Boolean {
+        val lineStart = text.lastIndexOf('\n', match.range.first).let { if (it < 0) 0 else it + 1 }
+        val lineEnd = text.indexOf('\n', match.range.last + 1).let { if (it < 0) text.length else it }
+        val line = text.substring(lineStart, lineEnd)
+        parseLine(line)?.let { return it == chapter }
+        if (line.trim() != match.value) return false
+        return node.noteAncestors().firstOrNull { it.normalName() in setOf("p", "li", "div") }
+            ?.wholeText()?.lines()?.any { parseLine(it) == chapter } == true
     }
 }

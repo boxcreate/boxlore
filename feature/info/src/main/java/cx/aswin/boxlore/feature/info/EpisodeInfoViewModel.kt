@@ -705,7 +705,6 @@ class EpisodeInfoViewModel(
     private fun detectCrossPromotion(episode: Episode, hostPodcastTitle: String) {
         val current = _uiState.value as? EpisodeInfoUiState.Success ?: return
         if (current.episode.id != episode.id) return
-        _uiState.value = current.copy(crossPromoLoading = true, crossPromotion = null)
         notesLoader.load(
             episode,
             current.podcastId,
@@ -713,6 +712,7 @@ class EpisodeInfoViewModel(
             onNotes = { notes -> updateEpisodeExtras(episode.id) { it.copy(showNotes = notes) } },
             onChapters = { chapters -> updateEpisodeExtras(episode.id) { it.copy(chapters = chapters) } },
             onPromotion = { promotion -> updateEpisodeExtras(episode.id) { it.copy(crossPromotion = promotion, crossPromoLoading = false) } },
+            onStarted = { updateEpisodeExtras(episode.id) { it.copy(crossPromoLoading = true) } },
         )
     }
 

@@ -14,7 +14,11 @@ import org.jsoup.select.NodeVisitor
 /** Parses publisher HTML locally; never fetches linked pages or guesses a relative URL's origin. */
 object ShowNotesParser {
     private val urlRegex = Regex("""(?i)\b(?:https?://|www\.)[^\s<>"']+""")
-    private val genericTitle = Regex("""(?i)^(?:click here|here|link|(?:our |the )?website|visit (?:our |the )?website|read more|learn more|listen now|listen here|subscribe here|https?://.*|www\..*)$""")
+    private val genericTitles = setOf("click here", "here", "link", "read more", "learn more", "listen now", "listen here", "subscribe here")
+    private val websiteTitle = Regex("""(?i)^(?:visit )?(?:(?:our|the) )?website$""")
+    private val urlTitle = Regex("""(?i)^(?:https?://|www\.).*""")
+    private fun isGenericTitle(title: String): Boolean = title.lowercase(java.util.Locale.ROOT) in genericTitles || websiteTitle.matches(title) || urlTitle.matches(title)
+
     private val trackingNames = setOf("fbclid", "gclid", "mc_cid", "mc_eid")
     private val infrastructure = setOf("podtrac.com", "chartable.com", "feedburner.com", "podcastindex.org")
     private val mediaExtensions = Regex("""(?i)\.(?:mp3|m4a|mp4|wav|ogg|rss|xml)$""")
@@ -56,7 +60,7 @@ object ShowNotesParser {
         body.select("a[href]").forEach { anchor ->
             val href = anchor.attr("href").trim()
             val absolute = if (href.startsWith("mailto:", true)) href else anchor.absUrl("href").ifBlank { href }
-            val title = anchor.text().trim().takeIf { it.isNotBlank() && !genericTitle.matches(it) }
+            val title = anchor.text().trim().takeIf { it.isNotBlank() && !isGenericTitle(it) }
             val parsed = link(absolute, title, context(anchor))
             if (parsed != null) {
                 anchor.attr("href", parsed.url)

@@ -10,8 +10,11 @@ import cx.aswin.boxlore.core.model.ShowNotes
 import java.util.Locale
 
 class CrossPromotionDetector {
-    private val strict = Regex("""^(?:\[|\(|\*)?(feed drop|trailer swap|promo drop|bonus drop|feed swap|feed share|promo swap|guest feed|companion show|network premiere|cross.?promo|promo episode)(?:\]|\)|\*)?\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE)
-    private val introducing = Regex("""^(?:\[|\(|\*)?(introducing|listen now|listen to|special preview|sneak peek|we recommend)(?:\]|\)|\*)?\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE)
+    private val strict = listOf(
+        Regex("""^[\[(*]?(feed drop|trailer swap|promo drop|bonus drop|feed swap|feed share)[\])*]?\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE),
+        Regex("""^[\[(*]?(promo swap|guest feed|companion show|network premiere|cross.?promo|promo episode)[\])*]?\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE),
+    )
+    private val introducing = Regex("""^[\[(*]?(introducing|listen now|listen to|special preview|sneak peek|we recommend)[\])*]?\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE)
     private val weak = Regex("""^(?:discover|meet|check out|announcing|try|sample|preview|(?:brand )?(?:new|next) (?:season|sesson|seaton)|sesson)\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE)
     private val presents = Regex("""^(?:.+\s)?(?:presents|presenting|presented by|from the creators of|from the makers of|from the team behind|brought to you by)(?:\s+[^:|]+)?\s*[:|]\s*(.+)$""", RegexOption.IGNORE_CASE)
     private val seamless = Regex("""^introducing\s+(?!season\b)(.+)$""", RegexOption.IGNORE_CASE)
@@ -19,8 +22,14 @@ class CrossPromotionDetector {
     private val recommendation = Regex("""\b(?:subscribe\s+to|listen\s+to|check\s+out|follow|introducing)\s+""", RegexOption.IGNORE_CASE)
     private val showPrefix = Regex("""^(?:our new podcast|our podcast|the podcast|new podcast|our new show|our show|the show|new show)\s+""", RegexOption.IGNORE_CASE)
     private val continuation = Regex("""^\s+(?:wherever|where you|on|for|every|daily|weekly|now|today|as)\b""", RegexOption.IGNORE_CASE)
-    private val quoted = Regex("""(?:subscribe\s+to|listen\s+to|check\s+out|follow|introducing)(?:\s+(?:our|the|new|podcast|show|series))*\s+["“‘']([^"”’']{3,120})["”’']""", RegexOption.IGNORE_CASE)
-    private val named = Regex("""(?:subscribe to|listen to|check out|follow)(?:\s+(?:our new podcast|our podcast|the podcast|our new show|our show))*\s+(.{3,120}?)(?=\s+(?:wherever|where you|on Apple|on Spotify|for more|for new|every\s+(?:week|day|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b)|[!\n]|$)""", RegexOption.IGNORE_CASE)
+    private val quotedName = Regex("""^(?:(?:our|the|new|podcast|show|series)\s+)*["“‘']([^"”’']{3,120})["”’']""", RegexOption.IGNORE_CASE)
+    private val namedRecommendation = Regex("""\b(?:subscribe to|listen to|check out|follow)\s+""", RegexOption.IGNORE_CASE)
+    private val namedPrefix = Regex("""^(?:(?:our new podcast|our podcast|the podcast|our new show|our show)\s+)*""", RegexOption.IGNORE_CASE)
+    private val nameBoundaries = listOf(
+        Regex("""\s+(?:wherever|where you|on Apple|on Spotify|for more|for new)""", RegexOption.IGNORE_CASE),
+        Regex("""\s+every\s+(?:week|day|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b""", RegexOption.IGNORE_CASE),
+        Regex("""[!\n]"""),
+    )
     private val seasonOnly = Regex("""(?i)^(?:(?:brand )?(?:new|next) )?(?:season|series|episode|part|s)\s*\d*$""")
 
     private data class TitleCandidate(val name: String, val indicator: CrossPromotionIndicator, val weak: Boolean = false)
@@ -28,7 +37,7 @@ class CrossPromotionDetector {
 
     fun detect(episode: Episode, hostPodcastTitle: String, notes: ShowNotes = ShowNotesParser.parse(episode.description)): CrossPromotionResult {
         val title = episode.title.trim()
-        strict.matchEntire(title)?.let {
+        strict.firstNotNullOfOrNull { it.matchEntire(title) }?.let {
             return result(it.groupValues[2], hostPodcastTitle, CrossPromotionConfidence.HIGH, CrossPromotionIndicator.TITLE_DELIMITER_PATTERN)
         }
         val descriptionName = descriptionName(notes, hostPodcastTitle)
@@ -50,8 +59,19 @@ class CrossPromotionDetector {
     private fun descriptionName(notes: ShowNotes, host: String): String? = notes.links.firstNotNullOfOrNull { link ->
         link.title?.takeIf { link.kind == EpisodeLinkKind.PODCAST && promoLanguage.containsMatchIn(link.context) && isOtherShow(it, host) }
     } ?: notes.plainText.lines().firstNotNullOfOrNull { line ->
-        val name = quoted.find(line)?.groupValues?.get(1) ?: named.find(line)?.groupValues?.get(1)
+        val name = descriptionLineName(line)
         name?.let(::clean)?.takeIf { isOtherShow(it, host) }
+    }
+
+    private fun descriptionLineName(line: String): String? {
+        recommendation.findAll(line).firstNotNullOfOrNull { action ->
+            quotedName.find(line.substring(action.range.last + 1))?.groupValues?.get(1)
+        }?.let { return it }
+        return namedRecommendation.findAll(line).firstNotNullOfOrNull { action ->
+            val tail = line.substring(action.range.last + 1).replaceFirst(namedPrefix, "")
+            val end = nameBoundaries.mapNotNull { it.find(tail)?.range?.first }.minOrNull() ?: tail.length
+            tail.take(end).takeIf { it.length in 3..120 }
+        }
     }
 
     private fun descriptionPromotes(notes: ShowNotes, name: String): Boolean {

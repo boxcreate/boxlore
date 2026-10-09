@@ -35,11 +35,11 @@ internal fun EpisodeInfoMoreFromPodcastCard(
     onEpisodeClick: (Episode) -> Unit,
     onPodcastLinkClicked: () -> Unit,
     onRelatedEpisodesScrolled: () -> Unit,
-    isPageScrolling: Boolean,
+    isSectionScrollEngaged: Boolean,
     onRelatedEpisodeClicked: () -> Unit,
 ) {
-    LaunchedEffect(isPageScrolling, state.episode.id) {
-        if (isPageScrolling && state.relatedEpisodes.isNotEmpty()) onRelatedEpisodesScrolled()
+    LaunchedEffect(isSectionScrollEngaged, state.episode.id) {
+        if (isSectionScrollEngaged && state.relatedEpisodes.isNotEmpty()) onRelatedEpisodesScrolled()
     }
     MoreFromEpisodeSection(
         showName = state.podcastTitle,

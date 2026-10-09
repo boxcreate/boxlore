@@ -6,6 +6,7 @@ import java.util.Locale
 import okhttp3.HttpUrl
 
 internal object EpisodeLinkClassifier {
+    private const val TIKTOK_HOST = "tiktok.com"
     private val profileRoutes = setOf("watch", "shorts", "playlist", "embed", "p", "reel", "reels", "explore", "search", "intent", "share", "sharer", "sharer.php", "login", "home", "settings", "privacy", "about", "accounts", "stories", "groups", "events", "pages", "profile.php", "hashtag", "i", "feed", "posts", "videos", "video", "clip")
     private val socialDomains = mapOf(
         "instagram.com" to "Instagram", "x.com" to "X", "twitter.com" to "X",
@@ -35,7 +36,7 @@ internal object EpisodeLinkClassifier {
             support != null -> Source(EpisodeLinkKind.SUPPORT, support, supportHandle(segments))
             matchesHost(host, "reddit.com") -> reddit(segments)
             matchesAny(host, "discord.com", "discord.gg") -> Source(EpisodeLinkKind.COMMUNITY, "Discord")
-            matchesAny(host, "tiktok.com", "twitch.tv") -> streaming(host, segments)
+            matchesAny(host, TIKTOK_HOST, "twitch.tv") -> streaming(host, segments)
             social != null -> Source(EpisodeLinkKind.SOCIAL, social, socialHandle(segments, social))
             else -> website(segments)
         }
@@ -67,8 +68,8 @@ internal object EpisodeLinkClassifier {
 
     private fun streaming(host: String, segments: List<String>): Source = Source(
         if (segments.any { it in setOf("video", "videos", "clip") }) EpisodeLinkKind.VIDEO else EpisodeLinkKind.SOCIAL,
-        if (matchesHost(host, "tiktok.com")) "TikTok" else "Twitch",
-        socialHandle(segments, if (matchesHost(host, "tiktok.com")) "TikTok" else "Twitch"),
+        if (matchesHost(host, TIKTOK_HOST)) "TikTok" else "Twitch",
+        socialHandle(segments, if (matchesHost(host, TIKTOK_HOST)) "TikTok" else "Twitch"),
     )
 
     private fun socialHandle(segments: List<String>, platform: String): String? {

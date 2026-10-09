@@ -141,4 +141,18 @@ class ShowNotesParserTest {
     fun `single clock time is not a chapter list`() {
         assertTrue(ShowNotesParser.parse("<p>12:30 Lunch break</p>").chapters.isEmpty())
     }
+
+    @Test
+    fun `markup and whitespace without readable notes remain blank`() {
+        listOf(" ", "<p> &nbsp; <br></p>", "<script>hidden()</script><style>hidden</style>", "<div><span></span></div>").forEach {
+            assertTrue(ShowNotesParser.parse(it).plainText.isBlank(), it)
+        }
+    }
+
+    @Test
+    fun `generic destination labels remain filtered after pattern simplification`() {
+        listOf("Click here", "Our website", "The website", "Visit website", "Visit our website", "Visit the website", "Read more", "Listen here", "www.example.org", "HTTPS://example.org").forEach {
+            assertEquals(null, ShowNotesParser.parse("<a href='https://example.org'>$it</a>").links.single().title, it)
+        }
+    }
 }

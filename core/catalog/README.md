@@ -143,3 +143,5 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 - [`:core:ranking` README](../ranking/README.md)
 - [`:core:prefs` README](../prefs/README.md)
 - [`:core:playback` README](../playback/README.md)
+
+- Promotion description extraction separates invitation phrases, optional show prefixes, quoted names and schedule boundaries instead of using one nested pattern. Show-notes generic labels use fixed actions and focused website/URL patterns. Chapter link validation remains separate from DOM rewriting; regression tests preserve wrapped feed-drop titles, weekday invitations, generic link labels and blank publisher markup.
