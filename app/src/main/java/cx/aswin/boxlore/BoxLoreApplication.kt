@@ -16,8 +16,6 @@ import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.SessionTransferCallback
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.appcheck.FirebaseAppCheck
-import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
-import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.posthog.PostHog
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
@@ -386,11 +384,7 @@ class BoxLoreApplication :
             NetworkModule.appVersion = BuildConfig.VERSION_NAME
             val provider = if (BuildConfig.DEBUG) "debug" else "play_integrity"
             val appCheck = FirebaseAppCheck.getInstance()
-            if (BuildConfig.DEBUG) {
-                appCheck.installAppCheckProviderFactory(DebugAppCheckProviderFactory.getInstance())
-            } else {
-                appCheck.installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())
-            }
+            installBuildAppCheckProvider(appCheck)
             // Keep a valid token in the SDK's persistent cache at all times and
             // refresh it in the background before expiry, so the interceptor gets
             // an instant cache read instead of a live (and sometimes failing)

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dynamic lookups in onboarding, Android Auto labels and notification channels. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/pod_cover_*,@font/google_sans_flex_variable,@raw/boxlore_chime,@raw/boxlore_announcement_chime" />

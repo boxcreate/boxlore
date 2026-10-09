@@ -1,0 +1,61 @@
+name: Manual optimized release validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  optimized-artifacts:
+    name: Optimized release contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v5
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: 'platform-tools'
+      - name: Install Android SDK packages
+        run: sdkmanager 'build-tools;36.0.0' 'platforms;android-36'
+      - name: Write build-only Firebase stub
+        uses: ./.github/actions/write-ci-google-services
+      - name: Build optimized unsigned APK and bundle
+        run: >-
+          ./gradlew --no-daemon -I .github/scripts/release_verification.init.gradle
+          :app:assembleRelease :app:bundleRelease :app:lintRelease
+          -x :app:uploadCrashlyticsMappingFileRelease
+      - name: Verify optimized release contracts
+        run: >-
+          python3 .github/scripts/verify_release_contracts.py
+          --report app/build/reports/release-contracts.json
+          app/build/outputs/apk/release/app-release-unsigned.apk
+          app/build/outputs/bundle/release/app-release.aab
+      - name: Preserve release diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-contract-diagnostics
+          retention-days: 14
+          path: |
+            app/build/reports/release-contracts.json
+            app/build/reports/lint-results-release.*
+            app/build/outputs/mapping/release/configuration.txt
+            app/build/outputs/mapping/release/mapping.txt
+            app/build/outputs/mapping/release/seeds.txt
+            app/build/outputs/mapping/release/usage.txt
+            app/build/outputs/mapping/release/missing_rules.txt
+      - name: Remove build-only Firebase stub
+        if: always()
+        run: rm -f app/google-services.json

@@ -235,7 +235,7 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 
-ProGuard keeps the permanent `core.data.**` stubs alongside `core.catalog|prefs|analytics|rss|ranking|downloads|playback|database.**`.
+R8 keeps worker names/constructors and permanent `core.data.service.*` component aliases, plus the JSON field/default-constructor contracts used by caches and backups. Library consumer rules protect generated Room implementations and SDK entry points. Core implementations are otherwise eligible for optimization. The release-artifact gate verifies these contracts after optimization.
 
 ## Source file size
 

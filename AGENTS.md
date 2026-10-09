@@ -31,7 +31,7 @@ boxlore is a Kotlin Android app with `:app`, `:core:*`, and `:feature:*` modules
 
 Use [docs/TESTING.md](docs/TESTING.md) to select relevant checks and distinguish local verification from remote CI or device verification. Use the Gradle wrapper.
 
-Follow [the PR template](.github/PULL_REQUEST_TEMPLATE.md) for Conventional Commit titles, exactly one user-impact label, release copy, and review requirements. Before an authorized squash merge, required checks must be green, every CodeRabbit finding addressed and thread resolved, and SonarCloud must have zero new-code issues. Agents must not dismiss requested-change reviews or bypass merge checks.
+Follow [the PR template](.github/PULL_REQUEST_TEMPLATE.md) for Conventional Commit titles, exactly one user-impact label, release copy, and review requirements. Before an authorized squash merge, required checks must be green by default, every CodeRabbit finding addressed and thread resolved, and SonarCloud must have zero new-code issues. A maintainer may explicitly authorize bypassing required status checks for a specific PR; general merge authorization does not authorize a bypass. Report the remaining checks and known risks before using that exception. Review requirements still apply, and agents must not dismiss requested-change reviews.
 
 ## Documentation map
 

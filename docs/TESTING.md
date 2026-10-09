@@ -197,7 +197,7 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 
 **Merge gate:** master uses a branch ruleset with no merge queue. Required checks are **`testDebugUnitTest`** and **`coderabbit-threads-resolved`**. SonarCloud, CodeRabbit, and Gitleaks also run on PRs. Fix all Sonar new-code issues and address every CodeRabbit finding, marking every review thread Resolved; the bare CodeRabbit status only confirms that the review completed.
 
-The unit suite cancels prior in-progress runs on each PR push. `[skip unit]` in the PR title no-ops that job only for docs/chore changes with no logic risk; it still reports green. Actions → Run workflow always runs the full suite. If the review decision is `CHANGES_REQUESTED`, stop automated merging and have a maintainer handle the review or merge manually. Otherwise squash-merge only after the required checks are green and review requirements are satisfied. Repository-administration procedures belong in root `AGENTS.internal.md`.
+The unit suite cancels prior in-progress runs on each PR push. `[skip unit]` in the PR title no-ops that job only for docs/chore changes with no logic risk; it still reports green. Actions → Run workflow always runs the full suite. If the review decision is `CHANGES_REQUESTED`, stop automated merging and have a maintainer handle the review or merge manually. Otherwise squash-merge after the required checks are green and review requirements are satisfied. A maintainer may explicitly authorize bypassing required status checks for a specific PR; report remaining checks and known risks first. General merge authorization does not authorize a bypass, and review requirements still apply. Repository-administration procedures belong in root `AGENTS.internal.md`.
 
 Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secret stub.
 
@@ -213,3 +213,49 @@ Protected inputs: `app/google-services.json` is gitignored; CI writes a non-secr
 ## Module README checklist
 
 Every `app/`, `core/*/`, and `feature/*/` module keeps a folder README. Shape: [`MODULE_README_TEMPLATE.md`](MODULE_README_TEMPLATE.md). Konsist fails if an included module lacks `README.md`.
+
+## Optimized release validation
+
+Debug JVM tests do not run optimized DEX. `testReleaseUnitTest` also uses JVM classes before R8, so it cannot replace a release-artifact gate or device acceptance.
+
+`release-contracts.yml` is an optional manual preflight: Actions → Manual optimized release validation → Run workflow, then select the branch to test. It builds unsigned optimized APK/AAB artifacts and runs release lint using the same release rules and resource shrinking, a build-only Firebase stub, no production signing key, and no Crashlytics mapping upload. It does not run automatically on PRs and does not publish a release or send notifications. Both signed build paths in `changelog-on-merge.yml` always run the contract gate before publication. Fast hermetic contract-regression tests remain in PR CI; existing unit/review merge requirements are unchanged.
+
+The gate derives contracts from pre-R8 release class files and the merged manifest, then checks the actual APK **and** AAB DEX with the matching R8 mapping:
+
+| Contract | Regression rejected |
+| :--- | :--- |
+| All concrete project workers and bundled input mergers | Renamed persisted classes; missing/private/wrong-argument constructors |
+| Manifest components, startup initializers, Firebase registrars, Cast/credential providers | Missing runtime entry points or reflection constructors |
+| Legacy service/provider aliases and both Room implementations | Broken upgraded-install or database initialization identities |
+| Gson backup/cache/Room model graphs | Removed/renamed nested fields; erased generic field types; lost default-value constructors or enum constants |
+| Concrete Gson TypeTokens | Lost generic superclass signatures |
+| Every Retrofit API method | Erased generic response types or lost endpoint/parameter annotations |
+| Dynamic API serializers and widget snapshot models | Lost `Companion` fields or public `serializer` methods |
+| Dynamic onboarding covers, Android Auto label font and literal resource URIs | Required resource names removed from the APK resource table; named raw payloads absent or changed in APK/AAB |
+| Debug-only App Check provider and test notification receiver | Development components accidentally included in release |
+
+Gson roots are intentionally declared in `verify_release_contracts.py`; add a new reflective JSON entry point there when introducing one. Nested model/field additions, new workers, new manifest components, and new API methods are discovered from compiled release classes automatically. This compares optimization against current source; it does not detect an intentional source-level schema rename or prove SDK/network behavior. A successful build alone is never release acceptance.
+
+```sh
+./gradlew :app:assembleRelease :app:bundleRelease :app:lintRelease
+python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
+  --report app/build/reports/release-contracts.json \
+  app/build/outputs/apk/release/app-release.apk \
+  app/build/outputs/bundle/release/app-release.aab
+python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+```
+
+Keep the release `mapping.txt`, effective `configuration.txt`, `seeds.txt`, `usage.txt`, lint output and gate report for diagnosis. The manual preflight preserves these as diagnostic artifacts; AABs also contain their mapping and signed release builds retain normal Crashlytics upload. Never upload signing keys, local properties or service configuration.
+
+### Release-device acceptance
+
+Install the signed release over the existing app without uninstalling or clearing data. Check:
+
+1. Cold launch → Home: feed and artwork load; saved subscriptions remain; search/detail pages load.
+2. Existing library → downloads: manual download runs. A genuine new release with auto-download enabled starts work; pending ledger entries can recover through existing foreground reconciliation. Avoid shared-topic test alerts unless explicitly authorized.
+3. Settings → Account: sign-in, cloud refresh and a foreground sync complete; account reauthentication errors remain actionable.
+4. Settings → backup: export/restore a controlled fixture containing subscriptions, history, folders, preferences and ranking state; old JSON keys/default values remain compatible.
+5. Playback → Cast/Android Auto: providers initialize, playback controls and restored sessions work; warnings/errors remain available.
+6. Installed widgets → force-stop/process restart: saved snapshots render; library/playback controls and deep links work. Onboarding covers and Auto collage labels retain their artwork/font.
+
+Record device/runtime verification separately from optimized-artifact checks. Static checks cannot establish every vendor-ROM behavior, live SDK response, or background-delivery timing.

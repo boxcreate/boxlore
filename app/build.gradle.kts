@@ -85,7 +85,7 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
-            // isShrinkResources = true // Cannot shrink resources without code shrinking (minify enabled)
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -187,9 +187,7 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck.playintegrity)
-    // Debug provider is guarded by BuildConfig.DEBUG at runtime; only debug
-    // tokens registered in Firebase console can ever attest through it
-    implementation(libs.firebase.appcheck.debug)
+    debugImplementation(libs.firebase.appcheck.debug)
 
     // Credentials / Google Sign-In
     implementation(libs.androidx.credentials)

@@ -96,3 +96,7 @@ src/main/java/cx/aswin/boxlore/core/database/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:catalog` README](../catalog/README.md)
 - [`:core:ranking` README](../ranking/README.md)
+
+### Release optimization
+
+Release checks both generated Room implementations and Gson-backed converter/backup model field names, default constructors and TypeToken signatures. DAOs and unrelated entities remain eligible for R8 optimization; database/storage identities stay unchanged.

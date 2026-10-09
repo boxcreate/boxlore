@@ -145,3 +145,7 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 - [`:core:playback` README](../playback/README.md)
 
 - Promotion description extraction separates invitation phrases, optional show prefixes, quoted names and schedule boundaries instead of using one nested pattern. Show-notes generic labels use fixed actions and focused website/URL patterns. Chapter link validation remains separate from DOM rewriting; regression tests preserve wrapped feed-drop titles, weekday invitations, generic link labels and blank publisher markup.
+
+### Release optimization
+
+Release keeps only the JSON backup/cache model contracts used reflectively, rather than the full catalog package. The artifact gate follows nested backup and recent-intent models from compiled classes to reject field renaming, missing defaults and erased TypeToken signatures.

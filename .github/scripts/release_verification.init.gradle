@@ -1,0 +1,7 @@
+// CI-only artifact verification: identical release optimization, no production
+// signing key and no publication. Official releases do not load this init script.
+gradle.afterProject { project ->
+    if (project.path == ':app') {
+        project.android.buildTypes.getByName('release').signingConfig = null
+    }
+}

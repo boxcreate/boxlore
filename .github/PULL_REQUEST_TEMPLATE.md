@@ -26,7 +26,7 @@ Flow:
 1. Open the PR and iterate (unit suite cancels prior runs).
 2. Address **every** CodeRabbit finding and mark every CodeRabbit thread **Resolved**; fix Sonar new-code issues and wait for unit + **`coderabbit-threads-resolved`**. The bare CodeRabbit status only confirms that its review completed.
 3. If review decision is **`CHANGES_REQUESTED`**, stop automated merging. Do not dismiss the review or force-merge; ask a maintainer to merge (or dismiss) manually.
-4. Otherwise squash-merge when required checks are green.
+4. Otherwise squash-merge when required checks are green. A maintainer may explicitly authorize bypassing required status checks for this PR; general merge approval is not bypass approval. Report remaining checks and known risks before using the exception. Review requirements still apply.
 5. Optional: Actions → Run workflow (`Unit Tests`) for a manual full gate.
 
 ## Summary
@@ -135,7 +135,7 @@ Use functional categories: `### Critical` (for `user-impact-critical`), `### Imp
 
 - [ ] Built / installed locally (`./gradlew installDebug`) when UI or app behavior changed
 - [ ] Manual checks for the user-visible paths touched by this PR
-- [ ] Required checks are green before merge completes
+- [ ] Required checks are green before merge, or a maintainer explicitly authorized a check bypass for this PR
 - [ ]
 
 ## Notes (optional)
