@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-09T09:26:58.805Z",
+  "lastRun": "2026-10-09T10:39:46.285Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "304d3102-05c8-474d-ad6f-86bbed859651",
-      "lastEpisodeTitle": "5am ET, October 09 | The latest headlines from NPR",
+      "lastRssKey": "a0e90921-ea24-4c3a-be1e-096f9e0ea258",
+      "lastEpisodeTitle": "6am ET, October 09 | The latest headlines from NPR",
       "lastEpisodeId": "61431584179",
-      "lastCheckedAt": 1791538024098
+      "lastCheckedAt": 1791542391580
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75647681",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "242b7f90-c3c1-11f1-b53d-9fe06b315568",
-      "lastEpisodeTitle": "5AM ET 10/09/2026 Newscast",
+      "lastRssKey": "82beac28-c3c9-11f1-80e0-cf18a1685426",
+      "lastEpisodeTitle": "6AM ET 10/09/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791538037806
+      "lastCheckedAt": 1791542403443
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -236,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4EFA1ZK5JJMPQJXV5D6HRAQ",
-      "lastEpisodeTitle": "Don't move a muscle!",
-      "lastEpisodeId": "61397993650",
-      "lastCheckedAt": 1791512703652
+      "lastRssKey": "01M4EDW8ZW60GD8NGACHXH612X",
+      "lastEpisodeTitle": "Trump names his new AI task force the \"Super Intelligence Force\"",
+      "lastEpisodeId": "61484367805",
+      "lastCheckedAt": 1791542408554
     },
     "432535": {
       "lastRssKey": "3b66721e-6186-40aa-9192-c996dc796c7d",
@@ -323,10 +323,10 @@
       "lastCheckedAt": 1790540283432
     },
     "491579": {
-      "lastRssKey": "6ac7925068b7ce6ffb3ac829",
-      "lastEpisodeTitle": "Proper Northern Sausages | The Square Ball",
+      "lastRssKey": "6ac8c1caf38f25c0f081e2f8",
+      "lastEpisodeTitle": "Jonny Cooper: It’s Never Happened | The West Stand",
       "lastEpisodeId": "60811874133",
-      "lastCheckedAt": 1791480659387
+      "lastCheckedAt": 1791542416727
     },
     "497129": {
       "lastRssKey": "12381::3575505",
@@ -448,10 +448,10 @@
       "lastCheckedAt": 1791226023394
     },
     "724143": {
-      "lastRssKey": "be714662-c366-11f1-99f6-f3c9f0f62c1e",
-      "lastEpisodeTitle": "Flávio e Lula em empate técnico, apoio de Augusto Cury a Flávio e votos de Garotinho anulados",
+      "lastRssKey": "78e053d6-c3ca-11f1-a45c-ef489370cd66",
+      "lastEpisodeTitle": "Nobel da Paz vai para jurista sul-africana; fumaça cobre céu de Manaus; rebelião causa mortes do México",
       "lastEpisodeId": "61444678924",
-      "lastCheckedAt": 1791498206175
+      "lastCheckedAt": 1791542428716
     },
     "739525": {
       "lastEpisodeId": "61460420611",
@@ -466,10 +466,10 @@
       "lastCheckedAt": 1791073777204
     },
     "743229": {
-      "lastRssKey": "94855b15-9742-4344-bf6c-d6a1e0df51ea",
-      "lastEpisodeTitle": "A Failed Execution and the Future of the Death Penalty",
-      "lastEpisodeId": "61432078491",
-      "lastCheckedAt": 1791453879140
+      "lastRssKey": "2cb83a5d-4ed5-4f39-ad87-0bb9bac58dce",
+      "lastEpisodeTitle": "Why France Is in Crisis",
+      "lastEpisodeId": "61482914118",
+      "lastCheckedAt": 1791542433637
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -676,10 +676,10 @@
       "lastCheckedAt": 1791296669065
     },
     "1116485": {
-      "lastRssKey": "6ac8adb679784622da7a02a3",
-      "lastEpisodeTitle": "Isak & Gakpo Out  Of Man City Clash ? | Redmen Bitesize",
+      "lastRssKey": "6ac8b4c4e5bfd5acaf200fb1",
+      "lastEpisodeTitle": "Jeremy Jacquet INJURY BOOST Ahead Of Liverpool v Man City | Daily News Update",
       "lastEpisodeId": "61384493127",
-      "lastCheckedAt": 1791538096318
+      "lastCheckedAt": 1791542452394
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -740,6 +740,12 @@
       "lastEpisodeId": "61322316302",
       "lastCheckedAt": 1791270848718
     },
+    "1333178": {
+      "lastRssKey": "https://api.spreaker.com/episode/59620855",
+      "lastEpisodeTitle": "The Man in Walmart | Someone Who Didn’t Know He Went Missing",
+      "lastEpisodeId": "22276694171",
+      "lastCheckedAt": 1791542457344
+    },
     "1336369": {
       "lastRssKey": "2136e894-bb63-11f1-ba8b-5f6e63e6a9c2",
       "lastEpisodeTitle": "Unsolved: The Servant Girl Annihilator",
@@ -758,10 +764,10 @@
       "lastCheckedAt": 1791426872116
     },
     "1366771": {
-      "lastRssKey": "6ac8557a5f788808a7879a62",
-      "lastEpisodeTitle": "Morning briefing Friday 9th October",
+      "lastRssKey": "6ac8ba0e8f90a39dfce13bc5",
+      "lastEpisodeTitle": "Afternoon Briefing Friday 9th October",
       "lastEpisodeId": "61479680363",
-      "lastCheckedAt": 1791538103079
+      "lastCheckedAt": 1791542458258
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -799,10 +805,10 @@
       "lastCheckedAt": 1791512761060
     },
     "2136580": {
-      "lastRssKey": "6423d731-762b-4375-813f-0245b72f6060",
-      "lastEpisodeTitle": "Episode 392: THE HURRICANES DEFEAT THE CANADIENS IN THEIR HOME OPENER!",
+      "lastRssKey": "318c6634-b729-4de8-b3b1-ddd5621be246",
+      "lastEpisodeTitle": "Episode 393: CANADIENS BLOW A 2 GOAL LEAD AGAINST THE PREDATORS...WHAT WENT WRONG?",
       "lastEpisodeId": "61173312933",
-      "lastCheckedAt": 1791347525397
+      "lastCheckedAt": 1791542460691
     },
     "2136949": {
       "lastRssKey": "6ac553a0eea51f2aa345497e",
@@ -977,9 +983,9 @@
       "lastCheckedAt": 1791538120633
     },
     "4898105": {
-      "lastRssKey": "d94bce92-c2c8-11f1-82bc-1b3e6bb61bf7",
-      "lastEpisodeTitle": "The Odyssey Returns to IMAX",
-      "lastCheckedAt": 1791453924493
+      "lastRssKey": "09e9ec3e-c38f-11f1-a828-c7c727acf6cc",
+      "lastEpisodeTitle": "The GTA 6 Leaker has Returned",
+      "lastCheckedAt": 1791542471588
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1123,10 +1129,10 @@
       "lastCheckedAt": 1791512790343
     },
     "6602135": {
-      "lastRssKey": "15094733-de70-40e9-9d5d-b9b1cce37a31",
-      "lastEpisodeTitle": "ROSALÍA: Can we understand without knowing?",
+      "lastRssKey": "f425d862-9ebf-4c24-8ed3-b94fa4558ea3",
+      "lastEpisodeTitle": "Why The Joshua Tree has stood the test of time",
       "lastEpisodeId": "61164573428",
-      "lastCheckedAt": 1790974614176
+      "lastCheckedAt": 1791542483767
     },
     "6628686": {
       "lastRssKey": "afae6aec-a04d-11f1-b6e7-8376fc029dc4",
@@ -1325,10 +1331,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a11de9-d075-7115-866d-4dc77a4f2500",
-      "lastEpisodeTitle": "JD Vance Humiliates Himself Trying to Define \"Socialism\"",
+      "lastRssKey": "audioboom-01a11e36-ae92-74a3-8494-454ba27b4227",
+      "lastEpisodeTitle": "Democrats Aren’t Winning Because They’re Brilliant. It’s Trump.",
       "lastEpisodeId": "61403745020",
-      "lastCheckedAt": 1791512816986
+      "lastCheckedAt": 1791542500223
     },
     "7239415": {
       "lastRssKey": "1fae431c-c38a-11f1-bbc7-c78ef0934535",
@@ -1533,10 +1539,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/5ea52867-188a-521c-af87-59c03e3e30bd",
-      "lastEpisodeTitle": "DO THIS when dealing with a raging narcissistic Dr. iver ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/32925cdd-f2c1-5087-a822-e7a1468fe8a7",
+      "lastEpisodeTitle": "Which narcissist magnet are youI PART 1 ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791538174299
+      "lastCheckedAt": 1791542510892
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
