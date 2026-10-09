@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support automatic refresh, auto-downloads, Smart Downloads and explicitly opted-in public-feed notifications for RSS-only subscriptions. ([#1098](https://github.com/boxcreate/boxlore/pull/1098)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- Artwork-derived Material 3 palettes for podcast and episode details, with an Appearance opt-out. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- A full-page custom theme editor with primary, secondary and tertiary colors, background choices and live light/dark previews. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 ### Changed
 - Link Lore background and logo colors to swipe progress, including cancelled gestures and late artwork palettes. ([#1101](https://github.com/boxcreate/boxlore/pull/1101)) <!-- impact:user-impact-high --> <!-- copy:locked -->
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace share-card branding with a compact “Listen on” wordmark signature. ([#1102](https://github.com/boxcreate/boxlore/pull/1102)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Redesign episode details with Material 3 surfaces, connected playback controls, separate listening progress and responsive title/metadata handling. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Consolidate show-notes link and chapter parsing; add branded resource pills and the five latest episodes from the same show. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Refined Podcast Info cards, metadata, connected subscription controls, genre confirmation and in-list search. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -31,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Collapse the caught-up Daily Mix state and center card titles with or without a progress indicator. ([#1102](https://github.com/boxcreate/boxlore/pull/1102)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Improve cross-show promotion detection and matching for longer introductions and scheduled releases. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Prevent generic social platform labels and reserved URL routes from being displayed as profile usernames. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Preserve title line spacing and align episode-selection controls with the adaptive mini-player. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Keep loading, navigation and predictive Back color transitions consistent with their destination. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
@@ -81,6 +86,15 @@ readme-copy:end pr=1102 -->
 - Featured-show cards now recognize more introductions to other podcasts.
 - Social links use a profile username when known, instead of repeating the platform name.
 readme-copy:end pr=1104 -->
+
+<!-- readme-copy:start pr=1105
+### Improvements
+- Browse shows with clearer controls, compact episode cards and search that keeps the episode list in view.
+- Let podcast and episode pages match their artwork, or turn artwork colors off in Appearance.
+- Create your own theme with live light and dark previews.
+### Fixes
+- Smoother page colors when opening details, loading another page or going back.
+readme-copy:end pr=1105 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added

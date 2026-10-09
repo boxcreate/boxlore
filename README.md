@@ -124,6 +124,9 @@ and listen without paywalls, subscriptions, or ads.
 <!-- release-upcoming:start -->
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Browse shows with clearer controls, compact episode cards and search that keeps the episode list in view. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
+<li>Let podcast and episode pages match their artwork, or turn artwork colors off in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
+<li>Create your own theme with live light and dark previews. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
 <li>Open episodes with clearer playback controls, artwork and reading layouts. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
 <li>Find chapters and useful links more easily, with recognizable icons and shorter social profile labels. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
 <li>Browse the show’s five latest episodes directly from the episode page. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
@@ -141,6 +144,7 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Smoother page colors when opening details, loading another page or going back. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
 <li>Featured-show cards now recognize more introductions to other podcasts. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
 <li>Social links use a profile username when known, instead of repeating the platform name. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
 <li>Daily Mix now uses show artwork when an episode has none. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
