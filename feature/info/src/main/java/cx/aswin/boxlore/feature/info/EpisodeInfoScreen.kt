@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -285,22 +286,7 @@ fun EpisodeInfoScreen(
                                 )
                             }
                         }
-                        state.showNotes?.let { notes ->
-                            if (notes.plainText.isNotBlank()) {
-                                item {
-                                    EpisodeDescriptionCard(
-                                        notes = notes,
-                                        location = state.location,
-                                        license = state.license,
-                                        persons = state.episode.persons,
-                                        onSeekTo = viewModel::seekToPosition,
-                                    )
-                                }
-                            }
-                            if (notes.links.isNotEmpty()) {
-                                item { EpisodeLinksSection(notes.links, state.podcastTitle) }
-                            }
-                        }
+                        episodeShowNotes(state, viewModel::seekToPosition)
 
                         // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
                         if (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty()) {
@@ -416,5 +402,27 @@ fun EpisodeInfoScreen(
             )
     }
     }
+    }
+}
+
+private fun LazyListScope.episodeShowNotes(
+    state: EpisodeInfoUiState.Success,
+    onSeekTo: (Long) -> Unit,
+) {
+    state.showNotes?.let { notes ->
+        if (notes.plainText.isNotBlank()) {
+            item {
+                EpisodeDescriptionCard(
+                    notes = notes,
+                    location = state.location,
+                    license = state.license,
+                    persons = state.episode.persons,
+                    onSeekTo = onSeekTo,
+                )
+            }
+        }
+        if (notes.links.isNotEmpty()) {
+            item { EpisodeLinksSection(notes.links, state.podcastTitle) }
+        }
     }
 }

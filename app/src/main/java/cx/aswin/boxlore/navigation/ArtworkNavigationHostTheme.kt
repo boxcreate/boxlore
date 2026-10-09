@@ -87,11 +87,11 @@ private fun rememberAppThemePreviewEntry(navController: NavHostController, entry
     val entryLifecycle = entry?.lifecycle?.currentStateFlow?.collectAsState()?.value
     val previousLifecycle = previous?.lifecycle?.currentStateFlow?.collectAsState()?.value
     SideEffect {
-        if (!transitioning && entryLifecycle == Lifecycle.State.RESUMED) settledEntryId = entry?.id
+        if (!transitioning && entryLifecycle == Lifecycle.State.RESUMED) settledEntryId = entry.id
     }
     // visibleEntries can still contain only the source during a native preview.
     // Remembering the resumed source also excludes an ordinary forward slide.
-    if (entry?.id != settledEntryId || !isArtworkDetailRoute(entry?.destination?.route)) return null
+    if (entry == null || entry.id != settledEntryId || !isArtworkDetailRoute(entry.destination.route)) return null
     return previous?.takeIf {
         previousLifecycle?.isAtLeast(Lifecycle.State.STARTED) == true && !isArtworkDetailRoute(it.destination.route)
     }?.id
