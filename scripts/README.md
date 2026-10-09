@@ -82,3 +82,16 @@ Device RTDB rows use `rss:<show-id>~<registration-id>~<url-hash>`. Group only ma
 Before mutation, [`backfill-tracked-podcast-feeds.js`](backfill-tracked-podcast-feeds.js) saves numeric registrations and aggregated public RSS show metadata to [`data/tracked-podcasts-backups/`](data/tracked-podcasts-backups/), retaining one snapshot per UTC ISO week for the latest 10 weeks. The workflow must successfully commit a changed snapshot to `master` before repairing rows. Backups preserve every accepted public URL scope without publishing device registration IDs.
 
 Repair considers catalog rows without a valid HTTPS `feedUrl`. It uses the authenticated boxlore `/podcast` endpoint, probes HTTPS upgrades for legacy HTTP feeds, and falls back to an exact-title Apple directory match when the API cannot supply a secure URL. Transactions update only the `feedUrl` leaf, preserving newer app writes, `title`, and `imageUrl`. Unresolved rows are logged and retried next run. RSS rows are skipped rather than searched in the catalog.
+
+### Release artifact contract guard
+
+The release workflow runs `.github/scripts/verify_release_contracts.py` after optimized APK/AAB builds and before either publication path uploads artifacts. It compares pre-R8 project classes with optimized DEX using Android SDK `dexdump`, checks dynamic resource names with `aapt2`, and verifies named raw-resource payloads in both artifacts. Literal resource URIs are discovered from main/release Kotlin sources, including notification sounds. Run locally after `assembleRelease bundleRelease`:
+
+```sh
+python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
+  --report app/build/reports/release-contracts.json \
+  app/build/outputs/apk/release/app-release.apk \
+  app/build/outputs/bundle/release/app-release.aab
+```
+
+`release_classfile.py` reads compiled JVM contracts; `release_dex.py` reads optimized contracts and R8 class names. `test_release_contracts.py` covers missing/private constructors, persisted names, nested JSON graphs, field/default changes, generic erasure, annotations, serializers, resource loss, and workflow wiring. The unsigned PR job exercises the real optimizer without release credentials. No catalog job or notification test is dispatched. See [optimized-release validation](../docs/TESTING.md#optimized-release-validation) for scope and manual acceptance.

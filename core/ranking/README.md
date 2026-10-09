@@ -84,3 +84,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 - [`docs/recommendation-system.md`](../../docs/recommendation-system.md)
 - [`:core:catalog` README](../catalog/README.md)
 - [`:core:domain` README](../domain/README.md)
+
+### Release optimization
+
+Release preserves explicit JSON backup fields/default constructors for `AdaptiveRankingBackup` and its three entity graphs while allowing ranking implementations to be optimized. The artifact gate checks that graph and the generated ranking Room database constructor.

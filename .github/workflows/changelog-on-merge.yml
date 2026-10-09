@@ -554,6 +554,27 @@ jobs:
       - name: Build signed release APK and AAB
         run: ./gradlew --no-daemon assembleRelease bundleRelease
 
+      - name: Verify optimized release contracts
+        run: |
+          python3 .github/scripts/verify_release_contracts.py \
+            --report app/build/reports/release-contracts.json \
+            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/bundle/release/app-release.aab
+
+      - name: Preserve optimized release diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-contract-diagnostics-${{ github.job }}
+          retention-days: 30
+          path: |
+            app/build/reports/release-contracts.json
+            app/build/outputs/mapping/release/configuration.txt
+            app/build/outputs/mapping/release/mapping.txt
+            app/build/outputs/mapping/release/seeds.txt
+            app/build/outputs/mapping/release/usage.txt
+            app/build/outputs/mapping/release/missing_rules.txt
+
       - name: Verify artifact versions and signatures
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -987,6 +1008,27 @@ jobs:
 
       - name: Build signed release APK and AAB
         run: ./gradlew --no-daemon assembleRelease bundleRelease
+
+      - name: Verify optimized release contracts
+        run: |
+          python3 .github/scripts/verify_release_contracts.py \
+            --report app/build/reports/release-contracts.json \
+            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/bundle/release/app-release.aab
+
+      - name: Preserve optimized release diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-contract-diagnostics-${{ github.job }}
+          retention-days: 30
+          path: |
+            app/build/reports/release-contracts.json
+            app/build/outputs/mapping/release/configuration.txt
+            app/build/outputs/mapping/release/mapping.txt
+            app/build/outputs/mapping/release/seeds.txt
+            app/build/outputs/mapping/release/usage.txt
+            app/build/outputs/mapping/release/missing_rules.txt
 
       - name: Verify artifact versions and signatures
         env:

@@ -206,7 +206,6 @@ com.google.code.findbugs:jsr305:3.0.2
 com.google.code.gson:gson:2.10.1
 com.google.errorprone:error_prone_annotations:2.28.0
 com.google.firebase:firebase-annotations:17.0.0
-com.google.firebase:firebase-appcheck-debug:19.3.0
 com.google.firebase:firebase-appcheck-interop:17.1.0
 com.google.firebase:firebase-appcheck-playintegrity:19.3.0
 com.google.firebase:firebase-appcheck:19.3.0

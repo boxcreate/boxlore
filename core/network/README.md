@@ -64,3 +64,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:catalog` README](../catalog/README.md)
 - [`:core:rss` README](../rss/README.md)
+
+### Release optimization
+
+Release keeps the Retrofit API, generic `Call`/`Response` types and JSON DTO contracts, while optimizing HTTP/runtime implementations using library consumer rules. The artifact gate verifies every API method and nested dynamic serializer after R8; JVM tests alone do not establish release reflection safety.

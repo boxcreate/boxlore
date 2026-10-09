@@ -84,3 +84,7 @@ src/main/java/cx/aswin/boxlore/core/model/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:network` README](../network/README.md)
 - [`:core:database` README](../database/README.md)
+
+### Release optimization
+
+Gson-backed models retain JSON field names and default constructors in release. The optimized-artifact gate checks their nested field graph; compiler-generated serializers use the library consumer rules.
