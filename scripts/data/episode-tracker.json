@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-09T17:28:50.302Z",
+  "lastRun": "2026-10-09T21:08:54.187Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
@@ -8,10 +8,10 @@
       "lastCheckedAt": 1791453808382
     },
     "6921": {
-      "lastRssKey": "urn:bbc:podcast:w3ct8k7j",
-      "lastEpisodeTitle": "How are shells made?",
+      "lastRssKey": "urn:bbc:podcast:w3ct8k7k",
+      "lastEpisodeTitle": "Are we really in charge?",
       "lastEpisodeId": "59343622582",
-      "lastCheckedAt": 1790974503225
+      "lastCheckedAt": 1791580135578
     },
     "7162": {
       "lastRssKey": "19e918ab-294f-45a5-92b0-c79b6249da57",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "3a65d4de-85b9-45e5-baca-9134bbd08594",
-      "lastEpisodeTitle": "1pm ET, October 09 | The latest headlines from NPR",
-      "lastEpisodeId": "61431584179",
-      "lastCheckedAt": 1791566935511
+      "lastRssKey": "3c144fac-3e43-40ec-9766-d4819c2077b7",
+      "lastEpisodeTitle": "4pm ET, October 09 | The latest headlines from NPR",
+      "lastEpisodeId": "61507607285",
+      "lastCheckedAt": 1791580140718
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75647681",
@@ -114,10 +114,10 @@
       "lastCheckedAt": 1791395740400
     },
     "212882": {
-      "lastRssKey": "45290842-a7f8-11f0-954a-a7e538f708c0",
-      "lastEpisodeTitle": "We Roasted Our Viewer's Trash Taste in Anime | Trash Taste #328",
+      "lastRssKey": "454dc3ee-a7f8-11f0-954a-2f04c6f185ef",
+      "lastEpisodeTitle": "Is Trash Taste Still The Same? | Trash Taste #329",
       "lastEpisodeId": "58691788675",
-      "lastCheckedAt": 1790974514866
+      "lastCheckedAt": 1791580165161
     },
     "215799": {
       "lastRssKey": "4da471c8-f8ec-4fbe-aba6-30ceacaa6aa1",
@@ -182,16 +182,16 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "2fd3ef1a-c404-11f1-afdd-e32ae4e03777",
-      "lastEpisodeTitle": "1PM ET 10/09/2026 Newscast",
-      "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791566949206
+      "lastRssKey": "580e9a16-c41d-11f1-b442-7fc2aa4f9473",
+      "lastEpisodeTitle": "4PM ET 10/09/2026 Newscast",
+      "lastEpisodeId": "61508775803",
+      "lastCheckedAt": 1791580169612
     },
     "386911": {
-      "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
-      "lastEpisodeTitle": "NerdCast 1050 - O Melhor de 1050 NerdCasts",
+      "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
+      "lastEpisodeTitle": "NerdCast 1051 - Lanternas: No Dia Mais Claro, Na Noite Mais Densa, Para Quem Não Chora, A Diversão é a Recompensa!",
       "lastEpisodeId": "61170825617",
-      "lastCheckedAt": 1790974519736
+      "lastCheckedAt": 1791580170463
     },
     "388141": {
       "lastRssKey": "6aa1dbe8b520126fa0fae3eb",
@@ -224,10 +224,10 @@
       "lastCheckedAt": 1791156533475
     },
     "431205": {
-      "lastRssKey": "71efac07-6fb5-4d0a-b00d-fa9ff9f2bcd1",
-      "lastEpisodeTitle": "Oil Spike, The Technical Take, and Oppormunities 10/8/26",
-      "lastEpisodeId": "61450275751",
-      "lastCheckedAt": 1791498185414
+      "lastRssKey": "6df22837-ea38-476a-9dc4-28759568b249",
+      "lastEpisodeTitle": "SpaceX’s Starlink Push, The Real Price of Oil, and the NBA’s Big Bet 10/9/26",
+      "lastEpisodeId": "61502642397",
+      "lastCheckedAt": 1791580175210
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -712,10 +712,10 @@
       "lastCheckedAt": 1791226054426
     },
     "1208307": {
-      "lastRssKey": "6ac760ac68b7ce6ffb30ba91",
-      "lastEpisodeTitle": "F1 Rewind: How his Dad's F1 failure made Max Verstappen an F1 great",
-      "lastEpisodeId": "61447290477",
-      "lastCheckedAt": 1791480706471
+      "lastRssKey": "6ac93a4839599f7c567ae8a9",
+      "lastEpisodeTitle": "In-Car Insights: F1's latest software woes & Verstappen's sprint pole",
+      "lastEpisodeId": "61508451025",
+      "lastCheckedAt": 1791580230248
     },
     "1258562": {
       "lastRssKey": "6ac22edf52f9e4485fc03f23",
@@ -747,9 +747,9 @@
       "lastCheckedAt": 1791542457344
     },
     "1336369": {
-      "lastRssKey": "2136e894-bb63-11f1-ba8b-5f6e63e6a9c2",
-      "lastEpisodeTitle": "Unsolved: The Servant Girl Annihilator",
-      "lastCheckedAt": 1790672056110
+      "lastRssKey": "5dbdbdc6-c3db-11f1-b02b-c70b174e1ccb",
+      "lastEpisodeTitle": "Driven to Murder: Why Ellen Pakkies Killed Her Own Son",
+      "lastCheckedAt": 1791580232522
     },
     "1365758": {
       "lastRssKey": "aaccd642-c2b9-11f1-a1ef-2385c10f4819",
@@ -1016,10 +1016,10 @@
       "lastCheckedAt": 1786787427464
     },
     "5601294": {
-      "lastRssKey": "5fcbdee8-eb09-4f95-8108-e13eff385a01",
-      "lastEpisodeTitle": "Detroit Is In Shambles & Recapping Opening Week- The Mike Bartner Show",
-      "lastEpisodeId": "61339857148",
-      "lastCheckedAt": 1791296693492
+      "lastRssKey": "3227f0f2-aef1-43d7-be54-4e60e0254460",
+      "lastEpisodeTitle": "OhNyquist Talks The NHL's First Week & Detroit's Debacle- The Mike Bartner Show",
+      "lastEpisodeId": "61503867092",
+      "lastCheckedAt": 1791580249607
     },
     "5650484": {
       "lastRssKey": "4e54ee28-78b5-4fc4-ad67-74f688e8474b",
@@ -1175,10 +1175,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "474368e8-c32c-11f1-b6e1-ef53096edff9",
-      "lastEpisodeTitle": "“Hannah’s Big Mistake” - Celeb Traitors Reaction (Episode 3)",
+      "lastRssKey": "f22144c8-c3eb-11f1-a64f-3bd53fd0f985",
+      "lastEpisodeTitle": "Secrets of the Breakfast Scene - Celeb Traitors Reaction (Episode 4)",
       "lastEpisodeId": "61180961222",
-      "lastCheckedAt": 1791498262313
+      "lastCheckedAt": 1791580260379
     },
     "6725294": {
       "lastRssKey": "cmur7w99f01ou01oxe3it5bpn",
@@ -1545,10 +1545,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/91d94c0b-2cbe-5d9c-894c-560bef39ae22",
-      "lastEpisodeTitle": "THIS can be BAD ADVICE for people in narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/713ed467-0721-5d12-a551-2386e05bcb7f",
+      "lastEpisodeTitle": "LISTEN What to expect from a narcissist on Valentines Day ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1791563450284
+      "lastCheckedAt": 1791580296422
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
