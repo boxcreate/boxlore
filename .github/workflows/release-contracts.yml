@@ -1,26 +1,13 @@
-name: Release contracts
+name: Manual optimized release validation
 
 on:
-  pull_request:
-    paths:
-      - 'app/**'
-      - 'core/**'
-      - 'feature/**'
-      - 'gradle/**'
-      - '*.gradle.kts'
-      - 'gradle.properties'
-      - '.github/scripts/release_*'
-      - '.github/scripts/verify_release_contracts.py'
-      - '.github/scripts/test_release_contracts.py'
-      - '.github/workflows/release-contracts.yml'
-      - '.github/workflows/changelog-on-merge.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-contracts-${{ github.event.pull_request.number || github.ref }}
+  group: release-contracts-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

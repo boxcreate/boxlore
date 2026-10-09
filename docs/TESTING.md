@@ -218,7 +218,7 @@ Every `app/`, `core/*/`, and `feature/*/` module keeps a folder README. Shape: [
 
 Debug JVM tests do not run optimized DEX. `testReleaseUnitTest` also uses JVM classes before R8, so it cannot replace a release-artifact gate or device acceptance.
 
-`release-contracts.yml` builds unsigned optimized APK/AAB artifacts and runs release lint on relevant PR changes or manual dispatch. It uses the same release rules and resource shrinking, a build-only Firebase stub, no production signing key, and disables Crashlytics mapping upload. Both signed build paths in `changelog-on-merge.yml` run the same contract gate before publication. Existing unit/review merge requirements are unchanged; this workflow is an additional PR check, not an administration change.
+`release-contracts.yml` is an optional manual preflight: Actions → Manual optimized release validation → Run workflow, then select the branch to test. It builds unsigned optimized APK/AAB artifacts and runs release lint using the same release rules and resource shrinking, a build-only Firebase stub, no production signing key, and no Crashlytics mapping upload. It does not run automatically on PRs and does not publish a release or send notifications. Both signed build paths in `changelog-on-merge.yml` always run the contract gate before publication. Fast hermetic contract-regression tests remain in PR CI; existing unit/review merge requirements are unchanged.
 
 The gate derives contracts from pre-R8 release class files and the merged manifest, then checks the actual APK **and** AAB DEX with the matching R8 mapping:
 
@@ -245,7 +245,7 @@ python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
 python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 ```
 
-Keep the release `mapping.txt`, effective `configuration.txt`, `seeds.txt`, `usage.txt`, lint output and gate report for diagnosis. The PR workflow preserves these as diagnostic artifacts; AABs also contain their mapping and signed release builds retain normal Crashlytics upload. Never upload signing keys, local properties or service configuration.
+Keep the release `mapping.txt`, effective `configuration.txt`, `seeds.txt`, `usage.txt`, lint output and gate report for diagnosis. The manual preflight preserves these as diagnostic artifacts; AABs also contain their mapping and signed release builds retain normal Crashlytics upload. Never upload signing keys, local properties or service configuration.
 
 ### Release-device acceptance
 

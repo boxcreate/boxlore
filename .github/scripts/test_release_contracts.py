@@ -332,16 +332,20 @@ Class #4 -
                 with self.assertRaisesRegex(ValueError, "raw/chime"):
                     check.validate_resources(root / "app.apk", root, Path("aapt2"))
 
-    def test_both_publication_paths_and_pr_build_are_guarded(self):
+    def test_both_publication_paths_and_manual_preflight_are_guarded(self):
+        """Full R8 verification gates publication; preflight is opt-in only."""
         root = Path(__file__).resolve().parents[2]
         workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
         self.assertEqual(2, workflow.count("python3 .github/scripts/verify_release_contracts.py"))
         for block in workflow.split("- name: Verify optimized release contracts")[1:]:
             self.assertIn("app-release.apk", block[:450])
             self.assertIn("app-release.aab", block[:450])
-        pr = (root / ".github/workflows/release-contracts.yml").read_text()
-        self.assertIn("app-release-unsigned.apk", pr)
-        self.assertIn("uploadCrashlyticsMappingFileRelease", pr)
+        preflight = (root / ".github/workflows/release-contracts.yml").read_text()
+        self.assertIn("app-release-unsigned.apk", preflight)
+        self.assertIn("uploadCrashlyticsMappingFileRelease", preflight)
+        self.assertIn("workflow_dispatch:", preflight)
+        self.assertNotIn("pull_request:", preflight)
+        self.assertNotIn("push:", preflight)
 
     def test_android_setup_never_requests_removed_tools_package(self):
         """All artifact-build jobs override the pinned action's obsolete default."""
