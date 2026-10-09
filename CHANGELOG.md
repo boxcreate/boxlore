@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refresh Home discovery headers, poster and featured cards, mix layouts and briefing presentation with Material 3 components and matching loading states. ([#1102](https://github.com/boxcreate/boxlore/pull/1102)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Update classic light/dark colours, upright wordmarks, LORE and briefing graphics, adaptive launcher, splash and notification icons. ([#1102](https://github.com/boxcreate/boxlore/pull/1102)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Replace share-card branding with a compact “Listen on” wordmark signature. ([#1102](https://github.com/boxcreate/boxlore/pull/1102)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Redesign episode details with Material 3 surfaces, connected playback controls, separate listening progress and responsive title/metadata handling. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Consolidate show-notes link and chapter parsing; add branded resource pills and the five latest episodes from the same show. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -27,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Repair existing RSS imports without catalogue matching or changing saved show and episode identities. ([#1098](https://github.com/boxcreate/boxlore/pull/1098)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Resolve mix artwork from episode and show metadata before falling back to the parent show image. ([#1102](https://github.com/boxcreate/boxlore/pull/1102)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Collapse the caught-up Daily Mix state and center card titles with or without a progress indicator. ([#1102](https://github.com/boxcreate/boxlore/pull/1102)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Improve cross-show promotion detection and matching for longer introductions and scheduled releases. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Prevent generic social platform labels and reserved URL routes from being displayed as profile usernames. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
@@ -67,6 +71,16 @@ readme-copy:end pr=1101 -->
 - Daily Mix now uses show artwork when an episode has none.
 - A caught-up Daily Mix takes up less space.
 readme-copy:end pr=1102 -->
+
+<!-- readme-copy:start pr=1104
+### Improvements
+- Open episodes with clearer playback controls, artwork and reading layouts.
+- Find chapters and useful links more easily, with recognizable icons and shorter social profile labels.
+- Browse the show’s five latest episodes directly from the episode page.
+### Fixes
+- Featured-show cards now recognize more introductions to other podcasts.
+- Social links use a profile username when known, instead of repeating the platform name.
+readme-copy:end pr=1104 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added

@@ -124,6 +124,9 @@ and listen without paywalls, subscriptions, or ads.
 <!-- release-upcoming:start -->
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Open episodes with clearer playback controls, artwork and reading layouts. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
+<li>Find chapters and useful links more easily, with recognizable icons and shorter social profile labels. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
+<li>Browse the show’s five latest episodes directly from the episode page. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
 <li>Browse Home with clearer sections, sharper artwork and refreshed Daily Mix cards. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
 <li>Enjoy updated colours and logos, with time-of-day animations that wait until the heading is in view. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
 <li>Share episodes with cleaner “Listen on boxlore” branding. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
@@ -138,6 +141,8 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Featured-show cards now recognize more introductions to other podcasts. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
+<li>Social links use a profile username when known, instead of repeating the platform name. <a href="https://github.com/boxcreate/boxlore/pull/1104"><img src="https://img.shields.io/badge/PR-1104-6750A4?style=flat-square" alt="PR #1104" height="18"/></a></li>
 <li>Daily Mix now uses show artwork when an episode has none. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
 <li>A caught-up Daily Mix takes up less space. <a href="https://github.com/boxcreate/boxlore/pull/1102"><img src="https://img.shields.io/badge/PR-1102-6750A4?style=flat-square" alt="PR #1102" height="18"/></a></li>
 <li>Navigation highlights match your chosen accent, and the miniplayer stays above the navbar when Android navigation buttons are enabled. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
