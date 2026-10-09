@@ -95,3 +95,5 @@ python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
 ```
 
 `release_classfile.py` reads compiled JVM contracts; `release_dex.py` reads optimized contracts and R8 class names. `test_release_contracts.py` covers missing/private constructors, persisted names, nested JSON graphs, field/default changes, generic erasure, annotations, serializers, resource loss, and workflow wiring. The unsigned PR job exercises the real optimizer without release credentials. No catalog job or notification test is dispatched. See [optimized-release validation](../docs/TESTING.md#optimized-release-validation) for scope and manual acceptance.
+
+All three artifact-build jobs explicitly request `platform-tools` during Android SDK setup; the pinned setup action's default also requests the removed `tools` package and fails before compilation. The workflow regression check covers the PR build and both signed publication paths.

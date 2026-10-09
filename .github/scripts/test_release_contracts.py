@@ -343,6 +343,19 @@ Class #4 -
         self.assertIn("app-release-unsigned.apk", pr)
         self.assertIn("uploadCrashlyticsMappingFileRelease", pr)
 
+    def test_android_setup_never_requests_removed_tools_package(self):
+        """All artifact-build jobs override the pinned action's obsolete default."""
+        root = Path(__file__).resolve().parents[2]
+        for filename, expected_setups in (
+                ("release-contracts.yml", 1), ("changelog-on-merge.yml", 2)):
+            with self.subTest(workflow=filename):
+                workflow = (root / ".github/workflows" / filename).read_text()
+                setups = workflow.split("uses: android-actions/setup-android@")[1:]
+                self.assertEqual(expected_setups, len(setups))
+                for setup in setups:
+                    step = setup.split("\n      - ", 1)[0]
+                    self.assertIn("packages: 'platform-tools'", step)
+
 
 if __name__ == "__main__":
     unittest.main()

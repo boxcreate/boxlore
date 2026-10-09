@@ -38,6 +38,8 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v5
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+        with:
+          packages: 'platform-tools'
       - name: Install Android SDK packages
         run: sdkmanager 'build-tools;36.0.0' 'platforms;android-36'
       - name: Write build-only Firebase stub
