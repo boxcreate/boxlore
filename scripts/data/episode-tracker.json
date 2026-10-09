@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-09T17:08:13.951Z",
+  "lastRun": "2026-10-09T17:28:50.302Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "1e9da35a-cce6-473a-b712-bf3d7d91980c",
-      "lastEpisodeTitle": "12pm ET, October 09 | The latest headlines from NPR",
+      "lastRssKey": "3a65d4de-85b9-45e5-baca-9134bbd08594",
+      "lastEpisodeTitle": "1pm ET, October 09 | The latest headlines from NPR",
       "lastEpisodeId": "61431584179",
-      "lastCheckedAt": 1791563282541
+      "lastCheckedAt": 1791566935511
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75647681",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "cdf8d2fe-c3fb-11f1-a165-63aa46db68f1",
-      "lastEpisodeTitle": "12PM ET 10/09/2026 Newscast",
+      "lastRssKey": "2fd3ef1a-c404-11f1-afdd-e32ae4e03777",
+      "lastEpisodeTitle": "1PM ET 10/09/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791563320170
+      "lastCheckedAt": 1791566949206
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -311,10 +311,10 @@
       "lastCheckedAt": 1790958626535
     },
     "483834": {
-      "lastRssKey": "6ac7d1628f34078889b55f13",
-      "lastEpisodeTitle": "Star Wars: Galactic Racer Launch Trailer, Timothy Zahn to Write Star Trek Graphic Novel — October 8th, 2026",
+      "lastRssKey": "6ac91f5a29b9fbfbe2db620c",
+      "lastEpisodeTitle": "Marvel Television announcements, New Cyberpunk 2077 Movie — October 9th, 2026",
       "lastEpisodeId": "61405464511",
-      "lastCheckedAt": 1791480658192
+      "lastCheckedAt": 1791566963864
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -718,9 +718,9 @@
       "lastCheckedAt": 1791480706471
     },
     "1258562": {
-      "lastRssKey": "6ab7a51bbd67ce4b537bc280",
-      "lastEpisodeTitle": "209. Murder in Room 1701 | Wendy Albano",
-      "lastCheckedAt": 1791134371443
+      "lastRssKey": "6ac22edf52f9e4485fc03f23",
+      "lastEpisodeTitle": "210. The Burning Car Murder | Mundill Mahil & Gagandip Singh",
+      "lastCheckedAt": 1791567006570
     },
     "1266933": {
       "lastRssKey": "4c5fea84-d345-4950-ad09-54ab043d0ef2",
@@ -763,10 +763,10 @@
       "lastCheckedAt": 1791426872116
     },
     "1366771": {
-      "lastRssKey": "6ac8ba0e8f90a39dfce13bc5",
-      "lastEpisodeTitle": "Afternoon Briefing Friday 9th October",
+      "lastRssKey": "6ac923693dc1c1be4a2f26bd",
+      "lastEpisodeTitle": "Evening briefing Friday 9th October",
       "lastEpisodeId": "61479680363",
-      "lastCheckedAt": 1791542458258
+      "lastCheckedAt": 1791567009880
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -816,10 +816,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6ac7c904b9a33923cb10d715",
-      "lastEpisodeTitle": "(Pop) Un Américain a détourné 8 millions de dollars grâce à des faux streams… HugoDécrypte",
+      "lastRssKey": "6ac918734fad7c63ed60ccca",
+      "lastEpisodeTitle": "L’IA impacte déjà le marché en France, voici les preuves",
       "lastEpisodeId": "61454132513",
-      "lastCheckedAt": 1791538107771
+      "lastCheckedAt": 1791567013556
     },
     "2574026": {
       "lastRssKey": "0052b4a6-c38c-11f1-9a53-8b7d6258a474",
@@ -831,6 +831,12 @@
       "lastRssKey": "0e72a65f-c10a-424c-8605-f2ea70492f12",
       "lastEpisodeTitle": "Big Bang and Shrinking Universe theory in hindi | EP#45 | Hindi Science Space Podcast",
       "lastCheckedAt": 1789383255255
+    },
+    "2750907": {
+      "lastRssKey": "57767816-01be-4627-b8af-593594c97de2",
+      "lastEpisodeTitle": "What’s really going on with ESDS?",
+      "lastEpisodeId": "61465672941",
+      "lastCheckedAt": 1791567014719
     },
     "2955119": {
       "lastRssKey": "https://www.ivoox.com/17232182",
@@ -1134,10 +1140,10 @@
       "lastCheckedAt": 1791542483767
     },
     "6628686": {
-      "lastRssKey": "afae6aec-a04d-11f1-b6e7-8376fc029dc4",
-      "lastEpisodeTitle": "Moment: Do You REALLY Need Hormones in Perimenopause If You Feel Fine?",
-      "lastEpisodeId": "60835585667",
-      "lastCheckedAt": 1791395813966
+      "lastRssKey": "flightcast:01M4FVYJP3B49SM53H83DGB195",
+      "lastEpisodeTitle": "5 Red Flags Your Hair Loss Needs a Medical Workup",
+      "lastEpisodeId": "61491511144",
+      "lastCheckedAt": 1791567038626
     },
     "6634680": {
       "lastRssKey": "cb571878-467a-49c1-bb3a-a9e6128a2f0b",
@@ -1366,10 +1372,10 @@
       "lastCheckedAt": 1789443365235
     },
     "7324937": {
-      "lastRssKey": "b139ddd4-2d42-11f1-801d-7bb97109eae5",
-      "lastEpisodeTitle": "The Basement: Ed Barnhart | Lost Cities, Botflies, and a Magic Number",
+      "lastRssKey": "b21db7b6-2d42-11f1-801d-7ba9234ab5eb",
+      "lastEpisodeTitle": "The Titanic Never Sank",
       "lastEpisodeId": "61176801103",
-      "lastCheckedAt": 1791192629805
+      "lastCheckedAt": 1791567054103
     },
     "7348627": {
       "lastRssKey": "bb76c6ed-ce39-40e6-85e0-a1bd4fb50d24",
@@ -1502,10 +1508,10 @@
       "lastCheckedAt": 1786543013085
     },
     "7679624": {
-      "lastRssKey": "https://api.spreaker.com/episode/75334306",
+      "lastRssKey": "https://api.spreaker.com/episode/75334299",
       "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack -",
       "lastEpisodeId": "61220804513",
-      "lastCheckedAt": 1791073852717
+      "lastCheckedAt": 1791567063191
     },
     "7756959": {
       "lastRssKey": "df4f9c98-c371-11f1-8472-4b448eccc15d",
