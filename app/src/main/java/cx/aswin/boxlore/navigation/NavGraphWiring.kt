@@ -151,6 +151,8 @@ data class NavSettingsState(
     val subscriptionsDefaultTab: String,
     val subscriptionsTabStyle: String = cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle.TOP,
     val miniPlayerSeekButtonsEnabled: Boolean = false,
+    val artworkColorsEnabled: Boolean = true,
+    val savedCustomTheme: cx.aswin.boxlore.core.prefs.ThemeSelection? = null,
 )
 
 /** Callbacks for OPML import state owned by MainActivity. */

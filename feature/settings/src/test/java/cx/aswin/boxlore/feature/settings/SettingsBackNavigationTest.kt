@@ -82,7 +82,7 @@ class SettingsBackNavigationTest {
 
     @Test
     fun themeReturnsToAppearanceAndCanBeOpenedDirectly() {
-        assertEquals(ProfileSettingsDestination.Theme, "theme".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.Appearance, "theme".toSettingsDestination())
         assertEquals(
             SettingsBackAction.NavigateTo(ProfileSettingsDestination.Appearance),
             resolveSettingsBackAction(false, ProfileSettingsDestination.Appearance, null),
@@ -92,6 +92,8 @@ class SettingsBackNavigationTest {
 
     @Test
     fun nestedDestinationsAnimateForwardOnEntryAndBackTowardTheirParent() {
+        assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.Appearance, ProfileSettingsDestination.CustomTheme))
+        assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.CustomTheme, ProfileSettingsDestination.Appearance))
         assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Theme))
         assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.Theme, ProfileSettingsDestination.Appearance))
         assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.SyncAndBackups, ProfileSettingsDestination.Account))

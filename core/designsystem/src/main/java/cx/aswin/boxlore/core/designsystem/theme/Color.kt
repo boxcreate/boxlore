@@ -46,7 +46,7 @@ fun isExactThemeBrand(themeBrand: String): Boolean {
 }
 
 /** True when [themeBrand] is a custom hex seed or an exact hex (e.g. `#5B5BD6`, `exact:#5B5BD6`). */
-fun isCustomThemeBrand(themeBrand: String): Boolean = isExactThemeBrand(themeBrand) || isCustomHexSeed(themeBrand)
+fun isCustomThemeBrand(themeBrand: String): Boolean = CustomThemeSeeds.decode(themeBrand) != null || isExactThemeBrand(themeBrand) || isCustomHexSeed(themeBrand)
 
 /** Hex body of a custom brand (`#RRGGBB`), or null for named palettes. */
 fun customThemeBrandHex(themeBrand: String): String? = when {
@@ -59,6 +59,7 @@ fun customThemeBrandHex(themeBrand: String): String? = when {
  * Resolves a theme brand key or custom hex into a seed [Color] for scheme generation.
  */
 fun resolveThemeSeedColor(themeBrand: String): Color {
+    CustomThemeSeeds.decode(themeBrand)?.let { return it.primary }
     findThemePreset(themeBrand)?.let { return it.primary.light }
     BrandSeeds[themeBrand]?.second?.let { return it }
     val hex = customThemeBrandHex(themeBrand)

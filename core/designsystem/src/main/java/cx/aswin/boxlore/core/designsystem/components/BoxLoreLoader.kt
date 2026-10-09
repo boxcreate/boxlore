@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.RoundedPolygon
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
+import cx.aswin.boxlore.core.designsystem.theme.LocalArtworkLoaderColors
 
 /**
  * BoxCast M3 Expressive Loaders.
@@ -47,10 +49,12 @@ object BoxLoreLoader {
         size: Dp = 64.dp,
         polygons: List<RoundedPolygon> = LoadingIndicatorDefaults.IndeterminateIndicatorPolygons,
     ) {
-        ContainedLoadingIndicator(
-            modifier = modifier.size(size),
-            polygons = polygons,
-        )
+        MaterialTheme(colorScheme = loaderColors(), typography = MaterialTheme.typography, shapes = MaterialTheme.shapes) {
+            ContainedLoadingIndicator(
+                modifier = modifier.size(size),
+                polygons = polygons,
+            )
+        }
     }
 
     /**
@@ -63,7 +67,7 @@ object BoxLoreLoader {
         modifier: Modifier = Modifier,
         progress: Float? = null, // Null for indeterminate
         size: Dp = 48.dp,
-        color: Color = MaterialTheme.colorScheme.primary,
+        color: Color = loaderColors().primary,
         trackColor: Color = color.copy(alpha = 0.2f)
     ) {
         if (progress == null) {
@@ -91,8 +95,8 @@ object BoxLoreLoader {
     fun LinearWavy(
         modifier: Modifier = Modifier,
         progress: Float? = null,
-        color: Color = MaterialTheme.colorScheme.primary,
-        trackColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest
+        color: Color = loaderColors().primary,
+        trackColor: Color = loaderColors().surfaceContainerHighest
     ) {
         if (progress == null) {
             LinearWavyProgressIndicator(
@@ -118,7 +122,7 @@ object BoxLoreLoader {
     fun Custom(
         modifier: Modifier = Modifier,
         shape: Shape = ExpressiveShapes.Star,
-        color: Color = MaterialTheme.colorScheme.primary,
+        color: Color = loaderColors().primary,
         size: Dp = 48.dp
     ) {
         val infiniteTransition = rememberInfiniteTransition(label = "loader_rotate")
@@ -139,3 +143,6 @@ object BoxLoreLoader {
         )
     }
 }
+
+@Composable
+private fun loaderColors(): ColorScheme = LocalArtworkLoaderColors.current ?: MaterialTheme.colorScheme

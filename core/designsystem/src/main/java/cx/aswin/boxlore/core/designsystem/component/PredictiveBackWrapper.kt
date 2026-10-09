@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
@@ -38,7 +39,7 @@ import kotlinx.coroutines.launch
  * the start destination must not leave the next screen at 0.9 scale.
  */
 @Composable
-fun PredictiveBackWrapper(enabled: Boolean, onBack: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit,) {
+fun PredictiveBackWrapper(enabled: Boolean, onBack: () -> Unit, modifier: Modifier = Modifier, backgroundColor: Color = MaterialTheme.colorScheme.surface, content: @Composable () -> Unit,) {
     val scope = rememberCoroutineScope()
 
     var swipeEdge by remember { mutableFloatStateOf(0f) }
@@ -94,7 +95,7 @@ fun PredictiveBackWrapper(enabled: Boolean, onBack: () -> Unit, modifier: Modifi
                 clip = animatedProgress.value > 0.01f
                 shadowElevation = elevation
             }.background(
-                color = MaterialTheme.colorScheme.surface,
+                color = backgroundColor,
                 shape = RoundedCornerShape(cornerRadius.dp),
             ),
     ) {

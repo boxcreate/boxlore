@@ -41,6 +41,7 @@ import cx.aswin.boxlore.feature.settings.pages.AppInfo
 import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
 import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
+import cx.aswin.boxlore.feature.settings.pages.CustomThemeEditor
 import cx.aswin.boxlore.feature.settings.pages.DownloadsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.LibraryBackupActions
 import cx.aswin.boxlore.feature.settings.pages.LibraryDiscoveryPreferences
@@ -260,7 +261,7 @@ fun SettingsScreen(
 
     val actions = SettingsPagesActions(
         onNavigate = {
-            if (it == ProfileSettingsDestination.Theme) previousDestination = ProfileSettingsDestination.Appearance
+            if (it == ProfileSettingsDestination.Theme || it == ProfileSettingsDestination.CustomTheme) previousDestination = ProfileSettingsDestination.Appearance
             destination = it
         },
         onReturnToHub = returnToHub,
@@ -408,7 +409,7 @@ private fun SettingsDestinationContent(
                 state = contentBundle.appearanceSettings.state,
                 actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
                 onBack = actions.onReturnToHub,
-                onThemeClick = { actions.onNavigate(ProfileSettingsDestination.Theme) },
+                onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) },
             )
 
         ProfileSettingsDestination.Theme ->
@@ -416,6 +417,17 @@ private fun SettingsDestinationContent(
                 state = contentBundle.appearanceSettings.state,
                 actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
                 onBack = actions.onReturnToHub,
+                onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) },
+            )
+
+        ProfileSettingsDestination.CustomTheme ->
+            CustomThemeEditor(
+                state = contentBundle.appearanceSettings.state,
+                onDismiss = actions.onReturnToHub,
+                onSave = { theme ->
+                    contentBundle.appearanceSettings.actions.onSaveCustomTheme(theme)
+                    actions.onReturnToHub()
+                },
             )
 
         ProfileSettingsDestination.Playback ->
@@ -629,6 +641,15 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
         onSetSubscriptionsTabStyle(it)
     },
     onSetMiniPlayerSeekButtonsEnabled = onSetMiniPlayerSeekButtonsEnabled,
+    onSetArtworkColorsEnabled = { enabled ->
+        AnalyticsHelper.trackSettingsInteraction("artwork_colors_toggled", enabled.toString())
+        onSetArtworkColorsEnabled(enabled)
+    },
+    onApplyTheme = { selection, custom ->
+        AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)
+        onApplyTheme(selection, custom)
+    },
+    onSaveCustomTheme = onSaveCustomTheme,
 )
 
 @Composable

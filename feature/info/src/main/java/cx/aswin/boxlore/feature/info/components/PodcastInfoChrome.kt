@@ -20,9 +20,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.MoreVert
@@ -38,6 +41,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,7 +56,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -65,6 +71,7 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.feature.info.DirectFeedChipState
 import cx.aswin.boxlore.feature.info.PodcastInfoViewModel
+import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.NotificationToggleAction
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
@@ -200,6 +207,7 @@ internal data class EpisodeFeedRowUi(
     val indicators: EpisodeListIndicators,
     val autoScrolledEpisodeId: String?,
     val podcastImageUrl: String?,
+    val isSearchActive: Boolean = false,
 )
 
 @Composable
@@ -209,6 +217,7 @@ internal fun EpisodeFeedItemRow(
     ui: EpisodeFeedRowUi,
     onEpisodeClick: (Episode, String, Int?) -> Unit,
     selection: EpisodeSelectionUi = EpisodeSelectionUi(),
+    modifier: Modifier = Modifier,
 ) {
     when (feedItem) {
         is FeedItem.NormalEpisode -> {
@@ -242,7 +251,7 @@ internal fun EpisodeFeedItemRow(
                             selection.onToggle(episode)
                         } else {
                             viewModel.recordEpisodeClick(episode.id)
-                            onEpisodeClick(episode, "podcast_info_episodes_list", index)
+                            onEpisodeClick(episode, if (ui.isSearchActive) "podcast_info_search_results" else "podcast_info_episodes_list", index)
                         }
                     },
                     onLongClick = { selection.onLongPress(episode) },
@@ -251,8 +260,8 @@ internal fun EpisodeFeedItemRow(
                     onQueueClick = { viewModel.toggleQueue(episode) },
                     onDownloadClick = { viewModel.toggleDownload(episode) },
                     onMarkPlayedClick = { viewModel.onToggleCompletion(episode) },
-                    showMarkPlayedButton = false, // Hide in list view
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    showMarkPlayedButton = ui.isSearchActive,
+                    modifier = modifier.padding(horizontal = 16.dp),
                 )
             }
         }
@@ -267,7 +276,7 @@ internal fun EpisodeFeedItemRow(
                 },
                 onPlayClick = { ep -> viewModel.onPlayClick(ep) },
                 selection = selection,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = modifier.padding(horizontal = 16.dp),
             )
         }
         is FeedItem.TrailerGroup -> {
@@ -280,7 +289,7 @@ internal fun EpisodeFeedItemRow(
                 },
                 onPlayClick = { ep -> viewModel.onPlayClick(ep) },
                 selection = selection,
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = modifier.padding(horizontal = 16.dp),
             )
         }
     }
@@ -498,58 +507,55 @@ private fun MissingEpisodesChipButton(chip: MissingEpisodesChip) {
         enter = fadeIn(),
         exit = fadeOut(),
     ) {
-        val quietColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
         val clickable = chip.state == DirectFeedChipState.Offer
-        TextButton(
+        val scheme = MaterialTheme.colorScheme
+        val container = if (chip.state == DirectFeedChipState.Updated) scheme.surfaceContainerHigh else scheme.primaryContainer
+        val content = if (chip.state == DirectFeedChipState.Updated) scheme.onSurfaceVariant else scheme.onPrimaryContainer
+        FilledTonalButton(
             onClick = chip.onClick,
             enabled = clickable,
             shape = RoundedCornerShape(percent = 50),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
             colors =
-            ButtonDefaults.textButtonColors(
-                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                contentColor = quietColor,
-                disabledContainerColor =
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                disabledContentColor = quietColor,
+            ButtonDefaults.filledTonalButtonColors(
+                containerColor = container,
+                contentColor = content,
+                disabledContainerColor = container,
+                disabledContentColor = content,
             ),
             modifier =
             Modifier
                 .padding(end = 4.dp)
-                .heightIn(max = 28.dp),
+                .widthIn(max = 176.dp).heightIn(min = 40.dp),
         ) {
-            when (chip.state) {
-                DirectFeedChipState.Fetching -> {
+            if (chip.state == DirectFeedChipState.Fetching) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(10.dp),
-                        strokeWidth = 1.5.dp,
-                        color = quietColor,
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = content,
                     )
-                    Spacer(modifier = Modifier.size(5.dp))
-                    Text(
-                        text = "Fetching…",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = GoogleSansWeight.medium,
-                        maxLines = 1,
-                    )
-                }
-                DirectFeedChipState.Updated -> {
-                    Text(
-                        text = "Updated",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = GoogleSansWeight.medium,
-                        maxLines = 1,
-                    )
-                }
-                else -> {
-                    Text(
-                        text = "Missing episodes?",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = GoogleSansWeight.medium,
-                        maxLines = 1,
-                    )
-                }
+            } else {
+                Icon(
+                    if (chip.state == DirectFeedChipState.Updated) Icons.Rounded.CheckCircle else Icons.AutoMirrored.Rounded.PlaylistAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
             }
+            Spacer(Modifier.size(6.dp))
+                    Text(
+                        text = stringResource(
+                            when (chip.state) {
+                            DirectFeedChipState.Fetching -> R.string.podcast_info_missing_fetching
+                            DirectFeedChipState.Updated -> R.string.podcast_info_missing_updated
+                            else -> R.string.podcast_info_missing_offer
+                        }
+                        ),
+                        modifier = Modifier.weight(1f, fill = false),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = GoogleSansWeight.bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
         }
     }
 }

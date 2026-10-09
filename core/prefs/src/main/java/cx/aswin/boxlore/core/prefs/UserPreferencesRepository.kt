@@ -87,6 +87,56 @@ class UserPreferencesRepository(context: Context,) {
     val cachedUseDynamicColor: Boolean
         get() = syncPrefs.getBoolean("use_dynamic_color", false)
 
+    val cachedArtworkColorsEnabled: Boolean
+        get() = syncPrefs.getBoolean("artwork_colors_enabled", true)
+
+    val cachedCustomTheme: ThemeSelection?
+        get() = syncPrefs.getString("custom_theme_brand", null)?.let { brand ->
+            ThemeSelection(brand, syncPrefs.getString("custom_theme_surface", "standard") ?: "standard", syncPrefs.getBoolean("custom_theme_dynamic", false))
+        }
+
+    val artworkColorsEnabledStream: Flow<Boolean> = dataStore.data.catch { exception ->
+        if (exception is IOException) emit(emptyPreferences()) else throw exception
+    }.map { preferences ->
+        preferences[Keys.ARTWORK_COLORS]?.also { syncPrefs.edit().putBoolean("artwork_colors_enabled", it).apply() } ?: cachedArtworkColorsEnabled
+    }.distinctUntilChanged()
+
+    suspend fun setArtworkColorsEnabled(enabled: Boolean) {
+        syncPrefs.edit().putBoolean("artwork_colors_enabled", enabled).apply()
+        dataStore.edit { it[Keys.ARTWORK_COLORS] = enabled }
+    }
+
+    val customThemeStream: Flow<ThemeSelection?> = dataStore.data.catch { exception ->
+        if (exception is IOException) emit(emptyPreferences()) else throw exception
+    }.map { preferences ->
+        preferences[Keys.CUSTOM_THEME_BRAND]?.let { brand ->
+            ThemeSelection(brand, preferences[Keys.CUSTOM_THEME_SURFACE] ?: "standard", preferences[Keys.CUSTOM_THEME_DYNAMIC] ?: false).also {
+                syncPrefs.edit().putString("custom_theme_brand", it.brand).putString("custom_theme_surface", it.surfaceStyle).putBoolean("custom_theme_dynamic", it.wallpaperColors).apply()
+            }
+        } ?: cachedCustomTheme
+    }.distinctUntilChanged()
+
+    /** Apply all color inputs together, optionally remembering the current or newly created Custom theme. */
+    suspend fun setThemeSelection(selection: ThemeSelection, customThemeToRemember: ThemeSelection? = null) {
+        val cache = syncPrefs.edit().putString("theme_brand", selection.brand)
+            .putString("surface_style", selection.surfaceStyle).putBoolean("use_dynamic_color", selection.wallpaperColors)
+        customThemeToRemember?.let {
+            cache.putString("custom_theme_brand", it.brand).putString("custom_theme_surface", it.surfaceStyle)
+                .putBoolean("custom_theme_dynamic", it.wallpaperColors)
+        }
+        cache.apply()
+        dataStore.edit { preferences ->
+            preferences[Keys.THEME_BRAND] = selection.brand
+            preferences[Keys.SURFACE_STYLE] = selection.surfaceStyle
+            preferences[Keys.USE_DYNAMIC_COLOR] = selection.wallpaperColors
+            customThemeToRemember?.let {
+                preferences[Keys.CUSTOM_THEME_BRAND] = it.brand
+                preferences[Keys.CUSTOM_THEME_SURFACE] = it.surfaceStyle
+                preferences[Keys.CUSTOM_THEME_DYNAMIC] = it.wallpaperColors
+            }
+        }
+    }
+
     /** Widget chrome: `app` (default, match Appearance) or `system` (launcher Material You). */
     val cachedWidgetAppearance: String
         get() = WidgetAppearance.sanitize(syncPrefs.getString(WidgetAppearance.PREF_KEY, null))
@@ -509,6 +559,7 @@ class UserPreferencesRepository(context: Context,) {
      */
     suspend fun hydrateMissingDataStoreFromFastCache() {
         dataStore.edit { preferences ->
+            hydrateArtworkThemePreferences(preferences)
             if (preferences[Keys.THEME_CONFIG] == null) {
                 preferences[Keys.THEME_CONFIG] = cachedThemeConfig
             }
@@ -543,6 +594,17 @@ class UserPreferencesRepository(context: Context,) {
                 preferences[Keys.WIDGET_APPEARANCE] = cachedWidgetAppearance
             }
         }
+    }
+
+    private fun hydrateArtworkThemePreferences(preferences: androidx.datastore.preferences.core.MutablePreferences) {
+            if (preferences[Keys.ARTWORK_COLORS] == null) preferences[Keys.ARTWORK_COLORS] = cachedArtworkColorsEnabled
+            cachedCustomTheme?.let { custom ->
+                if (preferences[Keys.CUSTOM_THEME_BRAND] == null) {
+                    preferences[Keys.CUSTOM_THEME_BRAND] = custom.brand
+                    preferences[Keys.CUSTOM_THEME_SURFACE] = custom.surfaceStyle
+                    preferences[Keys.CUSTOM_THEME_DYNAMIC] = custom.wallpaperColors
+                }
+            }
     }
 
     // SORTING PREFERENCES

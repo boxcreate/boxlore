@@ -86,10 +86,11 @@ fun BoxLoreNavHost(
             isSyncingSmartDownloads = isSyncingSmartDownloads,
         )
 
+    ArtworkNavigationHostTheme(navController) { navigationBackground ->
     NavHost(
         navController = navController,
         startDestination = computedStartDestination,
-        modifier = androidx.compose.ui.Modifier,
+        modifier = navigationBackground,
         enterTransition = {
             navEnterTransition(initialState.destination.route, targetState.destination.route)
         },
@@ -114,5 +115,6 @@ fun BoxLoreNavHost(
         addPodcastDestination(wiring)
         addEpisodeFullPathDestination(wiring)
         addEpisodeDeepLinkDestination(wiring)
+    }
     }
 }

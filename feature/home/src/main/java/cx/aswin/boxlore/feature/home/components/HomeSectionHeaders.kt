@@ -84,6 +84,7 @@ fun HomeTopLevelSectionHeader(
                     Text(
                         text = title,
                         modifier = Modifier.weight(1f).semantics { heading() },
+                        color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontFamily = rememberSectionHeaderFontFamily(),
                             fontWeight = GoogleSansWeight.semiBold,
@@ -172,6 +173,7 @@ fun HomeChildSectionHeader(
             Text(
                 text = title,
                 modifier = Modifier.fillMaxWidth().semantics { heading() },
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = GoogleSansWeight.semiBold,
             )

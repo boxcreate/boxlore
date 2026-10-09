@@ -28,6 +28,7 @@ mediaRouter = "1.8.1"
 castFramework = "22.3.1"
 palette = "1.0.0"
 material = "1.12.0"
+materialColorUtilities = "5.0.1"
 posthog = "3.45.0"
 work = "2.9.0"
 rssParser = "6.1.7"
@@ -113,6 +114,7 @@ firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging
 firebase-database = { group = "com.google.firebase", name = "firebase-database" }
 firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
 firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
+material-color-utilities = { module = "com.materialkolor:material-color-utilities-jvm", version.ref = "materialColorUtilities" }
 google-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 # Auth & Credentials

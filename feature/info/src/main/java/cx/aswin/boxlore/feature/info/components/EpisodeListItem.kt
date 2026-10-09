@@ -1,12 +1,12 @@
 package cx.aswin.boxlore.feature.info.components
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,9 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Videocam
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,6 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +42,7 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.feature.info.R
 import cx.aswin.boxlore.feature.info.logic.EpisodeArtworkLogic
 import cx.aswin.boxlore.feature.info.sections.stripHtml
 
@@ -69,41 +76,21 @@ fun EpisodeListItem(
     podcastImageUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    androidx.compose.material3.OutlinedCard(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .expressiveClickable(
-                onLongClickLabel = "Select episode",
-                onLongClick = onLongClick,
-                onClick = onClick,
-            ),
-        shape = MaterialTheme.shapes.large,
-        colors =
-        androidx.compose.material3.CardDefaults.outlinedCardColors(
-            containerColor =
-            if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            },
+    val markPlayedClick = rememberPodcastEpisodeControlClick(onMarkPlayedClick)
+    val markPlayedLabel = stringResource(if (isCompleted) R.string.episode_info_mark_unplayed else R.string.episode_info_mark_played)
+    val selectLabel = stringResource(R.string.podcast_episode_select)
+    Surface(
+        modifier = modifier.fillMaxWidth().expressiveClickable(
+            onLongClickLabel = selectLabel,
+            onLongClick = onLongClick,
+            onClick = onClick,
         ),
-        border =
-        BorderStroke(
-            width = if (isSelected) 2.dp else 0.5.dp,
-            color =
-            if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.outlineVariant
-            },
-        ),
-        elevation =
-        androidx.compose.material3.CardDefaults
-            .outlinedCardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
     ) {
         Column(
-            modifier = Modifier.padding(14.dp), // Generous padding inside the card
+            modifier = Modifier.padding(14.dp),
         ) {
             // 1. Content Row (Image + Text)
             Row(
@@ -152,7 +139,7 @@ fun EpisodeListItem(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Check,
-                                contentDescription = if (isSelected) "Selected" else "Completed",
+                                contentDescription = stringResource(if (isSelected) R.string.podcast_episode_selected else R.string.episode_info_played),
                                 tint =
                                 if (isSelected) {
                                     MaterialTheme.colorScheme.onPrimary
@@ -165,26 +152,34 @@ fun EpisodeListItem(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
                 // Text Content
                 Column(modifier = Modifier.weight(1f)) {
                     if (isUpNext) {
                         Surface(
                             shape = ExpressiveShapes.Pill,
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
                             modifier = Modifier.padding(bottom = 4.dp),
                         ) {
                             Text(
-                                "UP NEXT",
+                                stringResource(R.string.podcast_episode_up_next),
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = GoogleSansWeight.bold),
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             )
                         }
                     }
 
-                    // Metadata
+                    Text(
+                        text = episode.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = GoogleSansWeight.bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 20.sp,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                     fun formatDuration(seconds: Int): String {
                         val hours = seconds / 3600
                         val minutes = (seconds % 3600) / 60
@@ -205,102 +200,37 @@ fun EpisodeListItem(
                         }
                     }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // Podcast 2.0: Season/Episode number
-                        val seLabel =
-                            buildString {
-                                episode.seasonNumber?.let { append("S$it ") }
-                                episode.episodeNumber?.let { append("E$it") }
-                            }.trim()
-                        if (seLabel.isNotEmpty()) {
-                            Text(
-                                text = seLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = GoogleSansWeight.bold,
-                            )
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            )
-                        }
-                        Text(
-                            text = formatRelativeDate(episode.publishedDate),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        )
-                        Text(
-                            text = formatDuration(episode.duration),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        // Podcast 2.0: Episode type badge
-                        if (episode.episodeType != null && episode.episodeType != "full") {
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            )
-                            Surface(
-                                shape = ExpressiveShapes.Pill,
-                                color =
-                                if (episode.episodeType == "trailer") {
-                                    MaterialTheme.colorScheme.tertiaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.secondaryContainer
-                                },
-                            ) {
-                                Text(
-                                    text = episode.episodeType!!.replaceFirstChar { it.uppercase() },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = GoogleSansWeight.bold,
-                                    color =
-                                    if (episode.episodeType == "trailer") {
-                                        MaterialTheme.colorScheme.onTertiaryContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    },
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                )
+                    val seasonEpisode = buildString {
+                        episode.seasonNumber?.let { append("S$it ") }
+                        episode.episodeNumber?.let { append("E$it") }
+                    }.trim()
+                    Text(
+                        text = listOf(seasonEpisode, formatRelativeDate(episode.publishedDate), formatDuration(episode.duration))
+                            .filter { it.isNotBlank() }.joinToString(" · "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val type = episode.episodeType?.takeUnless { it == "full" }
+                    val isVideo = episode.enclosureType?.startsWith("video/") == true
+                    if (type != null || isVideo) {
+                        FlowRow(
+                            modifier = Modifier.padding(top = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            if (type != null) {
+                                val typeLabel = when (type) {
+                                    "bonus" -> stringResource(R.string.episode_info_bonus)
+                                    "trailer" -> stringResource(R.string.episode_info_trailer)
+                                    else -> type.replaceFirstChar { it.uppercase() }
+                                }
+                                EpisodeTypeChip(typeLabel)
                             }
-                        }
-
-                        // Video Badge inside Metadata Row
-                        if (episode.enclosureType?.startsWith("video/") == true) {
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            )
-                            Icon(
-                                imageVector = Icons.Rounded.Videocam,
-                                contentDescription = "Video",
-                                tint = accentColor,
-                                modifier = Modifier.size(16.dp),
-                            )
+                            if (isVideo) EpisodeTypeChip(stringResource(R.string.episode_info_video), video = true)
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // Title
-                    Text(
-                        text = episode.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = GoogleSansWeight.bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 20.sp,
-                    )
 
                     // Description Preview
                     val stripped = stripHtml(episode.description)
@@ -309,7 +239,7 @@ fun EpisodeListItem(
                         Text(
                             text = stripped,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             lineHeight = 16.sp,
@@ -321,53 +251,45 @@ fun EpisodeListItem(
             if (!selectionActive) {
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // 2. Control Row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .animateContentSize(),
-                ) {
-                    cx.aswin.boxlore.core.designsystem.components.AdvancedPlayerControls(
-                        isLiked = isLiked,
-                        isDownloaded = isDownloaded,
-                        isDownloading = isDownloading,
-                        colorScheme = MaterialTheme.colorScheme,
-                        onLikeClick = onToggleLike,
-                        onDownloadClick = onDownloadClick,
-                        onQueueClick = onQueueClick,
-                        style = cx.aswin.boxlore.core.designsystem.components.ControlStyle.TonalSquircle,
-                        overrideColor = accentColor,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        showAddQueueIcon = true,
-                        isQueued = isQueued,
-                        showShareButton = false,
-                        isPlayed = isCompleted,
-                        showMarkPlayedButton = showMarkPlayedButton,
-                        onMarkPlayedClick = onMarkPlayedClick,
-                        controlSize = 40.dp,
-                    )
-
-                    cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton(
-                        onClick = onPlayClick,
-                        state =
-                        cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState(
-                            isPlaying = isPlaying,
-                            isResume = isResume,
-                            progress = progress,
-                            timeText = timeLeft,
+                PodcastEpisodeActions(
+                    state = PodcastEpisodeActionsState(isPlaying, isResume, isLiked, isDownloaded, isDownloading, isQueued),
+                    callbacks = PodcastEpisodeActionsCallbacks(onPlayClick, onToggleLike, onDownloadClick, onQueueClick),
+                    accentColor = accentColor,
+                )
+                if (showMarkPlayedButton) {
+                    AssistChip(
+                        onClick = markPlayedClick,
+                        label = { Text(stringResource(if (isCompleted) R.string.episode_info_played else R.string.episode_info_mark_played)) },
+                        leadingIcon = { Icon(Icons.Rounded.Check, null, Modifier.size(16.dp)) },
+                        shape = ExpressiveShapes.Pill,
+                        border = null,
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
-                        accentColor = accentColor,
-                        modifier =
-                        Modifier
-                            .height(44.dp)
-                            .padding(start = 16.dp)
-                            .weight(1f),
+                        modifier = Modifier.semantics {
+                            contentDescription = markPlayedLabel
+                        },
                     )
                 }
+                podcastEpisodeCardProgress(isResume, isCompleted, progress)?.let {
+                    PodcastEpisodeProgress(it, timeLeft, accentColor)
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun EpisodeTypeChip(label: String, video: Boolean = false) {
+    Surface(shape = ExpressiveShapes.Pill, color = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurfaceVariant) {
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (video) Icon(Icons.Rounded.Videocam, null, Modifier.size(14.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = GoogleSansWeight.medium)
         }
     }
 }

@@ -91,13 +91,13 @@ class ThemePresetResolutionTest {
 
     @Test
     fun selectedSplitPreviewsShowCustomColorsInBothModes() {
-        val look = themeLookOptions().first { it.key == "preset:aurora" }
-        val state = AppearanceUiState("dark", false, "exact:#006C4C", look.key)
+        val look = themeLookOptions().first { it.key == "custom" }
+        val state = AppearanceUiState("dark", false, "exact:#006C4C", "preset:aurora")
         val preview = themePreviewColors(context, state, look, selected = true)
         assertEquals(Color(0xFF006C4C), preview.light.primary)
         assertEquals(Color(0xFF006C4C), preview.dark.primary)
-        assertEquals(resolveBoxLoreColorScheme(context, false, false, state.currentThemeBrand, look.key).background, preview.light.background)
-        assertEquals(resolveBoxLoreColorScheme(context, true, false, state.currentThemeBrand, look.key).background, preview.dark.background)
+        assertEquals(resolveBoxLoreColorScheme(context, false, false, state.currentThemeBrand, state.currentSurfaceStyle).background, preview.light.background)
+        assertEquals(resolveBoxLoreColorScheme(context, true, false, state.currentThemeBrand, state.currentSurfaceStyle).background, preview.dark.background)
     }
 
     @Test
@@ -110,6 +110,24 @@ class ThemePresetResolutionTest {
             val wallpaper = key == SurfaceStyles.STANDARD
             assertEquals(resolveBoxLoreColorScheme(context, false, wallpaper, brand, key).primary, preview.light.primary)
             assertEquals(resolveBoxLoreColorScheme(context, true, wallpaper, brand, key).primary, preview.dark.primary)
+        }
+    }
+
+    @Test
+    fun customCreatorUsesTheSameSchemeInAppPreviewAndWidgets() {
+        val seeds = cx.aswin.boxlore.core.designsystem.theme.CustomThemeSeeds(Color(0xFF4422EE), Color(0xFF007766), Color(0xFFAA5522))
+        val state = AppearanceUiState("system", false, seeds.encode(), SurfaceStyles.DYNAMIC_OLED_WHITE)
+        val look = themeLookOptions().first { it.key == "custom" }
+        val preview = themePreviewColors(context, state, look, selected = true)
+        listOf(false, true).forEach { dark ->
+            val app = resolveBoxLoreColorScheme(context, dark, false, seeds.encode(), state.currentSurfaceStyle)
+            val shown = if (dark) preview.dark else preview.light
+            val widget = cx.aswin.boxlore.core.designsystem.theme.resolveBoxLoreChromeColors(context, dark, false, seeds.encode(), state.currentSurfaceStyle)
+            assertEquals(app.primary, shown.primary)
+            assertEquals(app.secondary, shown.secondary)
+            assertEquals(app.tertiary, shown.tertiary)
+            assertEquals(app.primary.toArgb(), widget.primary)
+            assertEquals(app.surface.toArgb(), widget.surface)
         }
     }
 }

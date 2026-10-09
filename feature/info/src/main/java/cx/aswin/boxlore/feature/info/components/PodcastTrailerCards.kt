@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ExpandLess
@@ -22,11 +23,9 @@ import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -100,7 +99,7 @@ private fun SingleTrailerContent(
     modifier: Modifier,
 ) {
     val isSelected = episode.id in selection.selectedEpisodeIds
-    OutlinedCard(
+    Surface(
         modifier =
         modifier
             .fillMaxWidth()
@@ -111,18 +110,9 @@ private fun SingleTrailerContent(
                     if (selection.isActive) selection.onToggle(episode) else onEpisodeClick(episode, globalIndex)
                 },
             ),
-        shape = MaterialTheme.shapes.large,
-        colors =
-        CardDefaults.outlinedCardColors(
-            containerColor =
-            if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            },
-        ),
+        shape = RoundedCornerShape(24.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
         border = trailerBorder(isSelected),
-        elevation = CardDefaults.outlinedCardElevation(defaultElevation = 1.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -157,23 +147,14 @@ internal fun TrailerStackCard(
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val selectedCount = group.trailers.count { (episode, _) -> episode.id in selection.selectedEpisodeIds }
-    OutlinedCard(
+    Surface(
         modifier =
         modifier
             .fillMaxWidth()
             .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
-        shape = MaterialTheme.shapes.large,
-        colors =
-        CardDefaults.outlinedCardColors(
-            containerColor =
-            if (selectedCount > 0) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            },
-        ),
+        shape = RoundedCornerShape(24.dp),
+        color = if (selectedCount > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
         border = trailerBorder(selectedCount > 0),
-        elevation = CardDefaults.outlinedCardElevation(defaultElevation = 1.dp),
     ) {
         Column {
             TrailerStackHeader(
@@ -428,13 +409,13 @@ private fun TrailerSummary(
             if (showBadge) {
                 Surface(
                     shape = ExpressiveShapes.Pill,
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ) {
                     Text(
                         text = "Trailer",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = GoogleSansWeight.bold,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
@@ -452,10 +433,8 @@ private fun TrailerSummary(
 }
 
 @Composable
-private fun trailerBorder(isSelected: Boolean): BorderStroke = BorderStroke(
-    width = if (isSelected) 2.dp else 0.5.dp,
-    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-)
+private fun trailerBorder(isSelected: Boolean): BorderStroke? =
+    if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
 
 private fun trailerDurationText(episode: Episode): String {
     if (episode.duration <= 0) return "Trailer"

@@ -31,6 +31,15 @@ class AnalyticsTracksFacadeTest {
 
     private fun firstProps(event: String): Map<String, Any> = recorder.first { it.first == event }.second
 
+    @Test
+    fun customThemeEventsUseOnlyEditorEntryAndBackgroundStyle() {
+        AnalyticsHelper.trackCustomThemeEditorOpened()
+        AnalyticsHelper.trackCustomThemeSaved("classic_dynamic")
+        assertEquals(listOf("custom_theme_editor_opened", "custom_theme_saved"), names())
+        assertEquals(mapOf("entry_point" to "appearance"), firstProps("custom_theme_editor_opened"))
+        assertEquals(mapOf("background_style" to "classic_dynamic"), firstProps("custom_theme_saved"))
+    }
+
     // ── Onboarding ─────────────────────────────────────────────────
 
     @Test

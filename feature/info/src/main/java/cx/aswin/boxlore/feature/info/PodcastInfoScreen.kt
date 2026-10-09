@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -50,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -61,6 +64,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
+import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
@@ -71,13 +76,12 @@ import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbar
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarActions
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionToolbarState
+import cx.aswin.boxlore.feature.info.components.InfoArtworkBackground
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesConfirmDialog
 import cx.aswin.boxlore.feature.info.components.PodcastGenreEditSheet
-import cx.aswin.boxlore.feature.info.components.PodcastInfoBackgroundHeader
 import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPillOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
-import cx.aswin.boxlore.feature.info.components.PodcastInfoSearchOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlayActions
 import cx.aswin.boxlore.feature.info.components.areAppNotificationsEnabled
@@ -85,9 +89,11 @@ import cx.aswin.boxlore.feature.info.components.handleAutoDownloadToggle
 import cx.aswin.boxlore.feature.info.components.handleNotificationsToggle
 import cx.aswin.boxlore.feature.info.components.handleToolbarWarningAction
 import cx.aswin.boxlore.feature.info.logic.EpisodeSelectionRange
+import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.PodcastEpisodeSelectionLogic
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
+import cx.aswin.boxlore.feature.info.logic.podcastSearchDisplayEpisodes
 import cx.aswin.boxlore.feature.info.logic.resolveAutoScrollTarget
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -107,6 +113,7 @@ fun PodcastInfoScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf((uiState as? PodcastInfoUiState.Success)?.podcast?.takeIf { it.id == podcastId }?.let { it.imageUrl.takeIf(String::isNotBlank) ?: it.fallbackImageUrl }), isLoading = uiState is PodcastInfoUiState.Loading) {
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
     val downloadedEpisodeIds by viewModel.downloadedEpisodeIds.collectAsState()
     val downloadingEpisodeIds by viewModel.downloadingEpisodeIds.collectAsState()
@@ -119,9 +126,23 @@ fun PodcastInfoScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val searchFocusRequester = remember { FocusRequester() }
+    val isMiniPlayerVisible = bottomContentPadding > appBottomChromeContentPadding(isMiniPlayerVisible = false)
 
     // Search State
     var isSearchActive by remember { mutableStateOf(false) }
+    val closeSearch = {
+        focusManager.clearFocus()
+        isSearchActive = false
+        viewModel.searchEpisodes("")
+    }
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) {
+            listState.animateScrollToItem(1)
+            searchFocusRequester.requestFocus()
+        }
+    }
     var toolbarWarning by remember { mutableStateOf(ToolbarWarning.NONE) }
     LaunchedEffect(backgroundChecksEnabled) {
         if (backgroundChecksEnabled && toolbarWarning == ToolbarWarning.AUTO_DOWNLOAD_APP_OPEN_ONLY) {
@@ -225,8 +246,7 @@ fun PodcastInfoScreen(
 
     // Handle Back Press for Search
     BackHandler(enabled = isSearchActive) {
-        isSearchActive = false
-        viewModel.searchEpisodes("") // Optional: Clear search on close? Or keep it? Let's clear for now.
+        closeSearch()
     }
     BackHandler(enabled = selectionActive) {
         selectionRequestGeneration += 1
@@ -264,6 +284,7 @@ fun PodcastInfoScreen(
 
     // Scroll fraction: 0 (expanded) -> 1 (collapsed)
     val density = LocalDensity.current
+    val keyboardVisible = WindowInsets.ime.getBottom(density) > 0
     val morphThreshold = with(density) { 150.dp.toPx() }
     val scrollFraction = (scrollOffset / morphThreshold).coerceIn(0f, 1f)
 
@@ -355,30 +376,34 @@ fun PodcastInfoScreen(
 
             is PodcastInfoUiState.Success -> {
                 // Blurred Background Header
-                PodcastInfoBackgroundHeader(
+                InfoArtworkBackground(
                     imageUrl = state.podcast.imageUrl.takeIf { it.isNotEmpty() } ?: state.podcast.fallbackImageUrl,
-                    collapsedHeaderHeight = collapsedHeaderHeight,
+                    height = collapsedHeaderHeight + 240.dp,
                     scrollOffset = scrollOffset,
                     scrollFraction = scrollFraction,
                 )
 
                 // Content
-                val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-
                 val displayEpisodes =
-                    remember(state.searchResults, state.episodes, hideCompleted, completedEpisodeIds) {
-                        val rawList = state.searchResults ?: state.episodes
-                        if (hideCompleted) {
+                    remember(isSearchActive, state.searchQuery, state.searchResults, state.episodes, hideCompleted, completedEpisodeIds) {
+                        val rawList = podcastSearchDisplayEpisodes(isSearchActive, state.searchQuery, state.searchResults, state.episodes)
+                        if (hideCompleted && !(isSearchActive && state.searchQuery.isNotBlank())) {
                             rawList.filter { it.id !in completedEpisodeIds }
                         } else {
                             rawList
                         }
                     }
-                val feedItems = remember(displayEpisodes) { groupEpisodes(displayEpisodes) }
+                val feedItems = remember(displayEpisodes, isSearchActive, state.searchQuery) {
+                    if (isSearchActive && state.searchQuery.isNotBlank()) {
+                        displayEpisodes.mapIndexed { index, episode -> FeedItem.NormalEpisode(episode, index) }
+                    } else {
+                        groupEpisodes(displayEpisodes)
+                    }
+                }
                 val selectedEpisodes =
-                    remember(state.episodes, selectionEpisodePool, selectedEpisodeIds) {
+                    remember(state.episodes, displayEpisodes, selectionEpisodePool, selectedEpisodeIds) {
                         PodcastEpisodeSelectionLogic.selectedEpisodes(
-                            episodes = selectionEpisodePool + state.episodes,
+                            episodes = selectionEpisodePool + state.episodes + displayEpisodes,
                             selectedIds = selectedEpisodeIds.toSet(),
                         )
                     }
@@ -442,7 +467,7 @@ fun PodcastInfoScreen(
                 }
 
                 LaunchedEffect(state, completedEpisodeIds, feedItems, ongoingEpisodeIds) {
-                    if (state.currentSort == EpisodeSort.OLDEST && feedItems.isNotEmpty()) {
+                    if (!isSearchActive && state.currentSort == EpisodeSort.OLDEST && feedItems.isNotEmpty()) {
                         val target = resolveAutoScrollTarget(feedItems, completedEpisodeIds, ongoingEpisodeIds)
                         targetJumpIndex = target.jumpIndex
                         isTargetOngoing = target.isOngoing
@@ -480,6 +505,7 @@ fun PodcastInfoScreen(
                 val episodeListModifier =
                     Modifier
                         .fillMaxSize()
+                        .then(if (isSearchActive) Modifier.imePadding() else Modifier)
                         .pointerInput(Unit) {
                             detectTapGestures(onTap = { focusManager.clearFocus() })
                         }
@@ -506,10 +532,14 @@ fun PodcastInfoScreen(
                     modifier = episodeListModifier,
                     contentPadding = PaddingValues(
                         top = collapsedHeaderHeight + 16.dp,
-                        bottom = WindowInsets.navigationBars
+                        bottom = if (isSearchActive && keyboardVisible) {
+                            16.dp
+                        } else {
+                            WindowInsets.navigationBars
                             .asPaddingValues()
                             .calculateBottomPadding() + bottomContentPadding +
-                            if (selectionActive) 92.dp else 16.dp,
+                            if (selectionActive) 92.dp else 16.dp
+                        },
                     ),
                     state = state,
                     sortedPersons = sortedPersons,
@@ -522,6 +552,8 @@ fun PodcastInfoScreen(
                     autoScrolledEpisodeId = autoScrolledEpisodeId,
                     selectedEpisodeIdSet = selectedEpisodeIdSet,
                     selectionActive = selectionActive,
+                    isSearchActive = isSearchActive,
+                    searchFocusRequester = searchFocusRequester,
                 )
 
                 val contentCallbacks = EpisodeListContentCallbacks(
@@ -552,7 +584,11 @@ fun PodcastInfoScreen(
                             onToggleAutoDownload = { viewModel.toggleAutoDownload() },
                         )
                     },
-                    onSearchFocused = { isSearchActive = true },
+                    onSearchFocused = {
+                        clearEpisodeSelection()
+                        isSearchActive = true
+                    },
+                    onSearchClose = closeSearch,
                     onDismissWarning = { toolbarWarning = ToolbarWarning.NONE },
                     onWarningAction = {
                         val currentWarning = toolbarWarning
@@ -585,7 +621,10 @@ fun PodcastInfoScreen(
                             },
                         )
                     },
-                    onEpisodeClick = onEpisodeClick,
+                    onEpisodeClick = { episode, entryPoint, index ->
+                        onEpisodeClick(episode, entryPoint, index)
+                        if (isSearchActive) closeSearch()
+                    },
                     onToggleSelection = { episode ->
                         val updated = PodcastEpisodeSelectionLogic.toggle(
                             selectedIds = selectedEpisodeIdSet,
@@ -595,6 +634,7 @@ fun PodcastInfoScreen(
                         selectionAnchorEpisodeId = episode.id.takeIf { updated.isNotEmpty() }
                     },
                     onLongPressSelection = { episode ->
+                        focusManager.clearFocus()
                         selectedEpisodeIds = PodcastEpisodeSelectionLogic.toggle(
                             selectedIds = selectedEpisodeIdSet,
                             episodeId = episode.id,
@@ -663,6 +703,7 @@ fun PodcastInfoScreen(
                     modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
+                        .adaptivePlayerOverlayOffset(isMiniPlayerVisible)
                         .padding(
                             start = 12.dp,
                             end = 12.dp,
@@ -686,7 +727,7 @@ fun PodcastInfoScreen(
                             canAddToQueue = selectedEpisodes.any { it.id !in queuedEpisodeIds },
                             hasRangeAnchor =
                             selectionAnchorEpisodeId != null &&
-                                (selectionEpisodePool + state.episodes).any {
+                                (selectionEpisodePool + state.episodes + displayEpisodes).any {
                                     it.id == selectionAnchorEpisodeId
                                 },
                             isLoadingFullSelection = isLoadingFullSelection,
@@ -851,7 +892,7 @@ fun PodcastInfoScreen(
                 }
 
                 val jumpPillVisible =
-                    targetJumpEpisode != null && !isTargetVisible && isFabVisible && !selectionActive
+                    targetJumpEpisode != null && !isTargetVisible && isFabVisible && !selectionActive && !isSearchActive
                 SnackbarHost(
                     hostState = snackbarHostState,
                     modifier =
@@ -882,44 +923,6 @@ fun PodcastInfoScreen(
                         }
                     },
                 )
-
-                // SEARCH OVERLAY (Nested inside Success)
-                AnimatedVisibility(
-                    visible = isSearchActive,
-                    enter = fadeIn() + slideInVertically { it / 2 },
-                    exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it / 2 },
-                ) {
-                    PodcastInfoSearchOverlay(
-                        podcastImageUrl =
-                        state.podcast.imageUrl.takeIf { it.isNotEmpty() }
-                            ?: state.podcast.fallbackImageUrl,
-                        query = state.searchQuery,
-                        onQueryChange = { viewModel.searchEpisodes(it) },
-                        onClose = {
-                            isSearchActive = false
-                            viewModel.searchEpisodes("") // Clear on exit
-                        },
-                        results = state.searchResults,
-                        allEpisodes = state.episodes,
-                        onEpisodeClick = { episode, index ->
-                            viewModel.recordEpisodeClick(episode.id)
-                            onEpisodeClick(episode, "podcast_info_search_results", index)
-                        },
-                        onPlayClick = { viewModel.onPlayClick(it) },
-                        onToggleLike = { viewModel.onToggleLike(it) },
-                        onQueueClick = { viewModel.toggleQueue(it) },
-                        onDownloadClick = { viewModel.toggleDownload(it) },
-                        onToggleCompletion = { viewModel.onToggleCompletion(it) },
-                        likedEpisodeIds = likedEpisodeIds,
-                        completedEpisodeIds = completedEpisodeIds,
-                        queuedEpisodeIds = queuedEpisodeIds,
-                        playbackStateFlow = viewModel.episodePlaybackState,
-                        isSearching = state.isSearching,
-                        accentColor = accentColor,
-                        downloadedEpisodeIds = downloadedEpisodeIds,
-                        downloadingEpisodeIds = downloadingEpisodeIds,
-                    )
-                }
             }
         }
 
@@ -933,5 +936,6 @@ fun PodcastInfoScreen(
             viewModel = viewModel,
             episodePendingDownloadRemoval = episodePendingDownloadRemoval,
         )
+    }
     }
 }

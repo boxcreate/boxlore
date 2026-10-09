@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,10 +40,11 @@ import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
 import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
+import cx.aswin.boxlore.core.prefs.ThemeSelection
 import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
+import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
-import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import cx.aswin.boxlore.feature.settings.components.SettingsSwitchRow
 
@@ -63,6 +63,8 @@ data class AppearanceUiState(
     val currentSubscriptionsDefaultTab: String = SubscriptionsDefaultTab.SHOWS,
     val currentSubscriptionsTabStyle: String = SubscriptionsTabStyle.TOP,
     val miniPlayerSeekButtonsEnabled: Boolean = false,
+    val artworkColorsEnabled: Boolean = true,
+    val savedCustomTheme: ThemeSelection? = null,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -81,6 +83,9 @@ data class AppearanceActions(
     val onSetSubscriptionsTabStyle: (String) -> Unit = {},
     val onSetMiniPlayerSeekButtonsEnabled: (Boolean) -> Unit = {},
     val onSetThemePreset: (String) -> Unit = {},
+    val onSetArtworkColorsEnabled: (Boolean) -> Unit = {},
+    val onApplyTheme: (ThemeSelection, ThemeSelection?) -> Unit = { _, _ -> },
+    val onSaveCustomTheme: (ThemeSelection) -> Unit = { onApplyTheme(it, it) },
 )
 
 @Composable
@@ -88,62 +93,16 @@ internal fun AppearanceSettingsPage(
     state: AppearanceUiState,
     actions: AppearanceActions,
     onBack: () -> Unit,
-    onThemeClick: () -> Unit,
+    onEditCustomTheme: () -> Unit,
 ) {
     SettingsScaffold(
         title = "Appearance",
         onBack = onBack,
     ) {
-        SettingsGroup {
-            SettingsNavigationRow(
-                title = "Theme",
-                supportingText = themeSelectionSummary(state),
-                icon = Icons.Rounded.Palette,
-                onClick = onThemeClick,
-            )
-        }
-
-        LetteringSection(
-            currentFontRoundness = state.currentFontRoundness,
-            onSetFontRoundness = actions.onSetFontRoundness,
-        )
-
-        NavigationStyleSection(
-            currentNavigationStyle = state.currentNavigationStyle,
-            onSetNavigationStyle = actions.onSetNavigationStyle,
-        )
-
-        SettingsGroup(title = "Miniplayer") {
-            SettingsSwitchRow(
-                title = "Show seek buttons in miniplayer",
-                supportingText = "Larger back and forward controls beside play/pause",
-                checked = state.miniPlayerSeekButtonsEnabled,
-                onCheckedChange = actions.onSetMiniPlayerSeekButtonsEnabled,
-                icon = Icons.Rounded.Replay,
-            )
-        }
-
-        OpenAppToSection(
-            currentOpenAppTo = state.currentOpenAppTo,
-            onSetOpenAppTo = actions.onSetOpenAppTo,
-        )
-
-        DefaultTabsSection(
-            currentExploreDefaultTab = state.currentExploreDefaultTab,
-            onSetExploreDefaultTab = actions.onSetExploreDefaultTab,
-            currentSubscriptionsDefaultTab = state.currentSubscriptionsDefaultTab,
-            onSetSubscriptionsDefaultTab = actions.onSetSubscriptionsDefaultTab,
-        )
-
-        SubscriptionsTabStyleSection(
-            currentSubscriptionsTabStyle = state.currentSubscriptionsTabStyle,
-            onSetSubscriptionsTabStyle = actions.onSetSubscriptionsTabStyle,
-        )
-
-        HomeChromeSection(
-            homeShortcutsInLibrary = state.homeShortcutsInLibrary,
-            onSetHomeShortcutsInLibrary = actions.onSetHomeShortcutsInLibrary,
-        )
+        AppearanceThemeSection(state, actions, onEditCustomTheme)
+        LetteringSection(state.currentFontRoundness, actions.onSetFontRoundness)
+        AppearanceLayoutSection(state, actions)
+        AppearanceStartSection(state, actions)
 
         WidgetsSection(
             currentWidgetAppearance = state.currentWidgetAppearance,
@@ -153,90 +112,41 @@ internal fun AppearanceSettingsPage(
 }
 
 @Composable
-private fun NavigationStyleSection(
-    currentNavigationStyle: String,
-    onSetNavigationStyle: (String) -> Unit,
-) {
-    val selectedStyle = NavigationStyle.fromKey(currentNavigationStyle)
-    SettingsGroup(
-        title = "Navigation",
-        footer = "Choose the floating pill or a classic Material bottom bar.",
-    ) {
+private fun AppearanceLayoutSection(state: AppearanceUiState, actions: AppearanceActions) {
+    SettingsGroup(title = "Layout") {
         SettingsContent {
-            ConnectedOptionSelector(
-                options = NavigationStyle.entries.map { it.key to it.label },
-                selected = selectedStyle.key,
-                onSelect = onSetNavigationStyle,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                DefaultTabPicker("Navigation bar", NavigationStyle.entries.map { it.key to it.label }, NavigationStyle.fromKey(state.currentNavigationStyle).key, actions.onSetNavigationStyle)
+                DefaultTabPicker("Subscriptions tab position", listOf(SubscriptionsTabStyle.TOP to "Top", SubscriptionsTabStyle.FLOATING to "Floating"), SubscriptionsTabStyle.sanitize(state.currentSubscriptionsTabStyle), actions.onSetSubscriptionsTabStyle)
+            }
         }
+        SettingsDivider()
+        SettingsSwitchRow(
+            title = "Move Home shortcuts to Library",
+            supportingText = "Show Settings and Feedback in Library instead of Home",
+            checked = state.homeShortcutsInLibrary,
+            onCheckedChange = actions.onSetHomeShortcutsInLibrary,
+            icon = Icons.Rounded.Home
+        )
+        SettingsDivider()
+        SettingsSwitchRow(
+            title = "Miniplayer seek buttons",
+            supportingText = "Show back and forward controls beside play and pause",
+            checked = state.miniPlayerSeekButtonsEnabled,
+            onCheckedChange = actions.onSetMiniPlayerSeekButtonsEnabled,
+            icon = Icons.Rounded.Replay
+        )
     }
 }
 
 @Composable
-private fun OpenAppToSection(
-    currentOpenAppTo: String,
-    onSetOpenAppTo: (String) -> Unit,
-) {
-    val selected =
-        when (currentOpenAppTo) {
-            OpenAppTo.SUBSCRIPTIONS -> OpenAppTo.SUBSCRIPTIONS
-            OpenAppTo.DOWNLOADS -> OpenAppTo.DOWNLOADS
-            else -> OpenAppTo.HOME
-        }
-    SettingsGroup(
-        title = "Open app to",
-        footer = "Choose where boxlore opens after a cold start. Applies the next time you fully relaunch the app.",
-    ) {
+private fun AppearanceStartSection(state: AppearanceUiState, actions: AppearanceActions) {
+    SettingsGroup(title = "Start page & tabs", footer = "Start page applies when you relaunch boxlore. Links can open a different page or tab.") {
         SettingsContent {
-            ConnectedOptionSelector(
-                options =
-                listOf(
-                    OpenAppTo.HOME to "Home",
-                    OpenAppTo.SUBSCRIPTIONS to "Subscriptions",
-                    OpenAppTo.DOWNLOADS to "Downloads",
-                ),
-                selected = selected,
-                onSelect = onSetOpenAppTo,
-                labelStyle = MaterialTheme.typography.labelMedium,
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun DefaultTabsSection(
-    currentExploreDefaultTab: String,
-    onSetExploreDefaultTab: (String) -> Unit,
-    currentSubscriptionsDefaultTab: String,
-    onSetSubscriptionsDefaultTab: (String) -> Unit,
-) {
-    SettingsGroup(
-        title = "Default tabs",
-        footer = "Used when you open Explore or Subscriptions. Links that pick a tab still go there.",
-    ) {
-        SettingsContent {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                DefaultTabPicker(
-                    label = "Explore",
-                    options =
-                    listOf(
-                        ExploreDefaultTab.FOR_YOU to "For You",
-                        ExploreDefaultTab.TOP to "Top",
-                    ),
-                    selected = ExploreDefaultTab.sanitize(currentExploreDefaultTab),
-                    onSelect = onSetExploreDefaultTab,
-                )
-                DefaultTabPicker(
-                    label = "Subscriptions",
-                    options =
-                    listOf(
-                        SubscriptionsDefaultTab.SHOWS to "Shows",
-                        SubscriptionsDefaultTab.NEW_EPISODES to "New episodes",
-                    ),
-                    selected = SubscriptionsDefaultTab.sanitize(currentSubscriptionsDefaultTab),
-                    onSelect = onSetSubscriptionsDefaultTab,
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                DefaultTabPicker("Start page", listOf(OpenAppTo.HOME to "Home", OpenAppTo.SUBSCRIPTIONS to "Subscriptions", OpenAppTo.DOWNLOADS to "Downloads"), state.currentOpenAppTo, actions.onSetOpenAppTo)
+                DefaultTabPicker("Explore opens to", listOf(ExploreDefaultTab.FOR_YOU to "For You", ExploreDefaultTab.TOP to "Top"), ExploreDefaultTab.sanitize(state.currentExploreDefaultTab), actions.onSetExploreDefaultTab)
+                DefaultTabPicker("Subscriptions opens to", listOf(SubscriptionsDefaultTab.SHOWS to "Shows", SubscriptionsDefaultTab.NEW_EPISODES to "New episodes"), SubscriptionsDefaultTab.sanitize(state.currentSubscriptionsDefaultTab), actions.onSetSubscriptionsDefaultTab)
             }
         }
     }
@@ -267,32 +177,6 @@ private fun DefaultTabPicker(
 }
 
 @Composable
-private fun SubscriptionsTabStyleSection(
-    currentSubscriptionsTabStyle: String,
-    onSetSubscriptionsTabStyle: (String) -> Unit,
-) {
-    val selected = SubscriptionsTabStyle.sanitize(currentSubscriptionsTabStyle)
-    SettingsGroup(
-        title = "Subscriptions tabs",
-        footer = "Choose whether tabs sit in the top header or float at the bottom (like Explore).",
-    ) {
-        SettingsContent {
-            ConnectedOptionSelector(
-                options =
-                listOf(
-                    SubscriptionsTabStyle.TOP to "Top",
-                    SubscriptionsTabStyle.FLOATING to "Floating",
-                ),
-                selected = selected,
-                onSelect = onSetSubscriptionsTabStyle,
-                labelStyle = MaterialTheme.typography.labelMedium,
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
-            )
-        }
-    }
-}
-
-@Composable
 private fun LetteringSection(
     currentFontRoundness: String,
     onSetFontRoundness: (String) -> Unit,
@@ -307,8 +191,8 @@ private fun LetteringSection(
     val headerFamily = remember(context, axis) { buildSectionHeaderFontFamily(context, axis) }
 
     SettingsGroup(
-        title = "Lettering",
-        footer = "How rounded Google Sans Flex letters feel across the app.",
+        title = "Text",
+        footer = "Choose how rounded letters look across the app.",
     ) {
         SettingsContent {
             ConnectedOptionSelector(
@@ -466,8 +350,7 @@ private fun WidgetsSection(
     SettingsGroup(
         title = "Widgets",
         footer =
-        "App theme uses the same Theme, Background, and Colors as boxlore. " +
-            "System uses the launcher’s light/dark and wallpaper accents.",
+        "App theme matches your chosen colors and mode. System follows your phone’s mode and wallpaper colors.",
     ) {
         SettingsContent {
             ConnectedOptionSelector(
@@ -480,25 +363,5 @@ private fun WidgetsSection(
                 onSelect = onSetWidgetAppearance,
             )
         }
-    }
-}
-
-@Composable
-private fun HomeChromeSection(
-    homeShortcutsInLibrary: Boolean,
-    onSetHomeShortcutsInLibrary: (Boolean) -> Unit,
-) {
-    SettingsGroup(
-        title = "Home",
-        footer =
-        "When this is on, Home only shows the logo. Settings and Feedback move to the Library top bar.",
-    ) {
-        SettingsSwitchRow(
-            title = "Cleaner Home",
-            supportingText = "Move Settings and Feedback to Library",
-            checked = homeShortcutsInLibrary,
-            onCheckedChange = onSetHomeShortcutsInLibrary,
-            icon = Icons.Rounded.Home,
-        )
     }
 }

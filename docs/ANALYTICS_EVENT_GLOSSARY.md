@@ -107,6 +107,8 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `episode_detail_viewed` | Episode info screen opened | episode_id:string; podcast_id:string | — | none |
 | `nav_tab_clicked` | Bottom nav tab selected | tab:string | previous_tab:string | none |
 | `settings_interaction` | Settings screen view or control | action:string | setting_key:string | none |
+| `custom_theme_editor_opened` | Custom theme editor becomes visible | entry_point:string | none | none |
+| `custom_theme_saved` | Custom theme preferences saved successfully | background_style:string | none | none |
 | `feature_announcement_action` | In-app/feature announcement viewed/dismissed/acted | action:string | feature_id:string; category:string | none |
 | `offline_mode_entered` | App detected offline / offline UI | — | reason:string | none |
 | `player_chrome_interaction` | Mini/full player, control bar, or playback-route action | surface:string; action:string | screen:string; volume_control_available:bool | none |
