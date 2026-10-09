@@ -56,16 +56,27 @@ internal fun ArtworkNavigationHostTheme(navController: NavHostController, conten
         // Detail pages publish their own clock, including the entire loading phase.
         if (!isDetail) entry?.id?.let { palettes?.update(it, base) }
     }
-    val backdrop = when {
-        !enabled -> base.background
-        previewAppEntry != null -> base.background
-        transitioning -> palettes?.transitionColors?.background ?: initial.background
-        isDetail -> palettes?.colorsFor(entry?.id)?.background ?: initial.background
-        else -> base.background
+    val backdrop = if (enabled && previewAppEntry == null) {
+        artworkNavigationBackdrop(palettes, entry?.id, transitioning, isDetail, base.background, initial.background)
+    } else {
+        base.background
     }
     CompositionLocalProvider(LocalArtworkNavigationBaseColors provides base, LocalArtworkLoaderColors provides colors) {
         content(Modifier.background(backdrop))
     }
+}
+
+private fun artworkNavigationBackdrop(
+    palettes: cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationColors?,
+    entryId: String?,
+    transitioning: Boolean,
+    isDetail: Boolean,
+    base: androidx.compose.ui.graphics.Color,
+    initial: androidx.compose.ui.graphics.Color,
+): androidx.compose.ui.graphics.Color = when {
+    transitioning -> palettes?.transitionColors?.background ?: initial
+    isDetail -> palettes?.colorsFor(entryId)?.background ?: initial
+    else -> base
 }
 
 /** Native Back starts the previous page's lifecycle before changing the current entry. */
