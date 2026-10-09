@@ -122,8 +122,13 @@ and listen without paywalls, subscriptions, or ads.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>🚨 Critical:</b>
+<ul align="left">
+<li>Fixed a release-build issue that could prevent automatic and Smart downloads from starting. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
+</ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Smaller app download while retaining artwork, fonts and notification sounds. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
 <li>Browse shows with clearer controls, compact episode cards and search that keeps the episode list in view. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
 <li>Let podcast and episode pages match their artwork, or turn artwork colors off in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
 <li>Create your own theme with live light and dark previews. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>
