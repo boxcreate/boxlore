@@ -234,6 +234,7 @@ com.google.guava:guava:33.3.1-android
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 com.google.j2objc:j2objc-annotations:3.0.0
 com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0
+com.materialkolor:material-color-utilities-jvm:5.0.1
 com.posthog:posthog-android:3.45.0
 com.posthog:posthog:6.15.0
 com.prof18.rssparser:rssparser-android:6.1.7
@@ -247,6 +248,8 @@ com.squareup.okhttp3:okhttp:5.4.0
 com.squareup.okio:okio-jvm:3.17.0
 com.squareup.okio:okio:3.17.0
 com.squareup.retrofit2:retrofit:2.9.0
+dev.drewhamilton.poko:poko-annotations-jvm:0.23.1
+dev.drewhamilton.poko:poko-annotations:0.23.1
 io.coil-kt:coil-base:2.6.0
 io.coil-kt:coil-compose-base:2.6.0
 io.coil-kt:coil-compose:2.6.0

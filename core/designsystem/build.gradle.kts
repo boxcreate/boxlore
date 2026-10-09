@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.material.color.utilities)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.core.ktx)

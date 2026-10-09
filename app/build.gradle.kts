@@ -217,6 +217,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.ui.test.junit4)
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.work:work-testing:${libs.versions.work.get()}")
     implementation(projects.feature.history)

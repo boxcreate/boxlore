@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.ListeningPeriod
 import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
 import cx.aswin.boxlore.feature.settings.AppearanceSettings
@@ -157,6 +158,8 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             currentSubscriptionsDefaultTab = settingsState.subscriptionsDefaultTab,
             currentSubscriptionsTabStyle = settingsState.subscriptionsTabStyle,
             miniPlayerSeekButtonsEnabled = settingsState.miniPlayerSeekButtonsEnabled,
+            artworkColorsEnabled = settingsState.artworkColorsEnabled,
+            savedCustomTheme = settingsState.savedCustomTheme,
         ),
         actions = AppearanceActions(
             onSetThemeConfig = { config -> scope.launch { userPrefs.setThemeConfig(config) } },
@@ -164,6 +167,16 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             onSetThemeBrand = { brand -> scope.launch { userPrefs.setThemeBrand(brand) } },
             onSetSurfaceStyle = { style -> scope.launch { userPrefs.setSurfaceStyle(style) } },
             onSetThemePreset = { key -> scope.launch { userPrefs.setThemePreset(key) } },
+            onApplyTheme = { selection, custom ->
+                scope.launch { userPrefs.setThemeSelection(selection, custom) }
+            },
+            onSaveCustomTheme = { selection ->
+                scope.launch {
+                    userPrefs.setThemeSelection(selection, selection)
+                    AnalyticsHelper.trackCustomThemeSaved(selection.surfaceStyle)
+                }
+            },
+            onSetArtworkColorsEnabled = { enabled -> scope.launch { userPrefs.setArtworkColorsEnabled(enabled) } },
             onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
             onSetNavigationStyle = { style -> scope.launch { userPrefs.setNavigationStyle(style) } },
             onSetOpenAppTo = { openAppTo -> scope.launch { userPrefs.setOpenAppTo(openAppTo) } },

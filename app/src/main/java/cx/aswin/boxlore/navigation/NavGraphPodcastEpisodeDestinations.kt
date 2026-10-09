@@ -110,6 +110,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
             playbackRepository.playerState.map { it.currentEpisode != null }.distinctUntilChanged()
         }.collectAsState(initial = false)
 
+        cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationEntry(backStackEntry.id) {
         cx.aswin.boxlore.feature.info.PodcastInfoScreen(
             podcastId = podcastId,
             viewModel = viewModel,
@@ -135,6 +136,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
                 queueManager.playEpisode(episode, state.podcast)
             },
         )
+        }
     }
 }
 
@@ -225,6 +227,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w
         val carouselPosition = args.getInt("carouselPosition", -1)
         val playContext = entryPointBundle(entryPoint, vibeId, carouselPosition)
 
+        cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationEntry(backStackEntry.id) {
         cx.aswin.boxlore.feature.info.EpisodeInfoScreen(
             episodeId = episodeId,
             episodeTitle = episodeTitle,
@@ -266,6 +269,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w
             showMarkPlayedTip = !hasSeenMarkPlayedTip,
             onMarkPlayedTipDismissed = { scope.launch { userPrefs.markMarkPlayedTipSeen() } },
         )
+        }
     }
 }
 
@@ -406,6 +410,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
 
         val successState = state as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
 
+        cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationEntry(backStackEntry.id) {
         cx.aswin.boxlore.feature.info.EpisodeInfoScreen(
             episodeId = episodeId,
             episodeTitle = successState?.episode?.title ?: "",
@@ -442,5 +447,6 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
             },
             bottomContentPadding = miniPlayerBottomPadding(isPlayerVisible),
         )
+        }
     }
 }

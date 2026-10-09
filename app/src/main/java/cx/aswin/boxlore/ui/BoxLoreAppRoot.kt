@@ -404,6 +404,8 @@ fun BoxLoreAppRoot(
     val themeBrand by userPrefs.themeBrandStream.collectAsState(
         initial = remember { userPrefs.cachedThemeBrand },
     )
+    val artworkColorsEnabled by userPrefs.artworkColorsEnabledStream.collectAsState(initial = remember { userPrefs.cachedArtworkColorsEnabled })
+    val savedCustomTheme by userPrefs.customThemeStream.collectAsState(initial = remember { userPrefs.cachedCustomTheme })
     val surfaceStyle by userPrefs.surfaceStyleStream.collectAsState(
         initial = remember { userPrefs.cachedSurfaceStyle },
     )
@@ -544,14 +546,16 @@ fun BoxLoreAppRoot(
             dismissedFeatureVersion != "android_auto_1.3.6" &&
             activeAnnouncement == null
 
+    val artworkNavigation = remember { cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationColors() }
     BoxLoreTheme(
         darkTheme = darkTheme,
         dynamicColor = useDynamicColor,
+        artworkColorsEnabled = artworkColorsEnabled,
         themeBrand = themeBrand,
         surfaceStyle = surfaceStyle,
         fontRoundness = fontRoundness,
     ) {
-        CompositionLocalProvider(LocalNavigationStyle provides navigationStyle) {
+        CompositionLocalProvider(LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
             loreQueueConflictEpisode?.let { pendingLoreEpisode ->
                 LoreQueueConflictDialog(
                     pendingLoreEpisode = pendingLoreEpisode,
@@ -614,8 +618,15 @@ fun BoxLoreAppRoot(
                     episodeId = currentEpisode?.id,
                     route = currentRoute,
                 )
+                val navigationColors = if (artworkColorsEnabled && artworkNavigation.appThemePreviewEntryId == null && cx.aswin.boxlore.navigation.isArtworkDetailRoute(currentRoute)) {
+                    artworkNavigation.colorsFor(navBackStackEntry?.id)
+                } else {
+                    null
+                }
+                val navigationBackground = navigationColors?.background ?: MaterialTheme.colorScheme.surface
                 Scaffold(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = navigationBackground,
+                    contentColor = navigationColors?.onBackground ?: MaterialTheme.colorScheme.onSurface,
                     // Screens own their system-bar insets; keep Scaffold padding at zero.
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 ) { innerPadding ->
@@ -626,6 +637,7 @@ fun BoxLoreAppRoot(
                     ) {
                         PredictiveBackWrapper(
                             enabled = canGoBack,
+                            backgroundColor = navigationBackground,
                             onBack = {
                                 when (
                                     resolveLaunchSubscriptionsBack(
@@ -688,6 +700,8 @@ fun BoxLoreAppRoot(
                                         useDynamicColor = useDynamicColor,
                                         themeBrand = themeBrand,
                                         surfaceStyle = surfaceStyle,
+                                        artworkColorsEnabled = artworkColorsEnabled,
+                                        savedCustomTheme = savedCustomTheme,
                                         fontRoundness = fontRoundnessKey,
                                         navigationStyle = navigationStyleKey,
                                         openAppTo = openAppToKey,
@@ -731,6 +745,9 @@ fun BoxLoreAppRoot(
                             currentRoute = currentRoute,
                             backStack = backStack,
                         )
+                    cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationTheme(
+                        navigationColors,
+                    ) {
                     BoxLoreNavigationBar(
                         currentRoute = activeTab,
                         onNavigate = { route ->
@@ -750,6 +767,7 @@ fun BoxLoreAppRoot(
                                 }
                             },
                     )
+                    }
                 }
 
                 val isPlayerActive = currentEpisode != null

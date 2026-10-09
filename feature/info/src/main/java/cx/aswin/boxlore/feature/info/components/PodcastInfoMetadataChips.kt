@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
@@ -27,16 +28,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.info.EpisodeSort
+import cx.aswin.boxlore.feature.info.R
 
 internal fun calculateUpdateFrequencyData(
     podcast: Podcast,
@@ -247,233 +249,89 @@ internal fun mediumIconFor(medium: String): ImageVector = when (medium.lowercase
 }
 
 @Composable
-internal fun CompactPersonChip(
-    person: Person,
-    onClick: () -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = ExpressiveShapes.Pill,
-        modifier =
-        Modifier.expressiveClickable(
-            enabled = !person.href.isNullOrBlank(),
-            onClick = onClick,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
+internal fun CompactPersonChip(person: Person, onClick: () -> Unit) {
+    val displayText = if (!person.role.isNullOrBlank()) {
+        "${person.name} (${person.role!!.replaceFirstChar { it.uppercaseChar() }})"
+    } else {
+        person.name
+    }
+    PodcastMetadataChip(
+        label = displayText,
+        onClick = onClick.takeIf { !person.href.isNullOrBlank() },
+        leadingIcon = {
             if (!person.img.isNullOrBlank()) {
                 OptimizedImage(
                     url = person.img,
-                    proxyWidth = 40,
-                    contentDescription = person.name,
-                    modifier =
-                    Modifier
-                        .size(16.dp)
-                        .clip(CircleShape),
+                    proxyWidth = 60,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp).clip(CircleShape),
                     contentScale = ContentScale.Crop,
                 )
             } else {
-                Icon(
-                    imageVector = Icons.Rounded.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
+                Icon(Icons.Rounded.Person, null, Modifier.size(16.dp))
             }
-
-            val displayText =
-                if (!person.role.isNullOrBlank()) {
-                    "${person.name} (${person.role!!.replaceFirstChar { it.uppercaseChar() }})"
-                } else {
-                    person.name
-                }
-            Text(
-                text = displayText,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = GoogleSansWeight.bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
+        },
+    )
 }
 
 @Composable
 internal fun RssFeedChip() {
-    Surface(
-        shape = ExpressiveShapes.Pill,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.RssFeed,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = "RSS",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = GoogleSansWeight.medium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
+    PodcastMetadataChip(label = "RSS", icon = Icons.Rounded.RssFeed)
 }
 
 @Composable
 internal fun UpdateFrequencyChip(frequencyData: Pair<String, ImageVector>) {
-    Surface(
-        shape = ExpressiveShapes.Pill,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = frequencyData.second,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = frequencyData.first,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = GoogleSansWeight.medium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
+    PodcastMetadataChip(label = frequencyData.first, icon = frequencyData.second)
 }
 
 @Composable
-internal fun GenreChip(
-    genre: String,
-    icon: ImageVector? = null,
-    onClick: (() -> Unit)? = null,
-) {
-    Surface(
-        shape = ExpressiveShapes.Pill,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = if (onClick != null) {
-            Modifier.expressiveClickable(onClick = onClick)
-        } else {
-            Modifier
-        },
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = icon ?: genreIconFor(genre),
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-            Text(
-                text = genre,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-    }
+internal fun GenreChip(genre: String, icon: ImageVector? = null, onClick: (() -> Unit)? = null) {
+    PodcastMetadataChip(label = genre, icon = icon ?: genreIconFor(genre), onClick = onClick, genre = true)
 }
 
 @Composable
 internal fun PlayTrailerChip(onClick: () -> Unit) {
-    Surface(
-        shape = ExpressiveShapes.Pill,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.expressiveClickable(onClick = onClick),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onPrimary,
-            )
-            Text(
-                text = "Play Trailer",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-    }
+    PodcastMetadataChip(label = stringResource(R.string.podcast_info_play_trailer), icon = Icons.Rounded.PlayArrow, onClick = onClick)
 }
 
 @Composable
 internal fun MediumChip(medium: String) {
-    Surface(
-        shape = ExpressiveShapes.Pill,
-        color = MaterialTheme.colorScheme.primaryContainer,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = mediumIconFor(medium),
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            Text(
-                text = medium.replaceFirstChar { c -> c.uppercaseChar() },
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-    }
+    PodcastMetadataChip(label = medium.replaceFirstChar { it.uppercaseChar() }, icon = mediumIconFor(medium))
 }
 
 @Composable
-internal fun FundingChip(
-    fundingMessage: String?,
-    onClick: () -> Unit,
+internal fun FundingChip(fundingMessage: String?, onClick: () -> Unit) {
+    PodcastMetadataChip(label = fundingMessage ?: stringResource(R.string.podcast_info_support), icon = Icons.Filled.Favorite, onClick = onClick)
+}
+
+@Composable
+private fun PodcastMetadataChip(
+    label: String,
+    icon: ImageVector? = null,
+    onClick: (() -> Unit)? = null,
+    genre: Boolean = false,
+    leadingIcon: (@Composable () -> Unit)? = null,
 ) {
-    Surface(
-        shape = ExpressiveShapes.Pill,
-        color = MaterialTheme.colorScheme.tertiaryContainer,
-        modifier = Modifier.expressiveClickable(onClick = onClick),
-    ) {
+    val container = if (genre) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+    val foreground = if (genre) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    val content: @Composable () -> Unit = {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            Modifier.heightIn(min = 36.dp).padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Icon(
-                imageVector = Icons.Filled.Favorite,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-            Text(
-                text = fundingMessage ?: "Support",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                fontWeight = GoogleSansWeight.bold,
-            )
+            if (leadingIcon != null) {
+                leadingIcon()
+            } else if (icon != null) {
+                Icon(icon, null, Modifier.size(16.dp))
+            }
+            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = GoogleSansWeight.medium)
         }
+    }
+    if (onClick != null) {
+        Surface(onClick = onClick, shape = ExpressiveShapes.Pill, color = container, contentColor = foreground, content = content)
+    } else {
+        Surface(shape = ExpressiveShapes.Pill, color = container, contentColor = foreground, content = content)
     }
 }
 
@@ -490,6 +348,7 @@ internal fun PodcastInfoMetadataChipsRow(
     val medium = resolveDisplayMedium(podcast)
 
     LazyRow(
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         contentPadding = PaddingValues(horizontal = 0.dp),
         modifier = Modifier.fillMaxWidth(),

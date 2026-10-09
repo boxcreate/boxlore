@@ -23,12 +23,15 @@ import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoFolderSyncLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoPullRefreshLogic
 import cx.aswin.boxlore.feature.info.logic.enablePodcastNotifications
+import cx.aswin.boxlore.feature.info.logic.podcastSearchResponseIsCurrent
 import cx.aswin.boxlore.feature.info.logic.togglePodcastAutoDownload
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -1223,6 +1226,8 @@ class PodcastInfoViewModel(
         val currentState = _uiState.value
         if (currentState !is PodcastInfoUiState.Success) return
 
+        searchJob?.cancel()
+        searchJob = null
         _uiState.value = currentState.copy(searchQuery = query)
 
         // Clear search
@@ -1237,7 +1242,6 @@ class PodcastInfoViewModel(
         }
 
         // Debounce search
-        searchJob?.cancel()
         searchJob =
             viewModelScope.launch {
                 _uiState.value = (_uiState.value as? PodcastInfoUiState.Success)?.copy(isSearching = true) ?: return@launch
@@ -1266,15 +1270,20 @@ class PodcastInfoViewModel(
                         )
 
                     // Ensure we are still in a valid state to update
+                    currentCoroutineContext().ensureActive()
                     val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                    if (!podcastSearchResponseIsCurrent(query, feedId, latestState.searchQuery, latestState.podcast.id)) return@launch
                     _uiState.value =
                         latestState.copy(
                             searchResults = results,
                             isSearching = false,
                         )
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
                     val latestState = _uiState.value as? PodcastInfoUiState.Success ?: return@launch
+                    if (!podcastSearchResponseIsCurrent(query, currentState.podcast.id, latestState.searchQuery, latestState.podcast.id)) return@launch
                     _uiState.value = latestState.copy(isSearching = false, searchResults = emptyList())
                 }
             }

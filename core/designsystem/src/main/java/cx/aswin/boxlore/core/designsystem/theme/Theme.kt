@@ -36,6 +36,7 @@ val LocalFontRoundness = staticCompositionLocalOf { GoogleSansFlexRoundness }
  * surface style. Provided by [BoxLoreTheme]; available to any composable in the tree.
  */
 val LocalEffectiveDarkTheme = staticCompositionLocalOf { false }
+val LocalArtworkColorsEnabled = staticCompositionLocalOf { true }
 
 /**
  * Surface style modes that control background/surface lightness.
@@ -114,6 +115,7 @@ fun resolveBoxLoreColorScheme(
 /** Shared fixed-colour resolution for app chrome, widgets and Appearance previews. */
 fun resolveFixedThemeColorScheme(themeBrand: String, darkTheme: Boolean, surfaceStyle: String): ColorScheme {
     val effectiveDarkTheme = computeEffectiveDarkTheme(surfaceStyle, darkTheme)
+    CustomThemeSeeds.decode(themeBrand)?.let { return generatePersonalColorScheme(it, effectiveDarkTheme, surfaceStyle) }
     if (themeBrand == "violet" && isClassicSurface(surfaceStyle)) {
         return if (effectiveDarkTheme) ClassicBrandColors.dark else ClassicBrandColors.light
     }
@@ -134,6 +136,7 @@ fun BoxLoreTheme(
     themeBrand: String = "violet",
     surfaceStyle: String = SurfaceStyles.CLASSIC_DYNAMIC,
     fontRoundness: Float = GoogleSansFlexRoundness,
+    artworkColorsEnabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     // Determine effective darkTheme
@@ -165,6 +168,7 @@ fun BoxLoreTheme(
         LocalSurfaceStyle provides surfaceStyle,
         LocalEffectiveDarkTheme provides effectiveDarkTheme,
         LocalFontRoundness provides fontRoundness,
+        LocalArtworkColorsEnabled provides artworkColorsEnabled,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -205,7 +209,7 @@ private fun applyClassicOverrides(base: ColorScheme, isDark: Boolean): ColorSche
     )
 }
 
-private fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: String): ColorScheme {
+internal fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle: String): ColorScheme {
     findThemePreset(surfaceStyle)?.let { return base.withPresetBackground(it, isDark) }
     val style = if (surfaceStyle == SurfaceStyles.DYNAMIC_OLED_WHITE) {
         if (isDark) SurfaceStyles.AMOLED else SurfaceStyles.PURE_WHITE

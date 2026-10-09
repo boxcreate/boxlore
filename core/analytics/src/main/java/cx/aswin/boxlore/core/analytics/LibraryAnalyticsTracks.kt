@@ -159,6 +159,14 @@ internal object LibraryAnalyticsTracks {
         AnalyticsEmit.event("settings_interaction", props)
     }
 
+    fun trackCustomThemeEditorOpened() {
+        AnalyticsEmit.event("custom_theme_editor_opened", mapOf("entry_point" to "appearance"))
+    }
+
+    fun trackCustomThemeSaved(surfaceStyle: String) {
+        AnalyticsEmit.event("custom_theme_saved", mapOf("background_style" to surfaceStyle))
+    }
+
     fun trackMiniPlayerInteraction(
         action: String,
         podcastId: String?,

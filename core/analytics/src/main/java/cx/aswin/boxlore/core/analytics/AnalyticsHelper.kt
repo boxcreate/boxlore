@@ -672,6 +672,10 @@ object AnalyticsHelper : Analytics {
 
     fun trackSettingsInteraction(action: String, value: String? = null,) = LibraryAnalyticsTracks.trackSettingsInteraction(action, value)
 
+    fun trackCustomThemeEditorOpened() = LibraryAnalyticsTracks.trackCustomThemeEditorOpened()
+
+    fun trackCustomThemeSaved(surfaceStyle: String) = LibraryAnalyticsTracks.trackCustomThemeSaved(surfaceStyle)
+
     fun trackSupportPageViewed() = LibraryAnalyticsTracks.trackSupportPageViewed()
 
     fun trackSupportTierToggled(

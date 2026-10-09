@@ -74,6 +74,8 @@ object AnalyticsGlossary {
             "episode_detail_viewed",
             "nav_tab_clicked",
             "settings_interaction",
+            "custom_theme_editor_opened",
+            "custom_theme_saved",
             "feature_announcement_action",
             "offline_mode_entered",
             "player_chrome_interaction",

@@ -9,6 +9,7 @@ internal enum class ProfileSettingsDestination(
     Library("Library"),
     Appearance("Appearance"),
     Theme("Theme"),
+    CustomTheme("Custom theme"),
     Playback("Playback"),
     Downloads("Downloads"),
     Privacy("Privacy"),

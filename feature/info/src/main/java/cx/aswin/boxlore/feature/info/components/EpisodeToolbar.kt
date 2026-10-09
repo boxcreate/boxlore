@@ -1,10 +1,9 @@
 package cx.aswin.boxlore.feature.info.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -14,119 +13,57 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
-import androidx.compose.material.icons.rounded.AccountBalance
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AutoStories
-import androidx.compose.material.icons.rounded.ChildCare
-import androidx.compose.material.icons.rounded.Computer
-import androidx.compose.material.icons.rounded.EmojiEvents
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Fingerprint
-import androidx.compose.material.icons.rounded.Gavel
-import androidx.compose.material.icons.rounded.Groups
-import androidx.compose.material.icons.rounded.MonitorHeart
-import androidx.compose.material.icons.rounded.Movie
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Newspaper
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.NotificationsNone
-import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.School
-import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.SelfImprovement
-import androidx.compose.material.icons.rounded.SentimentVerySatisfied
-import androidx.compose.material.icons.rounded.Weekend
-import androidx.compose.material.icons.rounded.Work
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButtonDefaults
+import androidx.compose.material3.TonalToggleButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.info.EpisodeSort
-import kotlinx.coroutines.launch
-
-/**
- * A custom non-overlapping icon button for the toolbar to bypass minimum touch target overlap.
- */
-@Suppress("LongParameterList", "kotlin:S107")
-@Composable
-internal fun ToolbarIconButton(
-    icon: ImageVector,
-    contentDescription: String?,
-    containerColor: Color,
-    contentColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    iconSize: Dp = 20.dp,
-    showBadge: Boolean = false,
-    badgeColor: Color = MaterialTheme.colorScheme.error,
-) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier =
-        modifier
-            .expressiveClickable(onClick = onClick, shape = ExpressiveShapes.Pill)
-            .background(containerColor, ExpressiveShapes.Pill),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = contentColor,
-            modifier = Modifier.size(iconSize),
-        )
-        if (showBadge) {
-            Box(
-                modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 7.dp, end = 7.dp)
-                    .size(8.dp)
-                    .background(badgeColor, androidx.compose.foundation.shape.CircleShape),
-            )
-        }
-    }
-}
+import cx.aswin.boxlore.feature.info.R
 
 /**
  * Episode Toolbar - M3 Expressive
  * Contains: Search, Sort Toggle, Subscribe Button
  */
 @Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun EpisodeToolbar(
     searchQuery: String,
@@ -147,398 +84,208 @@ internal fun EpisodeToolbar(
     onSearchFocused: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    // --- Genre-themed celebration icon ---
-    val genreLower = genre.lowercase()
-    val celebrationIcon: ImageVector =
-        when {
-            genreLower.contains("music") -> Icons.Rounded.MusicNote
-            genreLower.contains("comedy") -> Icons.Rounded.SentimentVerySatisfied
-            genreLower.contains("sport") -> Icons.Rounded.EmojiEvents
-            genreLower.contains("science") -> Icons.Rounded.Science
-            genreLower.contains("tech") -> Icons.Rounded.Computer
-            genreLower.contains("news") -> Icons.Rounded.Newspaper
-            genreLower.contains("health") -> Icons.Rounded.MonitorHeart
-            genreLower.contains("history") -> Icons.Rounded.AccountBalance
-            genreLower.contains("arts") -> Icons.Rounded.Palette
-            genreLower.contains("education") -> Icons.Rounded.School
-            genreLower.contains("tv") || genreLower.contains("film") -> Icons.Rounded.Movie
-            genreLower.contains("fiction") -> Icons.Rounded.AutoStories
-            genreLower.contains("religion") || genreLower.contains("spiritual") -> Icons.Rounded.SelfImprovement
-            genreLower.contains("family") || genreLower.contains("kids") -> Icons.Rounded.ChildCare
-            genreLower.contains("leisure") -> Icons.Rounded.Weekend
-            genreLower.contains("business") -> Icons.Rounded.Work
-            genreLower.contains("government") -> Icons.Rounded.Gavel
-            genreLower.contains("society") || genreLower.contains("culture") -> Icons.Rounded.Groups
-            genreLower.contains("crime") -> Icons.Rounded.Fingerprint
-            else -> Icons.Rounded.Favorite // Fallback: heart
-        }
+    val subscribeLabel = stringResource(R.string.podcast_info_subscribe)
+    val subscribedLabel = stringResource(R.string.podcast_info_subscribed)
+    val unsubscribeLabel = stringResource(R.string.podcast_info_unsubscribe)
 
-    // --- 3-state machine: IDLE → CELEBRATING → DONE ---
-    // 0 = normal, 1 = celebrating (genre icon), 2 = done (subscribed)
-    var celebrationPhase by remember { mutableIntStateOf(if (isSubscribed) 2 else 0) }
-    var prevSubscribed by remember { mutableStateOf(isSubscribed) }
-
-    // Detect subscribe transition
-    LaunchedEffect(isSubscribed) {
-        if (isSubscribed && !prevSubscribed) {
-            // Just subscribed → celebration
-            celebrationPhase = 1
-            kotlinx.coroutines.delay(900L) // Hold the genre icon
-            celebrationPhase = 2
-        } else if (!isSubscribed) {
-            kotlinx.coroutines.delay(120L)
-            celebrationPhase = 0
-        }
-        prevSubscribed = isSubscribed
-    }
-
-    // Celebration icon animation
-    val celebScale = remember { Animatable(0f) }
-    val celebRotation = remember { Animatable(0f) }
-
-    LaunchedEffect(celebrationPhase) {
-        if (celebrationPhase == 1) {
-            // Reset
-            celebScale.snapTo(0f)
-            celebRotation.snapTo(-30f)
-            // Scale in with overshoot (parallel with rotation)
-            launch {
-                celebScale.animateTo(
-                    1.3f,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-                )
-                celebScale.animateTo(
-                    1f,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
-                )
-            }
-            // Rotate in
-            celebRotation.animateTo(
-                0f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-            )
-        }
-    }
-
-    // Screen configuration for layout optimization on narrow screens
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp
-    val isSmallScreen = screenWidth < 360
-
-    val spacing = if (isSmallScreen) 6.dp else 8.dp
-    val buttonHeight = if (isSmallScreen) 40.dp else 48.dp
-    val buttonSize = if (isSmallScreen) 40.dp else 48.dp
-    val iconSize = if (isSmallScreen) 20.dp else 22.dp
-    val textStyle = MaterialTheme.typography.labelLarge
-    val subIconSize = if (isSmallScreen) 18.dp else 20.dp
-    val subIconGap = if (isSmallScreen) 6.dp else 8.dp
-
-    val targetHorizontalPadding =
-        if (celebrationPhase == 2) {
-            if (isSmallScreen) 10.dp else 16.dp
-        } else {
-            if (isSmallScreen) 16.dp else 24.dp
-        }
-    val animatedHorizontalPadding by animateDpAsState(
-        targetValue = targetHorizontalPadding,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
-        label = "horizontalPadding",
+    val phase = rememberSubscriptionButtonPhase(isSubscribed)
+    val automationFraction by animateFloatAsState(
+        targetValue = if (isSubscribed && supportsReleaseAutomation) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = if (isSubscribed) 420f else 560f,
+        ),
+        label = "subscription_settings_reveal",
     )
-
+    val automationReveal = subscriptionAutomationReveal(automationFraction)
+    val automationEnabled = isSubscribed && supportsReleaseAutomation && automationReveal.fullyVisible
     val sortRotation by animateFloatAsState(
         targetValue = if (currentSort == EpisodeSort.NEWEST) 0f else 180f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
         label = "sortRotation",
     )
+    val containerColor by animateColorAsState(
+        targetValue = if (phase == SubscriptionButtonPhase.SUBSCRIBED) MaterialTheme.colorScheme.surfaceContainerHighest else accentColor,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "subscribeContainer",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (phase == SubscriptionButtonPhase.SUBSCRIBED) MaterialTheme.colorScheme.onSurface else accentColor.contrastColor(),
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "subscribeContent",
+    )
 
-    Row(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(spacing),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Subscribe Button
-        val subInteractionSource =
-            remember {
-                androidx.compose.foundation.interaction
-                    .MutableInteractionSource()
-            }
-        val isSubPressed by subInteractionSource.collectIsPressedAsState()
-        val subScale by animateFloatAsState(
-            targetValue = if (isSubPressed) 0.9f else 1f,
-            animationSpec = if (isSubPressed) cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion.QuickSpring else cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion.BouncySpring,
-            label = "subScale",
-        )
-
-        // Animate container color smoothly
-        val containerColor by animateColorAsState(
-            targetValue =
-            when (celebrationPhase) {
-                1 -> accentColor // Keep accent during celebration
-                2 -> MaterialTheme.colorScheme.surfaceContainerHigh
-                else -> accentColor
-            },
-            animationSpec = tween(400),
-            label = "containerColor",
-        )
-        // Pick text color based on container luminance for guaranteed contrast
-        val onAccent = accentColor.contrastColor()
-        val contentColor by animateColorAsState(
-            targetValue =
-            when (celebrationPhase) {
-                1 -> onAccent
-                2 -> MaterialTheme.colorScheme.onSurface
-                else -> onAccent
-            },
-            animationSpec = tween(400),
-            label = "contentColor",
-        )
-
-        FilledTonalButton(
-            onClick = onSubscribeClick,
-            colors =
-            ButtonDefaults.filledTonalButtonColors(
-                containerColor = containerColor,
-                contentColor = contentColor,
-            ),
-            shape = ExpressiveShapes.Pill,
-            contentPadding = PaddingValues(horizontal = animatedHorizontalPadding, vertical = 10.dp),
-            interactionSource = subInteractionSource,
-            modifier =
-            Modifier
-                .weight(1f)
-                .height(buttonHeight)
-                .graphicsLayer {
-                    scaleX = subScale
-                    scaleY = subScale
-                },
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val compact = maxWidth < 360.dp
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = if (compact) 12.dp else 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Content: AnimatedContent for the 3 phases
-            AnimatedContent(
-                targetState = celebrationPhase,
-                transitionSpec = {
-                    fadeIn(tween(150)).togetherWith(fadeOut(tween(100)))
+            Button(
+                onClick = onSubscribeClick,
+                shapes = ButtonDefaults.shapes(
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 8.dp, bottomStart = 24.dp),
+                    pressedShape = RoundedCornerShape(18.dp),
+                ),
+                colors = ButtonDefaults.buttonColors(containerColor = containerColor, contentColor = contentColor),
+                contentPadding = PaddingValues(horizontal = if (compact) 8.dp else 12.dp),
+                modifier = Modifier.weight(1f).height(48.dp).semantics {
+                    contentDescription = if (isSubscribed) unsubscribeLabel else subscribeLabel
                 },
-                contentAlignment = Alignment.Center,
-                label = "subContent",
-            ) { phase ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
+            ) {
+                AnimatedContent(
+                    targetState = phase,
+                    transitionSpec = {
+                        val enter = if (targetState == SubscriptionButtonPhase.CONFIRMATION) {
+                            fadeIn(tween(120))
+                        } else {
+                            fadeIn(tween(160, delayMillis = 60)) + scaleIn(tween(200), initialScale = 0.92f)
+                        }
+                        enter
+                            .togetherWith(fadeOut(tween(100)) + scaleOut(tween(100), targetScale = 0.96f))
+                            .using(SizeTransform(clip = false))
+                    },
+                    contentAlignment = Alignment.Center,
+                    label = "subContent",
+                ) { phase ->
                     when (phase) {
-                        0 -> {
-                            // Normal "Subscribe" state
-                            Icon(
-                                imageVector = Icons.Rounded.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(subIconSize),
-                            )
-                            Spacer(modifier = Modifier.width(subIconGap))
-                            Text(
-                                text = "Subscribe",
-                                style = textStyle,
-                                fontWeight = GoogleSansWeight.bold,
-                            )
-                        }
-                        1 -> {
-                            // Celebration: genre icon with bounce + rotate
-                            Icon(
-                                imageVector = celebrationIcon,
-                                contentDescription = null,
-                                modifier =
-                                Modifier
-                                    .size(28.dp)
-                                    .graphicsLayer {
-                                        scaleX = celebScale.value
-                                        scaleY = celebScale.value
-                                        rotationZ = celebRotation.value
-                                    },
-                            )
-                        }
-                        else -> {
-                            // Normal "Subscribed" state (text-only)
-                            Text(
-                                text = "Subscribed",
-                                style = textStyle,
-                                fontWeight = GoogleSansWeight.bold,
-                            )
-                        }
+                        SubscriptionButtonPhase.CONFIRMATION -> SubscriptionGenreConfirmation(genre)
+                        else -> Text(
+                            text = if (phase == SubscriptionButtonPhase.SUBSCRIBED) subscribedLabel else subscribeLabel,
+                            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
+                            fontWeight = GoogleSansWeight.bold,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }
-        }
-
-        AnimatedContent(
-            targetState = celebrationPhase == 2 && supportsReleaseAutomation,
-            transitionSpec = {
-                (
-                    fadeIn(spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)) +
-                        scaleIn(
-                            spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
-                            initialScale = 0.85f,
-                        )
-                    ).togetherWith(
-                    fadeOut(spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)) +
-                        scaleOut(
-                            spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
-                            targetScale = 0.85f,
-                        ),
-                ) using
-                    androidx.compose.animation.SizeTransform(clip = false) { _, _ ->
-                        spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMedium,
-                        )
-                    }
-            },
-            contentAlignment = Alignment.CenterEnd,
-            label = "actionsGroup",
-        ) { showExtraActions ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(spacing),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (showExtraActions) {
-                    // Notification Toggle Button (Bell icon)
-                    val bellInteractionSource =
-                        remember {
-                            androidx.compose.foundation.interaction
-                                .MutableInteractionSource()
-                        }
-                    val isBellPressed by bellInteractionSource.collectIsPressedAsState()
-                    val bellScale by animateFloatAsState(
-                        targetValue = if (isBellPressed) 0.9f else 1f,
-                        animationSpec = if (isBellPressed) cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion.QuickSpring else cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion.BouncySpring,
-                        label = "bellScale",
-                    )
-
-                    val bellContainerColor by animateColorAsState(
-                        targetValue =
-                        if (notificationsEnabled) {
-                            if (isSystemNotificationsBlocked) {
-                                MaterialTheme.colorScheme.errorContainer
-                            } else {
-                                MaterialTheme.colorScheme.primaryContainer
-                            }
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerLow
-                        },
-                        animationSpec = tween(300),
-                        label = "bellContainerColor",
-                    )
-
-                    val bellContentColor by animateColorAsState(
-                        targetValue =
-                        if (notificationsEnabled) {
-                            if (isSystemNotificationsBlocked) {
-                                MaterialTheme.colorScheme.onErrorContainer
-                            } else {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            }
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        animationSpec = tween(300),
-                        label = "bellContentColor",
-                    )
-
-                    ToolbarIconButton(
-                        icon = if (notificationsEnabled) Icons.Rounded.NotificationsActive else Icons.Rounded.NotificationsNone,
-                        contentDescription = "Toggle notifications",
-                        containerColor = bellContainerColor,
-                        contentColor = bellContentColor,
-                        onClick = onNotificationsToggle,
-                        showBadge = notificationsEnabled && isSystemNotificationsBlocked,
-                        badgeColor = MaterialTheme.colorScheme.error,
-                        modifier =
-                        Modifier
-                            .size(buttonSize)
-                            .graphicsLayer {
-                                scaleX = bellScale
-                                scaleY = bellScale
-                            },
-                        iconSize = iconSize,
-                    )
-
-                    // Auto-Download Toggle Button
-                    val downloadInteractionSource =
-                        remember {
-                            androidx.compose.foundation.interaction
-                                .MutableInteractionSource()
-                        }
-                    val isDownloadPressed by downloadInteractionSource.collectIsPressedAsState()
-                    val downloadScale by animateFloatAsState(
-                        targetValue = if (isDownloadPressed) 0.9f else 1f,
-                        animationSpec = if (isDownloadPressed) cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion.QuickSpring else cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion.BouncySpring,
-                        label = "downloadScale",
-                    )
-
-                    val downloadContainerColor by animateColorAsState(
-                        targetValue =
-                        if (autoDownloadEnabled) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerLow
-                        },
-                        animationSpec = tween(300),
-                        label = "downloadContainerColor",
-                    )
-
-                    val downloadContentColor by animateColorAsState(
-                        targetValue =
-                        if (autoDownloadEnabled) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        animationSpec = tween(300),
-                        label = "downloadContentColor",
-                    )
-
-                    val cloudDownloadIcon = ImageVector.vectorResource(cx.aswin.boxlore.feature.info.R.drawable.ic_cloud_download)
-                    ToolbarIconButton(
-                        icon = cloudDownloadIcon,
-                        contentDescription = "Toggle auto-download",
-                        containerColor = downloadContainerColor,
-                        contentColor = downloadContentColor,
-                        onClick = onAutoDownloadToggle,
-                        modifier =
-                        Modifier
-                            .size(buttonSize)
-                            .graphicsLayer {
-                                scaleX = downloadScale
-                                scaleY = downloadScale
-                            },
-                        iconSize = iconSize,
-                    )
-                }
-
-                // Sort Button
-                ToolbarIconButton(
-                    icon = Icons.AutoMirrored.Rounded.Sort,
-                    contentDescription = "Sort",
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    onClick = onSortToggle,
-                    modifier =
-                    Modifier
-                        .graphicsLayer { rotationX = sortRotation }
-                        .size(buttonSize),
-                    iconSize = iconSize,
+            SubscriptionAutomationSlot(automationReveal, automationEnabled) {
+                SubscriptionToggle(
+                    checked = notificationsEnabled,
+                    icon = if (notificationsEnabled) Icons.Rounded.NotificationsActive else Icons.Rounded.NotificationsNone,
+                    label = stringResource(R.string.podcast_info_notifications),
+                    onClick = onNotificationsToggle,
+                    blocked = notificationsEnabled && isSystemNotificationsBlocked,
+                    enabled = automationEnabled,
+                    modifier = Modifier.graphicsLayer {
+                        alpha = automationReveal.bellAlpha
+                        scaleX = 0.94f + 0.06f * automationReveal.bellAlpha
+                        scaleY = scaleX
+                    },
                 )
+                SubscriptionToggle(
+                    checked = autoDownloadEnabled,
+                    icon = ImageVector.vectorResource(R.drawable.ic_cloud_download),
+                    label = stringResource(R.string.podcast_info_auto_download),
+                    onClick = onAutoDownloadToggle,
+                    enabled = automationEnabled,
+                    modifier = Modifier.graphicsLayer {
+                        alpha = automationReveal.downloadAlpha
+                        scaleX = 0.94f + 0.06f * automationReveal.downloadAlpha
+                        scaleY = scaleX
+                    },
+                )
+            }
+            ConnectedToolbarAction(
+                icon = Icons.AutoMirrored.Rounded.Sort,
+                label = stringResource(R.string.podcast_info_sort),
+                onClick = onSortToggle,
+                modifier = Modifier.padding(start = 3.dp).graphicsLayer { rotationX = sortRotation },
+            )
+            ConnectedToolbarAction(
+                icon = Icons.Rounded.Search,
+                label = stringResource(R.string.podcast_info_search),
+                onClick = onSearchFocused,
+                modifier = Modifier.padding(start = 3.dp),
+                trailing = true,
+            )
+        }
+    }
+}
 
-                // Search Button
-                ToolbarIconButton(
-                    icon = Icons.Rounded.Search,
-                    contentDescription = "Search",
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    onClick = onSearchFocused,
-                    modifier = Modifier.size(buttonSize),
-                    iconSize = iconSize,
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ConnectedToolbarAction(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    trailing: Boolean = false,
+) {
+    Button(
+        onClick = onClick,
+        shapes = ButtonDefaults.shapes(
+            shape = if (trailing) {
+                RoundedCornerShape(topStart = 8.dp, topEnd = 24.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
+            } else {
+                RoundedCornerShape(8.dp)
+            },
+            pressedShape = RoundedCornerShape(18.dp),
+        ),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+        contentPadding = PaddingValues(0.dp),
+        modifier = modifier.size(48.dp).semantics { contentDescription = label },
+    ) {
+        Icon(icon, null, Modifier.size(21.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SubscriptionToggle(
+    checked: Boolean,
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    blocked: Boolean = false,
+    enabled: Boolean = true,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val blockedLabel = stringResource(R.string.podcast_info_notifications_blocked)
+    val shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(
+        shape = RoundedCornerShape(8.dp),
+        pressedShape = RoundedCornerShape(18.dp),
+    )
+    TonalToggleButton(
+        checked = checked,
+        onCheckedChange = { onClick() },
+        enabled = enabled,
+        shapes = shapes,
+        colors = ToggleButtonDefaults.tonalToggleButtonColors(
+            containerColor = scheme.surfaceContainerHighest,
+            contentColor = scheme.onSurfaceVariant,
+            checkedContainerColor = if (blocked) scheme.errorContainer else scheme.primaryContainer,
+            checkedContentColor = if (blocked) scheme.onErrorContainer else scheme.onPrimaryContainer,
+            disabledContainerColor = if (checked) {
+                if (blocked) scheme.errorContainer else scheme.primaryContainer
+            } else {
+                scheme.surfaceContainerHighest
+            },
+            disabledContentColor = if (checked) {
+                if (blocked) scheme.onErrorContainer else scheme.onPrimaryContainer
+            } else {
+                scheme.onSurfaceVariant
+            },
+        ),
+        contentPadding = PaddingValues(0.dp),
+        modifier = modifier.size(48.dp).semantics {
+            contentDescription = label
+            if (blocked) stateDescription = blockedLabel
+        },
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, null, Modifier.size(21.dp))
+            if (blocked) {
+                Box(
+                    Modifier.align(Alignment.TopEnd).size(6.dp)
+                        .background(scheme.error, CircleShape),
                 )
             }
         }

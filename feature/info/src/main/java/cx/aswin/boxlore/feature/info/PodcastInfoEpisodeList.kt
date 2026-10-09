@@ -1,21 +1,31 @@
 package cx.aswin.boxlore.feature.info
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.model.Episode
@@ -25,9 +35,11 @@ import cx.aswin.boxlore.feature.info.components.EpisodeFeedRowUi
 import cx.aswin.boxlore.feature.info.components.EpisodeListIndicators
 import cx.aswin.boxlore.feature.info.components.EpisodeSelectionUi
 import cx.aswin.boxlore.feature.info.components.EpisodeToolbar
+import cx.aswin.boxlore.feature.info.components.PodcastInfoEpisodeSearch
 import cx.aswin.boxlore.feature.info.components.ToolbarWarningBanner
 import cx.aswin.boxlore.feature.info.logic.FeedItem
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
+import cx.aswin.boxlore.feature.info.logic.podcastSearchHasNoResults
 import cx.aswin.boxlore.feature.info.sections.PodcastInfoHeroSection
 
 internal data class EpisodeListContentState(
@@ -45,6 +57,8 @@ internal data class EpisodeListContentState(
     val autoScrolledEpisodeId: String?,
     val selectedEpisodeIdSet: Set<String>,
     val selectionActive: Boolean,
+    val isSearchActive: Boolean,
+    val searchFocusRequester: FocusRequester,
 )
 
 internal data class EpisodeListContentCallbacks(
@@ -58,6 +72,7 @@ internal data class EpisodeListContentCallbacks(
     val onNotificationsToggle: () -> Unit,
     val onAutoDownloadToggle: () -> Unit,
     val onSearchFocused: () -> Unit,
+    val onSearchClose: () -> Unit,
     val onDismissWarning: () -> Unit,
     val onWarningAction: () -> Unit,
     val onEpisodeClick: (Episode, String, Int?) -> Unit,
@@ -91,6 +106,28 @@ internal fun PodcastInfoEpisodeList(
         }
 
         item(key = "toolbar") {
+            AnimatedContent(
+                targetState = contentState.isSearchActive,
+                transitionSpec = { fadeIn(tween(180, delayMillis = 60)).togetherWith(fadeOut(tween(120))) },
+                label = "podcast_episode_search",
+            ) { searching ->
+                if (searching) {
+                    Box(Modifier.fillMaxWidth()) {
+                        PodcastInfoEpisodeSearch(
+                            podcastTitle = contentState.state.podcast.title,
+                            query = contentState.state.searchQuery,
+                            onQueryChange = callbacks.onSearchChange,
+                            onClose = callbacks.onSearchClose,
+                            focusRequester = contentState.searchFocusRequester,
+                        )
+                        if (contentState.state.isSearching) {
+                            LinearProgressIndicator(
+                                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                                    .padding(horizontal = 40.dp, vertical = 2.dp).height(2.dp),
+                            )
+                        }
+                    }
+                } else {
             EpisodeToolbar(
                 searchQuery = contentState.state.searchQuery,
                 onSearchChange = callbacks.onSearchChange,
@@ -109,6 +146,8 @@ internal fun PodcastInfoEpisodeList(
                 genre = contentState.state.podcast.genre,
                 onSearchFocused = callbacks.onSearchFocused,
             )
+                }
+            }
         }
 
         toolbarWarningItem(
@@ -123,7 +162,7 @@ internal fun PodcastInfoEpisodeList(
             viewModel = viewModel,
         )
 
-        if (contentState.state.isLoadingMore && !contentState.state.isRssRefreshing) {
+        if (!contentState.isSearchActive && contentState.state.isLoadingMore && !contentState.state.isRssRefreshing) {
             item {
                 Box(
                     modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -134,14 +173,14 @@ internal fun PodcastInfoEpisodeList(
             }
         }
 
-        if (contentState.state.searchResults?.isEmpty() == true) {
+        if (podcastSearchHasNoResults(contentState.isSearchActive, contentState.state.searchQuery, contentState.state.isSearching, contentState.state.searchResults)) {
             item {
                 Box(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No episodes found",
+                        text = stringResource(R.string.podcast_info_no_search_results),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -182,9 +221,10 @@ private fun LazyListScope.episodesSection(
             ui = EpisodeFeedRowUi(
                 accentColor = contentState.accentColor,
                 indicators = contentState.episodeListIndicators,
-                autoScrolledEpisodeId = contentState.autoScrolledEpisodeId,
+                autoScrolledEpisodeId = contentState.autoScrolledEpisodeId.takeUnless { contentState.isSearchActive },
                 podcastImageUrl = contentState.state.podcast.imageUrl.takeIf { it.isNotEmpty() }
                     ?: contentState.state.podcast.fallbackImageUrl,
+                isSearchActive = contentState.isSearchActive,
             ),
             onEpisodeClick = callbacks.onEpisodeClick,
             selection = EpisodeSelectionUi(
@@ -193,10 +233,12 @@ private fun LazyListScope.episodesSection(
                 onToggle = callbacks.onToggleSelection,
                 onLongPress = callbacks.onLongPressSelection,
             ),
+            modifier = Modifier.animateItem().animateContentSize(),
         )
 
         val isLastItem = itemIndex == contentState.feedItems.lastIndex
-        val canLoadMore = contentState.state.searchResults == null &&
+        val canLoadMore = !contentState.isSearchActive &&
+            contentState.state.searchResults == null &&
             isLastItem &&
             contentState.state.hasMoreEpisodes &&
             !contentState.state.isLoadingMore

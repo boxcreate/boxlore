@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -38,12 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -52,7 +48,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
@@ -79,6 +74,7 @@ fun EpisodeInfoScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf((uiState as? EpisodeInfoUiState.Success)?.episode?.takeIf { it.id == episodeId }?.imageUrl ?: episodeImageUrl, (uiState as? EpisodeInfoUiState.Success)?.episode?.takeIf { it.id == episodeId }?.podcastImageUrl), isLoading = uiState is EpisodeInfoUiState.Loading) {
     val likedEpisodeIds by viewModel.likedEpisodeIds.collectAsState()
     val completedEpisodeIds by viewModel.completedEpisodeIds.collectAsState()
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
@@ -209,46 +205,12 @@ fun EpisodeInfoScreen(
             }
             is EpisodeInfoUiState.Success -> {
                 Box(modifier = modifier.fillMaxSize()) {
-                    // Blurred Background Header
-                    Box(
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(collapsedHeaderHeight + 400.dp)
-                            .clipToBounds()
-                            .graphicsLayer {
-                                translationY = -scrollOffset * 0.5f
-                                alpha = 1f - scrollFraction
-                            },
-                    ) {
-                        OptimizedImage(
-                            url = state.episode.imageUrl?.takeIf(String::isNotBlank) ?: state.episode.podcastImageUrl,
-                            proxyWidth = 400,
-                            contentDescription = null,
-                            modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .alpha(0.48f)
-                                .blur(80.dp, edgeTreatment = androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded),
-                            contentScale = ContentScale.Crop,
-                        )
-                        // Gradient overlay to blend into the background
-                        Box(
-                            modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(
-                                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                                        colors =
-                                        listOf(
-                                            androidx.compose.ui.graphics.Color.Transparent,
-                                            androidx.compose.ui.graphics.Color.Transparent,
-                                            MaterialTheme.colorScheme.background,
-                                        ),
-                                    ),
-                                ),
-                        )
-                    }
+                    cx.aswin.boxlore.feature.info.components.InfoArtworkBackground(
+                        imageUrl = state.episode.imageUrl?.takeIf(String::isNotBlank) ?: state.episode.podcastImageUrl,
+                        height = collapsedHeaderHeight + 400.dp,
+                        scrollOffset = scrollOffset,
+                        scrollFraction = scrollFraction,
+                    )
                     // Content List
                     LazyColumn(
                         state = listState,
@@ -324,22 +286,7 @@ fun EpisodeInfoScreen(
                                 )
                             }
                         }
-                        state.showNotes?.let { notes ->
-                            if (notes.plainText.isNotBlank()) {
-                                item {
-                                    EpisodeDescriptionCard(
-                                        notes = notes,
-                                        location = state.location,
-                                        license = state.license,
-                                        persons = state.episode.persons,
-                                        onSeekTo = viewModel::seekToPosition,
-                                    )
-                                }
-                            }
-                            if (notes.links.isNotEmpty()) {
-                                item { EpisodeLinksSection(notes.links, state.podcastTitle) }
-                            }
-                        }
+                        episodeShowNotes(state, viewModel::seekToPosition)
 
                         // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
                         if (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty()) {
@@ -454,5 +401,28 @@ fun EpisodeInfoScreen(
                 onDismiss = viewModel::dismissDownloadRemoval,
             )
     }
+    }
+    }
+}
+
+private fun LazyListScope.episodeShowNotes(
+    state: EpisodeInfoUiState.Success,
+    onSeekTo: (Long) -> Unit,
+) {
+    state.showNotes?.let { notes ->
+        if (notes.plainText.isNotBlank()) {
+            item {
+                EpisodeDescriptionCard(
+                    notes = notes,
+                    location = state.location,
+                    license = state.license,
+                    persons = state.episode.persons,
+                    onSeekTo = onSeekTo,
+                )
+            }
+        }
+        if (notes.links.isNotEmpty()) {
+            item { EpisodeLinksSection(notes.links, state.podcastTitle) }
+        }
     }
 }

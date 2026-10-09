@@ -6,6 +6,8 @@ Owns analytics event capture and non-fatal error reporting for Boxlore. The modu
 
 ## Public API
 
+- `trackCustomThemeEditorOpened` emits once per editor visit. `trackCustomThemeSaved` is called after custom theme preference persistence succeeds. Both use glossary-backed events with only entry point or background style; no color values are captured. Facade and inventory tests cover both emissions.
+
 - `Analytics` is the interface used by production code and tests.
 - `AnalyticsHelper` is the PostHog-backed production singleton.
 - `RecordingAnalytics` is an in-memory test double.

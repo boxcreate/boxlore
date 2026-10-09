@@ -261,6 +261,8 @@ class GlossaryAllEventsEmissionTest {
                 "settings_interaction" to {
                     AnalyticsHelper.trackSettingsInteraction("toggle_dark", "on")
                 },
+                "custom_theme_editor_opened" to { AnalyticsHelper.trackCustomThemeEditorOpened() },
+                "custom_theme_saved" to { AnalyticsHelper.trackCustomThemeSaved("standard") },
                 "feature_announcement_action" to {
                     AnalyticsHelper.trackFeatureAnnouncementViewed("f1")
                 },

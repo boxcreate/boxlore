@@ -27,6 +27,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.feature.info.PodcastInfoUiState
+import cx.aswin.boxlore.feature.info.components.ExpandableInfoTitle
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMetadataChipsRow
 import cx.aswin.boxlore.feature.info.components.calculateUpdateFrequencyData
 import kotlinx.coroutines.Dispatchers
@@ -67,11 +68,10 @@ internal fun PodcastInfoHeroSection(
         Spacer(modifier = Modifier.height(20.dp))
 
         // 2. Title & Artist
-        Text(
-            text = state.podcast.title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = GoogleSansWeight.bold,
+        ExpandableInfoTitle(
+            itemId = state.podcast.id,
+            title = state.podcast.title,
+            collapsedLines = 2,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
         )

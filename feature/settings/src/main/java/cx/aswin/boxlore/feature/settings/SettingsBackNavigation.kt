@@ -5,7 +5,7 @@ internal fun String?.toSettingsDestination(): ProfileSettingsDestination = when 
     "sync", "sync_and_backups", "sync-and-backups", "backups" -> ProfileSettingsDestination.SyncAndBackups
     "library" -> ProfileSettingsDestination.Library
     "appearance" -> ProfileSettingsDestination.Appearance
-    "theme" -> ProfileSettingsDestination.Theme
+    "theme" -> ProfileSettingsDestination.Appearance
     "playback" -> ProfileSettingsDestination.Playback
     "downloads" -> ProfileSettingsDestination.Downloads
     "privacy" -> ProfileSettingsDestination.Privacy
@@ -35,6 +35,7 @@ internal fun resolveSettingsBackAction(
 internal fun settingsDestinationMovesForward(from: ProfileSettingsDestination, to: ProfileSettingsDestination): Boolean = when {
     to == ProfileSettingsDestination.Hub -> false
     from == ProfileSettingsDestination.Theme && to == ProfileSettingsDestination.Appearance -> false
+    from == ProfileSettingsDestination.CustomTheme && to == ProfileSettingsDestination.Appearance -> false
     from == ProfileSettingsDestination.Account && to == ProfileSettingsDestination.SyncAndBackups -> false
     else -> true
 }

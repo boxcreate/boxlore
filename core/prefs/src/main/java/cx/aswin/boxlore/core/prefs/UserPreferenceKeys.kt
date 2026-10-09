@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.prefs
 
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
@@ -10,6 +11,10 @@ internal object Keys {
     val USE_DYNAMIC_COLOR = androidx.datastore.preferences.core.booleanPreferencesKey("use_dynamic_color")
     val THEME_BRAND = stringPreferencesKey("theme_brand")
     val SURFACE_STYLE = stringPreferencesKey("surface_style")
+    val ARTWORK_COLORS = booleanPreferencesKey("artwork_colors_enabled")
+    val CUSTOM_THEME_BRAND = stringPreferencesKey("custom_theme_brand")
+    val CUSTOM_THEME_SURFACE = stringPreferencesKey("custom_theme_surface")
+    val CUSTOM_THEME_DYNAMIC = booleanPreferencesKey("custom_theme_dynamic")
     val FONT_ROUNDNESS = stringPreferencesKey("font_roundness")
     val NAVIGATION_STYLE = stringPreferencesKey("navigation_style")
     val OPEN_APP_TO = stringPreferencesKey("open_app_to")
