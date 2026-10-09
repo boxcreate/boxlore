@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-09T02:24:40.769Z",
+  "lastRun": "2026-10-09T09:26:58.805Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
@@ -19,10 +19,10 @@
       "lastCheckedAt": 1791426779294
     },
     "8820": {
-      "lastRssKey": "78a85dc6-a9ae-4cb1-ab0c-425b6442a6f2",
-      "lastEpisodeTitle": "Relational Psychology (BONDING VIA  LAUGHING) with Sara Algoe and Laura Kurtz",
-      "lastEpisodeId": "60573402291",
-      "lastCheckedAt": 1791005710348
+      "lastEpisodeId": "61468154959",
+      "lastEpisodeTitle": "Horror Neurobiology (WATCHING SCARY STUFF) with Austin Lim",
+      "lastRssKey": "69059153-39a5-46a7-af7f-6f899aecfe0e",
+      "lastCheckedAt": 1791538021691
     },
     "9926": {
       "lastRssKey": "669983b0-c1e9-11f1-b573-83391e400189",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "87787270-d079-41a5-a52d-a49c785efb44",
-      "lastEpisodeTitle": "10pm ET, October 08 | The latest headlines from NPR",
+      "lastRssKey": "304d3102-05c8-474d-ad6f-86bbed859651",
+      "lastEpisodeTitle": "5am ET, October 09 | The latest headlines from NPR",
       "lastEpisodeId": "61431584179",
-      "lastCheckedAt": 1791512685902
+      "lastCheckedAt": 1791538024098
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75647681",
@@ -79,10 +79,10 @@
       "lastCheckedAt": 1789640192955
     },
     "152922": {
-      "lastRssKey": "6abe3cfe56d8e12f0925a72a",
-      "lastEpisodeTitle": "EP 210 - نگار صابریان | دانشمند و معاون ارشد لیفت",
+      "lastRssKey": "6ac7601c3dc1c1be4adf0abc",
+      "lastEpisodeTitle": "EP 211 - کوروش کوچکیان صبور | مهندسی تبلیغات و یادگیری ماشین در متا",
       "lastEpisodeId": "61145790971",
-      "lastCheckedAt": 1790937564163
+      "lastCheckedAt": 1791538026132
     },
     "160817": {
       "lastRssKey": "https://linuxunplugged.com/687",
@@ -158,10 +158,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "D6408A61-F1AA-451C-8CF6-8CC40EE4460E",
-      "lastEpisodeTitle": "Why Cute Mascots Are the New Faces of AI",
+      "lastRssKey": "CAC6C012-7EE0-46CF-8141-403310822217",
+      "lastEpisodeTitle": "Anthropic Took the Lead in the AI Race. OpenAI Is Catching Up.",
       "lastEpisodeId": "61108443091",
-      "lastCheckedAt": 1791453843018
+      "lastCheckedAt": 1791538036276
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -182,10 +182,10 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "74739298-c386-11f1-819a-8b6e4131c244",
-      "lastEpisodeTitle": "10PM ET 10/08/2026 Newscast",
+      "lastRssKey": "242b7f90-c3c1-11f1-b53d-9fe06b315568",
+      "lastEpisodeTitle": "5AM ET 10/09/2026 Newscast",
       "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791512698244
+      "lastCheckedAt": 1791538037806
     },
     "386911": {
       "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
@@ -248,10 +248,10 @@
       "lastCheckedAt": 1791246998080
     },
     "437685": {
-      "lastRssKey": "6d19fe7a-bc91-11f1-84e4-a774dbf607a6",
-      "lastEpisodeTitle": "Queen Ranavalona I of Madagascar",
-      "lastEpisodeId": "61430677165",
-      "lastCheckedAt": 1791453852151
+      "lastRssKey": "6cf5c9b0-bc91-11f1-84e4-53d56fd8529d",
+      "lastEpisodeTitle": "The New Deal",
+      "lastEpisodeId": "61481284305",
+      "lastCheckedAt": 1791538045905
     },
     "438184": {
       "lastRssKey": "2dc11bae-c1ec-11f1-a2e6-c7b6aef46cad",
@@ -266,10 +266,10 @@
       "lastCheckedAt": 1791296621447
     },
     "444785": {
-      "lastRssKey": "8c4e6f99-5875-4b7b-9681-98346850bf85",
-      "lastEpisodeTitle": "Montreal Canadiens' Montembeault injured | Fowler called up | Rumor Roundup | Predators game preview",
-      "lastEpisodeId": "61420125868",
-      "lastCheckedAt": 1791453853626
+      "lastRssKey": "b7585d54-0001-4c75-8143-d8cc33ce711a",
+      "lastEpisodeTitle": "MOMENT MELTDOWN: Canadiens SQUANDER Two Points, Even Strength Efforts Wasted by Special Teams",
+      "lastEpisodeId": "61470983244",
+      "lastCheckedAt": 1791538048391
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -335,10 +335,10 @@
       "lastCheckedAt": 1791134332225
     },
     "499394": {
-      "lastRssKey": "flightcast:01M46YN191EJ0V3NPANXPEM9WA",
-      "lastEpisodeTitle": "AI Safety Whistleblower: 700 AI Agents Attacked A Company To Cover Their Tracks! | Jeffrey Ladish",
-      "lastEpisodeId": "61272855925",
-      "lastCheckedAt": 1791453862809
+      "lastRssKey": "flightcast:01M1KG7RQ525JTCTET05G29VH6",
+      "lastEpisodeTitle": "Most Replayed Moment: AI Is Changing How Teams Work Forever",
+      "lastEpisodeId": "61481515942",
+      "lastCheckedAt": 1791538058841
     },
     "503644": {
       "lastRssKey": "d8b51d18-5889-4c53-9ec2-1cae8fb524d9",
@@ -377,10 +377,10 @@
       "lastCheckedAt": 1791371911919
     },
     "545784": {
-      "lastRssKey": "54e339824b2d179aba14431977773e5f",
-      "lastEpisodeTitle": "Hasta la pistoria siempre! (mit Helge Fuhst)",
-      "lastEpisodeId": "61418169376",
-      "lastCheckedAt": 1791453868567
+      "lastRssKey": "cc6594af6894f5b445cbd17a22b04e01",
+      "lastEpisodeTitle": "I feel hardcÖRR (mit Hubertus Heil)",
+      "lastEpisodeId": "61468996286",
+      "lastCheckedAt": 1791538064325
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/cap/twit_1104/b1e10584-ef12-4a62-be38-36b46710da62.mp3",
@@ -430,10 +430,10 @@
       "lastCheckedAt": 1791117922407
     },
     "628250": {
-      "lastRssKey": "a20b7d5c-bbb5-48f3-93eb-89a8e0fdda53",
-      "lastEpisodeTitle": "530405 Big_Chet",
-      "lastEpisodeId": "61376079441",
-      "lastCheckedAt": 1791371919336
+      "lastRssKey": "5c79ff2a-6586-4731-8a21-347c80ed80e5",
+      "lastEpisodeTitle": "530412 Big_Compulsion",
+      "lastEpisodeId": "61477500534",
+      "lastCheckedAt": 1791538067813
     },
     "640518": {
       "lastRssKey": "6ac76b0c39599f7c562948d7",
@@ -484,10 +484,10 @@
       "lastCheckedAt": 1791192550729
     },
     "744119": {
-      "lastRssKey": "72c33efc-32e7-4101-9268-b4d60146740d",
-      "lastEpisodeTitle": "La última frontera: el costo de defender el territorio en América Latina",
+      "lastRssKey": "8b629773-da5f-4aae-b9df-b4dd017359a6",
+      "lastEpisodeTitle": "“La última batalla”: lo que está en juego en las elecciones de EE UU",
       "lastEpisodeId": "61150417828",
-      "lastCheckedAt": 1790937607796
+      "lastCheckedAt": 1791538073559
     },
     "744169": {
       "lastRssKey": "953b0968-c1b8-11f1-a455-1bc142a8b318",
@@ -543,10 +543,10 @@
       "lastCheckedAt": 1791453882840
     },
     "838740": {
-      "lastRssKey": "3ac3fecc-c1ef-11f1-be45-1b798d79c396",
-      "lastEpisodeTitle": "Sabrina Zohar: How to Stop Chasing People Who Don’t Want You",
+      "lastRssKey": "4a93eebe-c381-11f1-b816-33506b5cbd9f",
+      "lastEpisodeTitle": "5 Signs Someone Is Draining Your Energy (And What to Do About It)",
       "lastEpisodeId": "60819104702",
-      "lastCheckedAt": 1791371930774
+      "lastCheckedAt": 1791538078241
     },
     "853158": {
       "lastRssKey": "a65cb6e2-d684-4ebe-b7d9-856da162d95b",
@@ -573,10 +573,10 @@
       "lastCheckedAt": 1791453886209
     },
     "928708": {
-      "lastRssKey": "8989d0b4-c10d-11f1-8dc7-fb13c6c4e763",
-      "lastEpisodeTitle": "History Today - Oct. 8",
-      "lastEpisodeId": "61420549049",
-      "lastCheckedAt": 1791453886989
+      "lastRssKey": "bed08f6e-c1bd-11f1-b593-dbb0ed812335",
+      "lastEpisodeTitle": "History Today - Oct. 9",
+      "lastEpisodeId": "61478515287",
+      "lastCheckedAt": 1791538080821
     },
     "946758": {
       "lastRssKey": "10f30bcc-77b5-11f0-8752-7b07bcd8ee21",
@@ -676,10 +676,10 @@
       "lastCheckedAt": 1791296669065
     },
     "1116485": {
-      "lastRssKey": "6ac79f625e8e5436b0f1fc7f",
-      "lastEpisodeTitle": "Andoni Iraola Will See THE POWER OF ANFIELD | What To Expect Ahead Of Liverpool v Man City",
+      "lastRssKey": "6ac8adb679784622da7a02a3",
+      "lastEpisodeTitle": "Isak & Gakpo Out  Of Man City Clash ? | Redmen Bitesize",
       "lastEpisodeId": "61384493127",
-      "lastCheckedAt": 1791480702914
+      "lastCheckedAt": 1791538096318
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -700,10 +700,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "8c090efe-c333-11f1-8544-17435100d8f6",
-      "lastEpisodeTitle": "Une Occasion À Saisir Pour Fowler | Le Sick Podcast Avec Tony Marinaro 08/10/26",
-      "lastEpisodeId": "61448692210",
-      "lastCheckedAt": 1791480705593
+      "lastRssKey": "43b41dd8-c392-11f1-86cd-d3208d724d48",
+      "lastEpisodeTitle": "Habs Blow A 2-0 Lead… IS THIS A JOKE?! | The Sick Podcast with Tony Marinaro October 8 2026",
+      "lastEpisodeId": "61473180228",
+      "lastCheckedAt": 1791538099786
     },
     "1199730": {
       "lastRssKey": "8ea61c5d-22ee-41a3-bce9-adafc5136fa2",
@@ -758,10 +758,10 @@
       "lastCheckedAt": 1791426872116
     },
     "1366771": {
-      "lastRssKey": "6ac7d05f39599f7c563be07d",
-      "lastEpisodeTitle": "Evening briefing Thursday 8th October",
-      "lastEpisodeId": "61350864715",
-      "lastCheckedAt": 1791480709122
+      "lastRssKey": "6ac8557a5f788808a7879a62",
+      "lastEpisodeTitle": "Morning briefing Friday 9th October",
+      "lastEpisodeId": "61479680363",
+      "lastCheckedAt": 1791538103079
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -770,10 +770,10 @@
       "lastCheckedAt": 1791480710030
     },
     "1388001": {
-      "lastRssKey": "4b23ed6c-a2a0-4d3b-b155-9d90071f6b03",
-      "lastEpisodeTitle": "Chine-Europe : menace de guerre commerciale",
+      "lastRssKey": "4b03d8a7-7892-4717-9b7d-9667d53a08db",
+      "lastEpisodeTitle": "Utiliser le mot \"génocide\" pour qualifier la situation à Gaza ou non ?",
       "lastEpisodeId": "61425278460",
-      "lastCheckedAt": 1791453910322
+      "lastCheckedAt": 1791538104493
     },
     "1545709": {
       "lastRssKey": "audioboom-01a0fcf5-f530-79ed-8abb-80f1b2551293",
@@ -811,16 +811,16 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6ac7f29f0b812ac8d5bb0dab",
-      "lastEpisodeTitle": "L'essence explose, le gouvernement fait des annonce (08/10)",
+      "lastRssKey": "6ac7c904b9a33923cb10d715",
+      "lastEpisodeTitle": "(Pop) Un Américain a détourné 8 millions de dollars grâce à des faux streams… HugoDécrypte",
       "lastEpisodeId": "61454132513",
-      "lastCheckedAt": 1791498238574
+      "lastCheckedAt": 1791538107771
     },
     "2574026": {
-      "lastRssKey": "0682bec8-bd26-11f1-9529-aba7f383686d",
-      "lastEpisodeTitle": "The Case for Crowdfunding Before Raising Venture Capital with Everette Taylor, Kickstarter",
+      "lastRssKey": "0052b4a6-c38c-11f1-9a53-8b7d6258a474",
+      "lastEpisodeTitle": "Build Mode Bonus: Inside the VC Decision-Making Process with True Ventures' Puneet Agarwal",
       "lastEpisodeId": "61115850716",
-      "lastCheckedAt": 1790883753218
+      "lastCheckedAt": 1791538108362
     },
     "2611393": {
       "lastRssKey": "0e72a65f-c10a-424c-8605-f2ea70492f12",
@@ -832,6 +832,12 @@
       "lastEpisodeTitle": "El Héroe perdido capitulo 42",
       "lastEpisodeId": "2138780960",
       "lastCheckedAt": 1788029139347
+    },
+    "3040942": {
+      "lastEpisodeId": "61285631937",
+      "lastEpisodeTitle": "The Bayeux Tapestry (English Vocabulary Lesson)",
+      "lastRssKey": "fbd1ba20-b711-11f1-9166-8bd5f9b1bdf1",
+      "lastCheckedAt": 1791538110050
     },
     "3236561": {
       "lastRssKey": "ceb72316-99d7-11f0-bf91-072267aee406",
@@ -870,10 +876,10 @@
       "lastCheckedAt": 1788608402916
     },
     "3759297": {
-      "lastRssKey": "0e9ed89a-c086-11f1-8cd8-07a507a16c97",
-      "lastEpisodeTitle": "Grilled or Fried?",
+      "lastRssKey": "967127bc-c376-11f1-9e2e-6f3020f3e14c",
+      "lastEpisodeTitle": "\"These Hallows And Rivers\" (The Scary Tapes)",
       "lastEpisodeId": "59422345053",
-      "lastCheckedAt": 1791192586787
+      "lastCheckedAt": 1791538113991
     },
     "3880049": {
       "lastEpisodeId": "13360674190",
@@ -965,10 +971,10 @@
       "lastCheckedAt": 1791192592076
     },
     "4894842": {
-      "lastRssKey": "f5e2b03b-4af9-453b-b58c-12a9968bb5bf",
-      "lastEpisodeTitle": "From Beyond Vol. III",
-      "lastEpisodeId": "61426228624",
-      "lastCheckedAt": 1791453923733
+      "lastRssKey": "1c84bbca-d1ba-4c56-94cb-be508f68691f",
+      "lastEpisodeTitle": "Fan Favorite - \"One Foot Out the Door\"",
+      "lastEpisodeId": "61477009542",
+      "lastCheckedAt": 1791538120633
     },
     "4898105": {
       "lastRssKey": "d94bce92-c2c8-11f1-82bc-1b3e6bb61bf7",
@@ -1022,16 +1028,16 @@
       "lastCheckedAt": 1791226073533
     },
     "5716515": {
-      "lastRssKey": "https://www.greatdetectives.net/detectives/?p=51751",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar: The Really Gone Matter (EP5075)",
+      "lastRssKey": "https://www.greatdetectives.net/detectives/?p=51836",
+      "lastEpisodeTitle": "Yours Truly, Johnny Dollar: The Backfire That Backfired Matter (EP5080)",
       "lastEpisodeId": "60603888883",
-      "lastCheckedAt": 1790937641849
+      "lastCheckedAt": 1791538126693
     },
     "5724334": {
-      "lastRssKey": "1cec0e2e-b35a-11f1-9593-7330af38b9b5",
-      "lastEpisodeTitle": "208: The final family",
-      "lastEpisodeId": "60536033514",
-      "lastCheckedAt": 1790914567742
+      "lastRssKey": "bf12f1ca-b35c-11f1-b79c-cbce044c7d6c",
+      "lastEpisodeTitle": "209: Suit trimmings",
+      "lastEpisodeId": "61478842247",
+      "lastCheckedAt": 1791538127260
     },
     "5731394": {
       "lastRssKey": "9ed3c9a6-c2b7-11f1-89d2-47722c89134a",
@@ -1052,10 +1058,10 @@
       "lastCheckedAt": 1791480732412
     },
     "5930143": {
-      "lastRssKey": "4b23ed6c-a2a0-4d3b-b155-9d90071f6b03",
-      "lastEpisodeTitle": "Chine-Europe : menace de guerre commerciale",
-      "lastEpisodeId": "61378210074",
-      "lastCheckedAt": 1791453934533
+      "lastRssKey": "4b03d8a7-7892-4717-9b7d-9667d53a08db",
+      "lastEpisodeTitle": "Utiliser le mot \"génocide\" pour qualifier la situation à Gaza ou non ?",
+      "lastEpisodeId": "61479742268",
+      "lastCheckedAt": 1791538130363
     },
     "5945547": {
       "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
@@ -1229,16 +1235,16 @@
       "lastCheckedAt": 1791498278713
     },
     "6894068": {
-      "lastRssKey": "0943a678-bd0c-11f1-bbf1-0366c63b3d39",
-      "lastEpisodeTitle": "#139: Why You're Not Changing (Even Though You're Trying)",
+      "lastRssKey": "8523d712-c285-11f1-92f0-dfc3eebf5d48",
+      "lastEpisodeTitle": "#140: How To Actually Change And Grow",
       "lastEpisodeId": "60250854357",
-      "lastCheckedAt": 1790937654636
+      "lastCheckedAt": 1791538154003
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779919",
-      "lastEpisodeTitle": "Radio City Playhouse - Correction",
+      "lastRssKey": "https://api.spreaker.com/episode/59779920",
+      "lastEpisodeTitle": "Lives Of Harry Lime - Earl On Troubled Waters",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1791453955252
+      "lastCheckedAt": 1791538155479
     },
     "6912659": {
       "lastRssKey": "ad6ac5f1-6717-435e-8595-89a8974680c0",
@@ -1325,10 +1331,10 @@
       "lastCheckedAt": 1791512816986
     },
     "7239415": {
-      "lastRssKey": "7dff96dc-c29a-11f1-903a-f39e6576093f",
-      "lastEpisodeTitle": "They ACTUALLY did it...",
-      "lastEpisodeId": "61368532185",
-      "lastCheckedAt": 1791413274495
+      "lastRssKey": "1fae431c-c38a-11f1-bbc7-c78ef0934535",
+      "lastEpisodeTitle": "This is so rough...",
+      "lastEpisodeId": "61469757313",
+      "lastCheckedAt": 1791538163579
     },
     "7248222": {
       "lastRssKey": "f46fa032-c362-11f1-abab-bfe7509edb08",
@@ -1527,10 +1533,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/bfb72b59-6241-59b6-b637-87f9a0f590ee",
-      "lastEpisodeTitle": "The mystery of the missing narcissism article (CASE SOLVED) ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/5ea52867-188a-521c-af87-59c03e3e30bd",
+      "lastEpisodeTitle": "DO THIS when dealing with a raging narcissistic Dr. iver ~ Dr. Ramani",
       "lastEpisodeId": "61262040086",
-      "lastCheckedAt": 1791512834643
+      "lastCheckedAt": 1791538174299
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
