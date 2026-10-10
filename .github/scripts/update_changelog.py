@@ -1100,18 +1100,18 @@ def validate_release_copy(
     labels: list[str] | None,
 ) -> tuple[str, bool, dict[str, list[str]], list[dict[str, list[str]]]]:
     """Validate author copy before writing files; never synthesize missing wording."""
-    impacts = {
+    impacts = [
         impact
         for label in labels or []
         if _normalize_token(label) != "backend-change"
         and (impact := _normalize_user_impact(label))
-    }
+    ]
     if len(impacts) != 1:
         raise ValueError(
             "Add exactly one PR impact label: " + ", ".join(USER_IMPACT_LABELS) +
             ". Then rerun release-copy validation."
         )
-    impact = next(iter(impacts))
+    impact = impacts[0]
     backend = any(_is_backend_label(label) for label in labels or [])
     for name, start, end in (
         ("changelog", PR_CHANGELOG_COPY_START, PR_CHANGELOG_COPY_END),
