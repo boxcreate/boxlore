@@ -99,7 +99,7 @@ class AppUpdatesPanelTest {
             composeRule.setContent { MaterialTheme { AppUpdatesPanel(updates, {}, {}) } }
             composeRule.onNodeWithText("Couldn’t check for updates. Try again later.").assertIsDisplayed()
             composeRule.onNodeWithText("Check for updates").assertIsDisplayed()
-            composeRule.onNodeWithText("boxlore is up to date").assertDoesNotExist()
+            composeRule.onNodeWithText("You’re up to date").assertDoesNotExist()
         } finally {
             scope.cancel()
         }

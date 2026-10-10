@@ -67,7 +67,7 @@ def build_manifest(gradle: str, apk: Path, asset: str, notes: str = "") -> dict:
     size = apk.stat().st_size
     if not 0 < size <= 512 * 1024 * 1024:
         raise ValueError("APK is missing, empty or larger than the updater limit")
-    if len(notes) > 24_000:
+    if len(notes.encode("utf-16-le")) // 2 > 24_000:
         raise ValueError("Release notes exceed 24,000 characters; supply concise reviewed copy")
     with apk.open("rb") as binary:
         digest = hashlib.file_digest(binary, "sha256").hexdigest()

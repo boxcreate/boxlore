@@ -113,11 +113,28 @@ jobs:
               ARGS+=(-F cursor=null)
             fi
             RESPONSE="$(gh api graphql "${ARGS[@]}")"
+            if ! echo "$RESPONSE" | jq -e '
+              ((.errors // []) | length == 0) and
+              (.data.repository.pullRequest.reviewThreads as $threads |
+                ($threads.nodes | type) == "array" and
+                ($threads.pageInfo.hasNextPage | type) == "boolean" and
+                all($threads.nodes[];
+                  (.isResolved | type) == "boolean" and
+                  (.isOutdated | type) == "boolean" and
+                  (.comments.nodes | type) == "array" and
+                  (.comments.nodes | length) > 0))' >/dev/null; then
+              echo "::error::Could not read complete review threads. Retry this check; do not treat it as approval."
+              exit 1
+            fi
             PAGE_NODES="$(echo "$RESPONSE" | jq -c '.data.repository.pullRequest.reviewThreads.nodes // []')"
-            ALL_NODES="$(jq -c --argjson a "$ALL_NODES" --argjson b "$PAGE_NODES" '$a + $b')"
+            ALL_NODES="$(jq -cn --argjson a "$ALL_NODES" --argjson b "$PAGE_NODES" '$a + $b')"
             HAS_NEXT="$(echo "$RESPONSE" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')"
             CURSOR="$(echo "$RESPONSE" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor // empty')"
-            [[ "$HAS_NEXT" == "true" && -n "$CURSOR" ]] || break
+            if [[ "$HAS_NEXT" == "true" && -z "$CURSOR" ]]; then
+              echo "::error::Review thread pagination is incomplete. Retry this check."
+              exit 1
+            fi
+            [[ "$HAS_NEXT" == "true" ]] || break
           done
 
           OPEN_JSON="$(
@@ -145,12 +162,16 @@ jobs:
           )"
 
           COUNT="$(echo "$OPEN_JSON" | jq 'length')"
+          if ! [[ "$COUNT" =~ ^[0-9]+$ ]]; then
+            echo "::error::Could not count review threads. Retry this check."
+            exit 1
+          fi
           echo "open_coderabbit_threads=${COUNT}"
           if [[ "$COUNT" -gt 0 ]]; then
             echo "### Unresolved CodeRabbit review threads (${COUNT})"
             echo "$OPEN_JSON" | jq -r '.[] | "- **@\(.author)**: \(.preview)\n  \(.url)"'
             echo "::error::${COUNT} unresolved CodeRabbit review thread(s) on PR #${PR_NUMBER}"
-            echo "Fix or dismiss each finding, mark the thread Resolved, then re-run this workflow or push."
+            echo "Address each finding, mark the thread Resolved, then re-run this workflow or push."
             exit 1
           fi
 

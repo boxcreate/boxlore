@@ -71,12 +71,7 @@ class AppUpdates internal constructor(
         restoring = scope.launch {
             mutableInstall.value = ApkInstallState(ApkInstallStage.VERIFYING, 1f)
             try {
-                val file = installer.restore(manifest)
-                if (checker.state.value.offer?.manifest?.apkSha256 == manifest.apkSha256) {
-                    prepared = file?.let { manifest to it }
-                    if (file == null) session.preparedChecksum = null
-                    mutableInstall.value = if (file != null) ApkInstallState(ApkInstallStage.READY, 1f) else ApkInstallState()
-                }
+                restorePreparedUpdate(manifest)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -85,6 +80,14 @@ class AppUpdates internal constructor(
                 if (restoringChecksum == manifest.apkSha256) restoringChecksum = null
             }
         }
+    }
+
+    private suspend fun restorePreparedUpdate(manifest: UpdateManifest) {
+        val file = installer.restore(manifest)
+        if (checker.state.value.offer?.manifest?.apkSha256 != manifest.apkSha256) return
+        prepared = file?.let { manifest to it }
+        if (file == null) session.preparedChecksum = null
+        mutableInstall.value = if (file != null) ApkInstallState(ApkInstallStage.READY, 1f) else ApkInstallState()
     }
 
     fun open(checkNow: Boolean = true) {

@@ -66,15 +66,15 @@ internal fun releaseNotesBlocks(notes: String, stripPrLinks: Boolean = true): Li
 }
 
 internal fun releaseNotesInline(text: String, linkStyle: SpanStyle): AnnotatedString = buildAnnotatedString {
-    val pattern = Regex("\\[([^\\]]+)\\]\\((https?://[^\\s)]+)\\)|\\*\\*(.+?)\\*\\*|__(.+?)__|\\*(.+?)\\*|_(.+?)_|`([^`]+)`")
+    val pattern = Regex("""\[([^\]]+)\]\((https?://[^\s)]+)\)|([*]{1,2}|_{1,2})(.+?)\3|`([^`]+)`""")
     var offset = 0
     pattern.findAll(text).forEach { match ->
         append(text.substring(offset, match.range.first))
         when {
             match.groups[1] != null -> withLink(LinkAnnotation.Url(match.groupValues[2], TextLinkStyles(style = linkStyle))) { append(match.groupValues[1]) }
-            match.groups[3] != null || match.groups[4] != null -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[3].ifEmpty { match.groupValues[4] }) }
-            match.groups[5] != null || match.groups[6] != null -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(match.groupValues[5].ifEmpty { match.groupValues[6] }) }
-            else -> withStyle(SpanStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)) { append(match.groupValues[7]) }
+            match.groups[3] != null && match.groupValues[3].length == 2 -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[4]) }
+            match.groups[3] != null -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(match.groupValues[4]) }
+            else -> withStyle(SpanStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)) { append(match.groupValues[5]) }
         }
         offset = match.range.last + 1
     }

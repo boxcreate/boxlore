@@ -70,6 +70,14 @@ class ManualDispatchTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             sender.notification_plan(arguments)
 
+    def test_release_url_requires_release_alert_before_transport(self):
+        transport = Mock()
+        with self.assertRaisesRegex(ValueError, "Enable Release alert"):
+            sender.send_notification(args("--release-url", "https://github.com/boxcreate/boxlore/releases/latest"), sender=transport)
+        transport.assert_not_called()
+        plan = sender.notification_plan(args("--release-url", "https://github.com/boxcreate/boxlore/releases/latest", "--release-alert", "true", "--target", "direct_users"))
+        self.assertEqual("https://github.com/boxcreate/boxlore/releases/latest", plan["data"]["release_url"])
+
     def test_invalid_controls_fail_closed(self):
         for field, value in (("dry_run", "TRUE"), ("test_mode", "yes"), ("show_action_in_push", "maybe"), ("type", "popup"), ("target", "unknown"), ("sound", "loud"), ("title", " ")):
             with self.subTest(field=field), self.assertRaises(ValueError):

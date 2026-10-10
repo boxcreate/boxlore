@@ -56,7 +56,27 @@ class UpdateManifestTests(unittest.TestCase):
             apk = Path(tmp) / "candidate.apk"
             apk.write_bytes(b"fixture")
             with self.assertRaisesRegex(ValueError, "64 KiB"):
-                build_manifest('versionCode = 29\nversionName = "0.0.29"\nminSdk = 31', apk, "a.apk", "🎧" * 20_000)
+                build_manifest('versionCode = 29\nversionName = "0.0.29"\nminSdk = 31', apk, "a.apk", "ࠀ" * 23_000)
+
+    def test_notes_limit_matches_android_utf16_length(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            apk = Path(tmp) / "candidate.apk"
+            apk.write_bytes(b"fixture")
+            gradle = 'versionCode = 29\nversionName = "0.0.29"\nminSdk = 31'
+            self.assertEqual("🎧" * 12_000, build_manifest(gradle, apk, "a.apk", "🎧" * 12_000)["notes"])
+            with self.assertRaisesRegex(ValueError, "24,000"):
+                build_manifest(gradle, apk, "a.apk", "🎧" * 12_001)
+
+    def test_workflow_queues_metadata_writers_and_uses_available_refresh_token(self):
+        root = Path(__file__).resolve().parents[2]
+        workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
+        self.assertEqual(4, workflow.count("queue: max"))
+        self.assertEqual(3, workflow.count("group: boxlore-release-metadata"))
+        self.assertIn("group: boxlore-release-preparation", workflow)
+        refresh_job = workflow.split("  refresh-latest-artifacts:", 1)[1]
+        self.assertNotIn("steps.app-token.outputs.token", refresh_job)
+        manifest_step = refresh_job.split("- name: Publish verified update manifest", 1)[1]
+        self.assertIn("GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}", manifest_step)
 
     def test_workflow_publishes_manifest_only_after_download_verification(self):
         root = Path(__file__).resolve().parents[2]

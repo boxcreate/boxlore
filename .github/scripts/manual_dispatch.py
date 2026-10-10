@@ -70,6 +70,8 @@ def notification_plan(args):
         data[field] = value
     for field in ("release_alert", "include_play"):
         data[field] = str(boolean(getattr(args, field, "false"), field)).lower()
+    if data["release_alert"] == "false" and getattr(args, "release_url", ""):
+        raise ValueError("Enable Release alert to use a GitHub release page, or clear the release URL")
     if data["release_alert"] == "true" and getattr(args, "release_url", ""):
         data["release_url"] = args.release_url
     data["test_mode"] = str(test_mode).lower()

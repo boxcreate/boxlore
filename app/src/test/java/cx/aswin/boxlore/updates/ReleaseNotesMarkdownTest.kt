@@ -28,6 +28,16 @@ class ReleaseNotesMarkdownTest {
     }
 
     @Test
+    fun `asterisk and underscore delimiters preserve distinct bold italic and code styles`() {
+        val text = releaseNotesInline("**bold** __strong__ *italic* _emphasis_ `code`", SpanStyle())
+        assertEquals("bold strong italic emphasis code", text.text)
+        assertEquals(listOf(androidx.compose.ui.text.font.FontWeight.Bold, androidx.compose.ui.text.font.FontWeight.Bold), text.spanStyles.mapNotNull { it.item.fontWeight })
+        assertEquals(2, text.spanStyles.count { it.item.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic })
+        assertEquals(1, text.spanStyles.count { it.item.fontFamily == androidx.compose.ui.text.font.FontFamily.Monospace })
+        assertEquals("*mixed_", releaseNotesInline("*mixed_", SpanStyle()).text)
+    }
+
+    @Test
     fun `unsafe link schemes remain inert plain text`() {
         val text = releaseNotesInline("[Unsafe](javascript:alert) and <script>text</script>", SpanStyle())
         assertEquals(0, text.getLinkAnnotations(0, text.length).size)

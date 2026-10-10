@@ -68,13 +68,6 @@ class BoxLoreFcmService : FirebaseMessagingService() {
     }
 
     private fun handlePushAnnouncement(parsed: ParsedFcmNotification, type: String) {
-        if (applicationContext.shouldSuppressAnnouncement(parsed.toAnnouncement())) {
-            android.util.Log.d(
-                "BoxLoreFcmService",
-                "Skipping Whats New push on Play Store install (category=${parsed.category})",
-            )
-            return
-        }
         try {
             showPushNotification(parsed.copy(type = type))
         } catch (e: Exception) {

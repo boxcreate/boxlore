@@ -66,6 +66,8 @@ jobs:
       pull-requests: read
     concurrency:
       group: boxlore-release-metadata
+      # Queue every metadata writer; the default single pending slot drops jobs.
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Generate boxlore pusher token
@@ -163,7 +165,9 @@ jobs:
       contents: write
       pull-requests: write
     concurrency:
-      group: boxlore-release-metadata
+      group: boxlore-release-preparation
+      # Queue every metadata writer; the default single pending slot drops jobs.
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Generate boxlore pusher token
@@ -386,6 +390,8 @@ jobs:
       notification_route: ${{ steps.notification.outputs.notification_route }}
     concurrency:
       group: boxlore-release-metadata
+      # Queue every metadata writer; the default single pending slot drops jobs.
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Generate boxlore pusher token
@@ -865,6 +871,8 @@ jobs:
       contents: write
     concurrency:
       group: boxlore-release-metadata
+      # Queue every metadata writer; the default single pending slot drops jobs.
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Checkout master
@@ -1265,7 +1273,7 @@ jobs:
 
       - name: Publish verified update manifest
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
           APK_ASSET: ${{ steps.release.outputs.apk_asset }}
         run: |
