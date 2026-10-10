@@ -49,7 +49,7 @@ test('preview sizing isolates the legacy gateway frame and fits the entire viewp
 test('browser preview formats the native Markdown subset without interpreting HTML',()=>{
  const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
  class Node { constructor(tag,text=''){this.tag=tag;this.textContent=text;this.children=[];this.dataset={};} append(...nodes){this.children.push(...nodes);} replaceChildren(){this.children=[];} }
- const context=vm.createContext({document:{createElement:tag=>new Node(tag),createTextNode:text=>new Node('#text',text)},window:{addEventListener(){},parent:{postMessage(){}}}});
+ const context=vm.createContext({document:{createElement:tag=>new Node(tag),createTextNode:text=>new Node('#text',text)},location:{origin:'https://boxcasts.web.app'},window:{addEventListener(){},parent:{postMessage(){}}}});
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../../admin-panel/public/notifyappusers/announcements/renderer.js'),'utf8'),context);
  const root=new Node('root');
  context.content(root,'## Heading\nFirst **bold** line\nSecond _italic_ [docs](https://example.org)\n\n1) One\n+ Two\n> A callout\n`code` <b>plain HTML</b>');
@@ -62,4 +62,28 @@ test('browser preview formats the native Markdown subset without interpreting HT
  assert.equal(root.children[5].children.find(n=>n.tag==='code').textContent,'code');
  assert.ok(root.children[5].children.some(n=>n.textContent.includes('<b>plain HTML</b>')));
  context.inline(root,'[bad](javascript:alert(1))');assert.equal(root.children.filter(n=>n.tag==='a').length,0);
+});
+
+
+test('incomplete URLs keep the composer guidance instead of a browser TypeError',()=>{
+ for(const release_url of ['github.com/x','https://'])assert.throws(()=>plan({...base(),release_alert:'true',release_url}),{message:'Use a boxlore GitHub release page.'});
+ for(const image of ['example.com/image.png','https://'])assert.throws(()=>plan({...base(),image}),{message:'Use an HTTPS image URL without embedded credentials.'});
+});
+
+test('preview messages require the same origin and the expected parent',()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+ const origin='https://boxcasts.web.app',handlers={},sent=[],rendered=[];
+ const parent={postMessage:(message,target)=>sent.push({message,target})};
+ const context=vm.createContext({location:{origin},window:{parent,addEventListener:(name,handler)=>handlers[name]=handler}});
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../../admin-panel/public/notifyappusers/announcements/renderer.js'),'utf8'),context);
+ context.window.renderAnnouncement=(payload)=>rendered.push(payload);
+ const data={source:'boxlore-preview',payload:{title:'Test'}};
+ handlers.message({origin:'https://other.example',source:parent,data});
+ handlers.message({origin,source:{},data});
+ handlers.message({origin,source:parent,data:{...data,source:'other'}});
+ assert.equal(rendered.length,0);
+ handlers.message({origin,source:parent,data});
+ assert.equal(rendered.length,1);assert.equal(rendered[0].title,'Test');
+ context.notify('dismiss');assert.equal(sent.length,2);
+ assert.ok(sent.every(message=>message.target===origin));
 });

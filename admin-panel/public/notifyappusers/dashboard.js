@@ -6,6 +6,7 @@ const BOOLS = {dry_run:'inputDryRun',test_mode:'inputTestMode',show_action_in_pu
 let reviewedDraft = null;
 function readDraft(){const result={};for(const [key,id] of Object.entries(FIELDS))result[key]=document.getElementById(id).value;for(const[key,id]of Object.entries(BOOLS))result[key]=String(document.getElementById(id).checked);return result;}
 function loadDraft(draft){for(const[key,id]of Object.entries(FIELDS))if(draft[key]!==undefined)document.getElementById(id).value=draft[key];for(const[key,id]of Object.entries(BOOLS))if(draft[key]!==undefined)document.getElementById(id).checked=String(draft[key])==='true';syncKind();pvUpdate();}
+function draftUrl(value,message){try{return new URL(value);}catch(_){throw Error(message);}}
 function plan(draft){
  for(const field of Object.keys(BOOLS))if(!['true','false'].includes(draft[field]))throw Error(`Choose a supported ${field.replaceAll('_',' ')} value.`);
  for(const[field,values]of Object.entries({target:['all_users','prod_users','debug_users','test_users','direct_users'],type:['push','in-app','both'],sound:['default','chime','announcement','silent'],presentation:['compact','fullscreen'],tone:['primary','secondary','tertiary','error'],image_style:['banner','cover']}))if(!values.includes(draft[field]))throw Error(`Choose a supported ${field.replaceAll('_',' ')}.`);
@@ -14,8 +15,8 @@ function plan(draft){
  if(draft.release_alert==='true'&&!['direct_users','test_users','debug_users'].includes(draft.target)&&draft.include_play!=='true')throw Error('Choose Direct installs for a release alert, or explicitly include Google Play.');
  if(draft.target==='direct_users'&&draft.include_play==='true')throw Error('Choose All installs to include Google Play.');
  if(!/^\d+$/.test(draft.release_version_code)||Number(draft.release_version_code)>2147483647)throw Error('Use a release version code from 0 to 2,147,483,647.');
- if(draft.release_alert==='true'&&draft.release_url){const url=new URL(draft.release_url);if(url.protocol!=='https:'||url.hostname!=='github.com'||url.port||url.username||url.password||url.search||url.hash||!(url.pathname==='/boxcreate/boxlore/releases/latest'||url.pathname.startsWith('/boxcreate/boxlore/releases/tag/')))throw Error('Use a boxlore GitHub release page.');}
- if(draft.image){const url=new URL(draft.image);if(url.protocol!=='https:'||url.username||url.password)throw Error('Use an HTTPS image URL without embedded credentials.');}
+ if(draft.release_alert==='true'&&draft.release_url){const url=draftUrl(draft.release_url,'Use a boxlore GitHub release page.');if(url.protocol!=='https:'||url.hostname!=='github.com'||url.port||url.username||url.password||url.search||url.hash||!(url.pathname==='/boxcreate/boxlore/releases/latest'||url.pathname.startsWith('/boxcreate/boxlore/releases/tag/')))throw Error('Use a boxlore GitHub release page.');}
+ if(draft.image){const url=draftUrl(draft.image,'Use an HTTPS image URL without embedded credentials.');if(url.protocol!=='https:'||url.username||url.password)throw Error('Use an HTTPS image URL without embedded credentials.');}
  const data={};for(const key of ['title','body','type','sound','action_label','show_action_in_push','show_action_in_app','category','presentation','tone','image_style','release_alert','include_play','release_version_code','test_mode'])data[key]=draft[key];
  data.body=data.body.replace(/\\n/g,'\n');data.release_version_code=String(Number(data.release_version_code));
  for(const key of ['route','image'])if(draft[key])data[key]=draft[key];
