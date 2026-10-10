@@ -1,0 +1,9 @@
+<resources>
+    <string name="announcement_open">Open</string>
+    <string name="announcement_close">Close announcement</string>
+    <string name="announcement_dismiss">Dismiss</string>
+    <string name="announcement_download">Download update</string>
+    <string name="announcement_github">View on GitHub</string>
+    <string name="announcement_play">Update on Google Play</string>
+    <string name="updates_test_build">Update test build. Updates come from this phone’s local test feed.</string>
+</resources>

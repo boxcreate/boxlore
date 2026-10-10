@@ -5,6 +5,12 @@
         <include domain="sharedpref" path="." />
         <include domain="file" path="datastore/" />
         <exclude domain="file" path="datastore/auto_download_background.preferences_pb" />
+        <!-- Update offers and installation sessions belong to this device only. -->
+        <exclude domain="sharedpref" path="boxlore_direct_updates.xml" />
+        <exclude domain="sharedpref" path="boxlore_play_updates.xml" />
+        <exclude domain="sharedpref" path="boxlore_test_updates.xml" />
+        <exclude domain="sharedpref" path="boxlore_update_session.xml" />
+        <exclude domain="sharedpref" path="boxlore_test_update_session.xml" />
         <exclude domain="database" path="androidx.work.workdb" />
         <exclude domain="database" path="androidx.work.workdb-journal" />
         <exclude domain="database" path="androidx.work.workdb-wal" />
@@ -15,6 +21,12 @@
         <include domain="sharedpref" path="." />
         <include domain="file" path="datastore/" />
         <exclude domain="file" path="datastore/auto_download_background.preferences_pb" />
+        <!-- Update offers and installation sessions belong to this device only. -->
+        <exclude domain="sharedpref" path="boxlore_direct_updates.xml" />
+        <exclude domain="sharedpref" path="boxlore_play_updates.xml" />
+        <exclude domain="sharedpref" path="boxlore_test_updates.xml" />
+        <exclude domain="sharedpref" path="boxlore_update_session.xml" />
+        <exclude domain="sharedpref" path="boxlore_test_update_session.xml" />
         <exclude domain="database" path="androidx.work.workdb" />
         <exclude domain="database" path="androidx.work.workdb-journal" />
         <exclude domain="database" path="androidx.work.workdb-wal" />

@@ -48,6 +48,37 @@ These commands test local logic; running a production script requires the intern
 
 CI configuration helpers, maintenance tools, and data files also live here. Check the owning workflow or runbook before using a tool; its presence in this directory does not mean it runs automatically.
 
+### Authored release copy and isolated rehearsals
+
+The publication and same-version refresh jobs build the direct `assembleRelease` APK and installer-free `bundlePlayRelease` AAB, validate their optimized contracts separately, and verify the downloadable APK before generating/uploading `update.json`. The manifest identifies the immutable release APK URL, version code/name, Android minimum, byte size, checksum and full reviewed listener bullets. A refresh updates its checksum without creating a newer version or sending an update alert. If manifest publication fails after verified assets, rerun publication/refresh to repair the manifest; do not bump again solely for a failed upload. No manifest is advertised before the download check passes. App checks remain read-only and do not rely on FCM delivery.
+
+Release tooling lives in `.github/scripts/`. The PR author or coding agent writes the exact developer and listener copy in the [PR template](../.github/PULL_REQUEST_TEMPLATE.md). `update_changelog.py` checks exactly one impact label, requires developer copy for every PR and listener copy for all user-impact labels, and never calls a text-generation service. The **Release copy** check refreshes on PR body and label edits. It is a fast standalone check; no Android build or repository-rule change is involved.
+
+README order is Critical → New features → Improvements → Fixes → Security → Other. Within a category, higher impact leads, then newer PRs; bullet order within each PR is preserved. CHANGELOG uses Keep a Changelog categories, then impact and PR order. All authored bullets are retained. `no-user-impact` stays in CHANGELOG only. Existing release notes and legacy markers remain readable.
+
+If copy is missing, fill that PR's release-copy region. For a merged PR, run **Changelog and Release → backfill-changelog** with its number, then retry the failed operation. Do not hand-edit generated regions. Release/tooling PRs can still use the established `[skip changelog]` exception.
+
+**Offline release rehearsal** writes candidate version files, release notes and an announcement payload to an artifact without editing source files, creating a release, using credentials or sending FCM. Same-version refresh previews keep the version unchanged and produce no announcement. Locally:
+
+```bash
+python3 .github/scripts/rehearse_release.py --output /tmp/boxlore-release-preview
+python3 .github/scripts/rehearse_release.py --output /tmp/boxlore-refresh-preview --operation refresh-latest-artifacts
+```
+
+For a custom announcement, **Send boxlore Notification** separates three steps:
+
+1. `preview_only=true` writes `announcement-preview.json` without Firebase access or delivery. Import it in the admin composer or use Download preview there.
+2. `dry_run=true` validates with Firebase without device delivery. Test mode permits only debug_users or isolated test_users.
+3. Real delivery requires the exact preview's approval digest. In the admin, Review announcement snapshots the text, appearance, destinations and audience; tick the review box and approve. Changing the draft requires another review. Automatic release publication prepares this artifact and does not send until approved.
+
+The composer offers compact/fullscreen alerts, controlled accent/image styles and exact selected-profile rendering, with a separate system-notification text preview. Release alerts have native Download update, View on GitHub and Dismiss actions. Optional fields retain old payload compatibility. Direct release delivery targets the new direct_users topic and excludes play_users/test_users; old clients sharing prod_users are not silently included. Ordinary announcements still support both channels, and manual include-Play is explicit. Topic payloads are checked against the 2,048-byte UTF-8 limit. FCM acceptance is not device receipt confirmation.
+
+If preview validation fails, correct the reported field or shorten the message, then preview again. If approval is stale, review the current draft and approve it again. If Firebase validation fails, inspect that workflow step; no message was delivered. If delivery is accepted but the device shows nothing, check the selected build/audience, notification permission, release code and Play exclusion. Retry a live message only after confirming that a previous request was not accepted.
+
+The public composer and renderer are versioned here; its existing private gateway/auth/hosting configuration remains unchanged and ignored. Deploying the panel is a separate operation. See [admin composer](../admin-panel/README.md) and [isolated app testing](../docs/TESTING.md#isolated-update-and-announcement-testing).
+
+The local updater fixture accepts `--notes-file` for long UTF-8 sample release notes. It preserves the supplied text in the test manifest and `/notes` page, validates the Android character/response bounds, and never publishes or sends anything.
+
 ### Check New Episodes
 
 [`.github/workflows/new-episode-check.yml`](../.github/workflows/new-episode-check.yml) runs approximately every 30 minutes on GitHub Actions. It polls notification registrations independently of catalog sync.
@@ -85,15 +116,21 @@ Repair considers catalog rows without a valid HTTPS `feedUrl`. It uses the authe
 
 ### Release artifact contract guard
 
-The release workflow runs `.github/scripts/verify_release_contracts.py` after optimized APK/AAB builds and before either publication path uploads artifacts. It compares pre-R8 project classes with optimized DEX using Android SDK `dexdump`, checks dynamic resource names with `aapt2`, and verifies named raw-resource payloads in both artifacts. Literal resource URIs are discovered from main/release Kotlin sources, including notification sounds. Run locally after `assembleRelease bundleRelease`:
+The release workflow runs `.github/scripts/verify_release_contracts.py` after optimized APK/AAB builds and before either publication path uploads artifacts. It compares pre-R8 project classes with optimized DEX using Android SDK `dexdump`, checks dynamic resource names with `aapt2`, and verifies named raw-resource payloads in both artifacts. Literal resource URIs are discovered from main/release Kotlin sources, including notification sounds. Run locally after `assembleRelease bundlePlayRelease`:
 
 ```sh
 python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
   --report app/build/reports/release-contracts.json \
-  app/build/outputs/apk/release/app-release.apk \
-  app/build/outputs/bundle/release/app-release.aab
+  app/build/outputs/apk/release/app-release.apk
+python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> --app-variant playRelease \
+  --report app/build/reports/play-release-contracts.json \
+  app/build/outputs/bundle/playRelease/app-playRelease.aab
 ```
 
 `release_classfile.py` reads compiled JVM contracts; `release_dex.py` reads optimized contracts and R8 class names. `test_release_contracts.py` covers missing/private constructors, persisted names, nested JSON graphs, field/default changes, generic erasure, annotations, serializers, resource loss, and workflow wiring. These fast tests run in PR CI. Actions → Manual optimized release validation → Run workflow optionally exercises the real optimizer on the selected branch without release credentials. It does not run automatically on PRs, publish a release or send notifications. See [optimized-release validation](../docs/TESTING.md#optimized-release-validation) for scope and manual acceptance.
 
 All three artifact-build jobs explicitly request `platform-tools` during Android SDK setup; the pinned setup action's default also requests the removed `tools` package and fails before compilation. The workflow regression check covers the manual preflight and both signed publication paths.
+
+The update manifest preserves authored listener-note emphasis and links as Markdown instead of flattening them to plain text. The app renders the supported listener Markdown subset.
+
+Local update fixtures support `--upcoming-file` for testing an unreleased Markdown preview. `upcoming_notes` extracts authored listener copy from README Upcoming Changes. The approved workflow refreshes only optional upcoming text in the latest verified update feed after README synchronization. Metadata writers share a concurrency group to prevent stale overwrites. This does not change APK metadata or send FCM; it becomes active only when these workflow changes are shipped.

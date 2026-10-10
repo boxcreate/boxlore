@@ -5,6 +5,7 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import cx.aswin.boxlore.BuildConfig
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
+import cx.aswin.boxlore.util.isInstalledFromPlayStore
 import java.io.File
 
 /** FCM topic subscribe helpers and post-restore reconciliation. */
@@ -13,16 +14,12 @@ object FcmTopicHelper {
     private const val SENTINEL_NAME = "fcm_topics_synced"
 
     /** Subscribe to broadcast topics (all_users + debug/prod). */
-    fun subscribeDefaultTopics() {
+    fun subscribeDefaultTopics(context: Context) {
         try {
-            FirebaseMessaging.getInstance().subscribeToTopic("all_users")
-            if (BuildConfig.DEBUG) {
-                FirebaseMessaging.getInstance().subscribeToTopic("debug_users")
-                FirebaseMessaging.getInstance().unsubscribeFromTopic("prod_users")
-            } else {
-                FirebaseMessaging.getInstance().subscribeToTopic("prod_users")
-                FirebaseMessaging.getInstance().unsubscribeFromTopic("debug_users")
-            }
+            val messaging = FirebaseMessaging.getInstance()
+            val topics = announcementTopics(BuildConfig.DEBUG, BuildConfig.BOXLORE_ISOLATED_TESTS, !BuildConfig.BOXLORE_DIRECT_UPDATES || context.isInstalledFromPlayStore())
+            topics.first.forEach { messaging.subscribeToTopic(it) }
+            topics.second.forEach { messaging.unsubscribeFromTopic(it) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed FCM init", e)
         }
@@ -43,4 +40,15 @@ object FcmTopicHelper {
             }
         }
     }
+}
+
+internal fun announcementTopics(debug: Boolean, isolated: Boolean, play: Boolean): Pair<Set<String>, Set<String>> {
+    val all = setOf("all_users", "prod_users", "debug_users", "test_users", "play_users", "direct_users")
+    val subscribed = when {
+        isolated -> setOf("test_users")
+        debug -> setOf("all_users", "debug_users")
+        play -> setOf("all_users", "prod_users", "play_users")
+        else -> setOf("all_users", "prod_users", "direct_users")
+    }
+    return subscribed to (all - subscribed)
 }

@@ -7,15 +7,16 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,12 +26,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
-/** Home's utility actions share one solid capsule, wherever the screen places them. */
+/** Connected action segments; screen owners retain navigation and shortcut callbacks. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TopBarUtilityActions(
     onFeedbackClick: () -> Unit,
@@ -40,28 +43,48 @@ fun TopBarUtilityActions(
     onSettingsLongClick: () -> Unit = {},
     settingsButtonModifier: Modifier = Modifier,
 ) {
-    Surface(
+    val onUpdate = LocalUpdateAvailableAction.current
+    val leading = RoundedCornerShape(topStart = 24.dp, topEnd = 7.dp, bottomEnd = 7.dp, bottomStart = 24.dp)
+    val trailing = RoundedCornerShape(topStart = 7.dp, topEnd = 24.dp, bottomEnd = 24.dp, bottomStart = 7.dp)
+    val middle = RoundedCornerShape(7.dp)
+    Row(
         modifier = modifier,
-        shape = RoundedCornerShape(percent = 50),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        if (onUpdate != null) {
+            UtilityActionSegment(
+                onClick = onUpdate,
+                onLongClick = {},
+                shape = leading,
+                modifier = Modifier.clip(leading).then(updateShimmerModifier()),
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
+                UpdateAvailableIcon(Modifier.size(22.dp))
+            }
+        }
+        UtilityActionSegment(
+            onClick = onFeedbackClick,
+            onLongClick = onFeedbackLongClick,
+            shape = if (onUpdate == null) leading else middle,
         ) {
-            UtilityActionButton(
-                icon = Icons.Rounded.Feedback,
+            Icon(
+                imageVector = Icons.Rounded.Feedback,
                 contentDescription = "Send Feedback",
-                onClick = onFeedbackClick,
-                onLongClick = onFeedbackLongClick,
+                modifier = Modifier.size(20.dp),
             )
-            UtilityActionButton(
-                icon = Icons.Rounded.Tune,
+        }
+        UtilityActionSegment(
+            onClick = onSettingsClick,
+            onLongClick = onSettingsLongClick,
+            shape = trailing,
+            modifier = settingsButtonModifier,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Tune,
                 contentDescription = "Settings",
-                onClick = onSettingsClick,
-                onLongClick = onSettingsLongClick,
-                modifier = settingsButtonModifier,
+                modifier = Modifier.size(20.dp),
             )
         }
     }
@@ -69,17 +92,19 @@ fun TopBarUtilityActions(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun UtilityActionButton(
-    icon: ImageVector,
-    contentDescription: String,
+private fun UtilityActionSegment(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    shape: Shape,
     modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    content: @Composable () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val iconScale = animateFloatAsState(
-        targetValue = if (isPressed) 0.94f else 1f,
+    val pressScale = animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMedium,
@@ -87,10 +112,13 @@ private fun UtilityActionButton(
         label = "utilityActionPress",
     )
 
-    Box(
+    Surface(
         modifier = modifier
-            .size(width = 48.dp, height = 35.dp)
-            .clip(CircleShape)
+            .size(width = 43.dp, height = 33.dp)
+            .graphicsLayer {
+                scaleX = pressScale.value
+                scaleY = pressScale.value
+            }
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = androidx.compose.foundation.LocalIndication.current,
@@ -98,17 +126,10 @@ private fun UtilityActionButton(
                 onClick = onClick,
                 onLongClick = onLongClick,
             ),
-        contentAlignment = Alignment.Center,
+        shape = if (isPressed) RoundedCornerShape(12.dp) else shape,
+        color = containerColor,
+        contentColor = contentColor,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier
-                .size(22.dp)
-                .graphicsLayer {
-                    scaleX = iconScale.value
-                    scaleY = iconScale.value
-                },
-        )
+        Box(contentAlignment = Alignment.Center) { content() }
     }
 }

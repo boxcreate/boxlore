@@ -70,6 +70,8 @@ import cx.aswin.boxlore.core.playback.setSleepTimer
 import cx.aswin.boxlore.core.playback.stopAndClearQueue
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.fcm.FcmTopicHelper
+import cx.aswin.boxlore.fcm.isUpdaterAnnouncementAction
+import cx.aswin.boxlore.fcm.shouldSuppressAnnouncement
 import cx.aswin.boxlore.feature.home.ModeSwitchState
 import cx.aswin.boxlore.feature.onboarding.generateRecommendationsFromOpml
 import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
@@ -83,7 +85,8 @@ import cx.aswin.boxlore.navigation.NavHostActions
 import cx.aswin.boxlore.navigation.NavHostSession
 import cx.aswin.boxlore.navigation.NavOpmlCallbacks
 import cx.aswin.boxlore.navigation.NavSettingsState
-import cx.aswin.boxlore.navigation.PushTargetRouteAllowlist
+import cx.aswin.boxlore.navigation.dispatchPushAction
+import cx.aswin.boxlore.navigation.externalPushActionIntent
 import cx.aswin.boxlore.navigation.isLaunchLandingBackRoute
 import cx.aswin.boxlore.navigation.navigateBottomNavTab
 import cx.aswin.boxlore.navigation.navigateHomeFromLaunchSubscriptions
@@ -94,7 +97,6 @@ import cx.aswin.boxlore.navigation.shouldShowBottomNav
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
 import cx.aswin.boxlore.ui.announcement.FeatureAnnouncementOverlay
 import cx.aswin.boxlore.ui.announcement.InAppAnnouncementDialog
-import cx.aswin.boxlore.ui.announcement.shouldSuppressWhatsNewOnPlay
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialog
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportDialogActions
 import cx.aswin.boxlore.ui.libraryimport.OpmlImportEffects
@@ -131,48 +133,32 @@ fun BoxLoreAppRoot(
     val currentWarmIntent = warmStartIntent.value
     LaunchedEffect(currentWarmIntent) {
         val intent = currentWarmIntent ?: return@LaunchedEffect
-        if (intent.data != null) {
-            val uri = intent.data
-            AnalyticsHelper.trackDeepLinkOpened(
-                linkScheme = uri?.scheme ?: "unknown",
-                isFirstOpen = false,
-                linkHost = uri?.host,
-                coldStart = false,
-            )
-            navController.handleDeepLink(intent)
-            warmStartIntent.value = null
-            return@LaunchedEffect
-        }
-        val rawTarget = intent.getStringExtra("target_route")
-        val allowed = PushTargetRouteAllowlist.sanitize(rawTarget)
-        if (allowed != null) {
-            if (PushTargetRouteAllowlist.isAppOrWebUri(allowed)) {
-                val deepLinkIntent =
-                    android.content
-                        .Intent(
-                            android.content.Intent.ACTION_VIEW,
-                        ).apply {
-                            data = android.net.Uri.parse(allowed)
-                        }
-                val uri = deepLinkIntent.data
-                AnalyticsHelper.trackDeepLinkOpened(
-                    linkScheme = uri?.scheme ?: "unknown",
-                    isFirstOpen = false,
-                    linkHost = uri?.host,
-                    coldStart = false,
-                )
-                navController.handleDeepLink(deepLinkIntent)
-            } else {
-                runCatching { navController.navigate(allowed) }
-                    .onFailure {
-                        Log.w("BoxLoreAppRoot", "Ignoring invalid target_route=$allowed", it)
+        val rawTarget = intent.data?.toString() ?: intent.getStringExtra("target_route")
+        runCatching {
+            dispatchPushAction(
+                target = rawTarget,
+                handleDeepLink = { deepLinkIntent ->
+                    val uri = deepLinkIntent.data
+                    AnalyticsHelper.trackDeepLinkOpened(
+                        linkScheme = uri?.scheme ?: "unknown",
+                        isFirstOpen = false,
+                        linkHost = uri?.host,
+                        coldStart = false,
+                    )
+                    navController.handleDeepLink(if (intent.data != null) intent else deepLinkIntent)
+                },
+                navigate = { navController.navigate(it) },
+                openExternal = { activity.startActivity(externalPushActionIntent(it)) },
+                openUpdater = { download ->
+                    if (download) {
+                        application.container.appUpdates.openAndDownload()
+                    } else {
+                        application.container.appUpdates.open(checkNow = true)
                     }
-            }
-            intent.removeExtra("target_route")
-        } else if (!rawTarget.isNullOrBlank()) {
-            Log.w("BoxLoreAppRoot", "Rejected non-allowlisted target_route=$rawTarget")
-            intent.removeExtra("target_route")
-        }
+                },
+            )
+        }.onFailure { Log.w("BoxLoreAppRoot", "Unable to open notification target", it) }
+        intent.removeExtra("target_route")
         warmStartIntent.value = null
     }
 
@@ -479,7 +465,7 @@ fun BoxLoreAppRoot(
         }
 
     LaunchedEffect(Unit) {
-        FcmTopicHelper.subscribeDefaultTopics()
+        FcmTopicHelper.subscribeDefaultTopics(activity)
     }
 
     var opmlImportState by remember { mutableStateOf<OpmlImportState>(OpmlImportState.Idle) }
@@ -555,6 +541,7 @@ fun BoxLoreAppRoot(
         surfaceStyle = surfaceStyle,
         fontRoundness = fontRoundness,
     ) {
+        cx.aswin.boxlore.updates.AppUpdatesHost(application.container.appUpdates, activity) {
         CompositionLocalProvider(LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
             loreQueueConflictEpisode?.let { pendingLoreEpisode ->
                 LoreQueueConflictDialog(
@@ -570,8 +557,8 @@ fun BoxLoreAppRoot(
             if (onboardingCompleted && activeAnnouncement != null) {
                 val announcement = activeAnnouncement!!
                 val suppressWhatsNewOnPlay =
-                    remember(announcement.category) {
-                        activity.shouldSuppressWhatsNewOnPlay(announcement.category)
+                    remember(announcement) {
+                        activity.shouldSuppressAnnouncement(announcement)
                     }
                 if (suppressWhatsNewOnPlay) {
                     LaunchedEffect(announcement.timestamp, announcement.category) {
@@ -582,8 +569,15 @@ fun BoxLoreAppRoot(
                         announcement = announcement,
                         onDismiss = { scope.launch { userPrefs.clearAnnouncement() } },
                         onAction = { route ->
-                            scope.launch { userPrefs.clearAnnouncement() }
-                            try {
+                            if (cx.aswin.boxlore.fcm.shouldDismissAnnouncementForAction(announcement, route)) scope.launch { userPrefs.clearAnnouncement() }
+                            if (isUpdaterAnnouncementAction(announcement, route)) {
+                                if (route == "boxlore://updates/download") {
+                                    application.container.appUpdates.openAndDownload()
+                                } else {
+                                    application.container.appUpdates.open(checkNow = true)
+                                }
+                            } else {
+                                try {
                                 val intent =
                                     android.content.Intent(
                                         android.content.Intent.ACTION_VIEW,
@@ -592,6 +586,7 @@ fun BoxLoreAppRoot(
                                 activity.startActivity(intent)
                             } catch (e: Exception) {
                                 Log.e("Announcement", "Failed to open route", e)
+                            }
                             }
                         },
                     )
@@ -974,6 +969,7 @@ fun BoxLoreAppRoot(
                     },
                 ),
             )
+        }
         }
     }
 }

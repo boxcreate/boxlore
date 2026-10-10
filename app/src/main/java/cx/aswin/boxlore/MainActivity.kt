@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
     private val playAppUpdateHelper by lazy {
         PlayAppUpdateHelper(this, updateLauncher)
     }
+    private val appUpdates get() = (application as BoxLoreApplication).container.appUpdates
 
     private var consumedAuthLink: String? = null
     private var inFlightAuthLink: String? = null
@@ -168,7 +169,8 @@ class MainActivity : ComponentActivity() {
             isCurrentlyPlaying = ::isCurrentlyPlaying,
             scope = lifecycleScope,
         )
-        playAppUpdateHelper.resumeInProgressUpdate()
+        appUpdates.foreground()
+        if (appUpdates.usesPlay) playAppUpdateHelper.resumeInProgressUpdate()
     }
 
     override fun onStart() {
@@ -222,8 +224,11 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(Unit) {
                 withFrameNanos {}
                 withFrameNanos {}
-                playAppUpdateHelper.checkForUpdates()
+                appUpdates.foreground()
             }
+            androidx.compose.runtime.CompositionLocalProvider(
+                cx.aswin.boxlore.updates.LocalPlayUpdateAction provides { playAppUpdateHelper.startUpdate() },
+            ) {
             BoxLoreAppRoot(
                 activity = this@MainActivity,
                 application = application as BoxLoreApplication,
@@ -235,6 +240,7 @@ class MainActivity : ComponentActivity() {
                     it.setUiForeground(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
                 },
             )
+            }
 
             pendingCrossDeviceAuthLink?.let { linkString ->
                 cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme {

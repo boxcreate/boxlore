@@ -3,8 +3,10 @@ package cx.aswin.boxlore.core.prefs
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import cx.aswin.boxlore.core.model.ContentRegions
@@ -1086,6 +1088,14 @@ class UserPreferencesRepository(context: Context,) {
             androidx.datastore.preferences.core
                 .longPreferencesKey("announcement_timestamp")
         val CATEGORY = stringPreferencesKey("announcement_category")
+        val PRESENTATION = stringPreferencesKey("announcement_presentation")
+        val TONE = stringPreferencesKey("announcement_tone")
+        val IMAGE_STYLE = stringPreferencesKey("announcement_image_style")
+        val RELEASE = booleanPreferencesKey("announcement_release")
+        val INCLUDE_PLAY = booleanPreferencesKey("announcement_include_play")
+        val TEST_ONLY = booleanPreferencesKey("announcement_test_only")
+        val RELEASE_CODE = longPreferencesKey("announcement_release_code")
+        val RELEASE_URL = stringPreferencesKey("announcement_release_url")
     }
 
     data class Announcement(
@@ -1097,6 +1107,14 @@ class UserPreferencesRepository(context: Context,) {
         val showActionInApp: Boolean,
         val timestamp: Long,
         val category: String,
+        val presentation: String = "compact",
+        val tone: String = "primary",
+        val imageStyle: String = "banner",
+        val releaseAlert: Boolean? = null,
+        val includePlay: Boolean = false,
+        val testOnly: Boolean = false,
+        val releaseVersionCode: Long = 0,
+        val releaseUrl: String? = null,
     )
 
     val activeAnnouncementStream: Flow<Announcement?> =
@@ -1115,6 +1133,14 @@ class UserPreferencesRepository(context: Context,) {
                         showActionInApp = pref[AnnouncementKeys.SHOW_ACTION_IN_APP] ?: true,
                         timestamp = pref[AnnouncementKeys.TIMESTAMP] ?: 0L,
                         category = pref[AnnouncementKeys.CATEGORY] ?: "WHAT'S NEW",
+                        presentation = pref[AnnouncementKeys.PRESENTATION] ?: "compact",
+                        tone = pref[AnnouncementKeys.TONE] ?: "primary",
+                        imageStyle = pref[AnnouncementKeys.IMAGE_STYLE] ?: "banner",
+                        releaseAlert = pref[AnnouncementKeys.RELEASE],
+                        includePlay = pref[AnnouncementKeys.INCLUDE_PLAY] ?: false,
+                        testOnly = pref[AnnouncementKeys.TEST_ONLY] ?: false,
+                        releaseVersionCode = pref[AnnouncementKeys.RELEASE_CODE] ?: 0,
+                        releaseUrl = pref[AnnouncementKeys.RELEASE_URL],
                     )
                 } else {
                     null
@@ -1143,6 +1169,14 @@ class UserPreferencesRepository(context: Context,) {
             it[AnnouncementKeys.SHOW_ACTION_IN_APP] = announcement.showActionInApp
             it[AnnouncementKeys.CATEGORY] = announcement.category
             it[AnnouncementKeys.TIMESTAMP] = announcement.timestamp
+            it[AnnouncementKeys.PRESENTATION] = announcement.presentation
+            it[AnnouncementKeys.TONE] = announcement.tone
+            it[AnnouncementKeys.IMAGE_STYLE] = announcement.imageStyle
+            announcement.releaseAlert?.let { value -> it[AnnouncementKeys.RELEASE] = value } ?: it.remove(AnnouncementKeys.RELEASE)
+            it[AnnouncementKeys.INCLUDE_PLAY] = announcement.includePlay
+            it[AnnouncementKeys.TEST_ONLY] = announcement.testOnly
+            it[AnnouncementKeys.RELEASE_CODE] = announcement.releaseVersionCode
+            announcement.releaseUrl?.let { url -> it[AnnouncementKeys.RELEASE_URL] = url } ?: it.remove(AnnouncementKeys.RELEASE_URL)
         }
     }
 
@@ -1156,6 +1190,14 @@ class UserPreferencesRepository(context: Context,) {
             pref.remove(AnnouncementKeys.SHOW_ACTION_IN_APP)
             pref.remove(AnnouncementKeys.CATEGORY)
             pref.remove(AnnouncementKeys.TIMESTAMP)
+            pref.remove(AnnouncementKeys.PRESENTATION)
+            pref.remove(AnnouncementKeys.TONE)
+            pref.remove(AnnouncementKeys.IMAGE_STYLE)
+            pref.remove(AnnouncementKeys.RELEASE)
+            pref.remove(AnnouncementKeys.INCLUDE_PLAY)
+            pref.remove(AnnouncementKeys.TEST_ONLY)
+            pref.remove(AnnouncementKeys.RELEASE_CODE)
+            pref.remove(AnnouncementKeys.RELEASE_URL)
         }
     }
 

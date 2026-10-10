@@ -6,6 +6,8 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 
 ## Public API
 
+- Settings and About expose **Check for updates** through an optional app-shell callback. The shell owns availability, the full-screen result, release notes and installation; Settings does not fetch releases or request APK installation itself.
+
 - Custom theme creation is a nested full-page destination under Appearance. Back discards the draft and returns to Appearance; Save applies and remembers the custom palette without changing display mode. A pinned light/dark preview updates on every color change, including slider drags, and uses a compact layout for short windows, the keyboard, and large text. Incomplete hex input keeps the last valid palette visible and disables Save. `CustomThemeEditorTest` covers live updates, validation, cancellation and editor-open event volume.
 
 - Add RSS uses a single localizable instruction to paste the podcast’s RSS feed link and add it to the library. The feed-link publication warning appears only in Podcast Info when notifications are enabled. Subscription creation enables normal foreground refresh for all supported feeds, including those without HEAD validators.

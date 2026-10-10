@@ -506,12 +506,20 @@ def pull_request_label_names(pull_request: dict[str, object]) -> list[str]:
 def reconcile_changelog(
     repository: str,
     token: str,
-    api_key: str,
     base_tag: str,
     head_sha: str,
 ) -> list[int]:
     pull_requests = pull_requests_between(repository, token, base_tag, head_sha)
     processed: list[int] = []
+
+    # Reject missing copy before appending any PR in this batch.
+    original_unreleased = unreleased_block(require_file(CHANGELOG_PATH))
+    for pull_request in pull_requests:
+        if not update_changelog._pr_already_present(original_unreleased, int(pull_request["number"])):
+            update_changelog.validate_release_copy(
+                str(pull_request.get("title") or ""), str(pull_request.get("body") or ""),
+                pull_request_label_names(pull_request),
+            )
 
     for pull_request in pull_requests:
         number = int(pull_request["number"])
@@ -521,7 +529,6 @@ def reconcile_changelog(
             continue
 
         changed = update_changelog.append_changelog(
-            api_key,
             number,
             str(pull_request.get("title") or "").strip(),
             str(pull_request.get("body") or ""),
@@ -530,11 +537,9 @@ def reconcile_changelog(
         if not changed:
             fail(f"PR #{number} produced no changelog entry")
         processed.append(number)
-        # Soft pacing so a long release range does not trip Groq TPM limits.
-        time.sleep(1.5)
 
-    update_changelog.sync_changelog_unreleased(api_key)
-    update_changelog.sync_readme_upcoming(api_key)
+    update_changelog.sync_changelog_unreleased()
+    update_changelog.sync_readme_upcoming()
 
     final_unreleased = unreleased_block(require_file(CHANGELOG_PATH))
     missing = [
@@ -737,14 +742,8 @@ def prepare_release(args: argparse.Namespace) -> None:
         skip_notify=skip_notify,
         use_readme_upcoming=use_readme_upcoming,
     )
-    api_key = os.environ.get("GROQ_API_KEY", "").strip()
     if not repository or not token:
         fail("GITHUB_REPOSITORY and GITHUB_TOKEN are required")
-    if notes_source == "reconciled" and not api_key:
-        fail(
-            "GROQ_API_KEY is required unless --skip-notify or "
-            "--use-readme-upcoming is set"
-        )
 
     current = read_app_version()
     validate_baseline(current, args.latest_tag, skip_notify=skip_notify)
@@ -755,11 +754,6 @@ def prepare_release(args: argparse.Namespace) -> None:
     processed: list[int] = []
 
     gradle_original = require_file(APP_GRADLE_PATH)
-    APP_GRADLE_PATH.write_text(
-        replace_gradle_version(gradle_original, current, target),
-        encoding="utf-8",
-    )
-
     if skip_notify:
         # Version bump + APK badge URL only — leave CHANGELOG / Upcoming / What's New
         # untouched. Publish skips in-app announcement; notify manually if needed.
@@ -773,22 +767,22 @@ def prepare_release(args: argparse.Namespace) -> None:
             processed = reconcile_changelog(
                 repository,
                 token,
-                api_key,
                 args.latest_tag,
                 args.head_sha,
             )
         changelog_original = require_file(CHANGELOG_PATH)
         readme_original = require_file(README_PATH)
-        CHANGELOG_PATH.write_text(
-            promote_changelog(changelog_original, target, release_date),
-            encoding="utf-8",
-        )
+        promoted_changelog = promote_changelog(changelog_original, target, release_date)
         promoted_readme = promote_readme(readme_original, target, release_date)
+        CHANGELOG_PATH.write_text(promoted_changelog, encoding="utf-8")
         README_PATH.write_text(
             update_readme_download_url(promoted_readme, repository, target),
             encoding="utf-8",
         )
 
+    APP_GRADLE_PATH.write_text(
+        replace_gradle_version(gradle_original, current, target), encoding="utf-8",
+    )
     write_outputs(
         {
             "current_version": current.name,
@@ -1049,8 +1043,6 @@ def write_release_notes(args: argparse.Namespace) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         f"# boxlore {current.tag}\n\n"
-        "> **AI-generated summary:** May contain mistakes. "
-        "Verify details against the linked pull requests.\n\n"
         f"{body}\n",
         encoding="utf-8",
     )
@@ -1321,7 +1313,7 @@ def main() -> None:
         "--use-readme-upcoming",
         action="store_true",
         help=(
-            "Skip AI reconciliation and promote the reviewed README Upcoming "
+            "Skip PR reconciliation and promote the reviewed README Upcoming "
             "region verbatim into What's New and the release notification"
         ),
     )

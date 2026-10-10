@@ -70,6 +70,9 @@ android {
         buildConfigField("String", "BOXLORE_CAST_RECEIVER_ID", "\"$resolvedCastReceiverId\"")
         buildConfigField("String", "POSTHOG_API_KEY", "\"${localProps.getProperty("posthog.apiKey", "")}\"")
         buildConfigField("String", "POSTHOG_HOST", "\"${localProps.getProperty("posthog.host", "")}\"")
+        buildConfigField("boolean", "BOXLORE_ISOLATED_TESTS", "false")
+        buildConfigField("boolean", "BOXLORE_DIRECT_UPDATES", "true")
+        buildConfigField("String", "BOXLORE_UPDATE_MANIFEST_URL", "\"https://github.com/boxcreate/boxlore/releases/latest/download/update.json\"")
     }
 
     signingConfigs {
@@ -90,6 +93,36 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+        create("updateTest") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            buildConfigField("boolean", "BOXLORE_ISOLATED_TESTS", "true")
+            buildConfigField("String", "BOXLORE_UPDATE_MANIFEST_URL", "\"http://127.0.0.1:8765/update.json\"")
+            versionNameSuffix = "-test"
+        }
+        create("playRelease") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            buildConfigField("boolean", "BOXLORE_DIRECT_UPDATES", "false")
+        }
+    }
+
+    sourceSets {
+        getByName("debug") {
+            kotlin.srcDir("src/direct/java")
+            manifest.srcFile("src/direct/AndroidManifest.xml")
+        }
+        getByName("release") {
+            kotlin.srcDir("src/direct/java")
+            manifest.srcFile("src/direct/AndroidManifest.xml")
+        }
+        getByName("updateTest") {
+            kotlin.srcDir("src/direct/java")
+            kotlin.srcDir("src/release/java")
+        }
+        getByName("playRelease") {
+            kotlin.srcDir("src/release/java")
         }
     }
 
@@ -223,4 +256,17 @@ dependencies {
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("updateTest")) { variant ->
+        providers.gradleProperty("boxloreUpdateTestVersionCode").orNull?.toInt()?.let { code ->
+            require(code > 0)
+            variant.outputs.forEach { it.versionCode.set(code) }
+        }
+    }
+}
+
+tasks.matching { it.name == "uploadCrashlyticsMappingFileUpdateTest" }.configureEach {
+    enabled = false
 }

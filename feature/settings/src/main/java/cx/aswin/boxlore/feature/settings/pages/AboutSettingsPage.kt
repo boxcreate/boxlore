@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Launch
 import androidx.compose.material.icons.rounded.Feedback
 import androidx.compose.material.icons.rounded.HistoryEdu
+import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,6 +57,7 @@ internal fun AboutSettingsPage(
     onOpenChangelog: () -> Unit,
     onSendFeedback: () -> Unit = {},
     onBack: () -> Unit,
+    onCheckForUpdates: (() -> Unit)? = null,
 ) {
     SettingsScaffold(
         title = "About boxlore",
@@ -146,6 +149,13 @@ internal fun AboutSettingsPage(
                 icon = Icons.Rounded.HistoryEdu,
                 onClick = onOpenChangelog,
             )
+            onCheckForUpdates?.let { check ->
+                SettingsNavigationRow(
+                    title = stringResource(cx.aswin.boxlore.feature.settings.R.string.settings_check_for_updates),
+                    icon = Icons.Rounded.SystemUpdate,
+                    onClick = check,
+                )
+            }
         }
     }
 }

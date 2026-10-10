@@ -18,6 +18,7 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 - `ExploreDefaultTab` / `SubscriptionsDefaultTab` sanitize Appearance **Default tabs** (`for_you`/`top`, `shows`/`new_episodes`) and resolve the pager index when a route does not already pick a tab.
 - `SubscriptionsTabStyle` defines and sanitizes Subscriptions tab layout choices: `top` (default) vs `floating` (FAB style).
 - `BoxcastPrefs` stores the permanent Home video-showcase dismissal in the canonical `boxlore_prefs` file (`featured_video_showcase_dismissed`). The showcase asks for confirmation before writing it and does not reappear afterward.
+- `Announcement` persists the existing title/body/route/image/action/category plus optional compact/fullscreen presentation, accent/image roles, release/Play/test flags, release code and GitHub release URL. Missing keys keep legacy compact defaults and category-based release detection; clearing removes all fields in one transaction. Rendering and delivery policy belong to app.
 - `Context.userPreferencesDataStore` defines the `user_preferences` DataStore delegate.
 - `BoxcastPrefs` is the typed facade for `boxlore_prefs` values such as onboarding, genres, recommendation caches, time-of-day rotation slot keys (`cached_byl_slot`), Learn history, learner-log gates, pending magic link authentication email (`pending_auth_email`), sticky feedback drafts (`FeedbackDraft` via `getFeedbackDraft()`, `saveFeedbackDraft()`, and `clearFeedbackDraft()`), the stable sync installation ID (`sync_device_id` via `getOrCreateSyncDeviceId()`), sync cursor state (`sync_last_timestamp`, `sync_last_user_id`, `sync_metadata_version`), and the notification-permission prompt gate (`has_requested_notification_permission`). `clearBylCacheIfPodcastId` invalidates a Because-you-like cache (including its cached slot key) when its seed show adopts a new catalog id.
 - `resolveLearnerLogEnabled(isDebugBuild)`: debug defaults on when unset; **release is always off** unless the user explicitly persisted `true` via the debug-screen toggle.
@@ -68,6 +69,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 
 ## Testing notes
 
+- `AnnouncementPreferencesTest` round-trips rich presentation/release fields and clears them, while retaining legacy defaults and blank-title behavior.
 - Unit tests live under `core/prefs/src/test`.
 - `ThemeSelectionPreferencesTest` covers artwork-color defaults, saved custom themes, atomic theme selection and fast-cache restoration.
 - `BoxcastPrefsTest` covers facade behavior, including targeted Because-you-like cache invalidation, time-of-day rotation slot persistence, permanent featured-video showcase dismissal, and sync state cursors.

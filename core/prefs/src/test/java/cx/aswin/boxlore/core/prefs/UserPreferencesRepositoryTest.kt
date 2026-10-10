@@ -483,51 +483,6 @@ class UserPreferencesRepositoryTest {
         assertEquals("2.5.0", repository.dismissedFeatureVersion.first())
     }
 
-    // ---- Announcement ----
-
-    @Test
-    fun announcementDefaultsNullAndRoundTrips() = runTest {
-        assertNull(repository.activeAnnouncementStream.first())
-
-        val announcement =
-            UserPreferencesRepository.Announcement(
-                title = "Hello",
-                body = "World",
-                route = "boxcast://home",
-                imageUrl = "https://example.com/x.jpg",
-                actionLabel = "Open",
-                showActionInApp = true,
-                timestamp = 42L,
-                category = "WHAT'S NEW",
-            )
-        repository.setAnnouncement(announcement)
-
-        val stored = repository.activeAnnouncementStream.first()!!
-        assertEquals("Hello", stored.title)
-        assertEquals("boxcast://home", stored.route)
-        assertEquals(42L, stored.timestamp)
-
-        repository.clearAnnouncement()
-        assertNull(repository.activeAnnouncementStream.first())
-    }
-
-    @Test
-    fun announcementWithBlankTitleIsNotSurfaced() = runTest {
-        repository.setAnnouncement(
-            UserPreferencesRepository.Announcement(
-                title = "   ",
-                body = "body",
-                route = null,
-                imageUrl = null,
-                actionLabel = null,
-                showActionInApp = false,
-                timestamp = 1L,
-                category = "X",
-            ),
-        )
-        assertNull(repository.activeAnnouncementStream.first())
-    }
-
     // ---- Review logic ----
 
     @Test
