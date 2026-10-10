@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-10T14:15:08.111Z",
+  "lastRun": "2026-10-10T18:46:24.584Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "8229c57c-b924-11f1-b9e8-7b2af0376c77",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "16a02e83-ad78-497a-adb8-7c71067c6aa7",
-      "lastEpisodeTitle": "10am ET, October 10 | The latest headlines from NPR",
+      "lastRssKey": "4e93bee8-d7f2-4a64-b19f-73ea083a86b3",
+      "lastEpisodeTitle": "2pm ET, October 10 | The latest headlines from NPR",
       "lastEpisodeId": "61507607285",
-      "lastCheckedAt": 1791641713157
+      "lastCheckedAt": 1791657990547
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75683876",
@@ -142,6 +142,12 @@
       "lastEpisodeTitle": "A Thing Of Nightmares",
       "lastCheckedAt": 1791371887176
     },
+    "259125": {
+      "lastRssKey": "6ac6437a8f34078889658ca4",
+      "lastEpisodeTitle": "Will Caicedo return and kickstart Chelsea's season?",
+      "lastEpisodeId": "61425566670",
+      "lastCheckedAt": 1791658026317
+    },
     "271849": {
       "lastRssKey": "tag:soundcloud,2010:tracks/2413189215",
       "lastEpisodeTitle": "Gospel Success",
@@ -182,10 +188,10 @@
       "lastCheckedAt": 1791641751430
     },
     "385117": {
-      "lastRssKey": "37c6f540-c4b4-11f1-adde-9fb00d6df158",
-      "lastEpisodeTitle": "10AM ET 10/10/2026 Newscast",
+      "lastRssKey": "bb4e83d0-c4d5-11f1-8925-abf09b115590",
+      "lastEpisodeTitle": "2PM ET 10/10/2026 Newscast",
       "lastEpisodeId": "61508775803",
-      "lastCheckedAt": 1791641751844
+      "lastCheckedAt": 1791658029252
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -311,10 +317,10 @@
       "lastCheckedAt": 1790958626535
     },
     "483834": {
-      "lastRssKey": "6ac91f5a29b9fbfbe2db620c",
-      "lastEpisodeTitle": "Marvel Television announcements, New Cyberpunk 2077 Movie — October 9th, 2026",
-      "lastEpisodeId": "61405464511",
-      "lastCheckedAt": 1791566963864
+      "lastRssKey": "6ac985365f788808a7bad3f9",
+      "lastEpisodeTitle": "Avatar: Seven Havens renewed, 28 Years Later Part III development — October 10th, 2026",
+      "lastEpisodeId": "61548027601",
+      "lastCheckedAt": 1791658043957
     },
     "490022": {
       "lastRssKey": "3c156027-cb30-47b3-a252-24f31eca2591",
@@ -339,6 +345,12 @@
       "lastEpisodeTitle": "Most Replayed Moment: AI Is Changing How Teams Work Forever",
       "lastEpisodeId": "61481515942",
       "lastCheckedAt": 1791538058841
+    },
+    "500708": {
+      "lastRssKey": "desiringgod.org-resource-795a1f71",
+      "lastEpisodeTitle": "Sexual Desire: God’s Gift, Satan’s Target",
+      "lastEpisodeId": "61483637514",
+      "lastCheckedAt": 1791658052767
     },
     "503644": {
       "lastRssKey": "d8b51d18-5889-4c53-9ec2-1cae8fb524d9",
@@ -561,10 +573,10 @@
       "lastCheckedAt": 1791480681883
     },
     "902798": {
-      "lastRssKey": "b466342a-749e-4855-9d1b-7913ae4b74cd",
-      "lastEpisodeTitle": "Startup Ideas, Timing & AI: How To Build The Next Big Thing | Sravanth Aluru | FO572 Raj Shamani",
+      "lastRssKey": "38c9827a-ec37-4716-a9c4-eb8b0d30b7ce",
+      "lastEpisodeTitle": "Top Investor’s Warning: Global Crisis Coming For Your Wealth | Saurabh Mukherjea | FO573 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1791480682865
+      "lastCheckedAt": 1791658076662
     },
     "906591": {
       "lastRssKey": "50b87368-c3aa-11f1-8408-f3f843a3b0fd",
@@ -577,6 +589,12 @@
       "lastEpisodeTitle": "History Today - Oct. 10",
       "lastEpisodeId": "61524120101",
       "lastCheckedAt": 1791617599038
+    },
+    "938111": {
+      "lastRssKey": "desiringgod.org-resource-7595fbf7",
+      "lastEpisodeTitle": "The Marriage Miracle That Takes Time",
+      "lastEpisodeId": "61435357643",
+      "lastCheckedAt": 1791658082732
     },
     "946758": {
       "lastRssKey": "10f30bcc-77b5-11f0-8752-7b07bcd8ee21",
@@ -602,10 +620,10 @@
       "lastCheckedAt": 1791594418220
     },
     "980370": {
-      "lastRssKey": "6ac7af6ae2a72faefc1e8d10",
-      "lastEpisodeTitle": "The three words that saved my life | Blake Mycoskie",
+      "lastRssKey": "6ac518de854b00dcfdb99f09",
+      "lastEpisodeTitle": "Why the future is human ... plus AI | Sal Khan and Esther Perel",
       "lastEpisodeId": "61397494100",
-      "lastCheckedAt": 1791559994439
+      "lastCheckedAt": 1791658086979
     },
     "998969": {
       "lastRssKey": "audioboom-01a11655-c906-766b-8604-b0703d7a5f9d",
@@ -805,10 +823,10 @@
       "lastCheckedAt": 1791512761060
     },
     "2136580": {
-      "lastRssKey": "318c6634-b729-4de8-b3b1-ddd5621be246",
-      "lastEpisodeTitle": "Episode 393: CANADIENS BLOW A 2 GOAL LEAD AGAINST THE PREDATORS...WHAT WENT WRONG?",
+      "lastRssKey": "c9e1ff41-4acd-4dec-9e5a-33e6ced6cc2f",
+      "lastEpisodeTitle": "Episode 394: The Montreal Canadiens NEED TO FIX THIS Tonight vs Detroit Red Wings!",
       "lastEpisodeId": "61488869775",
-      "lastCheckedAt": 1791565354076
+      "lastCheckedAt": 1791658106496
     },
     "2136949": {
       "lastRssKey": "6ac553a0eea51f2aa345497e",
@@ -817,10 +835,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6ac91f3b4fad7c63ed60cccb",
-      "lastEpisodeTitle": "(Pop) Amazon s’informe sur la vie privée de ses clients pour les conseiller… HugoDécrypte",
+      "lastRssKey": "6aca69e07f500334f1079780",
+      "lastEpisodeTitle": "Le 17 octobre pourrait être inédit.  (10/10)",
       "lastEpisodeId": "61528044395",
-      "lastCheckedAt": 1791617621136
+      "lastCheckedAt": 1791658107471
     },
     "2574026": {
       "lastRssKey": "0052b4a6-c38c-11f1-9a53-8b7d6258a474",
@@ -1082,10 +1100,10 @@
       "lastCheckedAt": 1790864064387
     },
     "5972153": {
-      "lastRssKey": "38ccefe2-c3ad-11f1-ba1a-8b6d1a1e5727",
-      "lastEpisodeTitle": "US execution livestream, Nobel peace prize and a Siberian plague scare",
+      "lastRssKey": "a8892c2c-c4a9-11f1-9a8f-97f881062293",
+      "lastEpisodeTitle": "Delhi protests, Trump's Russia diesel deal and Panama quake",
       "lastEpisodeId": "61436812330",
-      "lastCheckedAt": 1791542947252
+      "lastCheckedAt": 1791658127243
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1097,6 +1115,17 @@
       "lastRssKey": "64d4c6b8-a055-4a59-b140-34e81c1df891",
       "lastEpisodeTitle": "A False Sense of How People View You",
       "lastCheckedAt": 1791560043506
+    },
+    "6148209": {
+      "lastRssKey": "https://api.spreaker.com/episode/75675614",
+      "lastEpisodeTitle": "Stephanie Ike - Exposing Deception",
+      "lastEpisodeId": "61546559186",
+      "lastCheckedAt": 1791658128300
+    },
+    "6154309": {
+      "lastRssKey": "e46912b0-9a70-44e8-aa69-cc38478c34cc",
+      "lastEpisodeTitle": "How to Become Hungry for God - 124",
+      "lastCheckedAt": 1791658128446
     },
     "6264274": {
       "lastRssKey": "2a2b381f-77eb-44fc-a020-9bbed9b07b75",
@@ -1216,6 +1245,12 @@
       "lastEpisodeId": "53696806037",
       "lastCheckedAt": 1787770938932
     },
+    "6834018": {
+      "lastRssKey": "6abcdc906ffb28f8d612b4f9",
+      "lastEpisodeTitle": "LIVE with Millie Bright!",
+      "lastEpisodeId": "61057233171",
+      "lastCheckedAt": 1791658138625
+    },
     "6841381": {
       "lastRssKey": "6ac79b86eea51f2aa3cfa899",
       "lastEpisodeTitle": "Why Retro Tech Is Taking Over Again",
@@ -1229,16 +1264,16 @@
       "lastCheckedAt": 1791480752163
     },
     "6866470": {
-      "lastRssKey": "https://api.spreaker.com/episode/75566609",
-      "lastEpisodeTitle": "Shorts: উৎপীড়িতের প্রতিহিংসা",
-      "lastEpisodeId": "61248011112",
-      "lastCheckedAt": 1791134398485
+      "lastRssKey": "https://api.spreaker.com/episode/75690509",
+      "lastEpisodeTitle": "৪৯ নং মেস",
+      "lastEpisodeId": "61546501591",
+      "lastCheckedAt": 1791658139583
     },
     "6866732": {
-      "lastRssKey": "https://api.spreaker.com/episode/75566727",
-      "lastEpisodeTitle": "সনৎ ঠাকুর - নৈঋতা",
-      "lastEpisodeId": "61248735667",
-      "lastCheckedAt": 1791134398922
+      "lastRssKey": "https://api.spreaker.com/episode/75689983",
+      "lastEpisodeTitle": "টেরোডাক্টাইলের ডিম",
+      "lastEpisodeId": "61545160838",
+      "lastCheckedAt": 1791658140142
     },
     "6872190": {
       "lastEpisodeId": "61496302189",
@@ -1324,6 +1359,12 @@
       "lastEpisodeId": "60511350052",
       "lastCheckedAt": 1791426921224
     },
+    "7156500": {
+      "lastRssKey": "https://api.spreaker.com/episode/75575125",
+      "lastEpisodeTitle": "1 Peter 5:10 | Enduring \"Fiery Ordeals\"",
+      "lastEpisodeId": "61274583626",
+      "lastCheckedAt": 1791658147305
+    },
     "7183032": {
       "lastRssKey": "63509e39-a722-4bfb-ad34-098c737882f7",
       "lastEpisodeTitle": "\"I Set a Muslim's Hair on F*re!\" - Islamophobe Converts to Islam",
@@ -1337,10 +1378,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a122cd-e1fc-78ff-ae75-72a537613fcb",
-      "lastEpisodeTitle": "Hegseth’s Livestreamed Execution Exposes His Pathetic Tough-Guy Act",
-      "lastEpisodeId": "61403745020",
-      "lastCheckedAt": 1791594481706
+      "lastRssKey": "audioboom-01a1230f-f699-7891-aebb-5313add47168",
+      "lastEpisodeTitle": "John Husted Is the Fakest Republican in America",
+      "lastEpisodeId": "61545043862",
+      "lastCheckedAt": 1791658148138
     },
     "7239415": {
       "lastRssKey": "6bec9058-c439-11f1-a956-832cdaf1b07c",
@@ -1379,10 +1420,10 @@
       "lastCheckedAt": 1791567054103
     },
     "7348627": {
-      "lastRssKey": "bb76c6ed-ce39-40e6-85e0-a1bd4fb50d24",
-      "lastEpisodeTitle": "10 Chilling TEXAS Cold Cases | 326",
-      "lastEpisodeId": "61420794829",
-      "lastCheckedAt": 1791641861754
+      "lastRssKey": "c88133ad-e6d3-47b2-a2b7-eb16b7a006e6",
+      "lastEpisodeTitle": "4 Disturbing Cases That Baffle Detectives | 326",
+      "lastEpisodeId": "61524418546",
+      "lastCheckedAt": 1791658149963
     },
     "7376606": {
       "lastRssKey": "5d9ec36d-a7c0-4590-96bf-7c26b232990b",
@@ -1468,10 +1509,10 @@
       "lastCheckedAt": 1791426929980
     },
     "7591415": {
-      "lastRssKey": "e6dafbd36ee540bac7cfcd0b921dc2f225402b78",
-      "lastEpisodeTitle": "L'assurance des mosquées arrive enfin",
+      "lastRssKey": "d9ff3796795e8a97176bce34ab72e4a310aee358",
+      "lastEpisodeTitle": "Le danger de vivre dan l'insouciance",
       "lastEpisodeId": "61045636386",
-      "lastCheckedAt": 1791145380027
+      "lastCheckedAt": 1791658156111
     },
     "7606603": {
       "lastRssKey": "51051648-b657-4085-a131-c9d20e285b2d",
@@ -1509,10 +1550,10 @@
       "lastCheckedAt": 1786543013085
     },
     "7679624": {
-      "lastRssKey": "https://api.spreaker.com/episode/75334294",
+      "lastRssKey": "https://api.spreaker.com/episode/75331875",
       "lastEpisodeTitle": "Unsolved Mysteries with Dennis Farina -",
-      "lastEpisodeId": "61511631211",
-      "lastCheckedAt": 1791594490770
+      "lastEpisodeId": "61545351110",
+      "lastCheckedAt": 1791658158129
     },
     "7756959": {
       "lastRssKey": "80c63718-c44d-11f1-b294-d7f165932eec",
@@ -1545,10 +1586,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/2312f84f-dc52-5632-b23b-37ee9f43a9c9",
-      "lastEpisodeTitle": "How narcissists SABOTAGE your self care ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/574ae26b-2167-525a-a2a9-9a67d01357bb",
+      "lastEpisodeTitle": "Why did you stayI Rebecca Humphries ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1791641874953
+      "lastCheckedAt": 1791658159631
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
