@@ -96,17 +96,18 @@ Add impact labels on the PR (`gh pr edit <n> --add-label user-impact-critical --
 
 <!--
 changelog-on-merge (update_changelog.py) and prepare-release (prepare_release.py)
-paste these two regions as-is. Groq must not rewrite them.
+paste these regions as-is. The PR author or coding agent writes and reviews the
+copy; workflows only order it and add PR links. No AI rewriting or fallback.
 
-Required for user-impact-critical. Optional for other labels — if a region is
-filled, it is still used verbatim for that surface.
-
-Leave a region empty (or only `-` / TBD) to fall back to AI for that surface only.
+Developer copy is required for every PR. Listener copy is required for every
+user-impact label; no-user-impact changes appear only in CHANGELOG.md.
+Empty bullets or TBD fail validation. Release/tooling PRs may use the established
+[skip changelog] exception.
 Do not hand-edit CHANGELOG.md or README Upcoming / What's New; this section is
 the source those workflows copy from.
 -->
 
-### CHANGELOG.md (developer copy)
+### CHANGELOG.md (required developer copy)
 
 Keep a Changelog bullets for engineers. Use `### Added` / `### Changed` / `### Fixed` when you have more than one category. Class/module names are OK here.
 
@@ -117,7 +118,7 @@ Keep a Changelog bullets for engineers. Use `### Added` / `### Changed` / `### F
 
 <!-- release-copy:changelog:end -->
 
-### README What's New / Upcoming (listener copy)
+### README What's New / Upcoming (required for user-impact changes)
 
 Plain listener English for README Upcoming, then What's New on release, and in-app release notes. Product name is **boxlore** (lowercase). No class names, FCM keys, or CI.
 Use functional categories: `### Critical` (for `user-impact-critical`), `### Improvements`, or `### Fixes`. Do not use impact levels like `### High` or `### Medium` as headings.

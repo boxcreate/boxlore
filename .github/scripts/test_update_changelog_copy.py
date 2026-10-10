@@ -18,7 +18,7 @@ import update_changelog as uc  # noqa: E402
 
 SAMPLE_PR_BODY = """
 ## Summary
-Something Groq would rewrite into different words.
+Context that must not replace the exact release wording.
 
 <!-- release-copy:changelog:start -->
 ### Added
@@ -108,7 +108,7 @@ class ReleaseCopyParseTest(unittest.TestCase):
 
 
 class LockedChangelogFlowTest(unittest.TestCase):
-    def test_append_uses_verbatim_copy_and_skips_groq(self) -> None:
+    def test_append_uses_verbatim_copy(self) -> None:
         updated, changed = uc._update_changelog(
             MINIMAL_CHANGELOG,
             uc.parse_pr_changelog_copy(SAMPLE_PR_BODY),
@@ -132,29 +132,22 @@ class LockedChangelogFlowTest(unittest.TestCase):
         self.assertNotIn("Missing episodes from a show", " ".join(parsed.get("Fixed", [])))
         self.assertTrue(any("PodcastRepository" in b for b in parsed["Added"]))
 
-    def test_sync_changelog_does_not_call_groq_when_all_locked(self) -> None:
-        locked, _ = uc._update_changelog(
-            MINIMAL_CHANGELOG,
-            {"Fixed": ["Author-written fix bullet"]},
-            971,
-            impact="user-impact-critical",
-            copy_locked=True,
+    def test_sync_preserves_every_locked_and_legacy_bullet(self) -> None:
+        content, _ = uc._update_changelog(
+            MINIMAL_CHANGELOG, {"Changed": ["Exact first line", "Exact second line"]},
+            971, impact="user-impact-critical", copy_locked=True,
         )
-        with patch.object(uc, "_groq_curate_changelog_unreleased") as groq:
-            locked_sections, unlocked = uc._partition_locked_sections(
-                uc._extract_unreleased_sections(locked)
-            )
-            self.assertTrue(any(locked_sections.values()))
-            self.assertIn("Author-written fix bullet", locked_sections["Fixed"][0])
-            self.assertTrue(uc._is_copy_locked(locked_sections["Fixed"][0]))
-            curated = uc._merge_locked_and_curated(
-                locked_sections,
-                {"Fixed": ["Groq would rewrite this ([#971](https://github.com/boxcreate/boxlore/pull/971))"]},
-            )
-            self.assertIn("Author-written fix bullet", curated["Fixed"][0])
-            self.assertTrue(uc._is_copy_locked(curated["Fixed"][0]))
-            self.assertFalse(any("Groq would rewrite" in b for b in curated["Fixed"]))
-            groq.assert_not_called()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "CHANGELOG.md"
+            path.write_text(content, encoding="utf-8")
+            with patch.object(uc, "CHANGELOG_PATH", path):
+                uc.sync_changelog_unreleased()
+                updated = path.read_text(encoding="utf-8")
+                before = uc._extract_unreleased_sections(content)
+                after = uc._extract_unreleased_sections(updated)
+                self.assertCountEqual(before["Changed"], after["Changed"])
+                self.assertLess(updated.index("Exact first line"), updated.index("Unrelated polish"))
+                self.assertFalse(uc.sync_changelog_unreleased())
 
     def test_readme_sync_uses_locked_copy_verbatim_without_ai_notice(self) -> None:
         changelog, _ = uc._update_changelog(
@@ -261,33 +254,32 @@ class LockedChangelogFlowTest(unittest.TestCase):
         self.assertIn("Missing episodes now show up in the same show.", whats_new)
         self.assertNotIn("AI-generated summary", whats_new)
 
-    def test_append_changelog_skips_groq_when_copy_present(self) -> None:
+    def test_append_stores_authored_copy_without_credentials(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "CHANGELOG.md"
             path.write_text(MINIMAL_CHANGELOG, encoding="utf-8")
-            with patch.object(uc, "CHANGELOG_PATH", path), patch.object(
-                uc, "_groq_entries"
-            ) as groq:
+            with patch.object(uc, "CHANGELOG_PATH", path):
                 changed = uc.append_changelog(
-                    "unused-key",
-                    971,
-                    "feat(catalog): fill missing PI episodes",
-                    SAMPLE_PR_BODY,
+                    971, "feat(catalog): fill missing PI episodes", SAMPLE_PR_BODY,
                     labels=["user-impact-critical", "backend-change"],
                 )
-                groq.assert_not_called()
                 self.assertTrue(changed)
                 text = path.read_text(encoding="utf-8")
                 self.assertIn("copy:locked", text)
                 self.assertIn("readme-copy:start pr=971", text)
                 self.assertIn("PodcastRepository unions publisher-feed extras", text)
                 self.assertIn("Missing episodes from a show", text)
+                self.assertFalse(uc.append_changelog(971, "same", SAMPLE_PR_BODY, labels=[]))
+                self.assertEqual(text, path.read_text(encoding="utf-8"))
 
-    def test_groq_is_not_called_when_appending_locked_copy(self) -> None:
-        with patch.object(uc, "_groq_entries") as groq:
-            entries = uc.parse_pr_changelog_copy(SAMPLE_PR_BODY)
-            self.assertTrue(entries)
-            groq.assert_not_called()
+    def test_missing_copy_fails_before_changelog_write(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "CHANGELOG.md"
+            path.write_text(MINIMAL_CHANGELOG, encoding="utf-8")
+            with patch.object(uc, "CHANGELOG_PATH", path):
+                with self.assertRaisesRegex(ValueError, "release-copy:changelog"):
+                    uc.append_changelog(971, "fix: example", EMPTY_COPY_BODY, ["user-impact-critical"])
+            self.assertEqual(MINIMAL_CHANGELOG, path.read_text(encoding="utf-8"))
 
 
 class ChangelogSanitizationAndExtractionTest(unittest.TestCase):

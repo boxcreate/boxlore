@@ -49,7 +49,43 @@ Run commands from the repository root. Start with the affected behavior and broa
 
 For Android code changes, the full CI command is `./gradlew detekt testDebugUnitTest :koverVerifyMerged :app:dependencyGuard :core:catalog:dependencyGuard :core:playback:dependencyGuard --continue`, with `./gradlew lintDebug` in a separate job. The unit workflow also runs the architecture shell guards and Python release-tooling tests. `ktlintCheck` is a local check; it is not part of the current PR workflow.
 
+For release-copy and announcement changes, the Python suite covers required copy, preserved wording/order, historical backfill, batch failure before writes, UTF-8 payload limits, provider dry-run flags and test-mode audience rejection with a fake sender. **Offline release rehearsal** (manual dispatch) runs the same suite and writes reviewable candidate files without credentials, publishing or messages. **Release copy** checks the PR's body and impact labels without an Android build. See [release-copy and rehearsal recovery](../scripts/README.md#authored-release-copy-and-isolated-rehearsals) before testing live notifications. These are offline checks; APK installation and actual notification receipt require separate device acceptance.
+
 Report which checks completed and distinguish automated coverage from manual checks or paths that still need verification. Script tests exercise local logic; they do not verify a production deployment.
+
+For updater work, run `./gradlew :app:testDebugUnitTest --tests 'cx.aswin.boxlore.updates.*'` for offline/fake HTTP fixtures. These tests never publish releases, deliver FCM or install APKs. The optimized preflight builds the direct APK and `bundlePlayRelease`, checks each variant's R8 contracts, and rejects installer code/permission in Play. A real new-version installation still needs device acceptance with a separately approved staged APK; do not create a production release or alert for testing. On-device acceptance: Settings → Check for updates → inspect available/current/error state; for an approved available candidate, Download update → verify progress → Install update → confirm Android installation. Repeat interruption, permission return and cancellation, checking that listening data survives.
+
+## Isolated update and announcement testing
+
+No production release or shared production alert is needed. Use a dedicated test phone where possible. updateTest keeps the normal package/signature: installation preserves listening data, but installing a higher-code test candidate can prevent returning to an older production APK without a downgrade. Plan the exit build before testing installation; never uninstall merely to bypass this.
+
+```sh
+./gradlew :app:assembleUpdateTest
+cp app/build/outputs/apk/updateTest/app-updateTest.apk /tmp/boxlore-test-current.apk
+./gradlew :app:assembleUpdateTest -PboxloreUpdateTestVersionCode=<current-code-plus-one>
+cp app/build/outputs/apk/updateTest/app-updateTest.apk /tmp/boxlore-test-next.apk
+adb install -r /tmp/boxlore-test-current.apk
+adb reverse tcp:8765 tcp:8765
+python3 .github/scripts/serve_update_test.py --apk /tmp/boxlore-test-next.apk --version-code <current-code-plus-one>
+```
+
+Install the current test APK, open boxlore, then Settings → Check for updates. The available icon appears only after a valid newer compatible result. Open it, download, pause/resume, and install. When Android opens Allow from this source, enable it yourself, return to boxlore, and tap Install update again. The screen and verified file remain; returning never auto-installs. Cancel Android installation and check that Install remains available. Process restart re-verifies the existing file; removing its cache file returns to Download without a new automatic transfer.
+
+Restart the local server with `--state unavailable`, `--state incompatible`, or `--state corrupt` to test failures. Use Settings' manual check to bypass intervals. A manifest at the installed code should hide the icon. Integrity/signature/package/version checks must reject invalid candidates. The shipping app rejects testOnly/loopback manifests; Play bundles exclude the direct installer and install permission.
+
+For a long release-note test, add `--notes-file /tmp/boxlore-test-notes.txt` with UTF-8 sample text. The fixture rejects notes beyond the app's 24,000 UTF-16 character or 64 KiB response bounds. Scroll the notes to the end and confirm the close control and download/install footer remain visible. The `/notes` link shows the same sample text. This does not publish release notes or send an alert.
+
+For local visual review, export an announcement from the admin's Download preview, then run:
+
+```sh
+python3 .github/scripts/preview_announcement_on_device.py --preview /tmp/announcement-preview.json --serial <device>
+```
+
+This uses an ADB-only receiver present in updateTest and no FCM. The preview clears version eligibility locally so current devices can show its layout; delivery filtering is tested separately. Open the app and check Compact/Full screen, large text, light/dark, RTL, long titles, imagery and scrollable body. Release actions: Download update starts the native updater, View on GitHub keeps the message available on return, and Dismiss clears it. Permission/settings round-trips retain the updater.
+
+For a real transport test after workflows/panel are deployed, keep Test mode on and audience Isolated test builds. First retain Validate without delivery, review and approve provider validation. Only then turn validation off, review the changed draft and approve one actual test_users send. Production builds neither subscribe to this audience nor accept test-only payloads. Test Ordinary alert versus Release, both presentations, installed-version suppression, explicit Play override and normal episode notification independence. Do not select all_users/prod_users for an isolated test.
+
+Run `node --test .github/scripts/test_announcement_admin.cjs` and the Python suite for approval, payload bounds, audience restrictions, preview action semantics and font parity. Announcements render natively; verify preview style against phone screenshots. The optimized artifact gate rejects the isolated receiver/marker in shipping outputs. Report local/device/provider verification separately.
 
 ## Stack
 
@@ -191,6 +227,8 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 | Workflow | Runs | When | Status |
 | :--- | :--- | :--- | :--- |
 | `unit-tests.yml` | Architecture + detekt + unit + Kover + lint + Dependency Guard + Python release tests | PR / master push / dispatch | Done |
+| `release-copy.yml` | Authored release regions and exactly one impact label | PR, including body / label edits | Configured |
+| `release-rehearsal.yml` | Hermetic script tests and offline candidate previews | Manual | Configured |
 | `coderabbit-threads-resolved.yml` | Fail unless all non-outdated CodeRabbit review threads are Resolved | PR / review | Done |
 | `gitleaks.yml` | Secret scan | PR / push to master | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML; optional Cloud device job when configured | Nightly / manual | Done |
@@ -237,11 +275,13 @@ The gate derives contracts from pre-R8 release class files and the merged manife
 Gson roots are intentionally declared in `verify_release_contracts.py`; add a new reflective JSON entry point there when introducing one. Nested model/field additions, new workers, new manifest components, and new API methods are discovered from compiled release classes automatically. This compares optimization against current source; it does not detect an intentional source-level schema rename or prove SDK/network behavior. A successful build alone is never release acceptance.
 
 ```sh
-./gradlew :app:assembleRelease :app:bundleRelease :app:lintRelease
+./gradlew :app:assembleRelease :app:bundlePlayRelease :app:lintRelease :app:lintPlayRelease
 python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> \
   --report app/build/reports/release-contracts.json \
-  app/build/outputs/apk/release/app-release.apk \
-  app/build/outputs/bundle/release/app-release.aab
+  app/build/outputs/apk/release/app-release.apk
+python3 .github/scripts/verify_release_contracts.py --sdk <android-sdk> --app-variant playRelease \
+  --report app/build/reports/play-release-contracts.json \
+  app/build/outputs/bundle/playRelease/app-playRelease.aab
 python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 ```
 

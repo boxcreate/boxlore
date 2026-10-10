@@ -42,7 +42,18 @@ bench_node.js
 proxy/
 
 # Sub-projects (local only)
-admin-panel/
+# Composer sources are public; the existing gateway and configuration stay local.
+admin-panel/*
+!admin-panel/README.md
+!admin-panel/public/
+admin-panel/public/*
+!admin-panel/public/notifyappusers/
+admin-panel/public/notifyappusers/*
+!admin-panel/public/notifyappusers/dashboard.html
+!admin-panel/public/notifyappusers/dashboard.js
+!admin-panel/public/notifyappusers/composer.css
+!admin-panel/public/notifyappusers/preview.html
+!admin-panel/public/notifyappusers/announcements/
 telemetry-worker/
 
 # Local website checkout; keep the rest of docs/ tracked.
