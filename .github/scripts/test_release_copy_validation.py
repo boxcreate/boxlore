@@ -35,10 +35,15 @@ class ReleaseCopyValidationTest(unittest.TestCase):
                 uc.validate_release_copy("fix: user-impact-critical", SAMPLE_PR_BODY, labels)
 
     def test_legacy_labels_follow_the_same_normalization_as_tag_resolution(self):
-        for labels in (["user-impact"], ["user-impact", "user-impact-high", "backend-change"], ["backend-fix"]):
+        for labels in (["user-impact"], ["user-impact-high", "backend-change"], ["backend-fix"]):
             with self.subTest(labels=labels):
                 impact, backend, _, _ = uc.validate_release_copy("fix: example", SAMPLE_PR_BODY, labels)
                 self.assertEqual((impact, backend), uc._resolve_pr_tags(labels))
+
+    def test_multiple_impact_labels_rejected_even_when_aliases_match(self):
+        for labels in (["user-impact", "user-impact-high"], ["user-impact", "user-impact-high", "backend-change"], ["user-impact-high", "user-impact-high"]):
+            with self.subTest(labels=labels), self.assertRaisesRegex(ValueError, "exactly one"):
+                uc.validate_release_copy("fix: example", SAMPLE_PR_BODY, labels)
 
     def test_conflicting_legacy_impact_is_not_silently_ignored(self):
         with self.assertRaisesRegex(ValueError, "exactly one"):
