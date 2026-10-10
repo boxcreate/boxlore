@@ -34,6 +34,16 @@ class ReleaseCopyValidationTest(unittest.TestCase):
             with self.subTest(labels=labels), self.assertRaisesRegex(ValueError, "exactly one"):
                 uc.validate_release_copy("fix: user-impact-critical", SAMPLE_PR_BODY, labels)
 
+    def test_legacy_labels_follow_the_same_normalization_as_tag_resolution(self):
+        for labels in (["user-impact"], ["user-impact", "user-impact-high", "backend-change"], ["backend-fix"]):
+            with self.subTest(labels=labels):
+                impact, backend, _, _ = uc.validate_release_copy("fix: example", SAMPLE_PR_BODY, labels)
+                self.assertEqual((impact, backend), uc._resolve_pr_tags(labels))
+
+    def test_conflicting_legacy_impact_is_not_silently_ignored(self):
+        with self.assertRaisesRegex(ValueError, "exactly one"):
+            uc.validate_release_copy("fix: example", SAMPLE_PR_BODY, ["backend-fix", "user-impact-high"])
+
     def test_placeholders_are_not_authored_copy(self):
         with self.assertRaisesRegex(ValueError, "empty/TBD"):
             uc.validate_release_copy("fix: example", EMPTY_COPY_BODY, ["user-impact-critical"])

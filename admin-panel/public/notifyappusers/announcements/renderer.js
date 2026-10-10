@@ -34,7 +34,7 @@ function content(parent, text) {
     flush();
 }
 function notify(action) {
-    window.parent.postMessage({source:'boxlore-announcement', action}, '*');
+    window.parent.postMessage({source:'boxlore-announcement', action}, location.origin);
 }
 window.renderAnnouncement = function (payload, profile = {}) {
     const colors = profile.colors || {};
@@ -72,5 +72,5 @@ window.renderAnnouncement = function (payload, profile = {}) {
     document.getElementById('dismiss').textContent = profile.dismissLabel || 'Dismiss';
     document.getElementById('alert').style.visibility = 'visible';
 };
-window.addEventListener('message', event => { if (event.source === window.parent && event.data?.source === 'boxlore-preview') window.renderAnnouncement(event.data.payload, event.data.profile); });
-window.parent.postMessage({source:'boxlore-announcement', action:'ready'}, '*');
+window.addEventListener('message', event => { if (event.origin === location.origin && event.source === window.parent && event.data?.source === 'boxlore-preview') window.renderAnnouncement(event.data.payload, event.data.profile); });
+window.parent.postMessage({source:'boxlore-announcement', action:'ready'}, location.origin);
