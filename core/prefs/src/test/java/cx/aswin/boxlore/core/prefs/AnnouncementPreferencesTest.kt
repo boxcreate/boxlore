@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.prefs
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -23,11 +24,13 @@ class AnnouncementPreferencesTest {
 
     @Before fun setUp() {
         runBlocking { context.userPreferencesDataStore.edit { it.clear() } }
+        context.getSharedPreferences(PrefsFileMigrator.Files.THEME_FAST_CACHE, Context.MODE_PRIVATE).edit().clear().commit()
         repository = UserPreferencesRepository(context)
     }
 
     @After fun tearDown() {
         runBlocking { context.userPreferencesDataStore.edit { it.clear() } }
+        context.getSharedPreferences(PrefsFileMigrator.Files.THEME_FAST_CACHE, Context.MODE_PRIVATE).edit().clear().commit()
     }
 
     // ---- Announcement ----
@@ -72,6 +75,26 @@ class AnnouncementPreferencesTest {
 
         repository.clearAnnouncement()
         assertNull(repository.activeAnnouncementStream.first())
+    }
+
+    @Test
+    fun legacyAnnouncementKeepsDefaultsAndClearingPreservesOtherPreferences() = runTest {
+        context.userPreferencesDataStore.edit {
+            it[stringPreferencesKey("announcement_title")] = "Legacy"
+            it[stringPreferencesKey("announcement_body")] = "Message"
+            it[stringPreferencesKey("theme_brand")] = "classic"
+            it[stringPreferencesKey("subscription_manual_order")] = "123"
+        }
+        val restored = UserPreferencesRepository(context).activeAnnouncementStream.first()!!
+        assertEquals("compact", restored.presentation)
+        assertEquals("primary", restored.tone)
+        assertNull(restored.releaseAlert)
+        assertEquals(false, restored.includePlay)
+        repository.clearAnnouncement()
+        assertNull(repository.activeAnnouncementStream.first())
+        assertEquals("classic", repository.themeBrandStream.first())
+        assertEquals(listOf("123"), repository.subscriptionManualOrderStream.first())
+        assertEquals("cx.aswin.boxlore.core.prefs.UserPreferencesRepository$" + "Announcement", restored.javaClass.name)
     }
 
     @Test

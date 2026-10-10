@@ -3,11 +3,8 @@ package cx.aswin.boxlore.core.prefs
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import cx.aswin.boxlore.core.model.ContentRegions
 import java.io.IOException
@@ -18,8 +15,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
-
-private const val LAST_SEEN_EPISODE_ID_PREFIX = "last_seen_episode_id_"
 
 internal fun sanitizeNavigationStyle(value: String?): String = if (value?.trim()?.lowercase() == "classic") "classic" else "floating"
 
@@ -47,101 +42,65 @@ class UserPreferencesRepository(context: Context,) {
     suspend fun setAutoDownloadBackgroundChargingOnly(chargingOnly: Boolean) = autoDownloadBackground.setChargingOnly(chargingOnly)
 
     private val dataStore = context.userPreferencesDataStore
-    private val syncPrefs =
+    private val appearance = AppearancePreferences(
+        dataStore,
         PrefsFileMigrator.open(
             context,
             newName = PrefsFileMigrator.Files.THEME_FAST_CACHE,
             oldName = PrefsFileMigrator.LegacyFiles.THEME_FAST_CACHE,
-        )
-
+        ),
+    )
+    private val library = LibraryPreferences(dataStore)
+    private val engagement = EngagementPreferences(dataStore)
+    private val tips = TooltipPreferences(dataStore)
+    private val reviews = ReviewPromptPreferences(dataStore)
+    private val announcements = AnnouncementPreferences(dataStore)
     val cachedThemeConfig: String
-        get() = syncPrefs.getString("theme_config", null) ?: "system"
+        get() = appearance.cachedThemeConfig
 
     val cachedSurfaceStyle: String
-        get() = syncPrefs.getString("surface_style", null) ?: "classic_dynamic"
+        get() = appearance.cachedSurfaceStyle
 
-    /** Lettering roundness preset key: `crisp` | `soft` | `round` (default). */
     val cachedFontRoundness: String
-        get() = FontRoundnessAxis.sanitizeKey(syncPrefs.getString(FontRoundnessAxis.PREF_KEY, null))
+        get() = appearance.cachedFontRoundness
 
     val cachedNavigationStyle: String
-        get() = sanitizeNavigationStyle(syncPrefs.getString("navigation_style", null))
+        get() = appearance.cachedNavigationStyle
 
-    /** Cold-start destination: `home` | `subscriptions` | `downloads` (default home). */
     val cachedOpenAppTo: String
-        get() = sanitizeOpenAppTo(syncPrefs.getString("open_app_to", null))
+        get() = appearance.cachedOpenAppTo
 
-    /** Explore landing tab: `for_you` (default) or `top`. */
     val cachedExploreDefaultTab: String
-        get() = ExploreDefaultTab.sanitize(syncPrefs.getString(ExploreDefaultTab.PREF_KEY, null))
+        get() = appearance.cachedExploreDefaultTab
 
-    /** Subscriptions landing tab: `shows` (default) or `new_episodes`. */
     val cachedSubscriptionsDefaultTab: String
-        get() = SubscriptionsDefaultTab.sanitize(syncPrefs.getString(SubscriptionsDefaultTab.PREF_KEY, null))
+        get() = appearance.cachedSubscriptionsDefaultTab
 
-    /** Subscriptions tab layout: `top` (default) or `floating`. */
     val cachedSubscriptionsTabStyle: String
-        get() = SubscriptionsTabStyle.sanitize(syncPrefs.getString(SubscriptionsTabStyle.PREF_KEY, null))
+        get() = appearance.cachedSubscriptionsTabStyle
 
     val cachedThemeBrand: String
-        get() = syncPrefs.getString("theme_brand", null) ?: "violet"
+        get() = appearance.cachedThemeBrand
 
     val cachedUseDynamicColor: Boolean
-        get() = syncPrefs.getBoolean("use_dynamic_color", false)
+        get() = appearance.cachedUseDynamicColor
 
     val cachedArtworkColorsEnabled: Boolean
-        get() = syncPrefs.getBoolean("artwork_colors_enabled", true)
+        get() = appearance.cachedArtworkColorsEnabled
 
     val cachedCustomTheme: ThemeSelection?
-        get() = syncPrefs.getString("custom_theme_brand", null)?.let { brand ->
-            ThemeSelection(brand, syncPrefs.getString("custom_theme_surface", "standard") ?: "standard", syncPrefs.getBoolean("custom_theme_dynamic", false))
-        }
+        get() = appearance.cachedCustomTheme
 
-    val artworkColorsEnabledStream: Flow<Boolean> = dataStore.data.catch { exception ->
-        if (exception is IOException) emit(emptyPreferences()) else throw exception
-    }.map { preferences ->
-        preferences[Keys.ARTWORK_COLORS]?.also { syncPrefs.edit().putBoolean("artwork_colors_enabled", it).apply() } ?: cachedArtworkColorsEnabled
-    }.distinctUntilChanged()
+    val artworkColorsEnabledStream: Flow<Boolean> = appearance.artworkColorsEnabledStream
 
-    suspend fun setArtworkColorsEnabled(enabled: Boolean) {
-        syncPrefs.edit().putBoolean("artwork_colors_enabled", enabled).apply()
-        dataStore.edit { it[Keys.ARTWORK_COLORS] = enabled }
-    }
+    suspend fun setArtworkColorsEnabled(enabled: Boolean) = appearance.setArtworkColorsEnabled(enabled)
 
-    val customThemeStream: Flow<ThemeSelection?> = dataStore.data.catch { exception ->
-        if (exception is IOException) emit(emptyPreferences()) else throw exception
-    }.map { preferences ->
-        preferences[Keys.CUSTOM_THEME_BRAND]?.let { brand ->
-            ThemeSelection(brand, preferences[Keys.CUSTOM_THEME_SURFACE] ?: "standard", preferences[Keys.CUSTOM_THEME_DYNAMIC] ?: false).also {
-                syncPrefs.edit().putString("custom_theme_brand", it.brand).putString("custom_theme_surface", it.surfaceStyle).putBoolean("custom_theme_dynamic", it.wallpaperColors).apply()
-            }
-        } ?: cachedCustomTheme
-    }.distinctUntilChanged()
+    val customThemeStream: Flow<ThemeSelection?> = appearance.customThemeStream
 
-    /** Apply all color inputs together, optionally remembering the current or newly created Custom theme. */
-    suspend fun setThemeSelection(selection: ThemeSelection, customThemeToRemember: ThemeSelection? = null) {
-        val cache = syncPrefs.edit().putString("theme_brand", selection.brand)
-            .putString("surface_style", selection.surfaceStyle).putBoolean("use_dynamic_color", selection.wallpaperColors)
-        customThemeToRemember?.let {
-            cache.putString("custom_theme_brand", it.brand).putString("custom_theme_surface", it.surfaceStyle)
-                .putBoolean("custom_theme_dynamic", it.wallpaperColors)
-        }
-        cache.apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.THEME_BRAND] = selection.brand
-            preferences[Keys.SURFACE_STYLE] = selection.surfaceStyle
-            preferences[Keys.USE_DYNAMIC_COLOR] = selection.wallpaperColors
-            customThemeToRemember?.let {
-                preferences[Keys.CUSTOM_THEME_BRAND] = it.brand
-                preferences[Keys.CUSTOM_THEME_SURFACE] = it.surfaceStyle
-                preferences[Keys.CUSTOM_THEME_DYNAMIC] = it.wallpaperColors
-            }
-        }
-    }
+    suspend fun setThemeSelection(selection: ThemeSelection, customThemeToRemember: ThemeSelection? = null) = appearance.setThemeSelection(selection, customThemeToRemember)
 
-    /** Widget chrome: `app` (default, match Appearance) or `system` (launcher Material You). */
     val cachedWidgetAppearance: String
-        get() = WidgetAppearance.sanitize(syncPrefs.getString(WidgetAppearance.PREF_KEY, null))
+        get() = appearance.cachedWidgetAppearance
 
     private fun normalizeRegionCode(region: String): String = ContentRegions.canonicalize(region)
 
@@ -316,510 +275,89 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
-    // THEME PREFERENCES
-    val themeConfigStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.THEME_CONFIG]
-                if (stored != null) {
-                    syncPrefs.edit().putString("theme_config", stored).apply()
-                    stored
-                } else {
-                    cachedThemeConfig
-                }
-            }.distinctUntilChanged()
+    val themeConfigStream: Flow<String> = appearance.themeConfigStream
 
-    suspend fun setThemeConfig(themeConfig: String) {
-        syncPrefs.edit().putString("theme_config", themeConfig).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.THEME_CONFIG] = themeConfig
-        }
-    }
+    suspend fun setThemeConfig(themeConfig: String) = appearance.setThemeConfig(themeConfig)
 
-    val useDynamicColorStream: Flow<Boolean> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.USE_DYNAMIC_COLOR]
-                if (stored != null) {
-                    syncPrefs.edit().putBoolean("use_dynamic_color", stored).apply()
-                    stored
-                } else {
-                    cachedUseDynamicColor
-                }
-            }.distinctUntilChanged()
+    val useDynamicColorStream: Flow<Boolean> = appearance.useDynamicColorStream
 
-    suspend fun setUseDynamicColor(useDynamicColor: Boolean) {
-        syncPrefs.edit().putBoolean("use_dynamic_color", useDynamicColor).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.USE_DYNAMIC_COLOR] = useDynamicColor
-        }
-    }
+    suspend fun setUseDynamicColor(useDynamicColor: Boolean) = appearance.setUseDynamicColor(useDynamicColor)
 
-    val themeBrandStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.THEME_BRAND]
-                if (stored != null) {
-                    syncPrefs.edit().putString("theme_brand", stored).apply()
-                    stored
-                } else {
-                    cachedThemeBrand
-                }
-            }.distinctUntilChanged()
+    val themeBrandStream: Flow<String> = appearance.themeBrandStream
 
-    suspend fun setThemeBrand(themeBrand: String) {
-        syncPrefs.edit().putString("theme_brand", themeBrand).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.THEME_BRAND] = themeBrand
-        }
-    }
+    suspend fun setThemeBrand(themeBrand: String) = appearance.setThemeBrand(themeBrand)
 
-    /** Apply a complete preset in one write without changing light/dark mode or other appearance choices. */
-    suspend fun setThemePreset(presetKey: String) {
-        syncPrefs.edit()
-            .putString("surface_style", presetKey)
-            .putString("theme_brand", presetKey)
-            .putBoolean("use_dynamic_color", false)
-            .apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.SURFACE_STYLE] = presetKey
-            preferences[Keys.THEME_BRAND] = presetKey
-            preferences[Keys.USE_DYNAMIC_COLOR] = false
-        }
-    }
+    suspend fun setThemePreset(presetKey: String) = appearance.setThemeSelection(ThemeSelection(presetKey, presetKey, false))
 
-    val surfaceStyleStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.SURFACE_STYLE]
-                if (stored != null) {
-                    syncPrefs.edit().putString("surface_style", stored).apply()
-                    stored
-                } else {
-                    cachedSurfaceStyle
-                }
-            }.distinctUntilChanged()
+    val surfaceStyleStream: Flow<String> = appearance.surfaceStyleStream
 
-    suspend fun setSurfaceStyle(surfaceStyle: String) {
-        syncPrefs.edit().putString("surface_style", surfaceStyle).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.SURFACE_STYLE] = surfaceStyle
-        }
-    }
+    suspend fun setSurfaceStyle(surfaceStyle: String) = appearance.setSurfaceStyle(surfaceStyle)
 
-    val fontRoundnessStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.FONT_ROUNDNESS]
-                if (stored != null) {
-                    val roundness = FontRoundnessAxis.sanitizeKey(stored)
-                    syncPrefs.edit().putString(FontRoundnessAxis.PREF_KEY, roundness).apply()
-                    roundness
-                } else {
-                    cachedFontRoundness
-                }
-            }.distinctUntilChanged()
+    val fontRoundnessStream: Flow<String> = appearance.fontRoundnessStream
 
-    suspend fun setFontRoundness(fontRoundness: String) {
-        val sanitized = FontRoundnessAxis.sanitizeKey(fontRoundness)
-        syncPrefs.edit().putString(FontRoundnessAxis.PREF_KEY, sanitized).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.FONT_ROUNDNESS] = sanitized
-        }
-    }
+    suspend fun setFontRoundness(fontRoundness: String) = appearance.setFontRoundness(fontRoundness)
 
-    /** Navigation presentation key: `floating` (default) or `classic`. */
-    val navigationStyleStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.NAVIGATION_STYLE]
-                if (stored != null) {
-                    val navigationStyle = sanitizeNavigationStyle(stored)
-                    syncPrefs.edit().putString("navigation_style", navigationStyle).apply()
-                    navigationStyle
-                } else {
-                    cachedNavigationStyle
-                }
-            }.distinctUntilChanged()
+    val navigationStyleStream: Flow<String> = appearance.navigationStyleStream
 
-    suspend fun setNavigationStyle(navigationStyle: String) {
-        val sanitized = sanitizeNavigationStyle(navigationStyle)
-        syncPrefs.edit().putString("navigation_style", sanitized).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.NAVIGATION_STYLE] = sanitized
-        }
-    }
+    suspend fun setNavigationStyle(navigationStyle: String) = appearance.setNavigationStyle(navigationStyle)
 
-    /** Cold-start landing: `home` (default) or `subscriptions`. Mirrored in theme fast-cache for launch. */
-    val openAppToStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.OPEN_APP_TO]
-                if (stored != null) {
-                    val openAppTo = sanitizeOpenAppTo(stored)
-                    syncPrefs.edit().putString("open_app_to", openAppTo).apply()
-                    openAppTo
-                } else {
-                    cachedOpenAppTo
-                }
-            }.distinctUntilChanged()
+    val openAppToStream: Flow<String> = appearance.openAppToStream
 
-    suspend fun setOpenAppTo(openAppTo: String) {
-        val sanitized = sanitizeOpenAppTo(openAppTo)
-        syncPrefs.edit().putString("open_app_to", sanitized).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.OPEN_APP_TO] = sanitized
-        }
-    }
+    suspend fun setOpenAppTo(openAppTo: String) = appearance.setOpenAppTo(openAppTo)
 
-    val exploreDefaultTabStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.EXPLORE_DEFAULT_TAB]
-                if (stored != null) {
-                    val tab = ExploreDefaultTab.sanitize(stored)
-                    syncPrefs.edit().putString(ExploreDefaultTab.PREF_KEY, tab).apply()
-                    tab
-                } else {
-                    cachedExploreDefaultTab
-                }
-            }.distinctUntilChanged()
+    val exploreDefaultTabStream: Flow<String> = appearance.exploreDefaultTabStream
 
-    suspend fun setExploreDefaultTab(tab: String) {
-        val sanitized = ExploreDefaultTab.sanitize(tab)
-        syncPrefs.edit().putString(ExploreDefaultTab.PREF_KEY, sanitized).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.EXPLORE_DEFAULT_TAB] = sanitized
-        }
-    }
+    suspend fun setExploreDefaultTab(tab: String) = appearance.setExploreDefaultTab(tab)
 
-    val subscriptionsDefaultTabStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB]
-                if (stored != null) {
-                    val tab = SubscriptionsDefaultTab.sanitize(stored)
-                    syncPrefs.edit().putString(SubscriptionsDefaultTab.PREF_KEY, tab).apply()
-                    tab
-                } else {
-                    cachedSubscriptionsDefaultTab
-                }
-            }.distinctUntilChanged()
+    val subscriptionsDefaultTabStream: Flow<String> = appearance.subscriptionsDefaultTabStream
 
-    suspend fun setSubscriptionsDefaultTab(tab: String) {
-        val sanitized = SubscriptionsDefaultTab.sanitize(tab)
-        syncPrefs.edit().putString(SubscriptionsDefaultTab.PREF_KEY, sanitized).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = sanitized
-        }
-    }
+    suspend fun setSubscriptionsDefaultTab(tab: String) = appearance.setSubscriptionsDefaultTab(tab)
 
-    val subscriptionsTabStyleStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.SUBSCRIPTIONS_TAB_STYLE]
-                if (stored != null) {
-                    val style = SubscriptionsTabStyle.sanitize(stored)
-                    syncPrefs.edit().putString(SubscriptionsTabStyle.PREF_KEY, style).apply()
-                    style
-                } else {
-                    cachedSubscriptionsTabStyle
-                }
-            }.distinctUntilChanged()
+    val subscriptionsTabStyleStream: Flow<String> = appearance.subscriptionsTabStyleStream
 
-    suspend fun setSubscriptionsTabStyle(style: String) {
-        val sanitized = SubscriptionsTabStyle.sanitize(style)
-        syncPrefs.edit().putString(SubscriptionsTabStyle.PREF_KEY, sanitized).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] = sanitized
-        }
-    }
+    suspend fun setSubscriptionsTabStyle(style: String) = appearance.setSubscriptionsTabStyle(style)
 
-    /**
-     * After Google Backup, SharedPreferences fast-cache can restore while DataStore does not.
-     * Copy cache values into missing DataStore keys so UI streams and workers stay aligned.
-     */
-    suspend fun hydrateMissingDataStoreFromFastCache() {
-        dataStore.edit { preferences ->
-            hydrateArtworkThemePreferences(preferences)
-            if (preferences[Keys.THEME_CONFIG] == null) {
-                preferences[Keys.THEME_CONFIG] = cachedThemeConfig
-            }
-            if (preferences[Keys.USE_DYNAMIC_COLOR] == null) {
-                preferences[Keys.USE_DYNAMIC_COLOR] = cachedUseDynamicColor
-            }
-            if (preferences[Keys.THEME_BRAND] == null) {
-                preferences[Keys.THEME_BRAND] = cachedThemeBrand
-            }
-            if (preferences[Keys.SURFACE_STYLE] == null) {
-                preferences[Keys.SURFACE_STYLE] = cachedSurfaceStyle
-            }
-            if (preferences[Keys.FONT_ROUNDNESS] == null) {
-                preferences[Keys.FONT_ROUNDNESS] = cachedFontRoundness
-            }
-            if (preferences[Keys.NAVIGATION_STYLE] == null) {
-                preferences[Keys.NAVIGATION_STYLE] = cachedNavigationStyle
-            }
-            if (preferences[Keys.OPEN_APP_TO] == null) {
-                preferences[Keys.OPEN_APP_TO] = cachedOpenAppTo
-            }
-            if (preferences[Keys.EXPLORE_DEFAULT_TAB] == null) {
-                preferences[Keys.EXPLORE_DEFAULT_TAB] = cachedExploreDefaultTab
-            }
-            if (preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] == null) {
-                preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = cachedSubscriptionsDefaultTab
-            }
-            if (preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] == null) {
-                preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] = cachedSubscriptionsTabStyle
-            }
-            if (preferences[Keys.WIDGET_APPEARANCE] == null) {
-                preferences[Keys.WIDGET_APPEARANCE] = cachedWidgetAppearance
-            }
-        }
-    }
+    suspend fun hydrateMissingDataStoreFromFastCache() = appearance.hydrateMissingDataStoreFromFastCache()
 
-    private fun hydrateArtworkThemePreferences(preferences: androidx.datastore.preferences.core.MutablePreferences) {
-            if (preferences[Keys.ARTWORK_COLORS] == null) preferences[Keys.ARTWORK_COLORS] = cachedArtworkColorsEnabled
-            cachedCustomTheme?.let { custom ->
-                if (preferences[Keys.CUSTOM_THEME_BRAND] == null) {
-                    preferences[Keys.CUSTOM_THEME_BRAND] = custom.brand
-                    preferences[Keys.CUSTOM_THEME_SURFACE] = custom.surfaceStyle
-                    preferences[Keys.CUSTOM_THEME_DYNAMIC] = custom.wallpaperColors
-                }
-            }
-    }
+    val subscriptionSortStream: Flow<String> = library.subscriptionSortStream
 
-    // SORTING PREFERENCES
-    val subscriptionSortStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                preferences[Keys.SUBSCRIPTION_SORT] ?: "SmartRank"
-            }.distinctUntilChanged()
+    suspend fun setSubscriptionSort(sort: String) = library.setSort(Keys.SUBSCRIPTION_SORT, sort)
 
-    suspend fun setSubscriptionSort(sort: String) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SUBSCRIPTION_SORT] = sort
-        }
-    }
+    val subscriptionFolderSortStream: Flow<String> = library.subscriptionFolderSortStream
 
-    val subscriptionFolderSortStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                preferences[Keys.SUBSCRIPTION_FOLDER_SORT] ?: "Inherit"
-            }.distinctUntilChanged()
+    suspend fun setSubscriptionFolderSort(sort: String) = library.setSort(Keys.SUBSCRIPTION_FOLDER_SORT, sort)
 
-    suspend fun setSubscriptionFolderSort(sort: String) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SUBSCRIPTION_FOLDER_SORT] = sort
-        }
-    }
+    val subscriptionIntraFolderSortStream: Flow<String> = library.subscriptionIntraFolderSortStream
 
-    val subscriptionIntraFolderSortStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                preferences[Keys.SUBSCRIPTION_INTRA_FOLDER_SORT] ?: "Inherit"
-            }.distinctUntilChanged()
+    suspend fun setSubscriptionIntraFolderSort(sort: String) = library.setSort(Keys.SUBSCRIPTION_INTRA_FOLDER_SORT, sort)
 
-    suspend fun setSubscriptionIntraFolderSort(sort: String) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SUBSCRIPTION_INTRA_FOLDER_SORT] = sort
-        }
-    }
+    val subscriptionManualOrderStream: Flow<List<String>> = library.subscriptionManualOrderStream
 
-    val subscriptionManualOrderStream: Flow<List<String>> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                PreferenceIdList.decode(preferences[Keys.SUBSCRIPTION_MANUAL_ORDER])
-            }.distinctUntilChanged()
+    suspend fun setSubscriptionManualOrder(ids: List<String>) = library.setSubscriptionManualOrder(ids)
 
-    suspend fun setSubscriptionManualOrder(ids: List<String>) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SUBSCRIPTION_MANUAL_ORDER] = PreferenceIdList.encode(ids)
-        }
-    }
+    val subscriptionFolderManualOrderStream: Flow<List<String>> = library.subscriptionFolderManualOrderStream
 
-    val subscriptionFolderManualOrderStream: Flow<List<String>> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                PreferenceIdList.decode(preferences[Keys.SUBSCRIPTION_FOLDER_MANUAL_ORDER])
-            }.distinctUntilChanged()
+    suspend fun setSubscriptionFolderManualOrder(ids: List<String>) = library.setSubscriptionFolderManualOrder(ids)
 
-    suspend fun setSubscriptionFolderManualOrder(ids: List<String>) {
-        dataStore.edit { preferences ->
-            preferences[Keys.SUBSCRIPTION_FOLDER_MANUAL_ORDER] = PreferenceIdList.encode(ids)
-        }
-    }
+    val homePinnedPodcastIdsStream: Flow<List<String>> = library.homePinnedPodcastIdsStream
 
-    val homePinnedPodcastIdsStream: Flow<List<String>> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                HomePinnedShows.sanitize(PreferenceIdList.decode(preferences[Keys.HOME_PINNED_PODCAST_IDS]))
-            }.distinctUntilChanged()
+    suspend fun setHomePinnedPodcastIds(ids: List<String>) = library.setHomePinnedPodcastIds(ids)
 
-    suspend fun setHomePinnedPodcastIds(ids: List<String>) {
-        dataStore.edit { preferences ->
-            preferences[Keys.HOME_PINNED_PODCAST_IDS] =
-                PreferenceIdList.encode(HomePinnedShows.sanitize(ids))
-        }
-    }
+    suspend fun toggleHomePinnedPodcastId(podcastId: String): HomePinnedShows.ToggleResult = library.toggleHomePinnedPodcastId(podcastId)
 
-    /**
-     * Sanitizes, toggles, and persists Home pins in one DataStore write.
-     * [HomePinnedShows.ToggleResult.AtCapacity] leaves the stored list unchanged.
-     */
-    suspend fun toggleHomePinnedPodcastId(podcastId: String): HomePinnedShows.ToggleResult {
-        var result = HomePinnedShows.ToggleResult.Unpinned
-        dataStore.edit { preferences ->
-            val current =
-                HomePinnedShows.sanitize(
-                    PreferenceIdList.decode(preferences[Keys.HOME_PINNED_PODCAST_IDS]),
-                )
-            val (next, toggleResult) = HomePinnedShows.toggle(current, podcastId)
-            result = toggleResult
-            if (toggleResult != HomePinnedShows.ToggleResult.AtCapacity) {
-                preferences[Keys.HOME_PINNED_PODCAST_IDS] = PreferenceIdList.encode(next)
-            }
-        }
-        return result
-    }
+    suspend fun removePodcastIdFromManualOrderAndPins(podcastId: String) = library.removePodcastIdFromManualOrderAndPins(podcastId)
 
-    /** Drops an unsubscribed show from Manual order and Home pins without touching other prefs. */
-    suspend fun removePodcastIdFromManualOrderAndPins(podcastId: String) {
-        val id = podcastId.trim()
-        if (id.isEmpty()) return
-        dataStore.edit { preferences ->
-            val prevOrder = PreferenceIdList.decode(preferences[Keys.SUBSCRIPTION_MANUAL_ORDER])
-            if (id in prevOrder) {
-                preferences[Keys.SUBSCRIPTION_MANUAL_ORDER] =
-                    PreferenceIdList.encode(prevOrder.filter { it != id })
-            }
-            val prevPins =
-                HomePinnedShows.sanitize(PreferenceIdList.decode(preferences[Keys.HOME_PINNED_PODCAST_IDS]))
-            if (id in prevPins) {
-                preferences[Keys.HOME_PINNED_PODCAST_IDS] =
-                    PreferenceIdList.encode(prevPins.filter { it != id })
-            }
-        }
-    }
+    suspend fun legacyRssRepairVersion(): Int = library.legacyRssRepairVersion()
 
-    /** Versioned one-time repair gate; a failed/incomplete pass deliberately leaves this unchanged. */
-    suspend fun legacyRssRepairVersion(): Int = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) emit(emptyPreferences()) else throw exception
-        }.first()[Keys.LEGACY_RSS_REPAIR_VERSION] ?: 0
+    suspend fun markLegacyRssRepairVersion(version: Int) = library.markLegacyRssRepairVersion(version)
 
-    suspend fun markLegacyRssRepairVersion(version: Int) {
-        dataStore.edit { preferences ->
-            val current = preferences[Keys.LEGACY_RSS_REPAIR_VERSION] ?: 0
-            if (version > current) preferences[Keys.LEGACY_RSS_REPAIR_VERSION] = version
-        }
-    }
+    suspend fun beginPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) = library.beginPodcastIdRepair(oldPodcastId, newPodcastId)
 
-    /**
-     * Journals the cross-store ID rewrite before the Room transaction. If the process stops after
-     * Room commits, the next launch can still repair Manual order, pins, and last-seen state.
-     */
-    suspend fun beginPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) {
-        dataStore.edit { preferences ->
-            preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] = oldPodcastId
-            preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] = newPodcastId
-        }
-    }
+    suspend fun pendingPodcastIdRepair(): PendingPodcastIdRepair? = library.pendingPodcastIdRepair()
 
-    suspend fun pendingPodcastIdRepair(): PendingPodcastIdRepair? = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) emit(emptyPreferences()) else throw exception
-        }.first()
-        .let { preferences ->
-            val oldId = preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID]
-            val newId = preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID]
-            if (oldId.isNullOrBlank() || newId.isNullOrBlank()) {
-                null
-            } else {
-                PendingPodcastIdRepair(oldId, newId)
-            }
-        }
+    suspend fun finishPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) = library.finishPodcastIdRepair(oldPodcastId, newPodcastId)
 
-    /** Atomically rewrites every DataStore preference keyed by a podcast ID and clears the journal. */
-    suspend fun finishPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) {
-        dataStore.edit { preferences ->
-            if (preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] != oldPodcastId ||
-                preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] != newPodcastId
-            ) {
-                return@edit
-            }
-            val manualOrder = PreferenceIdList.decode(preferences[Keys.SUBSCRIPTION_MANUAL_ORDER])
-            preferences[Keys.SUBSCRIPTION_MANUAL_ORDER] =
-                PreferenceIdList.encode(manualOrder.map { if (it == oldPodcastId) newPodcastId else it }.distinct())
-
-            val pins =
-                HomePinnedShows.sanitize(
-                    PreferenceIdList.decode(preferences[Keys.HOME_PINNED_PODCAST_IDS]),
-                )
-            preferences[Keys.HOME_PINNED_PODCAST_IDS] =
-                PreferenceIdList.encode(
-                    HomePinnedShows.sanitize(
-                        pins.map { if (it == oldPodcastId) newPodcastId else it },
-                    ),
-                )
-            if (preferences[Keys.OVERRIDDEN_REC_PODCAST_ID] == oldPodcastId) {
-                preferences[Keys.OVERRIDDEN_REC_PODCAST_ID] = newPodcastId
-            }
-
-            val oldLastSeenKey = stringPreferencesKey("$LAST_SEEN_EPISODE_ID_PREFIX$oldPodcastId")
-            val newLastSeenKey = stringPreferencesKey("$LAST_SEEN_EPISODE_ID_PREFIX$newPodcastId")
-            val oldLastSeen = preferences[oldLastSeenKey]
-            if (oldLastSeen != null && preferences[newLastSeenKey] == null) {
-                preferences[newLastSeenKey] = oldLastSeen
-            }
-            preferences.remove(oldLastSeenKey)
-            preferences.remove(Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID)
-            preferences.remove(Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID)
-        }
-    }
-
-    suspend fun cancelPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) {
-        dataStore.edit { preferences ->
-            if (preferences[Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID] == oldPodcastId &&
-                preferences[Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID] == newPodcastId
-            ) {
-                preferences.remove(Keys.LEGACY_RSS_REPAIR_PENDING_OLD_ID)
-                preferences.remove(Keys.LEGACY_RSS_REPAIR_PENDING_NEW_ID)
-            }
-        }
-    }
+    suspend fun cancelPodcastIdRepair(oldPodcastId: String, newPodcastId: String,) = library.cancelPodcastIdRepair(oldPodcastId, newPodcastId)
 
     val latestEpisodesSortUseSmartStream: Flow<Boolean> =
         dataStore.data
@@ -937,166 +475,33 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
-    // TOOLTIP PREFERENCES (one-time tips)
-    private object TooltipKeys {
-        val HAS_SEEN_SWIPE_DISMISS_TIP =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("has_seen_swipe_dismiss_tip")
-        val HAS_SEEN_TITLE_TAP_TIP =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("has_seen_title_tap_tip")
-        val HAS_SEEN_SWIPE_MINIMIZE_TIP =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("has_seen_swipe_minimize_tip")
-        val HAS_SEEN_MARK_PLAYED_TIP =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("has_seen_mark_played_tip")
-        val HAS_SEEN_LISTENING_HISTORY_TRACKING_NOTICE =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("has_seen_listening_history_tracking_notice")
-    }
+    val hasSeenSwipeDismissTip: Flow<Boolean> = tips.hasSeenSwipeDismissTip
 
-    val hasSeenSwipeDismissTip: Flow<Boolean> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { it[TooltipKeys.HAS_SEEN_SWIPE_DISMISS_TIP] ?: false }
-            .distinctUntilChanged()
+    val hasSeenTitleTapTip: Flow<Boolean> = tips.hasSeenTitleTapTip
 
-    val hasSeenTitleTapTip: Flow<Boolean> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { it[TooltipKeys.HAS_SEEN_TITLE_TAP_TIP] ?: false }
-            .distinctUntilChanged()
+    val hasSeenSwipeMinimizeTip: Flow<Boolean> = tips.hasSeenSwipeMinimizeTip
 
-    val hasSeenSwipeMinimizeTip: Flow<Boolean> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { it[TooltipKeys.HAS_SEEN_SWIPE_MINIMIZE_TIP] ?: false }
-            .distinctUntilChanged()
+    suspend fun markSwipeDismissTipSeen() = tips.markSwipeDismissTipSeen()
 
-    suspend fun markSwipeDismissTipSeen() {
-        dataStore.edit { it[TooltipKeys.HAS_SEEN_SWIPE_DISMISS_TIP] = true }
-    }
+    suspend fun markTitleTapTipSeen() = tips.markTitleTapTipSeen()
 
-    suspend fun markTitleTapTipSeen() {
-        dataStore.edit { it[TooltipKeys.HAS_SEEN_TITLE_TAP_TIP] = true }
-    }
+    suspend fun markSwipeMinimizeTipSeen() = tips.markSwipeMinimizeTipSeen()
 
-    suspend fun markSwipeMinimizeTipSeen() {
-        dataStore.edit { it[TooltipKeys.HAS_SEEN_SWIPE_MINIMIZE_TIP] = true }
-    }
+    val hasSeenMarkPlayedTip: Flow<Boolean> = tips.hasSeenMarkPlayedTip
 
-    val hasSeenMarkPlayedTip: Flow<Boolean> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { it[TooltipKeys.HAS_SEEN_MARK_PLAYED_TIP] ?: false }
-            .distinctUntilChanged()
+    suspend fun markMarkPlayedTipSeen() = tips.markMarkPlayedTipSeen()
 
-    suspend fun markMarkPlayedTipSeen() {
-        dataStore.edit { it[TooltipKeys.HAS_SEEN_MARK_PLAYED_TIP] = true }
-    }
+    val hasSeenListeningHistoryTrackingNotice: Flow<Boolean> = tips.hasSeenListeningHistoryTrackingNotice
 
-    val hasSeenListeningHistoryTrackingNotice: Flow<Boolean> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { it[TooltipKeys.HAS_SEEN_LISTENING_HISTORY_TRACKING_NOTICE] ?: false }
-            .distinctUntilChanged()
+    suspend fun markListeningHistoryTrackingNoticeSeen() = tips.markListeningHistoryTrackingNoticeSeen()
 
-    suspend fun markListeningHistoryTrackingNoticeSeen() {
-        dataStore.edit { it[TooltipKeys.HAS_SEEN_LISTENING_HISTORY_TRACKING_NOTICE] = true }
-    }
+    val hasLoggedFirstPlay: Flow<Boolean> = engagement.hasLoggedFirstPlay
 
-    // ANALYTICS & REVIEW KEYS
-    private object AnalyticsKeys {
-        val HAS_LOGGED_FIRST_PLAY =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("has_logged_first_play")
-        val REVIEW_LAST_PROMPT_AT =
-            androidx.datastore.preferences.core
-                .longPreferencesKey("review_last_prompt_at")
-        val REVIEW_PROMPT_COUNT =
-            androidx.datastore.preferences.core
-                .intPreferencesKey("review_prompt_count")
-        val REVIEW_HAS_REVIEWED =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("review_has_reviewed")
-        val REVIEW_FIRST_LAUNCH_AT =
-            androidx.datastore.preferences.core
-                .longPreferencesKey("review_first_launch_at")
+    suspend fun markFirstPlayLogged() = engagement.markFirstPlayLogged()
 
-        // NPS survey: milestone marks eligibility (pending); the event fires on
-        // the next app open so it never surfaces during background playback.
-        val NPS_SURVEY_PENDING =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("nps_survey_pending")
-        val NPS_SURVEY_FIRED =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("nps_survey_fired")
-        val NPS_SURVEY_COMPLETED_COUNT =
-            androidx.datastore.preferences.core
-                .intPreferencesKey("nps_survey_completed_count")
-        val ENGAGEMENT_LAST_PROMPT_AT =
-            androidx.datastore.preferences.core
-                .longPreferencesKey("engagement_last_prompt_at")
-        val NPS_LAST_SCORE =
-            androidx.datastore.preferences.core
-                .intPreferencesKey("nps_last_score")
-        val PROMOTER_REVIEW_PENDING =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("promoter_review_pending")
-        val REVIEW_MILESTONE_PENDING =
-            androidx.datastore.preferences.core
-                .intPreferencesKey("review_milestone_pending")
-    }
+    val dismissedFeatureVersion: Flow<String> = engagement.dismissedFeatureVersion
 
-    val hasLoggedFirstPlay: Flow<Boolean> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { it[AnalyticsKeys.HAS_LOGGED_FIRST_PLAY] ?: false }
-            .distinctUntilChanged()
-
-    suspend fun markFirstPlayLogged() {
-        dataStore.edit { it[AnalyticsKeys.HAS_LOGGED_FIRST_PLAY] = true }
-    }
-
-    // --- FEATURE ANNOUNCEMENT (version-specific one-time dialog) ---
-    private object FeatureKeys {
-        val DISMISSED_FEATURE_VERSION = stringPreferencesKey("dismissed_feature_version")
-    }
-
-    val dismissedFeatureVersion: Flow<String> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { it[FeatureKeys.DISMISSED_FEATURE_VERSION] ?: "" }
-            .distinctUntilChanged()
-
-    suspend fun dismissFeatureAnnouncement(version: String) {
-        dataStore.edit { it[FeatureKeys.DISMISSED_FEATURE_VERSION] = version }
-    }
-
-    // --- ANNOUNCEMENT PREFERENCES ---
-    private object AnnouncementKeys {
-        val TITLE = stringPreferencesKey("announcement_title")
-        val BODY = stringPreferencesKey("announcement_body")
-        val ROUTE = stringPreferencesKey("announcement_route")
-        val IMAGE_URL = stringPreferencesKey("announcement_image_url")
-        val ACTION_LABEL = stringPreferencesKey("announcement_action_label")
-        val SHOW_ACTION_IN_APP =
-            androidx.datastore.preferences.core
-                .booleanPreferencesKey("announcement_show_action_in_app")
-        val TIMESTAMP =
-            androidx.datastore.preferences.core
-                .longPreferencesKey("announcement_timestamp")
-        val CATEGORY = stringPreferencesKey("announcement_category")
-        val PRESENTATION = stringPreferencesKey("announcement_presentation")
-        val TONE = stringPreferencesKey("announcement_tone")
-        val IMAGE_STYLE = stringPreferencesKey("announcement_image_style")
-        val RELEASE = booleanPreferencesKey("announcement_release")
-        val INCLUDE_PLAY = booleanPreferencesKey("announcement_include_play")
-        val TEST_ONLY = booleanPreferencesKey("announcement_test_only")
-        val RELEASE_CODE = longPreferencesKey("announcement_release_code")
-        val RELEASE_URL = stringPreferencesKey("announcement_release_url")
-    }
+    suspend fun dismissFeatureAnnouncement(version: String) = engagement.dismissFeatureAnnouncement(version)
 
     data class Announcement(
         val title: String,
@@ -1117,240 +522,49 @@ class UserPreferencesRepository(context: Context,) {
         val releaseUrl: String? = null,
     )
 
-    val activeAnnouncementStream: Flow<Announcement?> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { pref ->
-                val title = pref[AnnouncementKeys.TITLE]
-                val body = pref[AnnouncementKeys.BODY]
-                if (!title.isNullOrBlank() && !body.isNullOrBlank()) {
-                    Announcement(
-                        title = title,
-                        body = body,
-                        route = pref[AnnouncementKeys.ROUTE],
-                        imageUrl = pref[AnnouncementKeys.IMAGE_URL],
-                        actionLabel = pref[AnnouncementKeys.ACTION_LABEL],
-                        showActionInApp = pref[AnnouncementKeys.SHOW_ACTION_IN_APP] ?: true,
-                        timestamp = pref[AnnouncementKeys.TIMESTAMP] ?: 0L,
-                        category = pref[AnnouncementKeys.CATEGORY] ?: "WHAT'S NEW",
-                        presentation = pref[AnnouncementKeys.PRESENTATION] ?: "compact",
-                        tone = pref[AnnouncementKeys.TONE] ?: "primary",
-                        imageStyle = pref[AnnouncementKeys.IMAGE_STYLE] ?: "banner",
-                        releaseAlert = pref[AnnouncementKeys.RELEASE],
-                        includePlay = pref[AnnouncementKeys.INCLUDE_PLAY] ?: false,
-                        testOnly = pref[AnnouncementKeys.TEST_ONLY] ?: false,
-                        releaseVersionCode = pref[AnnouncementKeys.RELEASE_CODE] ?: 0,
-                        releaseUrl = pref[AnnouncementKeys.RELEASE_URL],
-                    )
-                } else {
-                    null
-                }
-            }.distinctUntilChanged()
+    val activeAnnouncementStream: Flow<Announcement?> = announcements.activeAnnouncementStream
 
-    suspend fun setAnnouncement(announcement: Announcement) {
-        dataStore.edit {
-            it[AnnouncementKeys.TITLE] = announcement.title
-            it[AnnouncementKeys.BODY] = announcement.body
-            if (announcement.route != null) it[AnnouncementKeys.ROUTE] = announcement.route else it.remove(AnnouncementKeys.ROUTE)
-            if (announcement.imageUrl !=
-                null
-            ) {
-                it[AnnouncementKeys.IMAGE_URL] = announcement.imageUrl
-            } else {
-                it.remove(AnnouncementKeys.IMAGE_URL)
-            }
-            if (announcement.actionLabel !=
-                null
-            ) {
-                it[AnnouncementKeys.ACTION_LABEL] = announcement.actionLabel
-            } else {
-                it.remove(AnnouncementKeys.ACTION_LABEL)
-            }
-            it[AnnouncementKeys.SHOW_ACTION_IN_APP] = announcement.showActionInApp
-            it[AnnouncementKeys.CATEGORY] = announcement.category
-            it[AnnouncementKeys.TIMESTAMP] = announcement.timestamp
-            it[AnnouncementKeys.PRESENTATION] = announcement.presentation
-            it[AnnouncementKeys.TONE] = announcement.tone
-            it[AnnouncementKeys.IMAGE_STYLE] = announcement.imageStyle
-            announcement.releaseAlert?.let { value -> it[AnnouncementKeys.RELEASE] = value } ?: it.remove(AnnouncementKeys.RELEASE)
-            it[AnnouncementKeys.INCLUDE_PLAY] = announcement.includePlay
-            it[AnnouncementKeys.TEST_ONLY] = announcement.testOnly
-            it[AnnouncementKeys.RELEASE_CODE] = announcement.releaseVersionCode
-            announcement.releaseUrl?.let { url -> it[AnnouncementKeys.RELEASE_URL] = url } ?: it.remove(AnnouncementKeys.RELEASE_URL)
-        }
-    }
+    suspend fun setAnnouncement(announcement: Announcement) = announcements.setAnnouncement(announcement)
 
-    suspend fun clearAnnouncement() {
-        dataStore.edit { pref ->
-            pref.remove(AnnouncementKeys.TITLE)
-            pref.remove(AnnouncementKeys.BODY)
-            pref.remove(AnnouncementKeys.ROUTE)
-            pref.remove(AnnouncementKeys.IMAGE_URL)
-            pref.remove(AnnouncementKeys.ACTION_LABEL)
-            pref.remove(AnnouncementKeys.SHOW_ACTION_IN_APP)
-            pref.remove(AnnouncementKeys.CATEGORY)
-            pref.remove(AnnouncementKeys.TIMESTAMP)
-            pref.remove(AnnouncementKeys.PRESENTATION)
-            pref.remove(AnnouncementKeys.TONE)
-            pref.remove(AnnouncementKeys.IMAGE_STYLE)
-            pref.remove(AnnouncementKeys.RELEASE)
-            pref.remove(AnnouncementKeys.INCLUDE_PLAY)
-            pref.remove(AnnouncementKeys.TEST_ONLY)
-            pref.remove(AnnouncementKeys.RELEASE_CODE)
-            pref.remove(AnnouncementKeys.RELEASE_URL)
-        }
-    }
+    suspend fun clearAnnouncement() = announcements.clearAnnouncement()
 
-    // --- APP REVIEW LOGIC ---
-    val reviewHasReviewed: Flow<Boolean> =
-        dataStore.data
-            .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-            .map { it[AnalyticsKeys.REVIEW_HAS_REVIEWED] ?: false }
-            .distinctUntilChanged()
+    val reviewHasReviewed: Flow<Boolean> = reviews.reviewHasReviewed
 
-    suspend fun markReviewed() {
-        dataStore.edit { it[AnalyticsKeys.REVIEW_HAS_REVIEWED] = true }
-    }
+    suspend fun markReviewed() = reviews.markReviewed()
 
-    suspend fun markReviewPromptShown() {
-        dataStore.edit { pref ->
-            val count = pref[AnalyticsKeys.REVIEW_PROMPT_COUNT] ?: 0
-            pref[AnalyticsKeys.REVIEW_PROMPT_COUNT] = count + 1
-            pref[AnalyticsKeys.REVIEW_LAST_PROMPT_AT] = System.currentTimeMillis()
-            pref[AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT] = System.currentTimeMillis()
-            pref.remove(AnalyticsKeys.REVIEW_MILESTONE_PENDING)
-        }
-    }
+    suspend fun markReviewPromptShown() = reviews.markReviewPromptShown()
 
-    /**
-     * Rules to show milestone Play review:
-     * - A milestone (5/15/30) was reached and stored as pending (survives playback gaps)
-     * - NPS survey already fired; skip detractors (score &lt;= 7)
-     * - Shared 14-day engagement cooldown
-     * - User has NOT reviewed yet; app installed 2+ days; max 3 lifetime; 30-day review gap
-     * - Never during playback
-     */
-    suspend fun shouldShowReviewPrompt(isPlaying: Boolean): Boolean {
-        if (isPlaying) return false
+    suspend fun shouldShowReviewPrompt(isPlaying: Boolean): Boolean = reviews.shouldShowReviewPrompt(isPlaying)
 
-        val prefs = dataStore.data.first()
-        val milestone = prefs[AnalyticsKeys.REVIEW_MILESTONE_PENDING] ?: return false
-        if (milestone != 5 && milestone != 15 && milestone != 30) return false
+    suspend fun syncReviewMilestonePending(completedCount: Int) = reviews.syncReviewMilestonePending(completedCount)
 
-        if (prefs[AnalyticsKeys.REVIEW_HAS_REVIEWED] == true) return false
-        if (prefs[AnalyticsKeys.NPS_SURVEY_FIRED] != true) return false
+    suspend fun reviewMilestonePending(): Int? = reviews.reviewMilestonePending()
 
-        val npsScore = prefs[AnalyticsKeys.NPS_LAST_SCORE]
-        if (npsScore != null && npsScore <= EngagementPromptConstants.DETRACTOR_SCORE_MAX) return false
+    suspend fun clearReviewMilestonePending() = reviews.clearReviewMilestonePending()
 
-        if (!isEngagementCooldownElapsed(prefs)) return false
+    suspend fun hasReviewedSync(): Boolean = reviews.hasReviewedSync()
 
-        val promptCount = prefs[AnalyticsKeys.REVIEW_PROMPT_COUNT] ?: 0
-        if (promptCount >= 3) return false
+    suspend fun recordEngagementPromptShown() = engagement.recordEngagementPromptShown()
 
-        val firstLaunch = prefs[AnalyticsKeys.REVIEW_FIRST_LAUNCH_AT]
-        if (firstLaunch == null) {
-            dataStore.edit { it[AnalyticsKeys.REVIEW_FIRST_LAUNCH_AT] = System.currentTimeMillis() }
-            return false
-        }
+    suspend fun isEngagementCooldownElapsed(): Boolean = engagement.isEngagementCooldownElapsed()
 
-        val daysSinceInstall = (System.currentTimeMillis() - firstLaunch) / (1000 * 60 * 60 * 24)
-        if (daysSinceInstall < 2) return false
+    suspend fun setNpsLastScore(score: Int) = engagement.setNpsLastScore(score)
 
-        val lastPrompt = prefs[AnalyticsKeys.REVIEW_LAST_PROMPT_AT] ?: 0L
-        val daysSinceLastPrompt = (System.currentTimeMillis() - lastPrompt) / (1000 * 60 * 60 * 24)
-        return lastPrompt == 0L || daysSinceLastPrompt >= 30
-    }
+    suspend fun npsLastScore(): Int? = engagement.npsLastScore()
 
-    /** Remember the highest unreached milestone so prompts survive playback gaps. */
-    suspend fun syncReviewMilestonePending(completedCount: Int) {
-        val milestone =
-            when {
-                completedCount >= 30 -> 30
-                completedCount >= 15 -> 15
-                completedCount >= 5 -> 5
-                else -> return
-            }
-        dataStore.edit { pref ->
-            if (pref[AnalyticsKeys.REVIEW_HAS_REVIEWED] == true) return@edit
-            val current = pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING]
-            if (current == null || milestone > current) {
-                pref[AnalyticsKeys.REVIEW_MILESTONE_PENDING] = milestone
-            }
-        }
-    }
+    suspend fun setPromoterReviewPending(pending: Boolean) = engagement.setPromoterReviewPending(pending)
 
-    suspend fun reviewMilestonePending(): Int? = dataStore.data.first()[AnalyticsKeys.REVIEW_MILESTONE_PENDING]
+    suspend fun isPromoterReviewPending(): Boolean = engagement.isPromoterReviewPending()
 
-    /** Clears a stored milestone after the review prompt is shown or dismissed. */
-    suspend fun clearReviewMilestonePending() {
-        dataStore.edit { it.remove(AnalyticsKeys.REVIEW_MILESTONE_PENDING) }
-    }
+    suspend fun markNpsSurveyPending(completedCount: Int) = engagement.markNpsSurveyPending(completedCount)
 
-    /** Synchronous read of whether the user has completed the Play Store review flow. */
-    suspend fun hasReviewedSync(): Boolean = dataStore.data.first()[AnalyticsKeys.REVIEW_HAS_REVIEWED] ?: false
+    suspend fun isNpsSurveyPending(): Boolean = engagement.isNpsSurveyPending()
 
-    /** Updates the shared engagement cooldown timestamp after any proactive prompt. */
-    suspend fun recordEngagementPromptShown() {
-        dataStore.edit { pref ->
-            pref[AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT] = System.currentTimeMillis()
-        }
-    }
+    suspend fun hasNpsSurveyFired(): Boolean = engagement.hasNpsSurveyFired()
 
-    /** True when at least [EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS] have passed since the last prompt. */
-    suspend fun isEngagementCooldownElapsed(): Boolean = isEngagementCooldownElapsed(dataStore.data.first())
+    suspend fun npsSurveyCompletedCount(): Int? = engagement.npsSurveyCompletedCount()
 
-    private fun isEngagementCooldownElapsed(pref: Preferences): Boolean {
-        val last = pref[AnalyticsKeys.ENGAGEMENT_LAST_PROMPT_AT] ?: 0L
-        if (last == 0L) return true
-        val days = (System.currentTimeMillis() - last) / (1000 * 60 * 60 * 24)
-        return days >= EngagementPromptConstants.ENGAGEMENT_COOLDOWN_DAYS
-    }
-
-    /** Persists the most recent NPS score for milestone gating and promoter handoff. */
-    suspend fun setNpsLastScore(score: Int) {
-        dataStore.edit { it[AnalyticsKeys.NPS_LAST_SCORE] = score }
-    }
-
-    suspend fun npsLastScore(): Int? = dataStore.data.first()[AnalyticsKeys.NPS_LAST_SCORE]
-
-    /** Sets whether a promoter Play review should show on the next eligible app open. */
-    suspend fun setPromoterReviewPending(pending: Boolean) {
-        dataStore.edit { it[AnalyticsKeys.PROMOTER_REVIEW_PENDING] = pending }
-    }
-
-    suspend fun isPromoterReviewPending(): Boolean = dataStore.data.first()[AnalyticsKeys.PROMOTER_REVIEW_PENDING] ?: false
-
-    // --- NPS SURVEY (PostHog) TRIGGER STATE ---
-    // The eligibility milestone (e.g. 3rd completed episode) can be reached
-    // while playback runs in the background. Rather than fire immediately, we
-    // mark the survey "pending" and let MainActivity fire the trigger event on
-    // the next app open. Firing happens at most once (guarded by the fired flag).
-
-    /** Mark the NPS survey pending (no-op if it has already fired). */
-    suspend fun markNpsSurveyPending(completedCount: Int) {
-        dataStore.edit { pref ->
-            if (pref[AnalyticsKeys.NPS_SURVEY_FIRED] == true) return@edit
-            pref[AnalyticsKeys.NPS_SURVEY_PENDING] = true
-            pref[AnalyticsKeys.NPS_SURVEY_COMPLETED_COUNT] = completedCount
-        }
-    }
-
-    suspend fun isNpsSurveyPending(): Boolean = dataStore.data.first()[AnalyticsKeys.NPS_SURVEY_PENDING] ?: false
-
-    /** Whether the NPS trigger event has already fired for this install. */
-    suspend fun hasNpsSurveyFired(): Boolean = dataStore.data.first()[AnalyticsKeys.NPS_SURVEY_FIRED] ?: false
-
-    /** Completed-episode count captured when the survey became pending. */
-    suspend fun npsSurveyCompletedCount(): Int? = dataStore.data.first()[AnalyticsKeys.NPS_SURVEY_COMPLETED_COUNT]
-
-    /** Mark the NPS survey as fired and clear the pending flag. */
-    suspend fun markNpsSurveyFired() {
-        dataStore.edit { pref ->
-            pref[AnalyticsKeys.NPS_SURVEY_FIRED] = true
-            pref[AnalyticsKeys.NPS_SURVEY_PENDING] = false
-        }
-    }
+    suspend fun markNpsSurveyFired() = engagement.markNpsSurveyFired()
 
     val hideCompletedInFeedsStream: Flow<Boolean> =
         dataStore.data
@@ -1476,50 +690,13 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
-    /**
-     * Widget chrome source: [WidgetAppearance.APP] (default) or [WidgetAppearance.SYSTEM].
-     * Mirrored in theme fast-cache so RemoteViews can read it without DataStore.
-     */
-    val widgetAppearanceStream: Flow<String> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                val stored = preferences[Keys.WIDGET_APPEARANCE]
-                if (stored != null) {
-                    val appearance = WidgetAppearance.sanitize(stored)
-                    syncPrefs.edit().putString(WidgetAppearance.PREF_KEY, appearance).apply()
-                    appearance
-                } else {
-                    cachedWidgetAppearance
-                }
-            }.distinctUntilChanged()
+    val widgetAppearanceStream: Flow<String> = appearance.widgetAppearanceStream
 
-    suspend fun setWidgetAppearance(appearance: String) {
-        val sanitized = WidgetAppearance.sanitize(appearance)
-        syncPrefs.edit().putString(WidgetAppearance.PREF_KEY, sanitized).apply()
-        dataStore.edit { preferences ->
-            preferences[Keys.WIDGET_APPEARANCE] = sanitized
-        }
-    }
+    suspend fun setWidgetAppearance(appearance: String) = this.appearance.setWidgetAppearance(appearance)
 
-    val overriddenRecPodcastIdStream: Flow<String?> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                preferences[Keys.OVERRIDDEN_REC_PODCAST_ID]
-            }.distinctUntilChanged()
+    val overriddenRecPodcastIdStream: Flow<String?> = library.overriddenRecPodcastIdStream
 
-    suspend fun setOverriddenRecPodcastId(podcastId: String?) {
-        dataStore.edit { preferences ->
-            if (podcastId == null) {
-                preferences.remove(Keys.OVERRIDDEN_REC_PODCAST_ID)
-            } else {
-                preferences[Keys.OVERRIDDEN_REC_PODCAST_ID] = podcastId
-            }
-        }
-    }
+    suspend fun setOverriddenRecPodcastId(podcastId: String?) = library.setOverriddenRecPodcastId(podcastId)
 
     val smartDownloadsEnabledStream: Flow<Boolean> =
         dataStore.data
@@ -1661,36 +838,11 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
-    val lastSeenEpisodesStream: Flow<Map<String, String>> =
-        dataStore.data
-            .catch { exception ->
-                if (exception is IOException) emit(emptyPreferences()) else throw exception
-            }.map { preferences ->
-                preferences
-                    .asMap()
-                    .entries
-                    .filter { it.key.name.startsWith(LAST_SEEN_EPISODE_ID_PREFIX) }
-                    .mapNotNull { entry ->
-                        val value = entry.value as? String
-                        if (value != null) {
-                            entry.key.name.removePrefix(LAST_SEEN_EPISODE_ID_PREFIX) to value
-                        } else {
-                            null
-                        }
-                    }.toMap()
-            }.distinctUntilChanged()
+    val lastSeenEpisodesStream: Flow<Map<String, String>> = library.lastSeenEpisodesStream
 
-    suspend fun setLastSeenEpisodeId(podcastId: String, episodeId: String,) {
-        dataStore.edit { preferences ->
-            preferences[stringPreferencesKey("$LAST_SEEN_EPISODE_ID_PREFIX$podcastId")] = episodeId
-        }
-    }
+    suspend fun setLastSeenEpisodeId(podcastId: String, episodeId: String,) = library.setLastSeenEpisodeId(podcastId, episodeId)
 
-    suspend fun removeLastSeenEpisodeId(podcastId: String) {
-        dataStore.edit { preferences ->
-            preferences.remove(stringPreferencesKey("$LAST_SEEN_EPISODE_ID_PREFIX$podcastId"))
-        }
-    }
+    suspend fun removeLastSeenEpisodeId(podcastId: String) = library.setLastSeenEpisodeId(podcastId, null)
 
     /** Last listener-selected Home mix: `daily` (default) or `offline`. */
     val homeMixModeStream: Flow<String> =

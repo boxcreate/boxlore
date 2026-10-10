@@ -30,13 +30,19 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 
 ## Internal structure
 
+`UserPreferencesRepository` delegates appearance/fast-cache, library ordering and RSS repair, engagement prompts/tips, and announcement storage to same-package helpers. They share the original DataStore; the repository API, nested `Announcement` type, file names, preference keys and defaults remain unchanged.
+
 ```text
 src/main/java/cx/aswin/boxlore/core/prefs/
+  AnnouncementPreferences.kt
+  AppearancePreferences.kt
   BoxcastPrefs.kt
   DefaultLandingTabs.kt
+  EngagementPreferences.kt
   EngagementPromptConstants.kt
   FontRoundnessAxis.kt
   HomePinnedShows.kt
+  LibraryPreferences.kt
   PlaybackSkipBounds.kt
   PreferenceIdList.kt
   PrefsFileMigrator.kt
