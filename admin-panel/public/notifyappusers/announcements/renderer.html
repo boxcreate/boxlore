@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src https:; frame-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="stylesheet" href="renderer.css"><script defer src="renderer.js"></script></head>
+<body><main id="alert" role="dialog" aria-modal="true" aria-labelledby="title">
+<header><span id="badge"></span><button id="close" aria-label="Close announcement">×</button></header>
+<div id="content" tabindex="0"><img id="image" alt=""><h1 id="title"></h1><div id="body"></div></div>
+<footer><button id="download" hidden>Download update</button><button id="github" hidden>View on GitHub</button><button id="action" hidden></button><button id="dismiss">Dismiss</button></footer>
+</main></body></html>

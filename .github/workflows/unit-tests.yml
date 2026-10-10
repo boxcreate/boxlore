@@ -56,6 +56,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up Node for announcement preview checks
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Announcement composer contract checks
+        run: node --test .github/scripts/test_announcement_admin.cjs
       - name: Changelog and release-note script tests
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 
