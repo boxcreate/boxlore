@@ -38,6 +38,24 @@ class ReleaseNotesMarkdownTest {
     }
 
     @Test
+    fun `adjacent emphasis preserves delimiter precedence`() {
+        val text = releaseNotesInline("**first**__second__*third*_fourth_ tail", SpanStyle())
+        assertEquals("firstsecondthirdfourth tail", text.text)
+        assertEquals(4, text.spanStyles.size)
+        assertEquals(listOf(0, 5, 11, 16), text.spanStyles.map { it.start })
+    }
+
+    @Test
+    fun `delimiters inside code and links do not consume later formatting`() {
+        val text = releaseNotesInline("`**hidden` **visible** [**Label**](https://example.com) _after_", SpanStyle())
+        assertEquals("**hidden visible **Label** after", text.text)
+        assertEquals(1, text.getLinkAnnotations(0, text.length).size)
+        assertEquals(1, text.spanStyles.count { it.item.fontWeight == androidx.compose.ui.text.font.FontWeight.Bold })
+        assertEquals(1, text.spanStyles.count { it.item.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic })
+        assertEquals(1, text.spanStyles.count { it.item.fontFamily == androidx.compose.ui.text.font.FontFamily.Monospace })
+    }
+
+    @Test
     fun `unsafe link schemes remain inert plain text`() {
         val text = releaseNotesInline("[Unsafe](javascript:alert) and <script>text</script>", SpanStyle())
         assertEquals(0, text.getLinkAnnotations(0, text.length).size)

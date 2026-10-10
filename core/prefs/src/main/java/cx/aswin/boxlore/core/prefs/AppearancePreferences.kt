@@ -337,39 +337,17 @@ internal class AppearancePreferences(
     suspend fun hydrateMissingDataStoreFromFastCache() {
         dataStore.edit { preferences ->
             hydrateArtworkThemePreferences(preferences)
-            if (preferences[Keys.THEME_CONFIG] == null) {
-                preferences[Keys.THEME_CONFIG] = cachedThemeConfig
-            }
-            if (preferences[Keys.USE_DYNAMIC_COLOR] == null) {
-                preferences[Keys.USE_DYNAMIC_COLOR] = cachedUseDynamicColor
-            }
-            if (preferences[Keys.THEME_BRAND] == null) {
-                preferences[Keys.THEME_BRAND] = cachedThemeBrand
-            }
-            if (preferences[Keys.SURFACE_STYLE] == null) {
-                preferences[Keys.SURFACE_STYLE] = cachedSurfaceStyle
-            }
-            if (preferences[Keys.FONT_ROUNDNESS] == null) {
-                preferences[Keys.FONT_ROUNDNESS] = cachedFontRoundness
-            }
-            if (preferences[Keys.NAVIGATION_STYLE] == null) {
-                preferences[Keys.NAVIGATION_STYLE] = cachedNavigationStyle
-            }
-            if (preferences[Keys.OPEN_APP_TO] == null) {
-                preferences[Keys.OPEN_APP_TO] = cachedOpenAppTo
-            }
-            if (preferences[Keys.EXPLORE_DEFAULT_TAB] == null) {
-                preferences[Keys.EXPLORE_DEFAULT_TAB] = cachedExploreDefaultTab
-            }
-            if (preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] == null) {
-                preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = cachedSubscriptionsDefaultTab
-            }
-            if (preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] == null) {
-                preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] = cachedSubscriptionsTabStyle
-            }
-            if (preferences[Keys.WIDGET_APPEARANCE] == null) {
-                preferences[Keys.WIDGET_APPEARANCE] = cachedWidgetAppearance
-            }
+            preferences[Keys.THEME_CONFIG] = preferences[Keys.THEME_CONFIG] ?: cachedThemeConfig
+            preferences[Keys.USE_DYNAMIC_COLOR] = preferences[Keys.USE_DYNAMIC_COLOR] ?: cachedUseDynamicColor
+            preferences[Keys.THEME_BRAND] = preferences[Keys.THEME_BRAND] ?: cachedThemeBrand
+            preferences[Keys.SURFACE_STYLE] = preferences[Keys.SURFACE_STYLE] ?: cachedSurfaceStyle
+            preferences[Keys.FONT_ROUNDNESS] = preferences[Keys.FONT_ROUNDNESS] ?: cachedFontRoundness
+            preferences[Keys.NAVIGATION_STYLE] = preferences[Keys.NAVIGATION_STYLE] ?: cachedNavigationStyle
+            preferences[Keys.OPEN_APP_TO] = preferences[Keys.OPEN_APP_TO] ?: cachedOpenAppTo
+            preferences[Keys.EXPLORE_DEFAULT_TAB] = preferences[Keys.EXPLORE_DEFAULT_TAB] ?: cachedExploreDefaultTab
+            preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] ?: cachedSubscriptionsDefaultTab
+            preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] = preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] ?: cachedSubscriptionsTabStyle
+            preferences[Keys.WIDGET_APPEARANCE] = preferences[Keys.WIDGET_APPEARANCE] ?: cachedWidgetAppearance
         }
     }
 

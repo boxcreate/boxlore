@@ -84,7 +84,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 - `UserPreferencesRepositoryTest` round-trips Manual order and Home pins, including atomic pin toggle, unsubscribe cleanup, and journaled podcast-id replacement.
 - Preference tests also verify miniplayer seeks default off, survive repository recreation, and preserve global seek durations when toggled.
 - `UserPreferencesRepositoryTest` verifies complete preset persistence/fast-cache restoration, repeated preset selection, later accent customisation and preservation of mode, lettering and navigation.
-- `UserPreferencesRestoreHydrationTest` covers Google Backup restore: appearance streams keep theme fast-cache when DataStore is empty, and `hydrateMissingDataStoreFromFastCache` writes those values into DataStore. Concurrent readers retain fast-cache appearance while application hydration runs in the background, and existing DataStore choices win over missing-key restoration.
+- `UserPreferencesRestoreHydrationTest` covers Google Backup restore: appearance streams keep theme fast-cache when DataStore is empty, and `hydrateMissingDataStoreFromFastCache` writes those values into DataStore. Concurrent readers retain fast-cache appearance while application hydration runs in the background, and existing DataStore choices, including false boolean values, survive repeated missing-key restoration.
 - `DefaultLandingTabsTest` covers Explore / Subscriptions default-tab sanitize and pager-index resolution (nav tab and genre win over the preference).
 
 ```bash

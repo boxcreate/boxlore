@@ -65,16 +65,39 @@ internal fun releaseNotesBlocks(notes: String, stripPrLinks: Boolean = true): Li
     return blocks
 }
 
+private enum class ReleaseInlineFormat(val pattern: Regex) {
+    LINK(Regex("""\[([^\]]+)\]\((https?://[^\s)]+)\)""")),
+    BOLD(Regex("""\*\*(.+?)\*\*|__(.+?)__""")),
+    ITALIC(Regex("""\*(.+?)\*|_(.+?)_""")),
+    CODE(Regex("""`([^`]+)`""")),
+}
+
+/** Retain lookahead, but refresh matches consumed inside a link or code span. */
+private fun nextReleaseInlineMatch(
+    text: String,
+    offset: Int,
+    matches: MutableMap<ReleaseInlineFormat, MatchResult?>,
+): Pair<ReleaseInlineFormat, MatchResult>? {
+    matches.forEach { (format, match) ->
+        if (match != null && match.range.first < offset) matches[format] = format.pattern.find(text, offset)
+    }
+    return matches.entries.filter { it.value != null }
+        .minByOrNull { requireNotNull(it.value).range.first }
+        ?.let { it.key to requireNotNull(it.value) }
+}
+
 internal fun releaseNotesInline(text: String, linkStyle: SpanStyle): AnnotatedString = buildAnnotatedString {
-    val pattern = Regex("""\[([^\]]+)\]\((https?://[^\s)]+)\)|([*]{1,2}|_{1,2})(.+?)\3|`([^`]+)`""")
+    // Insertion order gives links and bold precedence when matches start together.
+    val matches = ReleaseInlineFormat.entries.associateWith { it.pattern.find(text) }.toMutableMap()
     var offset = 0
-    pattern.findAll(text).forEach { match ->
+    while (true) {
+        val (format, match) = nextReleaseInlineMatch(text, offset, matches) ?: break
         append(text.substring(offset, match.range.first))
-        when {
-            match.groups[1] != null -> withLink(LinkAnnotation.Url(match.groupValues[2], TextLinkStyles(style = linkStyle))) { append(match.groupValues[1]) }
-            match.groups[3] != null && match.groupValues[3].length == 2 -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[4]) }
-            match.groups[3] != null -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(match.groupValues[4]) }
-            else -> withStyle(SpanStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)) { append(match.groupValues[5]) }
+        when (format) {
+            ReleaseInlineFormat.LINK -> withLink(LinkAnnotation.Url(match.groupValues[2], TextLinkStyles(style = linkStyle))) { append(match.groupValues[1]) }
+            ReleaseInlineFormat.BOLD -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(match.groupValues[1].ifEmpty { match.groupValues[2] }) }
+            ReleaseInlineFormat.ITALIC -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(match.groupValues[1].ifEmpty { match.groupValues[2] }) }
+            ReleaseInlineFormat.CODE -> withStyle(SpanStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)) { append(match.groupValues[1]) }
         }
         offset = match.range.last + 1
     }
