@@ -20,6 +20,32 @@ test('push-only messages do not promise an in-app alert',()=>{assert.equal(isPre
 test('push-only review describes notification actions and no in-app buttons',()=>{const draft={...base(),type:'push',release_alert:'true'};const rows=Object.fromEntries(reviewRows(draft,'Isolated test builds'));assert.equal(rows['Appearance'],'Android system notification');assert.equal(rows['In-app actions'],'No in-app alert');assert.equal(rows['Notification action'],'None');assert.equal(rows['Delivery'],'System notification');assert.equal(rows['Send mode'],'Provider validation only — no delivery');});
 test('combined delivery review includes the configured notification action',()=>{const draft={...base(),route:'https://example.org',show_action_in_push:'true'};const rows=Object.fromEntries(reviewRows(draft,'Isolated test builds'));assert.equal(rows['In-app actions'],'Open · Dismiss');assert.equal(rows['Notification action'],'Open');assert.equal(rows['Action destination'],'https://example.org');});
 
+test('preview sizing isolates the legacy gateway frame and fits the entire viewport',()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+ const root=path.join(__dirname,'../../admin-panel/public/notifyappusers');
+ const html=fs.readFileSync(path.join(root,'dashboard.html'),'utf8');
+ const css=fs.readFileSync(path.join(root,'composer.css'),'utf8');
+ assert.ok(html.includes('class="preview-phone"'));
+ assert.ok(css.includes('.preview-phone{'));
+ assert.ok(!html.includes('class="phone-frame"'));
+ const device={style:{}},frame={style:{width:'260px',height:'520px'}};
+ const stage={clientWidth:420,clientHeight:650,querySelector:selector=>({'.preview-device':device,'.preview-phone':frame})[selector]};
+ const nodes={previewStage:stage,previewWidth:{value:'393'},previewHeight:{value:'600'},previewZoom:{value:'fit'},reviewDialog:{open:false}};
+ const context=vm.createContext({TextEncoder,document:{getElementById:id=>nodes[id]}});
+ vm.runInContext(fs.readFileSync(path.join(root,'dashboard.js'),'utf8'),context);
+ for(const width of [360,393,430])for(const height of [600,740,850]){
+  nodes.previewWidth.value=String(width);nodes.previewHeight.value=String(height);context.fitPreview();
+  assert.equal(frame.style.width,(width+18)+'px');assert.equal(frame.style.height,(height+18)+'px');
+  assert.ok(parseFloat(device.style.width)<=stage.clientWidth-28);
+  assert.ok(parseFloat(device.style.height)<=stage.clientHeight-28);
+ }
+ stage.clientWidth=0;stage.clientHeight=0;context.fitPreview();
+ assert.equal(frame.style.transform,'scale(0)');
+ nodes.previewZoom.value='1';context.fitPreview();
+ assert.equal(frame.style.transform,'scale(1)');
+ assert.equal(device.style.width,'448px');assert.equal(device.style.height,'868px');
+});
+
 test('browser preview formats the native Markdown subset without interpreting HTML',()=>{
  const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
  class Node { constructor(tag,text=''){this.tag=tag;this.textContent=text;this.children=[];this.dataset={};} append(...nodes){this.children.push(...nodes);} replaceChildren(){this.children=[];} }
