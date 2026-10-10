@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support automatic refresh, auto-downloads, Smart Downloads and explicitly opted-in public-feed notifications for RSS-only subscriptions. ([#1098](https://github.com/boxcreate/boxlore/pull/1098)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - Artwork-derived Material 3 palettes for podcast and episode details, with an Appearance opt-out. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - A full-page custom theme editor with primary, secondary and tertiary colors, background choices and live light/dark previews. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Add cached update manifests, verified resumable APK updates, a Play-specific release variant, and release notes with upcoming changes. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Add native compact and full-screen announcements, reviewed sender integration, isolated optimized test builds, and offline release rehearsal. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
@@ -28,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redesign episode details with Material 3 surfaces, connected playback controls, separate listening progress and responsive title/metadata handling. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Consolidate show-notes link and chapter parsing; add branded resource pills and the five latest episodes from the same show. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Refined Podcast Info cards, metadata, connected subscription controls, genre confirmation and in-list search. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Publish verified update metadata, serialize metadata jobs, and prepare release announcements for approval instead of automatic delivery. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Extend optimized release contract validation to direct APK and Play bundle outputs, including installer exclusion and test-artifact rejection. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -41,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent generic social platform labels and reserved URL routes from being displayed as profile usernames. ([#1104](https://github.com/boxcreate/boxlore/pull/1104)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Preserve title line spacing and align episode-selection controls with the adaptive mini-player. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Keep loading, navigation and predictive Back color transitions consistent with their destination. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Route notification actions consistently on cold and warm launches, and restrict GitHub release alerts to eligible install channels. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Preserve updater recovery through permission settings, cancelled installation and process recreation, and clear completed update sessions. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
@@ -107,6 +113,16 @@ readme-copy:end pr=1105 -->
 ### Improvements
 - Smaller app download while retaining artwork, fonts and notification sounds.
 readme-copy:end pr=1106 -->
+
+<!-- readme-copy:start pr=1107
+### Improvements
+- Download updates in boxlore if you installed from GitHub, with download progress and checks before installation.
+- Read release notes and upcoming changes from Settings → Check for updates.
+- Read longer announcements in compact or full-screen layouts, with actions that stay visible as you scroll.
+### Fixes
+- Notification actions open the intended screen or link whether boxlore is already open or starting.
+- Prepared updates remain available after returning from Android's install-permission settings or cancelling installation.
+readme-copy:end pr=1107 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
