@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-10-10T07:32:22.703Z",
+  "lastRun": "2026-10-10T14:15:08.111Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
-      "lastEpisodeTitle": "OpenAI has a Muse problem",
+      "lastRssKey": "8229c57c-b924-11f1-b9e8-7b2af0376c77",
+      "lastEpisodeTitle": "Another billionaire thinks he can fix Warner Bros.",
       "lastEpisodeId": "61107324187",
-      "lastCheckedAt": 1791453808382
+      "lastCheckedAt": 1791641708765
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7k",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "2df45e2c-53af-47e6-aa5b-d83c26c03364",
-      "lastEpisodeTitle": "3am ET, October 10 | The latest headlines from NPR",
+      "lastRssKey": "16a02e83-ad78-497a-adb8-7c71067c6aa7",
+      "lastEpisodeTitle": "10am ET, October 10 | The latest headlines from NPR",
       "lastEpisodeId": "61507607285",
-      "lastCheckedAt": 1791617547447
+      "lastCheckedAt": 1791641713157
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75683876",
@@ -176,16 +176,16 @@
       "lastCheckedAt": 1791563319581
     },
     "353744": {
-      "lastRssKey": "flightcast:01M4195XGS3GTZ68XYBCHCSQZ0",
-      "lastEpisodeTitle": "Why Planning Better Habits Fails ADHD",
+      "lastRssKey": "flightcast:01M41B9T6GGXYVHPJ0F2CJEGFX",
+      "lastEpisodeTitle": "What Comedians Get Right About Mental Health Trauma",
       "lastEpisodeId": "60962825498",
-      "lastCheckedAt": 1791192512254
+      "lastCheckedAt": 1791641751430
     },
     "385117": {
-      "lastRssKey": "8b45c04c-c479-11f1-adc2-6fd73ad028f6",
-      "lastEpisodeTitle": "3AM ET 10/10/2026 Newscast",
+      "lastRssKey": "37c6f540-c4b4-11f1-adde-9fb00d6df158",
+      "lastEpisodeTitle": "10AM ET 10/10/2026 Newscast",
       "lastEpisodeId": "61508775803",
-      "lastCheckedAt": 1791617569852
+      "lastCheckedAt": 1791641751844
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -248,10 +248,10 @@
       "lastCheckedAt": 1791246998080
     },
     "437685": {
-      "lastRssKey": "6cf5c9b0-bc91-11f1-84e4-53d56fd8529d",
-      "lastEpisodeTitle": "The New Deal",
-      "lastEpisodeId": "61481284305",
-      "lastCheckedAt": 1791538045905
+      "lastRssKey": "6cd59762-bc91-11f1-84e4-ef9b25671c47",
+      "lastEpisodeTitle": "The History of Helicopters",
+      "lastEpisodeId": "61531992803",
+      "lastCheckedAt": 1791641759376
     },
     "438184": {
       "lastRssKey": "2dc11bae-c1ec-11f1-a2e6-c7b6aef46cad",
@@ -466,10 +466,10 @@
       "lastCheckedAt": 1791073777204
     },
     "743229": {
-      "lastRssKey": "2cb83a5d-4ed5-4f39-ad87-0bb9bac58dce",
-      "lastEpisodeTitle": "Why France Is in Crisis",
-      "lastEpisodeId": "61482914118",
-      "lastCheckedAt": 1791542433637
+      "lastRssKey": "4135c7ba-51c7-40ef-9776-0981339d05f1",
+      "lastEpisodeTitle": "She’s Been to Gaza. She Met With the Iranians. Now She Has a Warning.",
+      "lastEpisodeId": "61533708874",
+      "lastCheckedAt": 1791641786629
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -531,10 +531,10 @@
       "lastCheckedAt": 1791315815752
     },
     "827592": {
-      "lastEpisodeId": "61433681806",
-      "lastEpisodeTitle": "Stand-Up Pt II",
-      "lastRssKey": "165c6213-d25c-418d-89f3-b4d601257f1e",
-      "lastCheckedAt": 1791480679221
+      "lastEpisodeId": "61536871115",
+      "lastEpisodeTitle": "Selects: What's the deal with swing states?",
+      "lastRssKey": "b5d62a33-4f18-41e1-9997-b4dd00d9c300",
+      "lastCheckedAt": 1791641789978
     },
     "837535": {
       "lastRssKey": "ff794dd0-c19a-11f1-8de5-43e0bda9d228",
@@ -764,10 +764,10 @@
       "lastCheckedAt": 1791426872116
     },
     "1366771": {
-      "lastRssKey": "6ac923693dc1c1be4a2f26bd",
-      "lastEpisodeTitle": "Evening briefing Friday 9th October",
-      "lastEpisodeId": "61479680363",
-      "lastCheckedAt": 1791567009880
+      "lastRssKey": "6ac9eb2af38f25c0f0ae8d86",
+      "lastEpisodeTitle": "Daily briefing Saturday 10th October",
+      "lastEpisodeId": "61538342320",
+      "lastCheckedAt": 1791641815615
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -989,9 +989,9 @@
       "lastCheckedAt": 1791538120633
     },
     "4898105": {
-      "lastRssKey": "09e9ec3e-c38f-11f1-a828-c7c727acf6cc",
-      "lastEpisodeTitle": "The GTA 6 Leaker has Returned",
-      "lastCheckedAt": 1791542471588
+      "lastRssKey": "1ab35c74-c2c9-11f1-8535-c7b1a5d68a5b",
+      "lastEpisodeTitle": "IGN Game Review: Star Wars: Galactic Racer",
+      "lastCheckedAt": 1791641832708
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1123,10 +1123,10 @@
       "lastCheckedAt": 1791347547291
     },
     "6467886": {
-      "lastRssKey": "5520ceb2-c1b3-11f1-943d-dbb72c49f112",
-      "lastEpisodeTitle": "#339 - Unsichtbare Kräfte wirken in dir (Wunder sind möglich)",
-      "lastEpisodeId": "61300627866",
-      "lastCheckedAt": 1791395813146
+      "lastRssKey": "2e11249c-c3c1-11f1-b31a-03c9f5032935",
+      "lastEpisodeTitle": "#340 - Die Pressefreiheit ist bedroht - wir sind der Beweis",
+      "lastEpisodeId": "61533308920",
+      "lastCheckedAt": 1791641843933
     },
     "6559880": {
       "lastRssKey": "1dbf3748-c32e-11f1-85f5-ff5f8054646b",
@@ -1253,10 +1253,10 @@
       "lastCheckedAt": 1791538154003
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779920",
-      "lastEpisodeTitle": "Lives Of Harry Lime - Earl On Troubled Waters",
+      "lastRssKey": "https://api.spreaker.com/episode/59779923",
+      "lastEpisodeTitle": "Bold Venture - The Dead Matt Jeffrey",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1791538155479
+      "lastCheckedAt": 1791641852524
     },
     "6912659": {
       "lastRssKey": "ad6ac5f1-6717-435e-8595-89a8974680c0",
@@ -1379,10 +1379,10 @@
       "lastCheckedAt": 1791567054103
     },
     "7348627": {
-      "lastRssKey": "c88133ad-e6d3-47b2-a2b7-eb16b7a006e6",
-      "lastEpisodeTitle": "4 Disturbing Cases That Baffle Detectives | 326",
+      "lastRssKey": "bb76c6ed-ce39-40e6-85e0-a1bd4fb50d24",
+      "lastEpisodeTitle": "10 Chilling TEXAS Cold Cases | 326",
       "lastEpisodeId": "61420794829",
-      "lastCheckedAt": 1791594484032
+      "lastCheckedAt": 1791641861754
     },
     "7376606": {
       "lastRssKey": "5d9ec36d-a7c0-4590-96bf-7c26b232990b",
@@ -1444,10 +1444,10 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
-      "lastRssKey": "343b0a74-d33f-4e95-b55f-a89ae4d96e4a",
-      "lastEpisodeTitle": "Friday, October 9, 2026 - 5 Minute AI News",
-      "lastEpisodeId": "61493838991",
-      "lastCheckedAt": 1791560078514
+      "lastRssKey": "dc9c5e56-5429-4046-a492-7eb8937f5e2a",
+      "lastEpisodeTitle": "Saturday, October 10, 2026 - 5 Minute AI News",
+      "lastEpisodeId": "61539211862",
+      "lastCheckedAt": 1791641866416
     },
     "7551349": {
       "lastRssKey": "17448f4e-0e2a-4a64-80e4-b4dc0155cd7c",
@@ -1545,10 +1545,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/a0fe09de-872c-5904-9b84-74363f8046ae",
-      "lastEpisodeTitle": "DO THIS to cope with the grief of a narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/2312f84f-dc52-5632-b23b-37ee9f43a9c9",
+      "lastEpisodeTitle": "How narcissists SABOTAGE your self care ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1791617655528
+      "lastCheckedAt": 1791641874953
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
