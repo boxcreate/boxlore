@@ -3,5 +3,6 @@
 gradle.afterProject { project ->
     if (project.path == ':app') {
         project.android.buildTypes.getByName('release').signingConfig = null
+        project.android.buildTypes.getByName('playRelease').signingConfig = null
     }
 }

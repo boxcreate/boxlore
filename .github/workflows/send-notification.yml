@@ -35,6 +35,8 @@ on:
         - all_users
         - debug_users
         - prod_users
+        - direct_users
+        - test_users
       dry_run:
         description: 'Dry Run Mode (Validate only)'
         required: true
@@ -43,6 +45,18 @@ on:
         options:
         - 'false'
         - 'true'
+      test_mode:
+        description: 'Test mode — only isolated test or debug builds may receive this message'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      preview_only:
+        description: 'Offline preview — no message sent and no Firebase access'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
       collapse_key:
         description: 'Collapse Key (Optional)'
         required: false
@@ -80,7 +94,42 @@ on:
       category:
         description: 'In-App category badge label'
         required: true
-        default: "WHAT'S NEW"
+        default: "ANNOUNCEMENT"
+      presentation:
+        description: In-app appearance
+        type: choice
+        default: compact
+        options: [compact, fullscreen]
+      tone:
+        description: Accent role
+        type: choice
+        default: primary
+        options: [primary, secondary, tertiary, error]
+      image_style:
+        description: Image layout
+        type: choice
+        default: banner
+        options: [banner, cover]
+      release_url:
+        description: GitHub release page for the View on GitHub action
+        type: string
+        default: ''
+      release_alert:
+        description: GitHub release alert (normally excludes Google Play)
+        type: boolean
+        default: false
+      include_play:
+        description: Explicitly include Google Play for this release alert
+        type: boolean
+        default: false
+      release_version_code:
+        description: Release code (0 for ordinary alerts)
+        type: string
+        default: '0'
+      approval_digest:
+        description: Digest from the reviewed offline preview (required for delivery)
+        type: string
+        default: ''
   workflow_call:
     inputs:
       title:
@@ -114,6 +163,16 @@ on:
         required: false
         default: 'false'
         type: string
+      test_mode:
+        description: 'Test mode — only isolated test or debug builds may receive this message'
+        required: false
+        default: 'false'
+        type: string
+      preview_only:
+        description: 'Offline preview — no message sent and no Firebase access'
+        required: false
+        default: 'false'
+        type: string
       collapse_key:
         description: 'Optional Android collapse key'
         required: false
@@ -142,8 +201,32 @@ on:
       category:
         description: 'In-app category badge'
         required: false
-        default: "WHAT'S NEW"
+        default: "ANNOUNCEMENT"
         type: string
+      presentation:
+        type: string
+        default: compact
+      tone:
+        type: string
+        default: primary
+      image_style:
+        type: string
+        default: banner
+      release_url:
+        type: string
+        default: ''
+      release_alert:
+        type: string
+        default: 'false'
+      include_play:
+        type: string
+        default: 'false'
+      release_version_code:
+        type: string
+        default: '0'
+      approval_digest:
+        type: string
+        default: ''
     secrets:
       FCM_SERVICE_ACCOUNT_KEY:
         description: 'Firebase service-account JSON'
@@ -164,16 +247,25 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: '3.9'
+          python-version: '3.12'
 
       - name: Install dependencies
+        if: inputs.preview_only != 'true'
         run: |
           python -m pip install --upgrade pip
           pip install firebase-admin
           
-      - name: Send Notification
+      - name: Preview, validate or send announcement
         env:
-          FIREBASE_CREDENTIALS: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
+          FIREBASE_CREDENTIALS: ${{ inputs.preview_only != 'true' && secrets.FCM_SERVICE_ACCOUNT_KEY || '' }}
+          PRESENTATION: ${{ inputs.presentation || 'compact' }}
+          TONE: ${{ inputs.tone || 'primary' }}
+          IMAGE_STYLE: ${{ inputs.image_style || 'banner' }}
+          RELEASE_URL: ${{ inputs.release_url || '' }}
+          RELEASE_ALERT: ${{ inputs.release_alert || 'false' }}
+          INCLUDE_PLAY: ${{ inputs.include_play || 'false' }}
+          RELEASE_VERSION_CODE: ${{ inputs.release_version_code || '0' }}
+          APPROVAL_DIGEST: ${{ inputs.approval_digest }}
           NOTIFICATION_TITLE: ${{ inputs.title }}
           NOTIFICATION_BODY: ${{ inputs.body }}
           NOTIFICATION_TYPE: ${{ inputs.type }}
@@ -181,6 +273,8 @@ jobs:
           NOTIFICATION_IMAGE: ${{ inputs.image }}
           NOTIFICATION_TARGET: ${{ inputs.target }}
           NOTIFICATION_DRY_RUN: ${{ inputs.dry_run }}
+          NOTIFICATION_TEST_MODE: ${{ inputs.test_mode || 'false' }}
+          NOTIFICATION_PREVIEW_ONLY: ${{ inputs.preview_only || 'false' }}
           NOTIFICATION_COLLAPSE_KEY: ${{ inputs.collapse_key }}
           NOTIFICATION_SOUND: ${{ inputs.sound }}
           NOTIFICATION_ACTION_LABEL: ${{ inputs.action_label }}
@@ -189,6 +283,9 @@ jobs:
           NOTIFICATION_CATEGORY: ${{ inputs.category }}
         run: |
           python .github/scripts/manual_dispatch.py \
+            --release-url "$RELEASE_URL" --presentation "$PRESENTATION" --tone "$TONE" --image-style "$IMAGE_STYLE" \
+            --release-alert "$RELEASE_ALERT" --include-play "$INCLUDE_PLAY" \
+            --release-version-code "$RELEASE_VERSION_CODE" --approval-digest "$APPROVAL_DIGEST" \
             --title "$NOTIFICATION_TITLE" \
             --body "$NOTIFICATION_BODY" \
             --type "$NOTIFICATION_TYPE" \
@@ -196,9 +293,20 @@ jobs:
             --image "$NOTIFICATION_IMAGE" \
             --target "$NOTIFICATION_TARGET" \
             --dry-run "$NOTIFICATION_DRY_RUN" \
+            --test-mode "$NOTIFICATION_TEST_MODE" \
+            --preview-only "$NOTIFICATION_PREVIEW_ONLY" \
+            --preview-output "$RUNNER_TEMP/announcement-preview.json" \
             --collapse-key "$NOTIFICATION_COLLAPSE_KEY" \
             --sound "$NOTIFICATION_SOUND" \
             --action-label "$NOTIFICATION_ACTION_LABEL" \
             --show-action-in-push "$NOTIFICATION_SHOW_ACTION_IN_PUSH" \
             --show-action-in-app "$NOTIFICATION_SHOW_ACTION_IN_APP" \
             --category "$NOTIFICATION_CATEGORY"
+
+      - name: Save offline preview
+        if: inputs.preview_only == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: announcement-preview
+          path: ${{ runner.temp }}/announcement-preview.json
+          if-no-files-found: error

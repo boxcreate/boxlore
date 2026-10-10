@@ -9,14 +9,14 @@ import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import cx.aswin.boxlore.BoxLoreApplication
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
-import cx.aswin.boxlore.ui.announcement.shouldSuppressWhatsNewOnPlay
+import cx.aswin.boxlore.fcm.shouldSuppressAnnouncement
+import cx.aswin.boxlore.navigation.PushTargetRouteAllowlist
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,17 +34,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         @Suppress("DEPRECATION")
         super.onNewToken(token)
         RssNotificationSyncWorker.enqueue(applicationContext)
-        // Subscribe to the global announcements topic
-        FirebaseMessaging.getInstance().subscribeToTopic("all_users")
-
-        // Subscribe to environment-specific topic safely by clearing the antagonist topic
-        if (cx.aswin.boxlore.BuildConfig.DEBUG) {
-            FirebaseMessaging.getInstance().subscribeToTopic("debug_users")
-            FirebaseMessaging.getInstance().unsubscribeFromTopic("prod_users")
-        } else {
-            FirebaseMessaging.getInstance().subscribeToTopic("prod_users")
-            FirebaseMessaging.getInstance().unsubscribeFromTopic("debug_users")
-        }
+        FcmTopicHelper.subscribeDefaultTopics(applicationContext)
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -65,17 +55,11 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
 
         val parsed = FcmPayloadParser.parse(data)
+        if (applicationContext.shouldSuppressAnnouncement(parsed.toAnnouncement())) return
 
         if (parsed.type == "in-app" || parsed.type == "both") {
-            saveInAppAnnouncement(
-                parsed.title,
-                parsed.body,
-                parsed.route,
-                parsed.imageUrl,
-                parsed.actionLabel,
-                parsed.showActionInApp,
-                parsed.category,
-            )
+            val prefs = userPreferences()
+            CoroutineScope(Dispatchers.IO).launch { prefs.setAnnouncement(parsed.toAnnouncement()) }
         }
 
         if (parsed.type == "push" || parsed.type == "both") {
@@ -84,13 +68,6 @@ class BoxLoreFcmService : FirebaseMessagingService() {
     }
 
     private fun handlePushAnnouncement(parsed: ParsedFcmNotification, type: String) {
-        if (applicationContext.shouldSuppressWhatsNewOnPlay(parsed.category)) {
-            android.util.Log.d(
-                "BoxLoreFcmService",
-                "Skipping Whats New push on Play Store install (category=${parsed.category})",
-            )
-            return
-        }
         try {
             showPushNotification(parsed.copy(type = type))
         } catch (e: Exception) {
@@ -136,42 +113,7 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         }
     }
 
-    private fun saveInAppAnnouncement(
-        title: String,
-        body: String,
-        route: String?,
-        imageUrl: String?,
-        actionLabel: String?,
-        showActionInApp: Boolean,
-        category: String,
-    ) {
-        // GitHub APK "What's New" / release download CTA is meaningless on Play installs.
-        if (applicationContext.shouldSuppressWhatsNewOnPlay(category)) {
-            android.util.Log.d(
-                "BoxLoreFcmService",
-                "Skipping Whats New in-app announcement on Play Store install (category=$category)",
-            )
-            return
-        }
-
-        val prefs = userPreferences()
-        CoroutineScope(Dispatchers.IO).launch {
-            val announcement =
-                UserPreferencesRepository.Announcement(
-                    title = title,
-                    body = body,
-                    route = route,
-                    imageUrl = imageUrl,
-                    actionLabel = actionLabel,
-                    showActionInApp = showActionInApp,
-                    category = category,
-                    timestamp = System.currentTimeMillis(),
-                )
-            prefs.setAnnouncement(announcement)
-        }
-    }
-
-    private fun showPushNotification(notification: ParsedFcmNotification) {
+    internal fun showPushNotification(notification: ParsedFcmNotification) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val config = getPushChannelConfig(notification.sound)
 
@@ -199,30 +141,9 @@ class BoxLoreFcmService : FirebaseMessagingService() {
         val notificationId = NewEpisodeFcmLogic.ANNOUNCEMENT_NOTIFICATION_ID_BASE + slot
         val contentRequestCode = NewEpisodeFcmLogic.ANNOUNCEMENT_REQUEST_CODE_BASE + slot
         val actionRequestCode = NewEpisodeFcmLogic.ANNOUNCEMENT_ACTION_REQUEST_CODE_BASE + slot
+        val target = PushTargetRouteAllowlist.sanitize(pushAnnouncementTarget(notification))
 
-        val intent =
-            createPushIntent(
-                notification.route,
-                notification.type,
-                notification.podcastId,
-                notification.episodeId,
-            )
-        val pendingIntent =
-            try {
-                PendingIntent.getActivity(
-                    this,
-                    contentRequestCode,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                )
-            } catch (e: SecurityException) {
-                android.util.Log.w(
-                    "BoxLoreFcmService",
-                    "Failed to create PendingIntent for push announcement due to UID quota exhaustion",
-                    e,
-                )
-                null
-            }
+        val pendingIntent = announcementPendingIntent(contentRequestCode, notification, target)
 
         val notificationBuilder =
             NotificationCompat
@@ -241,31 +162,9 @@ class BoxLoreFcmService : FirebaseMessagingService() {
             notificationBuilder.setSound(config.soundUri)
         }
 
-        val route = notification.route
+        val route = target
         if (notification.showActionInPush && !route.isNullOrBlank()) {
-            val actionIntent =
-                createPushIntent(
-                    route,
-                    notification.type,
-                    notification.podcastId,
-                    notification.episodeId,
-                )
-            val actionPendingIntent =
-                try {
-                    PendingIntent.getActivity(
-                        this,
-                        actionRequestCode,
-                        actionIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    )
-                } catch (e: SecurityException) {
-                    android.util.Log.w(
-                        "BoxLoreFcmService",
-                        "Failed to create action PendingIntent for push announcement due to UID quota exhaustion",
-                        e,
-                    )
-                    null
-                }
+            val actionPendingIntent = announcementPendingIntent(actionRequestCode, notification, route)
             if (actionPendingIntent != null) {
                 notificationBuilder.addAction(
                     cx.aswin.boxlore.R.drawable.ic_notification_custom,
@@ -277,6 +176,18 @@ class BoxLoreFcmService : FirebaseMessagingService() {
 
         loadPushImage(notificationBuilder, notification.imageUrl)
         notificationManager.notify(notificationId, notificationBuilder.build())
+    }
+
+    private fun announcementPendingIntent(requestCode: Int, notification: ParsedFcmNotification, target: String?): PendingIntent? = try {
+        PendingIntent.getActivity(
+            this,
+            requestCode,
+            createPushIntent(target, notification.type, notification.podcastId, notification.episodeId),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    } catch (e: SecurityException) {
+        android.util.Log.w("BoxLoreFcmService", "Failed to create announcement PendingIntent due to UID quota exhaustion", e)
+        null
     }
 
     private data class PushChannelConfig(val id: String, val name: String, val soundUri: Uri?, val importance: Int,)

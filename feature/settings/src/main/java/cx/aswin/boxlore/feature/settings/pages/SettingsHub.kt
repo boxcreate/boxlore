@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PrivacyTip
+import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -20,15 +21,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.feature.settings.ProfileSettingsDestination
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsCategoryCard
+import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 
 @Composable
 internal fun SettingsHub(
     onBack: () -> Unit,
     onNavigate: (ProfileSettingsDestination) -> Unit,
+    onCheckForUpdates: (() -> Unit)? = null,
 ) {
     SettingsScaffold(
         title = "Settings",
@@ -108,5 +113,12 @@ internal fun SettingsHub(
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
             onClick = { onNavigate(ProfileSettingsDestination.About) },
         )
+        onCheckForUpdates?.let { check ->
+            SettingsNavigationRow(
+                title = stringResource(R.string.settings_check_for_updates),
+                icon = Icons.Rounded.SystemUpdate,
+                onClick = check,
+            )
+        }
     }
 }

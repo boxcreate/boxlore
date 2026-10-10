@@ -30,10 +30,10 @@ on:
       release_notes_source:
         description: Release-note source for prepare-release
         required: true
-        default: reconcile-with-ai
+        default: reconcile-reviewed-copy
         type: choice
         options:
-          - reconcile-with-ai
+          - reconcile-reviewed-copy
           - readme-upcoming
       skip_notify:
         description: >-
@@ -65,7 +65,9 @@ jobs:
       contents: write
       pull-requests: read
     concurrency:
-      group: changelog-on-merge
+      group: boxlore-release-metadata
+      # Queue every metadata writer; the default single pending slot drops jobs.
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Generate boxlore pusher token
@@ -84,7 +86,6 @@ jobs:
       - name: Append merged PR event to CHANGELOG
         if: github.event_name == 'pull_request'
         env:
-          GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
@@ -95,7 +96,6 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
           PR_NUMBER: ${{ github.event.inputs.pr_number }}
         run: |
           if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
@@ -109,14 +109,10 @@ jobs:
           python3 .github/scripts/update_changelog.py append \
             --pr-json "$RUNNER_TEMP/pr.json"
 
-      - name: Curate CHANGELOG grouping and priority
-        env:
-          GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
+      - name: Order authored CHANGELOG bullets
         run: python3 .github/scripts/update_changelog.py sync-changelog
 
-      - name: Curate README from all unreleased changes
-        env:
-          GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
+      - name: Place authored README copy by category and impact
         run: python3 .github/scripts/update_changelog.py sync-readme
 
       - name: Commit and push changelog update
@@ -145,6 +141,21 @@ jobs:
           echo "::error::Failed to push CHANGELOG update after 5 attempts"
           exit 1
 
+      - name: Refresh Coming next in the verified update feed
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          TAG=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName')
+          mkdir -p "$RUNNER_TEMP/upcoming-feed"
+          if ! gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern update.json --dir "$RUNNER_TEMP/upcoming-feed"; then
+            echo "::warning::Upcoming preview not published: the latest release has no accessible update feed. Run publication after fixing access or creating the verified feed."
+            exit 0
+          fi
+          git pull --ff-only origin master
+          python3 .github/scripts/refresh_upcoming.py --manifest "$RUNNER_TEMP/upcoming-feed/update.json"
+          gh release upload "$TAG" "$RUNNER_TEMP/upcoming-feed/update.json" --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Updated Coming next only. No APK changed and no notification was sent." >> "$GITHUB_STEP_SUMMARY"
+
   prepare-release:
     if: >-
       github.event_name == 'workflow_dispatch' &&
@@ -154,7 +165,9 @@ jobs:
       contents: write
       pull-requests: write
     concurrency:
-      group: prepare-release
+      group: boxlore-release-preparation
+      # Queue every metadata writer; the default single pending slot drops jobs.
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Generate boxlore pusher token
@@ -190,7 +203,6 @@ jobs:
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GROQ_API_KEY: ${{ secrets.REVIEW_KEY }}
           BUMP: ${{ github.event.inputs.bump }}
           LATEST_TAG: ${{ steps.latest.outputs.tag }}
           RELEASE_NOTES_SOURCE: ${{ github.event.inputs.release_notes_source }}
@@ -310,9 +322,9 @@ jobs:
           )"
           else
             if [[ "$NOTES_SOURCE" == "readme-upcoming" ]]; then
-              notes_message="README Upcoming is promoted verbatim into What's New and the in-app notification; AI reconciliation is skipped."
+              notes_message="Reviewed README Upcoming is promoted verbatim into What's New and the in-app notification."
             else
-              notes_message="Changelog and README use author-written release-copy when present; remaining notes are reconciled before promotion."
+              notes_message="Changelog and README use the required author-written release copy, ordered without rewriting before promotion."
             fi
             title="release: ${TAG} [skip changelog]"
             body="$(cat <<EOF
@@ -372,11 +384,14 @@ jobs:
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       skip_notify: ${{ steps.release.outputs.skip_notify }}
+      version_code: ${{ steps.release.outputs.version_code }}
       notification_title: ${{ steps.notification.outputs.notification_title }}
       notification_body: ${{ steps.notification.outputs.notification_body }}
       notification_route: ${{ steps.notification.outputs.notification_route }}
     concurrency:
-      group: publish-release
+      group: boxlore-release-metadata
+      # Queue every metadata writer; the default single pending slot drops jobs.
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Generate boxlore pusher token
@@ -552,14 +567,17 @@ jobs:
           fi
 
       - name: Build signed release APK and AAB
-        run: ./gradlew --no-daemon assembleRelease bundleRelease
+        run: ./gradlew --no-daemon :app:assembleRelease :app:bundlePlayRelease
 
       - name: Verify optimized release contracts
         run: |
           python3 .github/scripts/verify_release_contracts.py \
             --report app/build/reports/release-contracts.json \
-            app/build/outputs/apk/release/app-release.apk \
-            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/apk/release/app-release.apk
+          python3 .github/scripts/verify_release_contracts.py \
+            --app-variant playRelease \
+            --report app/build/reports/play-release-contracts.json \
+            app/build/outputs/bundle/playRelease/app-playRelease.aab
 
       - name: Preserve optimized release diagnostics
         if: always()
@@ -569,11 +587,13 @@ jobs:
           retention-days: 30
           path: |
             app/build/reports/release-contracts.json
+            app/build/reports/play-release-contracts.json
             app/build/outputs/mapping/release/configuration.txt
             app/build/outputs/mapping/release/mapping.txt
             app/build/outputs/mapping/release/seeds.txt
             app/build/outputs/mapping/release/usage.txt
             app/build/outputs/mapping/release/missing_rules.txt
+            app/build/outputs/mapping/playRelease/
 
       - name: Verify artifact versions and signatures
         env:
@@ -585,7 +605,7 @@ jobs:
         run: |
           set -euo pipefail
           apk="app/build/outputs/apk/release/app-release.apk"
-          aab="app/build/outputs/bundle/release/app-release.aab"
+          aab="app/build/outputs/bundle/playRelease/app-playRelease.aab"
           [[ -s "$apk" ]] || { echo "::error::Signed release APK is missing"; exit 1; }
           [[ -s "$aab" ]] || { echo "::error::Signed release AAB is missing"; exit 1; }
 
@@ -727,7 +747,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/release-assets"
           cp app/build/outputs/apk/release/app-release.apk \
             "$RUNNER_TEMP/release-assets/$APK_ASSET"
-          cp app/build/outputs/bundle/release/app-release.aab \
+          cp app/build/outputs/bundle/playRelease/app-playRelease.aab \
             "$RUNNER_TEMP/release-assets/$AAB_ASSET"
           (
             cd "$RUNNER_TEMP/release-assets"
@@ -815,6 +835,19 @@ jobs:
           echo "::error::README latest-download URL does not serve the ${TAG} APK"
           exit 1
 
+      - name: Publish verified update manifest
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          APK_ASSET: ${{ steps.release.outputs.apk_asset }}
+        run: |
+          python3 .github/scripts/generate_update_manifest.py \
+            --apk "$RUNNER_TEMP/release-assets/$APK_ASSET" \
+            --asset "$APK_ASSET" --output "$RUNNER_TEMP/update.json"
+          gh release upload "$TAG" "$RUNNER_TEMP/update.json" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Verified updater manifest published. Same-version refreshes stay quiet."
+
       - name: Delete release branch after publish
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -837,7 +870,9 @@ jobs:
     permissions:
       contents: write
     concurrency:
-      group: refresh-latest-artifacts
+      group: boxlore-release-metadata
+      # Queue every metadata writer; the default single pending slot drops jobs.
+      queue: max
       cancel-in-progress: false
     steps:
       - name: Checkout master
@@ -1007,14 +1042,17 @@ jobs:
           fi
 
       - name: Build signed release APK and AAB
-        run: ./gradlew --no-daemon assembleRelease bundleRelease
+        run: ./gradlew --no-daemon :app:assembleRelease :app:bundlePlayRelease
 
       - name: Verify optimized release contracts
         run: |
           python3 .github/scripts/verify_release_contracts.py \
             --report app/build/reports/release-contracts.json \
-            app/build/outputs/apk/release/app-release.apk \
-            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/apk/release/app-release.apk
+          python3 .github/scripts/verify_release_contracts.py \
+            --app-variant playRelease \
+            --report app/build/reports/play-release-contracts.json \
+            app/build/outputs/bundle/playRelease/app-playRelease.aab
 
       - name: Preserve optimized release diagnostics
         if: always()
@@ -1024,11 +1062,13 @@ jobs:
           retention-days: 30
           path: |
             app/build/reports/release-contracts.json
+            app/build/reports/play-release-contracts.json
             app/build/outputs/mapping/release/configuration.txt
             app/build/outputs/mapping/release/mapping.txt
             app/build/outputs/mapping/release/seeds.txt
             app/build/outputs/mapping/release/usage.txt
             app/build/outputs/mapping/release/missing_rules.txt
+            app/build/outputs/mapping/playRelease/
 
       - name: Verify artifact versions and signatures
         env:
@@ -1040,7 +1080,7 @@ jobs:
         run: |
           set -euo pipefail
           apk="app/build/outputs/apk/release/app-release.apk"
-          aab="app/build/outputs/bundle/release/app-release.aab"
+          aab="app/build/outputs/bundle/playRelease/app-playRelease.aab"
           [[ -s "$apk" ]] || { echo "::error::Signed release APK is missing"; exit 1; }
           [[ -s "$aab" ]] || { echo "::error::Signed release AAB is missing"; exit 1; }
 
@@ -1175,7 +1215,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/release-assets"
           cp app/build/outputs/apk/release/app-release.apk \
             "$RUNNER_TEMP/release-assets/$APK_ASSET"
-          cp app/build/outputs/bundle/release/app-release.aab \
+          cp app/build/outputs/bundle/playRelease/app-playRelease.aab \
             "$RUNNER_TEMP/release-assets/$AAB_ASSET"
           (
             cd "$RUNNER_TEMP/release-assets"
@@ -1231,6 +1271,19 @@ jobs:
           echo "::error::README latest-download URL does not serve the refreshed ${TAG} APK"
           exit 1
 
+      - name: Publish verified update manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+          APK_ASSET: ${{ steps.release.outputs.apk_asset }}
+        run: |
+          python3 .github/scripts/generate_update_manifest.py \
+            --apk "$RUNNER_TEMP/release-assets/$APK_ASSET" \
+            --asset "$APK_ASSET" --output "$RUNNER_TEMP/update.json"
+          gh release upload "$TAG" "$RUNNER_TEMP/update.json" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "Verified updater manifest published. Same-version refreshes stay quiet."
+
       - name: Remove protected build inputs
         if: always()
         run: |
@@ -1239,6 +1292,7 @@ jobs:
           rm -f app/google-services.json
 
   announce-release:
+    name: Preview release announcement (no delivery)
     needs: publish-release
     if: >-
       needs.publish-release.result == 'success' &&
@@ -1250,8 +1304,13 @@ jobs:
       type: in-app
       route: ${{ needs.publish-release.outputs.notification_route }}
       image: ''
-      target: all_users
+      target: direct_users
       dry_run: 'false'
+      preview_only: 'true'
+      release_url: ${{ format('https://github.com/boxcreate/boxlore/releases/tag/{0}', needs.publish-release.outputs.tag) }}
+      release_alert: 'true'
+      release_version_code: ${{ needs.publish-release.outputs.version_code }}
+      presentation: fullscreen
       collapse_key: ${{ format('boxlore-release-{0}', needs.publish-release.outputs.tag) }}
       sound: silent
       action_label: Download

@@ -80,6 +80,7 @@ class AppContainer(
     private val appContext = context.applicationContext
 
     private val syncScope = applicationScope
+    val appUpdates by lazy { cx.aswin.boxlore.updates.createAppUpdates(appContext, syncScope) }
     private val legacyRssRepairLaunchDecision =
         runCatching {
             @Suppress("DEPRECATION")

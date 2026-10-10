@@ -33,6 +33,7 @@ HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "HTT
 DEBUG_ONLY = {"com/google/firebase/appcheck/debug/DebugAppCheckProviderFactory",
               "com/google/firebase/appcheck/debug/FirebaseAppCheckDebugRegistrar",
               APP_PREFIX + "debug/TestNotificationReceiver"}
+DEBUG_ONLY.add(APP_PREFIX + "testing/AnnouncementTestReceiver")
 WIDGET_MODELS = {APP_PREFIX + "feature/widgets/" + name for name in
                  ("NowPlayingWidgetSnapshot", "LibraryWidgetSnapshot", "WidgetShowRow", "WidgetEpisodeRow")}
 
@@ -258,17 +259,33 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--sdk", type=Path)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--app-variant", choices=("release", "playRelease"), default="release")
     args = parser.parse_args()
     root = args.root.resolve()
     sdk = args.sdk or Path(os.environ.get("ANDROID_SDK_ROOT") or os.environ.get("ANDROID_HOME") or "")
     try:
-        classes = load_project_classes(root)
-        mapping = read_mapping(root / "app/build/outputs/mapping/release/mapping.txt")
-        manifest = manifest_constructors(root / "app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml")
+        variant = args.app_variant
+        task_variant = variant[0].upper() + variant[1:]
+        classes = load_project_classes(root, variant)
+        mapping = read_mapping(root / f"app/build/outputs/mapping/{variant}/mapping.txt")
+        manifest_path = root / f"app/build/intermediates/merged_manifests/{variant}/process{task_variant}Manifest/AndroidManifest.xml"
+        manifest = manifest_constructors(manifest_path)
+        permission = "android.permission.REQUEST_INSTALL_PACKAGES"
+        permissions = {item.get("{http://schemas.android.com/apk/res/android}name") for item in ET.parse(manifest_path).getroot().iter("uses-permission")}
+        if any(item.get("{http://schemas.android.com/apk/res/android}name") == "cx.aswin.boxlore.ISOLATED_UPDATE_TEST" for item in ET.parse(manifest_path).getroot().iter("meta-data")):
+            raise ValueError("Isolated test build cannot be published")
+        if variant == "playRelease" and permission in permissions:
+            raise ValueError("Play bundle must not request APK installation permission")
+        if variant == "release" and permission not in permissions:
+            raise ValueError("Direct APK installer permission is missing")
         report = {}
         for artifact in args.artifacts:
             dex, size = inspect_archive(artifact, sdk_tool("dexdump", sdk))
             counts = validate_contracts(classes, dex, mapping, manifest)
+            if variant == "playRelease":
+                for name in (APP_PREFIX + "updates/DirectApkInstaller", APP_PREFIX + "updates/ApkFileDownloader"):
+                    if mapping.get(name, name) in dex:
+                        raise ValueError("APK installer code packaged in Play bundle: " + name)
             counts["raw_uri_payloads"] = validate_raw_uri_payloads(artifact, root, literal_uri_resources(root))
             if artifact.suffix == ".apk":
                 counts["dynamic_resources"] = validate_resources(artifact, root, sdk_tool("aapt2", sdk))

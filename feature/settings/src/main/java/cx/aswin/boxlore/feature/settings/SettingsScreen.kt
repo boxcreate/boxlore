@@ -104,6 +104,7 @@ data class SettingsScreenConfig(
     val isOnboarding: Boolean = false,
     val onSendFeedback: (() -> Unit)? = null,
     val onSupportPageVisibilityChanged: ((Boolean) -> Unit)? = null,
+    val onCheckForUpdates: (() -> Unit)? = null,
 )
 
 /** Appearance sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -377,6 +378,7 @@ private fun SettingsDestinationContent(
             SettingsHub(
                 onBack = config.onBack,
                 onNavigate = actions.onNavigate,
+                onCheckForUpdates = config.onCheckForUpdates,
             )
 
         ProfileSettingsDestination.Account ->
@@ -458,6 +460,7 @@ private fun SettingsDestinationContent(
                 onVisitPodcastIndex = { visitPodcastIndexHomepage(contentBundle.context) },
                 onOpenChangelog = { openChangelog(contentBundle.context) },
                 onSendFeedback = { config.onSendFeedback?.invoke() },
+                onCheckForUpdates = config.onCheckForUpdates,
                 onBack = actions.onReturnToHub,
             )
 

@@ -112,7 +112,7 @@ def parse_class(data: bytes) -> ClassFile:
     return ClassFile(name, super_name, access, fields, methods, signature(attrs))
 
 
-def load_project_classes(root: Path) -> dict[str, ClassFile]:
+def load_project_classes(root: Path, app_variant: str = "release") -> dict[str, ClassFile]:
     result: dict[str, ClassFile] = {}
     modules = [root / "app", *sorted((root / "core").glob("*")), *sorted((root / "feature").glob("*"))]
     for module in modules:
@@ -124,11 +124,12 @@ def load_project_classes(root: Path) -> dict[str, ClassFile]:
                         item = parse_class(archive.read(entry))
                         result[item.name] = item
     # The application is not published as a library jar.
-    for directory in [root / "app/build/intermediates/javac/release/compileReleaseJavaWithJavac/classes",
-                      root / "app/build/intermediates/built_in_kotlinc/release/compileReleaseKotlin/classes"]:
+    task_variant = app_variant[0].upper() + app_variant[1:]
+    for directory in [root / f"app/build/intermediates/javac/{app_variant}/compile{task_variant}JavaWithJavac/classes",
+                      root / f"app/build/intermediates/built_in_kotlinc/{app_variant}/compile{task_variant}Kotlin/classes"]:
         for path in sorted(directory.rglob("*.class")):
             item = parse_class(path.read_bytes())
             result[item.name] = item
     if "cx/aswin/boxlore/core/network/BoxLoreApi" not in result or "cx/aswin/boxlore/LegacyWorkerFactory" not in result:
-        raise ValueError("Pre-R8 release classes missing; build assembleRelease and bundleRelease first")
+        raise ValueError(f"Pre-R8 {app_variant} classes missing; build assembleRelease and bundlePlayRelease first")
     return result

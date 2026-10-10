@@ -218,9 +218,9 @@ class BoxLoreApplication :
         }
 
         // Tag internal/test users so they can be filtered in PostHog settings
-        if (BuildConfig.DEBUG) {
+        if (BuildConfig.DEBUG || BuildConfig.BOXLORE_ISOLATED_TESTS) {
             PostHog.register("is_internal", true)
-            PostHog.register("app_environment", "debug")
+            PostHog.register("app_environment", if (BuildConfig.BOXLORE_ISOLATED_TESTS) "update_test" else "debug")
         } else {
             PostHog.register("is_internal", false)
             PostHog.register("app_environment", "production")

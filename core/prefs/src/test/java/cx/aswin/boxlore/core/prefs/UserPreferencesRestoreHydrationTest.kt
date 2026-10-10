@@ -10,6 +10,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -92,6 +93,23 @@ class UserPreferencesRestoreHydrationTest {
         hydration.await()
         assertEquals("dark", repository.cachedThemeConfig)
         assertEquals("amoled", repository.cachedSurfaceStyle)
+    }
+
+    @Test
+    fun repeatedHydrationPreservesStoredFalseAndExistingStrings() = runTest {
+        context.userPreferencesDataStore.edit {
+            it[Keys.USE_DYNAMIC_COLOR] = false
+            it[Keys.THEME_BRAND] = "violet"
+            it[Keys.OPEN_APP_TO] = OpenAppTo.HOME
+        }
+
+        repeat(2) { repository.hydrateMissingDataStoreFromFastCache() }
+
+        assertFalse(repository.useDynamicColorStream.first())
+        assertEquals("violet", repository.themeBrandStream.first())
+        assertEquals(OpenAppTo.HOME, repository.openAppToStream.first())
+        assertEquals("dark", repository.themeConfigStream.first())
+        assertEquals("amoled", repository.surfaceStyleStream.first())
     }
 
     @Test

@@ -10,6 +10,12 @@
     <include domain="file" path="datastore/" />
     <!-- Background feed access requires explicit consent on this installation. -->
     <exclude domain="file" path="datastore/auto_download_background.preferences_pb" />
+    <!-- Update offers and installation sessions belong to this device only. -->
+    <exclude domain="sharedpref" path="boxlore_direct_updates.xml" />
+    <exclude domain="sharedpref" path="boxlore_play_updates.xml" />
+    <exclude domain="sharedpref" path="boxlore_test_updates.xml" />
+    <exclude domain="sharedpref" path="boxlore_update_session.xml" />
+    <exclude domain="sharedpref" path="boxlore_test_update_session.xml" />
     <!-- Rebuild WorkManager jobs from DataStore instead of restoring stale schedules. -->
     <exclude domain="database" path="androidx.work.workdb" />
     <exclude domain="database" path="androidx.work.workdb-journal" />

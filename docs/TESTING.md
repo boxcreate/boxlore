@@ -299,3 +299,5 @@ Install the signed release over the existing app without uninstalling or clearin
 6. Installed widgets → force-stop/process restart: saved snapshots render; library/playback controls and deep links work. Onboarding covers and Auto collage labels retain their artwork/font.
 
 Record device/runtime verification separately from optimized-artifact checks. Static checks cannot establish every vendor-ROM behavior, live SDK response, or background-delivery timing.
+
+The CodeRabbit thread check reads every GraphQL page and fails on unresolved current bot threads, incomplete pagination or invalid API responses. `test_review_threads.py` runs the workflow’s actual shell script with a hermetic GitHub fixture, including unresolved/resolved/outdated and malformed-response cases.

@@ -1,0 +1,61 @@
+name: Offline release rehearsal
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Preview a new release or quiet same-version refresh
+        type: choice
+        default: prepare-release
+        options: [prepare-release, refresh-latest-artifacts]
+      bump:
+        description: Preview version bump for a new release
+        type: choice
+        default: patch
+        options: [patch, minor, major]
+
+permissions:
+  contents: read
+
+jobs:
+  rehearse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Set up Node for announcement preview checks
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Announcement composer contract checks
+        run: node --test .github/scripts/test_announcement_admin.cjs
+      - name: Test release tooling without credentials
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+      - name: Prepare preview files
+        env:
+          OPERATION: ${{ inputs.operation }}
+          BUMP: ${{ inputs.bump }}
+        run: |
+          python3 .github/scripts/rehearse_release.py \
+            --output "$RUNNER_TEMP/release-preview" \
+            --operation "$OPERATION" --bump "$BUMP"
+      - name: Save preview files
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-preview
+          path: ${{ runner.temp }}/release-preview/
+          if-no-files-found: error
+      - name: Explain result and recovery
+        if: always()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Release rehearsal
+          Nothing was published or sent. Source version files and download links were unchanged.
+
+          **Passed:** Download the `release-preview` artifact. Review candidate notes and `report.json`.
+
+          **Failed:** Open the first failed step. If listener copy is missing, fill that PR's release-copy region, run Backfill changelog, and retry. If a test failed, fix the reported regression and rerun this rehearsal. Do not run Publish release to repair a rehearsal failure.
+
+          This rehearsal covers local copy, version calculation and announcement payloads. APK builds, update installation, provider delivery and remote merged-PR reconciliation need separate checks.
+          SUMMARY

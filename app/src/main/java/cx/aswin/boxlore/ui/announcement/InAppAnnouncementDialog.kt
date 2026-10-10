@@ -1,386 +1,166 @@
 package cx.aswin.boxlore.ui.announcement
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import cx.aswin.boxlore.BuildConfig
+import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
+import cx.aswin.boxlore.ui.NativeDialogSystemBars
+import cx.aswin.boxlore.updates.ReleaseNotesMarkdown
+import cx.aswin.boxlore.util.isInstalledFromPlayStore
 
-private val ActionShape = RoundedCornerShape(16.dp)
-private val DialogShape = RoundedCornerShape(28.dp)
-private val ImageShape = RoundedCornerShape(16.dp)
-private val ActionHeight = 52.dp
-
+/** Native Material 3 presentation; the admin's browser preview follows the same visual specification. */
 @Composable
-fun InAppAnnouncementDialog(announcement: Announcement, onDismiss: () -> Unit, onAction: (route: String) -> Unit,) {
-    val hasImage = !announcement.imageUrl.isNullOrBlank()
-    val hasAction = announcement.showActionInApp && !announcement.route.isNullOrBlank()
-    val style = remember(announcement.category) { announcementLayoutStyle(announcement.category) }
-
-    LaunchedEffect(announcement.timestamp, announcement.title) {
-        AnalyticsHelper.trackInAppAnnouncementViewed(
-            category = announcement.category,
-            hasImage = hasImage,
-            hasAction = hasAction,
-        )
-    }
-
-    val dismissExplicitly = {
-        AnalyticsHelper.trackInAppAnnouncementDismissed(
-            category = announcement.category,
-            hasImage = hasImage,
-            hasAction = hasAction,
-        )
+fun InAppAnnouncementDialog(announcement: Announcement, onDismiss: () -> Unit, onAction: (route: String) -> Unit) {
+    val actions = remember(announcement) { announcementActions(announcement) }
+    val fullscreen = announcement.presentation == "fullscreen"
+    val colors = announcementColors(MaterialTheme.colorScheme, announcement.tone)
+    val dismiss = {
+        AnalyticsHelper.trackInAppAnnouncementDismissed(announcement.category, !announcement.imageUrl.isNullOrBlank(), announcement.showActionInApp)
         onDismiss()
     }
-
-    Dialog(
-        onDismissRequest = { /* outside / back do not dismiss */ },
-        properties =
-        DialogProperties(
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false,
-        ),
-    ) {
-        AnnouncementDialogCard(
-            announcement = announcement,
-            style = style,
-            hasImage = hasImage,
-            hasAction = hasAction,
-            onDismissExplicitly = dismissExplicitly,
-            onAction = onAction,
-        )
+    LaunchedEffect(announcement.timestamp) {
+        AnalyticsHelper.trackInAppAnnouncementViewed(announcement.category, !announcement.imageUrl.isNullOrBlank(), announcement.showActionInApp && !announcement.route.isNullOrBlank())
     }
-}
-
-@Composable
-private fun AnnouncementDialogCard(
-    announcement: Announcement,
-    style: AnnouncementLayoutStyle,
-    hasImage: Boolean,
-    hasAction: Boolean,
-    onDismissExplicitly: () -> Unit,
-    onAction: (route: String) -> Unit,
-) {
-    val surfaceBorder =
-        if (style.useErrorChip) {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f))
-        } else {
-            null
-        }
-
-    Surface(
-        shape = DialogShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 6.dp,
-        border = surfaceBorder,
-        modifier =
-        Modifier
-            .fillMaxWidth(0.94f)
-            .heightIn(max = 560.dp)
-            .padding(horizontal = 12.dp, vertical = 16.dp),
-    ) {
-        Box {
-            IconButton(
-                onClick = onDismissExplicitly,
-                modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp),
+    MaterialTheme(colorScheme = colors) {
+        Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+            NativeDialogSystemBars(colors.surface, dimmed = !fullscreen)
+            BoxWithConstraints(
+                Modifier.fillMaxSize()
+                    .background(if (fullscreen) colors.surface else colors.scrim.copy(alpha = 0.38f))
+                    .safeDrawingPadding()
+                    .padding(horizontal = if (fullscreen) 0.dp else 20.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = "Dismiss",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Column(modifier = Modifier.padding(20.dp)) {
-                AnnouncementCategoryChip(
-                    category = announcement.category,
-                    style = style,
-                )
-                AnnouncementScrollBody(
-                    announcement = announcement,
-                    style = style,
-                    hasImage = hasImage,
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                AnnouncementActions(
-                    announcement = announcement,
-                    style = style,
-                    hasImage = hasImage,
-                    hasAction = hasAction,
-                    onDismissExplicitly = onDismissExplicitly,
-                    onAction = onAction,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AnnouncementCategoryChip(category: String, style: AnnouncementLayoutStyle,) {
-    val chipContainer = chipContainerColor(style)
-    val chipContent = chipContentColor(style)
-
-    Row(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .padding(end = 36.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AssistChip(
-            onClick = {},
-            label = {
-                Text(
-                    text = category,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = GoogleSansWeight.semiBold,
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = style.icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-            },
-            colors =
-            AssistChipDefaults.assistChipColors(
-                containerColor = chipContainer,
-                labelColor = chipContent,
-                leadingIconContentColor = chipContent,
-            ),
-            border = null,
-        )
-    }
-}
-
-@Composable
-private fun chipContainerColor(style: AnnouncementLayoutStyle): Color = when {
-    style.useErrorChip -> MaterialTheme.colorScheme.errorContainer
-    style.useTertiaryChip -> MaterialTheme.colorScheme.tertiaryContainer
-    else -> MaterialTheme.colorScheme.primaryContainer
-}
-
-@Composable
-private fun chipContentColor(style: AnnouncementLayoutStyle): Color = when {
-    style.useErrorChip -> MaterialTheme.colorScheme.onErrorContainer
-    style.useTertiaryChip -> MaterialTheme.colorScheme.onTertiaryContainer
-    else -> MaterialTheme.colorScheme.onPrimaryContainer
-}
-
-@Composable
-private fun ColumnScope.AnnouncementScrollBody(announcement: Announcement, style: AnnouncementLayoutStyle, hasImage: Boolean,) {
-    Column(
-        modifier =
-        Modifier
-            .weight(1f, fill = false)
-            .verticalScroll(rememberScrollState()),
-    ) {
-        if (hasImage) {
-            AsyncImage(
-                model = announcement.imageUrl,
-                contentDescription = null,
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(style.imageHeight)
-                    .clip(ImageShape),
-                contentScale = ContentScale.Crop,
-            )
-            Spacer(modifier = Modifier.height(if (style.emphasizeImage) 12.dp else 16.dp))
-        }
-
-        Text(
-            text = announcement.title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight =
-            if (style.layout == AnnouncementLayout.Tip) {
-                GoogleSansWeight.medium
-            } else {
-                GoogleSansWeight.semiBold
-            },
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 12.dp),
-        )
-
-        AnnouncementBodyBlocks(
-            body = announcement.body,
-            style = style,
-        )
-    }
-}
-
-@Composable
-private fun AnnouncementBodyBlocks(body: String, style: AnnouncementLayoutStyle,) {
-    val blocks = remember(body) { parseBodyToBlocks(body) }
-    val bodySpacing = if (style.emphasizeBullets) 8.dp else 10.dp
-    val bulletColor =
-        if (style.useErrorChip) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.primary
-        }
-    val bulletTextStyle =
-        if (style.emphasizeBullets) {
-            MaterialTheme.typography.bodyLarge
-        } else {
-            MaterialTheme.typography.bodyMedium
-        }
-
-    Column(verticalArrangement = Arrangement.spacedBy(bodySpacing)) {
-        blocks.forEach { block ->
-            AnnouncementBodyBlockRow(
-                block = block,
-                bulletColor = bulletColor,
-                bulletTextStyle = bulletTextStyle,
-            )
-        }
-    }
-}
-
-@Composable
-private fun AnnouncementBodyBlockRow(block: BodyBlock, bulletColor: Color, bulletTextStyle: androidx.compose.ui.text.TextStyle,) {
-    when {
-        block.isSpacer -> Spacer(modifier = Modifier.height(6.dp))
-        block.isBullet -> {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Text(
-                    text = "•",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = bulletColor,
-                    modifier = Modifier.padding(start = 4.dp, end = 10.dp),
-                )
-                Text(
-                    text = block.text,
-                    style = bulletTextStyle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-        else -> {
-            Text(
-                text = block.text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
-}
-
-@Composable
-private fun AnnouncementActions(
-    announcement: Announcement,
-    style: AnnouncementLayoutStyle,
-    hasImage: Boolean,
-    hasAction: Boolean,
-    onDismissExplicitly: () -> Unit,
-    onAction: (route: String) -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        if (hasAction) {
-            val route = announcement.route.orEmpty()
-            val buttonText = announcement.actionLabel?.takeIf { it.isNotBlank() } ?: "View"
-            val containerColor =
-                if (style.useErrorChip) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.primary
+                val panel = if (fullscreen) Modifier.fillMaxSize() else Modifier.widthIn(max = 560.dp).fillMaxWidth().heightIn(max = maxHeight * 0.9f)
+                Surface(
+                    modifier = panel,
+                    shape = RoundedCornerShape(if (fullscreen) 0.dp else 28.dp),
+                    color = if (fullscreen) colors.surface else colors.surfaceContainer,
+                    shadowElevation = if (fullscreen) 0.dp else 3.dp,
+                ) {
+                    Column {
+                        AnnouncementHeader(announcement.category, dismiss)
+                        Column(
+                            Modifier.weight(1f, fill = fullscreen).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            AnnouncementImage(announcement)
+                            Text(announcement.title, style = if (fullscreen) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall)
+                            ReleaseNotesMarkdown(announcement.body, stripPrLinks = false)
+                        }
+                        AnnouncementFooter(actions, dismiss, onAction)
+                    }
                 }
-            Button(
-                onClick = {
-                    AnalyticsHelper.trackInAppAnnouncementAction(
-                        category = announcement.category,
-                        hasImage = hasImage,
-                        actionLabel = buttonText,
-                    )
-                    onAction(route)
-                },
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(ActionHeight),
-                shape = ActionShape,
-                colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = containerColor,
-                ),
-            ) {
-                Text(
-                    text = buttonText,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = GoogleSansWeight.semiBold,
-                )
             }
         }
+    }
+}
 
-        OutlinedButton(
-            onClick = onDismissExplicitly,
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(ActionHeight),
-            shape = ActionShape,
-        ) {
-            Text(
-                text = "Dismiss",
-                style = MaterialTheme.typography.labelLarge,
-            )
+@Composable
+private fun AnnouncementHeader(category: String, onDismiss: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f)) {
+            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
+                Text(category, Modifier.padding(horizontal = 12.dp, vertical = 8.dp), style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.announcement_close)) }
+    }
+}
+
+@Composable
+private fun AnnouncementImage(announcement: Announcement) {
+    val url = announcementImageUrl(announcement.imageUrl) ?: return
+    var failed by remember(url) { mutableStateOf(false) }
+    if (failed) return
+    val cover = announcement.imageStyle == "cover"
+    AsyncImage(
+        model = url,
+        contentDescription = null,
+        contentScale = if (cover) ContentScale.Fit else ContentScale.Crop,
+        modifier = Modifier.fillMaxWidth().heightIn(max = if (cover) 260.dp else 200.dp).aspectRatio(if (cover) 1f else 16f / 9f).clip(RoundedCornerShape(20.dp)),
+        onError = { failed = true },
+    )
+}
+
+@Composable
+private fun AnnouncementFooter(actions: List<AnnouncementAction>, onDismiss: () -> Unit, onAction: (String) -> Unit) {
+    if (actions.firstOrNull()?.kind == AnnouncementActionKind.UPDATE) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            actions.forEach { item -> AnnouncementActionButton(item, Modifier.fillMaxWidth(), onAction) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.announcement_dismiss)) }
+        }
+    } else {
+        FlowRow(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.announcement_dismiss)) }
+            actions.forEach { item -> AnnouncementActionButton(item, Modifier, onAction) }
         }
     }
+}
+
+@Composable
+private fun AnnouncementActionButton(item: AnnouncementAction, modifier: Modifier, onAction: (String) -> Unit) {
+    val play = !BuildConfig.BOXLORE_DIRECT_UPDATES || LocalContext.current.isInstalledFromPlayStore()
+    val label = when (item.kind) {
+        AnnouncementActionKind.UPDATE -> stringResource(if (play) R.string.announcement_play else R.string.announcement_download)
+        AnnouncementActionKind.GITHUB -> stringResource(R.string.announcement_github)
+        AnnouncementActionKind.CUSTOM -> item.label ?: stringResource(R.string.announcement_open)
+    }
+    if (item.kind == AnnouncementActionKind.GITHUB) {
+        FilledTonalButton(onClick = { onAction(item.route) }, modifier = modifier.heightIn(min = 48.dp)) { Text(label) }
+    } else {
+        Button(onClick = { onAction(item.route) }, modifier = modifier.heightIn(min = 48.dp)) { Text(label) }
+    }
+}
+
+internal fun announcementColors(colors: ColorScheme, tone: String): ColorScheme = when (tone) {
+    "secondary" -> colors.copy(primary = colors.secondary, onPrimary = colors.onSecondary, primaryContainer = colors.secondaryContainer, onPrimaryContainer = colors.onSecondaryContainer)
+    "tertiary" -> colors.copy(primary = colors.tertiary, onPrimary = colors.onTertiary, primaryContainer = colors.tertiaryContainer, onPrimaryContainer = colors.onTertiaryContainer)
+    "error" -> colors.copy(primary = colors.error, onPrimary = colors.onError, primaryContainer = colors.errorContainer, onPrimaryContainer = colors.onErrorContainer)
+    else -> colors
 }

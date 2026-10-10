@@ -1,0 +1,27 @@
+<resources>
+    <string name="updates_title">App updates</string>
+    <string name="updates_checking">Checking for updates…</string>
+    <string name="updates_current">You’re up to date</string>
+    <string name="updates_check_failed">Couldn’t check for updates. Try again later.</string>
+    <string name="updates_incompatible">The latest update needs a newer Android version.</string>
+    <string name="updates_check">Check for updates</string>
+    <string name="updates_close">Close updates</string>
+    <string name="updates_available">Update available</string>
+    <string name="updates_version">Version %1$s</string>
+    <string name="updates_play_available">An update is available on Google Play</string>
+    <string name="updates_play">Update with Google Play</string>
+    <string name="updates_play_failed">Couldn’t open the update. Try again.</string>
+    <string name="updates_play_unavailable">This update is no longer available. Check for updates again.</string>
+    <string name="updates_download">Download update</string>
+    <string name="updates_install">Install update</string>
+    <string name="updates_pause">Pause download</string>
+    <string name="updates_downloading">Downloading update · %1$d%%</string>
+    <string name="updates_verifying">Verifying update…</string>
+    <string name="updates_ready">Ready to install. Android will ask you to confirm.</string>
+    <string name="updates_permission">Allow boxlore to install updates in Android Settings, then return and tap Install update.</string>
+    <string name="updates_transfer_failed">Couldn’t prepare the update. Try downloading it again.</string>
+    <string name="updates_notes">Release notes</string>
+    <string name="updates_read_notes">Read release notes</string>
+    <string name="updates_upcoming">Coming next</string>
+    <string name="updates_unreleased">Not released yet</string>
+</resources>

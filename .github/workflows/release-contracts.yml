@@ -34,14 +34,19 @@ jobs:
       - name: Build optimized unsigned APK and bundle
         run: >-
           ./gradlew --no-daemon -I .github/scripts/release_verification.init.gradle
-          :app:assembleRelease :app:bundleRelease :app:lintRelease
-          -x :app:uploadCrashlyticsMappingFileRelease
+          :app:assembleRelease :app:bundlePlayRelease :app:lintPlayRelease :app:lintRelease
+          -x :app:uploadCrashlyticsMappingFileRelease -x :app:uploadCrashlyticsMappingFilePlayRelease
       - name: Verify optimized release contracts
         run: >-
           python3 .github/scripts/verify_release_contracts.py
           --report app/build/reports/release-contracts.json
           app/build/outputs/apk/release/app-release-unsigned.apk
-          app/build/outputs/bundle/release/app-release.aab
+      - name: Verify optimized Play contracts and installer exclusion
+        run: >-
+          python3 .github/scripts/verify_release_contracts.py
+          --app-variant playRelease
+          --report app/build/reports/play-release-contracts.json
+          app/build/outputs/bundle/playRelease/app-playRelease.aab
       - name: Preserve release diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -50,12 +55,14 @@ jobs:
           retention-days: 14
           path: |
             app/build/reports/release-contracts.json
+            app/build/reports/play-release-contracts.json
             app/build/reports/lint-results-release.*
             app/build/outputs/mapping/release/configuration.txt
             app/build/outputs/mapping/release/mapping.txt
             app/build/outputs/mapping/release/seeds.txt
             app/build/outputs/mapping/release/usage.txt
             app/build/outputs/mapping/release/missing_rules.txt
+            app/build/outputs/mapping/playRelease/
       - name: Remove build-only Firebase stub
         if: always()
         run: rm -f app/google-services.json

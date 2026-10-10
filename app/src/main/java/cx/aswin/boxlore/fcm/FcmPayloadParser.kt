@@ -19,6 +19,14 @@ data class ParsedFcmNotification(
     val feedUrl: String? = null,
     val guid: String? = null,
     val enclosureUrl: String? = null,
+    val presentation: String = "compact",
+    val tone: String = "primary",
+    val imageStyle: String = "banner",
+    val releaseAlert: Boolean? = null,
+    val includePlay: Boolean = false,
+    val testOnly: Boolean = false,
+    val releaseVersionCode: Long = 0,
+    val releaseUrl: String? = null,
 )
 
 /**
@@ -54,6 +62,14 @@ object FcmPayloadParser {
             feedUrl = feedUrl(data),
             guid = guid(data),
             enclosureUrl = enclosureUrl(data),
+            presentation = data["presentation"]?.takeIf { it == "fullscreen" } ?: "compact",
+            tone = data["tone"]?.takeIf { it in setOf("primary", "secondary", "tertiary", "error") } ?: "primary",
+            imageStyle = data["image_style"]?.takeIf { it == "cover" } ?: "banner",
+            releaseAlert = data["release_alert"]?.toBooleanStrictOrNull(),
+            includePlay = data["include_play"] == "true",
+            testOnly = data["test_mode"] == "true",
+            releaseVersionCode = data["release_version_code"]?.toLongOrNull()?.coerceAtLeast(0) ?: 0,
+            releaseUrl = data["release_url"],
         )
     }
 

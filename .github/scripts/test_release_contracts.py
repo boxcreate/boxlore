@@ -336,13 +336,14 @@ Class #4 -
         """Full R8 verification gates publication; preflight is opt-in only."""
         root = Path(__file__).resolve().parents[2]
         workflow = (root / ".github/workflows/changelog-on-merge.yml").read_text()
-        self.assertEqual(2, workflow.count("python3 .github/scripts/verify_release_contracts.py"))
+        self.assertEqual(4, workflow.count("python3 .github/scripts/verify_release_contracts.py"))
         for block in workflow.split("- name: Verify optimized release contracts")[1:]:
             self.assertIn("app-release.apk", block[:450])
-            self.assertIn("app-release.aab", block[:450])
+            self.assertIn("app-playRelease.aab", block[:600])
         preflight = (root / ".github/workflows/release-contracts.yml").read_text()
         self.assertIn("app-release-unsigned.apk", preflight)
         self.assertIn("uploadCrashlyticsMappingFileRelease", preflight)
+        self.assertIn("--app-variant playRelease", preflight)
         self.assertIn("workflow_dispatch:", preflight)
         self.assertNotIn("pull_request:", preflight)
         self.assertNotIn("push:", preflight)
