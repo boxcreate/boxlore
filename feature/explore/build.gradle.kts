@@ -68,6 +68,7 @@ dependencies {
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
@@ -87,5 +88,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     // Robolectric: SharedPreferences-backed BoxcastPrefs + org.json for the curiosity history store.
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
     testImplementation("androidx.test:core:1.6.1")
 }

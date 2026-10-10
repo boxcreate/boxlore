@@ -60,6 +60,7 @@ import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
+import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -90,7 +91,6 @@ import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionSortActions
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionSortConfig
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionSortSheet
 import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsTabSelectorFab
-import cx.aswin.boxlore.feature.library.subscriptions.SubscriptionsTabSelectorFabHeight
 import cx.aswin.boxlore.feature.library.subscriptions.extractDistinctGenres
 import cx.aswin.boxlore.feature.library.subscriptions.resolveSortedFolderShows
 import kotlinx.coroutines.launch
@@ -159,7 +159,7 @@ fun SubscriptionsScreen(
         val bottomChromeHeight = appBottomChromeContentPadding(isMiniPlayerVisible = isPlayerActive) + externalNavInset
         val tabFabBottomPadding = bottomChromeHeight + 16.dp
         val playAllBottomPadding = if (isFloatingTabs) {
-            tabFabBottomPadding + SubscriptionsTabSelectorFabHeight + 12.dp
+            tabFabBottomPadding + discoveryTabSwitcherHeight() + 12.dp
         } else {
             null
         }
