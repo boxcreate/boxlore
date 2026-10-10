@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-09T17:28:50.302Z",
+  "lastRun": "2026-10-10T07:32:22.703Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0bb4cba-cfc6-11f0-83c5-b30efc51f01d",
@@ -8,15 +8,15 @@
       "lastCheckedAt": 1791453808382
     },
     "6921": {
-      "lastRssKey": "urn:bbc:podcast:w3ct8k7j",
-      "lastEpisodeTitle": "How are shells made?",
+      "lastRssKey": "urn:bbc:podcast:w3ct8k7k",
+      "lastEpisodeTitle": "Are we really in charge?",
       "lastEpisodeId": "59343622582",
-      "lastCheckedAt": 1790974503225
+      "lastCheckedAt": 1791580135578
     },
     "7162": {
-      "lastRssKey": "19e918ab-294f-45a5-92b0-c79b6249da57",
-      "lastEpisodeTitle": "Chasing The Devil - Franklin, Louisiana",
-      "lastCheckedAt": 1791426779294
+      "lastRssKey": "3d3b970c-f63e-4ccf-b263-4e075ecdc1e6",
+      "lastEpisodeTitle": "The Bragging Brute - Cuyahoga Falls, Ohio",
+      "lastCheckedAt": 1791594370050
     },
     "8820": {
       "lastEpisodeId": "61468154959",
@@ -49,16 +49,16 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "3a65d4de-85b9-45e5-baca-9134bbd08594",
-      "lastEpisodeTitle": "1pm ET, October 09 | The latest headlines from NPR",
-      "lastEpisodeId": "61431584179",
-      "lastCheckedAt": 1791566935511
+      "lastRssKey": "2df45e2c-53af-47e6-aa5b-d83c26c03364",
+      "lastEpisodeTitle": "3am ET, October 10 | The latest headlines from NPR",
+      "lastEpisodeId": "61507607285",
+      "lastCheckedAt": 1791617547447
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75647681",
-      "lastEpisodeTitle": "Protests over the CEC, Green India Mission audit, and GST arrest powers scrapped",
-      "lastEpisodeId": "61464294197",
-      "lastCheckedAt": 1791512686950
+      "lastRssKey": "https://api.spreaker.com/episode/75683876",
+      "lastEpisodeTitle": "The Catch Up: Mobile internet blackout in central Delhi (9 October)",
+      "lastEpisodeId": "61526019131",
+      "lastCheckedAt": 1791617548411
     },
     "78573": {
       "lastRssKey": "87b9804a-0657-402f-9924-e771f51a0f27",
@@ -114,10 +114,10 @@
       "lastCheckedAt": 1791395740400
     },
     "212882": {
-      "lastRssKey": "45290842-a7f8-11f0-954a-a7e538f708c0",
-      "lastEpisodeTitle": "We Roasted Our Viewer's Trash Taste in Anime | Trash Taste #328",
+      "lastRssKey": "454dc3ee-a7f8-11f0-954a-2f04c6f185ef",
+      "lastEpisodeTitle": "Is Trash Taste Still The Same? | Trash Taste #329",
       "lastEpisodeId": "58691788675",
-      "lastCheckedAt": 1790974514866
+      "lastCheckedAt": 1791580165161
     },
     "215799": {
       "lastRssKey": "4da471c8-f8ec-4fbe-aba6-30ceacaa6aa1",
@@ -132,10 +132,10 @@
       "lastCheckedAt": 1791559878861
     },
     "229239": {
-      "lastRssKey": "ae78671a-2c74-11f1-959e-4baa8f70af42",
-      "lastEpisodeTitle": "CIA Whistleblower: “The Shadow Government Is Real” - John Kiriakou - #1160",
+      "lastRssKey": "bf737c12-2c74-11f1-b638-63081e9dbb78",
+      "lastEpisodeTitle": "The Only 12 Lessons Buried In Every Self-Help Book - Spencer Greenberg - #1161",
       "lastEpisodeId": "61426794091",
-      "lastCheckedAt": 1791453840661
+      "lastCheckedAt": 1791617566638
     },
     "230598": {
       "lastRssKey": "b8bef2fe-a54a-11f0-b1fc-67a9d5f21292",
@@ -182,16 +182,16 @@
       "lastCheckedAt": 1791192512254
     },
     "385117": {
-      "lastRssKey": "2fd3ef1a-c404-11f1-afdd-e32ae4e03777",
-      "lastEpisodeTitle": "1PM ET 10/09/2026 Newscast",
-      "lastEpisodeId": "61282079261",
-      "lastCheckedAt": 1791566949206
+      "lastRssKey": "8b45c04c-c479-11f1-adc2-6fd73ad028f6",
+      "lastEpisodeTitle": "3AM ET 10/10/2026 Newscast",
+      "lastEpisodeId": "61508775803",
+      "lastCheckedAt": 1791617569852
     },
     "386911": {
-      "lastRssKey": "b34eab96-be87-11f1-b92c-4f672efc0dcf",
-      "lastEpisodeTitle": "NerdCast 1050 - O Melhor de 1050 NerdCasts",
+      "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
+      "lastEpisodeTitle": "NerdCast 1051 - Lanternas: No Dia Mais Claro, Na Noite Mais Densa, Para Quem Não Chora, A Diversão é a Recompensa!",
       "lastEpisodeId": "61170825617",
-      "lastCheckedAt": 1790974519736
+      "lastCheckedAt": 1791580170463
     },
     "388141": {
       "lastRssKey": "6aa1dbe8b520126fa0fae3eb",
@@ -224,10 +224,10 @@
       "lastCheckedAt": 1791156533475
     },
     "431205": {
-      "lastRssKey": "71efac07-6fb5-4d0a-b00d-fa9ff9f2bcd1",
-      "lastEpisodeTitle": "Oil Spike, The Technical Take, and Oppormunities 10/8/26",
-      "lastEpisodeId": "61450275751",
-      "lastCheckedAt": 1791498185414
+      "lastRssKey": "6df22837-ea38-476a-9dc4-28759568b249",
+      "lastEpisodeTitle": "SpaceX’s Starlink Push, The Real Price of Oil, and the NBA’s Big Bet 10/9/26",
+      "lastEpisodeId": "61502642397",
+      "lastCheckedAt": 1791580175210
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -236,10 +236,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4GGYSZ4FPSPFXR55EKBR4DW",
-      "lastEpisodeTitle": "A beach full of trash with nowhere to go",
-      "lastEpisodeId": "61484367805",
-      "lastCheckedAt": 1791559893039
+      "lastRssKey": "01M4H3FE560HPZMCNG00BAQ9JS",
+      "lastEpisodeTitle": "Surprise, you've got medical bills!",
+      "lastEpisodeId": "61516073582",
+      "lastCheckedAt": 1791594389450
     },
     "432535": {
       "lastRssKey": "3b66721e-6186-40aa-9192-c996dc796c7d",
@@ -289,10 +289,10 @@
       "lastCheckedAt": 1791247002093
     },
     "466583": {
-      "lastEpisodeId": "61190483391",
-      "lastEpisodeTitle": "Chicago's Shocking Sausage Vat Murder",
-      "lastRssKey": "f16cf926-b92a-11f1-aa05-279bcac26b0e",
-      "lastCheckedAt": 1791498189629
+      "lastEpisodeId": "61524186052",
+      "lastEpisodeTitle": "Secret Agent Scam: The Lies, Lives, and Wives of Will Jordan",
+      "lastRssKey": "38a475ec-bea0-11f1-8284-dfd492f9d2ba",
+      "lastCheckedAt": 1791617577052
     },
     "467929": {
       "lastRssKey": "10f7a3df-a75d-4971-83f8-25809d69b595",
@@ -347,10 +347,10 @@
       "lastCheckedAt": 1791453863379
     },
     "509873": {
-      "lastRssKey": "1940d733-84bf-4bc3-84d5-d7ee5f82c3fd",
-      "lastEpisodeTitle": "MAGA official points to 'Plan B' as Republicans lose faith in Georgia victory",
+      "lastRssKey": "b72ff43a-3fe3-4a90-aac3-f8afda3c4526",
+      "lastEpisodeTitle": "92NY on MS NOW: 'The mega-agent of our time': Rachel Maddow talks with Ari Emanuel",
       "lastEpisodeId": "59517346400",
-      "lastCheckedAt": 1791270804055
+      "lastCheckedAt": 1791594398785
     },
     "511104": {
       "lastRssKey": "https://www.archive.org/download/interpretationofdreams_1401_librivox/interpretationofdreams_00_freud_64kb.mp3",
@@ -359,10 +359,10 @@
       "lastCheckedAt": 1786559316926
     },
     "522792": {
-      "lastRssKey": "b6bf5904-befc-11f1-91e6-2f1a51316823",
-      "lastEpisodeTitle": "AI Ruined The Deal And Gave Away His Address - WAN Show October 2, 2026",
+      "lastRssKey": "29e0d430-c466-11f1-86e9-3f9e2615e223",
+      "lastEpisodeTitle": "Software Is Over - WAN Show October 9, 2026",
       "lastEpisodeId": "59973348867",
-      "lastCheckedAt": 1791025835385
+      "lastCheckedAt": 1791617583325
     },
     "522811": {
       "lastRssKey": "37c66119-fcef-4eba-8000-91ecae9ec5a6",
@@ -377,10 +377,10 @@
       "lastCheckedAt": 1791371911919
     },
     "545784": {
-      "lastRssKey": "cc6594af6894f5b445cbd17a22b04e01",
-      "lastEpisodeTitle": "I feel hardcÖRR (mit Hubertus Heil)",
-      "lastEpisodeId": "61468996286",
-      "lastCheckedAt": 1791538064325
+      "lastRssKey": "cc56e424072b5f1994cc8edb415c207a",
+      "lastEpisodeTitle": "War’s das mit der Brandmauer?",
+      "lastEpisodeId": "61520302308",
+      "lastCheckedAt": 1791617586541
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/cap/twit_1104/b1e10584-ef12-4a62-be38-36b46710da62.mp3",
@@ -448,10 +448,10 @@
       "lastCheckedAt": 1791226023394
     },
     "724143": {
-      "lastRssKey": "78e053d6-c3ca-11f1-a45c-ef489370cd66",
-      "lastEpisodeTitle": "Nobel da Paz vai para jurista sul-africana; fumaça cobre céu de Manaus; rebelião causa mortes do México",
+      "lastRssKey": "7c17824c-c42c-11f1-9f91-b7d38420ede0",
+      "lastEpisodeTitle": "Ameaças e violência no segundo turno, pacote contra aumento dos combustíveis e terremoto no Panamá",
       "lastEpisodeId": "61444678924",
-      "lastCheckedAt": 1791542428716
+      "lastCheckedAt": 1791594407241
     },
     "739525": {
       "lastEpisodeId": "61460420611",
@@ -496,10 +496,10 @@
       "lastCheckedAt": 1791371927015
     },
     "744587": {
-      "lastRssKey": "afa08e54-9f62-4f35-8ff0-15f5459c3b80",
-      "lastEpisodeTitle": "Relatos Macabros de Velorios y Funerarias - Octubre de Relatos Vol. 2",
-      "lastEpisodeId": "60994773085",
-      "lastCheckedAt": 1791270821351
+      "lastRssKey": "0431d321-24df-452e-9433-b20e4a766f6e",
+      "lastEpisodeTitle": "Relatos Macabros de Turnos Nocturnos - Octubre de Relatos vol. 3",
+      "lastEpisodeId": "61523155980",
+      "lastCheckedAt": 1791617594875
     },
     "745392": {
       "lastRssKey": "20ad2ce9-3088-449b-8001-2e3e739b54d8",
@@ -573,10 +573,10 @@
       "lastCheckedAt": 1791559988532
     },
     "928708": {
-      "lastRssKey": "bed08f6e-c1bd-11f1-b593-dbb0ed812335",
-      "lastEpisodeTitle": "History Today - Oct. 9",
-      "lastEpisodeId": "61478515287",
-      "lastCheckedAt": 1791538080821
+      "lastRssKey": "9a1e8334-c25c-11f1-849b-4f69479dd5e9",
+      "lastEpisodeTitle": "History Today - Oct. 10",
+      "lastEpisodeId": "61524120101",
+      "lastCheckedAt": 1791617599038
     },
     "946758": {
       "lastRssKey": "10f30bcc-77b5-11f0-8752-7b07bcd8ee21",
@@ -596,10 +596,10 @@
       "lastCheckedAt": 1791453888094
     },
     "959112": {
-      "lastRssKey": "https://9to5google.com/?p=732362",
-      "lastEpisodeTitle": "50 Days Later, It's Still a Phone",
-      "lastEpisodeId": "60569052041",
-      "lastCheckedAt": 1790986292655
+      "lastRssKey": "https://9to5google.com/?p=732965",
+      "lastEpisodeTitle": "The Definitive Pixel Tier List",
+      "lastEpisodeId": "61510613161",
+      "lastCheckedAt": 1791594418220
     },
     "980370": {
       "lastRssKey": "6ac7af6ae2a72faefc1e8d10",
@@ -613,10 +613,10 @@
       "lastCheckedAt": 1791395777759
     },
     "1015378": {
-      "lastRssKey": "16094471-70e5-4698-9bac-3958d237b7b7",
-      "lastEpisodeTitle": "Trump's Super Intelligence Summit, AI Safety Accord, GDP Beats, Midterm Predictions",
-      "lastEpisodeId": "61180361031",
-      "lastCheckedAt": 1790986294783
+      "lastRssKey": "995e85a6-c5d7-46cc-a282-54d6a5eb8d9b",
+      "lastEpisodeTitle": "Is Claude Conscious? Pope Rejects, Model Welfare Movement, OpenAI's Math Backlash, France Riots",
+      "lastEpisodeId": "61519386311",
+      "lastCheckedAt": 1791617603563
     },
     "1021803": {
       "lastRssKey": "flightcast:01M3W9R8XN6YMSFCKFPHV0TN12",
@@ -647,9 +647,9 @@
       "lastCheckedAt": 1791480696239
     },
     "1047865": {
-      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-the-future-of-my-quran-study-bayyinahs-upcoming-projects",
-      "lastEpisodeTitle": "The Future of My Quran Study - Bayyinah’s Upcoming Projects",
-      "lastCheckedAt": 1791453895912
+      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-an-ummah-that-feels-broken",
+      "lastEpisodeTitle": "An Ummah That Feels Broken",
+      "lastCheckedAt": 1791617606946
     },
     "1065434": {
       "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1123",
@@ -664,10 +664,10 @@
       "lastCheckedAt": 1791512747661
     },
     "1076260": {
-      "lastRssKey": "81146d81-a3ea-4b59-b0ae-b4d701118a48",
-      "lastEpisodeTitle": "Thierry Aartsen, Ron Keller & Amber Kortzorg",
-      "lastEpisodeId": "61004037747",
-      "lastCheckedAt": 1791025867974
+      "lastRssKey": "6d13aa42-55ac-405f-842a-b4de011263ea",
+      "lastEpisodeTitle": "Nico Dijkshoorn, Maurice de Hond & Dick Maas",
+      "lastEpisodeId": "61528924171",
+      "lastCheckedAt": 1791617609121
     },
     "1106580": {
       "lastRssKey": "cmuma5nkd00n901w1b2blgbw0",
@@ -676,10 +676,10 @@
       "lastCheckedAt": 1791296669065
     },
     "1116485": {
-      "lastRssKey": "6ac902e5fc3d04c4d2406775",
-      "lastEpisodeTitle": "Liverpool v Man City | Premier League Match Preview",
+      "lastRssKey": "6ac8cc1603597dc41a284783",
+      "lastEpisodeTitle": "Will Man City Get Punished?, Jurgen Klopp's Maverick Move & More! | Redmen Weekly",
       "lastEpisodeId": "61384493127",
-      "lastCheckedAt": 1791565346919
+      "lastCheckedAt": 1791617612948
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -700,10 +700,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "7cb292ea-c3fb-11f1-829e-936cf75209b6",
-      "lastEpisodeTitle": "Une Autre Défaite ; Que Se Passe-T-Il ?? | Le Sick Podcast Avec Tony Marinaro 09/10/26",
+      "lastRssKey": "058ffaa6-c430-11f1-a4ea-a7d7d280e352",
+      "lastEpisodeTitle": "The Habs Aren’t Learning From Their Mistakes | The Sick Podcast with Tony Marinaro October 9 2026",
       "lastEpisodeId": "61473180228",
-      "lastCheckedAt": 1791563377655
+      "lastCheckedAt": 1791617615376
     },
     "1199730": {
       "lastRssKey": "8ea61c5d-22ee-41a3-bce9-adafc5136fa2",
@@ -712,10 +712,10 @@
       "lastCheckedAt": 1791226054426
     },
     "1208307": {
-      "lastRssKey": "6ac760ac68b7ce6ffb30ba91",
-      "lastEpisodeTitle": "F1 Rewind: How his Dad's F1 failure made Max Verstappen an F1 great",
-      "lastEpisodeId": "61447290477",
-      "lastCheckedAt": 1791480706471
+      "lastRssKey": "6ac93a4839599f7c567ae8a9",
+      "lastEpisodeTitle": "In-Car Insights: F1's latest software woes & Verstappen's sprint pole",
+      "lastEpisodeId": "61508451025",
+      "lastCheckedAt": 1791580230248
     },
     "1258562": {
       "lastRssKey": "6ac22edf52f9e4485fc03f23",
@@ -747,9 +747,9 @@
       "lastCheckedAt": 1791542457344
     },
     "1336369": {
-      "lastRssKey": "2136e894-bb63-11f1-ba8b-5f6e63e6a9c2",
-      "lastEpisodeTitle": "Unsolved: The Servant Girl Annihilator",
-      "lastCheckedAt": 1790672056110
+      "lastRssKey": "5dbdbdc6-c3db-11f1-b02b-c70b174e1ccb",
+      "lastEpisodeTitle": "Driven to Murder: Why Ellen Pakkies Killed Her Own Son",
+      "lastCheckedAt": 1791580232522
     },
     "1365758": {
       "lastRssKey": "aaccd642-c2b9-11f1-a1ef-2385c10f4819",
@@ -776,10 +776,10 @@
       "lastCheckedAt": 1791480710030
     },
     "1388001": {
-      "lastRssKey": "4b03d8a7-7892-4717-9b7d-9667d53a08db",
-      "lastEpisodeTitle": "Utiliser le mot \"génocide\" pour qualifier la situation à Gaza ou non ?",
-      "lastEpisodeId": "61425278460",
-      "lastCheckedAt": 1791538104493
+      "lastRssKey": "563415af-ca4a-4269-88d4-355793b5dc93",
+      "lastEpisodeTitle": "Le prix Nobel de la paix",
+      "lastEpisodeId": "61528965459",
+      "lastCheckedAt": 1791617618752
     },
     "1545709": {
       "lastRssKey": "audioboom-01a12130-1375-7008-b640-2c336969ceb9",
@@ -817,10 +817,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6ac918734fad7c63ed60ccca",
-      "lastEpisodeTitle": "L’IA impacte déjà le marché en France, voici les preuves",
-      "lastEpisodeId": "61454132513",
-      "lastCheckedAt": 1791567013556
+      "lastRssKey": "6ac91f3b4fad7c63ed60cccb",
+      "lastEpisodeTitle": "(Pop) Amazon s’informe sur la vie privée de ses clients pour les conseiller… HugoDécrypte",
+      "lastEpisodeId": "61528044395",
+      "lastCheckedAt": 1791617621136
     },
     "2574026": {
       "lastRssKey": "0052b4a6-c38c-11f1-9a53-8b7d6258a474",
@@ -864,10 +864,10 @@
       "lastCheckedAt": 1791453915689
     },
     "3353685": {
-      "lastRssKey": "44990278-c2ba-11f1-a61e-9ba0bb051d72",
-      "lastEpisodeTitle": "AI Renamed Super Intelligence, Microsoft's RTX Spark Surface Laptop Ultra, Paramount Closes Warner Bros. Deal + more!",
-      "lastEpisodeId": "61321140725",
-      "lastCheckedAt": 1791426878760
+      "lastRssKey": "dcddb41e-c447-11f1-a4d5-8f6236006abc",
+      "lastEpisodeTitle": "PS5 Operating System Now Runs on PC, SpaceX Spectrum Deal Rattles Big 3 Carriers, PC Shipments Plunge in Q3 + more!",
+      "lastEpisodeId": "61525519326",
+      "lastCheckedAt": 1791617624373
     },
     "3423895": {
       "lastRssKey": "/92d395d2d982b88584e788ad59647c45",
@@ -948,10 +948,10 @@
       "lastCheckedAt": 1786559328886
     },
     "4458818": {
-      "lastRssKey": "070785eb-6738-430e-8716-29ce4ae44887",
-      "lastEpisodeTitle": "Loïc Goudard : chute mortelle à Majorque",
+      "lastRssKey": "2363a4b9-6115-432d-98b0-5f543fa5ebcd",
+      "lastEpisodeTitle": "Patrick Findlay : le mort oublié de la falaise",
       "lastEpisodeId": "61419712254",
-      "lastCheckedAt": 1791498246904
+      "lastCheckedAt": 1791594443029
     },
     "4507961": {
       "lastRssKey": "3c83e181-b018-4ac3-bc41-9cbb626afaea",
@@ -1016,10 +1016,10 @@
       "lastCheckedAt": 1786787427464
     },
     "5601294": {
-      "lastRssKey": "5fcbdee8-eb09-4f95-8108-e13eff385a01",
-      "lastEpisodeTitle": "Detroit Is In Shambles & Recapping Opening Week- The Mike Bartner Show",
-      "lastEpisodeId": "61339857148",
-      "lastCheckedAt": 1791296693492
+      "lastRssKey": "3227f0f2-aef1-43d7-be54-4e60e0254460",
+      "lastEpisodeTitle": "OhNyquist Talks The NHL's First Week & Detroit's Debacle- The Mike Bartner Show",
+      "lastEpisodeId": "61503867092",
+      "lastCheckedAt": 1791580249607
     },
     "5650484": {
       "lastRssKey": "4e54ee28-78b5-4fc4-ad67-74f688e8474b",
@@ -1028,10 +1028,10 @@
       "lastCheckedAt": 1791453925650
     },
     "5698881": {
-      "lastRssKey": "47f3d551-b6f1-463a-bbaa-6814ba49ab3f",
-      "lastEpisodeTitle": "The Ultimate Guide to Male Hormones & Men’s Health",
-      "lastEpisodeId": "61420329506",
-      "lastCheckedAt": 1791453926278
+      "lastRssKey": "5304e752-adc1-42ac-83c5-763d62dcebc7",
+      "lastEpisodeTitle": "How to Stop Being Overlooked & Start Getting What You Want With Top Business School Professor",
+      "lastEpisodeId": "61522378458",
+      "lastCheckedAt": 1791617631406
     },
     "5716308": {
       "lastRssKey": "urn:bbc:podcast:p0pf2bpp",
@@ -1070,10 +1070,10 @@
       "lastCheckedAt": 1791480732412
     },
     "5930143": {
-      "lastRssKey": "4b03d8a7-7892-4717-9b7d-9667d53a08db",
-      "lastEpisodeTitle": "Utiliser le mot \"génocide\" pour qualifier la situation à Gaza ou non ?",
+      "lastRssKey": "563415af-ca4a-4269-88d4-355793b5dc93",
+      "lastEpisodeTitle": "Le prix Nobel de la paix",
       "lastEpisodeId": "61479742268",
-      "lastCheckedAt": 1791538130363
+      "lastCheckedAt": 1791617636956
     },
     "5945547": {
       "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
@@ -1105,10 +1105,10 @@
       "lastCheckedAt": 1791371985938
     },
     "6280366": {
-      "lastRssKey": "b5005405-23aa-4f48-963b-4d92960d1634",
-      "lastEpisodeTitle": "The Most Important Trends Showing Up in New AI Products",
-      "lastEpisodeId": "61467826368",
-      "lastCheckedAt": 1791512789120
+      "lastRssKey": "9a287cfa-9e3f-422e-b951-6009391a939d",
+      "lastEpisodeTitle": "What Happens When AI Solves Your Life’s Work",
+      "lastEpisodeId": "61513719671",
+      "lastCheckedAt": 1791594457603
     },
     "6413946": {
       "lastRssKey": "b312bf9c-da55-4b60-9d13-13cece7b9c37",
@@ -1175,10 +1175,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "474368e8-c32c-11f1-b6e1-ef53096edff9",
-      "lastEpisodeTitle": "“Hannah’s Big Mistake” - Celeb Traitors Reaction (Episode 3)",
+      "lastRssKey": "f22144c8-c3eb-11f1-a64f-3bd53fd0f985",
+      "lastEpisodeTitle": "Secrets of the Breakfast Scene - Celeb Traitors Reaction (Episode 4)",
       "lastEpisodeId": "61180961222",
-      "lastCheckedAt": 1791498262313
+      "lastCheckedAt": 1791580260379
     },
     "6725294": {
       "lastRssKey": "cmur7w99f01ou01oxe3it5bpn",
@@ -1193,10 +1193,10 @@
       "lastCheckedAt": 1791040400904
     },
     "6761897": {
-      "lastRssKey": "8461e892-8e68-4ed2-ae5b-00890d727ee9",
-      "lastEpisodeTitle": "Is This The End of Anonymous Reddit?",
-      "lastEpisodeId": "61183416501",
-      "lastCheckedAt": 1791005800521
+      "lastRssKey": "53d1fcbd-e16d-46a3-8f4d-a3bd4b9ef057",
+      "lastEpisodeTitle": "Muse is Collecting YOUR Data (Even if You Don't Use It)",
+      "lastEpisodeId": "61514700958",
+      "lastCheckedAt": 1791594474153
     },
     "6763230": {
       "lastRssKey": "452b577c-bfcc-11f1-b6c1-932acf64b0ec",
@@ -1265,10 +1265,10 @@
       "lastCheckedAt": 1791372019768
     },
     "6926108": {
-      "lastRssKey": "6cc49538-be90-11f1-98e3-bf0cff4c8112",
-      "lastEpisodeTitle": "Warum Schweizer jetzt noch mehr Steine nach uns werfen...",
-      "lastEpisodeId": "60293452030",
-      "lastCheckedAt": 1790986345475
+      "lastRssKey": "8f9bfeb6-c26e-11f1-bf39-63984e3888dc",
+      "lastEpisodeTitle": "Kommen die Girls noch? 😏",
+      "lastEpisodeId": "61515851381",
+      "lastCheckedAt": 1791594477463
     },
     "6956562": {
       "lastRssKey": "76398dc7-6e68-4c90-a7fe-9a8cdc4e0d64",
@@ -1337,22 +1337,22 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a11e36-ae92-74a3-8494-454ba27b4227",
-      "lastEpisodeTitle": "Democrats Aren’t Winning Because They’re Brilliant. It’s Trump.",
+      "lastRssKey": "audioboom-01a122cd-e1fc-78ff-ae75-72a537613fcb",
+      "lastEpisodeTitle": "Hegseth’s Livestreamed Execution Exposes His Pathetic Tough-Guy Act",
       "lastEpisodeId": "61403745020",
-      "lastCheckedAt": 1791542500223
+      "lastCheckedAt": 1791594481706
     },
     "7239415": {
-      "lastRssKey": "1fae431c-c38a-11f1-bbc7-c78ef0934535",
-      "lastEpisodeTitle": "This is so rough...",
-      "lastEpisodeId": "61469757313",
-      "lastCheckedAt": 1791538163579
+      "lastRssKey": "6bec9058-c439-11f1-a956-832cdaf1b07c",
+      "lastEpisodeTitle": "BREAKING: Habs make SNEAKY good trade",
+      "lastEpisodeId": "61515674361",
+      "lastCheckedAt": 1791594482085
     },
     "7248222": {
-      "lastRssKey": "f46fa032-c362-11f1-abab-bfe7509edb08",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Jueves 08 de octubre de 2026",
+      "lastRssKey": "2abf3cd2-c43b-11f1-b23a-9718f036efea",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Viernes 09 de octubre de 2026",
       "lastEpisodeId": "61360194267",
-      "lastCheckedAt": 1791498285650
+      "lastCheckedAt": 1791594482947
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1379,16 +1379,16 @@
       "lastCheckedAt": 1791567054103
     },
     "7348627": {
-      "lastRssKey": "bb76c6ed-ce39-40e6-85e0-a1bd4fb50d24",
-      "lastEpisodeTitle": "10 Chilling TEXAS Cold Cases | 326",
+      "lastRssKey": "c88133ad-e6d3-47b2-a2b7-eb16b7a006e6",
+      "lastEpisodeTitle": "4 Disturbing Cases That Baffle Detectives | 326",
       "lastEpisodeId": "61420794829",
-      "lastCheckedAt": 1791453964296
+      "lastCheckedAt": 1791594484032
     },
     "7376606": {
-      "lastRssKey": "183079cb-54e7-4bb8-be7d-7dfaa6ebe69b",
-      "lastEpisodeTitle": "Why Did So Many Ancient Civilizations Collapse at the Same Time? 🏺🌍 | The Bronze Age Collapse Explained | Boring History for Sleep",
+      "lastRssKey": "5d9ec36d-a7c0-4590-96bf-7c26b232990b",
+      "lastEpisodeTitle": "101 Dark Facts About American History They Never Taught You in School 🇺🇸📜 | Forgotten Truths & Hidden Stories | Boring History for Sleep",
       "lastEpisodeId": "61465849942",
-      "lastCheckedAt": 1791512825907
+      "lastCheckedAt": 1791594484380
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031jzh",
@@ -1486,10 +1486,10 @@
       "lastCheckedAt": 1789158722412
     },
     "7634730": {
-      "lastRssKey": "5373af60-e05d-484a-b1f0-f4e5b0f91d44",
-      "lastEpisodeTitle": "The Millennium Dome (Part 2)",
-      "lastEpisodeId": "61181744697",
-      "lastCheckedAt": 1790986359615
+      "lastRssKey": "ccc58c1c-9247-47f3-a505-e9ba07ca05c8",
+      "lastEpisodeTitle": "The Millennium Dome (Part 3)",
+      "lastEpisodeId": "61514655659",
+      "lastCheckedAt": 1791594489712
     },
     "7639797": {
       "lastRssKey": "0bd3cd59-7551-4f3e-bdab-349a17ce29b4",
@@ -1509,16 +1509,16 @@
       "lastCheckedAt": 1786543013085
     },
     "7679624": {
-      "lastRssKey": "https://api.spreaker.com/episode/75334299",
-      "lastEpisodeTitle": "Unsolved Mysteries with Robert Stack -",
-      "lastEpisodeId": "61220804513",
-      "lastCheckedAt": 1791567063191
+      "lastRssKey": "https://api.spreaker.com/episode/75334294",
+      "lastEpisodeTitle": "Unsolved Mysteries with Dennis Farina -",
+      "lastEpisodeId": "61511631211",
+      "lastCheckedAt": 1791594490770
     },
     "7756959": {
-      "lastRssKey": "df4f9c98-c371-11f1-8472-4b448eccc15d",
-      "lastEpisodeTitle": "Las Azules y el poder de la alianza entre mujeres | VA VA VA",
+      "lastRssKey": "80c63718-c44d-11f1-b294-d7f165932eec",
+      "lastEpisodeTitle": "‘Prefiero la muerte’ una serie de zombies, rock y humor negro | VA VA VA",
       "lastEpisodeId": "61412115847",
-      "lastCheckedAt": 1791512832925
+      "lastCheckedAt": 1791617654527
     },
     "7837137": {
       "lastRssKey": "https://api.spreaker.com/episode/71692642",
@@ -1545,10 +1545,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/91d94c0b-2cbe-5d9c-894c-560bef39ae22",
-      "lastEpisodeTitle": "THIS can be BAD ADVICE for people in narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/a0fe09de-872c-5904-9b84-74363f8046ae",
+      "lastEpisodeTitle": "DO THIS to cope with the grief of a narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1791563450284
+      "lastCheckedAt": 1791617655528
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
