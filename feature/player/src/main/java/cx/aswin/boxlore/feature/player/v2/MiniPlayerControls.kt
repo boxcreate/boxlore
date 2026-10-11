@@ -22,6 +22,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
 @Composable
@@ -77,15 +78,15 @@ private fun MiniPlayButton(
         Modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(colorScheme.primary)
             .expressiveClickable(
+                feedback = ExpressivePressFeedback.Control,
                 shape = CircleShape,
                 indication = ripple(bounded = true),
                 enabled = !isLoading && enabled,
             ) {
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
-            },
+            }.background(colorScheme.primary),
         contentAlignment = Alignment.Center,
     ) {
         Crossfade(
@@ -140,15 +141,15 @@ private fun MiniSeekButton(
         Modifier
             .size(40.dp)
             .clip(CircleShape)
-            .background(colorScheme.secondaryContainer)
             .expressiveClickable(
+                feedback = ExpressivePressFeedback.Control,
                 shape = CircleShape,
                 indication = ripple(bounded = true),
                 enabled = !isLoading,
             ) {
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
-            },
+            }.background(colorScheme.secondaryContainer),
         contentAlignment = Alignment.Center,
     ) {
         cx.aswin.boxlore.feature.player.SeekDurationIcon(

@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.AutoTranscriptState
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
@@ -365,7 +366,7 @@ fun AdaptiveControlButton(
             color = Color.Transparent,
             modifier = Modifier
                 .size(controlSize ?: 48.dp) // Standard Minimum Touch Target or Custom
-                .expressiveClickable(enabled = !isLoading, onClick = debouncedOnClick)
+                .expressiveClickable(feedback = ExpressivePressFeedback.Control, enabled = !isLoading, shape = androidx.compose.foundation.shape.CircleShape, onClick = debouncedOnClick)
         ) {
             Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
                 androidx.compose.animation.AnimatedContent(
@@ -424,6 +425,7 @@ fun AdaptiveControlButton(
             modifier = Modifier
                 .size(size)
                 .expressiveClickable(
+                    feedback = ExpressivePressFeedback.Control,
                     enabled = !isLoading,
                     shape = androidx.compose.foundation.shape.CircleShape,
                     onClick = debouncedOnClick
@@ -507,6 +509,7 @@ fun AdaptiveControlButton(
             modifier = Modifier
                 .size(size)
                 .expressiveClickable(
+                    feedback = ExpressivePressFeedback.Control,
                     enabled = !isLoading,
                     shape = squircleShape,
                     onClick = debouncedOnClick

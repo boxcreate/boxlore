@@ -1,11 +1,8 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,21 +17,7 @@ import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 internal fun AnimatedHomeMixTitle(mode: HomeMixMode) {
     AnimatedContent(
         targetState = mode,
-        transitionSpec = {
-            val direction = if (targetState == HomeMixMode.OFFLINE) 1 else -1
-            (
-                slideInVertically(
-                    animationSpec = tween(durationMillis = 280),
-                    initialOffsetY = { height -> direction * height / 2 },
-                ) + fadeIn(animationSpec = tween(durationMillis = 220))
-                ) togetherWith
-                (
-                    slideOutVertically(
-                        animationSpec = tween(durationMillis = 180),
-                        targetOffsetY = { height -> -direction * height / 2 },
-                    ) + fadeOut(animationSpec = tween(durationMillis = 140))
-                    )
-        },
+        transitionSpec = { yourShowsContentTransform(forward = targetState == HomeMixMode.OFFLINE) },
         label = "home_mix_title",
     ) { activeMode ->
         Text(
@@ -57,9 +40,9 @@ internal fun AnimatedHomeMixSubtitle(subtitle: String) {
         targetState = subtitle,
         transitionSpec = {
             fadeIn(
-                animationSpec = tween(durationMillis = 240, delayMillis = 55),
+                animationSpec = YourShowsMotion.EnterFade,
             ) togetherWith
-                fadeOut(animationSpec = tween(durationMillis = 120))
+                fadeOut(animationSpec = YourShowsMotion.ExitFade)
         },
         label = "home_mix_subtitle",
     ) { activeSubtitle ->

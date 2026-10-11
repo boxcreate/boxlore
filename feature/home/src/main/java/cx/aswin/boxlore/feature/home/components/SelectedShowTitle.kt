@@ -19,7 +19,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.home.R
 
 @Composable
-internal fun SelectedShowTitle(title: String, isRss: Boolean, modifier: Modifier = Modifier) {
+internal fun SelectedShowTitle(title: String, isRss: Boolean, modifier: Modifier = Modifier, maxLines: Int = 1) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -33,7 +33,7 @@ internal fun SelectedShowTitle(title: String, isRss: Boolean, modifier: Modifier
                 fontSize = 17.sp,
             ),
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false),
         )

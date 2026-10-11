@@ -5,10 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Podcasts
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,7 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
@@ -61,7 +58,11 @@ fun OptimizedImage(
     errorContent: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     if (url.isNullOrBlank()) {
-        Box(modifier = modifier) {
+        Box(
+            modifier = modifier.semantics {
+            contentDescription?.let { this.contentDescription = it }
+        }
+        ) {
             OptimizedImageFailureContent(errorContent)
         }
         return
@@ -150,12 +151,7 @@ private fun OptimizedImageLoadingPlaceholder() {
             .background(MaterialTheme.colorScheme.primaryContainer),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Rounded.Podcasts,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
-            modifier = Modifier.size(64.dp)
-        )
+        ArtworkFallbackMark()
     }
 }
 

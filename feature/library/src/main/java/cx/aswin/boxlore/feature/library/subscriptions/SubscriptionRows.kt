@@ -45,7 +45,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -149,31 +148,6 @@ internal fun episodeMetaDurationLabel(
         if (rh > 0) "${rh}h ${rm}m left" else "${rm}m left"
     } else {
         if (h > 0) "${h}h ${m}m" else "${m}m"
-    }
-}
-
-@Composable
-internal fun ArtworkTitleFallback(
-    title: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = GoogleSansWeight.semiBold
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(8.dp)
-        )
     }
 }
 
@@ -410,7 +384,6 @@ private fun Modifier.subscriptionCardClickable(
     return if (onLongClick != null) {
         expressiveClickable(
             shape = shape,
-            pressScaleEnabled = true,
             onLongClick = onLongClick,
             onClick = onClick ?: {},
         )
@@ -490,9 +463,6 @@ internal fun SubscriptionGridCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                     shape = artworkShape,
                 ),
-            errorContent = {
-                ArtworkTitleFallback(title = podcast.title)
-            },
         )
 
         if (hasRecentNew) {
@@ -523,9 +493,6 @@ internal fun EpisodeRowArtwork(
             modifier = Modifier
                 .size(72.dp)
                 .clip(RoundedCornerShape(12.dp)),
-            errorContent = {
-                ArtworkTitleFallback(title = podcast.title)
-            }
         )
 
         if (isCompleted) {

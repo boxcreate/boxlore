@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test
 class HomeLoadingGeometryTest {
     @Test
     fun `mix skeleton reserves the complete loaded rail height`() {
-        assertEquals(324.dp, HomeMixLayout.totalHeight)
-        assertEquals(176.dp, HomeMixLayout.CardWidth)
-        assertEquals(224.dp, HomeMixLayout.CardHeight)
+        assertEquals(226.dp, HomeMixLayout.totalHeight)
+        assertEquals(310.dp, HomeMixLayout.CardWidth)
+        assertEquals(142.dp, HomeMixLayout.CardHeight)
     }
 
     @Test

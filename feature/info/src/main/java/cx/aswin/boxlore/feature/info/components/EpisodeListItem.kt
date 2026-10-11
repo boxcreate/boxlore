@@ -81,6 +81,7 @@ fun EpisodeListItem(
     val selectLabel = stringResource(R.string.podcast_episode_select)
     Surface(
         modifier = modifier.fillMaxWidth().expressiveClickable(
+            shape = RoundedCornerShape(24.dp),
             onLongClickLabel = selectLabel,
             onLongClick = onLongClick,
             onClick = onClick,

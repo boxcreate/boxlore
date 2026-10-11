@@ -406,6 +406,10 @@ internal fun navigateHomeHeroArrow(
     heroItem: cx.aswin.boxlore.feature.home.SmartHeroItem,
     carouselPos: Int,
 ) {
+    if (heroItem.type == cx.aswin.boxlore.feature.home.HeroType.SPOTLIGHT) {
+        navController.navigate(podcastDetailRoute(android.net.Uri.encode(heroItem.podcast.id), "home_hero_spotlight"))
+        return
+    }
     val ep = heroItem.podcast.latestEpisode
     if (ep == null) {
         navController.navigate("podcast/${android.net.Uri.encode(heroItem.podcast.id)}")

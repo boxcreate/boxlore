@@ -94,11 +94,11 @@ private fun SupportDeployButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val buttonScale by animateFloatAsState(
+    val buttonScale = animateFloatAsState(
         targetValue = if (isPressed) 0.97f else 1f,
         animationSpec = spring(
             stiffness = Spring.StiffnessMedium,
-            dampingRatio = Spring.DampingRatioLowBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
         ),
         label = "button_press_scale",
     )
@@ -129,8 +129,8 @@ private fun SupportDeployButton(
             .fillMaxWidth()
             .height(54.dp)
             .graphicsLayer {
-                scaleX = buttonScale
-                scaleY = buttonScale
+                scaleX = buttonScale.value
+                scaleY = buttonScale.value
             }
             .clip(RoundedCornerShape(18.dp))
             .background(backgroundGradient),

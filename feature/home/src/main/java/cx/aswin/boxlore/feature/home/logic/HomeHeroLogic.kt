@@ -139,7 +139,12 @@ internal object HomeHeroLogic {
     ) {
         if (unplayedBucket.isEmpty()) return
 
-        val first = unplayedBucket.first()
+        val orderedBucket = unplayedBucket.sortedWith(
+            compareByDescending<Podcast> { (it.latestEpisode?.publishedDate ?: 0L).coerceAtLeast(0L) }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+                .thenBy { it.id },
+        )
+        val first = orderedBucket.first()
         heroList.add(
             SmartHeroItem(
                 type = HeroType.JUMP_BACK_IN,
@@ -150,8 +155,8 @@ internal object HomeHeroLogic {
         )
         usedPodcastIds.add(first.id)
 
-        if (unplayedBucket.size == 2) {
-            val second = unplayedBucket[1]
+        if (orderedBucket.size == 2) {
+            val second = orderedBucket[1]
             heroList.add(
                 SmartHeroItem(
                     type = HeroType.JUMP_BACK_IN,
@@ -161,8 +166,8 @@ internal object HomeHeroLogic {
                 ),
             )
             usedPodcastIds.add(second.id)
-        } else if (unplayedBucket.size > 2) {
-            val gridDrops = unplayedBucket.drop(1).take(4)
+        } else if (orderedBucket.size > 2) {
+            val gridDrops = orderedBucket.drop(1).take(4)
             heroList.add(
                 SmartHeroItem(
                     type = HeroType.NEW_EPISODES_GRID,
@@ -207,18 +212,6 @@ internal object HomeHeroLogic {
             "id" to "INDONESIA",
         )
 
-    fun displayPodcastForSpotlight(pod: Podcast): Podcast {
-        val epUrl = pod.latestEpisode?.imageUrl
-        return if (!epUrl.isNullOrEmpty()) {
-            pod.copy(
-                imageUrl = epUrl,
-                fallbackImageUrl = pod.imageUrl,
-            )
-        } else {
-            pod.copy(fallbackImageUrl = pod.imageUrl)
-        }
-    }
-
     fun appendSpotlightHeroItems(
         heroList: MutableList<SmartHeroItem>,
         usedPodcastIds: MutableSet<String>,
@@ -236,7 +229,7 @@ internal object HomeHeroLogic {
                 heroList.add(
                     SmartHeroItem(
                         type = HeroType.SPOTLIGHT,
-                        podcast = displayPodcastForSpotlight(pod),
+                        podcast = pod,
                         label = label,
                         description = spotlightDesc,
                     ),

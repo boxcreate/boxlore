@@ -62,7 +62,7 @@ internal fun LockedFeedNotice() {
         Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
-            .expressiveClickable(isolate = true) { showLockedInfoDialog = true }
+            .expressiveClickable(shape = MaterialTheme.shapes.medium) { showLockedInfoDialog = true }
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -175,7 +175,7 @@ internal fun PodcastInfoDescriptionSection(
                     dampingRatio = Spring.DampingRatioLowBouncy,
                     stiffness = Spring.StiffnessMediumLow,
                 ),
-            ).expressiveClickable { onToggleExpanded() },
+            ).expressiveClickable(shape = MaterialTheme.shapes.large) { onToggleExpanded() },
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.large,
     ) {
@@ -238,7 +238,7 @@ internal fun RecommendedPodcastCard(
     Surface(
         modifier =
         modifier
-            .expressiveClickable(isolate = true) {
+            .expressiveClickable(shape = MaterialTheme.shapes.medium) {
                 val targetId =
                     if (!item.uuid.isNullOrBlank()) {
                         "guid:${item.uuid}"

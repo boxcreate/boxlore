@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -186,8 +187,8 @@ private fun QueuePreviewRow(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(colorScheme.primary)
-                    .expressiveClickable(onClick = onPlay),
+                    .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onPlay)
+                    .background(colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

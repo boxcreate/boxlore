@@ -1,8 +1,10 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -29,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardSkeleton
@@ -74,7 +78,7 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
         modifier =
         modifier
             .fillMaxWidth()
-            .height(420.dp),
+            .height(homeHeroHeight()),
     ) {
         items(2) {
             Box(
@@ -82,8 +86,8 @@ fun HeroSkeleton(modifier: Modifier = Modifier) {
                 Modifier
                     .width(320.dp)
                     .fillMaxHeight()
-                    .clip(MaterialTheme.shapes.extraLarge)
-                    .m3Shimmer(baseColor, highlightColor, shape = MaterialTheme.shapes.extraLarge),
+                    .clip(HomeHeroStyle.CardShape)
+                    .m3Shimmer(baseColor, highlightColor, shape = HomeHeroStyle.CardShape),
             )
         }
     }
@@ -225,81 +229,55 @@ fun YourShowsSkeleton(
             )
         }
 
-        // Selector covers - match YourShowsSection. When count is still 0 (Room not
-        // emitted yet), reserve the 2-row height so a later count update does not remorph
-        // a 1-row shimmer into a 2-row one mid-wait.
-        if (subscribedCount == 0 || subscribedCount > 4) {
-            // 2-row layout matching the height 156.dp
-            Column(
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(156.dp)
-                    .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(MaterialTheme.colorScheme.surfaceContainerLow)) {
+            val count = if (subscribedCount == 0) 10 else subscribedCount + if (subscribedCount > 1) 1 else 0
+            BoxWithConstraints(
+                Modifier.fillMaxWidth().padding(YourShowsLayout.Padding),
             ) {
-                // Row 1 shimmers
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    repeat(5) {
-                        Box(
-                            modifier =
-                            Modifier
-                                .size(60.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
-                        )
-                    }
-                }
-                // Row 2 shimmers
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    repeat(5) {
-                        Box(
-                            modifier =
-                            Modifier
-                                .size(60.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
-                        )
+                val tileWidth = ((maxWidth - YourShowsLayout.Gap * 4) / 5).coerceAtMost(YourShowsLayout.TileWidth)
+                Column(verticalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap)) {
+                    val rows = if (subscribedCount == 0 || subscribedCount > 4) 2 else 1
+                    repeat(rows) { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap)) {
+                            repeat((count - row * 5).coerceIn(0, 5)) { column ->
+                                Column(
+                                    modifier = Modifier.width(if (rows == 1) YourShowsLayout.TileWidth else tileWidth)
+                                        .height(YourShowsLayout.TileHeight).padding(6.dp)
+                                        .testTag("home_show_skeleton_${row}_$column"),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    Box(
+                                        Modifier.widthIn(max = YourShowsLayout.CoverSize).fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(15.dp))
+                                        .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(15.dp))
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
-        } else {
-            // 1-row layout (LazyRow) matching the height 84.dp
-            LazyRow(
-                contentPadding = PaddingValues(start = 0.dp, end = 0.dp, top = 4.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                items(if (subscribedCount > 0) (subscribedCount + 1).coerceAtMost(5) else 5) {
-                    Box(
-                        modifier =
-                        Modifier
-                            .size(60.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(12.dp)),
-                    )
+            Column(Modifier.padding(vertical = HomeMixLayout.VerticalPadding)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp).height(HomeMixLayout.HeaderHeight), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    SkeletonBlock(width = 132.dp, height = 34.dp, baseColor = baseColor, highlightColor = highlightColor)
+                    SkeletonBlock(width = 88.dp, height = HomeMixLayout.HeaderHeight, baseColor = baseColor, highlightColor = highlightColor)
+                }
+                Spacer(Modifier.height(HomeMixLayout.HeaderGap))
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val cardWidth = (maxWidth - 32.dp).coerceAtMost(HomeMixLayout.CardWidth)
+                    LazyRow(contentPadding = PaddingValues(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(3) {
+                            Box(
+                                Modifier.width(cardWidth).height(homeMixCardHeight())
+                                .testTag("home_mix_skeleton_$it")
+                                .clip(RoundedCornerShape(24.dp))
+                                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(24.dp))
+                            )
+                        }
+                    }
                 }
             }
         }
-
-        // Large Mixtape Card
-        Box(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(HomeMixLayout.totalHeight)
-                .clip(RoundedCornerShape(24.dp))
-                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(24.dp)),
-        )
     }
 }
 

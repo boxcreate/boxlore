@@ -147,9 +147,6 @@ internal fun SubscriptionListArtwork(
             Modifier
                 .fillMaxSize()
                 .clip(artworkShape),
-            errorContent = {
-                ArtworkTitleFallback(title = podcast.title)
-            },
         )
         if (isPinned) {
             SubscriptionPinnedBadge(modifier = Modifier.align(Alignment.BottomStart))

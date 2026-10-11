@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.explore.R
@@ -54,6 +53,7 @@ internal fun ExploreHeroCard(
     showGenreChip: Boolean = false
 ) {
     OutlinedCard(
+        onClick = onClick,
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -61,7 +61,6 @@ internal fun ExploreHeroCard(
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
             .fillMaxWidth()
-            .expressiveClickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier

@@ -151,7 +151,7 @@ private fun BecauseYouLikeSeed(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 88.dp)
-            .expressiveClickable(onClick = { onPodcastClick(podcast) }),
+            .expressiveClickable(shape = MaterialTheme.shapes.extraLarge, onClick = { onPodcastClick(podcast) }),
     ) {
         Box {
             BecauseYouLikeSeedDecorations()

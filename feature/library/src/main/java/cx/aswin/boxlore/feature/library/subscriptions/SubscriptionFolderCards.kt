@@ -347,9 +347,6 @@ private fun DirectClickableShowCover(
             contentDescription = podcast.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
-            errorContent = {
-                ArtworkTitleFallback(title = podcast.title)
-            },
         )
         if (hasNewEpisode) {
             NewEpisodeBadge()

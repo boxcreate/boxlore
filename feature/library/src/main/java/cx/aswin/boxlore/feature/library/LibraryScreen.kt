@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -474,6 +475,7 @@ fun ExpressiveSolarSystemEmptyState(
                     .fillMaxWidth()
                     .padding(horizontal = 48.dp)
                     .expressiveClickable(
+                        feedback = ExpressivePressFeedback.Control,
                         shape = RoundedCornerShape(28.dp),
                         onClick = onExploreClick
                     )

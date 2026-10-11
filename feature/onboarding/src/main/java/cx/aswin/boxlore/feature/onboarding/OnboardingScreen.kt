@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import kotlinx.coroutines.delay
@@ -586,6 +587,7 @@ private fun WelcomeForeground(
                         .fillMaxHeight()
                         .heightIn(min = 54.dp)
                         .expressiveClickable(
+                            feedback = ExpressivePressFeedback.Control,
                             enabled = chromeInteractive,
                             shape = secondaryShape,
                             onClick = actions.onSearch,
@@ -625,6 +627,7 @@ private fun WelcomeForeground(
                         .fillMaxHeight()
                         .heightIn(min = 54.dp)
                         .expressiveClickable(
+                            feedback = ExpressivePressFeedback.Control,
                             enabled = chromeInteractive,
                             shape = secondaryShape,
                             onClick = actions.onImportClick,
@@ -670,6 +673,7 @@ private fun WelcomeForeground(
                             riseDp = 6f,
                         )
                     }.expressiveClickable(
+                        feedback = ExpressivePressFeedback.Control,
                         enabled = chromeInteractive,
                         shape = RoundedCornerShape(percent = 50),
                         onClick = actions.onSkip,

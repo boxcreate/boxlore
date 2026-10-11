@@ -82,6 +82,7 @@ import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton
 import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
@@ -814,7 +815,7 @@ fun ErrorContent(
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.expressiveClickable(onClick = onRetry)
+            modifier = Modifier.expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(12.dp), onClick = onRetry)
         ) {
             Text(
                 text = "Retry",

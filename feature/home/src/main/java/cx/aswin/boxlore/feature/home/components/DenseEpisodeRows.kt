@@ -1,48 +1,36 @@
 package cx.aswin.boxlore.feature.home.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.home.R
 
 @Composable
 internal fun DenseEpisodeRow(
@@ -128,97 +116,14 @@ private fun DenseEpisodeArtwork(
     rowState: DenseEpisodeRowState,
     onPlay: () -> Unit,
 ) {
-    Box(modifier = Modifier.size(56.dp)) {
-        OptimizedImage(
-            url =
-            episode.imageUrl?.takeIf { it.isNotEmpty() }
-                ?: podcast.imageUrl.takeIf { it.isNotEmpty() }
-                ?: podcast.fallbackImageUrl,
-            proxyWidth = 112,
-            contentDescription = episode.title,
-            contentScale = ContentScale.Crop,
-            modifier =
-            Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(8.dp)),
-        )
-        DenseEpisodePlayButton(
-            isCurrentPlaying = rowState.isCurrentPlaying,
-            onPlay = onPlay,
-            modifier = Modifier.align(Alignment.Center),
-        )
-        if (rowState.isCompleted) {
-            DenseEpisodeCompletedBadge(modifier = Modifier.align(Alignment.TopEnd))
-        }
-        if (rowState.isInProgress && rowState.progress > 0f) {
-            DenseEpisodeProgress(progress = rowState.progress)
-        }
-    }
-}
-
-@Composable
-private fun DenseEpisodePlayButton(
-    isCurrentPlaying: Boolean,
-    onPlay: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        onClick = onPlay,
-        shape = CircleShape,
-        color = Color.Black.copy(alpha = 0.45f),
-        contentColor = Color.White,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.45f)),
-        modifier =
-        modifier
-            .size(28.dp)
-            .expressiveClickable(onClick = onPlay),
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            Icon(
-                imageVector = if (isCurrentPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                contentDescription = if (isCurrentPlaying) "Pause" else "Play",
-                modifier = Modifier.size(16.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun DenseEpisodeCompletedBadge(modifier: Modifier = Modifier) {
-    Box(
-        modifier =
-        modifier
-            .padding(3.dp)
-            .size(14.dp)
-            .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
-            .border(1.dp, MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.4f), CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Check,
-            contentDescription = "Played",
-            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.size(8.dp),
-        )
-    }
-}
-
-@Composable
-private fun BoxScope.DenseEpisodeProgress(progress: Float) {
-    LinearProgressIndicator(
-        progress = { progress },
-        modifier =
-        Modifier
-            .align(Alignment.BottomCenter)
-            .fillMaxWidth()
-            .height(3.dp)
-            .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)),
-        color = MaterialTheme.colorScheme.primary,
-        trackColor = Color.White.copy(alpha = 0.4f),
-        drawStopIndicator = {},
+    HomeMixArtwork(
+        episode = episode,
+        podcast = podcast,
+        status = rowState.status,
+        downloaded = false,
+        playing = rowState.isCurrentPlaying,
+        onPlay = onPlay,
+        size = 72.dp,
     )
 }
 
@@ -239,8 +144,8 @@ private fun RowScope.DenseEpisodeDetails(
             style =
             MaterialTheme.typography.titleSmall.copy(
                 fontWeight = GoogleSansWeight.bold,
-                fontSize = 13.sp,
-                lineHeight = 16.sp,
+                fontSize = 16.sp,
+                lineHeight = 20.sp,
             ),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -254,6 +159,10 @@ private fun RowScope.DenseEpisodeDetails(
             showPodcastTitle = showPodcastTitle,
             isEligibleForNewTag = isEligibleForNewTag,
         )
+        if (rowState.isInProgress && rowState.progress > 0f) {
+            Spacer(Modifier.height(6.dp))
+            HomeMixEpisodeTime(episode, rowState.status, rowState.progress)
+        }
     }
 }
 
@@ -266,8 +175,8 @@ private fun DenseEpisodeMetadataRow(
     isEligibleForNewTag: Boolean,
 ) {
     val isNew = isEligibleForNewTag && isNewEpisode(episode, podcast, rowState.status)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    FlowRow(
+        verticalArrangement = Arrangement.spacedBy(3.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (showPodcastTitle) {
@@ -277,7 +186,7 @@ private fun DenseEpisodeMetadataRow(
             DenseNewEpisodeBadge()
         }
         DenseEpisodeDate(episode.publishedDate, showPodcastTitle || isNew)
-        DenseEpisodeDuration(episode, rowState)
+        if (!rowState.isInProgress || rowState.progress <= 0f) DenseEpisodeDuration(episode, rowState)
     }
 }
 
@@ -303,7 +212,7 @@ private fun DenseNewEpisodeBadge() {
             .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
-            text = "NEW",
+            text = stringResource(R.string.home_hero_new),
             style =
             MaterialTheme.typography.labelSmall.copy(
                 fontWeight = GoogleSansWeight.bold,

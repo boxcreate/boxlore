@@ -713,7 +713,7 @@ internal fun SuggestionBubble(
                 alpha = if (enabled) 1.0f else 0.38f
             }.then(
                 if (enabled) {
-                    Modifier.expressiveClickable { onClick() }
+                    Modifier.expressiveClickable(shape = RoundedCornerShape(16.dp)) { onClick() }
                 } else {
                     Modifier
                 },
@@ -816,7 +816,7 @@ internal fun BuildFeedNowChip(
                 alpha = if (enabled) 1.0f else 0.38f
             }.then(
                 if (enabled) {
-                    Modifier.expressiveClickable { onClick() }
+                    Modifier.expressiveClickable(shape = RoundedCornerShape(16.dp)) { onClick() }
                 } else {
                     Modifier
                 },

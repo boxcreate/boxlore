@@ -22,7 +22,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
 /**
  * Layout density for discovery poster cards.
@@ -61,10 +60,11 @@ fun FeedMediaCard(
     val showSubtitle = !subtitle.isNullOrBlank()
 
     OutlinedCard(
+        onClick = onClick,
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier.expressiveClickable(onClick = onClick),
+        modifier = modifier,
     ) {
         Column {
             Box(

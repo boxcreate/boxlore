@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.SleepTimerConstants
@@ -269,7 +270,7 @@ private fun SleepTimerPopupHeader(palette: SleepTimerPopupPalette, onDismiss: (S
         Box(
             modifier = Modifier
                 .size(30.dp)
-                .expressiveClickable(shape = CircleShape) {
+                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape) {
                     onDismiss(SleepTimerPopupDismissReason.Manual)
                 },
             contentAlignment = Alignment.Center
@@ -327,7 +328,7 @@ private fun SleepTimerOptionChip(
     Box(
         modifier = modifier
             .background(Color.White.copy(alpha = 0.10f), RoundedCornerShape(16.dp))
-            .expressiveClickable(shape = RoundedCornerShape(16.dp), onClick = onClick)
+            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(16.dp), onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {

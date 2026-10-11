@@ -54,6 +54,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
@@ -702,7 +703,7 @@ fun HomeImportBanner(
                         modifier =
                         Modifier
                             .fillMaxWidth()
-                            .expressiveClickable(shape = CircleShape, onClick = onAiOnboardingClick),
+                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onAiOnboardingClick),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -738,7 +739,7 @@ fun HomeImportBanner(
                             modifier =
                             Modifier
                                 .weight(1f)
-                                .expressiveClickable(shape = CircleShape, onClick = onSearchClick),
+                                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onSearchClick),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -770,7 +771,7 @@ fun HomeImportBanner(
                             modifier =
                             Modifier
                                 .weight(1f)
-                                .expressiveClickable(shape = CircleShape, onClick = onImportClick),
+                                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onImportClick),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),

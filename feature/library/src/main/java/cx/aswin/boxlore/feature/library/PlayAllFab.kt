@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
@@ -50,6 +51,7 @@ fun BoxScope.PlayAllFab(
             .adaptivePlayerOverlayOffset(isMiniPlayerVisible = isPlayerActive)
             .padding(bottom = bottomPadding, end = 16.dp)
             .expressiveClickable(
+                feedback = ExpressivePressFeedback.Control,
                 shape = CircleShape,
                 onClick = onClick
             ),

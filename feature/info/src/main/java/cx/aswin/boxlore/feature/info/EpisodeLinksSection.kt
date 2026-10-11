@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.shownotes.EpisodeLinkTitles
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.EpisodeLink
 import cx.aswin.boxlore.core.model.EpisodeLinkKind
@@ -84,7 +85,7 @@ private fun EpisodeLinkPill(link: EpisodeLink, showName: String, modifier: Modif
         shape = CircleShape,
         color = palette?.container ?: colors.surfaceContainer,
         modifier = modifier.semantics { contentDescription = accessibleLabel }
-            .expressiveClickable(shape = CircleShape, onClick = onClick),
+            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onClick),
     ) {
         Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             EpisodeLinkIcon(link, palette?.icon ?: colors.onSurfaceVariant)

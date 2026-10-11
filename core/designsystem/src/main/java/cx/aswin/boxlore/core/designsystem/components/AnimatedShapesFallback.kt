@@ -3,9 +3,6 @@ package cx.aswin.boxlore.core.designsystem.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Podcasts
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -20,7 +17,9 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import kotlin.random.Random
 
@@ -29,8 +28,6 @@ data class PlacedShape(val x: Float, val y: Float, val size: Int, val shape: and
 @Composable
 fun AnimatedShapesFallback() {
     val primaryColor = MaterialTheme.colorScheme.primary
-    val podcastIcon = Icons.Rounded.Podcasts
-    val iconColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
 
     // Random positions and sizes calculated once per composition
     val shapes = remember { calculateFallbackPlacedShapes() }
@@ -68,15 +65,7 @@ fun AnimatedShapesFallback() {
                 }
             }
     ) {
-        // Centered Podcast Icon (Only layout child)
-        Icon(
-            imageVector = podcastIcon,
-            contentDescription = null,
-            tint = iconColor,
-            modifier = Modifier
-                .size(64.dp)
-                .align(Alignment.Center)
-        )
+        ArtworkFallbackMark()
     }
 }
 
@@ -139,5 +128,18 @@ fun DrawScope.drawOutline(outline: Outline, color: Color, alpha: Float = 1.0f) {
                 alpha = alpha
             )
         }
+    }
+}
+
+/** Shared decorative mark; the surrounding artwork or card owns its accessible label. */
+@Composable
+internal fun ArtworkFallbackMark() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Icon(
+            painter = painterResource(R.drawable.ic_boxlore_app_mark),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.fillMaxSize(0.64f),
+        )
     }
 }
