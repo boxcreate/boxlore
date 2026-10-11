@@ -36,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a collapsing Explore header, persistent player-aware tab switcher and horizontal paging with independent tab scroll state. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Shared the animated discovery tab control with Subscriptions while preserving fixed/floating preferences and badges. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Refreshed search suggestions, result headings and loading/empty states. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Recompose Home heroes with larger attached artwork, adaptive titles, bounded context typography and playing progress; replace nested hero grids with flat episode rows and a fading peek label. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Connect Your shows and Daily mix into one animated surface with expressive selectors, matched loading geometry and bounded nested-scroll handoff. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Standardize stable surface press feedback, retain subtle feedback for small custom controls and use the podcast-mic B for artwork placeholders. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -54,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Return from collection pages to the saved Explore feed with predictive Back and a consistent slide transition. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Recover missing search-result genres from unambiguous matching results and suppress generic Podcast genre chips. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Prevent rounded search/tab controls and Home utility-button press feedback from clipping at their edges. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Sort fresh-drop and new-episode grids newest first, separate artwork playback from episode-detail taps and route the offline Mix action to downloads. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
@@ -141,6 +145,15 @@ readme-copy:end pr=1107 -->
 - Search cards show a specific genre when available, instead of a generic Podcast label.
 - Rounded controls keep their shape while scrolling and pressing.
 readme-copy:end pr=1109 -->
+
+<!-- readme-copy:start pr=1110
+### Improvements
+- A refreshed Home brings larger artwork, readable titles and clearer listening progress. Tap artwork to play or a title to open episode details.
+- Your shows and Daily mix now share a smoother layout with expressive selections and transitions.
+- Missing artwork uses the boxlore mark, and cards have more consistent tap feedback across the app.
+### Fixes
+- New episodes appear newest first, and the offline Daily mix action takes you to downloads.
+readme-copy:end pr=1110 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
