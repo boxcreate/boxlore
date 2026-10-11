@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 
@@ -167,7 +168,7 @@ private fun GenreChip(
         modifier =
         Modifier
             .height(64.dp)
-            .expressiveClickable(onClick = onClick),
+            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = MaterialTheme.shapes.extraLarge, onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -374,7 +375,7 @@ private fun SubGenreChip(
         modifier =
         Modifier
             .height(56.dp)
-            .expressiveClickable(onClick = onClick),
+            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = MaterialTheme.shapes.extraLarge, onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -624,7 +625,7 @@ internal fun ActivityPickerScreen(
                                             border = BorderStroke(1.dp, chipBorderColor),
                                             modifier =
                                             Modifier
-                                                .expressiveClickable {
+                                                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(12.dp)) {
                                                     val newGenres =
                                                         if (isGenreAssigned) {
                                                             mappedGenres - genre
@@ -892,7 +893,7 @@ internal fun LengthPickerScreen(
                                             border = BorderStroke(1.dp, chipBorderColor),
                                             modifier =
                                             Modifier
-                                                .expressiveClickable {
+                                                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(12.dp)) {
                                                     val newGenres =
                                                         if (isGenreAssigned) {
                                                             mappedGenres - genre

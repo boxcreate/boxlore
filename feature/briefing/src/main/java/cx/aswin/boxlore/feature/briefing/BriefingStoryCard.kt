@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Briefing
@@ -191,6 +192,7 @@ private fun StoryPlayButton(
             .fillMaxWidth()
             .height(48.dp)
             .expressiveClickable(
+                feedback = ExpressivePressFeedback.Control,
                 shape = RoundedCornerShape(16.dp),
                 onClick = { handleStoryPlayClick(state, actions) }
             )

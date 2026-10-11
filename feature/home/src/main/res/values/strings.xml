@@ -1,5 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="home_hero_play">Play</string>
+    <string name="home_hero_play_latest">Play latest</string>
+    <string name="home_hero_pause">Pause</string>
+    <string name="home_hero_resume">Resume</string>
+    <string name="home_hero_minutes">%1$dm</string>
+    <string name="home_hero_hours_minutes">%1$dh %2$dm</string>
+    <!-- Keep each number and unit together. Hours and minutes occupy separate lines in the narrow hero column. -->
+    <string name="home_hero_hours_minutes_stacked">%1$dh\n%2$dm</string>
+    <string name="home_hero_time_left">left</string>
+    <!-- Remaining listening time in a collection row. The argument includes hours/minutes. -->
+    <string name="home_hero_remaining">%1$s left</string>
+    <!-- Caption beneath the episode duration on a Fresh drop hero. The playback button is separate. -->
+    <string name="home_hero_listen">Listen</string>
+    <string name="home_hero_fresh_drop">Fresh drop</string>
+    <string name="home_hero_new_episode">New episode</string>
+    <string name="home_hero_next_episode">Next episode</string>
+    <string name="home_hero_rank_number">#%1$s</string>
+    <string name="home_hero_rank_market">in %1$s</string>
+    <string name="home_hero_trending_in">Trending in</string>
+    <string name="home_hero_episode_details">Open episode details</string>
+    <string name="home_hero_show_details">Explore podcast</string>
+    <string name="home_hero_listening_progress">Listening progress</string>
+    <string name="home_hero_playing">Playing</string>
+    <string name="home_hero_new">New</string>
+    <string name="home_hero_resume_collection">Jump back in</string>
+    <string name="home_hero_new_collection">New episodes</string>
+    <plurals name="home_hero_episode_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
     <string name="home_rss_feed_source">RSS feed</string>
     <string name="home_mix_daily_title">Daily Mix</string>
     <string name="home_mix_offline_title">Offline Mix</string>
@@ -32,4 +62,17 @@
     <string name="home_browse_genres">Browse genres</string>
     <string name="home_your_shows_heading">Your shows</string>
     <string name="home_view_library">View library</string>
+    <string name="home_shows_mix">Mix</string>
+    <string name="home_shows_latest_episodes">Latest episodes</string>
+    <string name="home_shows_next_episodes">Next episodes</string>
+    <string name="home_shows_clear_filter">Clear show filter</string>
+    <string name="home_shows_open_show">Show info</string>
+    <string name="home_shows_see_all_episodes">See all episodes</string>
+    <string name="home_shows_no_episodes">No episodes available</string>
+    <string name="home_shows_refreshing_rss">Refreshing RSS episodes…</string>
+    <string name="home_shows_pin">Pin show</string>
+    <string name="home_shows_unpin">Unpin show</string>
+    <string name="home_shows_pinned">Pinned</string>
+    <string name="home_mix_played">Played</string>
+    <string name="home_mix_downloaded">Downloaded</string>
 </resources>

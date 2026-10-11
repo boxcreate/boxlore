@@ -1,33 +1,29 @@
 package cx.aswin.boxlore.core.designsystem.theme
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 /**
  * Material 3 Expressive Motion Physics.
  *
- * Guidelines:
- * - Springs over Easing.
- * - Tactile Scaling (0.85 down, 1.0 up with bounce).
+ * Spatial motion tokens. Press feedback is scoped separately by [ExpressivePressFeedback].
  */
 
 object ExpressiveMotion {
@@ -69,66 +65,55 @@ object ExpressiveMotion {
     )
 }
 
+/** Surfaces stay still; only custom controls opt into a small, non-bouncy response. */
+enum class ExpressivePressFeedback { Surface, Control }
+
 @Composable
-private fun rememberExpressiveVisualScale(interactionSource: MutableInteractionSource): Animatable<Float, AnimationVector1D> {
-    val scale = remember(interactionSource) { Animatable(1f) }
-    LaunchedEffect(interactionSource) {
-        var animationJob: Job? = null
-        interactionSource.interactions.collect { interaction ->
-            val target = when (interaction) {
-                is PressInteraction.Press -> 0.85f
-                is PressInteraction.Release,
-                is PressInteraction.Cancel -> 1f
-                else -> null
-            } ?: return@collect
-
-            animationJob?.cancel()
-            animationJob = launch {
-                scale.animateTo(
-                    targetValue = target,
-                    animationSpec = if (target < 1f) {
-                        ExpressiveMotion.QuickSpring
-                    } else {
-                        ExpressiveMotion.BouncySpring
-                    }
-                )
-            }
-        }
-    }
-    return scale
-}
-
-private fun Modifier.expressivePressLayer(scale: Float, shape: androidx.compose.ui.graphics.Shape?,): Modifier = graphicsLayer {
-    scaleX = scale
-    scaleY = scale
-    if (shape != null) {
-        clip = true
-        this.shape = shape
-    }
+private fun Modifier.expressivePressLayer(
+    interactionSource: MutableInteractionSource,
+    enabled: Boolean,
+    feedback: ExpressivePressFeedback,
+    pressScaleEnabled: Boolean,
+    shape: Shape?,
+): Modifier {
+    val clipped = if (shape == null) this else clip(shape)
+    if (feedback != ExpressivePressFeedback.Control || !pressScaleEnabled) return clipped
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale = animateFloatAsState(
+        targetValue = if (enabled && pressed) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
+        label = "controlPressScale",
+    )
+    // Read the animation during drawing, without recomposing the control each frame.
+    return graphicsLayer {
+        scaleX = scale.value
+        scaleY = scale.value
+    }.then(if (shape == null) Modifier else Modifier.clip(shape))
 }
 
 /**
- * Expressive clickable modifier that always shows visible animation:
- * 1. On tap: Quickly shrink to 0.85
- * 2. Then immediately bounce back to 1.0
- * 3. Fire onClick when animation starts
+ * Material feedback for custom surfaces. Cards, rows and text keep their layout steady.
+ * Small custom controls opt into [ExpressivePressFeedback.Control]; native Material buttons
+ * already own their feedback and must not also receive this modifier.
  *
- * Pass [shape] so the shrink stays rounded (no sharp square). Set [pressScaleEnabled]
- * false while a drag overlay owns scale so press and drag do not compound.
+ * Pass the target's actual [shape] to bound the ripple. Explicit null [indication] retains
+ * ripple-free controls. Set [pressScaleEnabled] false while a drag overlay owns scale.
  */
 fun Modifier.expressiveClickable(
     enabled: Boolean = true,
-    shape: androidx.compose.ui.graphics.Shape? = null,
-    indication: Indication? = null,
-    @Suppress("UNUSED_PARAMETER") isolate: Boolean = false,
+    shape: Shape? = null,
+    indication: Indication? = ripple(),
     pressScaleEnabled: Boolean = true,
+    feedback: ExpressivePressFeedback = ExpressivePressFeedback.Surface,
     onClick: () -> Unit
 ): Modifier = composed {
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val visualScale = rememberExpressiveVisualScale(interactionSource)
+    val interactionSource = remember { MutableInteractionSource() }
     this
         .expressivePressLayer(
-            scale = if (pressScaleEnabled) visualScale.value else 1f,
+            interactionSource = interactionSource,
+            enabled = enabled,
+            feedback = feedback,
+            pressScaleEnabled = pressScaleEnabled,
             shape = shape,
         )
         .clickable(
@@ -139,21 +124,23 @@ fun Modifier.expressiveClickable(
         )
 }
 
-// Keep backward compatibility for callers passing interactionSource
-@Suppress("UNUSED_PARAMETER")
+/** Uses the caller's interaction source for coordinated custom controls. */
 fun Modifier.expressiveClickable(
-    interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource?,
+    interactionSource: MutableInteractionSource?,
     enabled: Boolean = true,
-    shape: androidx.compose.ui.graphics.Shape? = null,
-    indication: Indication? = null,
+    shape: Shape? = null,
+    indication: Indication? = ripple(),
     pressScaleEnabled: Boolean = true,
+    feedback: ExpressivePressFeedback = ExpressivePressFeedback.Surface,
     onClick: () -> Unit
 ): Modifier = composed {
-    val localInteractionSource = interactionSource ?: remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val visualScale = rememberExpressiveVisualScale(localInteractionSource)
+    val localInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
     this
         .expressivePressLayer(
-            scale = if (pressScaleEnabled) visualScale.value else 1f,
+            interactionSource = localInteractionSource,
+            enabled = enabled,
+            feedback = feedback,
+            pressScaleEnabled = pressScaleEnabled,
             shape = shape,
         )
         .clickable(
@@ -164,22 +151,27 @@ fun Modifier.expressiveClickable(
         )
 }
 
-/** Same press scale as [expressiveClickable], plus a long-press callback (multi-select, etc.). */
+/** Same surface/control feedback, preserving long press for selection and contextual actions. */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+// Keep Foundation's named click/long-click actions and the shared feedback options together.
+@Suppress("LongParameterList")
 fun Modifier.expressiveClickable(
     enabled: Boolean = true,
-    shape: androidx.compose.ui.graphics.Shape? = null,
-    indication: Indication? = null,
+    shape: Shape? = null,
+    indication: Indication? = ripple(),
     pressScaleEnabled: Boolean = true,
+    feedback: ExpressivePressFeedback = ExpressivePressFeedback.Surface,
     onLongClickLabel: String? = null,
     onLongClick: () -> Unit,
     onClick: () -> Unit,
 ): Modifier = composed {
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val visualScale = rememberExpressiveVisualScale(interactionSource)
+    val interactionSource = remember { MutableInteractionSource() }
     this
         .expressivePressLayer(
-            scale = if (pressScaleEnabled) visualScale.value else 1f,
+            interactionSource = interactionSource,
+            enabled = enabled,
+            feedback = feedback,
+            pressScaleEnabled = pressScaleEnabled,
             shape = shape,
         )
         .combinedClickable(

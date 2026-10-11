@@ -359,11 +359,6 @@ fun SmartDownloadsDashboardCard(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        modifier = Modifier.expressiveClickable(
-                            shape = RoundedCornerShape(100.dp),
-                            onClick = onSyncNow,
-                            enabled = !isSyncing
                         )
                     ) {
                         Icon(

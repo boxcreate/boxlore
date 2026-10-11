@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -34,7 +35,7 @@ fun ExpressivePlayButton(onClick: () -> Unit, state: ExpressivePlayButtonState, 
         shape = CircleShape,
         modifier = modifier
             .widthIn(min = 160.dp)
-            .expressiveClickable(enabled = !state.isLoading, isolate = true, onClick = onClick)
+            .expressiveClickable(feedback = ExpressivePressFeedback.Control, enabled = !state.isLoading, shape = CircleShape, onClick = onClick)
     ) {
         Box(contentAlignment = Alignment.Center) {
             PlayButtonProgressStrip(

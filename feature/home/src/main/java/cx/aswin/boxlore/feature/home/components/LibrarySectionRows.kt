@@ -1,17 +1,23 @@
 package cx.aswin.boxlore.feature.home.components
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -25,48 +31,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
+import cx.aswin.boxlore.feature.home.R
 
 internal data class CoverPin(
     val pinned: Boolean = false,
     val onToggle: () -> Unit = {},
-) {
-    val actionLabel: String
-        get() = if (pinned) "Unpin" else "Pin"
-}
-
-private fun selectorCoverScale(isSelected: Boolean): Float = if (isSelected) 1.05f else 0.95f
-
-private fun selectorCoverAlpha(
-    isSelected: Boolean,
-    isAnyPodcastSelected: Boolean,
-): Float = if (isSelected || !isAnyPodcastSelected) 1f else 0.6f
-
-private fun selectorCoverCornerDp(isSelected: Boolean): Dp = if (isSelected) 16.dp else 12.dp
-
-private fun selectorCoverBorderDp(isSelected: Boolean): Dp = if (isSelected) 3.dp else 0.dp
+)
 
 @Composable
 internal fun SelectorCover(
     podcast: Podcast,
     lastSeenId: String?,
     isSelected: Boolean,
-    isAnyPodcastSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.size(60.dp),
+    modifier: Modifier = Modifier.width(YourShowsLayout.TileWidth).height(YourShowsLayout.TileHeight),
     pin: CoverPin = CoverPin(),
 ) {
     val latestEpisodeId = podcast.latestEpisode?.id
@@ -83,83 +80,55 @@ internal fun SelectorCover(
             podcast.isLatestEpisodeNew(lastSeenId)
         }
 
-    val scale by animateFloatAsState(targetValue = selectorCoverScale(isSelected), label = "scale")
-    val alpha by animateFloatAsState(
-        targetValue = selectorCoverAlpha(isSelected, isAnyPodcastSelected),
-        label = "alpha",
-    )
-    val cornerRadius by animateDpAsState(
-        targetValue = selectorCoverCornerDp(isSelected),
-        label = "cornerRadius",
-    )
-    val borderStrokeWidth by animateDpAsState(
-        targetValue = selectorCoverBorderDp(isSelected),
-        label = "borderStrokeWidth",
-    )
-    val coverShape = RoundedCornerShape(cornerRadius)
+    val coverShape = rememberYourShowsSelectorShape(podcast.id, isSelected)
+    val actionLabel = stringResource(if (pin.pinned) R.string.home_shows_unpin else R.string.home_shows_pin)
     var showPinMenu by remember { mutableStateOf(false) }
-
-    Box(
-        modifier =
-        modifier
-            .scale(scale),
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(22.dp))
+                        .expressiveClickable(
+                            feedback = ExpressivePressFeedback.Control,
+                shape = RoundedCornerShape(22.dp),
+                onLongClickLabel = actionLabel,
+                onLongClick = { showPinMenu = true },
+                onClick = onClick,
+            )
+            .semantics {
+                selected = isSelected
+                role = Role.Button
+                contentDescription = podcast.title
+            }
+            .testTag("home_show_selector_${podcast.id}")
+            .padding(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Box(
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .expressiveClickable(
-                    shape = coverShape,
-                    onLongClickLabel = pin.actionLabel,
-                    onLongClick = { showPinMenu = true },
-                    onClick = onClick,
-                ).clip(coverShape),
-        ) {
+        Box(modifier = Modifier.widthIn(max = YourShowsLayout.CoverSize).fillMaxWidth().aspectRatio(1f)) {
             OptimizedImage(
                 url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
                 proxyWidth = 320,
-                contentDescription = podcast.title,
+                contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().alpha(alpha),
+                modifier = Modifier.fillMaxSize().clip(coverShape)
+                    .then(if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, coverShape) else Modifier)
+                    .testTag("home_show_artwork_${podcast.id}"),
             )
-            SelectorCoverSelectedBorder(
-                visible = isSelected,
-                borderStrokeWidth = borderStrokeWidth,
-                coverShape = coverShape,
-            )
+            if (hasRecentNew && !isSelected) {
+                NewEpisodeBadge(modifier = Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp))
+            }
+            if (pin.pinned) HomePinnedBadge(modifier = Modifier.align(Alignment.BottomStart))
+            if (isSelected) {
+                Box(
+                    modifier = Modifier.align(Alignment.BottomEnd).size(18.dp)
+                        .background(MaterialTheme.colorScheme.primary, coverShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Rounded.Check, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(12.dp))
+                }
+            }
         }
-
-        CoverPinMenu(
-            expanded = showPinMenu,
-            actionLabel = pin.actionLabel,
-            onDismiss = { showPinMenu = false },
-            onToggle = pin.onToggle,
-        )
-
-        if (hasRecentNew && !isSelected) {
-            NewEpisodeBadge(
-                modifier = Modifier.offset(x = 6.dp, y = (-4).dp),
-            )
-        }
-        if (pin.pinned) {
-            HomePinnedBadge(modifier = Modifier.align(Alignment.BottomStart))
-        }
+        CoverPinMenu(showPinMenu, actionLabel, { showPinMenu = false }, pin.onToggle)
     }
-}
-
-@Composable
-private fun SelectorCoverSelectedBorder(
-    visible: Boolean,
-    borderStrokeWidth: Dp,
-    coverShape: RoundedCornerShape,
-) {
-    if (!visible) return
-    Box(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .border(borderStrokeWidth, MaterialTheme.colorScheme.primary, coverShape),
-    )
 }
 
 @Composable
@@ -210,7 +179,7 @@ private fun HomePinnedBadge(modifier: Modifier = Modifier) {
     ) {
         Icon(
             imageVector = Icons.Rounded.PushPin,
-            contentDescription = "Pinned",
+            contentDescription = stringResource(R.string.home_shows_pinned),
             tint = MaterialTheme.colorScheme.onPrimary,
             modifier =
             Modifier

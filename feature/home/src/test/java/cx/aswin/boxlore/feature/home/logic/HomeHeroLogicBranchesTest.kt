@@ -124,19 +124,17 @@ class HomeHeroLogicBranchesTest {
     }
 
     @Test
-    fun displayPodcastForSpotlightUsesEpisodeArtWhenPresent() {
+    fun spotlightKeepsShowArtworkAndLatestEpisodeWithoutRewritingPodcastIdentity() {
         val withEpArt =
             TestFixtures
                 .podcast(id = "p1", imageUrl = "pod.jpg")
                 .copy(latestEpisode = TestFixtures.episode(id = "e1", imageUrl = "ep.jpg"))
-        val resultWith = HomeHeroLogic.displayPodcastForSpotlight(withEpArt)
-        assertEquals("ep.jpg", resultWith.imageUrl)
-        assertEquals("pod.jpg", resultWith.fallbackImageUrl)
-
         val withoutEpArt = TestFixtures.podcast(id = "p2", imageUrl = "pod2.jpg")
-        val resultWithout = HomeHeroLogic.displayPodcastForSpotlight(withoutEpArt)
-        assertEquals("pod2.jpg", resultWithout.imageUrl)
-        assertEquals("pod2.jpg", resultWithout.fallbackImageUrl)
+        val hero = mutableListOf<SmartHeroItem>()
+        HomeHeroLogic.appendSpotlightHeroItems(hero, mutableSetOf(), listOf(withEpArt, withoutEpArt), "us")
+        assertEquals(listOf(withEpArt, withoutEpArt), hero.map { it.podcast })
+        assertEquals("pod.jpg", hero.first().podcast.imageUrl)
+        assertEquals("ep.jpg", hero.first().podcast.latestEpisode?.imageUrl)
     }
 
     @Test

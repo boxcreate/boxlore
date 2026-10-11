@@ -6,6 +6,8 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 
 ## Public API
 
+- Settings cards, rows and expandable help text use the shared steady Material feedback rather than scaling their whole contents. Existing native controls and connected selectors retain their own feedback. The custom support CTA keeps its 3% response with a critically damped spring and draw-phase scale reads; avatar animations and settings behavior are unchanged.
+
 - Settings and About expose **Check for updates** through an optional app-shell callback. The shell owns availability, the full-screen result, release notes and installation; Settings does not fetch releases or request APK installation itself.
 
 - Custom theme creation is a nested full-page destination under Appearance. Back discards the draft and returns to Appearance; Save applies and remembers the custom palette without changing display mode. A pinned light/dark preview updates on every color change, including slider drags, and uses a compact layout for short windows, the keyboard, and large text. Incomplete hex input keeps the last valid palette visible and disables Save. `CustomThemeEditorTest` covers live updates, validation, cancellation and editor-open event volume.

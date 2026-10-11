@@ -1,74 +1,69 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.carousel.CarouselItemDrawInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.components.drawOutline
-import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 
-private val sessionSeed = kotlin.random.Random.nextInt()
+enum class HeroGridMode { Resume, NewEpisodes }
 
-private val GridCellCorner = RoundedCornerShape(14.dp)
-private val TitleFontSize = 13.sp
-private val TitleLineHeight = 17.sp
-private const val TitleMaxLines = 3
-private const val NewEpisodeWindowSeconds = 2 * 24 * 60 * 60L
-
-/** Resume grid taps play; new-episodes grid opens episode info. */
-enum class HeroGridMode {
-    Resume,
-    NewEpisodes,
-}
-
-/**
- * Hero Grid Card — Progressive Density Layout
- *
- * Supports 2, 3, or 4 items in a single hero card:
- * - 2 items: Stacked horizontally (top/bottom split)
- * - 3 items: 2 on top row + 1 wide spanning bottom
- * - 4 items: 2×2 grid
- */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList") // Existing collection API plus an independent artwork playback action.
 fun HeroGridCard(
     items: List<Podcast>,
     title: String,
@@ -78,404 +73,263 @@ fun HeroGridCard(
     currentPlayingEpisodeId: String? = null,
     isPlaying: Boolean = false,
     modifier: Modifier = Modifier,
+    onPlaybackClick: (Podcast) -> Unit = onCellClick,
+    carouselItemDrawInfo: CarouselItemDrawInfo? = null,
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-
-    val shapes =
-        remember(title) {
-            val random = kotlin.random.Random(sessionSeed + title.hashCode())
-            val shuffled = ExpressiveShapes.Decorative.shuffled(random)
-            Pair(shuffled[0], shuffled[1])
-        }
-    val shape1 = shapes.first
-    val shape2 = shapes.second
-
+    val displayItems = items.take(4)
+    val foreground = heroContentColor()
     Card(
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        modifier =
-        modifier
-            .fillMaxSize()
-            .clip(MaterialTheme.shapes.extraLarge),
+        shape = HomeHeroStyle.CardShape,
+        colors = CardDefaults.cardColors(containerColor = heroContainerColor(), contentColor = foreground),
+        modifier = modifier.fillMaxSize(),
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier =
-                Modifier
-                    .fillMaxSize()
-                    .heroGridBackground(
-                        title = title,
-                        primaryColor = primaryColor,
-                        shape1 = shape1,
-                        shape2 = shape2,
-                    ),
-            )
-
-            Column(modifier = Modifier.fillMaxSize()) {
-                RowHeader(title = title)
-
-                Box(
-                    modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                ) {
-                    val displayItems = items.take(4)
-                    val cellContent: @Composable (Podcast, Modifier) -> Unit = { podcast, cellModifier ->
-                        GridCell(
+        Box(Modifier.fillMaxSize()) {
+            // Material's minSize includes an off-screen anchor; visible peeks start at 40dp.
+            val minimumPeekWidth = with(LocalDensity.current) { 40.dp.toPx() }
+            val contentVisible by remember(carouselItemDrawInfo, minimumPeekWidth) {
+                derivedStateOf { carouselItemDrawInfo == null || HeroPeekMotion.contentAlpha(carouselItemDrawInfo.expansion(minimumPeekWidth)) > 0f }
+            }
+            Column(
+                Modifier.fillMaxSize().padding(18.dp)
+                    .graphicsLayer { alpha = HeroPeekMotion.contentAlpha(carouselItemDrawInfo.expansion(minimumPeekWidth)) }
+                    .then(if (contentVisible) Modifier else Modifier.clearAndSetSemantics {}),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HeroCollectionHeading(title, foreground, Modifier.weight(1f))
+                    val countDescription = pluralStringResource(R.plurals.home_hero_episode_count, displayItems.size, displayItems.size)
+                    Text(
+                        displayItems.size.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = foreground.copy(alpha = 0.8f),
+                        modifier = Modifier.semantics { contentDescription = countDescription },
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Column(Modifier.weight(1f)) {
+                    displayItems.forEachIndexed { index, podcast ->
+                        if (index > 0) HorizontalDivider(color = foreground.copy(alpha = 0.15f))
+                        val nowPlaying = HomePlaybackStateLogic.isHeroItemPlaying(
+                            itemEpisodeId = podcast.latestEpisode?.id,
+                            itemPodcastId = podcast.id,
+                            currentPlayingEpisodeId = currentPlayingEpisodeId,
+                            currentPlayingPodcastId = currentPlayingPodcastId,
+                            isPlaying = isPlaying,
+                        )
+                        HeroCollectionRow(
                             podcast = podcast,
                             mode = mode,
                             onClick = onCellClick,
-                            isNowPlaying =
-                            mode == HeroGridMode.Resume &&
-                                HomePlaybackStateLogic.isHeroItemPlaying(
-                                    itemEpisodeId = podcast.latestEpisode?.id,
-                                    itemPodcastId = podcast.id,
-                                    currentPlayingEpisodeId = currentPlayingEpisodeId,
-                                    currentPlayingPodcastId = currentPlayingPodcastId,
-                                    isPlaying = isPlaying,
-                                ),
-                            modifier = cellModifier,
+                            onPlaybackClick = onPlaybackClick,
+                            nowPlaying = nowPlaying,
+                            count = displayItems.size,
+                            tag = "home_hero_collection_$index",
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            enabled = contentVisible,
                         )
-                    }
-                    when (displayItems.size) {
-                        2 -> StackedLayout(displayItems, cellContent)
-                        3 -> TwoOneLayout(displayItems, cellContent)
-                        4 -> GridLayout2x2(displayItems, cellContent)
-                        else ->
-                            if (displayItems.isNotEmpty()) {
-                                cellContent(displayItems[0], Modifier.fillMaxSize())
-                            }
                     }
                 }
             }
+            if (carouselItemDrawInfo != null) {
+                HeroCollectionPeek(title, foreground, carouselItemDrawInfo, minimumPeekWidth, contentVisible, Modifier.align(Alignment.Center).padding(horizontal = 18.dp))
+                HeroCollectionPeekCount(displayItems.size, foreground, carouselItemDrawInfo, minimumPeekWidth, contentVisible, Modifier.align(Alignment.TopCenter).padding(top = 28.dp))
+            }
         }
     }
 }
 
+/** The regular header stays in place while the independent vertical preview fades away. */
 @Composable
-private fun StackedLayout(
-    items: List<Podcast>,
-    cellContent: @Composable (Podcast, Modifier) -> Unit,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        cellContent(items[0], Modifier.weight(1f).fillMaxWidth())
-        cellContent(items[1], Modifier.weight(1f).fillMaxWidth())
-    }
+private fun HeroCollectionHeading(title: String, foreground: Color, modifier: Modifier) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+        color = foreground,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = MaterialTheme.typography.titleLarge.fontSize, stepSize = 1.sp),
+        modifier = modifier.testTag("home_hero_collection_heading").semantics { heading() },
+    )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TwoOneLayout(
-    items: List<Podcast>,
-    cellContent: @Composable (Podcast, Modifier) -> Unit,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.weight(1f),
-        ) {
-            cellContent(items[0], Modifier.weight(1f).fillMaxHeight())
-            cellContent(items[1], Modifier.weight(1f).fillMaxHeight())
-        }
-        cellContent(items[2], Modifier.weight(1f).fillMaxWidth())
-    }
+private fun HeroCollectionPeek(title: String, foreground: Color, info: CarouselItemDrawInfo?, minimumPeekWidth: Float, contentVisible: Boolean, modifier: Modifier) {
+    val peekInset = with(LocalDensity.current) { 12.dp.toPx() }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    Text(
+        title,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.semiBold, letterSpacing = 0.3.sp),
+        color = foreground,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = MaterialTheme.typography.titleLarge.fontSize, stepSize = 1.sp),
+        modifier = modifier.testTag("home_hero_collection_peek")
+            .then(if (contentVisible) Modifier.clearAndSetSemantics {} else Modifier.semantics { heading() })
+            .graphicsLayer {
+                alpha = HeroPeekMotion.peekAlpha(info.expansion(minimumPeekWidth))
+                rotationZ = if (rtl) 90f else -90f
+                scaleX = minOf(1f, (minimumPeekWidth - peekInset).coerceAtLeast(1f) / size.height.coerceAtLeast(1f))
+                scaleY = scaleX
+            },
+    )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GridLayout2x2(
-    items: List<Podcast>,
-    cellContent: @Composable (Podcast, Modifier) -> Unit,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.weight(1f),
-        ) {
-            cellContent(items[0], Modifier.weight(1f).fillMaxHeight())
-            cellContent(items[1], Modifier.weight(1f).fillMaxHeight())
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.weight(1f),
-        ) {
-            cellContent(items[2], Modifier.weight(1f).fillMaxHeight())
-            cellContent(items[3], Modifier.weight(1f).fillMaxHeight())
-        }
-    }
+private fun HeroCollectionPeekCount(count: Int, foreground: Color, info: CarouselItemDrawInfo, minimumPeekWidth: Float, contentVisible: Boolean, modifier: Modifier) {
+    val description = pluralStringResource(R.plurals.home_hero_episode_count, count, count)
+    Text(
+        count.toString(),
+        style = MaterialTheme.typography.labelLarge,
+        color = foreground.copy(alpha = 0.75f),
+        modifier = modifier.testTag("home_hero_collection_peek_count")
+            .then(if (contentVisible) Modifier.clearAndSetSemantics {} else Modifier.semantics { contentDescription = description })
+            .graphicsLayer { alpha = HeroPeekMotion.peekAlpha(info.expansion(minimumPeekWidth)) },
+    )
 }
 
-@Composable
-private fun RowHeader(title: String) {
-    Row(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title.lowercase().replaceFirstChar { it.uppercase() },
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
+@OptIn(ExperimentalMaterial3Api::class)
+private fun CarouselItemDrawInfo?.expansion(minimumPeekWidth: Float): Float =
+    if (this == null) 1f else HeroPeekMotion.expansion(size, maxOf(minSize, minimumPeekWidth), maxSize)
 
 @Composable
-@Suppress("LongMethod")
-private fun GridCell(
+@Suppress("LongParameterList") // Row state and independent navigation/playback targets stay local to Home.
+private fun HeroCollectionRow(
     podcast: Podcast,
     mode: HeroGridMode,
     onClick: (Podcast) -> Unit,
-    isNowPlaying: Boolean,
-    modifier: Modifier = Modifier,
+    onPlaybackClick: (Podcast) -> Unit,
+    nowPlaying: Boolean,
+    count: Int,
+    tag: String,
+    modifier: Modifier,
+    enabled: Boolean,
 ) {
+    val foreground = heroContentColor()
     val currentPodcast by rememberUpdatedState(podcast)
     val currentOnClick by rememberUpdatedState(onClick)
-    val showProgress =
-        mode == HeroGridMode.Resume &&
-            podcast.resumeProgress != null &&
-            podcast.resumeProgress!! > 0f
-    // Same freshness as Your Shows NEW: shared Room flag (RSS / PI direct-feed) or 48h window.
-    val isNew =
-        mode == HeroGridMode.NewEpisodes &&
-            (
-                podcast.rssHasNewEpisodes ||
-                    podcast.latestEpisode?.let { episode ->
-                        episode.publishedDate > 0L &&
-                            (System.currentTimeMillis() / 1000L - episode.publishedDate) <
-                            NewEpisodeWindowSeconds
-                    } == true
-                )
-    val titleFootHeight =
-        with(LocalDensity.current) {
-            TitleLineHeight.toDp() * TitleMaxLines
+    val currentPlaybackClick by rememberUpdatedState(onPlaybackClick)
+    BoxWithConstraints(modifier) {
+        val artworkSize = when {
+            count <= 2 && maxWidth >= 254.dp -> 98.dp
+            count <= 2 -> 78.dp
+            count == 3 && maxWidth >= 254.dp -> 78.dp
+            else -> 68.dp
         }
-
-    val gradientBrush =
-        remember {
-            Brush.verticalGradient(
-                colorStops =
-                arrayOf(
-                    0.0f to Color.Transparent,
-                    0.35f to Color.Black.copy(alpha = 0.15f),
-                    0.55f to Color.Black.copy(alpha = 0.45f),
-                    0.75f to Color.Black.copy(alpha = 0.75f),
-                    1.0f to Color.Black.copy(alpha = 0.92f),
-                ),
-            )
-        }
-
-    Box(
-        modifier =
-        modifier
-            .clip(GridCellCorner)
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .then(
-                if (isNowPlaying) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = GridCellCorner,
-                    )
-                } else {
-                    Modifier
-                },
-            ).expressiveClickable {
-                currentOnClick(currentPodcast)
-            },
-    ) {
-        OptimizedImage(
-            url = podcast.imageUrl.ifEmpty { podcast.fallbackImageUrl.orEmpty() },
-            proxyWidth = 400,
-            contentDescription = podcast.title,
-            contentScale = ContentScale.Crop,
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .drawWithContent {
-                    drawContent()
-                    drawRect(gradientBrush)
-                },
-        )
-
-        if (isNew) {
-            Box(
-                modifier =
-                Modifier
-                    .padding(6.dp)
-                    .align(Alignment.TopStart)
-                    .clip(MaterialTheme.shapes.extraSmall)
-                    .background(MaterialTheme.colorScheme.primary),
-            ) {
-                Text(
-                    text = "NEW",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, lineHeight = 8.sp),
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                )
-            }
-        }
-
-        if (isNowPlaying) {
-            Box(
-                modifier =
-                Modifier
-                    .padding(6.dp)
-                    .align(Alignment.TopEnd)
-                    .size(22.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Pause,
-                    contentDescription = "Playing",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(14.dp),
-                )
-            }
-        }
-
-        Column(
-            modifier =
-            Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+        Row(
+            Modifier.fillMaxSize().testTag(tag)
+                .expressiveClickable(enabled = enabled, shape = HomeHeroStyle.CollectionArtworkShape) { currentOnClick(currentPodcast) }
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            val episodeTitle = podcast.latestEpisode?.title
-            val primaryText = episodeTitle ?: podcast.title
-            // Reserve 3 episode title lines (sp→dp); vertically center shorter titles.
-            Box(
-                modifier =
+            val playbackLabel = stringResource(if (nowPlaying) R.string.home_hero_pause else R.string.home_hero_play)
+            val artworkAction = if (podcast.latestEpisode != null) {
+                Modifier.semantics {
+                    contentDescription = playbackLabel
+                    role = Role.Button
+                }.expressiveClickable(enabled = enabled, shape = HomeHeroStyle.CollectionArtworkShape) { currentPlaybackClick(currentPodcast) }
+            } else {
                 Modifier
-                    .fillMaxWidth()
-                    .height(titleFootHeight),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Text(
-                    text = primaryText,
-                    style =
-                    MaterialTheme.typography.titleSmall.copy(
-                        fontSize = TitleFontSize,
-                        lineHeight = TitleLineHeight,
-                        fontWeight = GoogleSansWeight.bold,
-                        color = Color.White,
-                    ),
-                    maxLines = TitleMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
-
-            if (showProgress) {
-                ProgressBar(
-                    progress = podcast.resumeProgress!!,
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(4.dp),
+            Box(Modifier.size(artworkSize).testTag("${tag}_artwork").then(artworkAction)) {
+                OptimizedImage(
+                    url = podcast.imageUrl.ifEmpty { podcast.fallbackImageUrl.orEmpty() },
+                    proxyWidth = 400,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().clip(HomeHeroStyle.CollectionArtworkShape),
                 )
+                if (podcast.latestEpisode != null) {
+                    HeroCollectionPlayback(
+                        nowPlaying,
+                        Modifier.align(Alignment.BottomEnd).testTag("${tag}_play"),
+                    )
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                HeroCollectionTitle(podcast, count, foreground, "${tag}_title")
+                HeroCollectionMetadata(podcast, mode, foreground, nowPlaying, tag)
             }
         }
     }
 }
 
 @Composable
-private fun ProgressBar(
-    progress: Float,
-    modifier: Modifier = Modifier,
-    trackColor: Color = Color.White.copy(alpha = 0.3f),
-    indicatorColor: Color = MaterialTheme.colorScheme.inversePrimary,
-) {
+private fun HeroCollectionPlayback(playing: Boolean, modifier: Modifier) {
     Box(
-        modifier =
-        modifier
-            .clip(androidx.compose.foundation.shape.CircleShape)
-            .background(trackColor),
+        modifier.size(48.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Box(
-            modifier =
-            Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(progress)
-                .clip(androidx.compose.foundation.shape.CircleShape)
-                .background(indicatorColor),
-        )
+            Modifier.size(32.dp).background(Color.Black.copy(alpha = 0.62f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 
-private fun Modifier.heroGridBackground(
-    title: String,
-    primaryColor: Color,
-    shape1: androidx.compose.ui.graphics.Shape,
-    shape2: androidx.compose.ui.graphics.Shape,
-): Modifier = this.drawWithCache {
-    val size1Px = 180.dp.toPx()
-    val size2Px = 220.dp.toPx()
+@Composable
+private fun HeroCollectionTitle(podcast: Podcast, count: Int, foreground: Color, tag: String) {
+    Text(
+        podcast.latestEpisode?.title?.ifEmpty { podcast.title } ?: podcast.title,
+        style = MaterialTheme.typography.titleSmall.copy(
+            fontSize = if (count <= 2) 18.sp else 15.sp,
+            lineHeight = if (count <= 2) 22.sp else 18.sp,
+            fontWeight = GoogleSansWeight.bold,
+        ),
+        color = foreground,
+        maxLines = if (count <= 2) 3 else 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.testTag(tag),
+    )
+}
 
-    val shape1OffsetX = -50.dp.toPx()
-    val shape1OffsetY = -30.dp.toPx()
-    val shape2Inset = 150.dp.toPx()
-
-    val outline1 =
-        shape1.createOutline(
-            size = Size(size1Px, size1Px),
-            layoutDirection = layoutDirection,
-            density = this,
-        )
-    val outline2 =
-        shape2.createOutline(
-            size = Size(size2Px, size2Px),
-            layoutDirection = layoutDirection,
-            density = this,
-        )
-
-    val isJumpBackIn = title.contains("JUMP", ignoreCase = true)
-    val shapeAlpha = 0.06f
-
-    onDrawBehind {
-        if (isJumpBackIn) {
-            translate(left = shape1OffsetX, top = shape1OffsetY) {
-                drawOutline(
-                    outline = outline1,
-                    color = primaryColor,
-                    alpha = shapeAlpha,
+@Composable
+private fun HeroCollectionMetadata(podcast: Podcast, mode: HeroGridMode, foreground: Color, playing: Boolean, tag: String) {
+    val resume = mode == HeroGridMode.Resume
+    val progress = HomeHeroStyle.progress(podcast)
+    val minutes = HomeHeroStyle.minutes(podcast, resume)
+    val showProgress = resume && progress > 0f
+    if (!showProgress && minutes == null) return
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val metadataWidth = maxWidth
+        val timeWidth = (metadataWidth - 32.dp).coerceAtLeast(0.dp)
+        Row(
+            Modifier.fillMaxWidth().testTag("${tag}_metadata"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (showProgress) {
+                HeroProgress(
+                    progress,
+                    foreground,
+                    foreground.copy(alpha = 0.2f),
+                    modifier = Modifier.weight(1f).testTag("${tag}_progress"),
+                    playing = playing,
                 )
             }
-            translate(left = size.width - shape2Inset, top = size.height - shape2Inset) {
-                drawOutline(
-                    outline = outline2,
-                    color = primaryColor,
-                    alpha = shapeAlpha,
-                )
-            }
-        } else {
-            translate(left = shape1OffsetX, top = size.height - shape2Inset) {
-                drawOutline(
-                    outline = outline1,
-                    color = primaryColor,
-                    alpha = shapeAlpha,
-                )
-            }
-            translate(left = size.width - shape2Inset, top = shape1OffsetY) {
-                drawOutline(
-                    outline = outline2,
-                    color = primaryColor,
-                    alpha = shapeAlpha,
+            if (minutes != null) {
+                val duration = if (minutes >= 60) {
+                    stringResource(R.string.home_hero_hours_minutes, minutes / 60, minutes % 60)
+                } else {
+                    stringResource(R.string.home_hero_minutes, minutes)
+                }
+                Text(
+                    if (resume) stringResource(R.string.home_hero_remaining, duration) else duration,
+                    style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+                    color = foreground.copy(alpha = 0.85f),
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = 12.sp),
+                    modifier = Modifier.widthIn(max = if (showProgress) timeWidth else metadataWidth).testTag("${tag}_time"),
                 )
             }
         }

@@ -16,6 +16,8 @@ When playback is dismissed, every playback widget becomes a clean branded launch
 
 Does **not** construct `PlaybackRepository` or talk to Media3 / Room directly — `:app` installs narrow ports via `configureNowPlayingWidget` and `configureLibraryWidgets`.
 
+Missing or unreadable artwork uses the shared boxlore B-and-microphone vector over the existing widget artwork surface. Cached artwork and launch/playback actions are unchanged.
+
 ## Public API
 
 - `NowPlayingWidgetReceiver`, `NowPlayingBarWidgetReceiver`, `PlaybackControlsWidgetReceiver`, `PlaybackNextControlsWidgetReceiver` — picker-visible playback providers.

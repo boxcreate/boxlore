@@ -78,6 +78,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -317,6 +318,7 @@ fun DownloadedShowEpisodesScreen(
                                             modifier = Modifier
                                                 .height(36.dp)
                                                 .expressiveClickable(
+                                                    feedback = ExpressivePressFeedback.Control,
                                                     shape = RoundedCornerShape(50),
                                                     onClick = {
                                                         val episodes = showEpisodes.map { it.toEpisode() }
@@ -349,6 +351,7 @@ fun DownloadedShowEpisodesScreen(
                                             modifier = Modifier
                                                 .height(36.dp)
                                                 .expressiveClickable(
+                                                    feedback = ExpressivePressFeedback.Control,
                                                     shape = RoundedCornerShape(50),
                                                     onClick = { deleteConfirmShowDialog = true }
                                                 )

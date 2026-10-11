@@ -6,6 +6,8 @@ Owns Library presentation: hub, subscriptions, liked episodes, downloaded episod
 
 ## Public API
 
+- Cards and episode/subscription rows use steady Material feedback, retaining long-press selection and drag ownership. Custom Play All/Delete All/explore controls use restrained control feedback. The Smart Downloads sync button has one native Material click handler and indication.
+
 - `LibraryScreen` and `LibraryViewModel`. When Appearance **Cleaner Home** is on, the hub top bar shows Settings and Feedback in the same shared `TopBarUtilityActions` capsule Home normally uses. Styling, 48dp touch targets and press feedback are consistent; Library retains its existing top-bar scrolling and click/long-press actions.
 - `SubscriptionsScreen`, `LikedEpisodesScreen`, and `DownloadedEpisodesScreen`. `downloads/DownloadModels.kt` maps downloaded episode entities to domain episodes (including `chaptersUrl` and `transcriptUrl` for offline chapter/transcript display). Downloaded show episode 3-dots menu uses `RemoveDownloadConfirmationDialog` to protect against accidental file deletion.
 - `AutoOrganizeConfirmationDialogs`: Confirmation dialogs for enabling/disabling auto-organize into folders. The enable dialog allows users to choose their preferred folder display size (default 3×1 Shelf), conditionally pick 1×1 cover style (Folder Icon vs Podcast Grid), and reminds users how to edit show genres using the genre pill. The disable dialog explains that existing folders and contents remain safe and intact.
@@ -13,6 +15,7 @@ Owns Library presentation: hub, subscriptions, liked episodes, downloaded episod
 - Downloads multi-select: checklist in the top bar, or long-press a show (hub) / episode (show list) to enter selection with that row checked, then delete several at once.
 - `PlayAllFab` and library UI helpers.
 - Floating Subscriptions tabs and all library Play All controls follow designsystem's shared adaptive-player placement offset, including New Episodes with either Top or Floating tabs. Play All keeps its spacing above the floating selector. Existing system-bar and list clearances stay stable while the player morphs, and Classic retains its existing placement.
+- Missing or failed show/episode artwork uses designsystem's shared B-and-microphone fallback in grids, folders and rows; titles alongside the artwork remain unchanged.
 - Library UI uses centralized Google Sans Flex weight tokens from `:core:designsystem`.
 
 ## Internal structure
@@ -39,7 +42,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
     SubscriptionLatestLogic.kt    — Latest episodes sorting, smart scoring, and chronological header grouping
     SubscriptionListRowParts.kt   — list artwork, title column, pin badge
     SubscriptionReorderControls.kt — Scoped reorder mode state and floating bar with Save/Exit controls and sort notices
-    SubscriptionRows.kt           — grid cards (title fallback on broken art), list/latest rows, date headers
+    SubscriptionRows.kt           — grid cards (shared boxlore mark on broken art), list/latest rows, date headers
     SubscriptionSortSheet.kt      — Multi-tier subscription sorting modal bottom sheet (shows outside folders, folders at top, shows inside folders, drag tips, and auto-organize)
     SubscriptionTabContents.kt    — Shows grid/list + New Episodes catch-up list (Play All FAB); calvin reorderable on unfiltered Shows and folders
     SubscriptionTabs.kt           — Shows|New Episodes switcher; Explore-style genre pills with icons

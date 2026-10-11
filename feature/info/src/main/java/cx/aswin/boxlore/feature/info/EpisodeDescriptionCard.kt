@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.HtmlText
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -134,8 +135,9 @@ internal fun PersonChip(
         shape = ExpressiveShapes.Pill,
         modifier =
         Modifier.expressiveClickable(
+            feedback = ExpressivePressFeedback.Control,
             enabled = !person.href.isNullOrBlank(),
-            isolate = true,
+            shape = ExpressiveShapes.Pill,
             onClick = onClick,
         ),
     ) {

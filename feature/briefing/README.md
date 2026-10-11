@@ -6,6 +6,8 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
 
 ## Public API
 
+- Briefing cards and source rows stay still with shape-clipped Material feedback. Story play and retry controls use the shared restrained control response; native buttons keep their own indications and playback callbacks.
+
 - `BriefingScreen` is the route-level composable used by `:app`.
 - Section headers in briefing UI use `rememberSectionHeaderFontFamily()` from `:core:designsystem` so lettering roundness follows Appearance settings.
 - Briefing emphasis uses centralized Google Sans Flex weight tokens from `:core:designsystem`.

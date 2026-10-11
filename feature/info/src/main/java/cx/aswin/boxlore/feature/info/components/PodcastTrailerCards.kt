@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -104,6 +105,7 @@ private fun SingleTrailerContent(
         modifier
             .fillMaxWidth()
             .expressiveClickable(
+                shape = RoundedCornerShape(24.dp),
                 onLongClickLabel = "Select episode",
                 onLongClick = { selection.onLongPress(episode) },
                 onClick = {
@@ -280,6 +282,7 @@ private fun TrailerStackRow(
                 .fillMaxWidth()
                 .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
                 .expressiveClickable(
+                    shape = RoundedCornerShape(24.dp),
                     onLongClickLabel = "Select episode",
                     onLongClick = { selection.onLongPress(episode) },
                     onClick = {
@@ -332,7 +335,7 @@ private fun TrailerLeadButton(
                 if (selection.isActive) {
                     Modifier
                 } else {
-                    Modifier.expressiveClickable(isolate = true) { onPlayClick(episode) }
+                    Modifier.expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape) { onPlayClick(episode) }
                 },
             ),
     ) {

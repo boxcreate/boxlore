@@ -6,6 +6,8 @@ Owns Explore discovery and the Learn tab presentation: browse/search discovery, 
 
 ## Public API
 
+- Browse cards use native Material card feedback; Lore history rows use steady feedback clipped to their surface. Existing tab-selection motion and Lore control feedback remain independent; ranking, search and navigation callbacks are unchanged.
+
 - `ExploreScreen` and `ExploreViewModel` for the Explore route. The initial pager tab is For You unless Appearance **Default tabs** is Top, a genre category is present (always Top), or the route already names `tab` (`trending` / `top` / `for_you`).
 - Explore hero/browse headers use `rememberSectionHeaderFontFamily()` from `:core:designsystem` for section titles tied to Appearance lettering roundness; Explore and Learn use centralized Google Sans Flex weight tokens. Trending “All” uses the **Top charts** header with a leaderboard icon (genre filters still use “Top in {genre}”).
 - Explore list and selector-FAB clearance uses designsystem’s shared navigation-style / mini-player padding contract. Its edge-to-edge layout explicitly passes the bottom system inset for both Classic and Floating navigation, keeping controls and the list tail above the player when Android uses gestures or navigation buttons. Shared player/selector gap regression coverage lives in designsystem's `NavigationChromePlacementTest`.

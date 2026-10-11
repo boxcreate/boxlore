@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
@@ -446,7 +447,7 @@ private fun DailyBriefingPlayButton(
             .height(48.dp)
             .widthIn(min = 180.dp)
             .clip(RoundedCornerShape(24.dp))
-            .expressiveClickable(onClick = onClick),
+            .expressiveClickable(feedback = ExpressivePressFeedback.Control, onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 24.dp),

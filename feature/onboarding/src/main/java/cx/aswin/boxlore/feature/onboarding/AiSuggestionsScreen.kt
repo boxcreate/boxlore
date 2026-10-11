@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.RegionSegmentedSelector
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
@@ -122,7 +123,7 @@ internal fun AiSuggestionsScreen(
                         Modifier
                             .padding(start = 8.dp)
                             .size(40.dp)
-                            .expressiveClickable(shape = CircleShape) { onBack() },
+                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape) { onBack() },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")

@@ -289,7 +289,7 @@ private fun LearnHistoryRow(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .expressiveClickable(onClick = onClick),
+            .expressiveClickable(shape = MaterialTheme.shapes.extraLarge, onClick = onClick),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 2.dp

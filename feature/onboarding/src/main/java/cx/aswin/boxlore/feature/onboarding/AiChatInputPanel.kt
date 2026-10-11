@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import kotlinx.coroutines.delay
@@ -252,7 +253,7 @@ internal fun AiChatInputPanel(
                             .fillMaxWidth()
                             .height(50.dp)
                             .background(primaryColor, shape = RoundedCornerShape(25.dp))
-                            .expressiveClickable(shape = RoundedCornerShape(25.dp)) {
+                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(25.dp)) {
                                 onRevealSuggestions()
                             },
                         verticalAlignment = Alignment.CenterVertically,
@@ -349,7 +350,7 @@ internal fun AiChatInputPanel(
                             .fillMaxWidth()
                             .height(50.dp)
                             .background(primaryColor, shape = RoundedCornerShape(25.dp))
-                            .expressiveClickable(shape = RoundedCornerShape(25.dp)) {
+                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(25.dp)) {
                                 onContinue()
                             },
                         verticalAlignment = Alignment.CenterVertically,

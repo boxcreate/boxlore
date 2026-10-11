@@ -31,7 +31,7 @@ fun FeaturedCuratedCard(
         modifier =
         modifier
             .fillMaxWidth()
-            .expressiveClickable(onClick = onClick),
+            .expressiveClickable(shape = MaterialTheme.shapes.extraLarge, onClick = onClick),
     ) {
         Row(
             modifier =
