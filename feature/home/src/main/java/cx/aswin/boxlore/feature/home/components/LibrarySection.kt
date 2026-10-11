@@ -3,7 +3,6 @@ package cx.aswin.boxlore.feature.home.components
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,8 +39,6 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.LocalSurfaceStyle
-import cx.aswin.boxlore.core.designsystem.theme.SurfaceStyles
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Episode
@@ -141,29 +138,13 @@ fun YourShowsSection(
             )
         }
 
-        val showPureSurfaceBorder = LocalSurfaceStyle.current in setOf(
-            SurfaceStyles.AMOLED,
-            SurfaceStyles.PURE_WHITE,
-            SurfaceStyles.DYNAMIC_OLED_WHITE,
-        )
         // One surface persists across Mix, show filtering, loading and caught-up states.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(30.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .background(homeMixModuleColor())
                 .homeMixBackdrop(enabled = showingMix && hasMixContent)
-                .then(
-                    if (showPureSurfaceBorder) {
-                        Modifier.border(
-                        1.dp,
-                            MaterialTheme.colorScheme.outlineVariant,
-                            RoundedCornerShape(30.dp),
-                    )
-                    } else {
-                        Modifier
-                    },
-                )
                 .testTag("home_your_shows_surface"),
         ) {
             YourShowsSelectors(

@@ -53,7 +53,7 @@ object SurfaceStyles {
 
     /** Display labels for the settings UI. */
     val entries = listOf(
-        Entry(CLASSIC_DYNAMIC, "boxlore classic", "Rich iris and seafoam on cool neutral surfaces."),
+        Entry(CLASSIC_DYNAMIC, "boxlore classic", "Electric violet with blue and teal accents."),
         Entry(STANDARD, "Material You Soft", "Colored surfaces from your wallpaper or accent."),
         Entry(CLASSIC_DARK, "Blackish", "Soft dark gray · stays dark."),
         Entry(CLASSIC_LIGHT, "Whitish", "Soft cream · stays light."),
@@ -106,7 +106,8 @@ fun resolveBoxLoreColorScheme(
     return if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val baseScheme =
             if (effectiveDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        applySurfaceStyle(baseScheme, effectiveDarkTheme, surfaceStyle)
+        val wallpaperScheme = if (surfaceStyle == SurfaceStyles.STANDARD) refineWallpaperColors(baseScheme, effectiveDarkTheme) else baseScheme
+        applySurfaceStyle(wallpaperScheme, effectiveDarkTheme, surfaceStyle)
     } else {
         resolveFixedThemeColorScheme(themeBrand, darkTheme, surfaceStyle)
     }
@@ -116,8 +117,12 @@ fun resolveBoxLoreColorScheme(
 fun resolveFixedThemeColorScheme(themeBrand: String, darkTheme: Boolean, surfaceStyle: String): ColorScheme {
     val effectiveDarkTheme = computeEffectiveDarkTheme(surfaceStyle, darkTheme)
     CustomThemeSeeds.decode(themeBrand)?.let { return generatePersonalColorScheme(it, effectiveDarkTheme, surfaceStyle) }
-    if (themeBrand == "violet" && isClassicSurface(surfaceStyle)) {
-        return if (effectiveDarkTheme) ClassicBrandColors.dark else ClassicBrandColors.light
+    if (themeBrand == "violet") {
+        val classic = if (effectiveDarkTheme) ClassicBrandColors.dark else ClassicBrandColors.light
+        if (isClassicSurface(surfaceStyle)) return classic
+        if (surfaceStyle in setOf(SurfaceStyles.DYNAMIC_OLED_WHITE, SurfaceStyles.AMOLED, SurfaceStyles.PURE_WHITE)) {
+            return applySurfaceStyle(classic, effectiveDarkTheme, surfaceStyle)
+        }
     }
     val seed = resolveThemeSeedColor(themeBrand)
     val scheme = generateBrandColorScheme(seed, effectiveDarkTheme, surfaceStyle)
@@ -218,24 +223,8 @@ internal fun applySurfaceStyle(base: ColorScheme, isDark: Boolean, surfaceStyle:
     }
 
     return when {
-        style == SurfaceStyles.AMOLED && isDark -> base.copy(
-            background = Color.Black,
-            surface = Color.Black,
-            surfaceContainerLowest = Color.Black,
-            surfaceContainerLow = Color(0xFF0A0A0A),
-            surfaceContainer = Color(0xFF121212),
-            surfaceContainerHigh = Color(0xFF1A1A1A),
-            surfaceContainerHighest = Color(0xFF242424)
-        )
-        style == SurfaceStyles.PURE_WHITE && !isDark -> base.copy(
-            background = Color.White,
-            surface = Color.White,
-            surfaceContainerLowest = Color.White,
-            surfaceContainerLow = Color(0xFFFAFAFA),
-            surfaceContainer = Color(0xFFF5F5F5),
-            surfaceContainerHigh = Color(0xFFEEEEEE),
-            surfaceContainerHighest = Color(0xFFE5E5E5)
-        )
+        style == SurfaceStyles.AMOLED && isDark -> pureSurfaceColors(base, isDark)
+        style == SurfaceStyles.PURE_WHITE && !isDark -> pureSurfaceColors(base, isDark)
         style == SurfaceStyles.HIGH_CONTRAST && isDark -> base.copy(
             background = Color(0xFF050505),
             surface = Color(0xFF050505),
@@ -377,6 +366,9 @@ fun generateBrandColorScheme(seedColor: Color, isDark: Boolean, surfaceStyle: St
         )
     }
     val styled = if (isClassicSurface(surfaceStyle)) applyClassicOverrides(scheme, isDark) else scheme
+    if (surfaceStyle in setOf(SurfaceStyles.DYNAMIC_OLED_WHITE, SurfaceStyles.AMOLED, SurfaceStyles.PURE_WHITE)) {
+        return applySurfaceStyle(styled, isDark, surfaceStyle)
+    }
     return findThemePreset(surfaceStyle)?.let { styled.withPresetBackground(it, isDark) } ?: styled
 }
 

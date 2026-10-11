@@ -68,7 +68,7 @@ internal fun MixtapeEpisodeCard(
     val shape = RoundedCornerShape(24.dp)
     Surface(
         shape = shape,
-        color = if (playing) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        color = if (playing) MaterialTheme.colorScheme.primaryContainer else homeMixRestingCardColor(),
         modifier = modifier.width(HomeMixLayout.CardWidth).height(homeMixCardHeight())
             .expressiveClickable(shape = shape, onClick = onClick)
             .testTag("home_mix_episode_${episode.id}"),

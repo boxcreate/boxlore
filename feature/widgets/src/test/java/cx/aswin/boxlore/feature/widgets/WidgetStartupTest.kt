@@ -68,10 +68,10 @@ class WidgetStartupTest {
     }
 
     @Test
-    fun shortAttemptDeadlineLeavesTimeForFallbackArtwork() = runBlocking {
+    fun shortAttemptDeadlineLeavesTimeForFallbackArtwork() = runTest {
         val context: Context = ApplicationProvider.getApplicationContext()
         val requests = mutableListOf<String>()
-        val coil = artworkLoader(context) { data ->
+        val coil = artworkLoader(context, kotlinx.coroutines.test.StandardTestDispatcher(testScheduler)) { data ->
             requests.add(data)
             if (data.contains("slow.jpg")) kotlinx.coroutines.awaitCancellation()
             android.graphics.drawable.ColorDrawable(android.graphics.Color.GREEN)
@@ -95,8 +95,12 @@ class WidgetStartupTest {
         }
     }
 
-    private fun artworkLoader(context: Context, fetch: suspend (String) -> android.graphics.drawable.Drawable): coil.ImageLoader =
-        coil.ImageLoader.Builder(context).components {
+    private fun artworkLoader(
+        context: Context,
+        dispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
+        fetch: suspend (String) -> android.graphics.drawable.Drawable,
+    ): coil.ImageLoader =
+        coil.ImageLoader.Builder(context).dispatcher(dispatcher).components {
             add(
                 coil.fetch.Fetcher.Factory<android.net.Uri> { data, _, _ ->
                 object : coil.fetch.Fetcher {
