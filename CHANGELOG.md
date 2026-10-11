@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A full-page custom theme editor with primary, secondary and tertiary colors, background choices and live light/dark previews. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add cached update manifests, verified resumable APK updates, a Play-specific release variant, and release notes with upcoming changes. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add native compact and full-screen announcements, reviewed sender integration, isolated optimized test builds, and offline release rehearsal. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Add an independent saved Brief edition preference with explicit-link precedence and edition-only Home refreshes. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Bundle weekday regional Brief covers, fixed player artwork and the animated Echo account avatar. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
@@ -39,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recompose Home heroes with larger attached artwork, adaptive titles, bounded context typography and playing progress; replace nested hero grids with flat episode rows and a fading peek label. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Connect Your shows and Daily mix into one animated surface with expressive selectors, matched loading geometry and bounded nested-scroll handoff. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Standardize stable surface press feedback, retain subtle feedback for small custom controls and use the podcast-mic B for artwork placeholders. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Redesign Brief cards and pages with themed Material 3 surfaces, three Home headlines, improved story layout and a thinner seekable wavy progress track. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Separate onboarding and Settings account layouts, clarify sync states, hide player chrome during account restore and smooth import-to-account navigation. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Use solid Daily Mix episode-card surfaces across themes. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -62,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sort fresh-drop and new-episode grids newest first, separate artwork playback from episode-detail taps and route the offline Mix action to downloads. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Unify artwork fallback sources and bounded recovery across UI, playback, widgets, share cards and notification artwork while preserving optimized sizes and existing cache identities. ([#1111](https://github.com/boxcreate/boxlore/pull/1111)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Retain valid feed artwork when catalog image fields are blank, and expire failed playback bitmap requests instead of caching failures indefinitely. ([#1111](https://github.com/boxcreate/boxlore/pull/1111)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Repair legacy numeric Brief artwork references in listening history, queue and downloads on open and restored writes, preserving all non-artwork state. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -171,6 +177,16 @@ readme-copy:end pr=1111 -->
 - Customize your theme with a live preview, quick color choices and more precise controls.
 - Enjoy refined Classic, Pure and Material 3 colors, with clearer panels and episode cards in Pure mode.
 readme-copy:end pr=1112 -->
+
+<!-- readme-copy:start pr=1113
+### Improvements
+- The boxlore Brief has refreshed regional artwork, clearer headlines and layouts that match your light or dark theme.
+- Choose your default Brief edition without changing your podcast discovery region.
+- Account setup and cloud sync have clearer progress and actions, with no miniplayer covering the page.
+- Daily Mix episode cards are easier to distinguish across themes.
+### Fixes
+- Older Briefs show the correct artwork after an update or cloud restore, without losing listening progress.
+readme-copy:end pr=1113 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added

@@ -129,6 +129,10 @@ and listen without paywalls, subscriptions, or ads.
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Smaller app download while retaining artwork, fonts and notification sounds. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
+<li>The boxlore Brief has refreshed regional artwork, clearer headlines and layouts that match your light or dark theme. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
+<li>Choose your default Brief edition without changing your podcast discovery region. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
+<li>Account setup and cloud sync have clearer progress and actions, with no miniplayer covering the page. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
+<li>Daily Mix episode cards are easier to distinguish across themes. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
 <li>A refreshed Home brings larger artwork, readable titles and clearer listening progress. Tap artwork to play or a title to open episode details. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
 <li>Your shows and Daily mix now share a smoother layout with expressive selections and transitions. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
 <li>Missing artwork uses the boxlore mark, and cards have more consistent tap feedback across the app. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
@@ -160,6 +164,7 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Older Briefs show the correct artwork after an update or cloud restore, without losing listening progress. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
 <li>Episode artwork can fall back to the show cover when its image is unavailable. <a href="https://github.com/boxcreate/boxlore/pull/1111"><img src="https://img.shields.io/badge/PR-1111-6750A4?style=flat-square" alt="PR #1111" height="18"/></a></li>
 <li>Covers that failed to load can recover after reconnecting or loading successfully on another page. <a href="https://github.com/boxcreate/boxlore/pull/1111"><img src="https://img.shields.io/badge/PR-1111-6750A4?style=flat-square" alt="PR #1111" height="18"/></a></li>
 <li>New episodes appear newest first, and the offline Daily mix action takes you to downloads. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
