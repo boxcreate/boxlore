@@ -58,6 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recover missing search-result genres from unambiguous matching results and suppress generic Podcast genre chips. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Prevent rounded search/tab controls and Home utility-button press feedback from clipping at their edges. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sort fresh-drop and new-episode grids newest first, separate artwork playback from episode-detail taps and route the offline Mix action to downloads. ([#1110](https://github.com/boxcreate/boxlore/pull/1110)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Unify artwork fallback sources and bounded recovery across UI, playback, widgets, share cards and notification artwork while preserving optimized sizes and existing cache identities. ([#1111](https://github.com/boxcreate/boxlore/pull/1111)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Retain valid feed artwork when catalog image fields are blank, and expire failed playback bitmap requests instead of caching failures indefinitely. ([#1111](https://github.com/boxcreate/boxlore/pull/1111)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
@@ -154,6 +156,12 @@ readme-copy:end pr=1109 -->
 ### Fixes
 - New episodes appear newest first, and the offline Daily mix action takes you to downloads.
 readme-copy:end pr=1110 -->
+
+<!-- readme-copy:start pr=1111
+### Fixes
+- Episode artwork can fall back to the show cover when its image is unavailable.
+- Covers that failed to load can recover after reconnecting or loading successfully on another page.
+readme-copy:end pr=1111 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added

@@ -158,6 +158,8 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Episode artwork can fall back to the show cover when its image is unavailable. <a href="https://github.com/boxcreate/boxlore/pull/1111"><img src="https://img.shields.io/badge/PR-1111-6750A4?style=flat-square" alt="PR #1111" height="18"/></a></li>
+<li>Covers that failed to load can recover after reconnecting or loading successfully on another page. <a href="https://github.com/boxcreate/boxlore/pull/1111"><img src="https://img.shields.io/badge/PR-1111-6750A4?style=flat-square" alt="PR #1111" height="18"/></a></li>
 <li>New episodes appear newest first, and the offline Daily mix action takes you to downloads. <a href="https://github.com/boxcreate/boxlore/pull/1110"><img src="https://img.shields.io/badge/PR-1110-6750A4?style=flat-square" alt="PR #1110" height="18"/></a></li>
 <li>Back from a collection returns to where you were in Explore. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
 <li>Search cards show a specific genre when available, instead of a generic Podcast label. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
