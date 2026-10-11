@@ -384,7 +384,6 @@ private fun Modifier.subscriptionCardClickable(
     return if (onLongClick != null) {
         expressiveClickable(
             shape = shape,
-            pressScaleEnabled = true,
             onLongClick = onLongClick,
             onClick = onClick ?: {},
         )
