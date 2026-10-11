@@ -229,7 +229,7 @@ fun YourShowsSkeleton(
             )
         }
 
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(homeMixModuleColor())) {
             val count = if (subscribedCount == 0) 10 else subscribedCount + if (subscribedCount > 1) 1 else 0
             BoxWithConstraints(
                 Modifier.fillMaxWidth().padding(YourShowsLayout.Padding),

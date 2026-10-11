@@ -130,4 +130,24 @@ class ThemePresetResolutionTest {
             assertEquals(app.surface.toArgb(), widget.surface)
         }
     }
+
+    @Test
+    fun allThreeDefaultThemesAgreeAcrossAppAppearanceAndWidgetInBothModes() {
+        val state = AppearanceUiState("system", false, "violet", SurfaceStyles.CLASSIC_DYNAMIC)
+        themeLookOptions().filter { it.key != "custom" }.forEach { look ->
+            val wallpaper = look.key == SurfaceStyles.STANDARD
+            val preview = themePreviewColors(context, state, look, selected = false)
+            listOf(false, true).forEach { dark ->
+                val app = resolveBoxLoreColorScheme(context, dark, wallpaper, "violet", look.key)
+                val widget = resolveBoxLoreChromeColors(context, dark, wallpaper, "violet", look.key)
+                val shown = if (dark) preview.dark else preview.light
+                assertEquals(app.toString(), shown.toString())
+                assertEquals(app.primary.toArgb(), widget.primary)
+                assertEquals(app.onPrimary.toArgb(), widget.onPrimary)
+                assertEquals(app.surface.toArgb(), widget.surface)
+                assertEquals(app.onSurface.toArgb(), widget.onSurface)
+                assertEquals(app.secondaryContainer.toArgb(), widget.secondaryContainer)
+            }
+        }
+    }
 }

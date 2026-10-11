@@ -32,7 +32,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 
 ## Brand identity
 
-- boxlore classic uses the authored iris, slate and seafoam light/dark palette. A rich iris primary in light mode and luminous iris in dark mode lead the quieter slate and seafoam supporting accents. Wallpaper colours and custom accents retain their selection, with the updated classic neutral surfaces.
+- boxlore classic uses electric violet with quieter blue and teal supporting accents, cool neutral surfaces and complete fixed-color roles. Pure shares those authored accents while keeping exact white/black backgrounds, readable neutral foregrounds and distinct container levels; custom/artwork Pure palettes keep their own accents. Material 3 retains the wallpaper's supporting hues and neutral surfaces, with a modest HCT chroma lift for its primary and a tone-76 dark primary. This refinement runs only for wallpaper colors on the standard background, leaving custom HCT palettes and legacy seeds unchanged. App chrome, Appearance previews and widgets share the same resolver.
 - The top-bar wordmark uses the full-size plain B vector for readability at chrome sizes. LORE page/navigation marks and the boxlore brief serif masthead are tintable vectors from the new brand kit; UI typography remains Google Sans Flex. Share artwork follows the wordmark’s updated aspect ratio.
 
 ## Internal structure
@@ -87,6 +87,7 @@ Classic navigation applies its system insets outside the minimum 80dp content he
 - `ArtworkColorMotionTest` covers interrupted handoffs, bounded progress, intermediate light/dark text contrast, navbar surface agreement and neutral Pure backgrounds throughout the transition.
 - `ThemeBrandTokensTest` covers brand seed, contrast helper, and scheme-resolution behavior.
 - `ThemePresetsTest` checks distinct/stable preset keys, shared seed resolution, both-mode accent/container text contrast (at least 4.5:1), inverse/tint roles and preservation of user-selected surfaces and error colors. Settings JVM integration tests exercise actual app/widget resolution across all background styles.
+- `ClassicBrandColorsTest` and `PresetThemeColorsTest` cover authored/fixed-role contrast, Pure's matching accents and ordered neutral surfaces, legacy mode locks, retained custom seeds, and wallpaper hue/role preservation.
 - `ProgressiveSearchScrollLogicTest` covers pin-to-top when catalog hits prepend over local matches.
 - `LazyListKeyPolicyTest` covers safe deduplication, key prefixing, blank ID fallbacks, and duplicate collision disambiguation.
 - `GenreIconsTest` and `GenreSuggestionsTest` cover icon lookup, keyword scoring, library priority ranking, and suggestion composition.

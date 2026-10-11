@@ -11,22 +11,22 @@ class ClassicBrandColorsTest {
     fun `classic resolves authored light and dark accents`() {
         val light = resolveFixedThemeColorScheme("violet", false, SurfaceStyles.CLASSIC_DYNAMIC)
         val dark = resolveFixedThemeColorScheme("violet", true, SurfaceStyles.CLASSIC_DYNAMIC)
-        assertEquals(Color(0xFF5145D8), light.primary)
-        assertEquals(Color(0xFF55647C), light.secondary)
-        assertEquals(Color(0xFF397B6D), light.tertiary)
-        assertEquals(Color(0xFF9C8CFF), dark.primary)
-        assertEquals(Color(0xFFA3B1CA), dark.secondary)
-        assertEquals(Color(0xFF89C6B5), dark.tertiary)
+        assertEquals(Color(0xFF563DE8), light.primary)
+        assertEquals(Color(0xFF4D607E), light.secondary)
+        assertEquals(Color(0xFF226C62), light.tertiary)
+        assertEquals(Color(0xFFA594FF), dark.primary)
+        assertEquals(Color(0xFFAABDDD), dark.secondary)
+        assertEquals(Color(0xFF82CFC0), dark.tertiary)
     }
 
     @Test
-    fun `accent refinement retains classic backgrounds and surface levels`() {
+    fun `classic uses cool neutral surfaces with distinct container levels`() {
         assertEquals(Color(0xFFF8F8FB), ClassicBrandColors.light.background)
         assertEquals(Color(0xFFF8F8FB), ClassicBrandColors.light.surface)
-        assertEquals(Color(0xFFEDEDF4), ClassicBrandColors.light.surfaceContainer)
+        assertEquals(Color(0xFFEFEDF6), ClassicBrandColors.light.surfaceContainer)
         assertEquals(Color(0xFF121318), ClassicBrandColors.dark.background)
         assertEquals(Color(0xFF121318), ClassicBrandColors.dark.surface)
-        assertEquals(Color(0xFF20212A), ClassicBrandColors.dark.surfaceContainer)
+        assertEquals(Color(0xFF211F29), ClassicBrandColors.dark.surfaceContainer)
     }
 
     @Test
@@ -45,12 +45,32 @@ class ClassicBrandColorsTest {
                 scheme.primaryContainer to scheme.onPrimaryContainer,
                 scheme.secondaryContainer to scheme.onSecondaryContainer,
                 scheme.tertiaryContainer to scheme.onTertiaryContainer,
+                scheme.primaryFixedDim to scheme.onPrimaryFixedVariant,
+                scheme.secondaryFixedDim to scheme.onSecondaryFixedVariant,
+                scheme.tertiaryFixedDim to scheme.onTertiaryFixedVariant,
+                scheme.primaryFixed to scheme.onPrimaryFixed,
+                scheme.secondaryFixed to scheme.onSecondaryFixed,
+                scheme.tertiaryFixed to scheme.onTertiaryFixed,
                 scheme.surface to scheme.onSurface,
                 scheme.surfaceContainerHighest to scheme.onSurfaceVariant,
             ).forEach { (background, foreground) ->
                 val a = background.luminance()
                 val b = foreground.luminance()
                 assertTrue((maxOf(a, b) + 0.05f) / (minOf(a, b) + 0.05f) >= 4.5f)
+            }
+        }
+    }
+
+    @Test
+    fun `small accent text stays readable across the entire neutral surface hierarchy`() {
+        listOf(ClassicBrandColors.light, ClassicBrandColors.dark).forEach { scheme ->
+            val surfaces = listOf(scheme.background, scheme.surfaceDim, scheme.surfaceBright, scheme.surfaceContainerLowest, scheme.surfaceContainerLow, scheme.surfaceContainer, scheme.surfaceContainerHigh, scheme.surfaceContainerHighest)
+            surfaces.forEach { surface ->
+                listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.onSurface, scheme.onSurfaceVariant).forEach { foreground ->
+                    val a = surface.luminance()
+                    val b = foreground.luminance()
+                    assertTrue((maxOf(a, b) + 0.05f) / (minOf(a, b) + 0.05f) >= 4.5f, "$foreground on $surface")
+                }
             }
         }
     }
