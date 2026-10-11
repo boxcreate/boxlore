@@ -107,6 +107,21 @@ class ExploreSearchResultsTest {
         assertEquals(emptyList<List<Any?>>(), showTaps)
     }
 
+    @Test fun `positive durations below one minute never display zero minutes`() {
+        semantic()
+        state.value = state.value.copy(semanticSearchResults = listOf(episodes[0], episodes[1].copy(duration = 1)))
+        show()
+        for (duration in listOf(1, 59, 60)) {
+            composeRule.runOnIdle {
+                state.value = state.value.copy(semanticSearchResults = listOf(episodes[0], episodes[1].copy(duration = duration)))
+            }
+            composeRule.onNodeWithText("1 min").assertIsDisplayed()
+            composeRule.onNodeWithText("0 min").assertDoesNotExist()
+        }
+        composeRule.runOnIdle { state.value = state.value.copy(semanticSearchResults = listOf(episodes[0], episodes[1].copy(duration = 0))) }
+        composeRule.onNodeWithText("1 min").assertDoesNotExist()
+    }
+
     @Test fun `existing results stay visible during progressive and semantic refreshes`() {
         state.value = state.value.copy(searchResults = shows.take(2), isLoading = true)
         show()

@@ -42,7 +42,7 @@ internal fun ExploreSearchEpisodeCard(episode: Episode, featured: Boolean, onCli
                     modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
                 ) {
                     Text(
-                        text = stringResource(R.string.explore_duration_minutes, episode.duration / 60),
+                        text = stringResource(R.string.explore_duration_minutes, (episode.duration / 60).coerceAtLeast(1)),
                         style = MaterialTheme.typography.labelSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
