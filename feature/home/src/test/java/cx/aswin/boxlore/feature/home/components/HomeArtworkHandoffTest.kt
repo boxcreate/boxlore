@@ -131,9 +131,12 @@ class HomeArtworkHandoffTest {
     @Test
     fun `failed proxy and original artwork retain the branded fallback`() {
         val failures = AtomicInteger()
+        val requestsReady = CompletableDeferred<Unit>()
         val context = RuntimeEnvironment.getApplication()
         originalImageLoader = Coil.imageLoader(context)
         testImageLoader = ImageLoader.Builder(context)
+            .fetcherDispatcher(kotlinx.coroutines.Dispatchers.Unconfined)
+            .interceptorDispatcher(kotlinx.coroutines.Dispatchers.Unconfined)
             .components {
                 add(
                     Fetcher.Factory<android.net.Uri> { _, _, _ ->
@@ -145,7 +148,7 @@ class HomeArtworkHandoffTest {
             }
             .eventListener(object : EventListener {
                 override fun onError(request: ImageRequest, result: ErrorResult) {
-                    failures.incrementAndGet()
+                    if (failures.incrementAndGet() >= 3) requestsReady.complete(Unit)
                 }
             })
             .build()
@@ -161,21 +164,20 @@ class HomeArtworkHandoffTest {
                 )
             }
         }
-        composeRule.waitUntil(timeoutMillis = 5_000) {
-            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(300))
-            failures.get() >= 3
-        }
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue("All bounded artwork attempts finish", requestsReady.isCompleted)
         composeRule.waitForIdle()
         assertBrandedArtwork()
     }
 
     @Test
     fun `broken episode artwork tries the show and preserves its accessible description`() {
-        val loaded = AtomicBoolean(false)
+        val loaded = CompletableDeferred<Unit>()
         val requests = java.util.Collections.synchronizedList(mutableListOf<String>())
         installArtworkFetcher(requests) { data ->
             require(!data.contains("broken-episode")) { "Not an image" }
-            loaded.set(true)
+            loaded.complete(Unit)
             ColorDrawable(android.graphics.Color.GREEN)
         }
         composeRule.setContent {
@@ -190,7 +192,9 @@ class HomeArtworkHandoffTest {
                 )
             }
         }
-        composeRule.waitUntil(5_000) { loaded.get() }
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue(loaded.isCompleted)
         composeRule.waitForIdle()
         assertEquals(3, requests.size)
         assertTrue(requests.last().contains("show-fallback"))
@@ -201,11 +205,12 @@ class HomeArtworkHandoffTest {
     fun `successful detail load recovers home even when its last request has not failed yet`() {
         val detail = mutableStateOf(false)
         val failures = AtomicInteger()
+        val requestsReady = CompletableDeferred<Unit>()
         val finishHomeRequest = CompletableDeferred<Unit>()
         val requests = java.util.Collections.synchronizedList(mutableListOf<String>())
         installArtworkFetcher(requests) { data ->
             if (!data.contains("w=800")) {
-                failures.incrementAndGet()
+                if (failures.incrementAndGet() >= 2) requestsReady.complete(Unit)
                 if (!data.contains("w=")) finishHomeRequest.await()
                 throw IllegalArgumentException("Unavailable size")
             }
@@ -220,36 +225,25 @@ class HomeArtworkHandoffTest {
                 }
             }
         }
-        composeRule.waitUntil(5_000) {
-            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(100))
-            composeRule.mainClock.advanceTimeByFrame()
-            failures.get() >= 2
-        }
+        composeRule.mainClock.advanceTimeBy(1_500)
         composeRule.waitForIdle()
+        assertTrue(requestsReady.isCompleted)
         assertBrandedArtwork()
         composeRule.runOnIdle { detail.value = true }
-        composeRule.waitUntil(5_000) {
-            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(100))
-            composeRule.mainClock.advanceTimeByFrame()
-            ArtworkLoadPolicy.Shared.preferredRoute("https://example.invalid/cross-page-recovery")?.contains("w=800") == true
-        }
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue(ArtworkLoadPolicy.Shared.preferredRoute("https://example.invalid/cross-page-recovery")?.contains("w=800") == true)
         finishHomeRequest.complete(Unit)
-        try {
-            composeRule.waitUntil(5_000) {
-                org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(100))
-                composeRule.mainClock.advanceTimeByFrame()
-                android.graphics.Color.green(backingPixel(composeRule.onNodeWithTag("artwork"), 0.5f, 0.5f)) > 200
-            }
-        } catch (failure: Throwable) {
-            throw AssertionError("Recovery requests: $requests; route=${ArtworkLoadPolicy.Shared.preferredRoute("https://example.invalid/cross-page-recovery")}; pixel=${backingPixel(composeRule.onNodeWithTag("artwork"), 0.5f, 0.5f)}", failure)
-        }
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue(android.graphics.Color.green(backingPixel(composeRule.onNodeWithTag("artwork"), 0.5f, 0.5f)) > 200)
         assertTrue("Cached recovery must not start an endless loop", requests.size <= 4)
     }
 
     private fun installArtworkFetcher(requests: MutableList<String>, fetch: suspend (String) -> android.graphics.drawable.Drawable) {
         val context = RuntimeEnvironment.getApplication()
         originalImageLoader = Coil.imageLoader(context)
-        testImageLoader = ImageLoader.Builder(context).components {
+        testImageLoader = ImageLoader.Builder(context).fetcherDispatcher(kotlinx.coroutines.Dispatchers.Unconfined).interceptorDispatcher(kotlinx.coroutines.Dispatchers.Unconfined).components {
             add(
                 Fetcher.Factory<android.net.Uri> { data, _, _ ->
                 object : Fetcher {

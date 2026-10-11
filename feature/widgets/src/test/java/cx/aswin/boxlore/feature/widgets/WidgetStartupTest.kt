@@ -6,8 +6,10 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -20,7 +22,91 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31])
+@org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class WidgetStartupTest {
+    @org.junit.Before
+    fun prepareArtworkDispatcher() {
+        kotlinx.coroutines.Dispatchers.setMain(kotlinx.coroutines.Dispatchers.Unconfined)
+    }
+
+    @org.junit.After
+    fun restoreArtworkDispatcher() {
+        kotlinx.coroutines.Dispatchers.resetMain()
+    }
+
+    @Test
+    fun fallbackArtworkKeepsItsOwnCacheIdentityAndPrimaryCanRecover() = runBlocking {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val primary = "https://widget-fallback.invalid/episode.jpg"
+        val fallback = "https://widget-fallback.invalid/show.jpg"
+        val requests = mutableListOf<String>()
+        var recovered = false
+        val coil = artworkLoader(context) { data ->
+            requests.add(data)
+            if (data.contains("episode.jpg") && !recovered) throw java.io.IOException("Artwork temporarily unavailable")
+            android.graphics.drawable.ColorDrawable(android.graphics.Color.GREEN)
+        }
+        try {
+            val loader = WidgetArtworkLoader(context, coil)
+            val fallbackPath = loader.load(primary, listOf(fallback))
+            assertTrue(requests.any { it.contains("episode.jpg") })
+            assertTrue(requests.last().contains("show.jpg"))
+            assertEquals(loader.resolveCachedPath(fallback), fallbackPath)
+            assertEquals(null, loader.resolveCachedPath(primary))
+            recovered = true
+            cx.aswin.boxlore.core.designsystem.components.ArtworkLoadPolicy.Shared.networkRestored()
+            requests.clear()
+            val primaryPath = loader.load(primary, listOf(fallback))
+            assertEquals(loader.resolveCachedPath(primary), primaryPath)
+            assertTrue(requests.first().contains("episode.jpg"))
+            assertTrue(primaryPath != fallbackPath)
+        } finally {
+            coil.shutdown()
+            java.io.File(context.cacheDir, WidgetArtworkLoader.CACHE_DIR_NAME).deleteRecursively()
+        }
+    }
+
+    @Test
+    fun shortAttemptDeadlineLeavesTimeForFallbackArtwork() = runBlocking {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val requests = mutableListOf<String>()
+        val coil = artworkLoader(context) { data ->
+            requests.add(data)
+            if (data.contains("slow.jpg")) kotlinx.coroutines.awaitCancellation()
+            android.graphics.drawable.ColorDrawable(android.graphics.Color.GREEN)
+        }
+        var source: String? = null
+        try {
+            val bitmap = kotlinx.coroutines.withTimeout(2_000) {
+                cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(
+                    context,
+                    listOf("https://timeout-art.invalid/slow.jpg", "https://timeout-art.invalid/show.jpg"),
+                    loader = coil,
+                    perAttemptTimeoutMillis = 50,
+                    onSourceLoaded = { source = it },
+                )
+            }
+            assertTrue(bitmap != null)
+            assertEquals("https://timeout-art.invalid/show.jpg", source)
+            assertTrue(requests.last().contains("show.jpg"))
+        } finally {
+            coil.shutdown()
+        }
+    }
+
+    private fun artworkLoader(context: Context, fetch: suspend (String) -> android.graphics.drawable.Drawable): coil.ImageLoader =
+        coil.ImageLoader.Builder(context).components {
+            add(
+                coil.fetch.Fetcher.Factory<android.net.Uri> { data, _, _ ->
+                object : coil.fetch.Fetcher {
+                    override suspend fun fetch(): coil.fetch.DrawableResult =
+                        coil.fetch.DrawableResult(fetch(data.toString()), false, coil.decode.DataSource.NETWORK)
+                }
+            }
+            )
+        }.build()
+
     @Test
     fun transportNormalizationPreservesExistingArtworkCacheIdentity() = runBlocking {
         val context: Context = ApplicationProvider.getApplicationContext()

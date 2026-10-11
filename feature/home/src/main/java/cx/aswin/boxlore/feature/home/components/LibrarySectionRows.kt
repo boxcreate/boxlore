@@ -106,7 +106,7 @@ internal fun SelectorCover(
     ) {
         Box(modifier = Modifier.widthIn(max = YourShowsLayout.CoverSize).fillMaxWidth().aspectRatio(1f)) {
             OptimizedImage(
-                url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
+                url = podcast.imageUrl,
                 fallbackUrls = podcast.artworkUrls(),
                 proxyWidth = 320,
                 contentDescription = null,

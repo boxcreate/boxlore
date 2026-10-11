@@ -141,6 +141,8 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 - Core modules own Room filenames, DataStore names, SharedPreferences names, ranking identity, RSS IDs, and playback media IDs.
 - Google Backup / device transfer include Room, SharedPreferences, and `files/datastore/`. WorkManager's `androidx.work.workdb*` is excluded so periodic jobs are rebuilt from DataStore.
 
+Episode push artwork keeps its six-second total deadline and uses 700ms per route, allowing later episode/show candidates within that budget.
+
 ## Testing notes
 
 - Native announcements have no WebView, JavaScript bridge, render handshake or alternate fallback layout. Closing, scrolling and actions work immediately; image failure removes only the image. Compact surfaces use surfaceContainer and a subtle backdrop. Announcements and the updater set system-bar icon contrast on their own Dialog window without changing the underlying Activity; `NativeDialogSystemBarsTest` covers light/dark and dimmed surfaces.

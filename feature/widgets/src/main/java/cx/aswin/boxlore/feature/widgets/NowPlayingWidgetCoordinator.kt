@@ -98,7 +98,8 @@ object NowPlayingWidgetCoordinator {
         store: NowPlayingWidgetSnapshotStore,
     ) {
         if (!snapshot.hasEpisode) return
-        val url = snapshot.artworkUrl ?: return
+        val url = snapshot.artworkUrl
+        if (cx.aswin.boxlore.core.model.artworkUrls(url, *snapshot.fallbackArtworkUrls.toTypedArray()).isEmpty()) return
         if (!snapshot.artworkCachePath.isNullOrBlank()) return
 
         val inFlight = artworkJob.get()

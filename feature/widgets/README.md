@@ -84,6 +84,8 @@ src/main/res/
 
 The playback widget families are an independent RemoteViews implementation of the measured PixelPlayerOSS widget hierarchy. No GPL source, app assets, names, or resources are copied into boxlore. Transport icons come independently from Google Material Symbols under Apache-2.0. boxlore retains its own PolyForm Strict licensing and implementation.
 
+Fallback-only snapshots attempt artwork. Successful fallback files are stored under their own source identity, so later loads can retry the preferred primary artwork.
+
 ## Testing notes
 
 `WidgetStartupTest` covers unused-family registration without resolving playback/library ports and independent installed-family detection. Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, widget chrome (App theme vs System), and PendingIntent generation/cancellation via `WidgetActionIntentsTest`.

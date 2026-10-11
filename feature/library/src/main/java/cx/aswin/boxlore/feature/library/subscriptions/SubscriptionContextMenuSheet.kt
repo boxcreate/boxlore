@@ -43,6 +43,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.artworkUrls
 
 /**
  * Identifies the target item that was long-pressed in the Subscriptions tab.
@@ -336,7 +337,7 @@ private fun PodcastContextMenuHeader(
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
             modifier = Modifier.size(48.dp),
         ) {
-            if (podcast.imageUrl.isNotBlank()) {
+            if (podcast.artworkUrls().isNotEmpty()) {
                 OptimizedImage(
             proxyWidth = 140,
             url = podcast.imageUrl,

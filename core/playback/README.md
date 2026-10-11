@@ -118,6 +118,8 @@ Files under `core/data/service` are compatibility stubs for old service class na
 - Preference key `device_uuid` is a stable install identifier and must not be logged raw.
 - Queue, history, and download rows are persisted by `:core:database` and `:core:downloads`.
 
+Media-session bitmap loading classifies transient transport failures separately from decoding failures and preserves cancellation across fallback attempts.
+
 ## Testing notes
 
 - `PlaybackIntroOutroControllerTest` covers the 1 ms / 100 ms automatic-transition regression, explicit zero, intro trim, stale cutoff, explicit History resume, completed episodes, delayed readiness, and manual seeks. `QueueManagerPlaybackTest`, `QueueRepositoryTest`, `SmartQueueRefillCoordinatorTest`, and `ContextQueueContinuationCoordinatorTest` cover context replacement, ordered mixed-show playback, transactional rollback, completion-before-refill, long lists, and delayed results after a new queue or pause.

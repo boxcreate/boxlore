@@ -139,7 +139,7 @@ fun LikedEpisodesScreen(
                                         OptimizedImage(
             proxyWidth = 160,
             url = episode.imageUrl,
-                                            fallbackUrls = listOf(episode.podcastImageUrl),
+                                            fallbackUrls = listOf(podcast.imageUrl),
                                             contentDescription = null,
                                             modifier = Modifier.size(56.dp).clip(MaterialTheme.shapes.small),
                                             contentScale = ContentScale.Crop

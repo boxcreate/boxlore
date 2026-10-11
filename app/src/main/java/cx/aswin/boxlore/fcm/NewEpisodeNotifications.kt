@@ -154,7 +154,7 @@ internal object NewEpisodeNotifications {
         val bitmap = if (fetchArtwork) {
             kotlinx.coroutines.runBlocking {
             kotlinx.coroutines.withTimeoutOrNull(6_000) {
-                cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(context, details.artworkSources)
+                cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(context, details.artworkSources, perAttemptTimeoutMillis = 700)
             }
         }
         } else {

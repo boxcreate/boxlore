@@ -23,12 +23,7 @@ internal class CoilBitmapLoader(private val context: android.content.Context, pr
             result.getOrNull()?.let { return@future it }
             val error = result.exceptionOrNull()
             if (error is java.util.concurrent.CancellationException) throw error
-            val transient = when (error) {
-                is coil.network.HttpException -> error.response.code == 408 || error.response.code >= 500
-                is android.graphics.ImageDecoder.DecodeException -> false
-                is java.io.IOException, null -> true
-                else -> false
-            }
+            val transient = isTransientFailure(error)
             if (transient && retrySource == null) retrySource = source
         }
         retrySource?.let { source ->
@@ -38,6 +33,13 @@ internal class CoilBitmapLoader(private val context: android.content.Context, pr
         }
         throw IllegalArgumentException("Artwork unavailable")
     }
+    private fun isTransientFailure(error: Throwable?): Boolean = when (error) {
+        is coil.network.HttpException -> error.response.code == 408 || error.response.code >= 500
+        is android.graphics.ImageDecoder.DecodeException -> false
+        is java.io.IOException, null -> true
+        else -> false
+    }
+
     private suspend fun fetchSource(source: String): android.graphics.Bitmap? {
         artworkFetcher?.let { return it(source) }
         return when (

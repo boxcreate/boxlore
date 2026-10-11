@@ -88,6 +88,8 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - Playback media IDs are owned by `:core:playback`.
 - Catalog and subscription identities are owned by catalog, RSS, and database modules.
 
+Artwork-only subscription headers try usable fallback candidates even when the primary show URL is blank; liked episodes use their associated show artwork after episode artwork fails.
+
 ## Testing notes
 
 - `LatestPlaybackQueueLogicTest` checks visible suffix order, publication-date chronology, Smart/filter order, completed-row handling, Play All, missing/duplicate rows, mixed-show metadata, and opaque RSS episode IDs.

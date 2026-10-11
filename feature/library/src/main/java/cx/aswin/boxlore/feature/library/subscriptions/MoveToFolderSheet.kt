@@ -42,6 +42,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.artworkUrls
 
 /**
  * Modal bottom sheet displaying available subscription folders to move or add a [podcast].
@@ -132,7 +133,7 @@ private fun MoveToFolderHeader(
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
             modifier = Modifier.size(44.dp),
         ) {
-            if (podcast.imageUrl.isNotBlank()) {
+            if (podcast.artworkUrls().isNotEmpty()) {
                 OptimizedImage(
             proxyWidth = 140,
             url = podcast.imageUrl,

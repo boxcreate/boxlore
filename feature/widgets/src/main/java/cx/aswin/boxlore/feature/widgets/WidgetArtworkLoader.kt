@@ -28,14 +28,17 @@ class WidgetArtworkLoader(
             return@withContext target.absolutePath
         }
 
+        var successfulSource = normalized
         val bitmap = cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(
             appContext,
             listOfNotNull(url) + fallbackUrls.filterNotNull(),
             width = 512,
             loader = imageLoader,
+            onSourceLoaded = { successfulSource = it },
         ) ?: return@withContext null
-        if (!publishAtomically(bitmap, target)) return@withContext null
-        target.takeIf { it.exists() && it.length() > 0L }?.absolutePath
+        val loadedTarget = if (cx.aswin.boxlore.core.model.artworkUrls(normalized).firstOrNull() == successfulSource) target else cacheFileFor(successfulSource)
+        if (!publishAtomically(bitmap, loadedTarget)) return@withContext null
+        loadedTarget.takeIf { it.exists() && it.length() > 0L }?.absolutePath
     }
 
     fun resolveCachedPath(url: String?): String? {
