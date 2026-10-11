@@ -6,6 +6,8 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 
 ## Public API
 
+- Appearance wiring exposes the persisted full-player style and forwards selection to `:core:prefs`. The existing player overlay chooses the audio presentation without changing navigation, player ownership, playback or the miniplayer. Standard remains the default, and video retains its current presentation.
+
 - Brief navigation injects the shared preference repository. A missing region uses the independent saved Brief edition; explicit Home, episode, podcast and notification regions keep their existing route precedence.
 
 - Coil is installed once in `BoxLoreApplication`, before widgets/services start, so activity recreation does not replace their shared image cache. The shell supplies failed-image recovery on foreground reentry and reconnection. Episode push hydration retains episode/show artwork candidates and a six-second total artwork budget; general push artwork uses a four-second budget. Notification routes, sounds, audiences and delivery guards remain unchanged.
@@ -148,6 +150,8 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 Episode push artwork keeps its six-second total deadline and uses 700ms per route, allowing later episode/show candidates within that budget.
 
 ## Testing notes
+
+- Full-player style persistence and presentation regressions live in `:core:prefs`, `:feature:settings` and `:feature:player`; app assembly validates the shared wiring.
 
 - Native announcements have no WebView, JavaScript bridge, render handshake or alternate fallback layout. Closing, scrolling and actions work immediately; image failure removes only the image. Compact surfaces use surfaceContainer and a subtle backdrop. Announcements and the updater set system-bar icon contrast on their own Dialog window without changing the underlying Activity; `NativeDialogSystemBarsTest` covers light/dark and dimmed surfaces.
 - `AnnouncementPolicyTest` and `AnnouncementPreferencesTest` cover optional fields, legacy category fallback, channel/version filtering, isolated audiences and persisted styles/actions. `UpdateSessionTest` and `AppUpdatesPanelTest` cover saved files, process recreation and the explicit permission-return retry. Sender tests compare browser/workflow approval digests and reject changed drafts before delivery. `AnnouncementRenderTest` covers release/custom actions, scoped accent roles and Markdown compatibility. Shipping artifact checks still reject isolated receivers/markers.

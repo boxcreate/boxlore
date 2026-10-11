@@ -1,0 +1,15 @@
+<resources>
+    <string name="minimal_play">Play</string>
+    <string name="minimal_pause">Pause</string>
+    <string name="minimal_buffering">Buffering</string>
+    <string name="minimal_sleep">Sleep timer</string>
+    <string name="minimal_speed">Playback speed: %1$s</string>
+    <string name="minimal_up_next">Up next</string>
+    <string name="minimal_collapse">Minimize player</string>
+    <string name="minimal_full_title">Show full episode title</string>
+    <string name="minimal_done">Done</string>
+    <string name="minimal_unknown_duration">—</string>
+    <string name="minimal_remaining_hours">−%1$dh %2$dm</string>
+    <string name="minimal_remaining_minutes">−%1$dm</string>
+    <string name="player_seek">Playback position</string>
+</resources>

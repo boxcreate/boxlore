@@ -79,6 +79,13 @@ class UserPreferencesRepository(context: Context,) {
     val cachedSubscriptionsTabStyle: String
         get() = appearance.cachedSubscriptionsTabStyle
 
+    val cachedFullPlayerStyle: String
+        get() = appearance.fullPlayer.cachedStyle
+
+    val fullPlayerStyleStream: Flow<String> = appearance.fullPlayer.style
+
+    suspend fun setFullPlayerStyle(style: String) = appearance.fullPlayer.setStyle(style)
+
     val cachedThemeBrand: String
         get() = appearance.cachedThemeBrand
 

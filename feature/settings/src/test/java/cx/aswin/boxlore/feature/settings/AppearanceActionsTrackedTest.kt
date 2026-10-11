@@ -6,6 +6,23 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class AppearanceActionsTrackedTest {
+    @Test
+    fun `player style callback survives the appearance wrapper without toggling miniplayer`() {
+        val styles = mutableListOf<String>()
+        var miniChanges = 0
+        val tracked = AppearanceActions(
+            {},
+            {},
+            {},
+            {},
+            onSetFullPlayerStyle = { styles.add(it) },
+            onSetMiniPlayerSeekButtonsEnabled = { miniChanges++ },
+        ).trackedForAnalytics()
+        tracked.onSetFullPlayerStyle("bunpod")
+        tracked.onSetFullPlayerStyle("standard")
+        assertEquals(listOf("bunpod", "standard"), styles)
+        assertEquals(0, miniChanges)
+    }
 
     @Test
     fun `saving a custom draft is separate from selecting or remembering an existing theme`() {

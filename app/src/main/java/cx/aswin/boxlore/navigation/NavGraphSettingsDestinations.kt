@@ -173,6 +173,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             currentSubscriptionsDefaultTab = settingsState.subscriptionsDefaultTab,
             currentSubscriptionsTabStyle = settingsState.subscriptionsTabStyle,
             miniPlayerSeekButtonsEnabled = settingsState.miniPlayerSeekButtonsEnabled,
+            fullPlayerStyle = settingsState.fullPlayerStyle,
             artworkColorsEnabled = settingsState.artworkColorsEnabled,
             savedCustomTheme = settingsState.savedCustomTheme,
         ),
@@ -212,6 +213,9 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             },
             onSetMiniPlayerSeekButtonsEnabled = { enabled ->
                 scope.launch { userPrefs.setMiniPlayerSeekButtonsEnabled(enabled) }
+            },
+            onSetFullPlayerStyle = { style ->
+                scope.launch { userPrefs.setFullPlayerStyle(style) }
             },
         ),
     )

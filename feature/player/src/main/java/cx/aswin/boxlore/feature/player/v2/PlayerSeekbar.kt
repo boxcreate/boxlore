@@ -43,9 +43,16 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -82,14 +89,34 @@ fun PlayerSeekbar(
     colorScheme: ColorScheme,
     onSeek: (Long) -> Unit,
     chapters: List<Chapter> = emptyList(),
-    modifier: Modifier = Modifier
-) {
+    modifier: Modifier = Modifier,
+) = PlayerSeekbarContent(progressFlows, SeekbarPresentation(durationMs, isPlaying, colorScheme, chapters), onSeek, modifier)
+
+@Composable
+internal fun MinimalPlayerSeekbar(
+    progressFlows: PlayerProgressFlows,
+    durationMs: Long,
+    isPlaying: Boolean,
+    colorScheme: ColorScheme,
+    onSeek: (Long) -> Unit,
+    chapters: List<Chapter>,
+) = PlayerSeekbarContent(progressFlows, SeekbarPresentation(durationMs, isPlaying, colorScheme, chapters, minimal = true), onSeek, Modifier)
+
+private data class SeekbarPresentation(val durationMs: Long, val isPlaying: Boolean, val colors: ColorScheme, val chapters: List<Chapter>, val minimal: Boolean = false)
+
+@Composable
+private fun PlayerSeekbarContent(progressFlows: PlayerProgressFlows, model: SeekbarPresentation, onSeek: (Long) -> Unit, modifier: Modifier) {
+    val durationMs = model.durationMs
+    val isPlaying = model.isPlaying
+    val colorScheme = model.colors
+    val chapters = model.chapters
+    val minimal = model.minimal
     val position by progressFlows.position.collectAsStateWithLifecycle(initialValue = 0L)
     val bufferedPosition by progressFlows.bufferedPosition.collectAsStateWithLifecycle(initialValue = 0L)
     val haptics = LocalHapticFeedback.current
+    val seekDescription = stringResource(cx.aswin.boxlore.feature.player.R.string.player_seek)
 
     var dragFraction by remember { mutableStateOf<Float?>(null) }
-    var showTotalDuration by rememberSaveable { mutableStateOf(false) }
 
     val duration = durationMs.coerceAtLeast(1L)
     val playedFraction = dragFraction ?: playbackFraction(position, duration)
@@ -119,66 +146,25 @@ fun PlayerSeekbar(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Floating seek/chapter preview pill
-        AnimatedVisibility(
-            visible = dragFraction != null,
-            enter = fadeIn(tween(150)) + slideInVertically(initialOffsetY = { it / 2 }),
-            exit = fadeOut(tween(250)) + slideOutVertically(targetOffsetY = { it / 2 })
-        ) {
-            val fraction = dragFraction ?: 0f
-            val seekTime = seekPosition(fraction, duration)
-            val previewText = seekPreviewText(seekTime, chapterAtPosition(chapters, seekTime))
-            Surface(
-                modifier = Modifier
-                    .padding(bottom = 6.dp)
-                    .wrapContentSize(),
-                shape = RoundedCornerShape(16.dp),
-                color = colorScheme.primaryContainer,
-                border = BorderStroke(1.dp, colorScheme.primary),
-                shadowElevation = 6.dp
-            ) {
-                Text(
-                    text = previewText,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
-                    color = colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
+        SeekbarPreview(dragFraction, duration, chapters, colorScheme)
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(44.dp)
-                .pointerInput(duration) {
-                    detectTapGestures(onTap = { offset ->
-                        val fraction = (offset.x / size.width).coerceIn(0f, 1f)
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onSeek((fraction * duration).toLong())
-                    })
+                .semantics {
+                    contentDescription = seekDescription
+                    progressBarRangeInfo = ProgressBarRangeInfo(playedFraction, 0f..1f)
+                    setProgress { fraction ->
+                        if (durationMs <= 0L) {
+                            false
+                        } else {
+                            onSeek(seekPosition(fraction, duration))
+                            true
+                        }
+                    }
                 }
-                .pointerInput(duration) {
-                    detectHorizontalDragGestures(
-                        onDragStart = { offset ->
-                            dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        },
-                        onHorizontalDrag = { change, _ ->
-                            change.consume()
-                            dragFraction = (change.position.x / size.width).coerceIn(0f, 1f)
-                        },
-                        onDragEnd = {
-                            dragFraction?.let { fraction ->
-                                onSeek((fraction * duration).toLong())
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            }
-                            dragFraction = null
-                        },
-                        onDragCancel = { dragFraction = null }
-                    )
-                }
+                .seekbarGestures(durationMs, haptics, { dragFraction = it }, onSeek)
         ) {
             SeekbarTrack(
                 state = SeekbarDrawState(
@@ -187,40 +173,121 @@ fun PlayerSeekbar(
                     amplitudeFactor = amplitudeFactor,
                     phase = phase,
                     duration = duration,
-                    chapters = chapters
+                    chapters = chapters,
+                    minimal = minimal,
                 ),
                 colorScheme = colorScheme
             )
         }
 
-        Spacer(modifier = Modifier.height(2.dp))
+        if (!minimal) {
+            SeekbarTimeLabels(dragFraction?.let { (it * duration).toLong() } ?: position, duration, colorScheme)
+        }
+    }
+}
 
-        // Time labels
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            val previewPosition = dragFraction?.let { (it * duration).toLong() } ?: position
-            Text(
-                text = formatTime(previewPosition),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
-                color = colorScheme.primary.copy(alpha = 0.85f)
-            )
-            Text(
-                text = if (showTotalDuration) {
-                    formatTime(duration)
-                } else {
-                    "-" + formatTime((duration - previewPosition).coerceAtLeast(0))
-                },
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
-                color = colorScheme.primary.copy(alpha = 0.85f),
-                modifier = Modifier.pointerInput(Unit) {
-                    detectTapGestures { showTotalDuration = !showTotalDuration }
+private fun Modifier.seekbarGestures(
+    durationMs: Long,
+    haptics: HapticFeedback,
+    onPreview: (Float?) -> Unit,
+    onSeek: (Long) -> Unit,
+): Modifier {
+    if (durationMs <= 0L) return this
+    return pointerInput(durationMs) {
+        detectTapGestures { offset ->
+            val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onSeek(seekPosition(fraction, durationMs))
+        }
+    }.pointerInput(durationMs) {
+        var dragFraction: Float? = null
+        detectHorizontalDragGestures(
+            onDragStart = { offset ->
+                dragFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                onPreview(dragFraction)
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            },
+            onHorizontalDrag = { change, _ ->
+                change.consume()
+                dragFraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                onPreview(dragFraction)
+            },
+            onDragEnd = {
+                dragFraction?.let { fraction ->
+                    onSeek(seekPosition(fraction, durationMs))
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 }
+                dragFraction = null
+                onPreview(null)
+            },
+            onDragCancel = {
+                dragFraction = null
+                onPreview(null)
+            },
+        )
+    }
+}
+
+@Composable
+private fun SeekbarPreview(dragFraction: Float?, duration: Long, chapters: List<Chapter>, colorScheme: ColorScheme) {
+    AnimatedVisibility(
+        visible = dragFraction != null,
+        enter = fadeIn(tween(150)) + slideInVertically(initialOffsetY = { it / 2 }),
+        exit = fadeOut(tween(250)) + slideOutVertically(targetOffsetY = { it / 2 })
+    ) {
+        val fraction = dragFraction ?: 0f
+        val seekTime = seekPosition(fraction, duration)
+        val previewText = seekPreviewText(seekTime, chapterAtPosition(chapters, seekTime))
+        Surface(
+            modifier = Modifier
+                .padding(bottom = 6.dp)
+                .wrapContentSize(),
+            shape = RoundedCornerShape(16.dp),
+            color = colorScheme.primaryContainer,
+            border = BorderStroke(1.dp, colorScheme.primary),
+            shadowElevation = 6.dp
+        ) {
+            Text(
+                text = previewText,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
+                color = colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
+    }
+}
+
+@Composable
+private fun SeekbarTimeLabels(previewPosition: Long, duration: Long, colorScheme: ColorScheme) {
+    var showTotalDuration by rememberSaveable { mutableStateOf(false) }
+    Spacer(modifier = Modifier.height(2.dp))
+
+    // Time labels
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = formatTime(previewPosition),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
+            color = colorScheme.primary.copy(alpha = 0.85f)
+        )
+        Text(
+            text = if (showTotalDuration) {
+                formatTime(duration)
+            } else {
+                "-" + formatTime((duration - previewPosition).coerceAtLeast(0))
+            },
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = GoogleSansWeight.semiBold),
+            color = colorScheme.primary.copy(alpha = 0.85f),
+            modifier = Modifier.pointerInput(Unit) {
+                detectTapGestures { showTotalDuration = !showTotalDuration }
+            }
+        )
     }
 }
 
@@ -230,7 +297,8 @@ private data class SeekbarDrawState(
     val amplitudeFactor: Float,
     val phase: Float,
     val duration: Long,
-    val chapters: List<Chapter>
+    val chapters: List<Chapter>,
+    val minimal: Boolean,
 )
 
 private data class SeekbarDrawMetrics(
@@ -268,11 +336,11 @@ private fun DrawScope.seekbarMetrics(state: SeekbarDrawState): SeekbarDrawMetric
     val gap = 7.dp.toPx()
     return SeekbarDrawMetrics(
         centerY = centerY,
-        trackStroke = 5.dp.toPx(),
+        trackStroke = (if (state.minimal) 2.5.dp else 5.dp).toPx(),
         waveAmplitude = 3.dp.toPx() * state.amplitudeFactor,
         wavelength = 36.dp.toPx(),
-        thumbWidth = 5.dp.toPx(),
-        thumbHeight = 24.dp.toPx(),
+        thumbWidth = (if (state.minimal) 8.dp else 5.dp).toPx(),
+        thumbHeight = (if (state.minimal) 8.dp else 24.dp).toPx(),
         thumbX = thumbX,
         activeEnd = (thumbX - gap).coerceAtLeast(0f),
         inactiveStart = (thumbX + gap).coerceAtMost(size.width)

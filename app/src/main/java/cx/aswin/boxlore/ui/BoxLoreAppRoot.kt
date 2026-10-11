@@ -383,6 +383,7 @@ fun BoxLoreAppRoot(
     val seekBackwardMs by userPrefs.seekBackwardMsStream.collectAsState(initial = 10_000L)
     val seekForwardMs by userPrefs.seekForwardMsStream.collectAsState(initial = 30_000L)
     val miniPlayerSeekButtonsEnabled by userPrefs.miniPlayerSeekButtonsEnabledStream.collectAsStateWithLifecycle(initialValue = false)
+    val fullPlayerStyle by userPrefs.fullPlayerStyleStream.collectAsStateWithLifecycle(initialValue = userPrefs.cachedFullPlayerStyle)
     val hideCompletedInHome by userPrefs.hideCompletedInHomeStream.collectAsState(initial = true)
     val hideCompletedInSubs by userPrefs.hideCompletedInSubsStream.collectAsState(initial = true)
     val hideCompletedInShowDetails by userPrefs.hideCompletedInShowDetailsStream.collectAsState(initial = false)
@@ -712,6 +713,7 @@ fun BoxLoreAppRoot(
                                         seekBackwardMs = seekBackwardMs,
                                         seekForwardMs = seekForwardMs,
                                         miniPlayerSeekButtonsEnabled = miniPlayerSeekButtonsEnabled,
+                                        fullPlayerStyle = fullPlayerStyle,
                                         hideCompletedInHome = hideCompletedInHome,
                                         hideCompletedInSubs = hideCompletedInSubs,
                                         hideCompletedInShowDetails = hideCompletedInShowDetails,
