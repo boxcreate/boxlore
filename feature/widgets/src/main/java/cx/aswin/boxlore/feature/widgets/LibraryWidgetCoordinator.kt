@@ -127,7 +127,7 @@ object LibraryWidgetCoordinator {
                         if (!row.artworkCachePath.isNullOrBlank() || row.artworkUrl.isNullOrBlank()) {
                             row
                         } else {
-                            val path = artworkLoader.load(row.artworkUrl) ?: return@map row
+                            val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@map row
                             changed = true
                             row.copy(artworkCachePath = path)
                         }
@@ -137,7 +137,7 @@ object LibraryWidgetCoordinator {
                         if (!row.artworkCachePath.isNullOrBlank() || row.artworkUrl.isNullOrBlank()) {
                             row
                         } else {
-                            val path = artworkLoader.load(row.artworkUrl) ?: return@map row
+                            val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@map row
                             changed = true
                             row.copy(artworkCachePath = path)
                         }

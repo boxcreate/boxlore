@@ -39,7 +39,6 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.feature.info.logic.EpisodeArtworkLogic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,19 +74,7 @@ fun EpisodeOptionsSheet(
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Surface(
-                    modifier = Modifier.size(64.dp),
-                    shape = MaterialTheme.shapes.medium, // Or ExpressiveShapes.Squircle
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                ) {
-                    OptimizedImage(
-                        url = EpisodeArtworkLogic.listUrl(episode, podcastImageUrl),
-                        proxyWidth = 150, // 64dp thumbnail
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                }
+                EpisodeOptionsArtwork(episode, podcastImageUrl)
 
                 Spacer(modifier = Modifier.width(16.dp))
 
@@ -196,6 +183,24 @@ private fun OptionItem(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun EpisodeOptionsArtwork(episode: Episode, podcastImageUrl: String?) {
+    Surface(
+        modifier = Modifier.size(64.dp),
+        shape = MaterialTheme.shapes.medium, // Or ExpressiveShapes.Squircle
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        OptimizedImage(
+            url = episode.imageUrl,
+            fallbackUrls = listOf(episode.podcastImageUrl, podcastImageUrl),
+            proxyWidth = 150, // 64dp thumbnail
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
         )
     }
 }

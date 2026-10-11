@@ -6,6 +6,8 @@ Owns podcast and episode detail presentation: subscribe actions, RSS refresh act
 
 ## Public API
 
+- Detail heroes, blurred backdrops, episode rows/options, recommendations and More from retain artwork alternatives through actual load failures. Person portraits remain independent and never fall back to show artwork. Palette logic and navigation remain unchanged.
+
 - Details cards, chapter/episode rows and expandable text keep steady, shape-clipped Material feedback. Custom link/person chips and trailer play controls use the shared restrained control response. Native buttons retain their own feedback; episode long-press selection and nested actions are unchanged.
 
 - Episode and show titles share `ExpandableInfoTitle` and retain the original paragraph baselines when the expansion arrow is visible; its 48dp touch target is placed beside the last line without increasing line spacing. Episode titles collapse to three lines with two full-width lines before the control. Centered show titles collapse to two lines, with the arrow beside the second line, and only overflowing titles expose expansion. Expanded tails can wrap, and tapping again collapses the title. Heading semantics retain the complete title, and control placement mirrors in RTL.

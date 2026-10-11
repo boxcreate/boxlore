@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
@@ -75,6 +76,7 @@ class WidgetLibrarySourceAdapter(
                             title = podcast.title,
                             subtitle = podcast.artist,
                             artworkUrl = artworkUrlFor(podcast),
+                            fallbackArtworkUrls = podcast.artworkUrls(),
                             deepLinkUri = podcastDeepLink(podcast.id),
                             isNew = podcast.isLatestEpisodeNew(inputs.lastSeen[podcast.id]),
                         )
@@ -99,6 +101,7 @@ class WidgetLibrarySourceAdapter(
                             podcastId = podcast.id,
                             podcastTitle = podcast.title,
                             artworkUrl = episodeArtUrl(episode.imageUrl, podcast),
+                            fallbackArtworkUrls = episode.artworkUrls(podcast),
                             deepLinkUri = episodeDeepLink(episode.id, podcast.id, podcast.title),
                         )
                     },

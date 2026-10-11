@@ -470,6 +470,7 @@ private fun MiniPlayerArtwork(
     ) {
         OptimizedImage(
             url = imageUrl,
+            fallbackUrls = listOf(content.episode.podcastImageUrl, content.podcastImageUrl),
             proxyWidth = 160,
             contentDescription = "Episode artwork",
             contentScale = ContentScale.Crop,

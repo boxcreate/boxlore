@@ -66,6 +66,7 @@ internal fun ExpressiveFeedMediaCard(
     presentation: FeedMediaCardPresentation,
     modifier: Modifier,
     imageChrome: @Composable (BoxScope.() -> Unit)?,
+    fallbackImageUrls: List<String?>,
 ) {
     DiscoveryExpressiveTheme {
         Card(
@@ -80,6 +81,7 @@ internal fun ExpressiveFeedMediaCard(
                     Box(artworkModifier) {
                         OptimizedImage(
                             url = imageUrl,
+                            fallbackUrls = fallbackImageUrls,
                             proxyWidth = 400,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,

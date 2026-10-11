@@ -31,6 +31,7 @@ import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 
 data class SearchCategoryItem(
     val label: String,
@@ -377,6 +378,7 @@ internal fun OnboardingSearchScreen(
                             ) {
                                 OptimizedImage(
                                     url = podcast.imageUrl,
+                                    fallbackUrls = podcast.artworkUrls(),
                                     proxyWidth = 150,
                                     contentDescription = podcast.title,
                                     modifier =
@@ -465,6 +467,7 @@ private fun PopularPodcastGridItem(
         ) {
             OptimizedImage(
                 url = podcast.imageUrl,
+                fallbackUrls = podcast.artworkUrls(),
                 proxyWidth = 400,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
@@ -550,6 +553,7 @@ private fun SearchResultRow(
     ) {
         OptimizedImage(
             url = podcast.imageUrl,
+            fallbackUrls = podcast.artworkUrls(),
             proxyWidth = 400,
             contentDescription = null,
             contentScale = ContentScale.Crop,

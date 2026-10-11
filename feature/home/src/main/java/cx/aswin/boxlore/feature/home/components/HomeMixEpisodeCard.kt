@@ -119,7 +119,8 @@ internal fun HomeMixArtwork(
 ) {
     Box(Modifier.size(size).clip(RoundedCornerShape(topStart = 22.dp, topEnd = 12.dp, bottomEnd = 22.dp, bottomStart = 12.dp)).testTag("home_mix_artwork_${episode.id}")) {
         OptimizedImage(
-            url = resolveMixArtwork(episode.imageUrl, episode.podcastImageUrl, podcast.imageUrl, podcast.fallbackImageUrl),
+            url = episode.imageUrl,
+            fallbackUrls = listOf(episode.podcastImageUrl, podcast.imageUrl, podcast.fallbackImageUrl),
             proxyWidth = 512,
             contentDescription = null,
             contentScale = ContentScale.Crop,

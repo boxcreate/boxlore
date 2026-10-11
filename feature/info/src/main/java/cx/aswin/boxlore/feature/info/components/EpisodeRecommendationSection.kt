@@ -98,7 +98,8 @@ internal fun EpisodeRecommendationSection(
                     val showName = episode.podcastTitle?.takeIf(String::isNotBlank)
                     val accessibleTitle = showName?.let { stringResource(R.string.episode_info_episode_from_show, episode.title, it) } ?: episode.title
                     FeedMediaCard(
-                        imageUrl = episode.imageUrl?.takeIf(String::isNotBlank) ?: episode.podcastImageUrl?.takeIf(String::isNotBlank) ?: state.fallbackImageUrl.orEmpty(),
+                        imageUrl = episode.imageUrl.orEmpty(),
+                        fallbackImageUrls = listOf(episode.podcastImageUrl, state.fallbackImageUrl),
                         title = episode.title,
                         subtitle = null,
                         onClick = { onEpisodeClick(episode) },

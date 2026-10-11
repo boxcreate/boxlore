@@ -12,12 +12,8 @@ import cx.aswin.boxlore.core.network.model.TrendingFeed
  * Most CDNs (including BBC's ichef) support HTTPS, so this is safe.
  */
 internal fun String?.toHttps(): String {
-    if (this.isNullOrEmpty()) return ""
-    return if (this.startsWith("http://")) {
-        this.replaceFirst("http://", "https://")
-    } else {
-        this
-    }
+    val url = this?.trim().orEmpty()
+    return if (url.startsWith("http://", ignoreCase = true)) url.replaceFirst("http://", "https://", ignoreCase = true) else url
 }
 
 // Sort from most specific/descriptive to most generic to prevent "News" overriding "Sports"
@@ -53,7 +49,7 @@ internal fun mapFeedsToPodcasts(feeds: List<cx.aswin.boxlore.core.network.model.
         id = feed.id.toString(),
         title = feed.title,
         artist = feed.author ?: "Unknown",
-        imageUrl = (feed.artwork ?: feed.image).toHttps(),
+        imageUrl = (feed.artwork?.takeIf { it.isNotBlank() } ?: feed.image).toHttps(),
         description = feed.description,
         genre = resolvePrimaryGenre(feed.categories),
         latestEpisode = feed.latestEpisode?.let { epItem ->
@@ -133,7 +129,7 @@ internal fun mapToPodcast(feed: cx.aswin.boxlore.core.network.model.TrendingFeed
     id = feed.id.toString(),
     title = feed.title,
     artist = feed.author ?: "Unknown",
-    imageUrl = (feed.artwork ?: feed.image).toHttps(),
+    imageUrl = (feed.artwork?.takeIf { it.isNotBlank() } ?: feed.image).toHttps(),
     description = feed.description,
     genre = resolvePrimaryGenre(feed.categories),
     latestEpisode = feed.latestEpisode?.let { epItem ->

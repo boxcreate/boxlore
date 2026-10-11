@@ -6,6 +6,8 @@ Owns Library presentation: hub, subscriptions, liked episodes, downloaded episod
 
 ## Public API
 
+- Subscriptions, folder pickers, downloads and liked episodes use shared artwork loading instead of raw Coil consumers. Episode art falls through to available show art on failure; show surfaces remain show-first, with the branded shared fallback.
+
 - Cards and episode/subscription rows use steady Material feedback, retaining long-press selection and drag ownership. Custom Play All/Delete All/explore controls use restrained control feedback. The Smart Downloads sync button has one native Material click handler and indication.
 
 - `LibraryScreen` and `LibraryViewModel`. When Appearance **Cleaner Home** is on, the hub top bar shows Settings and Feedback in the same shared `TopBarUtilityActions` capsule Home normally uses. Styling, 48dp touch targets and press feedback are consistent; Library retains its existing top-bar scrolling and click/long-press actions.

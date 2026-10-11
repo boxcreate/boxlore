@@ -11,6 +11,7 @@ data class WidgetShowRow(
     val title: String,
     val subtitle: String = "",
     val artworkUrl: String? = null,
+    val fallbackArtworkUrls: List<String> = emptyList(),
     val artworkCachePath: String? = null,
     val deepLinkUri: String,
     val isNew: Boolean = false,
@@ -24,6 +25,7 @@ data class WidgetEpisodeRow(
     val podcastId: String,
     val podcastTitle: String,
     val artworkUrl: String? = null,
+    val fallbackArtworkUrls: List<String> = emptyList(),
     val artworkCachePath: String? = null,
     val deepLinkUri: String,
 )

@@ -28,6 +28,7 @@ internal fun InfoArtworkBackground(
     scrollOffset: Float,
     scrollFraction: Float,
     modifier: Modifier = Modifier,
+    fallbackUrls: List<String?> = emptyList(),
 ) {
     Box(
         modifier = modifier.fillMaxWidth().height(height).graphicsLayer {
@@ -49,6 +50,7 @@ internal fun InfoArtworkBackground(
     ) {
         OptimizedImage(
             url = imageUrl,
+            fallbackUrls = fallbackUrls,
             proxyWidth = 400,
             contentDescription = null,
             modifier = Modifier.fillMaxSize().graphicsLayer {

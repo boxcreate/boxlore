@@ -71,7 +71,9 @@ data class PlayerHeroArtwork(
     val artworkUrl: String?,
     val nextArtworkUrl: String?,
     val nextEpisodeTitle: String?,
-    val chapterArtFlow: Flow<String?>
+    val chapterArtFlow: Flow<String?>,
+    val fallbackArtworkUrls: List<String?> = emptyList(),
+    val nextFallbackArtworkUrls: List<String?> = emptyList(),
 )
 
 data class PlayerHeroPlayback(
@@ -124,6 +126,7 @@ fun PlayerHero(
         } else if (artwork.nextArtworkUrl.isNullOrBlank() || !playback.isExpanded) {
             PlayerArtworkCard(
                 artworkUrl = displayedArt,
+                fallbackArtworkUrls = listOf(artwork.artworkUrl) + artwork.fallbackArtworkUrls,
                 colorScheme = colorScheme,
                 modifier = Modifier
                     .width(dimensions.width)
@@ -132,10 +135,8 @@ fun PlayerHero(
             )
         } else {
             PlayerArtworkPager(
-                episodeId = artwork.episodeId,
+                artwork = artwork,
                 artworkUrl = displayedArt,
-                nextArtworkUrl = artwork.nextArtworkUrl,
-                nextEpisodeTitle = artwork.nextEpisodeTitle,
                 colorScheme = colorScheme,
                 dimensions = dimensions,
                 onSkipNextEpisode = onSkipNextEpisode
@@ -181,17 +182,15 @@ data class HeroDimensions(val width: Dp, val height: Dp)
 
 @Composable
 private fun PlayerArtworkPager(
-    episodeId: String,
+    artwork: PlayerHeroArtwork,
     artworkUrl: String?,
-    nextArtworkUrl: String,
-    nextEpisodeTitle: String?,
     colorScheme: ColorScheme,
     dimensions: HeroDimensions,
     onSkipNextEpisode: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
     val heroShape = MaterialTheme.shapes.extraLarge
-    key(episodeId) {
+    key(artwork.episodeId) {
         val pagerState = rememberPagerState { 2 }
         LaunchedEffect(pagerState) {
             snapshotFlow { pagerState.settledPage }
@@ -210,11 +209,12 @@ private fun PlayerArtworkPager(
                 val pageOffset = (
                     (pagerState.currentPage - index) + pagerState.currentPageOffsetFraction
                     ).absoluteValue.coerceIn(0f, 1f)
-                val pageArtwork = if (index == 0) artworkUrl else nextArtworkUrl
-                val contentDescription = if (index == 0) "Album Art" else "Up next: $nextEpisodeTitle"
+                val pageArtwork = if (index == 0) artworkUrl else artwork.nextArtworkUrl
+                val contentDescription = if (index == 0) "Album Art" else "Up next: ${artwork.nextEpisodeTitle}"
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     PlayerArtworkCard(
                         artworkUrl = pageArtwork,
+                        fallbackArtworkUrls = if (index == 0) listOf(artwork.artworkUrl) + artwork.fallbackArtworkUrls else artwork.nextFallbackArtworkUrls,
                         colorScheme = colorScheme,
                         contentDescription = contentDescription,
                         modifier = Modifier
@@ -275,6 +275,7 @@ private fun NextEpisodeHint(height: Dp, colorScheme: ColorScheme) {
 @Composable
 private fun PlayerArtworkCard(
     artworkUrl: String?,
+    fallbackArtworkUrls: List<String?>,
     colorScheme: ColorScheme,
     contentDescription: String = "Album Art",
     modifier: Modifier = Modifier
@@ -291,6 +292,7 @@ private fun PlayerArtworkCard(
         ) { url ->
             OptimizedImage(
                 url = url,
+                fallbackUrls = fallbackArtworkUrls,
                 proxyWidth = 800,
                 contentDescription = contentDescription,
                 contentScale = ContentScale.Crop,

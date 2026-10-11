@@ -55,6 +55,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 
 /** Stable Compose [testTag] ids for onboarding suggestion instrumentation / Maestro. */
 internal object SuggestedPodcastTestTags {
@@ -144,6 +145,7 @@ private fun SuggestionCardArtwork(
         ) {
             OptimizedImage(
                 url = podcast.imageUrl,
+                fallbackUrls = podcast.artworkUrls(),
                 proxyWidth = 400,
                 contentDescription = podcast.title,
                 contentScale = ContentScale.Crop,
@@ -339,6 +341,7 @@ private fun SuggestionDetailHeader(podcast: Podcast) {
     ) {
         OptimizedImage(
             url = podcast.imageUrl,
+            fallbackUrls = podcast.artworkUrls(),
             proxyWidth = 240,
             contentDescription = null,
             contentScale = ContentScale.Crop,

@@ -51,9 +51,10 @@ fun FeedMediaCard(
     titleMaxLines: Int = 2,
     presentation: FeedMediaCardPresentation = FeedMediaCardPresentation.Default,
     imageChrome: @Composable (BoxScope.() -> Unit)? = null,
+    fallbackImageUrls: List<String?> = emptyList(),
 ) {
     if (presentation != FeedMediaCardPresentation.Default) {
-        ExpressiveFeedMediaCard(imageUrl, title, onClick, presentation, modifier, imageChrome)
+        ExpressiveFeedMediaCard(imageUrl, title, onClick, presentation, modifier, imageChrome, fallbackImageUrls)
         return
     }
     val lines = titleMaxLines.coerceAtLeast(1)
@@ -75,6 +76,7 @@ fun FeedMediaCard(
             ) {
                 OptimizedImage(
                     url = imageUrl,
+                    fallbackUrls = fallbackImageUrls,
                     proxyWidth = 400,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

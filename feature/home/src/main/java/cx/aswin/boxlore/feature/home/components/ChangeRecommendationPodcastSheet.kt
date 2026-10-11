@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,6 +122,7 @@ fun ChangeRecommendationPodcastSheet(
                     ) {
                         OptimizedImage(
                             url = podcast.imageUrl,
+                            fallbackUrls = podcast.artworkUrls(),
                             proxyWidth = 120,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,

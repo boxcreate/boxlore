@@ -56,6 +56,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.feature.explore.R
 
 /** Cap for By-concept podcast-vector rail — keep episodes as the primary feed. */
@@ -103,6 +104,7 @@ fun ExploreRelatedShowsRail(
                 ) {
                     OptimizedImage(
                         url = podcast.imageUrl,
+                        fallbackUrls = podcast.artworkUrls(),
                         proxyWidth = 220,
                         contentDescription = podcast.title,
                         contentScale = ContentScale.Crop,

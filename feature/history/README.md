@@ -6,6 +6,8 @@ Provides UI and logic for viewing the user's listening history.
 
 ## Public API
 
+- History episode artwork retains its show-art alternative through actual load failures using the shared loader, without changing history ordering or navigation.
+
 - `HistoryScreen`
 
 ## Internal structure

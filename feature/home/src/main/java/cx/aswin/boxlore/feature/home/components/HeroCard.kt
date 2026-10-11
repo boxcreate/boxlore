@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -152,7 +153,8 @@ private fun HeroLead(item: SmartHeroItem, foreground: Color, modifier: Modifier)
 
 @Composable
 private fun HeroArtwork(item: SmartHeroItem, modifier: Modifier) {
-    HeroArtworkMerge(heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT), modifier.testTag("home_hero_artwork"))
+    val sources = if (item.type == HeroType.SPOTLIGHT) item.podcast.artworkUrls() else item.podcast.latestEpisode?.artworkUrls(item.podcast) ?: item.podcast.artworkUrls()
+    HeroArtworkMerge(heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT), modifier.testTag("home_hero_artwork"), sources)
 }
 
 @Composable

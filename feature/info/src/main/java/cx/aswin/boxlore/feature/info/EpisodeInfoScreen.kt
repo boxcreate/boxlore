@@ -206,7 +206,8 @@ fun EpisodeInfoScreen(
             is EpisodeInfoUiState.Success -> {
                 Box(modifier = modifier.fillMaxSize()) {
                     cx.aswin.boxlore.feature.info.components.InfoArtworkBackground(
-                        imageUrl = state.episode.imageUrl?.takeIf(String::isNotBlank) ?: state.episode.podcastImageUrl,
+                        imageUrl = state.episode.imageUrl,
+                        fallbackUrls = listOf(state.episode.podcastImageUrl),
                         height = collapsedHeaderHeight + 400.dp,
                         scrollOffset = scrollOffset,
                         scrollFraction = scrollFraction,

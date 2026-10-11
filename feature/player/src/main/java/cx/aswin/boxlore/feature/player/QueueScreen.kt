@@ -34,7 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -243,8 +243,10 @@ fun QueueItemRow(
             .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = episode.imageUrl?.takeIf { it.isNotBlank() }
+        OptimizedImage(
+            proxyWidth = 160,
+            fallbackUrls = listOf(episode.podcastImageUrl, podcast?.imageUrl, podcast?.fallbackImageUrl),
+            url = episode.imageUrl?.takeIf { it.isNotBlank() }
                 ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
                 ?: podcast?.imageUrl,
             contentDescription = null,
@@ -399,9 +401,10 @@ private fun SameShowContinuationPreviewList(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AsyncImage(
-                    model =
-                    episode.imageUrl?.takeIf { it.isNotBlank() }
+                OptimizedImage(
+            proxyWidth = 160,
+            fallbackUrls = listOf(episode.podcastImageUrl),
+                    url = episode.imageUrl?.takeIf { it.isNotBlank() }
                         ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
                     contentDescription = null,
                     modifier =

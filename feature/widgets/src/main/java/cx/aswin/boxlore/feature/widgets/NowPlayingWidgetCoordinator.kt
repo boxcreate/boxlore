@@ -110,7 +110,7 @@ object NowPlayingWidgetCoordinator {
         artworkJob.set(
             deps.scope.launch {
                 try {
-                    val path = artworkLoader.load(url) ?: return@launch
+                    val path = artworkLoader.load(url, snapshot.fallbackArtworkUrls) ?: return@launch
                     val latest = store.read() ?: return@launch
                     if (latest.episodeId != snapshot.episodeId || latest.artworkUrl != url) return@launch
                     if (latest.artworkCachePath == path) return@launch

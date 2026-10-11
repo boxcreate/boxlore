@@ -6,6 +6,8 @@ Owns player presentation: mini player, full player sheet, queue screen UI, contr
 
 ## Public API
 
+- Player, mini-player, Up next and Queue retain episode/show artwork alternatives. Full-player chapter art falls through to episode then show artwork; next-episode art has its own chain. Chapter tiles use the shared loader. Playback, queue advancement and artwork geometry are unchanged.
+
 - Queue rows use steady Material feedback; custom mini-player and Up Next controls opt into the shared 3% non-bouncy press response. The full-player connected transport animation, drag/seek interactions and playback callbacks are unchanged. Mini-player Play/Seek and Up Next backgrounds sit inside their press layer so the complete coloured control contracts with its content.
 
 - `v2.PlayerSheetScaffold` is composed by `:app` as the mini/full player overlay.

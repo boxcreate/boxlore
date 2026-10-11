@@ -57,7 +57,8 @@ internal fun PodcastInfoHeroSection(
             shadowElevation = 8.dp,
         ) {
             OptimizedImage(
-                url = state.podcast.imageUrl.takeIf { it.isNotEmpty() } ?: state.podcast.fallbackImageUrl,
+                url = state.podcast.imageUrl,
+                fallbackUrls = listOf(state.podcast.fallbackImageUrl, state.podcast.latestEpisode?.imageUrl),
                 proxyWidth = 600, // 180dp * ~3x density
                 contentDescription = state.podcast.title,
                 modifier = Modifier.fillMaxSize(),

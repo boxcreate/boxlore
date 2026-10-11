@@ -138,6 +138,7 @@ class BoxLoreApplication :
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
+        cx.aswin.boxlore.ui.CoilImageLoaderSetup.install(this)
 
         // Load the manifest-backed boxlore receiver before playback or Cast UI
         // creates remote resources, avoiding a selector initialization race.

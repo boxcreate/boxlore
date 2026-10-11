@@ -64,6 +64,7 @@ import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 
 /**
  * Main Library Screen
@@ -521,6 +522,7 @@ fun LibraryPodcastCard(
             ) {
                 OptimizedImage(
                     url = podcast.imageUrl,
+                    fallbackUrls = podcast.artworkUrls(),
                     proxyWidth = 400,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

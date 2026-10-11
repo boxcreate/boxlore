@@ -6,6 +6,8 @@ Owns first-run onboarding presentation: genre selection, search-based onboarding
 
 ## Public API
 
+- Show covers pass their available artwork alternatives to the shared loader without changing search, suggestions or onboarding decisions.
+
 - Suggestion cards and selectable rows use steady Material feedback. Custom compact actions and genre chips opt into the shared restrained control response, clipped to their actual shapes. Primary action backgrounds contract with their content inside the shared press layer. Welcome entrance animations and selection/subscription callbacks are unchanged.
 
 - `OnboardingScreen` and `OnboardingViewModel` for the flow shell.

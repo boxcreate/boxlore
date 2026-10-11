@@ -35,6 +35,7 @@ fun PodcastCard(
 ) {
     FeedMediaCard(
         imageUrl = podcast.imageUrl,
+        fallbackImageUrls = listOf(podcast.fallbackImageUrl, podcast.latestEpisode?.imageUrl),
         title = podcast.title.replace("+", " "),
         subtitle = if (showSubtitle) podcast.artist.replace("+", " ") else null,
         onClick = onClick,

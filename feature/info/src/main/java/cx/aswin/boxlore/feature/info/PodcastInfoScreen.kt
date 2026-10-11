@@ -377,7 +377,8 @@ fun PodcastInfoScreen(
             is PodcastInfoUiState.Success -> {
                 // Blurred Background Header
                 InfoArtworkBackground(
-                    imageUrl = state.podcast.imageUrl.takeIf { it.isNotEmpty() } ?: state.podcast.fallbackImageUrl,
+                    imageUrl = state.podcast.imageUrl,
+                    fallbackUrls = listOf(state.podcast.fallbackImageUrl, state.podcast.latestEpisode?.imageUrl),
                     height = collapsedHeaderHeight + 240.dp,
                     scrollOffset = scrollOffset,
                     scrollFraction = scrollFraction,

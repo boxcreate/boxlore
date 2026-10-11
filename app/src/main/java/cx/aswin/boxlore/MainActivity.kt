@@ -19,12 +19,11 @@ import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.surveys.NpsSurveyTriggers
 import cx.aswin.boxlore.ui.BoxLoreAppRoot
-import cx.aswin.boxlore.ui.CoilImageLoaderSetup
 import cx.aswin.boxlore.updates.PlayAppUpdateHelper
 import kotlinx.coroutines.launch
 
 /**
- * Activity shell: splash, edge-to-edge, Play updates, NPS triggers, Coil install,
+ * Activity shell: splash, edge-to-edge, Play updates, NPS triggers,
  * and [setContent] → [BoxLoreAppRoot] (theme + nav host + overlays).
  *
  * No repository construction — deps come from [BoxLoreApplication.container].
@@ -218,7 +217,6 @@ class MainActivity : ComponentActivity() {
         }
 
         AnalyticsHelper.trackFirstLaunchIfNecessary(this)
-        CoilImageLoaderSetup.install(applicationContext)
 
         setContent {
             LaunchedEffect(Unit) {

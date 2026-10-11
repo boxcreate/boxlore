@@ -56,6 +56,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 
@@ -234,7 +235,8 @@ private fun HeroCollectionRow(
             }
             Box(Modifier.size(artworkSize).testTag("${tag}_artwork").then(artworkAction)) {
                 OptimizedImage(
-                    url = podcast.imageUrl.ifEmpty { podcast.fallbackImageUrl.orEmpty() },
+                    url = podcast.imageUrl,
+                    fallbackUrls = podcast.artworkUrls(),
                     proxyWidth = 400,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

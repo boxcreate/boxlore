@@ -16,7 +16,6 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.SessionCommand
@@ -246,8 +245,17 @@ internal open class PlaybackServicePlayerFactory(private val context: Context, p
         customActions: CustomActions,
         sessionId: String? = null,
     ): MediaLibrarySession {
-        val coilBitmapLoader = CoilBitmapLoader(context, serviceScope)
-        val cacheBitmapLoader = CacheBitmapLoader(coilBitmapLoader)
+        val coilBitmapLoader = CoilBitmapLoader(context, serviceScope, fallbackSources = { requested ->
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) {
+                val metadata = forwardingPlayer.currentMediaItem?.mediaMetadata
+                if (metadata?.artworkUri == requested) {
+                    metadata.extras?.getStringArrayList(cx.aswin.boxlore.core.playback.PlaybackArtworkMetadata.SOURCES).orEmpty()
+                } else {
+                    emptyList()
+                }
+            }
+        })
+        val cacheBitmapLoader = RecoveringBitmapLoader(coilBitmapLoader)
         val builder =
             MediaLibrarySession
                 .Builder(service, forwardingPlayer, callback)

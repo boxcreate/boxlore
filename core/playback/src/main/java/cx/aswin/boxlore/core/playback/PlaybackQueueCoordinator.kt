@@ -234,7 +234,7 @@ internal class PlaybackQueueCoordinator(
                     .setDisplayTitle(episode.title)
                     .setSubtitle(episode.podcastTitle ?: podcast.title)
                     .setGenre(episode.podcastGenre ?: podcast.genre)
-                    .setExtras(PlaybackQueueContext.extras(episode, entryPointContext))
+                    .setExtras(PlaybackArtworkMetadata.extras(episode, podcast, PlaybackQueueContext.extras(episode, entryPointContext)))
                     .build()
 
             val mediaId = PlaybackMediaIdPolicy.encodeMediaId(episode.id, isLearn)
@@ -411,6 +411,7 @@ internal class PlaybackQueueCoordinator(
                     .setDisplayTitle(episode.title)
                     .setSubtitle(podcast.title)
                     .setGenre(episode.podcastGenre ?: podcast.genre)
+                    .setExtras(PlaybackArtworkMetadata.extras(episode, podcast))
                     .build()
 
             val isLearn = PlaybackMediaIdPolicy.isLearnEntryPoint(entryPoint)
@@ -475,6 +476,7 @@ internal class PlaybackQueueCoordinator(
                     .setDisplayTitle(episode.title)
                     .setSubtitle(podcast.title)
                     .setGenre(episode.podcastGenre ?: podcast.genre)
+                    .setExtras(PlaybackArtworkMetadata.extras(episode, podcast))
                     .build()
 
             val mediaItem =
@@ -574,6 +576,7 @@ internal class PlaybackQueueCoordinator(
                         .setDisplayTitle(ep.title)
                         .setSubtitle(podcast.title)
                         .setGenre(ep.podcastGenre ?: podcast.genre)
+                        .setExtras(PlaybackArtworkMetadata.extras(ep, podcast))
                         .build()
 
                 MediaItem
@@ -757,6 +760,7 @@ internal class PlaybackQueueCoordinator(
                 .setDisplayTitle(episode.title)
                 .setSubtitle(episode.podcastTitle ?: "")
                 .setGenre(episode.podcastGenre ?: "Podcast")
+                .setExtras(PlaybackArtworkMetadata.extras(episode, null))
                 .build()
         val mediaItem =
             MediaItem

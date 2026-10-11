@@ -5,8 +5,10 @@ import android.content.ComponentName
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -19,6 +21,23 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31])
 class WidgetStartupTest {
+    @Test
+    fun transportNormalizationPreservesExistingArtworkCacheIdentity() = runBlocking {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val url = "http://art.example/widget-cache-identity.jpg"
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(url.toByteArray()).joinToString("") { "%02x".format(it) }
+        val file = java.io.File(context.cacheDir, "${WidgetArtworkLoader.CACHE_DIR_NAME}/$digest.jpg")
+        file.parentFile?.mkdirs()
+        file.writeBytes(byteArrayOf(1, 2, 3))
+        try {
+            val loader = WidgetArtworkLoader(context)
+            assertEquals(file.absolutePath, loader.load(" $url ", listOf("https://art.example/show.jpg")))
+            assertEquals(file.absolutePath, loader.resolveCachedPath(url))
+        } finally {
+            file.delete()
+        }
+    }
+
     @Test
     fun unusedPlaybackWidgetsInstallPortsWithoutRestoringPlayback() = runTest {
         val context: Context = ApplicationProvider.getApplicationContext()

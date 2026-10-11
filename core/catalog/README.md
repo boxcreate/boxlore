@@ -6,6 +6,8 @@ Owns catalog orchestration: Podcast Index access through `PodcastRepository`, su
 
 ## Public API
 
+- Both episode-mapping paths ignore blank episode art before falling back to `feedImage`, retain show art separately and normalize surrounding whitespace/HTTP. Feed mappers also ignore blank `artwork` before `image`. `ArtworkMappingTest` covers blank values and signed artwork parameters without live API calls.
+
 Failed consent writes keep activation off, and local notification flags prevent a failed revoke from implicitly re-enabling after restart. RSS sync isolates each feed and runs alongside PI sync; the source adapter explicitly implements every catalog operation.
 
 - `SubscribedEpisodeCatalog` routes the shared local catalog contract by podcast ID to the PI or true RSS adapter. Shared negative IDs from a source switch resolve to the active subscription rather than a retired PI compatibility row. Foreground refresh, Home tips, Smart Downloads freshness, auto-download discovery and push hydration support RSS-only shows without PI lookups or required promotion.

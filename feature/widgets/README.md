@@ -20,6 +20,8 @@ Missing or unreadable artwork uses the shared boxlore B-and-microphone vector ov
 
 ## Public API
 
+- Widget artwork uses the process Coil loader, bounded shared retries and available show/episode fallback candidates. Optional fallback-source lists are additive in snapshots; existing preference keys and artwork-file hashes are retained. Artwork remains asynchronous and cancellation prevents outdated results from replacing metadata.
+
 - `NowPlayingWidgetReceiver`, `NowPlayingBarWidgetReceiver`, `PlaybackControlsWidgetReceiver`, `PlaybackNextControlsWidgetReceiver` — picker-visible playback providers.
 - `SubscriptionsWidgetReceiver`, `NewEpisodesWidgetReceiver` — picker-visible library list providers.
 - `WidgetControlReceiver` — one explicit, non-exported action endpoint shared by playback providers.

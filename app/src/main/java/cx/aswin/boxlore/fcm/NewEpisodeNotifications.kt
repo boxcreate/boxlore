@@ -8,7 +8,6 @@ import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import cx.aswin.boxlore.core.designsystem.components.optimizedImageUrl
 
 internal object NewEpisodeNotifications {
     private const val RELEASE_KEY = "boxlore_release_key"
@@ -20,6 +19,7 @@ internal object NewEpisodeNotifications {
         val imageUrl: String?,
         val durationMinutes: Int,
         val route: String,
+        val artworkSources: List<String> = emptyList(),
     )
 
     fun resolveNewEpisodeDetails(
@@ -49,6 +49,7 @@ internal object NewEpisodeNotifications {
             podcastTitle = podcastTitle,
             episodeTitle = episodeTitle,
             imageUrl = imageUrl,
+            artworkSources = cx.aswin.boxlore.core.model.artworkUrls(local?.imageUrl, data["image"], data["imageUrl"], local?.podcastImageUrl, data["feedImage"], data["podcastImageUrl"]),
             durationMinutes = duration,
             route = route,
         )
@@ -146,24 +147,19 @@ internal object NewEpisodeNotifications {
         notificationManager.notify(notificationId, notificationBuilder.build())
     }
 
-    private fun fetchBitmap(imageUrl: String): android.graphics.Bitmap? = try {
-        val connection = java.net.URI(imageUrl.optimizedImageUrl(500)).toURL().openConnection() as java.net.HttpURLConnection
-        connection.connectTimeout = 2_000
-        connection.readTimeout = 2_000
-        try {
-            connection.inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
-        } finally {
-            connection.disconnect()
-        }
-    } catch (_: Exception) {
-        null
-    }
-
     fun show(context: Context, podcastId: String, data: Map<String, String>, local: cx.aswin.boxlore.core.model.Episode? = null, fetchArtwork: Boolean = false, canPresent: () -> Boolean = { true }) {
         val releaseKey = NewEpisodeDeliveryWorker.workName(data + ("podcastId" to podcastId))
         if (fetchArtwork && !isCurrentRelease(context, podcastId, releaseKey)) return
         val details = resolveNewEpisodeDetails(podcastId, data, local)
-        val bitmap = if (fetchArtwork) details.imageUrl?.takeIf { it.isNotBlank() }?.let(::fetchBitmap) else null
+        val bitmap = if (fetchArtwork) {
+            kotlinx.coroutines.runBlocking {
+            kotlinx.coroutines.withTimeoutOrNull(6_000) {
+                cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(context, details.artworkSources)
+            }
+        }
+        } else {
+            null
+        }
         synchronized(updateLock) {
             // Recheck after artwork I/O, before updating the shared PendingIntent or notification slot.
             if (fetchArtwork && !isCurrentRelease(context, podcastId, releaseKey)) return

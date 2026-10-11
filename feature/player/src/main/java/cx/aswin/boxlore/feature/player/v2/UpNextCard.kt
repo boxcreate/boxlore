@@ -136,7 +136,8 @@ private fun QueuePreviewRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         OptimizedImage(
-            url = episode.imageUrl?.takeIf { it.isNotBlank() } ?: episode.podcastImageUrl,
+            url = episode.imageUrl,
+            fallbackUrls = listOf(episode.podcastImageUrl),
             proxyWidth = 128,
             contentDescription = null,
             contentScale = ContentScale.Crop,

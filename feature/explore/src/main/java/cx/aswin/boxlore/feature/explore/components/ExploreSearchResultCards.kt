@@ -28,7 +28,8 @@ import cx.aswin.boxlore.feature.explore.R
 @Composable
 internal fun ExploreSearchEpisodeCard(episode: Episode, featured: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     FeedMediaCard(
-        imageUrl = episode.imageUrl?.takeIf { it.isNotBlank() } ?: episode.podcastImageUrl.orEmpty(),
+        imageUrl = episode.imageUrl.orEmpty(),
+        fallbackImageUrls = listOf(episode.podcastImageUrl),
         title = episode.title,
         subtitle = null,
         onClick = onClick,

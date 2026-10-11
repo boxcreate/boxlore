@@ -65,4 +65,58 @@ class CoilBitmapLoaderTest {
         runCurrent()
         assertTrue(future.isCancelled)
     }
+
+    @Test
+    fun `broken episode art falls through to show art before retrying`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val requests = mutableListOf<String>()
+        val bitmap = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888)
+        val loader = CoilBitmapLoader(
+            RuntimeEnvironment.getApplication(),
+            backgroundScope,
+            dispatcher,
+            fallbackSources = { listOf("https://art/episode", "https://art/show") },
+            artworkFetcher = { source ->
+                requests += source
+                require(!source.endsWith("episode")) { "Invalid artwork" }
+                bitmap
+            },
+        )
+        val future = loader.loadBitmap(android.net.Uri.parse("https://art/episode"))
+        runCurrent()
+        assertEquals(bitmap, future.get())
+        assertEquals(listOf("https://art/episode", "https://art/show"), requests)
+    }
+
+    @Test
+    fun `transient artwork failure gets one bounded retry and cancellation propagates`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val requests = mutableListOf<String>()
+        val serviceScope = CoroutineScope(SupervisorJob() + dispatcher)
+        val loader = CoilBitmapLoader(
+            RuntimeEnvironment.getApplication(),
+            serviceScope,
+            dispatcher,
+            artworkFetcher = { source ->
+                requests += source
+                throw java.io.IOException("Offline")
+            },
+        )
+        val future = loader.loadBitmap(android.net.Uri.parse("https://art/episode"))
+        runCurrent()
+        testScheduler.advanceTimeBy(251)
+        runCurrent()
+        assertThrows(ExecutionException::class.java) { future.get() }
+        assertEquals(2, requests.size)
+        val cancelling = CoilBitmapLoader(
+            RuntimeEnvironment.getApplication(),
+            serviceScope,
+            dispatcher,
+            artworkFetcher = { throw kotlinx.coroutines.CancellationException() },
+        )
+        val cancelled = cancelling.loadBitmap(android.net.Uri.parse("https://art/episode"))
+        runCurrent()
+        assertTrue(cancelled.isCancelled)
+        serviceScope.cancel()
+    }
 }

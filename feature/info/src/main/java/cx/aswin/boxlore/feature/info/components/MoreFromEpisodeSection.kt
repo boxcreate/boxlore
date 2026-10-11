@@ -130,7 +130,8 @@ private fun MoreFromEpisodeRow(episode: Episode, showName: String, fallbackImage
     ) {
         Row(Modifier.heightIn(min = 88.dp).padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OptimizedImage(
-                url = episode.imageUrl?.takeIf(String::isNotBlank) ?: episode.podcastImageUrl?.takeIf(String::isNotBlank) ?: fallbackImageUrl,
+                url = episode.imageUrl,
+                fallbackUrls = listOf(episode.podcastImageUrl, fallbackImageUrl),
                 proxyWidth = 240,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
