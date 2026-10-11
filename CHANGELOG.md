@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Rebuild the custom theme editor with a persistent preview, accessible color controls, validated hex input and restored draft state. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Refine Classic, Pure and wallpaper-derived Material 3 color roles while preserving saved theme identities and custom seeds. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Preserve WorkManager input-merger constructors in optimized releases so one-time download and notification-hydration work can start. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -62,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Retain valid feed artwork when catalog image fields are blank, and expire failed playback bitmap requests instead of caching failures indefinitely. ([#1111](https://github.com/boxcreate/boxlore/pull/1111)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1097
 ### Improvements
@@ -162,6 +165,12 @@ readme-copy:end pr=1110 -->
 - Episode artwork can fall back to the show cover when its image is unavailable.
 - Covers that failed to load can recover after reconnecting or loading successfully on another page.
 readme-copy:end pr=1111 -->
+
+<!-- readme-copy:start pr=1112
+### Improvements
+- Customize your theme with a live preview, quick color choices and more precise controls.
+- Enjoy refined Classic, Pure and Material 3 colors, with clearer panels and episode cards in Pure mode.
+readme-copy:end pr=1112 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
