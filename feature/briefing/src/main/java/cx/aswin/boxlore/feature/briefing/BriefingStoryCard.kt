@@ -77,7 +77,6 @@ internal fun BriefingStoryCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 StoryParagraph(
                     paragraph = state.paragraph,
-                    isActive = state.isActive,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -131,7 +130,6 @@ private fun StoryHeadline(state: BriefingStoryCardState) {
 @Composable
 private fun StoryParagraph(
     paragraph: String,
-    isActive: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -146,12 +144,7 @@ private fun StoryParagraph(
                 text = paragraph.trim(),
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = 22.sp,
-                color =
-                if (isActive) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

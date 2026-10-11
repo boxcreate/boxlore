@@ -4,7 +4,6 @@ import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.model.BriefingArtwork
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
-import java.util.Locale
 
 const val BRIEFING_COVER_ASPECT_RATIO = 1.6f
 
@@ -13,20 +12,20 @@ fun briefingPlayerArtworkUri(applicationId: String, region: String): String =
     BriefingArtwork.forRegion(region).uri(applicationId)
 
 /** The player's branded square stays fixed, independently of the edition cover. */
-fun briefingPlayerResource(region: String): Int = when (region.lowercase(Locale.ROOT)) {
-    "in", "ind" -> R.drawable.daily_briefing_india
-    "gb", "uk" -> R.drawable.daily_briefing_uk
-    "us", "usa" -> R.drawable.daily_briefing_usa
-    else -> R.drawable.daily_briefing_global
+fun briefingPlayerResource(region: String): Int = when (BriefingArtwork.forRegion(region)) {
+    BriefingArtwork.INDIA -> R.drawable.daily_briefing_india
+    BriefingArtwork.UK -> R.drawable.daily_briefing_uk
+    BriefingArtwork.USA -> R.drawable.daily_briefing_usa
+    BriefingArtwork.GLOBAL -> R.drawable.daily_briefing_global
 }
 
 /** Monday is cover 01; Sunday is cover 07. Invalid dates use Monday deterministically. */
 fun briefingCoverResource(region: String, editionDate: String): Int {
-    val covers = when (region.lowercase(Locale.ROOT)) {
-        "in", "ind" -> indiaCovers
-        "gb", "uk" -> ukCovers
-        "us", "usa" -> usaCovers
-        else -> globalCovers
+    val covers = when (BriefingArtwork.forRegion(region)) {
+        BriefingArtwork.INDIA -> indiaCovers
+        BriefingArtwork.UK -> ukCovers
+        BriefingArtwork.USA -> usaCovers
+        BriefingArtwork.GLOBAL -> globalCovers
     }
     return covers[briefingWeekdayIndex(editionDate)]
 }

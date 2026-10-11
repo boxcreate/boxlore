@@ -102,6 +102,27 @@ class BriefingArtworkCompatibilityTest {
     }
 
     @Test
+    fun reopeningReplacesTriggersFromAnotherBuildBeforeRestoredWrites() = runTest {
+        database.close()
+        database = Room.databaseBuilder(context, BoxLoreDatabase::class.java, DATABASE_NAME)
+            .allowMainThreadQueries()
+            .addCallback(BriefingArtworkCompatibility("cx.aswin.boxlore.old"))
+            .build()
+        database.openHelper.writableDatabase
+        reopenWithCompatibility()
+        val item = history("briefing_in_2026-10-07", "briefing_in")
+        val uri = BriefingArtwork.INDIA.uri(APPLICATION_ID)
+        database.listeningHistoryDao().upsert(item)
+        database.queueDao().insertQueueItem(queue(item, 2))
+        database.downloadedEpisodeDao().insert(download(item))
+        assertEquals(item.copy(episodeImageUrl = uri, podcastImageUrl = uri), storedHistory(item))
+        assertEquals(uri, database.queueDao().getQueueItemByEpisodeId(item.episodeId)?.imageUrl)
+        assertEquals(uri, database.downloadedEpisodeDao().getDownload(item.episodeId)?.episodeImageUrl)
+        database.downloadedEpisodeDao().updateArtwork(item.episodeId, LEGACY_URI, LEGACY_URI)
+        assertEquals(uri, database.downloadedEpisodeDao().getDownload(item.episodeId)?.podcastImageUrl)
+    }
+
+    @Test
     fun nonBriefRemoteNamedNullAndMalformedArtworkRemainUntouched() = runTest {
         val urls = listOf(
             null,

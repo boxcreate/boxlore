@@ -65,7 +65,7 @@ internal fun CompactEpisodeChip(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = compactEpisodeChipColor(isActiveCard),
+        color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = modifier
             .width(260.dp)
             .expressiveClickable(
@@ -86,13 +86,6 @@ internal fun CompactEpisodeChip(
             )
         }
     }
-}
-
-@Composable
-private fun compactEpisodeChipColor(isActiveCard: Boolean): Color = if (isActiveCard) {
-    MaterialTheme.colorScheme.surfaceContainer
-} else {
-    MaterialTheme.colorScheme.surfaceContainer
 }
 
 @Composable
@@ -130,7 +123,6 @@ private fun androidx.compose.foundation.layout.RowScope.CompactEpisodeDetails(
         )
         CompactEpisodeInfo(
             infoText = compactEpisodeInfoText(episode),
-            isActiveCard = isActiveCard,
         )
     }
 }
@@ -172,18 +164,12 @@ private fun CompactEpisodePodcastTitle(
 @Composable
 private fun CompactEpisodeInfo(
     infoText: String,
-    isActiveCard: Boolean,
 ) {
     if (infoText.isEmpty()) return
     Text(
         text = infoText,
         style = MaterialTheme.typography.labelSmall,
-        color =
-        if (isActiveCard) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1
     )
 }

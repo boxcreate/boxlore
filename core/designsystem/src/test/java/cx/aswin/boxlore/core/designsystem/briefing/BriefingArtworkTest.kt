@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.designsystem.briefing
 
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.model.BriefingArtwork
 import java.time.LocalDate
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -34,6 +35,18 @@ class BriefingArtworkTest {
         assertEquals("android.resource://cx.aswin.boxlore.test/drawable/daily_briefing_uk", briefingPlayerArtworkUri("cx.aswin.boxlore.test", "gb"))
         assertEquals("android.resource://cx.aswin.boxlore/drawable/daily_briefing_usa", briefingPlayerArtworkUri("cx.aswin.boxlore", "us"))
         assertEquals("android.resource://cx.aswin.boxlore/drawable/daily_briefing_global", briefingPlayerArtworkUri("cx.aswin.boxlore", "unknown"))
+    }
+
+    @Test
+    fun `every shared alias resolves the same cover square and localizable label`() {
+        BriefingArtwork.entries.forEach { artwork ->
+            val canonical = artwork.regionAliases.first()
+            artwork.regionAliases.forEach { alias ->
+                assertEquals(briefingPlayerResource(canonical), briefingPlayerResource(alias.uppercase(java.util.Locale.ROOT)))
+                assertEquals(briefingCoverResource(canonical, "2026-10-08"), briefingCoverResource(alias, "2026-10-08"))
+                assertEquals(briefingRegionLabel(canonical), briefingRegionLabel(alias))
+            }
+        }
     }
 
     @Test

@@ -80,7 +80,7 @@ Bitmap callers can choose a shorter per-attempt timeout while retaining outer ca
 
 - Brief player artwork uses `:core:model`'s `BriefingArtwork` named-resource contract, shared with upgrade and restore compatibility repair. Weekday covers remain independent of fixed player artwork.
 
-- `BriefingArtworkTest` verifies all 28 weekday covers, edition-date rotation, aliases, invalid dates and the four independent player squares.
+- `BriefingArtworkTest` verifies all 28 weekday covers, edition-date rotation, aliases, invalid dates and the four independent player squares. Cover, square and localized edition-label selection share the model's alias contract; Brief labels, action descriptions and story/source counts use string and plural resources.
 - `BriefingEditorialColorsTest` checks that editorial surfaces retain the listener’s accent roles and readable text contrast in both modes.
 `NavigationChromeMetrics` gives the Floating mini player a full capsule: 32dp corners at 64dp height. Classic retains 26dp top / 14dp bottom corners and 72dp height. Player surfaces use the same selected corner metrics; bottom-content clearances do not change.
 

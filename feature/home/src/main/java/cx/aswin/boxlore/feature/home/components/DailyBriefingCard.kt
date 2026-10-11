@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -114,15 +115,15 @@ fun DailyBriefingCard(
                                     track(if (cardState == DailyBriefingCardState.NORMAL) "dismiss_initiated" else "dismiss_cancelled")
                                     cardState = if (cardState == DailyBriefingCardState.NORMAL) DailyBriefingCardState.CONFIRM_DISMISS else DailyBriefingCardState.NORMAL
                                 }) {
-                                    Icon(Icons.Rounded.Close, if (cardState == DailyBriefingCardState.NORMAL) "Hide briefing" else "Cancel hiding briefing", Modifier.size(20.dp))
+                                    Icon(Icons.Rounded.Close, if (cardState == DailyBriefingCardState.NORMAL) stringResource(R.string.briefing_hide) else stringResource(R.string.briefing_cancel_hide), Modifier.size(20.dp))
                                 }
                             }
                         },
                         footer = {
                             val metadata = listOfNotNull(
                                 displayDate,
-                                chapters.takeIf { it.isNotEmpty() }?.let { "${it.size} stories" },
-                                durationMinutes?.let { "~${it}m listen" },
+                                chapters.takeIf { it.isNotEmpty() }?.let { pluralStringResource(R.plurals.briefing_story_count, it.size, it.size) },
+                                durationMinutes?.let { stringResource(R.string.briefing_listen_minutes, it) },
                             ).joinToString(" · ")
                             BriefingCoverMetadata(metadata, Modifier.align(Alignment.BottomStart))
                         },
@@ -139,28 +140,28 @@ fun DailyBriefingCard(
                                         onExpandedChange = { expanded = it },
                                     )
                                     DailyBriefingCardState.CONFIRM_DISMISS -> {
-                                        Text("Hide today’s brief?", style = MaterialTheme.typography.titleMedium)
-                                        Text("It will return with the next daily edition.", style = MaterialTheme.typography.bodyMedium)
+                                        Text(stringResource(R.string.briefing_hide_today_title), style = MaterialTheme.typography.titleMedium)
+                                        Text(stringResource(R.string.briefing_hide_today_description), style = MaterialTheme.typography.bodyMedium)
                                         Button(onClick = {
                                             track("dismissed_today")
                                             onDismiss()
-                                        }) { Text("Hide today") }
+                                        }) { Text(stringResource(R.string.briefing_hide_today)) }
                                         TextButton(onClick = {
                                             track("dismiss_forever_initiated")
                                             cardState = DailyBriefingCardState.CONFIRM_FOREVER
-                                        }) { Text("Always hide the Brief") }
+                                        }) { Text(stringResource(R.string.briefing_always_hide)) }
                                     }
                                     DailyBriefingCardState.CONFIRM_FOREVER -> {
-                                        Text("Always hide the Brief?", style = MaterialTheme.typography.titleMedium)
-                                        Text("Daily briefings will no longer appear on Home.", style = MaterialTheme.typography.bodyMedium)
+                                        Text(stringResource(R.string.briefing_always_hide_title), style = MaterialTheme.typography.titleMedium)
+                                        Text(stringResource(R.string.briefing_always_hide_description), style = MaterialTheme.typography.bodyMedium)
                                         Button(onClick = {
                                             track("dismissed_forever")
                                             onDismissForever()
-                                        }) { Text("Always hide") }
+                                        }) { Text(stringResource(R.string.briefing_confirm_always_hide)) }
                                         TextButton(onClick = {
                                             track("feedback_clicked")
                                             onFeedbackClick()
-                                        }) { Text("Send feedback") }
+                                        }) { Text(stringResource(R.string.briefing_send_feedback)) }
                                     }
                                 }
                             }
@@ -214,11 +215,11 @@ private fun DailyBriefingNormalContent(
             Spacer(Modifier.width(6.dp))
             Text(
                 if (isPlaying) {
-                    "Pause"
+                    stringResource(R.string.briefing_card_pause)
                 } else if (playbackStatus == EpisodeStatus.IN_PROGRESS) {
-                    "Resume"
+                    stringResource(R.string.briefing_card_resume)
                 } else {
-                    "Listen"
+                    stringResource(R.string.briefing_card_listen)
                 },
             )
         }
@@ -229,7 +230,7 @@ private fun DailyBriefingNormalContent(
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
             modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp),
         ) {
-            Text("Open brief")
+            Text(stringResource(R.string.briefing_open))
             Spacer(Modifier.width(6.dp))
             Icon(Icons.Rounded.ArrowOutward, null, Modifier.size(16.dp))
         }
@@ -237,7 +238,7 @@ private fun DailyBriefingNormalContent(
     if (playbackStatus == EpisodeStatus.IN_PROGRESS && playbackProgress != null) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             LinearProgressIndicator(progress = { playbackProgress.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f }, modifier = Modifier.weight(1f).height(4.dp), gapSize = 0.dp, drawStopIndicator = {})
-            remainingMinutes?.let { Text("~${it}m left", style = MaterialTheme.typography.labelSmall) }
+            remainingMinutes?.let { Text(stringResource(R.string.briefing_remaining_minutes, it), style = MaterialTheme.typography.labelSmall) }
         }
     }
     DailyBriefingStories(briefing, chapters, expanded, onExpandedChange)

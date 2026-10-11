@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
-import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.Episode
@@ -17,10 +17,6 @@ import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.resume
 import cx.aswin.boxlore.core.prefs.BriefingEdition
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,7 +37,6 @@ class BriefingViewModel(
     val selectedRegion: StateFlow<String> = _selectedRegion.asStateFlow()
 
     val defaultEdition = userPreferences.briefingDefaultEdition
-    private var loadJob: Job? = null
 
     private val _briefingState = MutableStateFlow<Briefing?>(null)
     private val _briefingChapters = MutableStateFlow<List<Chapter>>(emptyList())
@@ -52,17 +47,29 @@ class BriefingViewModel(
     private val _uiState = MutableStateFlow<BriefingUiState>(BriefingUiState.Loading())
     val uiState: StateFlow<BriefingUiState> = _uiState.asStateFlow()
 
+    private val loader = BriefingLoader(
+        scope = viewModelScope,
+        fetchMetadata = podcastRepository::getBriefingMetadata,
+        fetchChapters = { briefing ->
+            val version = android.net.Uri.parse(briefing.audioUrl).getQueryParameter("v")
+            val url = briefing.chaptersUrl
+                ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}${version?.let { "&v=$it" }.orEmpty()}"
+            ChapterRepository.getChapters(url)
+        },
+        fetchSession = { playbackRepository.getSession(getBriefingEpisodeId(it)) },
+        publish = { state ->
+            if (state.isLoading) _isLoading.value = true
+            _selectedRegion.value = state.region
+            _briefingState.value = state.briefing
+            _briefingChapters.value = state.chapters
+            _savedSession.value = state.session
+            _error.value = if (state.failed) application.getString(R.string.briefing_load_error) else null
+            if (!state.isLoading) _isLoading.value = false
+        },
+    )
+
     init {
-        // Resolve the saved edition before the first request. Explicit links retain their region.
-        viewModelScope.launch {
-            val region = BriefingEdition.resolve(
-                defaultEdition.first(),
-                userPreferences.regionStream.first(),
-                initialRegion,
-            )
-            _selectedRegion.value = region
-            loadBriefing(region)
-        }
+        loader.initialize(defaultEdition, userPreferences.regionStream, initialRegion)
 
         // Keep _savedSession updated in real-time when the current briefing is playing
         viewModelScope.launch {
@@ -132,7 +139,7 @@ class BriefingViewModel(
                             chapters = chapters
                         )
                     }
-                    else -> BriefingUiState.Error("This edition is unavailable. Try again or choose another region.", region)
+                    else -> BriefingUiState.Error(application.getString(R.string.briefing_unavailable), region)
                 }
             }.collect {
                 _uiState.value = it
@@ -141,10 +148,7 @@ class BriefingViewModel(
     }
 
     fun selectRegion(region: String) {
-        val selected = mapRegionForBriefing(region)
-        _isLoading.value = true
-        _selectedRegion.value = selected
-        loadBriefing(selected)
+        loadBriefing(region)
     }
 
     fun setDefaultEdition(edition: String) {
@@ -155,41 +159,7 @@ class BriefingViewModel(
     }
 
     fun loadBriefing(region: String) {
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            _briefingChapters.value = emptyList()
-            _savedSession.value = null
-            val result = podcastRepository.getBriefingMetadata(mapRegionForBriefing(region))
-            currentCoroutineContext().ensureActive()
-            if (result != null) {
-                _briefingState.value = result
-
-                // Fetch saved session progress
-                val briefingEpisodeId = getBriefingEpisodeId(result)
-                _savedSession.value = playbackRepository.getSession(briefingEpisodeId)
-
-                // Fetch chapters asynchronously
-                val audioUri = android.net.Uri.parse(result.audioUrl)
-                val version = audioUri.getQueryParameter("v")
-                val versionParam = if (version != null) "&v=$version" else ""
-                val chaptersUrl = result.chaptersUrl
-                    ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${result.region}?d=${result.date}$versionParam"
-                try {
-                    val chaptersList = ChapterRepository.getChapters(chaptersUrl)
-                    currentCoroutineContext().ensureActive()
-                    _briefingChapters.value = chaptersList
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    _briefingChapters.value = emptyList()
-                }
-            } else {
-                _error.value = "Couldn’t load this edition. Check your connection and try again."
-            }
-            _isLoading.value = false
-        }
+        loader.load(region)
     }
 
     fun playBriefing(briefing: Briefing, initialPositionMs: Long? = null) {

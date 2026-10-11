@@ -40,17 +40,22 @@ class DailyBriefingCardTest {
         private val briefing = Briefing("2026-10-11", "global", "Energy, technology and the week ahead", "", "https://example.invalid/audio", "")
     private val chapters = listOf(Chapter(0.0, "Energy prices and the week ahead"), Chapter(60.0, "New rules for digital markets"), Chapter(120.0, "The third story"), Chapter(180.0, "The fourth story"))
 
-    private fun render() {
+    private fun render(stories: List<Chapter> = chapters) {
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, if (large.value) 2f else 1f), LocalLayoutDirection provides if (large.value) LayoutDirection.Rtl else LayoutDirection.Ltr) {
                 BoxLoreTheme(darkTheme = dark.value) {
                     Box(Modifier.width(320.dp)) {
-                        DailyBriefingCard(briefing, chapters, false, { play++ }, { open++ }, { hide++ }, onDismissForever = { hideAll++ })
+                        DailyBriefingCard(briefing, stories, false, { play++ }, { open++ }, { hide++ }, onDismissForever = { hideAll++ })
                     }
                 }
             }
         }
+    }
+
+    @Test fun `single story edition uses a singular localized metadata count`() {
+        render(chapters.take(1))
+        compose.onNodeWithText("11 Oct · 1 story · ~1m listen", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test fun `play open and inline story expansion keep independent actions`() {

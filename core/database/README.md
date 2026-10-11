@@ -75,7 +75,7 @@ src/main/java/cx/aswin/boxlore/core/database/
 ## Testing notes
 
 - Unit tests live under `core/database/src/test`.
-- `BriefingArtworkCompatibilityTest` covers upgrade/reopen, restored rows, all region aliases, recursive-trigger safety, unchanged non-Brief artwork and preservation of playback/download/queue state.
+- `BriefingArtworkCompatibilityTest` covers upgrade/reopen, restored rows, all region aliases, recursive-trigger safety, unchanged non-Brief artwork and preservation of playback/download/queue state. Opening recreates trigger definitions transactionally, including after a database comes from another application variant, so future restores use the current authority and aliases.
 - `PodcastDaoInMemoryTest` verifies the in-memory Room DAO path and RSS notification cleanup selection, including disabled/unsubscribed rows with stale source metadata.
 - `ListeningRollupMergeTest` covers session→rollup merge, including the empty-sessions guard. `ListeningHistoryDaoInMemoryTest` covers insert-if-absent conflict safety and playback completion updates preserving listener-owned fields such as likes.
 - `Migration36To37Test` verifies Room schema upgrade from version 36 to 37, adding `unsubscribedAt`, `isDirty`, `syncedAt` to `podcasts`, `likedAt` and indices to `listening_history`, creating `queue_metadata`, and preserving existing row data.

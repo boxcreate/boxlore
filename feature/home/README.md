@@ -105,6 +105,7 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 
 - `DailyBriefingCardTest` checks independent playback/detail/hide actions and inline story expansion, story expansion and light/dark, RTL and enlarged-text rendering. `HomeBriefingRefreshTest` checks edition independence, midnight/daypart refreshes and deduplication of unchanged markets.
 - Unit tests live under `feature/home/src/test`.
+- `HomeViewModelBriefingTest` exercises the production edition collector with suspend fakes. A failed same-edition refresh preserves the loaded card and chapters; changed regions clear old content before loading, and changed dates clear old chapters. Cancellation blocks stale responses. `DailyBriefingCardTest` also checks singular story-count metadata.
 - Existing coverage includes Home listening-history formatting,
   discovery greeting, editorial-row selection and de-duplication, equal-height poster grid
   extent math, and Your Shows pin precedence, foreground refresh cadence, and score hysteresis

@@ -39,7 +39,7 @@ internal fun RelatedEpisodesSection(
     HorizontalDivider(
         modifier = Modifier.padding(vertical = 12.dp),
         thickness = 0.8.dp,
-        color = relatedEpisodesDividerColor(state.isActive)
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
     )
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         RelatedEpisodesHeader(state.isActive)
@@ -63,13 +63,6 @@ internal fun RelatedEpisodesSection(
 }
 
 private fun relatedEpisodeKey(episode: Episode): String = "${episode.podcastId.orEmpty()}:${episode.id}:${episode.audioUrl}:${episode.title}"
-
-@Composable
-private fun relatedEpisodesDividerColor(isActive: Boolean): Color = if (isActive) {
-    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-} else {
-    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-}
 
 @Composable
 private fun RelatedEpisodesHeader(isActive: Boolean) {

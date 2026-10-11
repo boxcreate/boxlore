@@ -25,9 +25,10 @@ internal class BriefingArtworkCompatibility(applicationId: String) : RoomDatabas
     private fun installTriggers(db: SupportSQLiteDatabase, table: ArtworkTable) {
         val watchedColumns = (listOf("episodeId", "podcastId") + table.columns).joinToString(", ")
         listOf("insert" to "INSERT", "update" to "UPDATE OF $watchedColumns").forEach { (suffix, event) ->
+            db.execSQL("DROP TRIGGER IF EXISTS brief_artwork_${table.name}_$suffix")
             db.execSQL(
                 """
-                CREATE TRIGGER IF NOT EXISTS brief_artwork_${table.name}_$suffix
+                CREATE TRIGGER brief_artwork_${table.name}_$suffix
                 AFTER $event ON ${table.name}
                 WHEN ${needsRepair(table, "NEW.")}
                 BEGIN

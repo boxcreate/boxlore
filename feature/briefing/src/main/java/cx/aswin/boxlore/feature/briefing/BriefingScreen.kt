@@ -195,11 +195,11 @@ fun BriefingScreen(
                     when (displayedState) {
                         is BriefingUiState.Loading -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             BoxLoreLoader.Expressive(size = 48.dp)
-                            Text("Loading ${briefingRegionLabel(displayedState.selectedRegion)} edition…", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.briefing_loading_edition, stringResource(briefingRegionLabel(displayedState.selectedRegion))), Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodyMedium)
                         }
                         is BriefingUiState.Error -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(displayedState.message, style = MaterialTheme.typography.bodyLarge)
-                            Button(onClick = { onRegionSelect(displayedState.selectedRegion) }, modifier = Modifier.padding(top = 16.dp)) { Text("Try again") }
+                            Button(onClick = { onRegionSelect(displayedState.selectedRegion) }, modifier = Modifier.padding(top = 16.dp)) { Text(stringResource(R.string.briefing_try_again)) }
                             BriefingRegionMenu(displayedState.selectedRegion, onRegionSelect)
                         }
                         is BriefingUiState.Success -> BriefingEditionContent(
@@ -217,10 +217,10 @@ fun BriefingScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                        IconButton(onBackClick, Modifier.testTag("briefingBack")) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+                        IconButton(onBackClick, Modifier.testTag("briefingBack")) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.briefing_back)) }
                     }
                     Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                        IconButton(onClick = { showPreferences = true }) { Icon(Icons.Rounded.Tune, "Brief preferences") }
+                        IconButton(onClick = { showPreferences = true }) { Icon(Icons.Rounded.Tune, stringResource(R.string.briefing_preferences)) }
                     }
                 }
             }
@@ -248,17 +248,17 @@ private fun BriefingPlaybackControls(state: BriefingUiState.Success, onPlay: () 
                 Spacer(Modifier.width(8.dp))
                 Text(
                     if (state.isPlaying) {
-                        "Pause brief"
+                        stringResource(R.string.briefing_pause)
                     } else if (state.currentPosition > 0) {
-                        "Resume brief"
+                        stringResource(R.string.briefing_resume)
                     } else {
-                        "Listen to brief"
+                        stringResource(R.string.briefing_listen)
                     },
                 )
             }
             if (state.briefing.sources.isNotEmpty()) {
                 FilledTonalIconButton(onSources, modifier = Modifier.width(52.dp).fillMaxHeight(), shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 28.dp, bottomEnd = 28.dp), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurface)) {
-                    Icon(Icons.Rounded.Link, "Sources")
+                    Icon(Icons.Rounded.Link, stringResource(R.string.briefing_sources))
                 }
             }
         }
@@ -284,7 +284,7 @@ private fun BriefingPlaybackControls(state: BriefingUiState.Success, onPlay: () 
                     },
                     modifier = Modifier.weight(1f).height(48.dp).testTag("briefingSeekbar"),
                 )
-                Text(formatRemaining(((state.duration - state.currentPosition) / 1000).coerceAtLeast(0)) ?: "Finished", style = MaterialTheme.typography.labelSmall)
+                Text(formatRemaining(((state.duration - state.currentPosition) / 1000).coerceAtLeast(0)) ?: stringResource(R.string.briefing_finished), style = MaterialTheme.typography.labelSmall)
             }
         }
     }
@@ -314,17 +314,17 @@ private fun BriefingProgressTrack(progress: () -> Float, playing: Boolean) {
 private fun BriefingPreferencesSheet(defaultEdition: String, onSelect: (String) -> Unit, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp)) {
-            Text("Default Brief region", style = MaterialTheme.typography.headlineSmall)
-            Text("Home and the Brief open this edition. You can switch editions without changing your default.", modifier = Modifier.padding(top = 8.dp, bottom = 16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.briefing_default_region), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.briefing_default_region_description), modifier = Modifier.padding(top = 8.dp, bottom = 16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             (listOf(BriefingEdition.FOLLOW_APP) + BriefingEdition.regions).forEach { edition ->
                 Surface(onClick = { onSelect(edition) }, color = if (edition == defaultEdition) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                     Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = edition == defaultEdition, onClick = null)
-                        Text(if (edition == BriefingEdition.FOLLOW_APP) "Follow app region" else briefingRegionLabel(edition), modifier = Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(if (edition == BriefingEdition.FOLLOW_APP) R.string.briefing_follow_app_region else briefingRegionLabel(edition)), modifier = Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
-            TextButton(onDismiss, modifier = Modifier.align(Alignment.End)) { Text("Done") }
+            TextButton(onDismiss, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.briefing_done)) }
         }
     }
 }
@@ -335,7 +335,7 @@ private fun BriefingSourcesSheet(briefing: Briefing, onDismiss: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
-            Text("Sources", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
+            Text(stringResource(R.string.briefing_sources), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(briefing.sources) { source ->
                     Surface(onClick = {
@@ -453,12 +453,12 @@ private fun BriefingEditionContent(
                                 Text(stringResource(R.string.briefing_original_reporting), style = MaterialTheme.typography.titleSmall)
                                 Text(pluralStringResource(R.plurals.briefing_source_count, state.briefing.sources.size, state.briefing.sources.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Icon(Icons.Rounded.ArrowOutward, "Open sources", Modifier.size(20.dp))
+                            Icon(Icons.Rounded.ArrowOutward, stringResource(R.string.briefing_open_sources), Modifier.size(20.dp))
                         }
                     }
                 }
-                Text("This briefing uses AI-generated summaries and narration. Check the original sources for the full reporting.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = onFeedbackClick, contentPadding = PaddingValues(0.dp)) { Text("Report an issue") }
+                Text(stringResource(R.string.briefing_disclaimer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = onFeedbackClick, contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.briefing_report_issue)) }
             }
         }
     }
