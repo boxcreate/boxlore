@@ -1,19 +1,23 @@
 package cx.aswin.boxlore.feature.briefing
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,9 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Briefing
@@ -41,6 +44,7 @@ import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
+@Suppress("LongParameterList") // Pager keeps the existing playback and navigation callbacks.
 @Composable
 internal fun BriefingStoriesPager(
     briefing: Briefing,
@@ -50,6 +54,7 @@ internal fun BriefingStoriesPager(
     accentColor: Color,
     onEpisodeClick: (Episode) -> Unit,
     onPlayPauseClick: (Long?) -> Unit,
+    onShowSources: () -> Unit = {},
 ) {
     val pagerState = rememberPagerState(pageCount = { chapters.size })
     val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
@@ -84,13 +89,14 @@ internal fun BriefingStoriesPager(
     val paragraphs = remember(briefing.script) {
         briefingStoryParagraphs(briefing.script)
     }
-    val pagerActions = remember(scope, pagerState, updateUserClickedPage, onEpisodeClick, onPlayPauseClick) {
+    val pagerActions = remember(scope, pagerState, updateUserClickedPage, onEpisodeClick, onPlayPauseClick, onShowSources) {
         BriefingStoriesPagerActions(
             scope = scope,
             pagerState = pagerState,
             onUserClickedPageChange = updateUserClickedPage,
             onEpisodeClick = onEpisodeClick,
             onPlayPauseClick = onPlayPauseClick,
+            onShowSources = onShowSources,
         )
     }
 
@@ -134,6 +140,7 @@ internal data class BriefingStoriesPagerActions(
     val onUserClickedPageChange: (Int?) -> Unit,
     val onEpisodeClick: (Episode) -> Unit,
     val onPlayPauseClick: (Long?) -> Unit,
+    val onShowSources: () -> Unit = {},
 )
 
 @Composable
@@ -243,16 +250,33 @@ private fun BriefingStoriesPagerContent(
 ) {
     if (uiState.chapters.isEmpty()) {
         LoadingScriptPlaceholder()
-    } else {
-        BriefingChapterPager(uiState, actions)
+        return
     }
-
-    Spacer(modifier = Modifier.height(12.dp))
-    if (uiState.chapters.isNotEmpty()) {
-        BriefingPageIndicators(
-            pageCount = uiState.chapters.size,
-            currentPage = actions.pagerState.currentPage,
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Story ${actions.pagerState.currentPage + 1} of ${uiState.chapters.size}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                FilledTonalIconButton(onClick = {
+                    val page = actions.pagerState.currentPage - 1
+                    actions.onUserClickedPageChange(page)
+                    actions.scope.launch { actions.pagerState.animateScrollToPage(page) }
+                }, enabled = actions.pagerState.currentPage > 0) {
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, "Previous story")
+                }
+                FilledTonalIconButton(onClick = {
+                    val page = actions.pagerState.currentPage + 1
+                    actions.onUserClickedPageChange(page)
+                    actions.scope.launch { actions.pagerState.animateScrollToPage(page) }
+                }, enabled = actions.pagerState.currentPage < uiState.chapters.lastIndex) {
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "Next story")
+                }
+            }
+        }
+        BriefingChapterPager(uiState, actions)
     }
 }
 
@@ -261,6 +285,9 @@ private fun BriefingChapterPager(
     uiState: BriefingStoriesPagerUiState,
     actions: BriefingStoriesPagerActions,
 ) {
+    val longestStory = uiState.paragraphs.maxOfOrNull { it.length } ?: 0
+    val readingHeight = if (longestStory > 700) 460 else 340
+    val relatedHeight = if (uiState.chapters.any { !it.relatedEpisodes.isNullOrEmpty() }) 104 else 0
     HorizontalPager(
         state = actions.pagerState,
         contentPadding = PaddingValues(horizontal = 24.dp),
@@ -268,7 +295,7 @@ private fun BriefingChapterPager(
         key = { page -> stableChapterKey(uiState.chapters[page]) },
         modifier = Modifier
             .fillMaxWidth()
-            .height(500.dp)
+            .height(((readingHeight + relatedHeight) * LocalDensity.current.fontScale.coerceAtLeast(1f)).dp)
     ) { page ->
         BriefingStoryCard(
             state =
@@ -295,49 +322,14 @@ private fun LoadingScriptPlaceholder() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(380.dp)
+            .height(96.dp)
             .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Loading script...",
+            text = "Story text is unavailable. You can still listen to the brief.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
-}
-
-@Composable
-private fun BriefingPageIndicators(
-    pageCount: Int,
-    currentPage: Int,
-) {
-    Row(
-        modifier = Modifier
-            .height(16.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        repeat(pageCount) { iteration ->
-            BriefingPageIndicatorDot(isSelected = currentPage == iteration)
-        }
-    }
-}
-
-@Composable
-private fun BriefingPageIndicatorDot(isSelected: Boolean) {
-    val color =
-        if (isSelected) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-        }
-    Box(
-        modifier = Modifier
-            .padding(4.dp)
-            .clip(androidx.compose.foundation.shape.CircleShape)
-            .background(color)
-            .size(if (isSelected) 8.dp else 6.dp)
-    )
 }

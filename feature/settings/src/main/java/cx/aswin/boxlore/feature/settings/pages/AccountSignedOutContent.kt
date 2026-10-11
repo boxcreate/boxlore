@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -55,6 +56,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -63,9 +65,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.auth.AuthRepository
-import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.feature.settings.R
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -100,18 +102,6 @@ internal fun ColumnScope.SignedOutContent(
         exit = fadeOut() + shrinkVertically(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 1. Ultra-Light Header Subtext with Privacy Policy
-            PrivacyPolicyNotice(
-                prefix = "Sign in to sync your library, queue, and playback across devices. By signing in or signing up, you agree to our ",
-                suffix = ".",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
-            )
-
-            Spacer(Modifier.height(14.dp))
-
-            // 2. Continue with Google Button
             GoogleSignInButton(
                 isLoading = state.isGoogleLoading,
                 enabled = !state.isAnyLoading,
@@ -120,14 +110,12 @@ internal fun ColumnScope.SignedOutContent(
 
             Spacer(Modifier.height(14.dp))
 
-            // 3. Divider
-            AuthDivider()
+            Text(stringResource(R.string.account_email_methods), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(Modifier.height(6.dp))
         }
     }
 
-    // 4. Stable Primary Auth Card Container
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -147,11 +135,7 @@ internal fun ColumnScope.SignedOutContent(
                 exit = fadeOut() + shrinkVertically(),
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    ConnectedOptionSelector(
-                        options = listOf(
-                            AuthMode.SIGN_IN to "Sign In",
-                            AuthMode.SIGN_UP to "Sign Up",
-                        ),
+                    AccountAuthModeSelector(
                         selected = state.activeAuthMode,
                         onSelect = state::selectAuthMode,
                     )
@@ -168,10 +152,11 @@ internal fun ColumnScope.SignedOutContent(
         }
     }
 
-    Spacer(Modifier.height(16.dp))
-
-    // 5. Privacy & Data Callout
-    AccountPrivacyCard()
+    PrivacyPolicyNotice(
+        prefix = stringResource(R.string.account_privacy_prefix),
+        suffix = ".",
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+    )
 }
 
 @Composable
@@ -232,7 +217,7 @@ private fun GoogleSignInButton(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .heightIn(min = 56.dp)
             .expressiveClickable(
                 shape = googleShape,
                 enabled = enabled,
@@ -242,7 +227,8 @@ private fun GoogleSignInButton(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
+                .heightIn(min = 56.dp)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
             contentAlignment = Alignment.Center,
         ) {
             if (isLoading) {
@@ -258,6 +244,7 @@ private fun GoogleSignInButton(
                     Spacer(Modifier.width(12.dp))
                     Text(
                         text = "Connecting to Google...",
+                        modifier = Modifier.weight(1f, fill = false),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = GoogleSansWeight.medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -276,6 +263,7 @@ private fun GoogleSignInButton(
                     Spacer(Modifier.width(12.dp))
                     Text(
                         text = "Continue with Google",
+                        modifier = Modifier.weight(1f, fill = false),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = GoogleSansWeight.semiBold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -387,7 +375,7 @@ private fun EmailLinkSentSpamCard() {
                 )
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    text = "Important: The email will 99% land in your Spam or Junk folder! Please check there if you don't see it in your inbox.",
+                    text = stringResource(R.string.account_spam_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     lineHeight = 17.sp,
@@ -493,7 +481,7 @@ private fun EmailLinkInputSection(
         text = if (state.isSignUp) {
             "Enter your email to create an account. We'll send an instant verification link."
         } else {
-            "Enter your email to receive a passwordless sign-in link."
+            stringResource(R.string.account_email_hint)
         },
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

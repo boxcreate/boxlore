@@ -219,6 +219,16 @@ class UserPreferencesRepository(context: Context,) {
         }
     }
 
+    val briefingDefaultEdition: Flow<String> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }.map { BriefingEdition.sanitize(it[Keys.BRIEFING_DEFAULT_EDITION]) }
+        .distinctUntilChanged()
+
+    suspend fun setBriefingDefaultEdition(edition: String) {
+        dataStore.edit { it[Keys.BRIEFING_DEFAULT_EDITION] = BriefingEdition.sanitize(edition) }
+    }
+
     val briefingDismissedDate: Flow<String> =
         dataStore.data
             .catch { exception ->

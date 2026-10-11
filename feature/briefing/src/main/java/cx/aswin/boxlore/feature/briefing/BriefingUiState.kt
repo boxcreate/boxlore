@@ -4,7 +4,7 @@ import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 
 sealed interface BriefingUiState {
-    data object Loading : BriefingUiState
+    data class Loading(val selectedRegion: String = "global") : BriefingUiState
 
     data class Success(
         val briefing: Briefing,

@@ -104,6 +104,7 @@ data class SettingsScreenConfig(
     val isOnboarding: Boolean = false,
     val onSendFeedback: (() -> Unit)? = null,
     val onSupportPageVisibilityChanged: ((Boolean) -> Unit)? = null,
+    val onAccountPageVisibilityChanged: ((Boolean) -> Unit)? = null,
     val onCheckForUpdates: (() -> Unit)? = null,
 )
 
@@ -167,11 +168,14 @@ fun SettingsScreen(
     }
     DisposableEffect(destination) {
         val isSupport = destination == ProfileSettingsDestination.Support
+        val isAccount = destination == ProfileSettingsDestination.Account
         config.onSupportPageVisibilityChanged?.invoke(isSupport)
+        config.onAccountPageVisibilityChanged?.invoke(isAccount)
         onDispose {
             if (isSupport) {
                 config.onSupportPageVisibilityChanged?.invoke(false)
             }
+            if (isAccount) config.onAccountPageVisibilityChanged?.invoke(false)
         }
     }
     var previousDestination by rememberSaveable {

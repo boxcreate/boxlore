@@ -5,7 +5,11 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,10 +32,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
@@ -113,6 +123,47 @@ fun OpmlImportDialog(
     state: OpmlImportState,
     actions: OpmlImportDialogActions,
 ) {
+    var openingAccount by remember { mutableStateOf(false) }
+    val visibility = remember { MutableTransitionState(false) }
+    visibility.targetState = state !is OpmlImportState.Idle
+    LaunchedEffect(visibility.isIdle, visibility.currentState) {
+        if (visibility.isIdle && !visibility.currentState) openingAccount = false
+    }
+    // Keep the selector above the already-composed Account page while it fades.
+    // Removing it immediately exposes the previous route during its slide exit.
+    AnimatedVisibility(
+        visibleState = visibility,
+        modifier = Modifier.fillMaxSize().zIndex(200f).then(
+            if (openingAccount) {
+                Modifier.pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                }
+            }
+            } else {
+                Modifier
+            },
+        ),
+        enter = EnterTransition.None,
+        exit = if (openingAccount) fadeOut(tween(240, easing = FastOutSlowInEasing)) else ExitTransition.None,
+    ) {
+        ImportDialogSurface(
+            state = if (state is OpmlImportState.Idle) OpmlImportState.ShowSelector else state,
+            actions = actions.copy(
+                onDismissRequest = { if (!openingAccount) actions.onDismissRequest() },
+                onSyncAccountSelected = {
+                    if (!openingAccount) {
+                        openingAccount = true
+                        actions.onSyncAccountSelected()
+                    }
+                },
+            ),
+        )
+    }
+}
+
+@Composable
+private fun ImportDialogSurface(state: OpmlImportState, actions: OpmlImportDialogActions) {
     if (state is OpmlImportState.Idle) return
 
     val importJsonLauncher =

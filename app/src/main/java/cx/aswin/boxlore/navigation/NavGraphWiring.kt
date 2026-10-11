@@ -111,6 +111,10 @@ internal fun shouldShowBottomNav(
         !isFromOnboarding
 }
 
+/** Restored playback may become available during sign-in; account UI still owns the viewport. */
+internal fun shouldShowPlayerChrome(isAccountActive: Boolean, isFromOnboarding: Boolean, isSupportActive: Boolean, isModeSwitching: Boolean): Boolean =
+    !isAccountActive && !isFromOnboarding && !isSupportActive && !isModeSwitching
+
 /**
  * Resolves whether an import or settings navigation originated from onboarding.
  * False if onboarding was already completed or if triggered from the Home banner.
@@ -192,6 +196,7 @@ data class NavHostActions(
     val onShowFeedbackSheet: () -> Unit,
     val onSubmitFeedback: suspend (String, String, String, String) -> Boolean,
     val onSupportPageVisibilityChanged: (Boolean) -> Unit = {},
+    val onAccountPageVisibilityChanged: (Boolean) -> Unit = {},
 )
 
 /** Internal wiring bag shared by NavGraphBuilder destination helpers. */

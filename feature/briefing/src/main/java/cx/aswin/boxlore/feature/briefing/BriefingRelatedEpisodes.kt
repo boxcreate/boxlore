@@ -39,7 +39,7 @@ internal fun RelatedEpisodesSection(
     HorizontalDivider(
         modifier = Modifier.padding(vertical = 12.dp),
         thickness = 0.8.dp,
-        color = relatedEpisodesDividerColor(state.isActive)
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
     )
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         RelatedEpisodesHeader(state.isActive)
@@ -65,13 +65,6 @@ internal fun RelatedEpisodesSection(
 private fun relatedEpisodeKey(episode: Episode): String = "${episode.podcastId.orEmpty()}:${episode.id}:${episode.audioUrl}:${episode.title}"
 
 @Composable
-private fun relatedEpisodesDividerColor(isActive: Boolean): Color = if (isActive) {
-    Color.White.copy(alpha = 0.15f)
-} else {
-    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-}
-
-@Composable
 private fun RelatedEpisodesHeader(isActive: Boolean) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -85,10 +78,10 @@ private fun RelatedEpisodesHeader(isActive: Boolean) {
             modifier = Modifier.size(14.dp)
         )
         Text(
-            text = "LISTEN DEEPER",
+            text = "Listen further",
             style = MaterialTheme.typography.labelSmall.copy(
-                letterSpacing = 1.2.sp,
-                fontSize = 9.sp
+                letterSpacing = 0.sp,
+                fontSize = 12.sp
             ),
             fontWeight = GoogleSansWeight.bold,
             color = relatedEpisodesHeaderColor(isActive, alpha = 0.7f)
@@ -101,7 +94,7 @@ private fun relatedEpisodesHeaderColor(
     isActive: Boolean,
     alpha: Float,
 ): Color = if (isActive) {
-    Color.White.copy(alpha = alpha)
+    MaterialTheme.colorScheme.onSurfaceVariant
 } else {
     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
 }

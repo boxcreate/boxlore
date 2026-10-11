@@ -160,8 +160,7 @@ internal fun HomeViewModel.loadData() {
                                     country = region,
                                 )
 
-                            _briefingState.value = bootstrapData.briefing
-                            _briefingChaptersState.value = bootstrapData.briefingChapters
+                            // Brief editions load independently of the discovery country.
                             trendingState.value = bootstrapData.trending
                         } catch (e: CancellationException) {
                             throw e

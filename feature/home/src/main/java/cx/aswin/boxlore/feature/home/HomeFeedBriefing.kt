@@ -159,13 +159,4 @@ private fun dailyBriefingVersionParam(audioUrl: String): String {
 private fun dailyBriefingLocalCoverUrl(
     context: Context,
     region: String,
-): String {
-    val resId =
-        when (region.lowercase()) {
-            "in", "ind" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_india
-            "uk", "gb" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_uk
-            "us", "usa" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_usa
-            else -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_global
-        }
-    return "android.resource://${context.packageName}/$resId"
-}
+): String = cx.aswin.boxlore.core.designsystem.briefing.briefingPlayerArtworkUri(context.packageName, region)

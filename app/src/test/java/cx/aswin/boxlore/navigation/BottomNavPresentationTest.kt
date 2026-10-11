@@ -8,6 +8,16 @@ import org.junit.Test
 
 class BottomNavPresentationTest {
     @Test
+    fun restoredPlaybackStaysHiddenDuringAccountSyncAndOnboarding() {
+        assertFalse(shouldShowPlayerChrome(isAccountActive = true, isFromOnboarding = false, isSupportActive = false, isModeSwitching = false))
+        assertFalse(shouldShowPlayerChrome(isAccountActive = true, isFromOnboarding = true, isSupportActive = false, isModeSwitching = false))
+        assertFalse(shouldShowPlayerChrome(isAccountActive = false, isFromOnboarding = true, isSupportActive = false, isModeSwitching = false))
+        assertTrue(shouldShowPlayerChrome(isAccountActive = false, isFromOnboarding = false, isSupportActive = false, isModeSwitching = false))
+        assertFalse(shouldShowPlayerChrome(isAccountActive = false, isFromOnboarding = false, isSupportActive = true, isModeSwitching = false))
+        assertFalse(shouldShowPlayerChrome(isAccountActive = false, isFromOnboarding = false, isSupportActive = false, isModeSwitching = true))
+    }
+
+    @Test
     fun bottomNavTabRoutesKeepTheExistingRouteIdentities() {
         assertEquals("home", bottomNavTabRoutePattern("home"))
         assertEquals("learn", bottomNavTabRoutePattern("learn"))

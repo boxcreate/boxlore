@@ -48,6 +48,7 @@ android {
     }
 
     testOptions {
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
         }
@@ -61,6 +62,7 @@ dependencies {
     implementation(projects.core.model)
     implementation(projects.core.network)
     implementation(projects.core.analytics)
+    implementation(projects.core.prefs)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -75,6 +77,10 @@ dependencies {
     implementation(libs.androidx.palette.ktx)
 
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
     testRuntimeOnly(libs.junit.vintage.engine)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

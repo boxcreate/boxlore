@@ -40,6 +40,7 @@ class HomePureMixSurfaceTest {
     private val dark = mutableStateOf(false)
     private val playing = mutableStateOf(false)
     private val empty = mutableStateOf(false)
+    private val surfaceStyle = mutableStateOf(SurfaceStyles.DYNAMIC_OLED_WHITE)
     private lateinit var view: View
     private lateinit var colors: ColorScheme
 
@@ -72,6 +73,26 @@ class HomePureMixSurfaceTest {
         }
     }
 
+    @Test
+    fun `Classic and Material cards stay solid and separate from the module in both modes`() {
+        render()
+        for (style in listOf(SurfaceStyles.CLASSIC_DYNAMIC, SurfaceStyles.STANDARD)) {
+            for (isDark in listOf(false, true)) {
+                composeRule.runOnIdle {
+                    surfaceStyle.value = style
+                    dark.value = isDark
+                }
+                composeRule.waitForIdle()
+                val cardColor = pixel("home_mix_episode_episode-0", 0.015f, 0.5f)
+                assertEquals(colors.surfaceContainerHigh.toArgb(), cardColor)
+                assertNotEquals(pixel("home_your_shows_surface", 0.002f, 0.35f), cardColor)
+                composeRule.runOnIdle { playing.value = true }
+                assertEquals(colors.primaryContainer.toArgb(), pixel("home_mix_episode_episode-0", 0.015f, 0.5f))
+                composeRule.runOnIdle { playing.value = false }
+            }
+        }
+    }
+
     private fun render() {
         val shows = List(2) { index ->
             TestFixtures.podcast(id = "show-$index", imageUrl = "").copy(
@@ -80,7 +101,7 @@ class HomePureMixSurfaceTest {
         }
         composeRule.setContent {
             view = LocalView.current
-            BoxLoreTheme(darkTheme = dark.value, dynamicColor = false, surfaceStyle = SurfaceStyles.DYNAMIC_OLED_WHITE) {
+            BoxLoreTheme(darkTheme = dark.value, dynamicColor = false, surfaceStyle = surfaceStyle.value) {
                 colors = MaterialTheme.colorScheme
                 Box(Modifier.width(380.dp).height(800.dp).background(colors.background)) {
                     YourShowsSection(

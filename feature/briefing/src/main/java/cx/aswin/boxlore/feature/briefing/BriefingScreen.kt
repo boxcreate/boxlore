@@ -1,134 +1,145 @@
 package cx.aswin.boxlore.feature.briefing
 
-import android.graphics.drawable.BitmapDrawable
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
+import android.app.Application
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.ArrowOutward
 import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.palette.graphics.Palette
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.briefing.BRIEFING_COVER_ASPECT_RATIO
+import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
+import cx.aswin.boxlore.core.designsystem.briefing.BriefingEditorialTheme
+import cx.aswin.boxlore.core.designsystem.briefing.BriefingPageStatusBars
+import cx.aswin.boxlore.core.designsystem.briefing.BriefingRegionMenu
+import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
-import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButton
-import cx.aswin.boxlore.core.designsystem.components.ExpressivePlayButtonState
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
-import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
-import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.QueueManager
+import cx.aswin.boxlore.core.prefs.BriefingEdition
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-// Color extraction helper
-private fun extractDominantColor(bitmap: android.graphics.Bitmap): Color {
-    val palette = Palette.from(bitmap).generate()
-    val vibrant = palette.vibrantSwatch?.rgb
-    val muted = palette.mutedSwatch?.rgb
-    val dominant = palette.dominantSwatch?.rgb
-    val colorInt = vibrant ?: muted ?: dominant ?: 0xFF6200EE.toInt()
-    return Color(colorInt)
-}
-
+@Suppress("LongParameterList") // Stable app-shell callback wiring.
 @Composable
 fun BriefingRoute(
-    podcastRepository: cx.aswin.boxlore.core.catalog.PodcastRepository,
-    playbackRepository: cx.aswin.boxlore.core.playback.PlaybackRepository,
-    queueManager: cx.aswin.boxlore.core.playback.QueueManager,
+    podcastRepository: PodcastRepository,
+    playbackRepository: PlaybackRepository,
+    queueManager: QueueManager,
     onBackClick: () -> Unit,
     onEpisodeClick: (Episode) -> Unit,
     onFeedbackClick: () -> Unit,
+    userPreferences: UserPreferencesRepository,
     modifier: Modifier = Modifier,
     initialRegion: String? = null,
-    bottomContentPadding: Dp = 0.dp
+    bottomContentPadding: Dp = 0.dp,
 ) {
-    val application = LocalContext.current.applicationContext as android.app.Application
+    val application = LocalContext.current.applicationContext as Application
     val viewModel: BriefingViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T = BriefingViewModel(
-                application = application,
-                podcastRepository = podcastRepository,
-                playbackRepository = playbackRepository,
-                queueManager = queueManager,
-                initialRegion = initialRegion
+                application,
+                podcastRepository,
+                playbackRepository,
+                queueManager,
+                initialRegion,
+                userPreferences,
             ) as T
-        }
+        },
     )
-
-    val uiState by viewModel.uiState.collectAsState()
-
+    val state by viewModel.uiState.collectAsState()
+    val defaultEdition by viewModel.defaultEdition.collectAsState(initial = BriefingEdition.FOLLOW_APP)
     BriefingScreen(
-        uiState = uiState,
+        uiState = state,
         onBackClick = onBackClick,
         onRegionSelect = viewModel::selectRegion,
         onPlayPauseClick = viewModel::togglePlayPause,
@@ -137,11 +148,14 @@ fun BriefingRoute(
         onFeedbackClick = onFeedbackClick,
         initialRegion = initialRegion,
         bottomContentPadding = bottomContentPadding,
-        modifier = modifier
+        modifier = modifier,
+        defaultEdition = defaultEdition,
+        onDefaultEditionSelect = viewModel::setDefaultEdition,
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList") // Public screen callbacks delegate to focused components.
 @Composable
 fun BriefingScreen(
     uiState: BriefingUiState,
@@ -153,629 +167,188 @@ fun BriefingScreen(
     onFeedbackClick: () -> Unit,
     modifier: Modifier = Modifier,
     initialRegion: String? = null,
-    bottomContentPadding: Dp = 0.dp
-) {
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val currentRegion = when (uiState) {
-        is BriefingUiState.Loading -> "in"
-        is BriefingUiState.Success -> uiState.selectedRegion
-        is BriefingUiState.Error -> uiState.selectedRegion
-    }
-
-    // Shared scroll state (hoisted so header can react to content scroll)
-    val scrollState = rememberScrollState()
-
-    // Header animation (matches EpisodeInfoScreen pattern)
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val collapsedHeaderHeight = 64.dp + statusBarHeight
-    val morphThreshold = with(density) { 180.dp.toPx() }
-    val scrollFraction = (scrollState.value.toFloat() / morphThreshold).coerceIn(0f, 1f)
-
-    // Header background: transparent → surfaceContainer on scroll
-    val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
-    val headerColor by animateColorAsState(
-        targetValue = surfaceColor.copy(alpha = scrollFraction),
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "headerColor"
-    )
-    // Title fades in only when header is nearly collapsed
-    val titleAlpha = if (scrollFraction > 0.6f) (scrollFraction - 0.6f) / 0.4f else 0f
-
-    // Key only on the state TYPE so Crossfade only animates on Loading→Success→Error
-    // transitions, NOT on every playback position update (~200ms).
-    val stateKey = when (uiState) {
-        is BriefingUiState.Loading -> "loading"
-        is BriefingUiState.Success -> "success"
-        is BriefingUiState.Error -> "error"
-    }
-
-    Box(modifier = modifier.fillMaxSize()) {
-        Crossfade(
-            targetState = stateKey,
-            label = "BriefingScreenStateCrossfade",
-            modifier = Modifier.fillMaxSize()
-        ) { key ->
-            when (key) {
-                "loading" -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        BoxLoreLoader.Expressive(size = 64.dp)
-                    }
-                }
-                "success" -> {
-                    val successState = uiState as? BriefingUiState.Success ?: return@Crossfade
-
-                    LaunchedEffect(successState.briefing.region, successState.briefing.date) {
-                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingScreenViewed(
-                            region = successState.briefing.region,
-                            date = successState.briefing.date,
-                            source = initialRegion?.let { "notification" } ?: "home_banner"
-                        )
-                    }
-
-                    var extractedColor by remember { mutableStateOf(Color.Transparent) }
-                    val accentColor by animateColorAsState(
-                        targetValue = if (extractedColor != Color.Transparent) extractedColor else MaterialTheme.colorScheme.primary,
-                        animationSpec = spring(stiffness = Spring.StiffnessLow),
-                        label = "accent_color"
-                    )
-
-                    val coverResId = remember(successState.briefing.region) {
-                        when (successState.briefing.region.lowercase()) {
-                            "in", "ind" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_india
-                            "uk", "gb" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_uk
-                            "us", "usa" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_usa
-                            else -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_global
-                        }
-                    }
-                    val painter = rememberAsyncImagePainter(
-                        model = remember(coverResId) {
-                            ImageRequest.Builder(context)
-                                .data(coverResId)
-                                .allowHardware(false)
-                                .build()
-                        }
-                    )
-                    LaunchedEffect(painter.state) {
-                        val painterState = painter.state
-                        if (painterState is AsyncImagePainter.State.Success) {
-                            val bitmap = (painterState.result.drawable as? BitmapDrawable)?.bitmap
-                            if (bitmap != null) {
-                                extractedColor = extractDominantColor(bitmap)
-                            }
-                        }
-                    }
-
-                    val progress = if (successState.duration > 0) successState.currentPosition.toFloat() / successState.duration else 0f
-                    val remainingSeconds = if (successState.duration > 0) (successState.duration - successState.currentPosition) / 1000 else 0L
-                    val timeText = formatRemaining(remainingSeconds)
-
-                    var showSourcesBottomSheet by remember { mutableStateOf(false) }
-
-                    BriefingContent(
-                        briefing = successState.briefing,
-                        chapters = successState.chapters,
-                        isPlaying = successState.isPlaying,
-                        isResume = successState.currentPosition > 0,
-                        progress = progress,
-                        timeText = timeText,
-                        accentColor = accentColor,
-                        currentPositionMs = successState.currentPosition,
-                        durationMs = successState.duration,
-                        currentRegion = successState.selectedRegion,
-                        onRegionSelect = onRegionSelect,
-                        onShowSources = {
-                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                                action = "sources_sheet_opened",
-                                region = successState.briefing.region,
-                                date = successState.briefing.date,
-                                extraProps = mapOf("sources_count" to successState.briefing.sources.size)
-                            )
-                            showSourcesBottomSheet = true
-                        },
-                        onPlayPauseClick = { initialPositionMs ->
-                            if (successState.isPlaying) {
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingPauseClicked(
-                                    region = successState.briefing.region,
-                                    date = successState.briefing.date,
-                                    source = "briefing_detail"
-                                )
-                            } else {
-                                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingPlayClicked(
-                                    region = successState.briefing.region,
-                                    date = successState.briefing.date,
-                                    source = "briefing_detail"
-                                )
-                            }
-                            onPlayPauseClick(successState.briefing, initialPositionMs)
-                        },
-                        onSeekTo = onSeekTo,
-                        onEpisodeClick = onEpisodeClick,
-                        onFeedbackClick = onFeedbackClick,
-                        scrollState = scrollState,
-                        contentTopPadding = collapsedHeaderHeight,
-                        bottomContentPadding = bottomContentPadding
-                    )
-
-                    if (showSourcesBottomSheet) {
-                        val uriHandler = LocalUriHandler.current
-                        ModalBottomSheet(
-                            onDismissRequest = { showSourcesBottomSheet = false },
-                            shape = MaterialTheme.shapes.extraLarge,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .navigationBarsPadding()
-                                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                            ) {
-                                Text(
-                                    text = "References & Sources",
-                                    fontFamily = rememberSectionHeaderFontFamily(),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Normal,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-                                androidx.compose.foundation.lazy.LazyColumn(
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(successState.briefing.sources) { source ->
-                                        val cleanDomain = remember(source.url) { getDomainName(source.url) }
-                                        Card(
-                                            shape = RoundedCornerShape(16.dp),
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                            ),
-                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .expressiveClickable(
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    onClick = {
-                                                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingInteraction(
-                                                            action = "source_clicked",
-                                                            region = successState.briefing.region,
-                                                            date = successState.briefing.date,
-                                                            extraProps = mapOf(
-                                                                "source_title" to source.title,
-                                                                "source_url" to source.url
-                                                            )
-                                                        )
-                                                        uriHandler.openUri(source.url)
-                                                    }
-                                                )
-                                        ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Surface(
-                                                        shape = RoundedCornerShape(8.dp),
-                                                        color = MaterialTheme.colorScheme.secondaryContainer,
-                                                        modifier = Modifier.padding(bottom = 4.dp)
-                                                    ) {
-                                                        Text(
-                                                            text = cleanDomain.uppercase(),
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            fontWeight = GoogleSansWeight.bold,
-                                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                                        )
-                                                    }
-                                                    Text(
-                                                        text = source.title,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        fontWeight = GoogleSansWeight.medium,
-                                                        color = MaterialTheme.colorScheme.onSurface,
-                                                        modifier = Modifier.padding(top = 2.dp)
-                                                    )
-                                                }
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Link,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp).padding(start = 4.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                "error" -> {
-                    val errorState = uiState as? BriefingUiState.Error ?: return@Crossfade
-                    ErrorContent(
-                        message = errorState.message,
-                        onRetry = { onRegionSelect(errorState.selectedRegion) }
-                    )
-                }
-            }
-        }
-
-        // FLOATING HEADER OVERLAY — adapts on scroll like other screens
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(collapsedHeaderHeight)
-                .background(headerColor)
-                .statusBarsPadding(),
-            contentAlignment = Alignment.Center
-        ) {
-            // Centered Title — fades in on scroll
-            Image(
-                painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_brief_logo),
-                contentDescription = "The Boxlore Brief",
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .height(40.dp)
-                    .graphicsLayer { alpha = titleAlpha }
-            )
-
-            // Back button on the left
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Go back",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
-                            shape = androidx.compose.foundation.shape.CircleShape
-                        )
-                        .padding(8.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun BriefingContent(
-    briefing: Briefing,
-    chapters: List<cx.aswin.boxlore.core.model.Chapter>,
-    isPlaying: Boolean,
-    isResume: Boolean,
-    progress: Float,
-    timeText: String?,
-    accentColor: Color,
-    currentPositionMs: Long,
-    durationMs: Long,
-    currentRegion: String,
-    onRegionSelect: (String) -> Unit,
-    onShowSources: () -> Unit,
-    onPlayPauseClick: (Long?) -> Unit,
-    onSeekTo: (Long) -> Unit,
-    onEpisodeClick: (Episode) -> Unit,
-    onFeedbackClick: () -> Unit,
-    scrollState: ScrollState = rememberScrollState(),
-    contentTopPadding: Dp = 0.dp,
     bottomContentPadding: Dp = 0.dp,
-    modifier: Modifier = Modifier
+    defaultEdition: String = BriefingEdition.FOLLOW_APP,
+    onDefaultEditionSelect: (String) -> Unit = {},
 ) {
-    val density = LocalDensity.current
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val morphThreshold = with(density) { 180.dp.toPx() }
-    val scrollFraction = (scrollState.value.toFloat() / morphThreshold).coerceIn(0f, 1f)
+    val scroll = rememberScrollState()
+    var showPreferences by remember { mutableStateOf(false) }
+    var showSources by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .navigationBarsPadding()
-    ) {
-        // Blurred Background Header (only at the top)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(contentTopPadding + 240.dp)
-                .clipToBounds()
-                .graphicsLayer {
-                    translationY = -scrollState.value * 0.5f
-                    alpha = 1f - scrollFraction
-                }
-        ) {
-            val coverResId = remember(briefing.region) {
-                when (briefing.region.lowercase()) {
-                    "in", "ind" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_india
-                    "uk", "gb" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_uk
-                    "us", "usa" -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_usa
-                    else -> cx.aswin.boxlore.core.designsystem.R.drawable.daily_briefing_global
-                }
-            }
-            OptimizedImage(
-                url = "android.resource://${context.packageName}/$coverResId",
-                proxyWidth = 600,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(8.dp, edgeTreatment = androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded)
-                    .alpha(0.55f),
-                contentScale = ContentScale.Crop
-            )
-            // Gradient overlay to blend into the solid background
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0.0f to Color.Transparent,
-                                0.7f to MaterialTheme.colorScheme.background,
-                                1.0f to MaterialTheme.colorScheme.background
-                            )
-                        )
-                    )
-            )
+    val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val success = uiState as? BriefingUiState.Success
+    var coverHeight by remember { mutableFloatStateOf(0f) }
+    val hasCover = success != null
+    val coverVisible by remember(hasCover, scroll) {
+        derivedStateOf { hasCover && (coverHeight == 0f || scroll.value < coverHeight) }
+    }
+    BriefingPageStatusBars(coverVisible = coverVisible)
+    LaunchedEffect(success?.briefing?.region, success?.briefing?.date) {
+        success?.briefing?.let {
+            AnalyticsHelper.trackDailyBriefingScreenViewed(it.region, it.date, initialRegion?.let { "notification" } ?: "home_banner")
         }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(scrollState)
-                .padding(top = contentTopPadding, bottom = bottomContentPadding + 16.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Page title (visible in body, fades into header on scroll)
-            Image(
-                painter = painterResource(id = cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_brief_logo),
-                contentDescription = "The Boxlore Brief",
-                colorFilter = ColorFilter.tint(accentColor),
-                modifier = Modifier
-                    .height(72.dp)
-                    .padding(horizontal = 24.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Subtitle details (Show formatted Date and Duration)
-            val displayDate = remember(briefing.date) {
-                try {
-                    val date = java.time.LocalDate.parse(briefing.date)
-                    date.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"))
-                } catch (e: Exception) {
-                    briefing.date
+    }
+    BriefingEditorialTheme {
+        Surface(modifier.fillMaxSize().onSizeChanged { coverHeight = it.width / BRIEFING_COVER_ASPECT_RATIO }, color = MaterialTheme.colorScheme.background) {
+            Box(Modifier.fillMaxSize()) {
+                AnimatedContent(uiState, contentKey = { it.presentationKey() }, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "briefingState") { displayedState ->
+                    when (displayedState) {
+                        is BriefingUiState.Loading -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                            BoxLoreLoader.Expressive(size = 48.dp)
+                            Text(stringResource(R.string.briefing_loading_edition, stringResource(briefingRegionLabel(displayedState.selectedRegion))), Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodyMedium)
+                        }
+                        is BriefingUiState.Error -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(displayedState.message, style = MaterialTheme.typography.bodyLarge)
+                            Button(onClick = { onRegionSelect(displayedState.selectedRegion) }, modifier = Modifier.padding(top = 16.dp)) { Text(stringResource(R.string.briefing_try_again)) }
+                            BriefingRegionMenu(displayedState.selectedRegion, onRegionSelect)
+                        }
+                        is BriefingUiState.Success -> BriefingEditionContent(
+                            displayedState,
+                            scroll,
+                            BriefingContentActions(onRegionSelect, onPlayPauseClick, onSeekTo, onEpisodeClick, onFeedbackClick, onSources = { showSources = true }),
+                            topPadding,
+                            bottomContentPadding,
+                        )
+                    }
+                }
+                Row(
+                    Modifier.align(AbsoluteAlignment.TopRight).statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        IconButton(onBackClick, Modifier.testTag("briefingBack")) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.briefing_back)) }
+                    }
+                    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        IconButton(onClick = { showPreferences = true }) { Icon(Icons.Rounded.Tune, stringResource(R.string.briefing_preferences)) }
+                    }
                 }
             }
+        }
+        if (showPreferences) {
+            BriefingPreferencesSheet(defaultEdition, onSelect = { onDefaultEditionSelect(it) }, onDismiss = { showPreferences = false })
+        }
+        if (showSources && success != null) {
+            BriefingSourcesSheet(success.briefing, onDismiss = { showSources = false })
+        }
+    }
+}
 
-            val listenDuration = remember(durationMs) {
-                formatBriefingListenDuration(durationMs)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BriefingPlaybackControls(state: BriefingUiState.Success, onPlay: () -> Unit, onSources: () -> Unit, onSeekTo: (Long) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+            Button(onPlay, modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 52.dp), shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 4.dp, bottomEnd = 4.dp)) {
+                if (state.isBuffering) {
+                    BoxLoreLoader.CircularWavy(size = 22.dp, color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Icon(if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(24.dp))
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (state.isPlaying) {
+                        stringResource(R.string.briefing_pause)
+                    } else if (state.currentPosition > 0) {
+                        stringResource(R.string.briefing_resume)
+                    } else {
+                        stringResource(R.string.briefing_listen)
+                    },
+                )
             }
+            if (state.briefing.sources.isNotEmpty()) {
+                FilledTonalIconButton(onSources, modifier = Modifier.width(52.dp).fillMaxHeight(), shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 28.dp, bottomEnd = 28.dp), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurface)) {
+                    Icon(Icons.Rounded.Link, stringResource(R.string.briefing_sources))
+                }
+            }
+        }
+        if (state.duration > 0) {
+            var seekPosition by remember(state.briefing.region, state.briefing.date) { mutableStateOf<Float?>(null) }
+            val interactionSource = remember { MutableInteractionSource() }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Slider(
+                    value = seekPosition ?: (state.currentPosition.toFloat() / state.duration).coerceIn(0f, 1f),
+                    onValueChange = { seekPosition = it },
+                    onValueChangeFinished = {
+                        seekPosition?.let { onSeekTo((it * state.duration).toLong()) }
+                        seekPosition = null
+                    },
+                    interactionSource = interactionSource,
+                    thumb = {
+                        Box(Modifier.width(12.dp).height(48.dp), contentAlignment = Alignment.Center) {
+                            SliderDefaults.Thumb(interactionSource, thumbSize = DpSize(12.dp, 12.dp))
+                        }
+                    },
+                    track = { slider ->
+                        BriefingProgressTrack(progress = { slider.value }, playing = state.isPlaying)
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp).testTag("briefingSeekbar"),
+                )
+                Text(formatRemaining(((state.duration - state.currentPosition) / 1000).coerceAtLeast(0)) ?: stringResource(R.string.briefing_finished), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
 
-            Text(
-                text = listOfNotNull(displayDate, listenDuration)
-                    .joinToString(separator = " • ")
-                    .uppercase(),
-                style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = GoogleSansWeight.bold,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun BriefingProgressTrack(progress: () -> Float, playing: Boolean) {
+    val stroke = Stroke(with(LocalDensity.current) { 3.dp.toPx() }, cap = StrokeCap.Round)
+    LinearWavyProgressIndicator(
+        progress = progress,
+        color = MaterialTheme.colorScheme.primary,
+        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        stroke = stroke,
+        trackStroke = stroke,
+        gapSize = 4.dp,
+        stopSize = 0.dp,
+        amplitude = { if (playing && it > 0f && it < 1f) 0.6f else 0f },
+        wavelength = 24.dp,
+        waveSpeed = if (playing) 24.dp else 0.dp,
+        modifier = Modifier.fillMaxWidth().height(12.dp).clearAndSetSemantics {},
+    )
+}
 
-            Spacer(modifier = Modifier.height(20.dp))
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BriefingPreferencesSheet(defaultEdition: String, onSelect: (String) -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp)) {
+            Text(stringResource(R.string.briefing_default_region), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.briefing_default_region_description), modifier = Modifier.padding(top = 8.dp, bottom = 16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            (listOf(BriefingEdition.FOLLOW_APP) + BriefingEdition.regions).forEach { edition ->
+                Surface(onClick = { onSelect(edition) }, color = if (edition == defaultEdition) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+                    Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = edition == defaultEdition, onClick = null)
+                        Text(stringResource(if (edition == BriefingEdition.FOLLOW_APP) R.string.briefing_follow_app_region else briefingRegionLabel(edition)), modifier = Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+            TextButton(onDismiss, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.briefing_done)) }
+        }
+    }
+}
 
-            // Title of current briefing
-            Text(
-                text = briefing.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = GoogleSansWeight.bold,
-                textAlign = TextAlign.Start,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Region Selector Chips Row
-            val regions = listOf(
-                "in" to "India",
-                "us" to "US",
-                "gb" to "UK",
-                "global" to "Global"
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                regions.forEach { (code, label) ->
-                    val isSelected = currentRegion == code ||
-                        (code == "gb" && currentRegion.equals("uk", ignoreCase = true))
-                    FilterChip(
-                        modifier = Modifier.weight(1f),
-                        selected = isSelected,
-                        onClick = {
-                            cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDailyBriefingRegionChanged(
-                                previousRegion = currentRegion,
-                                newRegion = code,
-                                date = briefing.date
-                            )
-                            onRegionSelect(code)
-                        },
-                        label = {
-                            Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = GoogleSansWeight.bold,
-                                    textAlign = TextAlign.Center
-                                )
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BriefingSourcesSheet(briefing: Briefing, onDismiss: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
+            Text(stringResource(R.string.briefing_sources), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(briefing.sources) { source ->
+                    Surface(onClick = {
+                        AnalyticsHelper.trackDailyBriefingInteraction("source_clicked", briefing.region, briefing.date, mapOf("source_title" to source.title, "source_url" to source.url))
+                        uriHandler.openUri(source.url)
+                    }, color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(getDomainName(source.url), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                Text(source.title, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
                             }
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = isSelected,
-                            borderColor = Color.Transparent,
-                            selectedBorderColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Prominent Play Briefing Button
-            ExpressivePlayButton(
-                onClick = { onPlayPauseClick(null) },
-                state = ExpressivePlayButtonState(
-                    isPlaying = isPlaying,
-                    isResume = isResume,
-                    progress = progress,
-                    timeText = timeText,
-                ),
-                accentColor = accentColor,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(56.dp)
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            BriefingStoriesPager(
-                briefing = briefing,
-                chapters = chapters,
-                isPlaying = isPlaying,
-                currentPositionMs = currentPositionMs,
-                accentColor = accentColor,
-                onEpisodeClick = onEpisodeClick,
-                onPlayPauseClick = onPlayPauseClick,
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Sources — compact button opening bottom sheet
-            if (briefing.sources.isNotEmpty()) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .expressiveClickable(
-                            shape = RoundedCornerShape(16.dp),
-                            onClick = onShowSources
-                        )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Link,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "${briefing.sources.size} Sources",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = GoogleSansWeight.bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Icon(Icons.Rounded.ArrowOutward, null, Modifier.padding(start = 12.dp).size(18.dp))
                         }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Disclaimer & Feedback",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Text(
-                    text = "This daily briefing contains AI-generated summary content and audio narration. We do not claim ownership of the underlying news stories, which are compiled and attributed to the original sources listed above.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 16.sp
-                )
-
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .expressiveClickable(
-                            shape = RoundedCornerShape(10.dp),
-                            onClick = onFeedbackClick
-                        )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Report an Issue / Send Feedback",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = GoogleSansWeight.bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
                     }
                 }
             }
@@ -783,156 +356,116 @@ fun BriefingContent(
     }
 }
 
+private data class BriefingContentActions(
+    val region: (String) -> Unit,
+    val play: (Briefing, Long?) -> Unit,
+    val seek: (Long) -> Unit,
+    val episode: (Episode) -> Unit,
+    val feedback: () -> Unit,
+    val onSources: () -> Unit,
+)
+
 @Composable
-fun ErrorContent(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+private fun BriefingEditionContent(
+    state: BriefingUiState.Success,
+    scroll: ScrollState,
+    actions: BriefingContentActions,
+    topPadding: Dp,
+    bottomContentPadding: Dp,
 ) {
+    val onRegionSelect = actions.region
+    val onPlayPauseClick = actions.play
+    val onSeekTo = actions.seek
+    val onEpisodeClick = actions.episode
+    val onFeedbackClick = actions.feedback
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        Modifier.fillMaxWidth().verticalScroll(scroll).testTag("briefingArticle").padding(bottom = bottomContentPadding + 24.dp).navigationBarsPadding(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Icon(
-            imageVector = Icons.Rounded.Warning,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier
-                .size(64.dp)
-                .padding(bottom = 16.dp)
+        BriefingCover(
+            region = state.briefing.region,
+            editionDate = state.briefing.date,
+            modifier = Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)).testTag("briefingPageCover"),
+            mastheadTopPadding = topPadding + 12.dp,
+            mastheadScrim = true,
         )
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = GoogleSansWeight.medium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(12.dp), onClick = onRetry)
-        ) {
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                val date = remember(state.briefing.date) {
+                    runCatching { LocalDate.parse(state.briefing.date).format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())) }.getOrDefault(state.briefing.date)
+                }
+                val stories = state.chapters.takeIf { it.isNotEmpty() }?.let {
+                    pluralStringResource(R.plurals.briefing_story_count, it.size, it.size)
+                }
+                Text(
+                    listOfNotNull(date, stories, formatBriefingListenDuration(state.duration)).joinToString(" · "),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                BriefingRegionMenu(state.selectedRegion, onSelect = { region ->
+                    AnalyticsHelper.trackDailyBriefingRegionChanged(state.selectedRegion, region, state.briefing.date)
+                    onRegionSelect(region)
+                })
+            }
             Text(
-                text = "Retry",
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = GoogleSansWeight.bold,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                state.briefing.title,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Normal,
+                fontSize = 32.sp,
+                lineHeight = 36.sp,
+                letterSpacing = (-0.4).sp
             )
+            BriefingPlaybackControls(state, onPlay = {
+                if (state.isPlaying) {
+                    AnalyticsHelper.trackDailyBriefingPauseClicked(state.briefing.region, state.briefing.date, "briefing_detail")
+                } else {
+                    AnalyticsHelper.trackDailyBriefingPlayClicked(state.briefing.region, state.briefing.date, "briefing_detail")
+                }
+                onPlayPauseClick(state.briefing, null)
+            }, onSources = {
+                AnalyticsHelper.trackDailyBriefingInteraction("sources_sheet_opened", state.briefing.region, state.briefing.date, mapOf("sources_count" to state.briefing.sources.size))
+                actions.onSources()
+            }, onSeekTo = onSeekTo)
+        }
+        BriefingStoriesPager(
+            briefing = state.briefing,
+            chapters = state.chapters,
+            isPlaying = state.isPlaying,
+            currentPositionMs = state.currentPosition,
+            accentColor = MaterialTheme.colorScheme.primary,
+            onEpisodeClick = onEpisodeClick,
+            onPlayPauseClick = { onPlayPauseClick(state.briefing, it) },
+            onShowSources = { actions.onSources() },
+        )
+        Surface(Modifier.padding(horizontal = 20.dp).fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (state.briefing.sources.isNotEmpty()) {
+                    Surface(onClick = { actions.onSources() }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.briefing_original_reporting), style = MaterialTheme.typography.titleSmall)
+                                Text(pluralStringResource(R.plurals.briefing_source_count, state.briefing.sources.size, state.briefing.sources.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Icon(Icons.Rounded.ArrowOutward, stringResource(R.string.briefing_open_sources), Modifier.size(20.dp))
+                        }
+                    }
+                }
+                Text(stringResource(R.string.briefing_disclaimer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = onFeedbackClick, contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.briefing_report_issue)) }
+            }
         }
     }
 }
 
-@Composable
-fun VerticalRecommendedEpisodeCard(
-    episode: Episode,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
-        ),
-        modifier = modifier
-            .width(160.dp)
-            .expressiveClickable(
-                shape = RoundedCornerShape(16.dp),
-                onClick = onClick
-            )
-    ) {
-        Column {
-            // Artwork with play overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-            ) {
-                val imageUrl = episode.imageUrl?.takeIf { it.isNotEmpty() }
-                    ?: episode.podcastImageUrl?.takeIf { it.isNotEmpty() }
-
-                OptimizedImage(
-                    url = imageUrl,
-                    fallbackUrls = cx.aswin.boxlore.core.model.artworkUrls(episode.imageUrl, episode.podcastImageUrl),
-                    proxyWidth = 320,
-                    contentDescription = episode.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Gradient scrim at bottom of artwork
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))
-                            )
-                        )
-                )
-            }
-
-            // Text content
-            Column(
-                modifier = Modifier.padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = episode.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = GoogleSansWeight.bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 18.sp
-                )
-                val podTitle = episode.podcastTitle
-                if (!podTitle.isNullOrEmpty()) {
-                    Text(
-                        text = podTitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        fontWeight = GoogleSansWeight.medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                val infoText = buildString {
-                    if (episode.duration > 0) {
-                        append("${episode.duration / 60} min")
-                    }
-                    if (episode.publishedDate > 0) {
-                        if (isNotEmpty()) append(" • ")
-                        try {
-                            val instant = java.time.Instant.ofEpochSecond(episode.publishedDate)
-                            val date = java.time.LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault()).toLocalDate()
-                            append(date.format(java.time.format.DateTimeFormatter.ofPattern("MMM d")))
-                        } catch (e: Exception) {
-                            // ignore
-                        }
-                    }
-                }
-                if (infoText.isNotEmpty()) {
-                    Text(
-                        text = infoText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        maxLines = 1
-                    )
-                }
-            }
-        }
-    }
+private fun BriefingUiState.presentationKey(): String = when (this) {
+    is BriefingUiState.Loading -> "loading"
+    is BriefingUiState.Error -> "error"
+    is BriefingUiState.Success -> "success"
 }

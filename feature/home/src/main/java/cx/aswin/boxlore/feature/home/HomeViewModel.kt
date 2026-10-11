@@ -274,6 +274,7 @@ class HomeViewModel(
     val currentRegion = userPrefs.regionStream
 
     init {
+        loadDailyBriefing()
         viewModelScope.launch {
             userPrefs.homeMixModeStream.collect { persistedMode ->
                 _homeMixMode.value = HomeMixMode.fromPersistedValue(persistedMode)

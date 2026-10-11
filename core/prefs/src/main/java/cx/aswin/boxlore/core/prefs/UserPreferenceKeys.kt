@@ -52,6 +52,7 @@ internal object Keys {
         androidx.datastore.preferences.core.booleanPreferencesKey("restart_forgotten_episodes")
     val HAS_DISMISSED_HOME_IMPORT_BANNER = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_home_import_banner")
     val BRIEFING_DISMISSED_DATE = stringPreferencesKey("briefing_dismissed_date")
+    val BRIEFING_DEFAULT_EDITION = stringPreferencesKey("briefing_default_edition")
     val BRIEFING_DISMISSED_FOREVER = androidx.datastore.preferences.core.booleanPreferencesKey("briefing_dismissed_forever")
     val OVERRIDDEN_REC_PODCAST_ID = stringPreferencesKey("overridden_rec_podcast_id")
     val SMART_DOWNLOADS_ENABLED = androidx.datastore.preferences.core.booleanPreferencesKey("smart_downloads_enabled")
