@@ -88,6 +88,8 @@ Fallback-only snapshots attempt artwork. Successful fallback files are stored un
 
 ## Testing notes
 
+The artwork deadline regression uses a test-scheduler dispatcher for Coil, so it verifies timed-out primary requests and successful fallback loading without depending on CI startup speed.
+
 `WidgetStartupTest` covers unused-family registration without resolving playback/library ports and independent installed-family detection. Hermetic JVM tests under `src/test` cover provider variants, RemoteViews inflation, library row cap (scrollable ListView), snapshot storage, mapper/update policy for playback widgets, widget chrome (App theme vs System), and PendingIntent generation/cancellation via `WidgetActionIntentsTest`.
 
 ```bash

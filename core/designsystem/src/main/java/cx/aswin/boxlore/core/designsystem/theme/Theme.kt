@@ -53,7 +53,7 @@ object SurfaceStyles {
 
     /** Display labels for the settings UI. */
     val entries = listOf(
-        Entry(CLASSIC_DYNAMIC, "boxlore classic", "Rich iris and seafoam on cool neutral surfaces."),
+        Entry(CLASSIC_DYNAMIC, "boxlore classic", "Electric violet with blue and teal accents."),
         Entry(STANDARD, "Material You Soft", "Colored surfaces from your wallpaper or accent."),
         Entry(CLASSIC_DARK, "Blackish", "Soft dark gray · stays dark."),
         Entry(CLASSIC_LIGHT, "Whitish", "Soft cream · stays light."),
