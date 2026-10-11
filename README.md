@@ -129,6 +129,9 @@ and listen without paywalls, subscriptions, or ads.
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Smaller app download while retaining artwork, fonts and notification sounds. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
+<li>Explore has refreshed cards, genre filters and collection shortcuts that match Home. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
+<li>Swipe between For You and Top, keep search within reach while scrolling, and switch tabs above the player. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
+<li>Search suggestions and results are easier to scan, with distinct cards for shows and episodes. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
 <li>Download updates in boxlore if you installed from GitHub, with download progress and checks before installation. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
 <li>Read release notes and upcoming changes from Settings → Check for updates. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
 <li>Read longer announcements in compact or full-screen layouts, with actions that stay visible as you scroll. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
@@ -152,6 +155,9 @@ and listen without paywalls, subscriptions, or ads.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Back from a collection returns to where you were in Explore. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
+<li>Search cards show a specific genre when available, instead of a generic Podcast label. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
+<li>Rounded controls keep their shape while scrolling and pressing. <a href="https://github.com/boxcreate/boxlore/pull/1109"><img src="https://img.shields.io/badge/PR-1109-6750A4?style=flat-square" alt="PR #1109" height="18"/></a></li>
 <li>Notification actions open the intended screen or link whether boxlore is already open or starting. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
 <li>Prepared updates remain available after returning from Android's install-permission settings or cancelling installation. <a href="https://github.com/boxcreate/boxlore/pull/1107"><img src="https://img.shields.io/badge/PR-1107-6750A4?style=flat-square" alt="PR #1107" height="18"/></a></li>
 <li>Smoother page colors when opening details, loading another page or going back. <a href="https://github.com/boxcreate/boxlore/pull/1105"><img src="https://img.shields.io/badge/PR-1105-6750A4?style=flat-square" alt="PR #1105" height="18"/></a></li>

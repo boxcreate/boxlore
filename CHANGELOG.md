@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refined Podcast Info cards, metadata, connected subscription controls, genre confirmation and in-list search. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Publish verified update metadata, serialize metadata jobs, and prepare release announcements for approval instead of automatic delivery. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Extend optimized release contract validation to direct APK and Play bundle outputs, including installer exclusion and test-artifact rejection. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Standardized Explore browse, collections and search results on expressive discovery cards, with matching skeletons and distinct compact show rails for concept search. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Added a collapsing Explore header, persistent player-aware tab switcher and horizontal paging with independent tab scroll state. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Shared the animated discovery tab control with Subscriptions while preserving fixed/floating preferences and badges. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Refreshed search suggestions, result headings and loading/empty states. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -47,6 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep loading, navigation and predictive Back color transitions consistent with their destination. ([#1105](https://github.com/boxcreate/boxlore/pull/1105)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Route notification actions consistently on cold and warm launches, and restrict GitHub release alerts to eligible install channels. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Preserve updater recovery through permission settings, cancelled installation and process recreation, and clear completed update sessions. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Return from collection pages to the saved Explore feed with predictive Back and a consistent slide transition. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Recover missing search-result genres from unambiguous matching results and suppress generic Podcast genre chips. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Prevent rounded search/tab controls and Home utility-button press feedback from clipping at their edges. ([#1109](https://github.com/boxcreate/boxlore/pull/1109)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
@@ -123,6 +130,17 @@ readme-copy:end pr=1106 -->
 - Notification actions open the intended screen or link whether boxlore is already open or starting.
 - Prepared updates remain available after returning from Android's install-permission settings or cancelling installation.
 readme-copy:end pr=1107 -->
+
+<!-- readme-copy:start pr=1109
+### Improvements
+- Explore has refreshed cards, genre filters and collection shortcuts that match Home.
+- Swipe between For You and Top, keep search within reach while scrolling, and switch tabs above the player.
+- Search suggestions and results are easier to scan, with distinct cards for shows and episodes.
+### Fixes
+- Back from a collection returns to where you were in Explore.
+- Search cards show a specific genre when available, instead of a generic Podcast label.
+- Rounded controls keep their shape while scrolling and pressing.
+readme-copy:end pr=1109 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
