@@ -172,7 +172,7 @@ fun appBottomChromeContentPadding(
 )
 
 /** Explore For You / Top segmented control (padding + pill). */
-val ExploreTabSelectorFabHeight = 44.dp
+val ExploreTabSelectorFabHeight = cx.aswin.boxlore.core.designsystem.components.DiscoveryTabSwitcherMinimumHeight
 
 private val NavPillShape = RoundedCornerShape(28.dp)
 private val NavSelectionShape = RoundedCornerShape(22.dp)

@@ -213,6 +213,26 @@ class PodcastRepositoryCatalogTest {
     }
 
     @Test
+    fun `searchPodcastsGrouped recovers a real genre when typeahead returns only Podcast`() = runTest(testDispatcher) {
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                val feeds = if (request.path.orEmpty().startsWith("/search/typeahead")) {
+                    """[{"id":1330097,"title":"Catalog title","categories":{"0":"Podcast"}}]"""
+                } else {
+                    """[{"id":1330097,"title":"Hybrid title","categories":{"20":"Education","29":"Health"}},{"id":200,"title":"Other show","categories":{"27":"Technology"}}]"""
+                }
+                return MockResponse().setHeader("Content-Type", "application/json").setBody("""{"status":"true","feeds":$feeds}""")
+            }
+        }
+        val grouped = repository.searchPodcastsGrouped("show")
+        assertEquals(listOf("1330097"), grouped.catalog.map { it.id })
+        assertEquals("Catalog title", grouped.catalog.single().title)
+        assertEquals("Health", grouped.catalog.single().genre)
+        assertEquals(listOf("200"), grouped.alsoFound.map { it.id })
+        assertEquals("Technology", grouped.alsoFound.single().genre)
+    }
+
+    @Test
     fun `searchPodcastsGrouped returns empty groups for blank query`() = runTest(testDispatcher) {
         val grouped = repository.searchPodcastsGrouped("   ")
         assertTrue(grouped.catalog.isEmpty())

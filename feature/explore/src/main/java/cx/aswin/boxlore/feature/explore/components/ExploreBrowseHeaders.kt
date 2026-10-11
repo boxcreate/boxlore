@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Leaderboard
 import androidx.compose.material.icons.rounded.Search
@@ -33,15 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.catalog.content.CuratedMoods
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.feature.explore.R
 
 /**
  * M3 Horizontal Hero Card — image left, text right on surface
@@ -178,6 +178,7 @@ internal fun ExploreSectionHeader(
     title: String,
     regionLabel: String? = null,
     onRegionClick: (() -> Unit)? = null,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Rounded.Leaderboard,
 ) {
     Row(
         modifier = Modifier
@@ -191,7 +192,7 @@ internal fun ExploreSectionHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = Icons.Rounded.Leaderboard,
+                imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
@@ -302,34 +303,14 @@ internal fun ExploreIconTitleHeader(
 }
 
 /**
- * Results header when a For You mood chip is active.
- */
-@Composable
-internal fun ExploreMoodResultsHeader(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    val mood = remember(title) { CuratedMoods.all.find { it.title == title } }
-    val icon = remember(mood?.id) { moodIconForId(mood?.id.orEmpty()) }
-    ExploreIconTitleHeader(
-        title = title,
-        subtitle = mood?.subtitle,
-        icon = icon,
-        modifier = modifier,
-    )
-}
-
-/**
  * Search idle header above the mood suggestion blocks.
  */
 @Composable
-internal fun ExploreSuggestedMoodsHeader(modifier: Modifier = Modifier) {
-    ExploreIconTitleHeader(
-        title = "Suggested for you",
-        icon = Icons.Rounded.AutoAwesome,
+internal fun ExploreSuggestedMoodsHeader(modifier: Modifier = Modifier, hasSuggestions: Boolean = true) {
+    ExploreSearchLandingHeader(
+        title = stringResource(if (hasSuggestions) R.string.explore_suggested_topics else R.string.explore_show_search_idle_title),
+        subtitle = if (hasSuggestions) null else stringResource(R.string.explore_show_search_idle_hint),
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
     )
 }
 

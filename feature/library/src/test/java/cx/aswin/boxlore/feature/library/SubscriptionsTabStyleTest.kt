@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test
 class SubscriptionsTabStyleTest {
 
     @Test
-    fun subscriptionsTabSelectorFabHeightIs44Dp() {
-        assertEquals(44.dp, SubscriptionsTabSelectorFabHeight)
+    fun subscriptionsTabSelectorFabHeightIs48Dp() {
+        assertEquals(48.dp, SubscriptionsTabSelectorFabHeight)
     }
 
     @Test

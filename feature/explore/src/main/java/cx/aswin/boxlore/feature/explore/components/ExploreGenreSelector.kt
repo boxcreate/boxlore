@@ -4,11 +4,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.Apps
@@ -31,7 +35,12 @@ import androidx.compose.material.icons.rounded.SportsBaseball
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Weekend
 import androidx.compose.material.icons.rounded.Work
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -45,7 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
+import cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme
 
 // Synced with GenreSelector.kt / onboarding search icons.
 internal data class ExploreGenreItem(val label: String, val value: String, val icon: ImageVector)
@@ -73,11 +82,19 @@ internal val EXPLORE_GENRES = listOf(
 )
 
 /**
- * Expandable genre row for Explore (onboarding-style pills + More sheet).
+ * Home's native Material 3 genre-chip treatment with Explore's existing filtering.
  */
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun ExploreGenreSelector(
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit,
+) {
+    DiscoveryExpressiveTheme { ExploreGenreSelectorContent(selectedCategory, onCategorySelected) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExploreGenreSelectorContent(
     selectedCategory: String,
     onCategorySelected: (String) -> Unit,
 ) {
@@ -106,10 +123,11 @@ internal fun ExploreGenreSelector(
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         state = listState,
+        contentPadding = PaddingValues(horizontal = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
-            PillFilterChip(
+            ExploreGenreFilterChip(
                 label = "All",
                 selected = selectedCategory == "All",
                 onClick = { onCategorySelected("All") },
@@ -118,7 +136,7 @@ internal fun ExploreGenreSelector(
         }
 
         items(displayGenres, key = { it.value }) { genre ->
-            PillFilterChip(
+            ExploreGenreFilterChip(
                 label = genre.label,
                 selected = selectedCategory == genre.value,
                 onClick = { onCategorySelected(genre.value) },
@@ -127,11 +145,14 @@ internal fun ExploreGenreSelector(
         }
 
         item {
-            PillFilterChip(
-                label = "More",
-                selected = showSheet,
+            AssistChip(
+                label = { Text("More") },
                 onClick = { showSheet = true },
-                trailingIcon = Icons.Rounded.KeyboardArrowDown,
+                trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
+                modifier = Modifier.heightIn(min = 48.dp),
+                shape = CircleShape,
+                border = null,
+                colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             )
         }
     }
@@ -142,46 +163,75 @@ internal fun ExploreGenreSelector(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 48.dp),
-            ) {
-                Text(
-                    text = "Browse Genres",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 16.dp),
+            ExploreGenreSheetContent(selectedCategory) { category ->
+                onCategorySelected(category)
+                showSheet = false
+            }
+        }
+    }
+}
+
+/** Mirrors HomeGenreFilterChip tokens; no feature-to-feature dependency. */
+@Composable
+private fun ExploreGenreFilterChip(label: String, selected: Boolean, onClick: () -> Unit, icon: ImageVector) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+        modifier = Modifier.heightIn(min = 48.dp),
+        shape = CircleShape,
+        border = null,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ExploreGenreSheetContent(selectedCategory: String, onCategorySelected: (String) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 48.dp),
+    ) {
+        Text(
+            text = "Browse Genres",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 16.dp),
+        )
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            ExploreGenreFilterChip(
+                label = "All",
+                selected = selectedCategory == "All",
+                onClick = {
+                    onCategorySelected("All")
+                },
+                icon = Icons.Rounded.Apps,
+            )
+
+            EXPLORE_GENRES.forEach { genre ->
+                ExploreGenreFilterChip(
+                    label = genre.label,
+                    selected = selectedCategory == genre.value,
+                    onClick = {
+                        onCategorySelected(genre.value)
+                    },
+                    icon = genre.icon,
                 )
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    PillFilterChip(
-                        label = "All",
-                        selected = selectedCategory == "All",
-                        onClick = {
-                            onCategorySelected("All")
-                            showSheet = false
-                        },
-                        icon = Icons.Rounded.Apps,
-                    )
-
-                    EXPLORE_GENRES.forEach { genre ->
-                        PillFilterChip(
-                            label = genre.label,
-                            selected = selectedCategory == genre.value,
-                            onClick = {
-                                onCategorySelected(genre.value)
-                                showSheet = false
-                            },
-                            icon = genre.icon,
-                        )
-                    }
-                }
             }
         }
     }

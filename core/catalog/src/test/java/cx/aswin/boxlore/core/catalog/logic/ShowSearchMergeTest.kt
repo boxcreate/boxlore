@@ -52,6 +52,44 @@ class ShowSearchMergeTest {
     }
 
     @Test
+    fun fillsMissingGenreFromSameIdWithoutReplacingCatalogMetadataOrOrder() {
+        val catalog = Podcast("100", "Catalog title", "Catalog host", "catalog.jpg")
+        val other = Podcast("200", "Other show", "Host", "", genre = "Comedy")
+        val hybrid = catalog.copy(title = "Hybrid title", imageUrl = "hybrid.jpg", genre = "Technology")
+        val merged = mergeShowSearchResults(listOf(catalog, other), listOf(hybrid))
+        assertEquals(listOf(catalog.copy(genre = "Technology"), other), merged.catalog)
+        assertTrue(merged.alsoFound.isEmpty())
+    }
+
+    @Test
+    fun fillsMissingGenreAcrossExistingFeedUrlIdentityMatch() {
+        val catalog = Podcast("100", "Show", "Host", "", genre = " podcasts ", feedUrl = "https://feeds.example/show")
+        val hybrid = catalog.copy(id = "itunes:55", genre = "Science")
+        val merged = mergeShowSearchResults(listOf(catalog), listOf(hybrid))
+        assertEquals(listOf(catalog.copy(genre = "Science")), merged.catalog)
+        assertTrue(merged.alsoFound.isEmpty())
+    }
+
+    @Test
+    fun preservesKnownCatalogGenreAndDoesNotGuessFromTitles() {
+        val known = Podcast("100", "Show", "Host", "", genre = "News")
+        val missing = known.copy(id = "200", genre = "Podcast")
+        val sameTitle = known.copy(id = "300", genre = "Comedy")
+        val merged = mergeShowSearchResults(listOf(known, missing), listOf(known.copy(genre = "Science"), sameTitle))
+        assertEquals(listOf(known, missing), merged.catalog)
+        assertEquals(listOf(sameTitle), merged.alsoFound)
+    }
+
+    @Test
+    fun leavesUnknownGenreWhenMatchingMetadataIsGenericOrConflicting() {
+        val catalog = Podcast("100", "Show", "Host", "", feedUrl = "https://feeds.example/show")
+        val generic = catalog.copy(genre = " ")
+        assertEquals(listOf(catalog), mergeShowSearchResults(listOf(catalog), listOf(generic)).catalog)
+        val conflicting = listOf(catalog.copy(genre = "Science"), catalog.copy(id = "itunes:55", genre = "News"))
+        assertEquals(listOf(catalog), mergeShowSearchResults(listOf(catalog), conflicting).catalog)
+    }
+
+    @Test
     fun identityFallsBackToTitleArtist() {
         val a = Podcast(id = "0", title = "Foo", artist = "Bar", imageUrl = "")
         val b = Podcast(id = "", title = "Foo", artist = "Bar", imageUrl = "")
