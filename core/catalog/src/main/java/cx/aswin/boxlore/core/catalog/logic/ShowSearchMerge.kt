@@ -19,6 +19,7 @@ data class GroupedShowSearchResult(val catalog: List<Podcast>, val alsoFound: Li
 /**
  * Merge Meili typeahead + hybrid `/search` into catalog / also-found groups.
  * Prefer catalog (Meili) when the same show appears in both (matched by id, itunes:, or feed URL).
+ * Fill missing catalog genres from unambiguous hybrid matches without changing identity or order.
  */
 fun mergeShowSearchResults(typeahead: List<Podcast>, hybrid: List<Podcast>,): GroupedShowSearchResult {
     val seenKeys = mutableSetOf<String>()
@@ -36,9 +37,24 @@ fun mergeShowSearchResults(typeahead: List<Podcast>, hybrid: List<Podcast>,): Gr
         target.add(podcast)
     }
 
-    for (p in typeahead) tryAdd(catalog, p)
+    for (p in typeahead) tryAdd(catalog, p.withSearchGenreFrom(hybrid))
     for (p in hybrid) tryAdd(alsoFound, p)
     return GroupedShowSearchResult(catalog = catalog, alsoFound = alsoFound)
+}
+
+private fun Podcast.withSearchGenreFrom(hybrid: List<Podcast>): Podcast {
+    if (genre.isUsefulSearchGenre()) return this
+    val keys = podcastIdentityKeys(this).filterNot { it.startsWith("title:") }.toSet()
+    if (keys.isEmpty()) return this
+    val genres = hybrid
+        .filter { candidate -> candidate.genre.isUsefulSearchGenre() && podcastIdentityKeys(candidate).any { it in keys } }
+        .map { it.genre.trim() }
+        .distinctBy { it.lowercase(java.util.Locale.ROOT) }
+    return if (genres.size == 1) copy(genre = genres.single()) else this
+}
+
+private fun String.isUsefulSearchGenre(): Boolean = trim().let {
+    it.isNotEmpty() && !it.equals("Podcast", ignoreCase = true) && !it.equals("Podcasts", ignoreCase = true)
 }
 
 /** Identity keys used to dedupe across Meili pid, itunes:, and feed URL. */

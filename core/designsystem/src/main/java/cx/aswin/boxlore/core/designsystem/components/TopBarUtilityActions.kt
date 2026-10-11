@@ -119,14 +119,15 @@ private fun UtilityActionSegment(
                 scaleX = pressScale.value
                 scaleY = pressScale.value
             }
+            .clip(shape)
             .combinedClickable(
                 interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
+                indication = null,
                 role = Role.Button,
                 onClick = onClick,
                 onLongClick = onLongClick,
             ),
-        shape = if (isPressed) RoundedCornerShape(12.dp) else shape,
+        shape = shape,
         color = containerColor,
         contentColor = contentColor,
     ) {

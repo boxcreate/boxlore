@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.explore.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,18 +8,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bolt
@@ -29,17 +28,17 @@ import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.Newspaper
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Podcasts
 import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.SentimentVerySatisfied
 import androidx.compose.material.icons.rounded.SportsBaseball
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Work
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,121 +46,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
-import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
-
-/**
- * Podcast card matching HomeScreen's PodcastCard exactly
- */
-@Composable
-fun ExplorePodcastCard(
-    podcast: Podcast,
-    cardHeight: androidx.compose.ui.unit.Dp,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    showGenreChip: Boolean = false
-) {
-    OutlinedCard(
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier.expressiveClickable(onClick = onClick)
-    ) {
-        Column {
-            // Image Container with optional Genre Chip
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(cardHeight)
-            ) {
-                OptimizedImage(
-                    url = podcast.imageUrl,
-                    proxyWidth = 400,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
-                )
-
-                // Genre Chip (only shown when showGenreChip is true)
-                if (showGenreChip && podcast.genre.isNotEmpty()) {
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .align(Alignment.TopStart)
-                    ) {
-                        Text(
-                            text = podcast.genre.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = GoogleSansWeight.bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-
-                // Video Badge overlay on image
-                if (podcast.medium == "video" || podcast.latestEpisode?.enclosureType?.startsWith("video/") == true) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.Black.copy(alpha = 0.55f),
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .align(Alignment.TopEnd)
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Videocam,
-                                contentDescription = "Video",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Text content below image
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = podcast.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = podcast.artist,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
+import cx.aswin.boxlore.feature.explore.R
 
 /** Cap for By-concept podcast-vector rail — keep episodes as the primary feed. */
 private const val RELATED_SHOWS_RAIL_MAX = 8
@@ -175,7 +70,7 @@ fun ExploreRelatedShowsRail(
     podcasts: List<Podcast>,
     onPodcastClick: (podcast: Podcast, index: Int) -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "Related shows",
+    title: String? = null,
 ) {
     val railItems = remember(podcasts) {
         LazyListKeyPolicy.deduplicateById(podcasts) { it.id }.take(RELATED_SHOWS_RAIL_MAX)
@@ -183,12 +78,9 @@ fun ExploreRelatedShowsRail(
     if (railItems.isEmpty()) return
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp),
+        ExploreSearchSectionHeader(
+            title = title ?: stringResource(R.string.explore_related_shows),
+            icon = Icons.Rounded.Podcasts,
         )
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -243,57 +135,38 @@ fun ExploreVibeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val tone = remember(vibe.first) { kotlin.math.abs(vibe.first.hashCode()) % 3 }
-    val containerColor = when (tone) {
-        0 -> MaterialTheme.colorScheme.primaryContainer
-        1 -> MaterialTheme.colorScheme.secondaryContainer
-        else -> MaterialTheme.colorScheme.tertiaryContainer
-    }
-    val contentColor = when (tone) {
-        0 -> MaterialTheme.colorScheme.onPrimaryContainer
-        1 -> MaterialTheme.colorScheme.onSecondaryContainer
-        else -> MaterialTheme.colorScheme.onTertiaryContainer
-    }
     val icon = remember(vibe.first) { moodIconForId(vibe.first) }
-
+    val titleHeight = with(androidx.compose.ui.platform.LocalDensity.current) {
+        MaterialTheme.typography.titleSmall.lineHeight.toDp() * 2
+    }
     Surface(
         onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(96.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = containerColor,
-        contentColor = contentColor,
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-        Column(
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = contentColor.copy(alpha = 0.14f),
-                contentColor = contentColor,
-                modifier = Modifier.size(32.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
+        Column(Modifier.padding(14.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                Spacer(Modifier.weight(1f))
+                Icon(
+                    Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
             }
-            Text(
-                text = vibe.second,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = GoogleSansWeight.semiBold,
-                color = contentColor,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Spacer(Modifier.height(10.dp))
+            Box(Modifier.fillMaxWidth().height(titleHeight), contentAlignment = Alignment.CenterStart) {
+                Text(
+                    text = vibe.second,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = GoogleSansWeight.semiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -327,7 +200,7 @@ fun CuratedVibeHeader(title: String) {
 }
 
 /**
- * Horizontal For You vibe catchers — lives in the sticky header (same slot as genres).
+ * For You navigation shortcuts in the collapsing header, distinct from genre filters.
  */
 @Composable
 fun ExploreVibeChipRow(
@@ -340,70 +213,64 @@ fun ExploreVibeChipRow(
     }
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        items(
+        itemsIndexed(
             distinctVibes,
-            key = { LazyListKeyPolicy.safeKey(it.first, prefix = "vibe_chip") }
-        ) { vibe ->
+            key = { _, vibe -> LazyListKeyPolicy.safeKey(vibe.first, prefix = "vibe_chip") }
+        ) { index, vibe ->
             ExploreVibeChip(
                 vibe = vibe,
                 onClick = { onVibeSelected(vibe.first, vibe.second) },
+                first = index == 0,
+                last = index == distinctVibes.lastIndex,
             )
         }
     }
 }
 
 /**
- * For You "vibe catcher" — soft rounded capsule with tint + per-vibe icon.
- * Not a genre [PillFilterChip]: no stadium filter look, always chromatic.
+ * Connected topic shortcuts: strong standalone icons, curved outer ends and tight inner corners.
  */
 @Composable
 fun ExploreVibeChip(
     vibe: Pair<String, String>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    first: Boolean = true,
+    last: Boolean = true,
 ) {
-    val tone = remember(vibe.first) { kotlin.math.abs(vibe.first.hashCode()) % 3 }
-    val containerColor = when (tone) {
-        0 -> MaterialTheme.colorScheme.secondaryContainer
-        1 -> MaterialTheme.colorScheme.tertiaryContainer
-        else -> MaterialTheme.colorScheme.primaryContainer
-    }
-    val contentColor = when (tone) {
-        0 -> MaterialTheme.colorScheme.onSecondaryContainer
-        1 -> MaterialTheme.colorScheme.onTertiaryContainer
-        else -> MaterialTheme.colorScheme.onPrimaryContainer
-    }
     val icon = remember(vibe.first) { vibeCatcherIcon(vibe.first) }
-
-    Surface(
+    FilledTonalButton(
         onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = containerColor,
-        contentColor = contentColor,
+        modifier = modifier.heightIn(min = 52.dp).widthIn(max = 248.dp),
+        shape = RoundedCornerShape(
+            topStart = if (first) 26.dp else 8.dp,
+            bottomStart = if (first) 26.dp else 8.dp,
+            topEnd = if (last) 26.dp else 8.dp,
+            bottomEnd = if (last) 26.dp else 8.dp,
+        ),
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = contentColor,
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = vibe.second,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = GoogleSansWeight.semiBold,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = vibe.second,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = GoogleSansWeight.semiBold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -424,221 +291,4 @@ internal fun moodIconForId(moodId: String): androidx.compose.ui.graphics.vector.
     "history_buff" -> Icons.Rounded.AccountBalance
     "mystery_thriller" -> Icons.Rounded.Visibility
     else -> Icons.Rounded.AutoAwesome
-}
-
-@Composable
-fun ExploreEpisodeHeroCard(
-    episode: Episode,
-    isFallback: Boolean = true,
-    labelText: String? = null,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .expressiveClickable(shape = RoundedCornerShape(20.dp), onClick = onClick)
-    ) {
-        OptimizedImage(
-            url = episode.imageUrl?.takeIf { it.isNotBlank() } ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
-            proxyWidth = 600,
-            contentDescription = episode.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0.0f to Color.Transparent,
-                            0.3f to Color.Black.copy(alpha = 0.15f),
-                            0.6f to Color.Black.copy(alpha = 0.65f),
-                            1.0f to Color.Black
-                        )
-                    )
-                )
-        )
-
-        Box(
-            modifier = Modifier
-                .padding(14.dp)
-                .align(Alignment.TopStart)
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.AutoAwesome,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(12.dp)
-                )
-                Text(
-                    text = labelText ?: (if (isFallback) "POPULAR IN YOUR REGION" else "FEATURED RECOMMENDATION"),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontSize = 9.sp,
-                        fontWeight = GoogleSansWeight.bold,
-                        letterSpacing = 0.5.sp
-                    )
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = episode.podcastTitle ?: "",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 11.sp,
-                    fontWeight = GoogleSansWeight.semiBold,
-                    letterSpacing = 0.4.sp
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Text(
-                text = episode.title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    color = Color.White,
-                    fontWeight = GoogleSansWeight.bold,
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp
-                ),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (episode.duration > 0) {
-                    val minutes = episode.duration / 60
-                    Text(
-                        text = "$minutes min listen",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 10.sp,
-                            fontWeight = GoogleSansWeight.medium
-                        )
-                    )
-                }
-
-                val genre = episode.podcastGenre
-                if (!genre.isNullOrBlank()) {
-                    Text(
-                        text = "•",
-                        color = Color.White.copy(alpha = 0.4f),
-                        fontSize = 10.sp
-                    )
-                    Text(
-                        text = genre,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 10.sp,
-                            fontWeight = GoogleSansWeight.medium
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ExploreEpisodeBentoCard(
-    episode: Episode,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedCard(
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier.expressiveClickable(onClick = onClick)
-    ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.25f)
-            ) {
-                OptimizedImage(
-                    url = episode.imageUrl?.takeIf { it.isNotBlank() } ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() },
-                    proxyWidth = 400,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
-                )
-
-                if (episode.duration > 0) {
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = Color.Black.copy(alpha = 0.6f),
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(6.dp)
-                    ) {
-                        Text(
-                            text = "${episode.duration / 60}m",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = GoogleSansWeight.medium,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-            }
-
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = episode.title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontSize = 14.sp,
-                        lineHeight = 18.sp,
-                        fontWeight = GoogleSansWeight.bold
-                    ),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = episode.podcastTitle ?: "",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 12.sp,
-                        lineHeight = 15.sp,
-                        fontWeight = GoogleSansWeight.medium
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
 }
