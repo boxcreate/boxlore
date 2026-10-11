@@ -15,9 +15,11 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -110,6 +112,26 @@ class HomeConnectedRailTest {
                 assertTrue(mix.width <= 54f)
             }
         }
+    }
+
+    @Test fun `switching shows gives incoming list its own scroll state during crossfade`() {
+        state.value = Scenario(selected = "show-0", episodeCount = 8, distinctEpisodes = true, parentScrollHost = true)
+        render()
+        composeRule.onNodeWithTag("home_filtered_episodes").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 180f) }
+        composeRule.waitForIdle()
+        val outgoingOffset = composeRule.onNodeWithTag("home_filtered_episodes").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+        assertTrue("Outgoing show must be scrolled for this regression", outgoingOffset > 0f)
+        composeRule.mainClock.autoAdvance = false
+        composeRule.onNodeWithTag("home_show_selector_show-1").performClick()
+        applySelectionFrame()
+        composeRule.mainClock.advanceTimeBy(64)
+        val offsets = composeRule.onAllNodesWithTag("home_filtered_episodes").fetchSemanticsNodes().map {
+            it.config[SemanticsProperties.VerticalScrollAxisRange].value()
+        }.sorted()
+        assertEquals("Each concurrently visible show owns its scroll offset", listOf(0f, outgoingOffset), offsets)
+        assertEquals("Switching shows must not scroll Home", 0, parentScroll.value)
+        composeRule.mainClock.advanceTimeBy(1200)
+        assertEquals(0f, composeRule.onNodeWithTag("home_filtered_episodes").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value(), 0.1f)
     }
 
     @Test fun `outgoing show retains its episode during a crossfade into another show`() {

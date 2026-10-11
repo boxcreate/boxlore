@@ -130,7 +130,6 @@ fun HeroCarousel(
                 currentPlayingEpisodeId = currentPlayingEpisodeId,
                 isPlaying = isPlaying,
                 modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
-                artworkVariant = i,
             )
         }
     }

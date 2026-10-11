@@ -78,7 +78,6 @@ private fun MiniPlayButton(
         Modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(colorScheme.primary)
             .expressiveClickable(
                 feedback = ExpressivePressFeedback.Control,
                 shape = CircleShape,
@@ -87,7 +86,7 @@ private fun MiniPlayButton(
             ) {
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
-            },
+            }.background(colorScheme.primary),
         contentAlignment = Alignment.Center,
     ) {
         Crossfade(
@@ -142,7 +141,6 @@ private fun MiniSeekButton(
         Modifier
             .size(40.dp)
             .clip(CircleShape)
-            .background(colorScheme.secondaryContainer)
             .expressiveClickable(
                 feedback = ExpressivePressFeedback.Control,
                 shape = CircleShape,
@@ -151,7 +149,7 @@ private fun MiniSeekButton(
             ) {
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
-            },
+            }.background(colorScheme.secondaryContainer),
         contentAlignment = Alignment.Center,
     ) {
         cx.aswin.boxlore.feature.player.SeekDurationIcon(

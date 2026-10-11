@@ -86,6 +86,7 @@ fun YourShowsSection(
 ) {
     if (subscribedPodcasts.list.isEmpty()) return
     val contentTarget = selectedPodcastId ?: subscribedPodcasts.list.singleOrNull()?.id
+    val showingMix = selectedPodcastId == null && subscribedPodcasts.list.size > 1
     val mixMode = HomeMixModeLogic.resolveMode(
         selectedMixMode,
         HomeMixModeLogic.canOfferOffline(subscribedPodcasts.list.size, completedDownloads.list.size),
@@ -93,14 +94,6 @@ fun YourShowsSection(
     val hasMixContent = when (mixMode) {
         HomeMixMode.DAILY -> latestEpisodes.list.any { it.latestEpisode != null }
         HomeMixMode.OFFLINE -> HomeMixModeLogic.visibleOfflineItems(completedDownloads.list).isNotEmpty()
-    }
-
-    val filteredScrollState = rememberScrollState()
-    val filteredScrollConnection = remember(filteredScrollState) {
-        HomeEpisodeListScrollConnection(
-            canScrollForward = { filteredScrollState.canScrollForward },
-            canScrollBackward = { filteredScrollState.canScrollBackward },
-        )
     }
 
     Column(modifier = modifier) {
@@ -159,7 +152,7 @@ fun YourShowsSection(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(30.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .homeMixBackdrop(enabled = contentTarget == null && hasMixContent)
+                .homeMixBackdrop(enabled = showingMix && hasMixContent)
                 .then(
                     if (showPureSurfaceBorder) {
                         Modifier.border(
@@ -207,6 +200,13 @@ fun YourShowsSection(
                 } else {
                     // Scenario B: Filtered State (A Specific Sub is Selected) / Scenario C: Only 1 Sub Edge Case
                     val activeId = activeShowId
+                    val filteredScrollState = rememberScrollState()
+                    val filteredScrollConnection = remember(filteredScrollState) {
+                        HomeEpisodeListScrollConnection(
+                            canScrollForward = { filteredScrollState.canScrollForward },
+                            canScrollBackward = { filteredScrollState.canScrollBackward },
+                        )
+                    }
                     val frame = retainExitingShowsFrame(
                         active = activeId == contentTarget,
                         current = SelectedShowPresentation(selectedPodcastEpisodes, isSelectedPodcastLoading, isSelectedRssRefreshing),

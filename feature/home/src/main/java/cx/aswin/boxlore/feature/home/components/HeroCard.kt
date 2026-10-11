@@ -49,7 +49,7 @@ import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
 
 @Composable
-@Suppress("LongParameterList") // Existing action/playback callbacks plus the artwork variation.
+@Suppress("LongParameterList") // Existing action and playback callbacks.
 fun HeroCard(
     item: SmartHeroItem,
     onClick: () -> Unit,
@@ -59,7 +59,6 @@ fun HeroCard(
     currentPlayingEpisodeId: String? = null,
     isPlaying: Boolean = false,
     modifier: Modifier = Modifier,
-    artworkVariant: Int = 0,
 ) {
     val foreground = heroContentColor()
     val container = heroContainerColor()
@@ -80,7 +79,7 @@ fun HeroCard(
         modifier = modifier.fillMaxSize(),
     ) {
         Column(Modifier.fillMaxSize()) {
-            HeroBody(item, foreground, artworkVariant, progressState, Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp))
+            HeroBody(item, foreground, progressState, Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp))
             Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                 HeroActions(
                     pause = pause,
@@ -97,7 +96,7 @@ fun HeroCard(
 }
 
 @Composable
-private fun HeroBody(item: SmartHeroItem, foreground: Color, artworkVariant: Int, progressState: HeroProgressState?, modifier: Modifier) {
+private fun HeroBody(item: SmartHeroItem, foreground: Color, progressState: HeroProgressState?, modifier: Modifier) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val titleStyle = heroTitleStyle()
@@ -121,7 +120,7 @@ private fun HeroBody(item: SmartHeroItem, foreground: Color, artworkVariant: Int
         val headerLimit = (maxHeight - copyReserve - 12.dp).coerceAtLeast(0.dp)
         val headerHeight = minOf(headerLimit, desiredHeader)
         Column(Modifier.fillMaxSize()) {
-            HeroLead(item, foreground, artworkVariant, Modifier.fillMaxWidth().height(headerHeight))
+            HeroLead(item, foreground, Modifier.fillMaxWidth().height(headerHeight))
             Spacer(Modifier.height(12.dp))
             HeroCopy(item, foreground, title.layoutInput.style, progressState, Modifier.weight(1f).fillMaxWidth())
         }
@@ -129,7 +128,7 @@ private fun HeroBody(item: SmartHeroItem, foreground: Color, artworkVariant: Int
 }
 
 @Composable
-private fun HeroLead(item: SmartHeroItem, foreground: Color, artworkVariant: Int, modifier: Modifier) {
+private fun HeroLead(item: SmartHeroItem, foreground: Color, modifier: Modifier) {
     val wideContext = LocalDensity.current.fontScale > 1.3f
     BoxWithConstraints(modifier.testTag("home_hero_lead")) {
         val wideContextHeight = if (wideContext) heroWideContextHeight(item, maxWidth - 32.dp) else 0.dp
@@ -139,21 +138,20 @@ private fun HeroLead(item: SmartHeroItem, foreground: Color, artworkVariant: Int
             Column(Modifier.fillMaxSize()) {
                 HeroCardContext(item, foreground, wide = true, Modifier.fillMaxWidth().height(contextHeight).padding(horizontal = 16.dp))
                 Spacer(Modifier.height(8.dp))
-                HeroArtwork(item, artworkVariant, Modifier.size(artworkSize).align(Alignment.End))
+                HeroArtwork(item, Modifier.size(artworkSize).align(Alignment.End))
             }
         } else {
             val artworkSize = minOf(maxHeight, maxWidth * 0.65f)
             Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(0.dp), verticalAlignment = Alignment.CenterVertically) {
                 HeroCardContext(item, foreground, wide = false, Modifier.weight(1f).fillMaxSize().padding(horizontal = 16.dp))
-                HeroArtwork(item, artworkVariant, Modifier.size(artworkSize).align(Alignment.Top))
+                HeroArtwork(item, Modifier.size(artworkSize).align(Alignment.Top))
             }
         }
     }
 }
 
 @Composable
-@Suppress("UnusedParameter") // Preserve the existing variant call contract while comparing the attached artwork design.
-private fun HeroArtwork(item: SmartHeroItem, artworkVariant: Int, modifier: Modifier) {
+private fun HeroArtwork(item: SmartHeroItem, modifier: Modifier) {
     HeroArtworkMerge(heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT), modifier.testTag("home_hero_artwork"))
 }
 

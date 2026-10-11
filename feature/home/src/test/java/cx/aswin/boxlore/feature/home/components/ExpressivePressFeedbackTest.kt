@@ -95,6 +95,19 @@ class ExpressivePressFeedbackTest {
         assertEquals(emptyList<String>(), events)
     }
 
+    @Test fun `custom control background contracts with content and restores on cancel`() {
+        show(Scene(feedback = ExpressivePressFeedback.Control, rippleEnabled = false, customSurface = true))
+        val resting = bounds("target")
+        val edge = Offset(resting.left + 1f, resting.center.y)
+        assertEquals(Color.Blue.toArgb(), pixel(edge))
+        hold("target")
+        assertEquals("The complete coloured surface must shrink", Color.Magenta.toArgb(), pixel(edge))
+        assertEquals(Color.Blue.toArgb(), pixel(resting.center))
+        cancel("target")
+        assertEquals(Color.Blue.toArgb(), pixel(edge))
+        assertEquals(emptyList<String>(), events)
+    }
+
     @Test fun `nested control owns its gesture without activating or shrinking the card`() {
         show(Scene(nested = true))
         val resting = bounds("target")
@@ -192,6 +205,7 @@ class ExpressivePressFeedbackTest {
         val rtl: Boolean = false,
         val fontScale: Float = 1f,
         val nativeButton: Boolean = false,
+        val customSurface: Boolean = false,
     )
 
     private fun show(scene: Scene = Scene()) = with(scene) {
@@ -209,7 +223,10 @@ class ExpressivePressFeedbackTest {
                         Modifier.expressiveClickable(interactionSource = source, enabled = enabled.value, shape = shape, feedback = feedback, pressScaleEnabled = scaleEnabled, indication = if (rippleEnabled) androidx.compose.material3.ripple() else null, onClick = { events.add("target") })
                     }
                     Box(Modifier.fillMaxSize().background(Color.Magenta).padding(24.dp)) {
-                        Surface(modifier = Modifier.size(200.dp, 100.dp).then(click).testTag("target"), shape = shape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        if (customSurface) {
+                            Box(Modifier.size(200.dp, 100.dp).then(click).background(Color.Blue, shape).testTag("target"))
+                        } else {
+                            Surface(modifier = Modifier.size(200.dp, 100.dp).then(click).testTag("target"), shape = shape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
                             Box(Modifier.fillMaxSize().padding(20.dp)) {
                                 if (nested) {
                                     Surface(
@@ -221,6 +238,7 @@ class ExpressivePressFeedbackTest {
                                     Button(onClick = { events.add("native") }, modifier = Modifier.testTag("native")) { Text("Play") }
                                 }
                             }
+                        }
                         }
                     }
                 }

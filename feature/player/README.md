@@ -6,7 +6,7 @@ Owns player presentation: mini player, full player sheet, queue screen UI, contr
 
 ## Public API
 
-- Queue rows use steady Material feedback; custom mini-player and Up Next controls opt into the shared 3% non-bouncy press response. The full-player connected transport animation, drag/seek interactions and playback callbacks are unchanged.
+- Queue rows use steady Material feedback; custom mini-player and Up Next controls opt into the shared 3% non-bouncy press response. The full-player connected transport animation, drag/seek interactions and playback callbacks are unchanged. Mini-player Play/Seek and Up Next backgrounds sit inside their press layer so the complete coloured control contracts with its content.
 
 - `v2.PlayerSheetScaffold` is composed by `:app` as the mini/full player overlay.
 - The collapsed v2 mini player follows Appearance → Navigation: Floating is a 64dp capsule with 32dp corners; Classic keeps the 72dp shape with 26dp top and 14dp bottom corners. Both clips use the selected navigation's corner metrics. The solid artwork-tinted surface holds 48dp cookie-shaped artwork, title/show metadata, and a 48dp circular play/pause control inside one bar. `PlayerSheetLayout.miniPlayerSeekButtonsEnabled` defaults off; opting in adds 40dp back/forward controls around play/pause using global seek durations. The title and show/Cast label each get their own line. A rounded progress line beneath them smooths position updates and gently waves while playing; its quiet remaining track has an open gap after the played segment. Pause/loading flatten the wave, and compactness, expansion, and stopped lifecycle suspend motion.

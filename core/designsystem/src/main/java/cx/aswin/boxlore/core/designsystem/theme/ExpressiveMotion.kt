@@ -153,13 +153,10 @@ fun Modifier.expressiveClickable(
 
 /** Same surface/control feedback, preserving long press for selection and contextual actions. */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-// Keep Foundation's named click/long-click actions and the shared feedback options together.
-@Suppress("LongParameterList")
 fun Modifier.expressiveClickable(
     enabled: Boolean = true,
     shape: Shape? = null,
     indication: Indication? = ripple(),
-    pressScaleEnabled: Boolean = true,
     feedback: ExpressivePressFeedback = ExpressivePressFeedback.Surface,
     onLongClickLabel: String? = null,
     onLongClick: () -> Unit,
@@ -171,7 +168,7 @@ fun Modifier.expressiveClickable(
             interactionSource = interactionSource,
             enabled = enabled,
             feedback = feedback,
-            pressScaleEnabled = pressScaleEnabled,
+            pressScaleEnabled = true,
             shape = shape,
         )
         .combinedClickable(

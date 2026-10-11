@@ -187,8 +187,8 @@ private fun QueuePreviewRow(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(colorScheme.primary)
-                    .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onPlay),
+                    .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onPlay)
+                    .background(colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

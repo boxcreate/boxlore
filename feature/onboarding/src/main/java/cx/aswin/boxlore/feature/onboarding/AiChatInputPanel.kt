@@ -252,10 +252,8 @@ internal fun AiChatInputPanel(
                         Modifier
                             .fillMaxWidth()
                             .height(50.dp)
-                            .background(primaryColor, shape = RoundedCornerShape(25.dp))
-                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(25.dp)) {
-                                onRevealSuggestions()
-                            },
+                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(25.dp), onClick = onRevealSuggestions)
+                            .background(primaryColor, shape = RoundedCornerShape(25.dp)),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {
@@ -349,10 +347,8 @@ internal fun AiChatInputPanel(
                         Modifier
                             .fillMaxWidth()
                             .height(50.dp)
-                            .background(primaryColor, shape = RoundedCornerShape(25.dp))
-                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(25.dp)) {
-                                onContinue()
-                            },
+                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(25.dp), onClick = onContinue)
+                            .background(primaryColor, shape = RoundedCornerShape(25.dp)),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {

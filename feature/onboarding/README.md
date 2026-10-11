@@ -6,7 +6,7 @@ Owns first-run onboarding presentation: genre selection, search-based onboarding
 
 ## Public API
 
-- Suggestion cards and selectable rows use steady Material feedback. Custom compact actions and genre chips opt into the shared restrained control response, clipped to their actual shapes. Welcome entrance animations and selection/subscription callbacks are unchanged.
+- Suggestion cards and selectable rows use steady Material feedback. Custom compact actions and genre chips opt into the shared restrained control response, clipped to their actual shapes. Primary action backgrounds contract with their content inside the shared press layer. Welcome entrance animations and selection/subscription callbacks are unchanged.
 
 - `OnboardingScreen` and `OnboardingViewModel` for the flow shell.
 - Welcome step uses a cinematic podcast-cover marquee (`CinematicBackgroundGrid`): ~2.4s entrance with draw-phase-only chrome motion (`graphicsLayer`), static bottom scrim (no logo halo plate), modest cover glide that hands off into continuous drift (~700ms in — no pause), then logo/CTA cascade. Welcome chrome: wordmark + “Podcasts, done right.”; soft primary CTA with integrated AI cue; quieter tonal secondary actions.
