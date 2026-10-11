@@ -14,6 +14,7 @@ object NowPlayingWidgetMapper {
         episodeTitle = state.episodeTitle.orEmpty(),
         podcastTitle = state.podcastTitle.orEmpty(),
         artworkUrl = state.artworkUrl,
+        fallbackArtworkUrls = state.fallbackArtworkUrls,
         artworkCachePath = artworkCachePath,
         isPlaying = state.isPlaying,
         isLoading = state.isLoading,

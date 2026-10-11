@@ -124,20 +124,20 @@ object LibraryWidgetCoordinator {
 
                 shows =
                     shows.map { row ->
-                        if (!row.artworkCachePath.isNullOrBlank() || row.artworkUrl.isNullOrBlank()) {
+                        if (!row.artworkCachePath.isNullOrBlank() || cx.aswin.boxlore.core.model.artworkUrls(row.artworkUrl, *row.fallbackArtworkUrls.toTypedArray()).isEmpty()) {
                             row
                         } else {
-                            val path = artworkLoader.load(row.artworkUrl) ?: return@map row
+                            val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@map row
                             changed = true
                             row.copy(artworkCachePath = path)
                         }
                     }
                 episodes =
                     episodes.map { row ->
-                        if (!row.artworkCachePath.isNullOrBlank() || row.artworkUrl.isNullOrBlank()) {
+                        if (!row.artworkCachePath.isNullOrBlank() || cx.aswin.boxlore.core.model.artworkUrls(row.artworkUrl, *row.fallbackArtworkUrls.toTypedArray()).isEmpty()) {
                             row
                         } else {
-                            val path = artworkLoader.load(row.artworkUrl) ?: return@map row
+                            val path = artworkLoader.load(row.artworkUrl, row.fallbackArtworkUrls) ?: return@map row
                             changed = true
                             row.copy(artworkCachePath = path)
                         }

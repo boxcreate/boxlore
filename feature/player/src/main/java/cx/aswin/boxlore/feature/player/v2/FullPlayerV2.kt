@@ -710,6 +710,8 @@ private fun ArtworkPlayerHero(
         artwork =
         PlayerHeroArtwork(
             episodeId = model.episode.id,
+            fallbackArtworkUrls = listOf(model.episode.podcastImageUrl, model.podcast.imageUrl, model.podcast.fallbackImageUrl),
+            nextFallbackArtworkUrls = listOf(model.nextEpisode?.podcastImageUrl),
             artworkUrl = model.episode.imageUrl?.takeIf { it.isNotBlank() } ?: model.podcast.imageUrl,
             nextArtworkUrl =
             model.nextEpisode?.imageUrl?.takeIf { it.isNotBlank() }

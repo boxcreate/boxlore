@@ -6,6 +6,8 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 
 ## Public API
 
+- `ArtworkUrls.kt` provides ordered, deduplicated episode-first and show-first sources. It ignores blank, malformed and unsupported values, retains local artwork URIs and signed query parameters, and upgrades HTTP to HTTPS. `ArtworkUrlsTest` covers these contracts.
+
 - `Podcast.RSS_REFRESH_AUTOMATIC` describes publisher subscriptions refreshed via conditional GET or cooldown-gated GET, including feeds without HEAD validators. Legacy capability strings remain readable for in-place upgrade repair.
 
 - Podcast, episode, briefing, chapter, person, transcript, and playback-adjacent model types.

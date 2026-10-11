@@ -44,9 +44,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.artworkUrls
 
 /**
  * Modal bottom sheet allowing users to add or remove subscribed shows from a [folder]
@@ -286,9 +287,11 @@ private fun FolderShowCheckboxRow(
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
             modifier = Modifier.size(44.dp),
         ) {
-            if (podcast.imageUrl.isNotBlank()) {
-                AsyncImage(
-                    model = podcast.imageUrl,
+            if (podcast.artworkUrls().isNotEmpty()) {
+                OptimizedImage(
+            proxyWidth = 140,
+            url = podcast.imageUrl,
+                    fallbackUrls = listOf(podcast.fallbackImageUrl, podcast.latestEpisode?.imageUrl),
                     contentDescription = podcast.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.size(44.dp),

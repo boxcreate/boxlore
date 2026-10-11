@@ -43,6 +43,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.CrossPromotionConfidence
 import cx.aswin.boxlore.core.model.ResolvedCrossPromotion
+import cx.aswin.boxlore.core.model.artworkUrls
 
 @Composable
 fun CrossPromotionCard(crossPromotion: ResolvedCrossPromotion, onPodcastClick: (String) -> Unit, modifier: Modifier = Modifier) {
@@ -57,6 +58,7 @@ fun CrossPromotionCard(crossPromotion: ResolvedCrossPromotion, onPodcastClick: (
         Row(Modifier.crossPromotionBackdrop(MaterialTheme.colorScheme.onTertiaryContainer).padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             OptimizedImage(
                 podcast.imageUrl,
+                fallbackUrls = podcast.artworkUrls(),
                 contentDescription = null,
                 proxyWidth = 320,
                 contentScale = ContentScale.Crop,

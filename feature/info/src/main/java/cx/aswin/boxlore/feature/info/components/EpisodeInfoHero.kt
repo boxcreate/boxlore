@@ -60,7 +60,8 @@ internal fun EpisodeInfoHero(
         ) {
             Box(Modifier.fillMaxSize()) {
                 OptimizedImage(
-                    url = episode.imageUrl?.takeIf(String::isNotBlank) ?: episode.podcastImageUrl,
+                    url = episode.imageUrl,
+                    fallbackUrls = listOf(episode.podcastImageUrl),
                     proxyWidth = 640,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

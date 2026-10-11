@@ -14,12 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Chapter
 
@@ -163,11 +161,9 @@ fun ChapterRow(
     ) {
         // Thumbnail Image
         if (!chapter.img.isNullOrBlank()) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(chapter.img)
-                    .crossfade(true)
-                    .build(),
+            OptimizedImage(
+                url = chapter.img,
+                proxyWidth = 160,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

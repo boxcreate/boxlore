@@ -32,6 +32,7 @@ object ShareManager {
             cardTitle = podcast.title,
             cardSubtitle = podcast.artist,
             imageUrl = podcast.imageUrl,
+            fallbackImageUrl = podcast.fallbackImageUrl,
             target = target
         )
     }
@@ -114,17 +115,15 @@ object ShareManager {
     ) {
         shareScope.launch {
             var sharedUri: android.net.Uri? = null
-            val targetUrl = imageUrl?.takeIf { it.isNotEmpty() } ?: fallbackImageUrl?.takeIf { it.isNotEmpty() }
-
-            if (targetUrl != null) {
-                try {
-                    val loader = coil.ImageLoader(context)
-                    val request = coil.request.ImageRequest.Builder(context)
-                        .data(targetUrl)
-                        .allowHardware(false) // Required to draw onto Canvas
-                        .build()
-                    val result = loader.execute(request)
-                    val originalBitmap = (result as? coil.request.SuccessResult)?.drawable?.toBitmap()
+            try {
+                    val originalBitmap = cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(
+                        context,
+                        listOfNotNull(imageUrl, fallbackImageUrl),
+                        width = 800,
+                    ) ?: androidx.core.content.ContextCompat.getDrawable(
+                        context,
+                        cx.aswin.boxlore.core.designsystem.R.drawable.ic_boxlore_app_mark,
+                    )?.toBitmap(800, 624)
 
                     if (originalBitmap != null) {
                         val shareCard = ShareCardRenderer.createShareCard(
@@ -157,7 +156,6 @@ object ShareManager {
                 } catch (e: Exception) {
                     android.util.Log.e("ShareManager", "Error generating composite image", e)
                 }
-            }
 
             withContext(Dispatchers.Main) {
                 val openedInstagram = if (

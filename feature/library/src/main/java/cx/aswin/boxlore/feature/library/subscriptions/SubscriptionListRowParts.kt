@@ -32,6 +32,7 @@ import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 
 @Composable
 internal fun SubscriptionPinnedBadge(modifier: Modifier = Modifier) {
@@ -141,6 +142,7 @@ internal fun SubscriptionListArtwork(
     ) {
         OptimizedImage(
             url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
+            fallbackUrls = podcast.artworkUrls(),
             proxyWidth = 400,
             contentDescription = podcast.title,
             modifier =

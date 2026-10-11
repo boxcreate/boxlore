@@ -3,9 +3,6 @@ package cx.aswin.boxlore.feature.widgets
 import android.content.Context
 import android.graphics.Bitmap
 import coil.ImageLoader
-import coil.request.CachePolicy
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import java.io.File
 import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
@@ -13,14 +10,17 @@ import kotlinx.coroutines.withContext
 
 class WidgetArtworkLoader(
     context: Context,
-    private val imageLoader: ImageLoader = ImageLoader(context.applicationContext),
+    private val imageLoader: ImageLoader = coil.Coil.imageLoader(context.applicationContext),
 ) {
     private val appContext = context.applicationContext
     private val cacheDir: File =
         File(appContext.cacheDir, CACHE_DIR_NAME).also { it.mkdirs() }
 
-    suspend fun load(url: String?): String? = withContext(Dispatchers.IO) {
-        val normalized = url?.trim().orEmpty()
+    suspend fun load(url: String?, fallbackUrls: List<String?> = emptyList()): String? = withContext(Dispatchers.IO) {
+        val primary = url?.trim().orEmpty()
+        // Keep the existing filename identity even when transport upgrades HTTP to HTTPS.
+        val normalized = primary.takeIf { cx.aswin.boxlore.core.model.artworkUrls(it).isNotEmpty() }
+            ?: cx.aswin.boxlore.core.model.artworkUrls(*fallbackUrls.toTypedArray()).firstOrNull().orEmpty()
         if (normalized.isEmpty()) return@withContext null
 
         val target = cacheFileFor(normalized)
@@ -28,9 +28,17 @@ class WidgetArtworkLoader(
             return@withContext target.absolutePath
         }
 
-        val bitmap = fetchBitmap(normalized) ?: return@withContext null
-        if (!publishAtomically(bitmap, target)) return@withContext null
-        target.takeIf { it.exists() && it.length() > 0L }?.absolutePath
+        var successfulSource = normalized
+        val bitmap = cx.aswin.boxlore.core.designsystem.components.loadArtworkBitmap(
+            appContext,
+            listOfNotNull(url) + fallbackUrls.filterNotNull(),
+            width = 512,
+            loader = imageLoader,
+            onSourceLoaded = { successfulSource = it },
+        ) ?: return@withContext null
+        val loadedTarget = if (cx.aswin.boxlore.core.model.artworkUrls(normalized).firstOrNull() == successfulSource) target else cacheFileFor(successfulSource)
+        if (!publishAtomically(bitmap, loadedTarget)) return@withContext null
+        loadedTarget.takeIf { it.exists() && it.length() > 0L }?.absolutePath
     }
 
     fun resolveCachedPath(url: String?): String? {
@@ -38,21 +46,6 @@ class WidgetArtworkLoader(
         if (normalized.isEmpty()) return null
         val file = cacheFileFor(normalized)
         return file.takeIf { it.exists() && it.length() > 0L }?.absolutePath
-    }
-
-    private suspend fun fetchBitmap(url: String): Bitmap? {
-        val request =
-            ImageRequest
-                .Builder(appContext)
-                .data(url)
-                .allowHardware(false)
-                .diskCachePolicy(CachePolicy.ENABLED)
-                .memoryCachePolicy(CachePolicy.ENABLED)
-                .networkCachePolicy(CachePolicy.ENABLED)
-                .build()
-        val result = imageLoader.execute(request)
-        if (result !is SuccessResult) return null
-        return result.drawable.toBitmapOrNull()
     }
 
     private fun publishAtomically(
@@ -110,18 +103,6 @@ class WidgetArtworkLoader(
                 .digest(url.toByteArray())
                 .joinToString("") { "%02x".format(it) }
         return File(cacheDir, "$digest.jpg")
-    }
-
-    private fun android.graphics.drawable.Drawable.toBitmapOrNull(): Bitmap? = when (this) {
-        is android.graphics.drawable.BitmapDrawable -> bitmap
-        else -> {
-            val width = intrinsicWidth.coerceAtLeast(1)
-            val height = intrinsicHeight.coerceAtLeast(1)
-            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
-                setBounds(0, 0, width, height)
-                draw(android.graphics.Canvas(bitmap))
-            }
-        }
     }
 
     companion object {

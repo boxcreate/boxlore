@@ -109,6 +109,7 @@ private fun compactEpisodeChipColor(isActiveCard: Boolean): Color = if (isActive
 private fun CompactEpisodeImage(episode: Episode) {
     OptimizedImage(
         url = compactEpisodeImageUrl(episode),
+        fallbackUrls = listOf(episode.podcastImageUrl),
         proxyWidth = 120,
         contentDescription = null,
         contentScale = ContentScale.Crop,

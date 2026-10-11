@@ -34,7 +34,8 @@ fun CuratedEpisodeCard(
             (System.currentTimeMillis() / 1000L - episode.publishedDate) < 2 * 24 * 60 * 60L
 
     FeedMediaCard(
-        imageUrl = (episode.imageUrl ?: "").ifEmpty { podcast.imageUrl },
+        imageUrl = episode.imageUrl.orEmpty(),
+        fallbackImageUrls = listOf(episode.podcastImageUrl, podcast.imageUrl, podcast.fallbackImageUrl),
         title = episode.title,
         subtitle = if (showSubtitle) podcast.title else null,
         onClick = onClick,

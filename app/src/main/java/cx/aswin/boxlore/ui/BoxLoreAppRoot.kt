@@ -307,6 +307,7 @@ fun BoxLoreAppRoot(
     }
 
     val isOnline by container.connectivityObserver.isOnlineFlow.collectAsStateWithLifecycle()
+    val artworkRecoveryGeneration = cx.aswin.boxlore.core.designsystem.components.rememberArtworkRecoveryGeneration(isOnline)
 
     LaunchedEffect(onboardingCompleted) {
         if (onboardingCompleted) {
@@ -542,7 +543,7 @@ fun BoxLoreAppRoot(
         fontRoundness = fontRoundness,
     ) {
         cx.aswin.boxlore.updates.AppUpdatesHost(application.container.appUpdates, activity) {
-        CompositionLocalProvider(LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
+        CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
             loreQueueConflictEpisode?.let { pendingLoreEpisode ->
                 LoreQueueConflictDialog(
                     pendingLoreEpisode = pendingLoreEpisode,

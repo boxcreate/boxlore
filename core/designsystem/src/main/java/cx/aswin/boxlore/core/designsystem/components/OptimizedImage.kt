@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -22,32 +24,13 @@ import androidx.compose.ui.semantics.semantics
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import cx.aswin.boxlore.core.model.artworkUrls
+import java.io.IOException
+import kotlinx.coroutines.delay
 
-/**
- * Global cache of URLs for which the proxy has failed, to avoid repeatedly
- * attempting proxy load for failed items when scrolling lazy lists.
- */
-private val proxyFailedUrls = java.util.Collections.synchronizedSet(mutableSetOf<String>())
-
-/**
- * A reusable image composable that implements a proxy-first loading strategy
- * with automatic fallback to the raw URL if the proxy fails.
- *
- * Loading Order:
- *   1. Try the wsrv.nl proxy (context-sized WebP) — fast, small, sharp.
- *   2. If the proxy errors (e.g. origin blocks wsrv.nl) → fall back to the raw URL.
- *   3. If the raw URL also errors → show [errorContent] or [AnimatedShapesFallback].
- *
- * @param url The original, unproxied image URL.
- * @param proxyWidth The desired width in pixels for the wsrv.nl proxy.
- *        Use 2x the dp display size for retina sharpness (e.g. 180dp → 400px).
- * @param contentDescription Accessibility description.
- * @param modifier Modifier for the image.
- * @param contentScale How the image should be scaled inside its bounds.
- * @param colorFilter Optional color filter (e.g., grayscale).
- * @param errorContent Optional replacement when the URL is blank or both proxy and raw fail.
- */
+/** Ordered artwork fallback with bounded recovery; existing URL/size cache keys are retained. */
 @Composable
+@Suppress("LongParameterList") // Retain source compatibility while adding an optional fallback chain.
 fun OptimizedImage(
     url: String?,
     proxyWidth: Int,
@@ -56,101 +39,94 @@ fun OptimizedImage(
     contentScale: ContentScale = ContentScale.Crop,
     colorFilter: ColorFilter? = null,
     errorContent: (@Composable BoxScope.() -> Unit)? = null,
+    fallbackUrls: List<String?> = emptyList(),
 ) {
-    if (url.isNullOrBlank()) {
-        Box(
-            modifier = modifier.semantics {
-            contentDescription?.let { this.contentDescription = it }
+    val sources = remember(url, fallbackUrls) { artworkUrls(url, *fallbackUrls.toTypedArray()) }
+    val width = remember(proxyWidth) { imageTargetPixels(proxyWidth) }
+    val recoveryGeneration = LocalArtworkRecoveryGeneration.current
+    var cachedRecovery by remember(sources, width) { mutableStateOf(0) }
+    val attempts = remember(sources, width, cachedRecovery) { ArtworkAttempts(sources, width) }
+    var current by remember(attempts) { mutableStateOf(attempts.next()) }
+    var seenGeneration by remember(sources, width) { mutableStateOf(recoveryGeneration) }
+    var cacheRecovered by remember(sources, width) { mutableStateOf(false) }
+    LaunchedEffect(recoveryGeneration) {
+        if (seenGeneration != recoveryGeneration && current == null) cachedRecovery += 1
+        seenGeneration = recoveryGeneration
+    }
+    val revision by ArtworkLoadPolicy.Shared.revision.collectAsState()
+    LaunchedEffect(revision, current) {
+        // Another page may have just populated Coil's cache. Recover this failed tile once.
+        if (current == null &&
+            !cacheRecovered &&
+            sources.any {
+            ArtworkLoadPolicy.Shared.preferredRoute(it) != null
         }
         ) {
-            OptimizedImageFailureContent(errorContent)
+            cacheRecovered = true
+            cachedRecovery += 1
         }
-        return
     }
-
-    val context = LocalContext.current
-    val pxWidth = remember(proxyWidth) { imageTargetPixels(proxyWidth) }
-    val proxyUrl = remember(url, proxyWidth) { url.optimizedImageUrl(proxyWidth) }
-
-    // Check if this url has already failed on the proxy in this app session
-    val isProxyKnownFailed = remember(url) { proxyFailedUrls.contains(url) }
-
-    // Track which URL we're currently trying
-    var currentUrl by remember(url, proxyUrl) { mutableStateOf(if (isProxyKnownFailed) url else proxyUrl) }
-    var hasTriedFallback by remember(url, proxyUrl) { mutableStateOf(isProxyKnownFailed) }
-
-    val painter = rememberAsyncImagePainter(
-        model = remember(currentUrl, pxWidth) {
-            ImageRequest.Builder(context)
-                .data(currentUrl)
-                .size(coil.size.Size(pxWidth, pxWidth))
-                .memoryCacheKey("$currentUrl-w$pxWidth")
-                .allowHardware(true)
-                .crossfade(150)
-                .build()
+    Box(modifier.semantics { contentDescription?.let { this.contentDescription = it } }) {
+        OptimizedImageLoadingPlaceholder()
+        val attempt = current
+        if (attempt == null) {
+            OptimizedImageFailureContent(errorContent)
+        } else {
+            key(attempt) {
+            ArtworkAttemptImage(attempt, width, contentScale, colorFilter) { error ->
+                if (error == null) {
+                    ArtworkLoadPolicy.Shared.recordSuccess(attempt.url, attempt.source)
+                } else {
+                    if (error is java.util.concurrent.CancellationException) return@ArtworkAttemptImage
+                    if (attempt.url != attempt.source && !attempt.recovery) trackProxyFallback(attempt.source, width)
+                    attempts.failed(attempt, error)
+                    val next = attempts.next()
+                    if (next?.recovery == true) delay(250)
+                    current = next
+                }
+            }
+            }
         }
+    }
+}
+
+@Composable
+private fun ArtworkAttemptImage(
+    attempt: ArtworkAttempt,
+    width: Int,
+    contentScale: ContentScale,
+    colorFilter: ColorFilter?,
+    onResult: suspend (Throwable?) -> Unit,
+) {
+    val context = LocalContext.current
+    val painter = rememberAsyncImagePainter(
+        model = remember(attempt, width) {
+            ImageRequest.Builder(context).data(attempt.url).size(width, width)
+                .memoryCacheKey("${attempt.url}-w$width").allowHardware(true).crossfade(150).build()
+        },
     )
     val state = painter.state
-
-    if (state is AsyncImagePainter.State.Error && !hasTriedFallback && currentUrl == proxyUrl) {
-        LaunchedEffect(url) {
-            proxyFailedUrls.add(url)
-            hasTriedFallback = true
-            currentUrl = url
-            trackProxyFallback(url, proxyWidth)
+    LaunchedEffect(attempt, state) {
+        when (state) {
+            is AsyncImagePainter.State.Success -> onResult(null)
+            is AsyncImagePainter.State.Error -> onResult(state.result.throwable)
+            else -> {
+                delay(8_000)
+                onResult(IOException("Artwork request timed out"))
+            }
         }
     }
-
-    Box(modifier = modifier) {
-        // Keep this underneath the image through Coil's success crossfade. Success
-        // is emitted when the transition starts, while its first frame is transparent.
-        OptimizedImageLoadingPlaceholder()
-        Image(
-            painter = painter,
-            contentDescription = contentDescription,
-            contentScale = contentScale,
-            colorFilter = colorFilter,
-            modifier = Modifier.fillMaxSize()
-        )
-        OptimizedImageOverlay(
-            state = state,
-            hasTriedFallback = hasTriedFallback,
-            errorContent = errorContent,
-        )
-    }
+    Image(painter, null, Modifier.fillMaxSize(), contentScale = contentScale, colorFilter = colorFilter)
 }
 
 @Composable
-private fun BoxScope.OptimizedImageFailureContent(errorContent: (@Composable BoxScope.() -> Unit)?,) {
-    if (errorContent != null) {
-        errorContent()
-    } else {
-        AnimatedShapesFallback()
-    }
-}
-
-@Composable
-private fun BoxScope.OptimizedImageOverlay(
-    state: AsyncImagePainter.State,
-    hasTriedFallback: Boolean,
-    errorContent: (@Composable BoxScope.() -> Unit)?,
-) {
-    when {
-        state is AsyncImagePainter.State.Success -> Unit
-        state is AsyncImagePainter.State.Error && hasTriedFallback ->
-            OptimizedImageFailureContent(errorContent)
-        else -> Unit
-    }
+private fun BoxScope.OptimizedImageFailureContent(errorContent: (@Composable BoxScope.() -> Unit)?) {
+    if (errorContent != null) errorContent() else AnimatedShapesFallback()
 }
 
 @Composable
 private fun OptimizedImageLoadingPlaceholder() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
         ArtworkFallbackMark()
     }
 }

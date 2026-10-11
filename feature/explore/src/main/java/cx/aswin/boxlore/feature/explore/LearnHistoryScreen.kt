@@ -302,6 +302,7 @@ private fun LearnHistoryRow(
         ) {
             OptimizedImage(
                 url = imageUrl.orEmpty(),
+                fallbackUrls = loreArtworkSources(entry.imageUrl, entry.feedImage),
                 proxyWidth = 160,
                 contentDescription = null,
                 modifier = Modifier

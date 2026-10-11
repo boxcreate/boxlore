@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.widgets
 
 import android.os.Bundle
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.isTransportReady
@@ -114,6 +115,7 @@ internal fun PlayerState.toWidgetPlaybackState(): WidgetPlaybackState {
         episode?.imageUrl?.takeIf { it.isNotBlank() }
             ?: episode?.podcastImageUrl?.takeIf { it.isNotBlank() }
             ?: podcast?.imageUrl?.takeIf { it.isNotBlank() },
+        fallbackArtworkUrls = episode?.artworkUrls(podcast) ?: podcast?.artworkUrls().orEmpty(),
         isPlaying = isPlaying,
         isLoading = isLoading,
         positionMs = position,

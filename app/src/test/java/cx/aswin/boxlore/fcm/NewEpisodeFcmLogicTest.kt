@@ -18,6 +18,18 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], application = Application::class)
 class NewEpisodeFcmLogicTest {
     @Test
+    fun notificationArtworkRetainsPayloadAndLocalShowAlternativesWithoutDuplicates() {
+        val local = Episode("42", "Episode", "", "https://audio/42", imageUrl = " ", podcastImageUrl = "https://art/show")
+        val details = NewEpisodeNotifications.resolveNewEpisodeDetails(
+            "123",
+            mapOf("image" to "http://art/episode", "imageUrl" to "https://art/episode", "feedImage" to "https://art/show", "podcastImageUrl" to "https://art/alternate"),
+            local,
+        )
+        assertEquals(listOf("https://art/episode", "https://art/show", "https://art/alternate"), details.artworkSources)
+        assertTrue(details.route.contains("episode/42"))
+    }
+
+    @Test
     fun usableEpisodeIdDropsBlankAndZero() {
         assertNull(NewEpisodeFcmLogic.usableEpisodeId(null))
         assertNull(NewEpisodeFcmLogic.usableEpisodeId(" "))

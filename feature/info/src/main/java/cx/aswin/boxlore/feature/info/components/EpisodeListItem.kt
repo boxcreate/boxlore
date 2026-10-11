@@ -43,7 +43,6 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.info.R
-import cx.aswin.boxlore.feature.info.logic.EpisodeArtworkLogic
 import cx.aswin.boxlore.feature.info.sections.stripHtml
 
 @Composable
@@ -105,7 +104,8 @@ fun EpisodeListItem(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         OptimizedImage(
-                            url = EpisodeArtworkLogic.listUrl(episode, podcastImageUrl),
+                            url = episode.imageUrl,
+                            fallbackUrls = listOf(episode.podcastImageUrl, podcastImageUrl),
                             proxyWidth = 200, // 76dp thumbnails
                             contentDescription = episode.title,
                             modifier = Modifier.fillMaxSize(),

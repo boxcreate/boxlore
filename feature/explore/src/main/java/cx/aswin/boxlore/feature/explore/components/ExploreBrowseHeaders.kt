@@ -40,6 +40,7 @@ import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.feature.explore.R
 
 /**
@@ -75,6 +76,7 @@ internal fun ExploreHeroCard(
             ) {
                 OptimizedImage(
                     url = podcast.imageUrl,
+                    fallbackUrls = podcast.artworkUrls(),
                     proxyWidth = 400,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

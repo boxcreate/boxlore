@@ -9,9 +9,10 @@ import cx.aswin.boxlore.core.model.Podcast
 
 /** The outer card clips the top/end corner; only the exposed inner corner is rounded. */
 @Composable
-internal fun HeroArtworkMerge(imageUrl: String?, modifier: Modifier = Modifier) {
+internal fun HeroArtworkMerge(imageUrl: String?, modifier: Modifier = Modifier, fallbackUrls: List<String?> = emptyList()) {
     OptimizedImage(
         url = imageUrl,
+        fallbackUrls = fallbackUrls,
         proxyWidth = 800,
         contentDescription = null,
         contentScale = ContentScale.Fit,

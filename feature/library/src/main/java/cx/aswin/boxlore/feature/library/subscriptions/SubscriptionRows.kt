@@ -55,6 +55,7 @@ import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -451,6 +452,7 @@ internal fun SubscriptionGridCard(
     ) {
         OptimizedImage(
             url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
+            fallbackUrls = podcast.artworkUrls(),
             proxyWidth = 400,
             contentDescription = podcast.title,
             contentScale = ContentScale.Crop,
@@ -487,6 +489,7 @@ internal fun EpisodeRowArtwork(
             url = episode.imageUrl?.takeIf { it.isNotEmpty() }
                 ?: podcast.imageUrl.takeIf { it.isNotEmpty() }
                 ?: podcast.fallbackImageUrl,
+            fallbackUrls = episode.artworkUrls(podcast),
             proxyWidth = 400,
             contentDescription = episode.title,
             contentScale = ContentScale.Crop,

@@ -24,8 +24,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -124,8 +124,10 @@ internal fun PodcastListShowCard(
             )
         }
 
-        AsyncImage(
-            model = imageUrl,
+        OptimizedImage(
+            proxyWidth = 180,
+            url = imageUrl,
+            fallbackUrls = listOf(group.episodes.firstOrNull()?.episodeImageUrl),
             contentDescription = title,
             contentScale = ContentScale.Crop,
             modifier = Modifier

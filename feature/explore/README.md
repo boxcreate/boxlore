@@ -6,6 +6,8 @@ Owns Explore discovery and the Learn tab presentation: browse/search discovery, 
 
 ## Public API
 
+- Discovery/search cards pass available show/episode fallbacks through shared feed cards. LORE cards retain every available artwork source for actual failure handling; retry/cooldown behavior stays in the shared loader. Ranking, search and navigation are unchanged.
+
 - Browse cards use native Material card feedback; Lore history rows use steady feedback clipped to their surface. Existing tab-selection motion and Lore control feedback remain independent; ranking, search and navigation callbacks are unchanged.
 
 - `ExploreScreen` and `ExploreViewModel` for the Explore route. The initial pager tab is For You unless Appearance **Default tabs** is Top, a genre category is present (always Top), or the route already names `tab` (`trending` / `top` / `for_you`).

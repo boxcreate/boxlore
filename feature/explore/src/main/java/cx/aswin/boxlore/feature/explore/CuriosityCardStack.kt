@@ -231,6 +231,7 @@ private fun CuriosityCardContent(
         ) {
             OptimizedImage(
                 url = coverArt,
+                fallbackUrls = daily.artworkSources.drop(1),
                 proxyWidth = 320,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
@@ -439,6 +440,7 @@ private fun LoreCardFooter(
             ) {
                 OptimizedImage(
                     url = daily.artworkSources.firstOrNull().orEmpty(),
+                    fallbackUrls = daily.artworkSources.drop(1),
                     proxyWidth = 128,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

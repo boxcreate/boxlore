@@ -75,8 +75,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -165,8 +165,10 @@ fun DownloadedShowEpisodesScreen(
                         alpha = (1f - scrollFraction).coerceIn(0f, 1f)
                     }
             ) {
-                AsyncImage(
-                    model = firstItem.podcastImageUrl,
+                OptimizedImage(
+            proxyWidth = 240,
+            url = firstItem.podcastImageUrl,
+                    fallbackUrls = listOf(firstItem.episodeImageUrl),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
@@ -276,8 +278,10 @@ fun DownloadedShowEpisodesScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                AsyncImage(
-                                    model = firstItem.podcastImageUrl,
+                                OptimizedImage(
+            proxyWidth = 240,
+            url = firstItem.podcastImageUrl,
+                    fallbackUrls = listOf(firstItem.episodeImageUrl),
                                     contentDescription = podcastTitle,
                                     modifier = Modifier
                                         .size(80.dp)
@@ -473,8 +477,10 @@ fun DownloadedShowEpisodesScreen(
 
                                         // Cover art with download status overlay badges
                                         Box(modifier = Modifier.size(46.dp)) {
-                                            AsyncImage(
-                                                model = download.episodeImageUrl ?: download.podcastImageUrl,
+                                            OptimizedImage(
+            proxyWidth = 240,
+            url = download.episodeImageUrl,
+                                                fallbackUrls = listOf(download.podcastImageUrl),
                                                 contentDescription = null,
                                                 modifier = Modifier
                                                     .fillMaxSize()

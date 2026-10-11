@@ -6,6 +6,8 @@ Owns Home feed presentation, Daily and Offline mixes, and local debug surfaces f
 
 ## Public API
 
+- Hero, grid, Daily mix, Your shows and recommendation artwork retain episode/show alternatives for the shared loader to try after real failures. Spotlight and Your shows remain show-first. `HomeArtworkHandoffTest` covers broken episode art falling through to show art, bounded all-error recovery, accessible labels and a failed Home tile recovering after detail art loads at another size.
+
 - Cards, episode rows and expandable titles use steady Material feedback; custom hero actions, show selectors and compact CTA controls opt into the shared 3% press response. Hero and discovery cards use their native click handlers. Nested play and navigation targets remain independent, and selector long presses still open pin actions. Shared press interaction regressions run in this module's existing native-graphics JVM host.
 
 - Both chapter and child heading text explicitly use `onSurface`, so an artwork-colored navigation shell cannot leak its foreground into a dark Home preview. `HomeHeaderPaletteTest` renders both levels under an inherited black content color on the JVM.

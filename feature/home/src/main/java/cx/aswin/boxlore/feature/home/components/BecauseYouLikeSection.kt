@@ -35,6 +35,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 import cx.aswin.boxlore.feature.home.StablePodcastList
@@ -173,6 +174,7 @@ private fun BecauseYouLikeSeed(
                     ) {
                         OptimizedImage(
                             url = podcast.imageUrl,
+                            fallbackUrls = podcast.artworkUrls(),
                             proxyWidth = 120,
                             contentDescription = null,
                             modifier =

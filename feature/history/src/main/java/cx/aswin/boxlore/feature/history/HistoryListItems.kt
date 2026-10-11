@@ -172,7 +172,8 @@ fun HistoryTimelineItem(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OptimizedImage(
-                    url = item.episodeImageUrl ?: item.podcastImageUrl,
+                    url = item.episodeImageUrl,
+                    fallbackUrls = listOf(item.podcastImageUrl),
                     proxyWidth = 128,
                     contentDescription = null,
                     modifier =

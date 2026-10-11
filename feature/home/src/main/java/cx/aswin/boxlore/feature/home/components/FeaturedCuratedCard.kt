@@ -108,7 +108,8 @@ fun FeaturedCuratedCard(
                     .clip(MaterialTheme.shapes.large),
             ) {
                 OptimizedImage(
-                    url = (episode.imageUrl ?: "").ifEmpty { podcast.imageUrl },
+                    url = episode.imageUrl,
+                    fallbackUrls = listOf(episode.podcastImageUrl, podcast.imageUrl, podcast.fallbackImageUrl),
                     proxyWidth = 400,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

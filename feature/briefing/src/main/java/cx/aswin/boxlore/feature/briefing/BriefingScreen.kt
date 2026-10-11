@@ -862,6 +862,7 @@ fun VerticalRecommendedEpisodeCard(
 
                 OptimizedImage(
                     url = imageUrl,
+                    fallbackUrls = cx.aswin.boxlore.core.model.artworkUrls(episode.imageUrl, episode.podcastImageUrl),
                     proxyWidth = 320,
                     contentDescription = episode.title,
                     contentScale = ContentScale.Crop,

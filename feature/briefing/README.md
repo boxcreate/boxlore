@@ -6,6 +6,8 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
 
 ## Public API
 
+- Episode artwork retains show-art alternatives through the shared loader; dynamic daily briefing covers keep their existing first-party requests.
+
 - Briefing cards and source rows stay still with shape-clipped Material feedback. Story play and retry controls use the shared restrained control response; native buttons keep their own indications and playback callbacks.
 
 - `BriefingScreen` is the route-level composable used by `:app`.

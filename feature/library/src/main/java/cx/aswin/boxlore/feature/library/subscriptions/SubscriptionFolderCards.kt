@@ -49,6 +49,7 @@ import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
+import cx.aswin.boxlore.core.model.artworkUrls
 import cx.aswin.boxlore.core.model.isLatestEpisodeNew
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 
@@ -343,6 +344,7 @@ private fun DirectClickableShowCover(
     ) {
         OptimizedImage(
             url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
+            fallbackUrls = podcast.artworkUrls(),
             proxyWidth = 240,
             contentDescription = podcast.title,
             contentScale = ContentScale.Crop,
@@ -489,6 +491,7 @@ private fun OverflowNewEpisodesChip(
 private fun MiniCover(podcast: Podcast, modifier: Modifier = Modifier) {
     OptimizedImage(
         url = podcast.imageUrl.takeIf { it.isNotEmpty() } ?: podcast.fallbackImageUrl,
+        fallbackUrls = podcast.artworkUrls(),
         proxyWidth = 100,
         contentDescription = null,
         contentScale = ContentScale.Crop,

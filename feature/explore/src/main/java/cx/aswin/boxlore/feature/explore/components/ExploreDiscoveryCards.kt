@@ -29,6 +29,7 @@ import cx.aswin.boxlore.feature.explore.R
 internal fun ExploreBrowsePodcastCard(podcast: Podcast, featured: Boolean, showGenre: Boolean, onClick: () -> Unit) {
     FeedMediaCard(
         imageUrl = podcast.imageUrl,
+        fallbackImageUrls = listOf(podcast.fallbackImageUrl, podcast.latestEpisode?.imageUrl),
         title = podcast.title,
         subtitle = null,
         onClick = onClick,

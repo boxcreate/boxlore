@@ -6,6 +6,8 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 
 ## Public API
 
+- Coil is installed once in `BoxLoreApplication`, before widgets/services start, so activity recreation does not replace their shared image cache. The shell supplies failed-image recovery on foreground reentry and reconnection. Episode push hydration retains episode/show artwork candidates and a six-second total artwork budget; general push artwork uses a four-second budget. Notification routes, sounds, audiences and delivery guards remain unchanged.
+
 - The app-scoped updater checks on foreground at most every six hours (failed requests back off for 15 minutes). Settings → Check for updates bypasses the interval. The Home/Library utility capsule gets an icon-only action only for a confirmed newer compatible version. Background checks never open a prompt or start a download. Direct installs read a bounded versioned `update.json` from GitHub Latest, cache the last valid offer and distinguish connection errors from an up-to-date result. Same-version artifact refreshes stay quiet.
 - Direct APK updates use an app-private, checksum-keyed resumable transfer. Download, verification and installation are separate explicit actions; the Android installer owns confirmation. Before each handoff, the APK's checksum, package, exact version, Android minimum and signing identity are checked again. Interrupted transfers resume; failed integrity checks discard corrupt bytes. Returning from install permission settings or cancelling Android installation retains the Install action. A changed offer discards stale prepared state. Restoration separates session eligibility from verified-file recovery and retains cancellation and checksum guards.
 - `assembleRelease` builds the direct APK. `bundlePlayRelease` builds the Google Play AAB with release optimization/signing, the same application identity and normal notification receiver, but no APK downloader/installer implementation or `REQUEST_INSTALL_PACKAGES` permission. Play availability uses Play Core and caches the confirmed version across process recreation; the explicit action obtains fresh eligibility before starting a flow or finishing a downloaded flexible update. In-progress immediate Play updates resume on foreground. Release artifact validation checks both variants separately, including installer exclusion in Play.
@@ -138,6 +140,8 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 - Build config reads `BOXLORE_API_BASE_URL`, `BOXLORE_PUBLIC_KEY`, and the public `BOXLORE_CAST_RECEIVER_ID`, with legacy API/key local-property names still accepted for existing developer environments.
 - Core modules own Room filenames, DataStore names, SharedPreferences names, ranking identity, RSS IDs, and playback media IDs.
 - Google Backup / device transfer include Room, SharedPreferences, and `files/datastore/`. WorkManager's `androidx.work.workdb*` is excluded so periodic jobs are rebuilt from DataStore.
+
+Episode push artwork keeps its six-second total deadline and uses 700ms per route, allowing later episode/show candidates within that budget.
 
 ## Testing notes
 

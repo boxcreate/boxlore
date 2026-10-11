@@ -31,6 +31,7 @@ import coil.fetch.Fetcher
 import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import cx.aswin.boxlore.core.designsystem.components.ArtworkLoadPolicy
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.StableEpisodeList
@@ -40,6 +41,7 @@ import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -78,7 +80,7 @@ class HomeArtworkHandoffTest {
             MaterialTheme(colorScheme = darkColorScheme(primaryContainer = Color.Blue)) {
                 Box(Modifier.background(Color.Black)) {
                     OptimizedImage(
-                        url = "test-artwork",
+                        url = "https://example.invalid/test-artwork",
                         proxyWidth = 120,
                         contentDescription = "Artwork",
                         modifier = Modifier.size(120.dp).testTag("artwork"),
@@ -129,9 +131,12 @@ class HomeArtworkHandoffTest {
     @Test
     fun `failed proxy and original artwork retain the branded fallback`() {
         val failures = AtomicInteger()
+        val requestsReady = CompletableDeferred<Unit>()
         val context = RuntimeEnvironment.getApplication()
         originalImageLoader = Coil.imageLoader(context)
         testImageLoader = ImageLoader.Builder(context)
+            .fetcherDispatcher(kotlinx.coroutines.Dispatchers.Unconfined)
+            .interceptorDispatcher(kotlinx.coroutines.Dispatchers.Unconfined)
             .components {
                 add(
                     Fetcher.Factory<android.net.Uri> { _, _, _ ->
@@ -143,7 +148,7 @@ class HomeArtworkHandoffTest {
             }
             .eventListener(object : EventListener {
                 override fun onError(request: ImageRequest, result: ErrorResult) {
-                    failures.incrementAndGet()
+                    if (failures.incrementAndGet() >= 3) requestsReady.complete(Unit)
                 }
             })
             .build()
@@ -159,9 +164,98 @@ class HomeArtworkHandoffTest {
                 )
             }
         }
-        composeRule.waitUntil(timeoutMillis = 5_000) { failures.get() == 2 }
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue("All bounded artwork attempts finish", requestsReady.isCompleted)
         composeRule.waitForIdle()
         assertBrandedArtwork()
+    }
+
+    @Test
+    fun `broken episode artwork tries the show and preserves its accessible description`() {
+        val loaded = CompletableDeferred<Unit>()
+        val requests = java.util.Collections.synchronizedList(mutableListOf<String>())
+        installArtworkFetcher(requests) { data ->
+            require(!data.contains("broken-episode")) { "Not an image" }
+            loaded.complete(Unit)
+            ColorDrawable(android.graphics.Color.GREEN)
+        }
+        composeRule.setContent {
+            view = LocalView.current
+            MaterialTheme {
+                OptimizedImage(
+                    "https://example.invalid/broken-episode",
+                    240,
+                    "Episode artwork",
+                    Modifier.size(120.dp).testTag("artwork"),
+                    fallbackUrls = listOf("", "https://example.invalid/show-fallback", "https://example.invalid/show-fallback"),
+                )
+            }
+        }
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue(loaded.isCompleted)
+        composeRule.waitForIdle()
+        assertEquals(3, requests.size)
+        assertTrue(requests.last().contains("show-fallback"))
+        composeRule.onNodeWithContentDescription("Episode artwork").assertExists()
+    }
+
+    @Test
+    fun `successful detail load recovers home even when its last request has not failed yet`() {
+        val detail = mutableStateOf(false)
+        val failures = AtomicInteger()
+        val requestsReady = CompletableDeferred<Unit>()
+        val finishHomeRequest = CompletableDeferred<Unit>()
+        val requests = java.util.Collections.synchronizedList(mutableListOf<String>())
+        installArtworkFetcher(requests) { data ->
+            if (!data.contains("w=800")) {
+                if (failures.incrementAndGet() >= 2) requestsReady.complete(Unit)
+                if (!data.contains("w=")) finishHomeRequest.await()
+                throw IllegalArgumentException("Unavailable size")
+            }
+            ColorDrawable(android.graphics.Color.GREEN)
+        }
+        composeRule.setContent {
+            view = LocalView.current
+            MaterialTheme(colorScheme = darkColorScheme(primaryContainer = Color.Blue, onPrimaryContainer = Color.White)) {
+                androidx.compose.foundation.layout.Column {
+                    OptimizedImage("https://example.invalid/cross-page-recovery", 240, "Home artwork", Modifier.size(120.dp).testTag("artwork"))
+                    if (detail.value) OptimizedImage("https://example.invalid/cross-page-recovery", 800, null, Modifier.size(120.dp))
+                }
+            }
+        }
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue(requestsReady.isCompleted)
+        assertBrandedArtwork()
+        composeRule.runOnIdle { detail.value = true }
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue(ArtworkLoadPolicy.Shared.preferredRoute("https://example.invalid/cross-page-recovery")?.contains("w=800") == true)
+        finishHomeRequest.complete(Unit)
+        composeRule.mainClock.advanceTimeBy(1_500)
+        composeRule.waitForIdle()
+        assertTrue(android.graphics.Color.green(backingPixel(composeRule.onNodeWithTag("artwork"), 0.5f, 0.5f)) > 200)
+        assertTrue("Cached recovery must not start an endless loop", requests.size <= 4)
+    }
+
+    private fun installArtworkFetcher(requests: MutableList<String>, fetch: suspend (String) -> android.graphics.drawable.Drawable) {
+        val context = RuntimeEnvironment.getApplication()
+        originalImageLoader = Coil.imageLoader(context)
+        testImageLoader = ImageLoader.Builder(context).fetcherDispatcher(kotlinx.coroutines.Dispatchers.Unconfined).interceptorDispatcher(kotlinx.coroutines.Dispatchers.Unconfined).components {
+            add(
+                Fetcher.Factory<android.net.Uri> { data, _, _ ->
+                object : Fetcher {
+                    override suspend fun fetch(): DrawableResult {
+                        requests.add(data.toString())
+                        return DrawableResult(fetch(data.toString()), false, DataSource.NETWORK)
+                    }
+                }
+            }
+            )
+        }.build()
+        Coil.setImageLoader(requireNotNull(testImageLoader))
     }
 
     private fun assertBrandedArtwork() {
@@ -186,7 +280,7 @@ class HomeArtworkHandoffTest {
     @Test
     fun `new subscription cover paints immediately during a room list update`() {
         val podcasts = mutableStateOf(
-            listOf(TestFixtures.podcast(id = "first", title = "First", imageUrl = "test-first")),
+            listOf(TestFixtures.podcast(id = "first", title = "First", imageUrl = "https://example.invalid/test-first")),
         )
         composeRule.mainClock.autoAdvance = false
         installTransparentImageLoader(RuntimeEnvironment.getApplication(), AtomicBoolean())
@@ -217,7 +311,7 @@ class HomeArtworkHandoffTest {
         }
         settleComposition()
         composeRule.runOnIdle {
-            podcasts.value += TestFixtures.podcast(id = "second", title = "Second", imageUrl = "test-second")
+            podcasts.value += TestFixtures.podcast(id = "second", title = "Second", imageUrl = "https://example.invalid/test-second")
             Snapshot.sendApplyNotifications()
         }
         settleComposition()

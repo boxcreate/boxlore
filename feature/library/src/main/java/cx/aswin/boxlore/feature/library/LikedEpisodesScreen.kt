@@ -29,7 +29,7 @@ import androidx.compose.ui.text.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -136,8 +136,10 @@ fun LikedEpisodesScreen(
                                     headlineContent = { Text(episode.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                     supportingContent = { Text(podcast.title, style = MaterialTheme.typography.bodySmall) },
                                     leadingContent = {
-                                        AsyncImage(
-                                            model = episode.imageUrl,
+                                        OptimizedImage(
+            proxyWidth = 160,
+            url = episode.imageUrl,
+                                            fallbackUrls = listOf(podcast.imageUrl),
                                             contentDescription = null,
                                             modifier = Modifier.size(56.dp).clip(MaterialTheme.shapes.small),
                                             contentScale = ContentScale.Crop
