@@ -1,0 +1,53 @@
+{
+  "id": "shared-spin",
+  "type": "generated-sprite-one-shot",
+  "character": "neutral Echo",
+  "strip": "transitions/shared-spin/strip.png",
+  "animated_webp": "transitions/shared-spin/clip.webp",
+  "poster": "transitions/shared-spin/poster.png",
+  "frames": [
+    "transitions/shared-spin/frames/00.png",
+    "transitions/shared-spin/frames/01.png",
+    "transitions/shared-spin/frames/02.png",
+    "transitions/shared-spin/frames/03.png",
+    "transitions/shared-spin/frames/04.png",
+    "transitions/shared-spin/frames/05.png",
+    "transitions/shared-spin/frames/06.png",
+    "transitions/shared-spin/frames/07.png"
+  ],
+  "strip_width_px": 1536,
+  "strip_height_px": 208,
+  "cell_width_px": 192,
+  "cell_height_px": 208,
+  "row": 0,
+  "frame_count": 8,
+  "frame_durations_ms": [
+    70,
+    50,
+    40,
+    40,
+    40,
+    50,
+    60,
+    90
+  ],
+  "clip_duration_ms": 440,
+  "loop": false,
+  "webp_loop_count": 1,
+  "enter_bridge_ms": 60,
+  "exit_bridge_ms": 60,
+  "total_transition_ms": 560,
+  "costume_swap_cue": {
+    "frame": 3,
+    "clip_elapsed_ms": 180,
+    "total_elapsed_ms": 240,
+    "meaning": "rear-facing pose; prepare latest destination, reveal it after spin"
+  },
+  "applies_to": "any two distinct state IDs",
+  "pair_count": 72,
+  "outgoing": "freeze current source frame; 60ms opacity blend into spin frame0",
+  "incoming": "60ms opacity blend from final spin frame into destination frame0; then start genre loop",
+  "repeated_clicks": "update pending destination while entering/spinning; during reveal retain at most one latest request",
+  "reduced_motion": "instant destination poster; bypass spin and blends",
+  "syncing": "transition completion never signals operation completion"
+}

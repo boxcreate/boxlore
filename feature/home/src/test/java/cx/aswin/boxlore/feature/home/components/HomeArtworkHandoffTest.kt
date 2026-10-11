@@ -346,13 +346,13 @@ class HomeArtworkHandoffTest {
     }
 
     @Test
-    fun `Mix card preserves the shared backdrop while playing retains its tonal highlight`() {
+    fun `Mix card is solid over its backdrop while playing retains its tonal highlight`() {
         val playing = mutableStateOf(false)
         val episode = TestFixtures.episode(id = "backdrop-episode", title = "Episode")
         val podcast = TestFixtures.podcast(id = "backdrop-show", title = "Show", imageUrl = "")
         composeRule.setContent {
             view = LocalView.current
-            MaterialTheme(colorScheme = darkColorScheme(primaryContainer = Color.Blue)) {
+            MaterialTheme(colorScheme = darkColorScheme(primaryContainer = Color.Blue, surfaceContainerHigh = Color.Green)) {
                 Box(Modifier.background(Color.Magenta)) {
                     MixtapeEpisodeCard(
                         episode = episode,
@@ -366,7 +366,7 @@ class HomeArtworkHandoffTest {
             }
         }
         val card = composeRule.onNodeWithTag("home_mix_episode_backdrop-episode", useUnmergedTree = true)
-        assertEquals(Color.Magenta.toArgb(), backingPixel(card, xFraction = 0.015f, yFraction = 0.5f))
+        assertEquals(Color.Green.toArgb(), backingPixel(card, xFraction = 0.015f, yFraction = 0.5f))
         composeRule.runOnIdle { playing.value = true }
         assertEquals(Color.Blue.toArgb(), backingPixel(card, xFraction = 0.015f, yFraction = 0.5f))
     }

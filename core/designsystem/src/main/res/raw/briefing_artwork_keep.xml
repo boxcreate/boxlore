@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Media artwork uses named resource URIs and must survive release resource shrinking. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/daily_briefing_global,@drawable/daily_briefing_india,@drawable/daily_briefing_uk,@drawable/daily_briefing_usa" />

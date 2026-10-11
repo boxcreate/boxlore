@@ -368,6 +368,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
                         MIGRATION_36_37,
                         MIGRATION_37_38,
                     ).fallbackToDestructiveMigration(dropAllTables = true) // For development simplicity on older versions
+                    .addCallback(BriefingArtworkCompatibility(context.applicationContext.packageName))
                     .build()
             INSTANCE = instance
             instance

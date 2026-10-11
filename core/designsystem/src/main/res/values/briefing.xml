@@ -1,0 +1,21 @@
+<resources>
+    <string name="briefing_brand_name">The boxlore brief</string>
+    <string name="briefing_show_all_stories">Show all %1$d stories</string>
+    <string name="briefing_show_fewer_stories">Show fewer stories</string>
+    <string name="briefing_all_stories_inline">All %1$d</string>
+    <string name="briefing_less_inline">Less</string>
+    <string name="briefing_story_label">Story %1$d</string>
+    <string name="briefing_play_story">Play story</string>
+    <string name="briefing_pause_story">Pause story</string>
+    <string name="briefing_play_story_named">Play story: %1$s</string>
+    <string name="briefing_pause_story_named">Pause story: %1$s</string>
+    <string name="briefing_original_reporting">Original reporting</string>
+    <plurals name="briefing_story_count">
+        <item quantity="one">%d story</item>
+        <item quantity="other">%d stories</item>
+    </plurals>
+    <plurals name="briefing_source_count">
+        <item quantity="one">%d source</item>
+        <item quantity="other">%d sources</item>
+    </plurals>
+</resources>

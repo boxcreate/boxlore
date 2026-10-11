@@ -6,6 +6,8 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 
 ## Public API
 
+- `briefingDefaultEdition` / `setBriefingDefaultEdition` persist `briefing_default_edition` independently of discovery. `BriefingEdition` resolves Follow app region (default), Global, India, US and UK, normalizes aliases, and prioritizes explicit entry regions. Merely opening another edition does not persist it.
+
 - `miniPlayerSeekButtonsEnabledStream` / `setMiniPlayerSeekButtonsEnabled` persist the opt-in `mini_player_seek_buttons_enabled` flag (default off) in `user_preferences`. It only controls regular miniplayer button visibility; global seek durations and full-player controls remain available.
 - `ThemeSelection` is an opaque brand/surface/wallpaper input bundle. `setThemeSelection` applies it atomically and optionally remembers Custom in `custom_theme_brand`, `custom_theme_surface`, and `custom_theme_dynamic`; existing theme/storage keys remain intact. `customThemeStream` and `cachedCustomTheme` restore the saved selection after switching defaults. `artworkColorsEnabledStream` / `setArtworkColorsEnabled` persist `artwork_colors_enabled` (default on). Theme fast-cache and restore hydration include both new preferences, with existing DataStore values taking precedence.
 - `setThemePreset` atomically writes a ready-made theme's opaque key to existing `surface_style` and `theme_brand` preferences and disables wallpaper colors, including one matching fast-cache update. It preserves theme mode, lettering, navigation and all unrelated preferences. Palette definitions stay in designsystem; prefs owns no color tokens or catalog dependency.
@@ -75,6 +77,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 
 ## Testing notes
 
+- `BriefingEditionTest` covers saved/default/explicit region precedence and aliases. `UserPreferencesRepositoryTest` verifies the saved edition survives repository recreation without changing discovery region.
 - `AnnouncementPreferencesTest` round-trips rich presentation/release fields and clears them, while retaining legacy defaults and blank-title behavior.
 - Unit tests live under `core/prefs/src/test`.
 - `ThemeSelectionPreferencesTest` covers artwork-color defaults, saved custom themes, atomic theme selection and fast-cache restoration.

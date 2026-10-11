@@ -22,8 +22,4 @@ internal fun homeMixModuleColor(): Color = if (usesPureMixSurfaces()) {
 }
 
 @Composable
-internal fun homeMixRestingCardColor(): Color = if (usesPureMixSurfaces()) {
-    MaterialTheme.colorScheme.surfaceContainerHigh
-} else {
-    Color.Transparent
-}
+internal fun homeMixRestingCardColor(): Color = MaterialTheme.colorScheme.surfaceContainerHigh

@@ -1,0 +1,32 @@
+<resources>
+    <string name="account_page_title">Account &amp; sync</string>
+    <string name="account_setup_title">Connect your library</string>
+    <string name="account_back">Back</string>
+    <string name="account_echo_description">Echo, podcast companion</string>
+    <string name="account_echo_change">Change Echo’s outfit</string>
+    <string name="account_connect_title">Your library, everywhere</string>
+    <string name="account_connect_body">Sign in to keep your shows, queue and listening progress in sync across devices.</string>
+    <string name="account_optional">An account is optional. You can keep listening without one.</string>
+    <string name="account_connected_title">You’re signed in</string>
+    <string name="account_connected_body">Your shows and listening progress will sync with this device.</string>
+    <string name="account_listener">boxlore listener</string>
+    <string name="account_continue">Continue to boxlore</string>
+    <string name="account_sync_title">Cloud sync</string>
+    <string name="account_sync_body">Subscriptions, queue and listening progress sync across your devices.</string>
+    <string name="account_sync_now">Sync now</string>
+    <string name="account_sync_retry">Try again</string>
+    <string name="account_sync_busy">Syncing your library</string>
+    <string name="account_sync_busy_body">Bringing your shows and listening progress up to date.</string>
+    <string name="account_sync_success">Library up to date</string>
+    <string name="account_sync_ready">Ready to sync</string>
+    <string name="account_sync_ready_body">Your shows, queue and listening progress sync automatically across devices.</string>
+    <string name="account_sync_error">Couldn’t sync your library</string>
+    <string name="account_sync_error_body">Your library is still available on this device. Try syncing again.</string>
+    <string name="account_sync_progress">Sync in progress</string>
+    <string name="account_sign_in">Sign in</string>
+    <string name="account_create">Create account</string>
+    <string name="account_email_methods">Or use email</string>
+    <string name="account_privacy_prefix">"By signing in or creating an account, you agree to our "</string>
+    <string name="account_email_hint">We’ll email a link to sign in on this device.</string>
+    <string name="account_spam_hint">If the email isn’t in your inbox, check Spam or Junk.</string>
+</resources>

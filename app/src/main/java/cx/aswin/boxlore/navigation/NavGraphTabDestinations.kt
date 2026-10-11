@@ -265,6 +265,7 @@ internal fun androidx.navigation.NavGraphBuilder.addBriefingDestination(w: NavGr
     ) { backStackEntry ->
         val region = backStackEntry.arguments?.getString("region")
         BriefingRoute(
+            userPreferences = w.userPrefs,
             podcastRepository = podcastRepository,
             playbackRepository = playbackRepository,
             queueManager = queueManager,

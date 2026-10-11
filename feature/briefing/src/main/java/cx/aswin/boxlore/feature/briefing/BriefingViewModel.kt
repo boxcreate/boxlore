@@ -15,10 +15,17 @@ import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.getSession
 import cx.aswin.boxlore.core.playback.pause
 import cx.aswin.boxlore.core.playback.resume
+import cx.aswin.boxlore.core.prefs.BriefingEdition
+import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class BriefingViewModel(
@@ -26,11 +33,15 @@ class BriefingViewModel(
     private val podcastRepository: PodcastRepository,
     private val playbackRepository: PlaybackRepository,
     private val queueManager: cx.aswin.boxlore.core.playback.QueueManager,
-    initialRegion: String? = null
+    initialRegion: String? = null,
+    private val userPreferences: UserPreferencesRepository,
 ) : AndroidViewModel(application) {
 
-    private val _selectedRegion = MutableStateFlow(mapRegionForBriefing(initialRegion ?: "in"))
+    private val _selectedRegion = MutableStateFlow("global")
     val selectedRegion: StateFlow<String> = _selectedRegion.asStateFlow()
+
+    val defaultEdition = userPreferences.briefingDefaultEdition
+    private var loadJob: Job? = null
 
     private val _briefingState = MutableStateFlow<Briefing?>(null)
     private val _briefingChapters = MutableStateFlow<List<Chapter>>(emptyList())
@@ -38,15 +49,19 @@ class BriefingViewModel(
     private val _error = MutableStateFlow<String?>(null)
     private val _savedSession = MutableStateFlow<cx.aswin.boxlore.core.playback.PlaybackSession?>(null)
 
-    private val _uiState = MutableStateFlow<BriefingUiState>(BriefingUiState.Loading)
+    private val _uiState = MutableStateFlow<BriefingUiState>(BriefingUiState.Loading())
     val uiState: StateFlow<BriefingUiState> = _uiState.asStateFlow()
 
     init {
-        // Observe region changes and load data
+        // Resolve the saved edition before the first request. Explicit links retain their region.
         viewModelScope.launch {
-            _selectedRegion.collect { region ->
-                loadBriefing(region)
-            }
+            val region = BriefingEdition.resolve(
+                defaultEdition.first(),
+                userPreferences.regionStream.first(),
+                initialRegion,
+            )
+            _selectedRegion.value = region
+            loadBriefing(region)
         }
 
         // Keep _savedSession updated in real-time when the current briefing is playing
@@ -98,7 +113,7 @@ class BriefingViewModel(
                 val chapters = subState.chapters
 
                 when {
-                    isLoading -> BriefingUiState.Loading
+                    isLoading -> BriefingUiState.Loading(region)
                     error != null -> BriefingUiState.Error(error, region)
                     briefing != null -> {
                         val briefingEpisodeId = getBriefingEpisodeId(briefing)
@@ -117,7 +132,7 @@ class BriefingViewModel(
                             chapters = chapters
                         )
                     }
-                    else -> BriefingUiState.Error("Unknown error", region)
+                    else -> BriefingUiState.Error("This edition is unavailable. Try again or choose another region.", region)
                 }
             }.collect {
                 _uiState.value = it
@@ -126,16 +141,28 @@ class BriefingViewModel(
     }
 
     fun selectRegion(region: String) {
-        _selectedRegion.value = mapRegionForBriefing(region)
+        val selected = mapRegionForBriefing(region)
+        _isLoading.value = true
+        _selectedRegion.value = selected
+        loadBriefing(selected)
+    }
+
+    fun setDefaultEdition(edition: String) {
+        viewModelScope.launch {
+            userPreferences.setBriefingDefaultEdition(edition)
+            selectRegion(BriefingEdition.resolve(edition, userPreferences.regionStream.first()))
+        }
     }
 
     fun loadBriefing(region: String) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             _briefingChapters.value = emptyList()
             _savedSession.value = null
             val result = podcastRepository.getBriefingMetadata(mapRegionForBriefing(region))
+            currentCoroutineContext().ensureActive()
             if (result != null) {
                 _briefingState.value = result
 
@@ -151,12 +178,15 @@ class BriefingViewModel(
                     ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${result.region}?d=${result.date}$versionParam"
                 try {
                     val chaptersList = ChapterRepository.getChapters(chaptersUrl)
+                    currentCoroutineContext().ensureActive()
                     _briefingChapters.value = chaptersList
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     _briefingChapters.value = emptyList()
                 }
             } else {
-                _error.value = "Failed to load briefing for ${region.uppercase()}. Please check your connection."
+                _error.value = "Couldn’t load this edition. Check your connection and try again."
             }
             _isLoading.value = false
         }
@@ -266,8 +296,7 @@ class BriefingViewModel(
 
     private fun getBriefingCoverUrl(region: String): String {
         val packageName = getApplication<Application>().packageName
-        val resId = BriefingIdentity.coverDrawableRes(region)
-        return "android.resource://$packageName/$resId"
+        return cx.aswin.boxlore.core.designsystem.briefing.briefingPlayerArtworkUri(packageName, region)
     }
 }
 

@@ -50,6 +50,21 @@ class UserPreferencesRepositoryTest {
             .commit()
     }
 
+    @Test
+    fun briefingDefaultIsIndependentAndSurvivesRepositoryRecreation() = runTest {
+        assertEquals(BriefingEdition.FOLLOW_APP, repository.briefingDefaultEdition.first())
+        repository.setRegion("us")
+        repository.setBriefingDefaultEdition("global")
+        assertEquals("global", UserPreferencesRepository(context).briefingDefaultEdition.first())
+        assertEquals("us", repository.regionStream.first())
+        repository.setRegion("in")
+        assertEquals("global", repository.briefingDefaultEdition.first())
+        assertEquals("gb", BriefingEdition.resolve(repository.briefingDefaultEdition.first(), "in", "uk"))
+        assertEquals("global", repository.briefingDefaultEdition.first())
+        repository.setBriefingDefaultEdition("follow_app")
+        assertEquals("in", BriefingEdition.resolve(repository.briefingDefaultEdition.first(), repository.regionStream.first()))
+    }
+
     // ---- Region ----
 
     @Test

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.navigation
 
+import androidx.compose.animation.EnterTransition
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -45,18 +46,12 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
     val appInstanceId = w.session.appInstanceId
 
     composable(
-        route = "settings?page={page}&fromOnboarding={fromOnboarding}",
-        arguments = listOf(
-            navArgument("page") {
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            },
-            navArgument("fromOnboarding") {
-                type = NavType.BoolType
-                defaultValue = false
-            },
-        ),
+        route = "settings?page={page}&fromOnboarding={fromOnboarding}&fromImport={fromImport}",
+        arguments = settingsRouteArguments(),
+        enterTransition = {
+            if (targetState.arguments?.getBoolean("fromImport") == true && targetState.arguments?.getString("page") == "account") EnterTransition.None else null
+        },
+        popEnterTransition = { null },
     ) { backStackEntry ->
         val settingsPage = backStackEntry.arguments?.getString("page")
         val fromOnboardingArg = backStackEntry.arguments?.getBoolean("fromOnboarding") ?: false
@@ -106,19 +101,14 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                         popBackStack = { navController.popBackStack() },
                     )
                 },
-                onResetAnalytics = {
-                    try {
-                        cx.aswin.boxlore.core.analytics.AnalyticsHelper.resetIdentity()
-                    } catch (e: Exception) {
-                        android.util.Log.e("Settings", "Failed to reset analytics", e)
-                    }
-                },
+                onResetAnalytics = ::resetSettingsAnalytics,
                 appInstanceId = appInstanceId,
                 initialPage = settingsPage,
                 isOnboarding = isFromOnboarding,
                 onSendFeedback = { navController.navigate("feedback") },
                 onCheckForUpdates = { container.appUpdates.open(checkNow = true) },
                 onSupportPageVisibilityChanged = w.actions.onSupportPageVisibilityChanged,
+                onAccountPageVisibilityChanged = w.actions.onAccountPageVisibilityChanged,
             ),
             regionSettings = RegionSettings(
                 currentRegion = settingsState.currentRegion,
@@ -136,6 +126,30 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 onNavigateToAutoDownloads = { navController.navigate("library/auto_downloads/settings") },
             ),
         )
+    }
+}
+
+private fun settingsRouteArguments() = listOf(
+    navArgument("page") {
+        type = NavType.StringType
+        nullable = true
+        defaultValue = null
+    },
+    navArgument("fromOnboarding") {
+        type = NavType.BoolType
+        defaultValue = false
+    },
+    navArgument("fromImport") {
+        type = NavType.BoolType
+        defaultValue = false
+    },
+)
+
+private fun resetSettingsAnalytics() {
+    try {
+        AnalyticsHelper.resetIdentity()
+    } catch (e: Exception) {
+        android.util.Log.e("Settings", "Failed to reset analytics", e)
     }
 }
 

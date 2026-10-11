@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.briefing
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,11 +26,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -56,14 +57,12 @@ internal fun BriefingStoryCard(
     state: BriefingStoryCardState,
     actions: BriefingStoriesPagerActions,
 ) {
-    Card(
+    Surface(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = briefingStoryCardColor(state.isActive)),
-        border = BorderStroke(1.dp, if (state.isActive) state.accentColor else MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight()
-            .shadow(6.dp, RoundedCornerShape(24.dp))
     ) {
         Column(
             modifier = Modifier
@@ -90,13 +89,6 @@ internal fun BriefingStoryCard(
 }
 
 @Composable
-private fun briefingStoryCardColor(isActive: Boolean): Color = if (isActive) {
-    MaterialTheme.colorScheme.primaryContainer
-} else {
-    MaterialTheme.colorScheme.surfaceContainerHigh
-}
-
-@Composable
 private fun StoryCardHeader(state: BriefingStoryCardState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -115,38 +107,23 @@ private fun StoryCardHeader(state: BriefingStoryCardState) {
 
 @Composable
 private fun StoryCountBadge(state: BriefingStoryCardState) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color =
-        if (state.isActive) {
-            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
-        } else {
-            MaterialTheme.colorScheme.secondaryContainer
-        },
-    ) {
-        Text(
-            text = "STORY ${state.page + 1} OF ${state.pageCount}".uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = GoogleSansWeight.bold,
-            color =
-            if (state.isActive) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSecondaryContainer
-            },
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
-    }
+    Text(
+        stringResource(R.string.briefing_story_label, state.page + 1),
+        fontFamily = FontFamily.Serif,
+        fontSize = 22.sp,
+        color = MaterialTheme.colorScheme.primary
+    )
 }
 
 @Composable
 private fun StoryHeadline(state: BriefingStoryCardState) {
     Text(
         text = state.chapter.title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = GoogleSansWeight.bold,
-        color = if (state.isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-        maxLines = 2,
+        fontFamily = FontFamily.Serif,
+        fontSize = 24.sp,
+        lineHeight = 28.sp,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 3,
         overflow = TextOverflow.Ellipsis
     )
 }
@@ -171,7 +148,7 @@ private fun StoryParagraph(
                 lineHeight = 22.sp,
                 color =
                 if (isActive) {
-                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
@@ -185,15 +162,17 @@ private fun StoryPlayButton(
     state: BriefingStoryCardState,
     actions: BriefingStoriesPagerActions,
 ) {
+    val actionLabel = stringResource(if (state.isActive) R.string.briefing_pause_story_named else R.string.briefing_play_story_named, state.chapter.title)
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = if (state.isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
+        shape = RoundedCornerShape(28.dp),
+        color = if (state.isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary,
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(52.dp)
+            .semantics { contentDescription = actionLabel }
             .expressiveClickable(
                 feedback = ExpressivePressFeedback.Control,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(28.dp),
                 onClick = { handleStoryPlayClick(state, actions) }
             )
     ) {
@@ -214,18 +193,18 @@ private fun StoryPlayIcon(isActive: Boolean) {
     Icon(
         imageVector = if (isActive) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
         contentDescription = null,
-        tint = if (isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.onPrimary,
-        modifier = Modifier.size(18.dp)
+        tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary,
+        modifier = Modifier.size(22.dp)
     )
 }
 
 @Composable
 private fun StoryPlayLabel(isActive: Boolean) {
     Text(
-        text = if (isActive) "PAUSE STORY" else "PLAY THIS STORY",
+        text = stringResource(if (isActive) R.string.briefing_pause_story else R.string.briefing_play_story),
         fontWeight = GoogleSansWeight.bold,
         style = MaterialTheme.typography.labelLarge,
-        color = if (isActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.onPrimary
+        color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary
     )
 }
 

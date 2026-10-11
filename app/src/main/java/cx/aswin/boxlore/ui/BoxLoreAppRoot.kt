@@ -94,6 +94,7 @@ import cx.aswin.boxlore.navigation.resolveBottomNavTab
 import cx.aswin.boxlore.navigation.resolveIsFromOnboarding
 import cx.aswin.boxlore.navigation.resolveLaunchSubscriptionsBack
 import cx.aswin.boxlore.navigation.shouldShowBottomNav
+import cx.aswin.boxlore.navigation.shouldShowPlayerChrome
 import cx.aswin.boxlore.navigation.snapshotNavBackStack
 import cx.aswin.boxlore.ui.announcement.FeatureAnnouncementOverlay
 import cx.aswin.boxlore.ui.announcement.InAppAnnouncementDialog
@@ -243,7 +244,10 @@ fun BoxLoreAppRoot(
         navBackStackEntry?.arguments?.getBoolean("fromOnboarding") == true ||
             (!onboardingCompleted && currentRoute.startsWith("settings"))
     var isSupportPageActive by remember { mutableStateOf(false) }
+    var isAccountPageActive by remember { mutableStateOf(false) }
     val isSupportActive = isSupportPageActive && currentRoute.startsWith("settings")
+    val isAccountActive = currentRoute.startsWith("settings") &&
+        (isAccountPageActive || navBackStackEntry?.arguments?.getString("page") == "account")
     val showBottomNav =
         shouldShowBottomNav(
             onboardingCompleted = onboardingCompleted,
@@ -442,10 +446,10 @@ fun BoxLoreAppRoot(
     DownloadBandwidthEffect(isPlaying = isPlaying)
 
     val miniPlayerPadding =
-        remember(currentEpisode, navigationStyle) {
+        remember(currentEpisode, navigationStyle, isAccountActive) {
             appBottomChromeContentPadding(
                 style = navigationStyle,
-                isMiniPlayerVisible = currentEpisode != null,
+                isMiniPlayerVisible = currentEpisode != null && !isAccountActive,
             )
         }
 
@@ -608,7 +612,7 @@ fun BoxLoreAppRoot(
                         style = navigationStyle,
                         navigationVisible = showBottomNav,
                         hasEpisode = currentEpisode != null,
-                        suppressed = isModeSwitching || isSupportActive,
+                        suppressed = !shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching),
                         widthDp = maxWidth.value,
                     ),
                     episodeId = currentEpisode?.id,
@@ -687,6 +691,7 @@ fun BoxLoreAppRoot(
                                         onShowFeedbackSheet = { navController.navigate("feedback") },
                                         onSubmitFeedback = onSubmitFeedback,
                                         onSupportPageVisibilityChanged = { isSupportPageActive = it },
+                                        onAccountPageVisibilityChanged = { isAccountPageActive = it },
                                     ),
                                     settingsState =
                                     NavSettingsState(
@@ -782,6 +787,7 @@ fun BoxLoreAppRoot(
                         isPlayerActive &&
                         !isModeSwitching &&
                         !isSupportActive &&
+                        !isAccountActive &&
                         !legacyRssRepairInProgress,
                     modifier =
                     Modifier
@@ -804,7 +810,7 @@ fun BoxLoreAppRoot(
                     },
                 )
 
-                if (!isModeSwitching && !isSupportActive) {
+                if (shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching)) {
                     PlayerSheetScaffold(
                         playbackRepository = playbackRepository,
                         downloadRepository = downloadRepository,
@@ -966,7 +972,7 @@ fun BoxLoreAppRoot(
                     onSyncAccountSelected = {
                         opmlImportState = OpmlImportState.Idle
                         val fromOnboarding = resolveIsFromOnboarding(onboardingCompleted, opmlImportSource)
-                        navController.navigate("settings?page=account&fromOnboarding=$fromOnboarding")
+                        navController.navigate("settings?page=account&fromOnboarding=$fromOnboarding&fromImport=true")
                     },
                 ),
             )

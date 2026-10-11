@@ -66,7 +66,7 @@ private fun relatedEpisodeKey(episode: Episode): String = "${episode.podcastId.o
 
 @Composable
 private fun relatedEpisodesDividerColor(isActive: Boolean): Color = if (isActive) {
-    Color.White.copy(alpha = 0.15f)
+    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
 } else {
     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
 }
@@ -85,10 +85,10 @@ private fun RelatedEpisodesHeader(isActive: Boolean) {
             modifier = Modifier.size(14.dp)
         )
         Text(
-            text = "LISTEN DEEPER",
+            text = "Listen further",
             style = MaterialTheme.typography.labelSmall.copy(
-                letterSpacing = 1.2.sp,
-                fontSize = 9.sp
+                letterSpacing = 0.sp,
+                fontSize = 12.sp
             ),
             fontWeight = GoogleSansWeight.bold,
             color = relatedEpisodesHeaderColor(isActive, alpha = 0.7f)
@@ -101,7 +101,7 @@ private fun relatedEpisodesHeaderColor(
     isActive: Boolean,
     alpha: Float,
 ): Color = if (isActive) {
-    Color.White.copy(alpha = alpha)
+    MaterialTheme.colorScheme.onSurfaceVariant
 } else {
     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
 }

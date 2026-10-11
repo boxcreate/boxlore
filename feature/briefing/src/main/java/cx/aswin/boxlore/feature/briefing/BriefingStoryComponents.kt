@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.briefing
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -68,14 +66,6 @@ internal fun CompactEpisodeChip(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = compactEpisodeChipColor(isActiveCard),
-        border = BorderStroke(
-            0.5.dp,
-            if (isActiveCard) {
-                MaterialTheme.colorScheme.outline
-            } else {
-                MaterialTheme.colorScheme.outlineVariant
-            }
-        ),
         modifier = modifier
             .width(260.dp)
             .expressiveClickable(
@@ -100,7 +90,7 @@ internal fun CompactEpisodeChip(
 
 @Composable
 private fun compactEpisodeChipColor(isActiveCard: Boolean): Color = if (isActiveCard) {
-    MaterialTheme.colorScheme.surfaceContainerHighest
+    MaterialTheme.colorScheme.surfaceContainer
 } else {
     MaterialTheme.colorScheme.surfaceContainer
 }
@@ -132,7 +122,7 @@ private fun androidx.compose.foundation.layout.RowScope.CompactEpisodeDetails(
         modifier = Modifier.weight(1f),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        CompactEpisodeTitle(episode.title, isActiveCard)
+        CompactEpisodeTitle(episode.title)
         CompactEpisodePodcastTitle(
             podcastTitle = episode.podcastTitle,
             isActiveCard = isActiveCard,
@@ -146,18 +136,15 @@ private fun androidx.compose.foundation.layout.RowScope.CompactEpisodeDetails(
 }
 
 @Composable
-private fun CompactEpisodeTitle(
-    title: String,
-    isActiveCard: Boolean,
-) {
+private fun CompactEpisodeTitle(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.labelMedium.copy(
             fontWeight = GoogleSansWeight.bold,
-            fontSize = 11.sp,
-            lineHeight = 14.sp
+            fontSize = 13.sp,
+            lineHeight = 16.sp
         ),
-        color = if (isActiveCard) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+        color = MaterialTheme.colorScheme.onSurface,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
     )
@@ -173,7 +160,7 @@ private fun CompactEpisodePodcastTitle(
     Text(
         text = podcastTitle,
         style = MaterialTheme.typography.labelSmall.copy(
-            fontSize = 10.sp,
+            fontSize = 12.sp,
             fontWeight = GoogleSansWeight.medium
         ),
         color = if (isActiveCard) accentColor.copy(alpha = 0.85f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
@@ -190,12 +177,12 @@ private fun CompactEpisodeInfo(
     if (infoText.isEmpty()) return
     Text(
         text = infoText,
-        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+        style = MaterialTheme.typography.labelSmall,
         color =
         if (isActiveCard) {
-            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f)
+            MaterialTheme.colorScheme.onSurfaceVariant
         } else {
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+            MaterialTheme.colorScheme.onSurfaceVariant
         },
         maxLines = 1
     )
