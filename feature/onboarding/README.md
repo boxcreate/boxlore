@@ -8,12 +8,12 @@ Owns first-run onboarding presentation: genre selection, search-based onboarding
 
 - Show covers pass their available artwork alternatives to the shared loader without changing search, suggestions or onboarding decisions.
 
-- Suggestion cards and selectable rows use steady Material feedback. Custom compact actions and genre chips opt into the shared restrained control response, clipped to their actual shapes. Primary action backgrounds contract with their content inside the shared press layer. Welcome entrance animations and selection/subscription callbacks are unchanged.
+- Suggestion cards and selectable rows use steady Material feedback. Custom compact actions and genre chips opt into the shared restrained control response, clipped to their actual shapes. Primary action backgrounds contract with their content inside the shared press layer. Selection/subscription callbacks are unchanged.
 
 - `OnboardingScreen` and `OnboardingViewModel` for the flow shell.
-- Welcome step uses a cinematic podcast-cover marquee (`CinematicBackgroundGrid`): ~2.4s entrance with draw-phase-only chrome motion (`graphicsLayer`), static bottom scrim (no logo halo plate), modest cover glide that hands off into continuous drift (~700ms in — no pause), then logo/CTA cascade. Welcome chrome: wordmark + “Podcasts, done right.”; soft primary CTA with integrated AI cue; quieter tonal secondary actions.
+- Welcome uses a solid rounded cover panel with 12 curated bundled covers in two opposing, continuously tiled rows. The opening holds a brisk glide for 600ms, then slows over 1.8s directly into a continuous 16dp/s loop. The invitation “You bring the curiosity.” enters before a fixed “We’ve got the” prefix with rotating mysteries, laughs, headlines, big ideas, stories, discoveries and lore. The word and its matching Rounded icon use the theme's primary accent; masked word reveals and a short icon settle share the cover clock, with readable holds and a longer pause on lore. The subtitle reserves the longest localized word's width and height; large text stacks the prefix above the slot rather than shrinking it. TalkBack reads one stable “We’ve got the lore.” description. Headline type size adapts to the window width. The wordmark and all actions remain available from the first frame. The compact, single-line “Find shows for me” action includes an AI sparkle and opens the existing AI-guided discovery flow; connected “Search podcasts” / “Import library” actions include their search/download icons. These actions and “Skip setup” retain their existing callbacks. The normal phone layout fits without scrolling or overscroll stretch; short windows and larger system text can scroll only when content needs more room.
 - Onboarding hero titles use `rememberCondensedGoogleSansFamily()` from `:core:designsystem` so condensed Google Sans Flex follows Appearance lettering roundness; AI onboarding uses centralized Google Sans Flex weight tokens.
-- `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`. `ImportOnboardingScreen` and the Welcome import option card present library restoration options (OPML/JSON file import and Sync from Cloud account) with inbound download iconography (`Icons.Rounded.Download`). Search uses progressive Meili typeahead + hybrid `/search` (`searchPodcastsGrouped`) with **Matches** / **Also found** sections. When catalog hits prepend over local substring matches, the result list pins to the top via shared `ProgressiveSearchScrollLogic` so the best match stays on screen. Search genre chips use shared `PillFilterChip` from `:core:designsystem`. Search and suggestion grids safely deduplicate and disambiguate keys via `LazyListKeyPolicy` to protect Lazy layouts from collision crashes. AI suggestions use the shared 11-country `RegionSegmentedSelector` (persisted via `UserPreferencesRepository.setRegion`, which also seeds recommended content languages). Curriculum / genre-synth / similar-shows requests use `discoveryLocaleForRegion` so `country` and `languages` stay canonical together; the proxy expands and `startsWith`-filters podcast languages.
+- `GenreOnboardingScreen`, `SearchOnboardingScreen`, `ImportOnboardingScreen`, `AiOnboardingScreen`, `AiChatOnboardingScreen`, and `AiSuggestionsScreen`. `ImportOnboardingScreen` presents library restoration options (OPML/JSON file import and Sync from Cloud account) with inbound download iconography (`Icons.Rounded.Download`). Search uses progressive Meili typeahead + hybrid `/search` (`searchPodcastsGrouped`) with **Matches** / **Also found** sections. When catalog hits prepend over local substring matches, the result list pins to the top via shared `ProgressiveSearchScrollLogic` so the best match stays on screen. Search genre chips use shared `PillFilterChip` from `:core:designsystem`. Search and suggestion grids safely deduplicate and disambiguate keys via `LazyListKeyPolicy` to protect Lazy layouts from collision crashes. AI suggestions use the shared 11-country `RegionSegmentedSelector` (persisted via `UserPreferencesRepository.setRegion`, which also seeds recommended content languages). Curriculum / genre-synth / similar-shows requests use `discoveryLocaleForRegion` so `country` and `languages` stay canonical together; the proxy expands and `startsWith`-filters podcast languages.
 - Suggestions (“Designed for you”) is a **single screen**: one compact headline, a single-row scrollable taste-lane chip strip (full titles, no ellipsis; per-lane selection badges), a one-line purpose + Select all toolbar, and a 2-column select grid. Descriptions open in a Material bottom sheet. Finish CTA stays pinned. Shared by genre, AI, search, and OPML flows.
 - `AiSuggestionCards`, AI onboarding components, option icons, chat input, and chat message list logic.
 - Pure helpers including `OnboardingGenreLimits`, `OnboardingSearchBackStep`, `OnboardingCurriculumLogic`, `OnboardingSuggestionsLanes`, `OnboardingSuggestionsPresentation`, and `OnboardingDiscoveryLocale`.
@@ -47,6 +47,12 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
   OnboardingViewModelSearch.kt
   OnboardingViewModelSimilarShows.kt
   SearchOnboardingScreen.kt
+  WelcomeCoverReel.kt
+  WelcomeMotionClock.kt
+  WelcomeReelMotion.kt
+  WelcomeRotatingReply.kt
+  WelcomeScreen.kt
+  WelcomeWordLoopMotion.kt
 ```
 ## Dependencies
 
@@ -60,7 +66,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 - `OnboardingViewModel` is scoped to the onboarding route or host owner.
 - Preference completion writes go through `UserPreferencesRepository` and `BoxcastPrefs` supplied by app wiring.
 - Catalog and network actions use injected dependencies and suspend APIs; first publisher-feed persist is handed to application-scoped `SubscriptionForegroundSync` so navigation cannot cancel it.
-- UI runs on the main thread.
+- UI runs on the main thread. Welcome motion shares one lifecycle-aware frame clock, pauses below STARTED, and resumes without replaying the entrance. The system animation-duration scale is honored; disabling animations reveals the full copy, shows static lore and freezes the reel. Travel and reveal values are read only by drawing layers, avoiding per-frame composition; the rotating subtitle composes only when its selected word changes. Bundled covers require no network request.
 
 ## Persistence & identity
 
@@ -72,6 +78,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 
 - Unit tests live under `feature/onboarding/src/test`.
 - Existing coverage includes genre limits, search back-step behavior, curriculum logic, suggestions presentation (loading gate / seed filter / back-clear), AI option icons, and AI chat message list logic. Progressive search pin-to-top is covered in `:core:designsystem` (`ProgressiveSearchScrollLogicTest`).
+- `WelcomeReelMotionTest` covers the entrance-to-loop handoff, reverse direction, repeated seams, long-running clocks, phase offsets and invalid inputs. `WelcomeWordLoopMotionTest` checks term order, the longer lore hold, entrance/exit timing, bounded poses, long-running clocks and the static reduced-motion state. Manually verify welcome on first launch: observe a full subtitle loop without layout shifts; discovery, search, import and skip route to their existing destinations. Backgrounding and returning resumes the loop, and disabled system animations leave the complete lore reply visible. Check narrow windows, RTL and larger text for scroll access to every action.
 - ViewModel tests should use fakes for prefs, catalog, network, and analytics dependencies.
 
 ```bash
