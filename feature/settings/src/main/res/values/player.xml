@@ -1,0 +1,7 @@
+<resources>
+    <string name="player_style_title">Player style</string>
+    <string name="player_style_standard">Standard</string>
+    <string name="player_style_bunpod">bunpod</string>
+    <string name="player_style_description">bunpod player UI puts the title and controls first. Both styles use artwork colors and keep the same miniplayer. Video uses the standard player.</string>
+    <string name="player_style_credit">Design inspired by BunPod · Kamran Bekirov ↗</string>
+</resources>

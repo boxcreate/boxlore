@@ -648,6 +648,7 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
         onSetSubscriptionsTabStyle(it)
     },
     onSetMiniPlayerSeekButtonsEnabled = onSetMiniPlayerSeekButtonsEnabled,
+    onSetFullPlayerStyle = onSetFullPlayerStyle,
     onSetArtworkColorsEnabled = { enabled ->
         AnalyticsHelper.trackSettingsInteraction("artwork_colors_toggled", enabled.toString())
         onSetArtworkColorsEnabled(enabled)

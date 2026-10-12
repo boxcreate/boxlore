@@ -25,6 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +39,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
+import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
 import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
@@ -65,6 +68,7 @@ data class AppearanceUiState(
     val miniPlayerSeekButtonsEnabled: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
     val savedCustomTheme: ThemeSelection? = null,
+    val fullPlayerStyle: String = FullPlayerStyle.STANDARD,
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */
@@ -86,6 +90,7 @@ data class AppearanceActions(
     val onSetArtworkColorsEnabled: (Boolean) -> Unit = {},
     val onApplyTheme: (ThemeSelection, ThemeSelection?) -> Unit = { _, _ -> },
     val onSaveCustomTheme: (ThemeSelection) -> Unit = { onApplyTheme(it, it) },
+    val onSetFullPlayerStyle: (String) -> Unit = {},
 )
 
 @Composable
@@ -102,12 +107,42 @@ internal fun AppearanceSettingsPage(
         AppearanceThemeSection(state, actions, onEditCustomTheme)
         LetteringSection(state.currentFontRoundness, actions.onSetFontRoundness)
         AppearanceLayoutSection(state, actions)
+        PlayerStyleSection(state.fullPlayerStyle, actions.onSetFullPlayerStyle)
         AppearanceStartSection(state, actions)
 
         WidgetsSection(
             currentWidgetAppearance = state.currentWidgetAppearance,
             onSetWidgetAppearance = actions.onSetWidgetAppearance,
         )
+    }
+}
+
+@Composable
+internal fun PlayerStyleSection(selected: String, onSelect: (String) -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    SettingsGroup(title = stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_title)) {
+        SettingsContent {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ConnectedOptionSelector(
+                    options = listOf(
+                        FullPlayerStyle.STANDARD to stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_standard),
+                        FullPlayerStyle.BUNPOD to stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_bunpod),
+                    ),
+                    selected = FullPlayerStyle.sanitize(selected),
+                    onSelect = onSelect,
+                )
+                Text(
+                    stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                androidx.compose.material3.TextButton(
+                    onClick = { uriHandler.openUri("https://github.com/kamranbekirovyz/bunpod") },
+                ) {
+                    Text(stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_credit))
+                }
+            }
+        }
     }
 }
 

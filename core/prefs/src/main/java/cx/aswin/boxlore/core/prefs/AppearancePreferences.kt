@@ -45,6 +45,8 @@ internal class AppearancePreferences(
     val cachedSubscriptionsTabStyle: String
         get() = SubscriptionsTabStyle.sanitize(syncPrefs.getString(SubscriptionsTabStyle.PREF_KEY, null))
 
+    val fullPlayer = FullPlayerPreferences(dataStore, syncPrefs)
+
     val cachedThemeBrand: String
         get() = syncPrefs.getString("theme_brand", null) ?: "violet"
 
@@ -347,6 +349,7 @@ internal class AppearancePreferences(
             preferences[Keys.EXPLORE_DEFAULT_TAB] = preferences[Keys.EXPLORE_DEFAULT_TAB] ?: cachedExploreDefaultTab
             preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] ?: cachedSubscriptionsDefaultTab
             preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] = preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] ?: cachedSubscriptionsTabStyle
+            fullPlayer.hydrate(preferences)
             preferences[Keys.WIDGET_APPEARANCE] = preferences[Keys.WIDGET_APPEARANCE] ?: cachedWidgetAppearance
         }
     }

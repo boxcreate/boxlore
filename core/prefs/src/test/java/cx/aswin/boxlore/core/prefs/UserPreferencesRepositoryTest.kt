@@ -68,6 +68,32 @@ class UserPreferencesRepositoryTest {
     // ---- Region ----
 
     @Test
+    fun fullPlayerChoiceSurvivesRecreationAndDoesNotAlterTransportPreferences() = runTest {
+        assertEquals(FullPlayerStyle.STANDARD, repository.fullPlayerStyleStream.first())
+        repository.setMiniPlayerSeekButtonsEnabled(true)
+        repository.setSeekBackwardMs(15_000L)
+        repository.setFullPlayerStyle(" BUNPOD ")
+        val restored = UserPreferencesRepository(context)
+        assertEquals(FullPlayerStyle.BUNPOD, restored.fullPlayerStyleStream.first())
+        assertEquals(FullPlayerStyle.BUNPOD, restored.cachedFullPlayerStyle)
+        assertTrue(restored.miniPlayerSeekButtonsEnabledStream.first())
+        assertEquals(15_000L, restored.seekBackwardMsStream.first())
+        restored.setFullPlayerStyle("unknown")
+        assertEquals(FullPlayerStyle.STANDARD, restored.fullPlayerStyleStream.first())
+    }
+
+    @Test
+    fun fullPlayerBackupCacheHydratesMissingValuesButCannotOverrideStoredChoice() = runTest {
+        repository.setFullPlayerStyle(FullPlayerStyle.BUNPOD)
+        context.userPreferencesDataStore.edit { it.remove(Keys.FULL_PLAYER_STYLE) }
+        repository.hydrateMissingDataStoreFromFastCache()
+        assertEquals(FullPlayerStyle.BUNPOD, repository.fullPlayerStyleStream.first())
+        context.userPreferencesDataStore.edit { it[Keys.FULL_PLAYER_STYLE] = FullPlayerStyle.STANDARD }
+        repository.hydrateMissingDataStoreFromFastCache()
+        assertEquals(FullPlayerStyle.STANDARD, repository.fullPlayerStyleStream.first())
+    }
+
+    @Test
     fun regionDefaultsToUsForUnsupportedLocale() = runTest {
         assertEquals("us", repository.regionStream.first())
     }

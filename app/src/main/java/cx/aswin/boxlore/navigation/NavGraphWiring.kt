@@ -157,6 +157,7 @@ data class NavSettingsState(
     val miniPlayerSeekButtonsEnabled: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
     val savedCustomTheme: cx.aswin.boxlore.core.prefs.ThemeSelection? = null,
+    val fullPlayerStyle: String = cx.aswin.boxlore.core.prefs.FullPlayerStyle.STANDARD,
 )
 
 /** Callbacks for OPML import state owned by MainActivity. */

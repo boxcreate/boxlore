@@ -6,6 +6,10 @@ Owns player presentation: mini player, full player sheet, queue screen UI, contr
 
 ## Public API
 
+- `FullPlayerV2` also supports Appearance → **Player style** → **bunpod** for audio. Its original Compose layout is inspired by BunPod: show/title, remaining time, thin seekbar and five transport controls, with no displayed artwork. The title block is vertically centered above transport. Episode titles adapt from 28–40sp within four lines; show names adapt from 12–16sp within two. Remaining time fits one line at 32–64sp. This canvas uses crisp Google Sans Flex independently of Appearance lettering and caps its height to the visible window, keeping controls and the queue arrow above system navigation even though the shared sheet's animation canvas is taller. The existing artwork-derived palette, sheet anchors, predictive Back, global seek durations, analytics and miniplayer remain unchanged. Playback morphs its square into a circle, sleep into a four-sided cookie and custom speed into a six-sided cookie. Each seek direction has distinct transient press geometry. State/enablement changes reset press tracking so interrupted or repeated taps cannot leave Pause with the pressed square silhouette. Buffering uses the shared circular wavy loader. Long titles open in full on tap, and short windows scroll rather than covering controls.
+- Episode titles use Android's full, dictionary-based hyphenation and high-quality line breaks through a scoped native text view within the existing four-line/adaptive-size bounds; show names and the full-title dialog keep their normal wrapping. The Compose node retains the original title and full-title accessibility action. Play/Pause keeps the artwork-derived primary accent; active sleep/speed controls use the artwork palette's own tertiary container and corresponding foreground, distinguishing them by tone rather than generating a new hue. Inactive small controls remain neutral. This hierarchy affects only the bunpod controls.
+- The arrow labelled **Up next** for accessibility and an upward swipe at the end of the player open the unchanged `PlayerQueueSheet`, preserving reorder, remove/Undo, source labels, queue index mapping, show navigation, Same Show continuation and Smart Queue recovery. Speed/sleep controls use the existing modal sheets. Video retains the standard player.
+
 - Player, mini-player, Up next and Queue retain episode/show artwork alternatives. Full-player chapter art falls through to episode then show artwork; next-episode art has its own chain. Chapter tiles use the shared loader. Playback, queue advancement and artwork geometry are unchanged.
 
 - Queue rows use steady Material feedback; custom mini-player and Up Next controls opt into the shared 3% non-bouncy press response. The full-player connected transport animation, drag/seek interactions and playback callbacks are unchanged. Mini-player Play/Seek and Up Next backgrounds sit inside their press layer so the complete coloured control contracts with its content.
@@ -62,7 +66,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:prefs`, `:core:network`, `:core:designsystem`, and `:core:analytics`.
-- Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Media3 ExoPlayer/Session/UI/Cast, AndroidX MediaRouter, Google Cast framework, Coil, Palette, smooth corner rect, reorderable, coroutines, JUnit, and Turbine.
+- Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Media3 ExoPlayer/Session/UI/Cast, AndroidX Graphics Shapes, AndroidX MediaRouter, Google Cast framework, Coil, Palette, smooth corner rect, reorderable, coroutines, JUnit, and Turbine.
 - Reverse-edge rule: feature modules must not depend on other feature modules or construct a second `PlaybackRepository`.
 
 ## Threading / lifecycle
@@ -79,6 +83,8 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 - UI state should treat media IDs as opaque strings from playback APIs.
 
 ## Testing notes
+
+- `MinimalPlayerLogicTest` covers style fallback/video handling, bounded remaining time and one queue opening per upward gesture. `MinimalPlayerContentTest` exercises the real controls, accessibility seeking/queue access, title expansion, adaptive short/long text, title-only full hyphenation, centered metadata, scoped crisp typography, oversized sheet/window bounds, large-text RTL, buffering, short landscape windows and swipe-to-queue with local callbacks; it sends no media or network requests. `MinimalPlayerControlsTest` checks distinct active silhouettes, separate main/auxiliary control accents in both themes, rapid taps and a press interrupted by buffering. `MinimalControlAccentTest` checks related hues, tone separation and foreground contrast across artwork seeds in both modes. Optional local render exports use `BOXLORE_UI_TEST_ARTIFACTS`.
 
 - Unit tests live under `feature/player/src/test`.
 - Existing coverage includes time formatting and v2 logic for controls, layout, nested-scroll collapse handoff, seekbar, queue labels, queue podcast display, transcript dialogs, mini-player dismissal, and chapter art flow.

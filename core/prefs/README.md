@@ -6,6 +6,8 @@ Owns user preference persistence and migration helpers: DataStore-backed user pr
 
 ## Public API
 
+- `FullPlayerStyle`, `fullPlayerStyleStream`, `cachedFullPlayerStyle` and `setFullPlayerStyle` persist `full_player_style` (`standard` default / `bunpod`) independently of miniplayer preferences and global seeks. The same DataStore and theme fast cache are used; restoration hydrates only a missing key, and an existing DataStore choice wins. Unknown values fall back to Standard.
+
 - `briefingDefaultEdition` / `setBriefingDefaultEdition` persist `briefing_default_edition` independently of discovery. `BriefingEdition` resolves Follow app region (default), Global, India, US and UK, normalizes aliases, and prioritizes explicit entry regions. Merely opening another edition does not persist it.
 
 - `miniPlayerSeekButtonsEnabledStream` / `setMiniPlayerSeekButtonsEnabled` persist the opt-in `mini_player_seek_buttons_enabled` flag (default off) in `user_preferences`. It only controls regular miniplayer button visibility; global seek durations and full-player controls remain available.
@@ -76,6 +78,8 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 - `legacy_rss_repair_*` keys are a crash-recovery contract; keep them until every shipping build that can begin the repair has aged out.
 
 ## Testing notes
+
+- `UserPreferencesRepositoryTest` verifies full-player style sanitization, persistence/recreation, fast-cache hydration and existing-choice precedence without changing miniplayer or global seek settings.
 
 - `BriefingEditionTest` covers saved/default/explicit region precedence and aliases. `UserPreferencesRepositoryTest` verifies the saved edition survives repository recreation without changing discovery region.
 - `AnnouncementPreferencesTest` round-trips rich presentation/release fields and clears them, while retaining legacy defaults and blank-title behavior.

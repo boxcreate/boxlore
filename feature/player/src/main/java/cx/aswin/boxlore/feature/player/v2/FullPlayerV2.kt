@@ -62,10 +62,13 @@ import cx.aswin.boxlore.core.playback.CastMediaEligibility
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.core.playback.setOutputVolume
+import cx.aswin.boxlore.core.playback.skipBackward
+import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.playback.skipToNextEpisode
 import cx.aswin.boxlore.core.playback.stopCasting
 import cx.aswin.boxlore.feature.player.v2.logic.PlayerMetadataStylingLogic
 import cx.aswin.boxlore.feature.player.v2.logic.calculateResponsiveHeroLayout
+import cx.aswin.boxlore.feature.player.v2.logic.useMinimalPlayer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -214,31 +217,47 @@ fun FullPlayerV2(
         }
     }
 
-    FullPlayerBody(
-        model =
-        FullPlayerBodyModel(
-            state = state,
-            episode = episode,
-            podcast = podcast,
-            nextEpisode = nextEpisode,
-            isVideo = isVideo,
-            isVideoPodcast = isVideoPodcast,
-            download = FullPlayerDownloadState(isDownloaded, isDownloading),
-        ),
-        dependencies = dependencies,
-        display = display,
-        actions = actions,
-        flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
-        ui = ui,
-        resources =
-        FullPlayerBodyResources(
-            scope,
-            queueSnackbarHostState,
-            statusBarPadding,
-            navBarPadding,
-            modifier,
-        ),
+    val style by dependencies.userPrefs.fullPlayerStyleStream.collectAsStateWithLifecycle(
+        initialValue = dependencies.userPrefs.cachedFullPlayerStyle,
     )
+    if (useMinimalPlayer(style, isVideoPodcast)) {
+        MinimalPlayerContent(
+            state = state,
+            display = display,
+            flows = PlayerProgressFlows(positionFlow, bufferedPositionFlow),
+            actions = minimalPlayerActions(dependencies, state, ui, actions),
+            modifier = modifier,
+        )
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            SnackbarHost(queueSnackbarHostState, Modifier.padding(bottom = navBarPadding))
+        }
+    } else {
+        FullPlayerBody(
+            model =
+            FullPlayerBodyModel(
+                state = state,
+                episode = episode,
+                podcast = podcast,
+                nextEpisode = nextEpisode,
+                isVideo = isVideo,
+                isVideoPodcast = isVideoPodcast,
+                download = FullPlayerDownloadState(isDownloaded, isDownloading),
+            ),
+            dependencies = dependencies,
+            display = display,
+            actions = actions,
+            flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
+            ui = ui,
+            resources =
+            FullPlayerBodyResources(
+                scope,
+                queueSnackbarHostState,
+                statusBarPadding,
+                navBarPadding,
+                modifier,
+            ),
+        )
+    }
 
     // ------------------------------------------------------------------
     // Sheets
@@ -278,6 +297,40 @@ fun FullPlayerV2(
         ui = ui,
     )
 }
+
+private fun minimalPlayerActions(
+    dependencies: FullPlayerDependencies,
+    state: PlayerState,
+    ui: FullPlayerUiState,
+    actions: FullPlayerActions,
+) = MinimalPlayerActions(
+    onPlayPause = {
+        cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("play_pause")
+        togglePlayback(state, dependencies.playbackRepository)
+    },
+    onReplay = {
+        cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("previous")
+        dependencies.playbackRepository.skipBackward()
+    },
+    onForward = {
+        cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("next")
+        dependencies.playbackRepository.skipForward()
+    },
+    onSleep = { ui.showSleepSheet = true },
+    onSpeed = { ui.showSpeedSheet = true },
+    onQueue = { ui.showQueueSheet = true },
+    onSeek = {
+        cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("seek")
+        dependencies.playbackRepository.seekTo(it)
+    },
+    onCollapse = actions.onCollapse,
+    onPodcastInfo = {
+        state.currentPodcast?.let {
+            actions.onCollapse()
+            actions.onPodcastInfoClick(it)
+        }
+    },
+)
 
 internal data class FullPlayerDownloadState(
     val isDownloaded: Boolean,
