@@ -1,37 +1,16 @@
 package cx.aswin.boxlore.feature.home
 
 import android.content.pm.PackageManager
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -45,7 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -54,9 +32,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -613,190 +588,4 @@ fun HomeScreen(
         callbacks = callbacks,
         onDismissChangePodcastSheet = { showChangePodcastSheet = false },
     )
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun HomeImportBanner(
-    onAiOnboardingClick: () -> Unit,
-    onSearchClick: () -> Unit,
-    onImportClick: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors =
-        CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-        border =
-        BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant,
-        ),
-    ) {
-        Box(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-        ) {
-            // Dismiss button in top right
-            IconButton(
-                onClick = onDismiss,
-                modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .size(32.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        shape = CircleShape,
-                    ),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = "Dismiss",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(end = 40.dp), // Avoid overlapping with dismiss button
-                ) {
-                    Text(
-                        text = "it's a bit quiet in here...",
-                        style =
-                        MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = GoogleSansWeight.bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        ),
-                    )
-                    Text(
-                        text = "let's find your favorite shows so we can build your daily mix and curate better episode recommendations.",
-                        style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                    )
-                }
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    // Primary full-width action button
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onAiOnboardingClick),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Find shows with AI",
-                                style =
-                                MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = GoogleSansWeight.bold,
-                                ),
-                            )
-                        }
-                    }
-
-                    // Secondary split-width action row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.Transparent,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier =
-                            Modifier
-                                .weight(1f)
-                                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onSearchClick),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Search,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Search",
-                                    style =
-                                    MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = GoogleSansWeight.bold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    ),
-                                )
-                            }
-                        }
-
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.Transparent,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier =
-                            Modifier
-                                .weight(1f)
-                                .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = CircleShape, onClick = onImportClick),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Download,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Import",
-                                    style =
-                                    MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = GoogleSansWeight.bold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    ),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
