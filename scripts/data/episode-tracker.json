@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-12T10:16:41.934Z",
+  "lastRun": "2026-10-12T19:56:16.234Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f02e8956-cfc6-11f0-83c5-9f12527bae80",
@@ -43,22 +43,22 @@
       "lastCheckedAt": 1789363039070
     },
     "55386": {
-      "lastRssKey": "gid://art19-episode-locator/V0/goQygCkMRjH9Z6mbZKU4UpYwAIJfHtQSb_noEWnT4oc",
-      "lastEpisodeTitle": "The Real Reason You Can’t Focus (And How to Fix It)",
-      "lastEpisodeId": "60085919668",
-      "lastCheckedAt": 1791198182447
+      "lastRssKey": "gid://art19-episode-locator/V0/EMJnpl-EUS3VboA8Zs_S61OfqlPB5XN2Toe2zzJ8oRA",
+      "lastEpisodeTitle": "Flow Expert: The Secret to Peak Focus, Creativity, and Performance",
+      "lastEpisodeId": "61627803170",
+      "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "25148d9c-d547-4cf0-98d0-fc49927d785e",
-      "lastEpisodeTitle": "6am ET, October 12 | The latest headlines from NPR",
+      "lastRssKey": "7914115e-a781-4d7c-9e64-618723495daf",
+      "lastEpisodeTitle": "3pm ET, October 12 | The latest headlines from NPR",
       "lastEpisodeId": "61558516761",
-      "lastCheckedAt": 1791800207565
+      "lastCheckedAt": 1791834980835
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75702438",
-      "lastEpisodeTitle": "Delhi’s protest crackdown, a bird on the brink, and a fatal crash",
-      "lastEpisodeId": "61598163690",
-      "lastCheckedAt": 1791772483164
+      "lastRssKey": "https://api.spreaker.com/episode/75732961",
+      "lastEpisodeTitle": "The Catch Up: Jantar Mantar de-notified as protest site (12 October)",
+      "lastEpisodeId": "61636383976",
+      "lastCheckedAt": 1791834981534
     },
     "78573": {
       "lastRssKey": "87b9804a-0657-402f-9924-e771f51a0f27",
@@ -103,9 +103,10 @@
       "lastCheckedAt": 1791680901358
     },
     "204808": {
-      "lastRssKey": "36c28dfb-6a6f-47a9-b70e-4c9e27d3c569",
-      "lastEpisodeTitle": "NFL WEEK 5 PREVIEW",
-      "lastCheckedAt": 1791413185343
+      "lastRssKey": "3b9b18ce-49c3-4ab0-a1da-56ad9c7c76fe",
+      "lastEpisodeTitle": "Was ist denn da passiert?",
+      "lastEpisodeId": "61636264073",
+      "lastCheckedAt": 1791834986365
     },
     "207877": {
       "lastRssKey": "Ixpor0JqsOgzpQzsCkGJx5OzljlmwItn",
@@ -120,10 +121,10 @@
       "lastCheckedAt": 1791580165161
     },
     "215799": {
-      "lastRssKey": "4da471c8-f8ec-4fbe-aba6-30ceacaa6aa1",
-      "lastEpisodeTitle": "When Bad Things Happen to Good People",
-      "lastEpisodeId": "61301419909",
-      "lastCheckedAt": 1791246985923
+      "lastRssKey": "5d6b4eed-3721-40dd-aaee-fefd332cf286",
+      "lastEpisodeTitle": "Why Am I Unhappy?",
+      "lastEpisodeId": "61633747929",
+      "lastCheckedAt": 1791834987242
     },
     "222512": {
       "lastRssKey": "Buzzsprout-19935632",
@@ -143,10 +144,10 @@
       "lastCheckedAt": 1791371887176
     },
     "259125": {
-      "lastRssKey": "6ac6437a8f34078889658ca4",
-      "lastEpisodeTitle": "Will Caicedo return and kickstart Chelsea's season?",
+      "lastRssKey": "6accccc78f90a39dfc5c5691",
+      "lastEpisodeTitle": "Henderson’s stunning double + Palmer’s contract extension",
       "lastEpisodeId": "61425566670",
-      "lastCheckedAt": 1791658026317
+      "lastCheckedAt": 1791834988544
     },
     "271849": {
       "lastRssKey": "tag:soundcloud,2010:tracks/2417137758",
@@ -154,9 +155,9 @@
       "lastCheckedAt": 1791746491563
     },
     "300687": {
-      "lastRssKey": "3e8957b7-af1f-4a5d-a3ac-73b3bb6aa860",
-      "lastEpisodeTitle": "Inteligencia Artificial, tu resumen semanal | Microsoft le ganó a OpenAI esta semana",
-      "lastCheckedAt": 1791246988596
+      "lastRssKey": "019dbc27-9359-4d77-b7f1-da6d9c3fead1",
+      "lastEpisodeTitle": "Inteligencia Artificial, tu resumen semanal | Tus slides, hojas y docs, sin copiar y pegar",
+      "lastCheckedAt": 1791834989688
     },
     "311214": {
       "lastEpisodeId": "567104661",
@@ -175,11 +176,17 @@
       "lastEpisodeId": "52764208570",
       "lastCheckedAt": 1790028455041
     },
+    "325708": {
+      "lastRssKey": "8D9C10C4-552A-4F25-84B1-E2AEBB1CB7A1",
+      "lastEpisodeTitle": "Ukraine Says Russian Strikes Damage Energy Infrastructure",
+      "lastEpisodeId": "61630605137",
+      "lastCheckedAt": 1791834990204
+    },
     "331078": {
-      "lastRssKey": "124260f4-b823-11f1-957c-fb3530fd24cd",
-      "lastEpisodeTitle": "Is Elon Musk Coming For Your Phone Plan?",
-      "lastEpisodeId": "61458072433",
-      "lastCheckedAt": 1791563319581
+      "lastRssKey": "128e1cba-b823-11f1-957c-63fe418d53f1",
+      "lastEpisodeTitle": "Has AI Cooked Gaming?",
+      "lastEpisodeId": "61634759824",
+      "lastCheckedAt": 1791834991000
     },
     "353744": {
       "lastRssKey": "flightcast:01M4NT5N4PZP5NCJHH2GNWHCTN",
@@ -188,10 +195,10 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "01f0dc5c-c625-11f1-b041-7752f2855c80",
-      "lastEpisodeTitle": "6AM ET 10/12/2026 Newscast",
+      "lastRssKey": "720df24a-c670-11f1-95e8-e72b514989ea",
+      "lastEpisodeTitle": "3PM ET 10/12/2026 Newscast",
       "lastEpisodeId": "61558991056",
-      "lastCheckedAt": 1791800225759
+      "lastCheckedAt": 1791834991658
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -206,10 +213,10 @@
       "lastCheckedAt": 1791270781216
     },
     "398589": {
-      "lastRssKey": "gid://art19-episode-locator/V0/mRKgLoguvXM3ivJ2mNSIb3uZfawB8caYhGZEEEb1fj4",
-      "lastEpisodeTitle": "Varsity Blues | The Admissions Game | 5",
+      "lastRssKey": "gid://art19-episode-locator/V0/uygyoZy2jqvd3o1q8VGsRCwNDpPZt3btDD7_hS-YuAg",
+      "lastEpisodeTitle": "Listen Now: Audible True Crime – Ghost Story",
       "lastEpisodeId": "61326340573",
-      "lastCheckedAt": 1791270781831
+      "lastCheckedAt": 1791834992904
     },
     "399669": {
       "lastRssKey": "580335fb-d663-4692-a0e3-6f8f06cefd0a",
@@ -230,10 +237,10 @@
       "lastCheckedAt": 1791746498163
     },
     "431205": {
-      "lastRssKey": "6df22837-ea38-476a-9dc4-28759568b249",
-      "lastEpisodeTitle": "SpaceX’s Starlink Push, The Real Price of Oil, and the NBA’s Big Bet 10/9/26",
-      "lastEpisodeId": "61502642397",
-      "lastCheckedAt": 1791580175210
+      "lastRssKey": "c905e8f5-8e73-4e99-bb31-99e2626f2774",
+      "lastEpisodeTitle": "The Bull Market Turns Four, Energy Headwinds, and Isaacson on AI Safety 10/12/26",
+      "lastEpisodeId": "61635569953",
+      "lastCheckedAt": 1791834995506
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -242,16 +249,16 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4H3FE560HPZMCNG00BAQ9JS",
-      "lastEpisodeTitle": "Surprise, you've got medical bills!",
-      "lastEpisodeId": "61516073582",
-      "lastCheckedAt": 1791594389450
+      "lastRssKey": "01M4R8EK5VSFH59C2AFYMS9M5D",
+      "lastEpisodeTitle": "Outlooks, bank earnings, and a Nobel win",
+      "lastEpisodeId": "61632293000",
+      "lastCheckedAt": 1791834996315
     },
     "432535": {
-      "lastRssKey": "3b66721e-6186-40aa-9192-c996dc796c7d",
-      "lastEpisodeTitle": "The Lyme Disease Epidemic & the Inflammation Connection — A Conversation with Dr. Horowitz and Dr. Daniel Amen",
+      "lastRssKey": "7519f2d2-1e3b-405d-b08e-1c3da35a65e7",
+      "lastEpisodeTitle": "Your Hormones Aren't Broken—Your Gut Might Be the Missing Piece PT. 1 | Dr. Eboni Cornish",
       "lastEpisodeId": "59964924407",
-      "lastCheckedAt": 1791246998080
+      "lastCheckedAt": 1791834997310
     },
     "437685": {
       "lastRssKey": "6de7fe7e-bc91-11f1-84e4-db69dc64f502",
@@ -260,10 +267,10 @@
       "lastCheckedAt": 1791800234106
     },
     "438184": {
-      "lastRssKey": "2dc11bae-c1ec-11f1-a2e6-c7b6aef46cad",
-      "lastEpisodeTitle": "The creative genius behind Squatty Potty & Poo-Pourri reveals his marketing playbook",
-      "lastEpisodeId": "60965368970",
-      "lastCheckedAt": 1791371900165
+      "lastRssKey": "57ea7220-c62b-11f1-86fa-2b79f7db4dc0",
+      "lastEpisodeTitle": "3 embarrassing moments that changed my life",
+      "lastEpisodeId": "61625434006",
+      "lastCheckedAt": 1791834998737
     },
     "444331": {
       "lastRssKey": "5ec6d81a-c16a-11f1-9c08-ff9bf259a686",
@@ -318,10 +325,10 @@
       "lastCheckedAt": 1791800244261
     },
     "483834": {
-      "lastRssKey": "6ac98584253c13a89866f3fe",
-      "lastEpisodeTitle": "James Bond Comics from IDW, Crazy Rich Asians HBO Series — October 11th, 2026",
+      "lastRssKey": "6acd2d2a7ce338e8cd833ba1",
+      "lastEpisodeTitle": "Dark Horse Baldur’s Gate 3 Comic Series, New Stargate Series for Amazon MGM Studios — October 12th, 2026",
       "lastEpisodeId": "61548027601",
-      "lastCheckedAt": 1791746511145
+      "lastCheckedAt": 1791835003149
     },
     "490022": {
       "lastRssKey": "12e22989-ea3b-44ec-98b7-5514b8a78131",
@@ -330,10 +337,10 @@
       "lastCheckedAt": 1791800245603
     },
     "491579": {
-      "lastRssKey": "6aca5c2bf38f25c0f0b97396",
-      "lastEpisodeTitle": "The Match Ball: Arsenal 2-1 Leeds United",
-      "lastEpisodeId": "60811874133",
-      "lastCheckedAt": 1791670467134
+      "lastRssKey": "6accfec2d3bfab176e8e6392",
+      "lastEpisodeTitle": "Bryn Law: Noisy Fans & Mythical Trams | The West Stand",
+      "lastEpisodeId": "61635393733",
+      "lastCheckedAt": 1791835003798
     },
     "497129": {
       "lastRssKey": "12381::3577747",
@@ -384,10 +391,10 @@
       "lastCheckedAt": 1789508283942
     },
     "522889": {
-      "lastRssKey": "02dffedc-c1a6-11f1-a73e-cbbe1cc8c1a7",
-      "lastEpisodeTitle": "1045: Who can actually max out 5 AI subscriptions?",
-      "lastEpisodeId": "61384923222",
-      "lastCheckedAt": 1791371911919
+      "lastRssKey": "1c505cac-c306-11f1-b685-f75638c47567",
+      "lastEpisodeTitle": "1046: The Pi Updates are insane",
+      "lastEpisodeId": "61619391092",
+      "lastCheckedAt": 1791835009736
     },
     "545784": {
       "lastRssKey": "9d706399dbdff9c31c0baf0eb1a1320a",
@@ -419,10 +426,10 @@
       "lastCheckedAt": 1791347484598
     },
     "573431": {
-      "lastRssKey": "gid://art19-episode-locator/V0/VssNbZrTCZSf3P0Z7bY7FEjff0Z1u5HN6gqo78Mx63g",
-      "lastEpisodeTitle": "Buffalo Wild Wings vs Wingstop | Winging It | 1",
+      "lastRssKey": "gid://art19-episode-locator/V0/YCrO2GlAIurp-6-BtP7865C14SZnqYOQWGxWm5Ifb7g",
+      "lastEpisodeTitle": "Listen Now: Audible True Crime – Ghost Story",
       "lastEpisodeId": "60943135901",
-      "lastCheckedAt": 1791371916939
+      "lastCheckedAt": 1791835012995
     },
     "577105": {
       "lastRssKey": "prx_7057_141e0c43-f935-41de-be94-708448052c4d",
@@ -455,10 +462,10 @@
       "lastCheckedAt": 1791498204956
     },
     "665403": {
-      "lastRssKey": "57340057-5c83-44c2-9bea-79fc4fda70e0",
-      "lastEpisodeTitle": "#1724 Great Censorship Legal Cases",
+      "lastRssKey": "0a84e1a0-e2bf-4dd2-a08e-28bc52cf3e50",
+      "lastEpisodeTitle": "#1725 Mesa Verde, Bears Ears and National Monuments",
       "lastEpisodeId": "60959727313",
-      "lastCheckedAt": 1791226023394
+      "lastCheckedAt": 1791835015235
     },
     "724143": {
       "lastRssKey": "15afd23e-c625-11f1-b32b-1724dd1f65e4",
@@ -562,10 +569,10 @@
       "lastCheckedAt": 1791800276196
     },
     "853158": {
-      "lastRssKey": "a65cb6e2-d684-4ebe-b7d9-856da162d95b",
-      "lastEpisodeTitle": "Episode 533: I'm drowning in AI slop from lazy coworkers",
+      "lastRssKey": "9ad2dd57-a288-4573-a80d-56a3f5d7ddda",
+      "lastEpisodeTitle": "Episode 534: I'm so bad at my job and I've inherited a huge slop pile",
       "lastEpisodeId": "60118865665",
-      "lastCheckedAt": 1791226032900
+      "lastCheckedAt": 1791835023248
     },
     "889671": {
       "lastRssKey": "aa6a7950-7ac7-4cb0-bd90-159917d3fa97",
@@ -592,16 +599,16 @@
       "lastCheckedAt": 1791800278836
     },
     "938111": {
-      "lastRssKey": "desiringgod.org-resource-7595fbf7",
-      "lastEpisodeTitle": "The Marriage Miracle That Takes Time",
-      "lastEpisodeId": "61435357643",
-      "lastCheckedAt": 1791658082732
+      "lastRssKey": "desiringgod.org-resource-8b9381ff",
+      "lastEpisodeTitle": "Do Good People Get Hurt?",
+      "lastEpisodeId": "61618201922",
+      "lastCheckedAt": 1791835026431
     },
     "946758": {
-      "lastRssKey": "10f30bcc-77b5-11f0-8752-7b07bcd8ee21",
-      "lastEpisodeTitle": "295 - The Book of Dale",
+      "lastRssKey": "bb1cae68-c66b-11f1-8eba-ff5ad41868b9",
+      "lastEpisodeTitle": "Announcing: This Will Ruin The Tour from the team behind Welcome to Night Vale",
       "lastEpisodeId": "59193386502",
-      "lastCheckedAt": 1790837603525
+      "lastCheckedAt": 1791835026737
     },
     "947138": {
       "lastRssKey": "821b0dae-b5cc-11f0-92f1-23566b9885fc",
@@ -621,10 +628,10 @@
       "lastCheckedAt": 1791594418220
     },
     "980370": {
-      "lastRssKey": "6ac7b033e2a72faefc1e8d13",
-      "lastEpisodeTitle": "Sunday Pick: Can AI really teach your kids? with Leah Belsky | from WorkLife with Molly Graham",
-      "lastEpisodeId": "61397494100",
-      "lastCheckedAt": 1791704315132
+      "lastRssKey": "6ac7affae2a72faefc1e8d12",
+      "lastEpisodeTitle": "How to make parenting less lonely | Stacey McLachlan",
+      "lastEpisodeId": "61632132865",
+      "lastCheckedAt": 1791835028963
     },
     "998969": {
       "lastRssKey": "audioboom-01a12cb6-5928-7522-b36b-75e2fc0f73a0",
@@ -633,10 +640,10 @@
       "lastCheckedAt": 1791759879819
     },
     "1015378": {
-      "lastRssKey": "995e85a6-c5d7-46cc-a282-54d6a5eb8d9b",
-      "lastEpisodeTitle": "Is Claude Conscious? Pope Rejects, Model Welfare Movement, OpenAI's Math Backlash, France Riots",
-      "lastEpisodeId": "61519386311",
-      "lastCheckedAt": 1791617603563
+      "lastRssKey": "df9fe70c-a787-4f9f-b869-ab6bd6758a7b",
+      "lastEpisodeTitle": "Martin Shkreli: Big Pharma's Blind Spot, Betting Against Quantum & What Prison Taught Him",
+      "lastEpisodeId": "61632974440",
+      "lastCheckedAt": 1791835030403
     },
     "1021803": {
       "lastRssKey": "flightcast:01M3W9R8XN6YMSFCKFPHV0TN12",
@@ -661,10 +668,10 @@
       "lastCheckedAt": 1791226044151
     },
     "1047718": {
-      "lastRssKey": "6ac733c08f08995753e19028",
-      "lastEpisodeTitle": "Manchester City’s trip to Anfield and is Eckert’s Spygate ban too lenient? – Football Weekly podcast",
+      "lastRssKey": "6acc7a528f084a13d13c99d0",
+      "lastEpisodeTitle": "Triumphant Manchester City unfazed by Liverpool and Anfield hostility – Football Weekly",
       "lastEpisodeId": "61446000362",
-      "lastCheckedAt": 1791480696239
+      "lastCheckedAt": 1791835033015
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-an-ummah-that-feels-broken",
@@ -696,10 +703,10 @@
       "lastCheckedAt": 1791729696893
     },
     "1116485": {
-      "lastRssKey": "6acca90bd9d0e378356d5a59",
-      "lastEpisodeTitle": "Wirtz Should Be Dropped? | Daily News Update",
-      "lastEpisodeId": "61384493127",
-      "lastCheckedAt": 1791800297531
+      "lastRssKey": "6accff552ec3f04a11f47a4d",
+      "lastEpisodeTitle": "The Premier League NEED To SORT OUT The Man City Situation.",
+      "lastEpisodeId": "61634438883",
+      "lastCheckedAt": 1791835038564
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -720,16 +727,16 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "058ffaa6-c430-11f1-a4ea-a7d7d280e352",
-      "lastEpisodeTitle": "The Habs Aren’t Learning From Their Mistakes | The Sick Podcast with Tony Marinaro October 9 2026",
-      "lastEpisodeId": "61473180228",
-      "lastCheckedAt": 1791617615376
+      "lastRssKey": "8bde472c-c65e-11f1-957b-bbb26c183017",
+      "lastEpisodeTitle": "Fowler Brouille Encore Les Cartes & Situation Dylan Larkin... | Le Sick Podcast Avec Tony Marinaro 12/10/26",
+      "lastEpisodeId": "61636001558",
+      "lastCheckedAt": 1791835041416
     },
     "1199730": {
-      "lastRssKey": "8ea61c5d-22ee-41a3-bce9-adafc5136fa2",
-      "lastEpisodeTitle": "Jai Maa Kaali 🙏🏻♥️🚩 - Kolkata Pujo Vlog",
-      "lastEpisodeId": "59317998159",
-      "lastCheckedAt": 1791226054426
+      "lastRssKey": "2c3ffa25-fb78-4559-b68e-7f7580a4190d",
+      "lastEpisodeTitle": "2026 Kolkata Durga Pujo Special Vlog 🙏",
+      "lastEpisodeId": "61618868691",
+      "lastCheckedAt": 1791835041701
     },
     "1208307": {
       "lastRssKey": "6acc00488f340788893f236b",
@@ -784,10 +791,10 @@
       "lastCheckedAt": 1791772545480
     },
     "1366771": {
-      "lastRssKey": "6acc4464e53019e8904dfe30",
-      "lastEpisodeTitle": "Morning briefing Monday 12th October",
+      "lastRssKey": "6acd0f853b41843137a2de03",
+      "lastEpisodeTitle": "Evening briefing Monday 12th October",
       "lastEpisodeId": "61538342320",
-      "lastCheckedAt": 1791772546886
+      "lastCheckedAt": 1791835044983
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -802,9 +809,10 @@
       "lastCheckedAt": 1791800305952
     },
     "1545709": {
-      "lastRssKey": "audioboom-01a12130-1375-7008-b640-2c336969ceb9",
-      "lastEpisodeTitle": "8th October 2026 - Google Maps and Gadget Reviews on BBC Radio London",
-      "lastCheckedAt": 1791560016666
+      "lastRssKey": "audioboom-01a1306b-31ec-7784-beab-36f86b377033",
+      "lastEpisodeTitle": "9th October 2026 - Talking AI news on LBC Radio",
+      "lastEpisodeId": "61626058647",
+      "lastCheckedAt": 1791835045984
     },
     "1621172": {
       "lastRssKey": "https://krfp.org/?p=33534",
@@ -837,10 +845,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6aca411ab8e5b513e50df962",
-      "lastEpisodeTitle": "(Interview) Bardella dit que c’est faux ? J’ai interrogé Fabrice Arfi de Mediapart.",
+      "lastRssKey": "6acd16249633c7569eb16deb",
+      "lastEpisodeTitle": "Trump s’allie à Poutine et demande le départ de Zelensky (12/10)",
       "lastEpisodeId": "61587004303",
-      "lastCheckedAt": 1791746567134
+      "lastCheckedAt": 1791835048056
     },
     "2574026": {
       "lastRssKey": "0052b4a6-c38c-11f1-9a53-8b7d6258a474",
@@ -878,10 +886,10 @@
       "lastCheckedAt": 1789135539229
     },
     "3237767": {
-      "lastRssKey": "1f4cd120-6458-42fd-b1ce-fccda9d6d7dd",
-      "lastEpisodeTitle": "Are the Eagles Punting on the Season? - NFL Week 4 Recap Cont.",
-      "lastEpisodeId": "61432063783",
-      "lastCheckedAt": 1791453915689
+      "lastRssKey": "2ddaf6f9-d0d1-4ab0-9047-255ab50a4fef",
+      "lastEpisodeTitle": "NFL Week 5 Recap: Seahawks Can't Get It Done Against Hot 49ers",
+      "lastEpisodeId": "61623257360",
+      "lastCheckedAt": 1791835050689
     },
     "3353685": {
       "lastRssKey": "dcddb41e-c447-11f1-a4d5-8f6236006abc",
@@ -1136,16 +1144,16 @@
       "lastCheckedAt": 1791371985938
     },
     "6280366": {
-      "lastRssKey": "e0777b20-ac9a-4f48-ae52-dcb41ce88d60",
-      "lastEpisodeTitle": "The 5 Debates Shaping AI",
-      "lastEpisodeId": "61575747778",
-      "lastCheckedAt": 1791729732981
+      "lastEpisodeId": "61631544871",
+      "lastEpisodeTitle": "How to Go from AI Power User to AI Leader",
+      "lastRssKey": "c6d49af5-9d42-4cb3-802d-02d561d3a4e1",
+      "lastCheckedAt": 1791835064525
     },
     "6413946": {
-      "lastRssKey": "b312bf9c-da55-4b60-9d13-13cece7b9c37",
-      "lastEpisodeTitle": "EP 840: ¿Qué pasa con el programa Jóvenes Construyendo el Futuro? La quinceañera de Morena y Cae red de extorsión que usaba inteligencia artificial",
+      "lastRssKey": "393fd1c7-ccff-4f40-a748-ec4a56c15282",
+      "lastEpisodeTitle": "EP 841: Crece el enojo en el Seguro Social, Atacan a guardias de seguridad en refinería de Veracruz y Trump se vuelve a enojar porque no le dieron el Nobel",
       "lastEpisodeId": "61442343769",
-      "lastCheckedAt": 1791560045642
+      "lastCheckedAt": 1791835064968
     },
     "6456494": {
       "lastRssKey": "6ac5b9e18f3407888940c1c5",
@@ -1160,10 +1168,15 @@
       "lastCheckedAt": 1791641843933
     },
     "6559880": {
-      "lastRssKey": "1dbf3748-c32e-11f1-85f5-ff5f8054646b",
-      "lastEpisodeTitle": "England's Next Breakout Star? Josh King Meets TRIF",
+      "lastRssKey": "80924a16-c650-11f1-8c6c-435fed72de68",
+      "lastEpisodeTitle": "“Bad Look” As Manchester City Batter Liverpool Amid Charges",
       "lastEpisodeId": "60944555813",
-      "lastCheckedAt": 1791512790343
+      "lastCheckedAt": 1791835066089
+    },
+    "6579505": {
+      "lastRssKey": "1ab30b32-c645-11f1-b6ed-9385b41a412b",
+      "lastEpisodeTitle": "Man City HUMILIATE Liverpool! Man United Draw With Spurs & Arsenal Fight Back! | Weekend Round Up",
+      "lastCheckedAt": 1791835066545
     },
     "6602135": {
       "lastRssKey": "f425d862-9ebf-4c24-8ed3-b94fa4558ea3",
@@ -1217,11 +1230,17 @@
       "lastEpisodeId": "59730670618",
       "lastCheckedAt": 1791759946586
     },
+    "6726996": {
+      "lastRssKey": "27c761ea-c552-11f1-ab97-3fa8bc387793",
+      "lastEpisodeTitle": "October 12 (Isaiah 42–43; Psalm 95; Acts 19)",
+      "lastEpisodeId": "61610944620",
+      "lastCheckedAt": 1791835080524
+    },
     "6744768": {
-      "lastRssKey": "384050dd-2f8b-4b08-aea9-dc69f3bcf729",
-      "lastEpisodeTitle": "I Shouldn't Have Come to Afghanistan",
+      "lastRssKey": "56c4d7e1-2bbf-4918-9416-4678408d476e",
+      "lastEpisodeTitle": "Ranking Every Country I've Been To (2026 edition)",
       "lastEpisodeId": "60965430658",
-      "lastCheckedAt": 1791040400904
+      "lastCheckedAt": 1791835080644
     },
     "6761897": {
       "lastRssKey": "53d1fcbd-e16d-46a3-8f4d-a3bd4b9ef057",
@@ -1236,10 +1255,10 @@
       "lastCheckedAt": 1791746608564
     },
     "6764080": {
-      "lastRssKey": "64e8f479-8e4a-43d7-a553-b4da00c0c6d2",
-      "lastEpisodeTitle": "Con Coutis and Zach Ruane",
+      "lastRssKey": "a8dc3501-1098-46cd-b4c3-b4e1008cad6d",
+      "lastEpisodeTitle": "VOTE SOCIALIST: With Jordan van den Lamb",
       "lastEpisodeId": "60985241676",
-      "lastCheckedAt": 1791226087769
+      "lastCheckedAt": 1791835081323
     },
     "6766874": {
       "lastRssKey": "c58777c6-63b9-481e-a2d1-99e05fe828a9",
@@ -1386,10 +1405,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a12d28-0f08-786b-a18d-aa01b395821c",
-      "lastEpisodeTitle": "Fox News Hosts Clash Over Trump’s Deal with Putin",
-      "lastEpisodeId": "61596564484",
-      "lastCheckedAt": 1791772593351
+      "lastRssKey": "audioboom-01a130b9-7a42-751b-b0e8-da6ac323bc94",
+      "lastEpisodeTitle": "The Spectacularly Stupid Collapse of MAGA’s Talarico Conspiracy | MAGA Mondays",
+      "lastEpisodeId": "61629461931",
+      "lastCheckedAt": 1791835086291
     },
     "7239415": {
       "lastRssKey": "18b9ac24-c5c2-11f1-aedd-bb78c379b6af",
@@ -1402,6 +1421,12 @@
       "lastEpisodeTitle": "Alex Fdz en Chilango: Viernes 09 de octubre de 2026",
       "lastEpisodeId": "61360194267",
       "lastCheckedAt": 1791594482947
+    },
+    "7283122": {
+      "lastRssKey": "01629d12-bea4-11f1-b4fc-df16e4f89c3d",
+      "lastEpisodeTitle": "Guilty, Guilty, Guilty",
+      "lastEpisodeId": "61206108453",
+      "lastCheckedAt": 1791835087502
     },
     "7313964": {
       "lastRssKey": "a5a30862-5617-4c8f-851b-086babb4bb2f",
@@ -1493,10 +1518,10 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
-      "lastRssKey": "8a55733a-2f61-4dd8-b724-d47a5f4ad3b0",
-      "lastEpisodeTitle": "Sunday, October 11, 2026 - 5 Minute AI News",
-      "lastEpisodeId": "61539211862",
-      "lastCheckedAt": 1791729751976
+      "lastRssKey": "53184121-5f79-4077-b747-86d3ba47fc34",
+      "lastEpisodeTitle": "Monday, October 12, 2026 - 5 Minute AI News",
+      "lastEpisodeId": "61628337470",
+      "lastCheckedAt": 1791835091023
     },
     "7551349": {
       "lastRssKey": "17448f4e-0e2a-4a64-80e4-b4dc0155cd7c",
@@ -1557,6 +1582,12 @@
       "lastEpisodeTitle": "Scientists Discuss the Future of Extreme Weather",
       "lastCheckedAt": 1786543013085
     },
+    "7679176": {
+      "lastRssKey": "IntentionalPodcastwithTravisGreene.podbean.com/1de4d962-77f1-34cf-bf59-1ec407bca021",
+      "lastEpisodeTitle": "Elevation Without Compromise with Dee-1 | Intentional Podcast with Travis Greene",
+      "lastEpisodeId": "55374423131",
+      "lastCheckedAt": 1791835092689
+    },
     "7679624": {
       "lastRssKey": "https://api.spreaker.com/episode/75331834",
       "lastEpisodeTitle": "Unsolved Mysteries with Dennis Farina -",
@@ -1594,10 +1625,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/142173e5-40c0-5fea-b514-8543a12eb6d0",
-      "lastEpisodeTitle": "A special New Years message from Dr. Ramani ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/fe829fa2-4acc-58c5-a9e3-7c6aa62aa844",
+      "lastEpisodeTitle": "The Empaths Journey in an Unempathic World ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1791800367690
+      "lastCheckedAt": 1791835094188
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
