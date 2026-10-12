@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bundle weekday regional Brief covers, fixed player artwork and the animated Echo account avatar. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add an optional bunpod audio player with persisted appearance preferences, adaptive typography, locale-aware title hyphenation and expressive control shapes. ([#1114](https://github.com/boxcreate/boxlore/pull/1114)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add regression coverage for player style persistence, control interactions, window sizing and artwork palette contrast. ([#1114](https://github.com/boxcreate/boxlore/pull/1114)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Add hermetic tests for welcome reel velocity and wrapping, word-loop ordering and timing, readable holds, reduced motion and long-running clocks. ([#1115](https://github.com/boxcreate/boxlore/pull/1115)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
@@ -46,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redesign Brief cards and pages with themed Material 3 surfaces, three Home headlines, improved story layout and a thinner seekable wavy progress track. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Separate onboarding and Settings account layouts, clarify sync states, hide player chrome during account restore and smooth import-to-account navigation. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Use solid Daily Mix episode-card surfaces across themes. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Redesign the first-launch welcome screen with curated bundled cover reels, coordinated headline entry, accent-coloured rotating words and icons, and compact Material 3 discovery/search/import actions. ([#1115](https://github.com/boxcreate/boxlore/pull/1115)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Share lifecycle-aware, system-scaled motion across welcome artwork and copy, with stable accessibility semantics, reduced-motion presentation and responsive text layout. ([#1115](https://github.com/boxcreate/boxlore/pull/1115)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -194,6 +197,12 @@ readme-copy:end pr=1113 -->
 ### Improvements
 - Choose the new bunpod player in Appearance settings for a minimal listening screen with larger titles, artwork-inspired colors and expressive controls. Your queue and miniplayer stay the same.
 readme-copy:end pr=1114 -->
+
+<!-- readme-copy:start pr=1115
+### Improvements
+- Meet boxlore with a new welcome screen: moving podcast covers, a playful invitation and clear choices to find shows, search or import your library.
+- Welcome adapts to smaller screens and larger text, and respects your phone's animation settings.
+readme-copy:end pr=1115 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
