@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add regression coverage for player style persistence, control interactions, window sizing and artwork palette contrast. ([#1114](https://github.com/boxcreate/boxlore/pull/1114)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add hermetic tests for welcome reel velocity and wrapping, word-loop ordering and timing, readable holds, reduced motion and long-running clocks. ([#1115](https://github.com/boxcreate/boxlore/pull/1115)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Add hermetic JVM coverage for setup actions, button semantics, narrow and enlarged-text layouts, first-line dismissal alignment and RTL geometry. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - Replace blanket R8 keeps with scoped reflection and storage contracts, enable resource shrinking with dynamic-resource retention, and exclude the debug App Check SDK from release builds. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -54,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Rebuild the custom theme editor with a persistent preview, accessible color controls, validated hex input and restored draft state. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Refine Classic, Pure and wallpaper-derived Material 3 color roles while preserving saved theme identities and custom seeds. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Replace the Home setup banner with a responsive Material 3 split layout, neutral raised action tiles, localized copy and an aligned dismissal control; preserve existing callbacks, eligibility, analytics and hero presentation. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Preserve WorkManager input-merger constructors in optimized releases so one-time download and notification-hydration work can start. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -203,6 +205,11 @@ readme-copy:end pr=1114 -->
 - Meet boxlore with a new welcome screen: moving podcast covers, a playful invitation and clear choices to find shows, search or import your library.
 - Welcome adapts to smaller screens and larger text, and respects your phone's animation settings.
 readme-copy:end pr=1115 -->
+
+<!-- readme-copy:start pr=1116
+### Improvements
+- Home’s setup options now use a compact layout with clearer choices to find shows, search podcasts or import your library.
+readme-copy:end pr=1116 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
