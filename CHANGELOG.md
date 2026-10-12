@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add native compact and full-screen announcements, reviewed sender integration, isolated optimized test builds, and offline release rehearsal. ([#1107](https://github.com/boxcreate/boxlore/pull/1107)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add an independent saved Brief edition preference with explicit-link precedence and edition-only Home refreshes. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Bundle weekday regional Brief covers, fixed player artwork and the animated Echo account avatar. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Add an optional bunpod audio player with persisted appearance preferences, adaptive typography, locale-aware title hyphenation and expressive control shapes. ([#1114](https://github.com/boxcreate/boxlore/pull/1114)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Add regression coverage for player style persistence, control interactions, window sizing and artwork palette contrast. ([#1114](https://github.com/boxcreate/boxlore/pull/1114)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
@@ -187,6 +189,11 @@ readme-copy:end pr=1112 -->
 ### Fixes
 - Older Briefs show the correct artwork after an update or cloud restore, without losing listening progress.
 readme-copy:end pr=1113 -->
+
+<!-- readme-copy:start pr=1114
+### Improvements
+- Choose the new bunpod player in Appearance settings for a minimal listening screen with larger titles, artwork-inspired colors and expressive controls. Your queue and miniplayer stay the same.
+readme-copy:end pr=1114 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added

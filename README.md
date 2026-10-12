@@ -129,6 +129,7 @@ and listen without paywalls, subscriptions, or ads.
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Smaller app download while retaining artwork, fonts and notification sounds. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
+<li>Choose the new bunpod player in Appearance settings for a minimal listening screen with larger titles, artwork-inspired colors and expressive controls. Your queue and miniplayer stay the same. <a href="https://github.com/boxcreate/boxlore/pull/1114"><img src="https://img.shields.io/badge/PR-1114-6750A4?style=flat-square" alt="PR #1114" height="18"/></a></li>
 <li>The boxlore Brief has refreshed regional artwork, clearer headlines and layouts that match your light or dark theme. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
 <li>Choose your default Brief edition without changing your podcast discovery region. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
 <li>Account setup and cloud sync have clearer progress and actions, with no miniplayer covering the page. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
