@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-11T23:03:30.212Z",
+  "lastRun": "2026-10-12T02:34:37.766Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "8229c57c-b924-11f1-b9e8-7b2af0376c77",
@@ -49,16 +49,16 @@
       "lastCheckedAt": 1791198182447
     },
     "55810": {
-      "lastRssKey": "fa1a703e-4e20-483e-ab69-7830ca3f2f15",
-      "lastEpisodeTitle": "6pm ET, October 11 | The latest headlines from NPR",
+      "lastRssKey": "5398faa1-94d5-4ee8-a3d8-4ed8e6d9aef1",
+      "lastEpisodeTitle": "10pm ET, October 11 | The latest headlines from NPR",
       "lastEpisodeId": "61558516761",
-      "lastCheckedAt": 1791759816626
+      "lastCheckedAt": 1791772482071
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75683876",
-      "lastEpisodeTitle": "The Catch Up: Mobile internet blackout in central Delhi (9 October)",
-      "lastEpisodeId": "61526019131",
-      "lastCheckedAt": 1791617548411
+      "lastRssKey": "https://api.spreaker.com/episode/75702438",
+      "lastEpisodeTitle": "Delhi’s protest crackdown, a bird on the brink, and a fatal crash",
+      "lastEpisodeId": "61598163690",
+      "lastCheckedAt": 1791772483164
     },
     "78573": {
       "lastRssKey": "87b9804a-0657-402f-9924-e771f51a0f27",
@@ -188,10 +188,10 @@
       "lastCheckedAt": 1791641751430
     },
     "385117": {
-      "lastRssKey": "70c6e9d8-c5c0-11f1-b8ee-4795db2534d2",
-      "lastEpisodeTitle": "6PM ET 10/11/2026 Newscast",
+      "lastRssKey": "f401e71e-c5e1-11f1-9802-c7c2559d859f",
+      "lastEpisodeTitle": "10PM ET 10/11/2026 Newscast",
       "lastEpisodeId": "61558991056",
-      "lastCheckedAt": 1791759831489
+      "lastCheckedAt": 1791772494153
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -301,9 +301,10 @@
       "lastCheckedAt": 1791617577052
     },
     "467929": {
-      "lastRssKey": "10f7a3df-a75d-4971-83f8-25809d69b595",
-      "lastEpisodeTitle": "709: Vanessa Van Edwards - How to Connect with Anyone, Master Small Talk, and Ask the 9 Power Questions That Deepen Every Relationship",
-      "lastCheckedAt": 1791156540174
+      "lastRssKey": "a8f92006-1a79-49c4-a37a-65cc179741e3",
+      "lastEpisodeTitle": "710: Ravi Gupta - The Anti-Dabbler's Guide to Mastering One New Skill Every Year, Why Presence Isn't Enough, Bourdain's Masterclass in Humility, and Pairing Reasonable Goals With Delusional Ones",
+      "lastEpisodeId": "61599308692",
+      "lastCheckedAt": 1791772504041
     },
     "469432": {
       "lastRssKey": "8e6ef410-3c32-4bdc-a0fd-8ef405e17adb",
@@ -677,10 +678,10 @@
       "lastCheckedAt": 1791512746915
     },
     "1070334": {
-      "lastRssKey": "9c9b7f80-c2fd-11f1-b013-2bc72f7342ef",
-      "lastEpisodeTitle": "To-Do Lists",
-      "lastEpisodeId": "61366950093",
-      "lastCheckedAt": 1791512747661
+      "lastRssKey": "5a684e1a-c300-11f1-ac34-f7d1dd76b4ed",
+      "lastEpisodeTitle": "Falling into a Void",
+      "lastEpisodeId": "61599253317",
+      "lastCheckedAt": 1791772536352
     },
     "1076260": {
       "lastRssKey": "6d13aa42-55ac-405f-842a-b4de011263ea",
@@ -777,16 +778,16 @@
       "lastCheckedAt": 1791453908477
     },
     "1365765": {
-      "lastRssKey": "fc5f8712-c24a-11f1-a95a-9bafcc33d507",
-      "lastEpisodeTitle": "712. The Terror: The Fall of Robespierre (Part 6)",
+      "lastRssKey": "097bbd64-c31b-11f1-8fc4-d7a4e415d941",
+      "lastEpisodeTitle": "713. King Arthur: The Once & Future King (Part 1)",
       "lastEpisodeId": "60930977429",
-      "lastCheckedAt": 1791426872116
+      "lastCheckedAt": 1791772545480
     },
     "1366771": {
-      "lastRssKey": "6acb62f9f38f25c0f0d5cbfc",
-      "lastEpisodeTitle": "Daily Briefing Sunday 11th October",
+      "lastRssKey": "6acc4464e53019e8904dfe30",
+      "lastEpisodeTitle": "Morning briefing Monday 12th October",
       "lastEpisodeId": "61538342320",
-      "lastCheckedAt": 1791729704515
+      "lastCheckedAt": 1791772546886
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -1307,10 +1308,10 @@
       "lastCheckedAt": 1791594477463
     },
     "6956562": {
-      "lastRssKey": "76398dc7-6e68-4c90-a7fe-9a8cdc4e0d64",
-      "lastEpisodeTitle": "Inside India’s first household travel survey",
-      "lastEpisodeId": "61416987549",
-      "lastCheckedAt": 1791512812153
+      "lastEpisodeId": "61599932502",
+      "lastEpisodeTitle": "Can ₹84,000 crore get India drilling?",
+      "lastRssKey": "6630740f-cd9e-4381-a0aa-4918c0b54ba8",
+      "lastCheckedAt": 1791772589745
     },
     "6959250": {
       "lastRssKey": "99f92a05-76b6-4edd-b507-b1ad2cda5d61",
@@ -1385,10 +1386,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a12bf2-e4e3-77be-8d14-045caed151dc",
-      "lastEpisodeTitle": "Ron Brownstein: It's MUCH Worse for Trump Than 2018 | Bulwark on Sunday",
-      "lastEpisodeId": "61558158756",
-      "lastCheckedAt": 1791746619935
+      "lastRssKey": "audioboom-01a12d28-0f08-786b-a18d-aa01b395821c",
+      "lastEpisodeTitle": "Fox News Hosts Clash Over Trump’s Deal with Putin",
+      "lastEpisodeId": "61596564484",
+      "lastCheckedAt": 1791772593351
     },
     "7239415": {
       "lastRssKey": "18b9ac24-c5c2-11f1-aedd-bb78c379b6af",
@@ -1433,10 +1434,10 @@
       "lastCheckedAt": 1791704380601
     },
     "7376606": {
-      "lastRssKey": "76cc4efd-fc50-43b9-9f97-21ac9383883d",
-      "lastEpisodeTitle": "Why Did Ancient Humans Start Believing in Gods? 🌌🗿 | The Origins of Religion and the Divine | Boring History for Sleep",
+      "lastRssKey": "b00de415-ecde-41d1-ad92-b775897a7bbf",
+      "lastEpisodeTitle": "What Was Life Really Like in 17th Century Britain? 🏡⚔️ | The Hidden World of Everyday Life | Boring History for Sleep",
       "lastEpisodeId": "61465849942",
-      "lastCheckedAt": 1791681036392
+      "lastCheckedAt": 1791772594915
     },
     "7424167": {
       "lastRssKey": "urn:bbc:podcast:m0031jzh",
@@ -1593,10 +1594,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/6590a3c0-8c7d-5a04-8102-2b688cfd464b",
-      "lastEpisodeTitle": "DO THIS to get under the skin of a VULNERABLE narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/515e68bb-8460-51ce-923a-9e2fa38bebe6",
+      "lastEpisodeTitle": "Narcissistic relationshipswhat happened vs how you felt ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1791759970680
+      "lastCheckedAt": 1791772601303
     },
     "7935877": {
       "lastRssKey": "flightcast:01M43RMWKKVVM14V19141DZ8N2",
