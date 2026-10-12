@@ -77,6 +77,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 ## Testing notes
 
 - Unit tests live under `feature/onboarding/src/test`.
+- `WelcomeMotionClockTest` covers negative/zero frame deltas, the 100ms frame cap before duration scaling, fast/slow animation settings and nanosecond-to-millisecond conversion with fractional accumulation.
 - Existing coverage includes genre limits, search back-step behavior, curriculum logic, suggestions presentation (loading gate / seed filter / back-clear), AI option icons, and AI chat message list logic. Progressive search pin-to-top is covered in `:core:designsystem` (`ProgressiveSearchScrollLogicTest`).
 - `WelcomeReelMotionTest` covers the entrance-to-loop handoff, reverse direction, repeated seams, long-running clocks, phase offsets and invalid inputs. `WelcomeWordLoopMotionTest` checks term order, the longer lore hold, entrance/exit timing, bounded poses, long-running clocks and the static reduced-motion state. Manually verify welcome on first launch: observe a full subtitle loop without layout shifts; discovery, search, import and skip route to their existing destinations. Backgrounding and returning resumes the loop, and disabled system animations leave the complete lore reply visible. Check narrow windows, RTL and larger text for scroll access to every action.
 - ViewModel tests should use fakes for prefs, catalog, network, and analytics dependencies.

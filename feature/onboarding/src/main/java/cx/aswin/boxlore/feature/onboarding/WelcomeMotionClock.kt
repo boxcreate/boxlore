@@ -22,6 +22,19 @@ internal class WelcomeMotionClock(
     val animationsDisabled: State<Boolean>,
 )
 
+/** Pure timing rules shared by welcome artwork and copy; callers supply a positive scale. */
+internal object WelcomeFrameTiming {
+    private const val MaxFrameDeltaNanos = 100_000_000L
+    private const val NanosPerMillisecond = 1_000_000.0
+
+    /** Caps long gaps before scaling so returning to the screen never fast-forwards motion. */
+    fun advanceElapsedNanos(elapsedNanos: Double, frameDeltaNanos: Long, scale: Float): Double =
+        elapsedNanos + frameDeltaNanos.coerceIn(0L, MaxFrameDeltaNanos) / scale.toDouble()
+
+    /** Publishes whole milliseconds while the clock retains fractional nanoseconds. */
+    fun elapsedMillis(elapsedNanos: Double): Long = (elapsedNanos / NanosPerMillisecond).toLong()
+}
+
 /** A single clock for the reel and text entry, paused while this route is not visible. */
 @Composable
 internal fun rememberWelcomeMotionClock(): WelcomeMotionClock {
@@ -42,8 +55,8 @@ internal fun rememberWelcomeMotionClock(): WelcomeMotionClock {
                     withFrameNanos { now ->
                         if (lastFrame != 0L) {
                             // Resuming does not fast-forward by the time spent in the background.
-                            elapsedNanos += (now - lastFrame).coerceIn(0L, 100_000_000L) / scale.toDouble()
-                            elapsed.longValue = (elapsedNanos / 1_000_000.0).toLong()
+                            elapsedNanos = WelcomeFrameTiming.advanceElapsedNanos(elapsedNanos, now - lastFrame, scale)
+                            elapsed.longValue = WelcomeFrameTiming.elapsedMillis(elapsedNanos)
                             if (!revealComplete.value) {
                                 revealComplete.value = WelcomeReelMotion.isRevealComplete(elapsed.longValue, animationsDisabled = false, alreadyComplete = false)
                             }
