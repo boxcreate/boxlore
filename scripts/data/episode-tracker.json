@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-14T19:59:19.540Z",
+  "lastRun": "2026-10-14T23:07:08.848Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f02e8956-cfc6-11f0-83c5-9f12527bae80",
@@ -49,16 +49,16 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "5cedf824-6716-47ef-a31b-d6253ad1ac0c",
-      "lastEpisodeTitle": "3pm ET, October 14 | The latest headlines from NPR",
-      "lastEpisodeId": "61558516761",
-      "lastCheckedAt": 1792007966008
+      "lastRssKey": "f4f305da-b3f0-4047-864d-89b749392ac2",
+      "lastEpisodeTitle": "6pm ET, October 14 | The latest headlines from NPR",
+      "lastEpisodeId": "61745129365",
+      "lastCheckedAt": 1792019241443
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75765356",
-      "lastEpisodeTitle": "Opposition takes on the EC, a dunki route, and Nilekani's paper leak fix",
-      "lastEpisodeId": "61699548239",
-      "lastCheckedAt": 1791939202947
+      "lastRssKey": "https://api.spreaker.com/episode/75794867",
+      "lastEpisodeTitle": "The Catch Up: Mumbai’s groundwater under threat (14 Oct)",
+      "lastEpisodeId": "61743870044",
+      "lastCheckedAt": 1792019242575
     },
     "78573": {
       "lastRssKey": "b4d80f5e-ed0f-4be9-b79f-158ebbe85381",
@@ -85,10 +85,10 @@
       "lastCheckedAt": 1791538026132
     },
     "160817": {
-      "lastRssKey": "https://linuxunplugged.com/688",
-      "lastEpisodeTitle": "Eyes on Deck | LINUX Unplugged 688",
-      "lastEpisodeId": "61686931516",
-      "lastCheckedAt": 1791927871533
+      "lastRssKey": "https://www.weeklylaunch.rocks/episodepage/88",
+      "lastEpisodeTitle": "Apple Moves In | The Launch 🚀 88",
+      "lastEpisodeId": "61740911815",
+      "lastCheckedAt": 1792019251918
     },
     "193209": {
       "lastRssKey": "5c1d663e-f163-482b-b4ad-4d643845b3a9",
@@ -103,10 +103,10 @@
       "lastCheckedAt": 1791927872335
     },
     "204808": {
-      "lastRssKey": "3b9b18ce-49c3-4ab0-a1da-56ad9c7c76fe",
-      "lastEpisodeTitle": "Was ist denn da passiert?",
+      "lastRssKey": "345fa3b0-405f-4a0b-a566-42a00814bdff",
+      "lastEpisodeTitle": "NFL WEEK 6 PREVIEW",
       "lastEpisodeId": "61636264073",
-      "lastCheckedAt": 1791834986365
+      "lastCheckedAt": 1792019254937
     },
     "207877": {
       "lastRssKey": "Ixpor0JqsOgzpQzsCkGJx5OzljlmwItn",
@@ -178,10 +178,10 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "0459E78B-1336-45EC-B99A-FF2BCE4E133E",
-      "lastEpisodeTitle": "Inflation Rises in September, Pressuring the Fed",
+      "lastRssKey": "65E4004A-4C41-4342-A1CD-8253802E1757",
+      "lastEpisodeTitle": "Stocks Drop After Hot Inflation Reading",
       "lastEpisodeId": "61690938190",
-      "lastCheckedAt": 1791993296417
+      "lastCheckedAt": 1792019264331
     },
     "331078": {
       "lastRssKey": "13444b66-b823-11f1-957c-df1d5bd68530",
@@ -196,10 +196,10 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "ca7a55c0-c802-11f1-9cf7-43efe34456dc",
-      "lastEpisodeTitle": "3PM ET 10/14/2026 Newscast",
+      "lastRssKey": "f005d094-c81b-11f1-b949-bf8260657738",
+      "lastEpisodeTitle": "6PM ET 10/14/2026 Newscast",
       "lastEpisodeId": "61558991056",
-      "lastCheckedAt": 1792008010576
+      "lastCheckedAt": 1792019265473
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -250,10 +250,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4XE9PKRF9PBYQ9YRJWHYDTF",
-      "lastEpisodeTitle": "What keeps people gambling",
+      "lastRssKey": "01M4Y19K55YZTBD8RQ2SC65ZY0",
+      "lastEpisodeTitle": "Energyflation? More like everything-flation",
       "lastEpisodeId": "61738733529",
-      "lastCheckedAt": 1792008018073
+      "lastCheckedAt": 1792019275979
     },
     "432535": {
       "lastRssKey": "7519f2d2-1e3b-405d-b08e-1c3da35a65e7",
@@ -475,10 +475,10 @@
       "lastCheckedAt": 1791835015235
     },
     "724143": {
-      "lastRssKey": "945e4abe-c7b7-11f1-a6b1-73720c3699b2",
-      "lastEpisodeTitle": "Senado vota fim da escala 6x1; canal ‘Exército do Lula’ sai do ar; condenação por estupro coletivo no Rio",
+      "lastRssKey": "622fac96-c81a-11f1-bd7f-ef43e04bc92d",
+      "lastEpisodeTitle": "Flávio e Lula em empate técnico na Quaest, Flávio agora diz que vai a debate e PT aciona TSE contra Meta",
       "lastEpisodeId": "61698697211",
-      "lastCheckedAt": 1791976658735
+      "lastCheckedAt": 1792019315427
     },
     "739525": {
       "lastEpisodeId": "61460420611",
@@ -582,10 +582,10 @@
       "lastCheckedAt": 1791835023248
     },
     "889671": {
-      "lastRssKey": "aa6a7950-7ac7-4cb0-bd90-159917d3fa97",
-      "lastEpisodeTitle": "Bloodborne On Linux, 2GB Pi Increases, and Snappy Steam Dragons",
+      "lastRssKey": "a6bfd57d-bf4d-41c1-ae58-1a5ec341b456",
+      "lastEpisodeTitle": "Epic Games Launcher Linux BETA, Ethernet Audio Interfaces, 16-Core ARM!",
       "lastEpisodeId": "61420731363",
-      "lastCheckedAt": 1791480681883
+      "lastCheckedAt": 1792019328381
     },
     "893059": {
       "lastEpisodeId": "2660570745",
@@ -804,10 +804,10 @@
       "lastCheckedAt": 1791800304349
     },
     "1365765": {
-      "lastRssKey": "097bbd64-c31b-11f1-8fc4-d7a4e415d941",
-      "lastEpisodeTitle": "713. King Arthur: The Once & Future King (Part 1)",
+      "lastRssKey": "db4aff8e-c7d1-11f1-be51-23df9a3eeb1f",
+      "lastEpisodeTitle": "714. King Arthur: Lancelot and the Round Table (Part 2)",
       "lastEpisodeId": "60930977429",
-      "lastCheckedAt": 1791772545480
+      "lastCheckedAt": 1792019363878
     },
     "1366771": {
       "lastRssKey": "6acfbde939599f7c5629c426",
@@ -995,10 +995,10 @@
       "lastCheckedAt": 1786559328886
     },
     "4458818": {
-      "lastRssKey": "5c042f4b-0147-4b17-a12b-55d02693a68f",
-      "lastEpisodeTitle": "Rita Staub : du sang au haras",
+      "lastRssKey": "b9852e62-d2cc-4e31-97e4-c2e7509e05c1",
+      "lastEpisodeTitle": "Bérénice H : l'affaire de la plume",
       "lastEpisodeId": "61419712254",
-      "lastCheckedAt": 1791939311324
+      "lastCheckedAt": 1792019382158
     },
     "4507961": {
       "lastRssKey": "12212cb8-4c7d-4c82-912f-414545ee534b",
@@ -1123,10 +1123,10 @@
       "lastCheckedAt": 1791976728384
     },
     "5945547": {
-      "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
-      "lastEpisodeTitle": "Episode 150 - Treasure, Tyrants & Tinseltown ft. Ami Goradia",
-      "lastEpisodeId": "59548566836",
-      "lastCheckedAt": 1790864064387
+      "lastRssKey": "0da47757-ee1f-4ddd-b540-2b2e4c9862e5",
+      "lastEpisodeTitle": "Episode 151 - Sitcoms, Suplexes & Saint-Tropez",
+      "lastEpisodeId": "61746245186",
+      "lastCheckedAt": 1792019393160
     },
     "5972153": {
       "lastRssKey": "24b41f18-c7a8-11f1-a220-3fca11f27d17",
@@ -1239,10 +1239,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "6ef388b6-c654-11f1-84a6-e73f1601b969",
-      "lastEpisodeTitle": "Are Nonsense Memes The New Punk Rock?",
+      "lastRssKey": "e9990002-c7d3-11f1-8036-7bd9a541146e",
+      "lastEpisodeTitle": "Why Paramount Merger Spells Disaster For British Film",
       "lastEpisodeId": "61180961222",
-      "lastCheckedAt": 1791856448458
+      "lastCheckedAt": 1792019400953
     },
     "6725294": {
       "lastRssKey": "cmuz0s19703wo01w88i5hcf6r",
@@ -1335,10 +1335,10 @@
       "lastCheckedAt": 1791976745824
     },
     "6912659": {
-      "lastRssKey": "ad6ac5f1-6717-435e-8595-89a8974680c0",
-      "lastEpisodeTitle": "#112 - As Envenenadoras de Uberaba e o mistério dos 12 mortos - Uberaba | Brasil",
+      "lastRssKey": "561d1781-bda9-4d36-9565-21d87a7de5ac",
+      "lastEpisodeTitle": "#113 - O Caso dos Irmãos Naves: o homem que voltou dos mortos - Araguari | Brasil",
       "lastEpisodeId": "61446942814",
-      "lastCheckedAt": 1792008159087
+      "lastCheckedAt": 1792019408941
     },
     "6926108": {
       "lastRssKey": "8f9bfeb6-c26e-11f1-bf39-63984e3888dc",
@@ -1401,10 +1401,10 @@
       "lastCheckedAt": 1787841002583
     },
     "7131280": {
-      "lastRssKey": "ad9d1c82-b8ce-11f1-ae4c-1357c8eda565",
-      "lastEpisodeTitle": "A Study in Scarlet: Part Seven",
+      "lastRssKey": "35e70f1a-b110-11f1-94b4-1b6d6aed1ae2",
+      "lastEpisodeTitle": "Introducing: Short History Of... Sir Arthur Conan Doyle",
       "lastEpisodeId": "60511350052",
-      "lastCheckedAt": 1791426921224
+      "lastCheckedAt": 1792019413815
     },
     "7156500": {
       "lastRssKey": "https://api.spreaker.com/episode/75575134",
@@ -1651,10 +1651,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/6a62f3bb-f1f7-51b8-9122-8879268baf4a",
-      "lastEpisodeTitle": "Shame, the holidays, and narcissistic families ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/0d4ff42a-2b74-5a5d-b8d5-6cdc93d6693d",
+      "lastEpisodeTitle": "Is there virtue in forgiving a narcissist who doesnt apologize ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1792008179909
+      "lastCheckedAt": 1792019433669
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
