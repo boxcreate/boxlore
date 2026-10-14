@@ -87,3 +87,40 @@ test('preview messages require the same origin and the expected parent',()=>{
  context.notify('dismiss');assert.equal(sent.length,2);
  assert.ok(sent.every(message=>message.target===origin));
 });
+
+
+test('ordinary drafts omit the hidden release page across workflow dispatch and digest validation',()=>{
+ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+ const {spawnSync}=require('node:child_process');
+ const releaseUrl='https://github.com/boxcreate/boxlore/releases/latest';
+ const draft={...base(),release_url:releaseUrl};
+ const ids={title:'inputTitle',body:'inputBody',type:'inputType',route:'inputRoute',image:'inputImage',target:'inputTarget',collapse_key:'inputCollapseKey',sound:'inputSound',action_label:'inputActionLabel',category:'inputCategory',presentation:'inputPresentation',tone:'inputTone',image_style:'inputImageStyle',release_version_code:'inputReleaseCode',release_url:'inputReleaseUrl'};
+ const bools={dry_run:'inputDryRun',test_mode:'inputTestMode',show_action_in_push:'inputShowPush',show_action_in_app:'inputShowApp',release_alert:'inputReleaseAlert',include_play:'inputIncludePlay'};
+ const nodes={};
+ for(const[key,id]of Object.entries(ids))nodes[id]={value:draft[key]};
+ for(const[key,id]of Object.entries(bools))nodes[id]={checked:draft[key]==='true'};
+ const context=vm.createContext({TextEncoder,document:{getElementById:id=>nodes[id]}});
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../../admin-panel/public/notifyappusers/dashboard.js'),'utf8'),context);
+ function validateWorkflow(normalized){
+  const browserPlan=plan(normalized);
+  const script="import json,sys; sys.path.insert(0,'.github/scripts'); import manual_dispatch as sender; draft=json.load(sys.stdin); argv=[part for key,value in draft.items() for part in ('--'+key.replace('_','-'),value)]; plan=sender.notification_plan(sender.argument_parser().parse_args(argv)); print(json.dumps({'plan':plan,'digest':sender.plan_digest(plan)},ensure_ascii=False))";
+  const result=spawnSync('python3',['-B','-c',script],{cwd:path.join(__dirname,'../..'),input:JSON.stringify(normalized),encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  const workflow=JSON.parse(result.stdout);
+  assert.deepEqual(workflow.plan,browserPlan);
+  const expected=require('node:crypto').createHash('sha256').update(JSON.stringify(canonical(browserPlan))).digest('hex');
+  assert.equal(workflow.digest,expected);
+ }
+ const ordinary=context.readDraft();
+ assert.equal(ordinary.release_url,'');
+ validateWorkflow(ordinary);
+ nodes.inputReleaseAlert.checked=true;
+ const release=context.readDraft();
+ assert.equal(release.release_url,releaseUrl);
+ validateWorkflow(release);
+ nodes.inputReleaseAlert.checked=false;
+ const switched=context.readDraft();
+ assert.equal(switched.release_url,'');
+ validateWorkflow(switched);
+ assert.equal(nodes.inputReleaseUrl.value,releaseUrl,'Retain the entered page for switching back to release mode');
+});

@@ -4,7 +4,7 @@ const WORKFLOW = `https://api.github.com/repos/${REPOSITORY}/actions/workflows/s
 const FIELDS = {title:'inputTitle',body:'inputBody',type:'inputType',route:'inputRoute',image:'inputImage',target:'inputTarget',collapse_key:'inputCollapseKey',sound:'inputSound',action_label:'inputActionLabel',category:'inputCategory',presentation:'inputPresentation',tone:'inputTone',image_style:'inputImageStyle',release_version_code:'inputReleaseCode',release_url:'inputReleaseUrl'};
 const BOOLS = {dry_run:'inputDryRun',test_mode:'inputTestMode',show_action_in_push:'inputShowPush',show_action_in_app:'inputShowApp',release_alert:'inputReleaseAlert',include_play:'inputIncludePlay'};
 let reviewedDraft = null;
-function readDraft(){const result={};for(const [key,id] of Object.entries(FIELDS))result[key]=document.getElementById(id).value;for(const[key,id]of Object.entries(BOOLS))result[key]=String(document.getElementById(id).checked);return result;}
+function readDraft(){const result={};for(const [key,id] of Object.entries(FIELDS))result[key]=document.getElementById(id).value;for(const[key,id]of Object.entries(BOOLS))result[key]=String(document.getElementById(id).checked);if(result.release_alert==='false')result.release_url='';return result;}
 function loadDraft(draft){for(const[key,id]of Object.entries(FIELDS))if(draft[key]!==undefined)document.getElementById(id).value=draft[key];for(const[key,id]of Object.entries(BOOLS))if(draft[key]!==undefined)document.getElementById(id).checked=String(draft[key])==='true';syncKind();pvUpdate();}
 function draftUrl(value,message){try{return new URL(value);}catch(_){throw Error(message);}}
 function plan(draft){
