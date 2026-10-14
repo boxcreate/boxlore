@@ -124,3 +124,98 @@ test('ordinary drafts omit the hidden release page across workflow dispatch and 
  validateWorkflow(switched);
  assert.equal(nodes.inputReleaseUrl.value,releaseUrl,'Retain the entered page for switching back to release mode');
 });
+
+const {latestReleaseDraft,previewFromArchive}=require('../../admin-panel/public/notifyappusers/dashboard.js');
+const cryptoApi=require('node:crypto');
+const releaseBase='https://api.github.com/repos/boxcreate/boxlore';
+const latest={id:29,tag_name:'v0.0.29',draft:false,prerelease:false};
+function releasePreview(tag='v0.0.29'){
+ const draft={...base(),test_mode:'false',target:'direct_users',dry_run:'false',release_alert:'true',release_url:`https://github.com/boxcreate/boxlore/releases/tag/${tag}`,release_version_code:'29',type:'in-app'};
+ const value=plan(draft);
+ return {...value,mode:'offline-preview',sent:false,approval_digest:cryptoApi.createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex')};
+}
+function previewZip(preview,{method=8,name='announcement-preview.json',flags=0}={}){
+ const data=Buffer.from(JSON.stringify(preview)),filename=Buffer.from(name),packed=method===8?require('node:zlib').deflateRawSync(data):data;
+ const local=Buffer.alloc(30);local.writeUInt32LE(0x04034b50);local.writeUInt16LE(flags,6);local.writeUInt16LE(method,8);local.writeUInt32LE(packed.length,18);local.writeUInt32LE(data.length,22);local.writeUInt16LE(filename.length,26);
+ const central=Buffer.alloc(46);central.writeUInt32LE(0x02014b50);central.writeUInt16LE(flags,8);central.writeUInt16LE(method,10);central.writeUInt32LE(packed.length,20);central.writeUInt32LE(data.length,24);central.writeUInt16LE(filename.length,28);
+ const end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50);end.writeUInt16LE(1,8);end.writeUInt16LE(1,10);end.writeUInt32LE(central.length+filename.length,12);end.writeUInt32LE(local.length+filename.length+packed.length,16);
+ return Buffer.concat([local,filename,packed,central,filename,end]);
+}
+function releaseFixture({preview=releasePreview(),release=latest,artifacts,run,zip,status=200,changedRelease}={}){
+ const archive=zip||previewZip(preview);
+ const artifact={id:10,name:'announcement-preview',expired:false,size_in_bytes:archive.length,workflow_run:{id:100,head_branch:'master'},digest:'sha256:'+cryptoApi.createHash('sha256').update(archive).digest('hex')};
+ const calls=[];let releaseReads=0;
+ const fetcher=async(url,options)=>{
+  calls.push({url,options});assert.equal(options.method,'GET');assert.equal(options.headers.Authorization,'token fixture-token');
+  const endpoint=url.slice(releaseBase.length);
+  if(status!==200)return new Response('{}',{status});
+  if(endpoint==='/releases/latest')return Response.json(releaseReads++&&changedRelease?changedRelease:release);
+  if(endpoint.startsWith('/actions/artifacts?'))return Response.json(artifacts||{total_count:1,artifacts:[artifact]});
+  if(endpoint==='/actions/runs/100')return Response.json(run||{path:'.github/workflows/changelog-on-merge.yml',status:'completed',conclusion:'success',head_branch:'master'});
+  if(endpoint==='/actions/artifacts/10/zip')return new Response(archive);
+  throw Error('Unexpected request: '+endpoint);
+ };
+ return {calls,fetcher,artifact};
+}
+
+test('release fetch validates the published tag, both digests and the existing audience without sending',async()=>{
+ const fixture=releaseFixture();const result=await latestReleaseDraft('fixture-token',fixture.fetcher);
+ assert.equal(result.tag,latest.tag_name);assert.equal(result.draft.target,'direct_users');assert.equal(result.draft.presentation,'fullscreen');assert.equal(result.draft.dry_run,'false');
+ assert.equal(fixture.calls.length,5);assert.ok(fixture.calls.every(c=>c.options.method==='GET'));
+});
+test('stored and deflated GitHub preview archives preserve exact copy',async()=>{
+ const preview=releasePreview();for(const method of [0,8])assert.deepEqual(await previewFromArchive(previewZip(preview,{method})),preview);
+});
+test('bad archive names, encryption, oversized data and malformed archives fail closed',async()=>{
+ for(const bytes of [new Uint8Array(1),new Uint8Array(131073),previewZip(releasePreview(),{name:'other.json'}),previewZip(releasePreview(),{flags:1}),previewZip(releasePreview(),{method:99}),previewZip({text:'x'.repeat(65537)})])await assert.rejects(previewFromArchive(bytes));
+});
+test('missing, expired, manual and failed previews never become a release draft',async()=>{
+ const missing=releaseFixture({artifacts:{total_count:0,artifacts:[]}});assert.equal(await latestReleaseDraft('fixture-token',missing.fetcher),null);
+ const fixture=releaseFixture();fixture.artifact.expired=true;assert.equal(await latestReleaseDraft('fixture-token',fixture.fetcher),null);
+ for(const run of [{path:'.github/workflows/send-notification.yml',status:'completed',conclusion:'success',head_branch:'master'},{path:'.github/workflows/changelog-on-merge.yml',status:'completed',conclusion:'failure',head_branch:'master'}])assert.equal(await latestReleaseDraft('fixture-token',releaseFixture({run}).fetcher),null);
+ assert.equal(await latestReleaseDraft('fixture-token',releaseFixture({preview:releasePreview('v0.0.28')}).fetcher),null);
+ assert.equal(await latestReleaseDraft('fixture-token',releaseFixture({status:404}).fetcher),null);
+});
+test('permission failure, stale release and edited preview approval provide recovery',async()=>{
+ await assert.rejects(latestReleaseDraft('fixture-token',releaseFixture({status:403}).fetcher),/Sign in again/);
+ await assert.rejects(latestReleaseDraft('fixture-token',releaseFixture({changedRelease:{...latest,id:30,tag_name:'v0.0.30'}}).fetcher),/newer release/);
+ const preview=releasePreview();preview.data.body='Changed after approval';await assert.rejects(latestReleaseDraft('fixture-token',releaseFixture({preview}).fetcher),/failed validation/);
+ const fixture=releaseFixture();fixture.artifact.digest='sha256:bad';await assert.rejects(latestReleaseDraft('fixture-token',fixture.fetcher),/checksum/);
+});
+test('artifact pagination continues past a page containing no eligible preview',async()=>{
+ const fixture=releaseFixture();let pages=0;
+ const fetcher=async(url,options)=>{if(url.includes('/actions/artifacts?')&&++pages===1)return Response.json({total_count:101,artifacts:[{...fixture.artifact,expired:true}]});return fixture.fetcher(url,options);};
+ assert.equal((await latestReleaseDraft('fixture-token',fetcher)).tag,latest.tag_name);assert.equal(pages,2);
+});
+
+function draftUi({signedIn=true}={}){
+ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+ const nodes={releaseDraftStatus:{textContent:''},checkReleaseDraft:{disabled:false},reviewDialog:{open:false,close(){this.open=false;}},releaseDraftDialog:{open:false,showModal(){this.open=true;},close(){this.open=false;}},releaseDraftHeading:{focus(){}},releaseDraftMessage:{},loadReleaseDraft:{},reviewReleaseDraft:{},closeReleaseDraft:{},inputTitle:{focus(){}},approveDraft:{checked:true}};
+ const initial=base(),state={draft:initial,loads:0};
+ const context=vm.createContext({URL,TextEncoder,TextDecoder,Blob,Response,DecompressionStream,AbortSignal,crypto:cryptoApi.webcrypto,document:{getElementById:id=>nodes[id]},window:{__ADMIN_PAT:signedIn?'fixture-token':null}});
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../../admin-panel/public/notifyappusers/dashboard.js'),'utf8'),context);
+ context.readDraft=()=>state.draft;context.loadDraft=value=>{state.draft=value;state.loads++;nodes.approveDraft.checked=false;};
+ return {context,nodes,state};
+}
+test('authenticated opening fills the editor and opens the popup without approving or sending',async()=>{
+ const {context,nodes,state}=draftUi();const fixture=releaseFixture();context.fetch=fixture.fetcher;
+ await context.checkReleaseDraft();assert.equal(state.loads,1,nodes.releaseDraftStatus.textContent);assert.equal(state.draft.release_url,'https://github.com/boxcreate/boxlore/releases/tag/v0.0.29');assert.equal(nodes.releaseDraftDialog.open,true);assert.equal(nodes.approveDraft.checked,false);assert.equal(nodes.loadReleaseDraft.hidden,true);assert.equal(nodes.reviewReleaseDraft.hidden,false);
+ await context.checkReleaseDraft();assert.equal(state.loads,1);
+ assert.ok(nodes.releaseDraftStatus.textContent.includes('edits are unchanged'));assert.ok(fixture.calls.every(c=>c.options.method==='GET'));
+});
+test('an edit or active review made while fetching is preserved until Load release draft',async()=>{
+ for(const reviewing of [false,true]){
+  const {context,nodes,state}=draftUi();let resolve;context.latestReleaseDraft=()=>new Promise(r=>resolve=r);
+  const pending=context.checkReleaseDraft();if(reviewing)nodes.reviewDialog.open=true;else state.draft={...state.draft,body:'My unsent message'};
+  resolve({key:'10',tag:latest.tag_name,draft:parsePreview(releasePreview())});await pending;
+  assert.equal(state.loads,0);assert.equal(nodes.loadReleaseDraft.hidden,false);assert.equal(nodes.reviewReleaseDraft.hidden,true);
+  context.closeReview=()=>{nodes.reviewDialog.open=false;};context.useReleaseDraft();assert.equal(state.loads,1);assert.equal(nodes.releaseDraftDialog.open,false);assert.equal(nodes.reviewDialog.open,false);
+ }
+});
+test('offline openings and sign-out during a fetch never load a draft',async()=>{
+ const offline=draftUi({signedIn:false});offline.context.fetch=()=>{throw Error('Offline mode must not call GitHub');};await offline.context.checkReleaseDraft();assert.equal(offline.state.loads,0);
+ const {context,state,nodes}=draftUi();let resolve;context.latestReleaseDraft=()=>new Promise(r=>resolve=r);const pending=context.checkReleaseDraft();context.window.__ADMIN_PAT=null;resolve({key:'10',tag:latest.tag_name,draft:parsePreview(releasePreview())});await pending;assert.equal(state.loads,0);assert.equal(nodes.releaseDraftDialog.open,false);
+});
+test('release lookup errors leave the message intact and let the user retry',async()=>{
+ const {context,nodes,state}=draftUi();context.latestReleaseDraft=async()=>{throw Error('Could not check release drafts. Try again.');};await context.checkReleaseDraft();assert.equal(state.loads,0);assert.equal(nodes.checkReleaseDraft.disabled,false);assert.match(nodes.releaseDraftStatus.textContent,/Try again/);
+});

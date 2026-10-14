@@ -55,6 +55,116 @@ async function exportDraft(){try{const draft=readDraft();const output={...plan(d
 function saveTemplate(){const name=document.getElementById('templateName').value.trim();if(!name)return;const templates=JSON.parse(localStorage.getItem('boxlore-announcement-drafts')||'{}');templates[name]=readDraft();localStorage.setItem('boxlore-announcement-drafts',JSON.stringify(templates));loadTemplates();}
 function loadTemplates(){const parent=document.getElementById('templatesList');parent.replaceChildren();for(const[name,draft]of Object.entries(JSON.parse(localStorage.getItem('boxlore-announcement-drafts')||'{}'))){const button=document.createElement('button');button.textContent=name;button.onclick=()=>loadDraft(draft);parent.append(button);}}
 async function fetchWorkflowHistory(){const parent=document.getElementById('historyList');if(!window.__ADMIN_PAT){parent.textContent='Sign in to view workflow runs.';return;}try{const response=await fetch(WORKFLOW+'/runs?per_page=5',{headers:{Accept:'application/vnd.github+json',Authorization:`token ${window.__ADMIN_PAT}`}});if(!response.ok)throw Error('Could not load runs. Try Refresh runs.');const data=await response.json();parent.replaceChildren();for(const run of data.workflow_runs){const link=document.createElement('a');link.href=run.html_url;link.target='_blank';link.rel='noopener';link.textContent=`${run.display_title} · ${run.conclusion||run.status}`;parent.append(link);}}catch(error){parent.textContent=error.message;}}
-function initApp(){document.getElementById('notifyForm').addEventListener('input',pvUpdate);document.getElementById('notifyForm').addEventListener('change',pvUpdate);for(const id of ['previewMode','previewScale','previewWidth','previewHeight','previewZoom','previewRtl','previewRoundness','previewPlay'])document.getElementById(id).addEventListener('change',pvUpdate);window.addEventListener('message',event=>{if(event.origin!==location.origin||event.data?.source!=='boxlore-announcement')return;for(const id of ['appPreview','reviewPreview']){const frame=document.getElementById(id);if(event.source!==frame.contentWindow)continue;if(event.data.action==='ready')updateFrame(frame,reviewedDraft||readDraft());else{const descriptions={download:'In the app: opens the updater and downloads the verified release.',github:'In the app: opens this release on GitHub.',dismiss:'In the app: dismisses this announcement.',action:'In the app: opens the configured action destination.'};document.getElementById('previewInteraction').textContent=descriptions[event.data.action]||'Live app layout.';}}});document.getElementById('importDraft').onchange=async event=>{try{const data=JSON.parse(await event.target.files[0].text());loadDraft(parsePreview(data));}catch(error){document.getElementById('statusText').textContent='Could not open this preview. Choose an announcement-preview JSON file.';}};new ResizeObserver(fitPreview).observe(document.getElementById('previewStage'));window.addEventListener('resize',fitPreview);syncKind();loadTemplates();fetchWorkflowHistory();pvUpdate();}
+function initApp(){document.getElementById('notifyForm').addEventListener('input',pvUpdate);document.getElementById('notifyForm').addEventListener('change',pvUpdate);for(const id of ['previewMode','previewScale','previewWidth','previewHeight','previewZoom','previewRtl','previewRoundness','previewPlay'])document.getElementById(id).addEventListener('change',pvUpdate);window.addEventListener('message',event=>{if(event.origin!==location.origin||event.data?.source!=='boxlore-announcement')return;for(const id of ['appPreview','reviewPreview']){const frame=document.getElementById(id);if(event.source!==frame.contentWindow)continue;if(event.data.action==='ready')updateFrame(frame,reviewedDraft||readDraft());else{const descriptions={download:'In the app: opens the updater and downloads the verified release.',github:'In the app: opens this release on GitHub.',dismiss:'In the app: dismisses this announcement.',action:'In the app: opens the configured action destination.'};document.getElementById('previewInteraction').textContent=descriptions[event.data.action]||'Live app layout.';}}});document.getElementById('importDraft').onchange=async event=>{try{const data=JSON.parse(await event.target.files[0].text());loadDraft(parsePreview(data));}catch(error){document.getElementById('statusText').textContent='Could not open this preview. Choose an announcement-preview JSON file.';}};new ResizeObserver(fitPreview).observe(document.getElementById('previewStage'));window.addEventListener('resize',fitPreview);syncKind();loadTemplates();fetchWorkflowHistory();pvUpdate();checkReleaseDraft();}
+const RELEASE_API = `https://api.github.com/repos/${REPOSITORY}`;
+const PREVIEW_LIMIT = 65536;
+let releaseDraftPending = null;
+let releaseDraftRequest = 0;
+let releaseDraftLoaded = null;
+
+async function readLimited(stream, limit) {
+ const reader=stream.getReader(),chunks=[];let size=0;
+ try { while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>limit)throw Error('The release preview is too large. Open a downloaded preview instead.');chunks.push(value);} }
+ finally { await reader.cancel();reader.releaseLock(); }
+ const result=new Uint8Array(size);let offset=0;for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.length;}return result;
+}
+
+async function previewFromArchive(bytes) {
+ const invalid=()=>Error('The release preview could not be opened. Download it from GitHub Actions and use Open preview.');
+ if(bytes.length<22||bytes.length>PREVIEW_LIMIT*2)throw invalid();
+ const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);let end=-1;
+ for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(view.getUint32(i,true)===0x06054b50&&i+22+view.getUint16(i+20,true)===bytes.length){end=i;break;}
+ if(end<0||view.getUint16(end+4,true)!==0||view.getUint16(end+6,true)!==0||view.getUint16(end+8,true)!==1||view.getUint16(end+10,true)!==1)throw invalid();
+ const central=view.getUint32(end+16,true);
+ if(central+46>end||view.getUint32(central,true)!==0x02014b50)throw invalid();
+ const flags=view.getUint16(central+8,true),method=view.getUint16(central+10,true),packed=view.getUint32(central+20,true),size=view.getUint32(central+24,true),nameLength=view.getUint16(central+28,true),local=view.getUint32(central+42,true);
+ if((flags&1)||packed>PREVIEW_LIMIT||size>PREVIEW_LIMIT||central+46+nameLength>end||local+30>central||view.getUint32(local,true)!==0x04034b50)throw invalid();
+ if(new TextDecoder().decode(bytes.subarray(central+46,central+46+nameLength))!=='announcement-preview.json')throw invalid();
+ const start=local+30+view.getUint16(local+26,true)+view.getUint16(local+28,true);
+ if(start+packed>central)throw invalid();
+ let output=bytes.subarray(start,start+packed);
+ if(method===8){
+  let decompressor;try{decompressor=new DecompressionStream('deflate-raw');}catch(_){throw invalid();}
+  output=await readLimited(new Blob([output]).stream().pipeThrough(decompressor),PREVIEW_LIMIT);
+ }else if(method!==0)throw invalid();
+ if(output.length!==size)throw invalid();
+ try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(output));}catch(_){throw invalid();}
+}
+
+async function githubReleaseRead(path,token,fetcher) {
+ const response=await fetcher(RELEASE_API+path,{method:'GET',cache:'no-store',headers:{Accept:'application/vnd.github+json',Authorization:`token ${token}`},signal:AbortSignal.timeout(20000)});
+ if(response.status===401||response.status===403)throw Error('Could not read release drafts. Sign in again and check GitHub Actions access.');
+ if(response.status===410)throw Error('This release preview has expired. Open a downloaded preview instead.');
+ if(!response.ok)throw Error('Could not check release drafts. Try Check release draft again.');
+ return response;
+}
+
+async function latestReleaseDraft(token,fetcher=fetch) {
+ const releaseResponse=await fetcher(RELEASE_API+'/releases/latest',{method:'GET',cache:'no-store',headers:{Accept:'application/vnd.github+json',Authorization:`token ${token}`},signal:AbortSignal.timeout(20000)});
+ if(releaseResponse.status===404)return null;
+ if(!releaseResponse.ok)throw Error('Could not check the latest release. Sign in again or try Check release draft.');
+ const release=await releaseResponse.json();
+ if(!Number.isSafeInteger(release.id)||typeof release.tag_name!=='string'||release.draft||release.prerelease)throw Error('The latest release could not be verified. Try again later.');
+ const releaseUrl=`https://github.com/${REPOSITORY}/releases/tag/${release.tag_name}`;
+ for(let page=1;page<=10;page++){
+  const result=await (await githubReleaseRead(`/actions/artifacts?name=announcement-preview&per_page=100&page=${page}`,token,fetcher)).json();
+  if(!Array.isArray(result.artifacts)||!Number.isSafeInteger(result.total_count))throw Error('The release preview list could not be read. Try again later.');
+  for(const artifact of result.artifacts){
+   if(artifact.name!=='announcement-preview'||artifact.expired||artifact.workflow_run?.head_branch!=='master')continue;
+   if(!Number.isSafeInteger(artifact.id)||!Number.isSafeInteger(artifact.workflow_run?.id)||artifact.size_in_bytes>PREVIEW_LIMIT*2)continue;
+   const run=await (await githubReleaseRead(`/actions/runs/${artifact.workflow_run.id}`,token,fetcher)).json();
+   if(run.path!=='.github/workflows/changelog-on-merge.yml'||run.head_branch!=='master'||run.status!=='completed'||run.conclusion!=='success')continue;
+   const archive=await githubReleaseRead(`/actions/artifacts/${artifact.id}/zip`,token,fetcher);
+   const bytes=await readLimited(archive.body,PREVIEW_LIMIT*2);
+   if(artifact.digest){const hash=await crypto.subtle.digest('SHA-256',bytes);const hex=[...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');if(artifact.digest!==`sha256:${hex}`)throw Error('The release preview did not match GitHub’s checksum. Try again later.');}
+   const preview=await previewFromArchive(bytes);
+   if(preview.mode!=='offline-preview'||preview.sent!==false)continue;
+   let draft;try{draft=parsePreview(preview);}catch(_){throw Error('The release preview is invalid. Open a fresh preview instead.');}
+   if(draft.release_alert!=='true'||draft.release_url!==releaseUrl)continue;
+   if(await digest(plan(draft))!==preview.approval_digest)throw Error('The release preview failed validation. Open a fresh preview instead.');
+   const current=await (await githubReleaseRead('/releases/latest',token,fetcher)).json();
+   if(current.id!==release.id||current.tag_name!==release.tag_name)throw Error('A newer release appeared. Choose Check release draft to load it.');
+   return {key:String(artifact.id),tag:release.tag_name,draft};
+  }
+  if(result.artifacts.length===0||page*100>=result.total_count)return null;
+ }
+ throw Error('Could not find the latest release preview. Open a downloaded preview instead.');
+}
+
+function closeReleaseDraft(){document.getElementById('releaseDraftDialog').close();releaseDraftPending=null;}
+function useReleaseDraft(){
+ if(!releaseDraftPending)return;
+ const pending=releaseDraftPending;
+ document.getElementById('releaseDraftDialog').close();
+ if(document.getElementById('reviewDialog').open)closeReview();
+ loadDraft(pending.draft);releaseDraftLoaded=pending.key;releaseDraftPending=null;
+ document.getElementById('releaseDraftStatus').textContent=`Release draft loaded for ${pending.tag}. Review the message and audience before sending.`;
+ document.getElementById('inputTitle').focus();
+}
+function reviewReleaseDraft(){closeReleaseDraft();handleSend({preventDefault(){}});}
+async function checkReleaseDraft(){
+ const status=document.getElementById('releaseDraftStatus'),button=document.getElementById('checkReleaseDraft');
+ const request=++releaseDraftRequest,token=window.__ADMIN_PAT;
+ if(!token){status.textContent='Sign in to check release drafts.';return;}
+ const original=JSON.stringify(readDraft());button.disabled=true;status.textContent='Checking the latest release draft…';
+ try{
+  const pending=await latestReleaseDraft(token);
+  if(request!==releaseDraftRequest||window.__ADMIN_PAT!==token)return;
+  if(!pending){status.textContent='No preview is available for the latest release. You can still open a downloaded preview.';return;}
+  if(pending.key===releaseDraftLoaded){status.textContent=`The draft for ${pending.tag} is already loaded. Your edits are unchanged.`;return;}
+  releaseDraftPending=pending;
+  const autoFill=JSON.stringify(readDraft())===original&&!document.getElementById('reviewDialog').open;
+  if(autoFill){loadDraft(pending.draft);releaseDraftLoaded=pending.key;}
+  document.getElementById('releaseDraftHeading').textContent=`Release draft ready: ${pending.tag}`;
+  document.getElementById('releaseDraftMessage').textContent=autoFill?'The fields now contain this release draft. Review the message and audience before sending.':'You have a message open. Loading this release draft will replace it.';
+  document.getElementById('loadReleaseDraft').hidden=autoFill;
+  document.getElementById('reviewReleaseDraft').hidden=!autoFill;
+  document.getElementById('closeReleaseDraft').textContent=autoFill?'Keep editing':'Keep current message';
+  status.textContent=autoFill?`Release draft loaded for ${pending.tag}. Nothing has been sent.`:`A release draft for ${pending.tag} is available. Your message is unchanged.`;
+  const dialog=document.getElementById('releaseDraftDialog');if(!dialog.open)dialog.showModal();document.getElementById('releaseDraftHeading').focus();
+ }catch(error){if(request===releaseDraftRequest&&window.__ADMIN_PAT===token)status.textContent=error.name==='TimeoutError'?'The release check timed out. Try Check release draft again.':error.name==='TypeError'?'Could not read the release preview. Check your connection and try again.':error.message;}
+ finally{if(request===releaseDraftRequest)button.disabled=false;}
+}
+
 function logout(){window.__ADMIN_PAT=null;if(typeof firebase!=='undefined'&&firebase.auth)firebase.auth().signOut().then(()=>location.reload());else location.reload();}
-if(typeof module!=='undefined')module.exports={plan,canonical,PALETTES,isPreviewExcluded,parsePreview,reviewRows};
+if(typeof module!=='undefined')module.exports={plan,canonical,PALETTES,isPreviewExcluded,parsePreview,reviewRows,previewFromArchive,latestReleaseDraft};

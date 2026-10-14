@@ -4,3 +4,5 @@
 #reviewStage{position:relative}.excluded-preview{position:absolute;inset:8px;display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;background:#121318;color:#e6e6ee;border-radius:22px;margin:0;font-size:16px;line-height:1.5}
 
 .review-push-copy{padding:20px;border-radius:18px;background:#272832}#reviewPushBody{white-space:pre-wrap;overflow-wrap:anywhere}
+
+.release-draft-check{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.release-draft-check .hint{margin:0}#releaseDraftDialog{width:min(100% - 40px,520px)}
