@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-14T05:50:52.455Z",
+  "lastRun": "2026-10-14T11:16:07.012Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f02e8956-cfc6-11f0-83c5-9f12527bae80",
@@ -19,16 +19,16 @@
       "lastCheckedAt": 1791594370050
     },
     "8820": {
-      "lastEpisodeId": "61468154959",
-      "lastEpisodeTitle": "Horror Neurobiology (WATCHING SCARY STUFF) with Austin Lim",
-      "lastRssKey": "69059153-39a5-46a7-af7f-6f899aecfe0e",
-      "lastCheckedAt": 1791538021691
+      "lastRssKey": "97ef9e8c-5f8d-4d19-9acc-a5e51df184f3",
+      "lastEpisodeTitle": "Orcinology (KILLER WHALES) with Jorge Vélez-Juarbe",
+      "lastEpisodeId": "61715012119",
+      "lastCheckedAt": 1791976569864
     },
     "9926": {
-      "lastRssKey": "669983b0-c1e9-11f1-b573-83391e400189",
-      "lastEpisodeTitle": "Panic in the Streets: The War of the Worlds Radio Broadcast",
-      "lastCheckedAt": 1791565275800,
-      "lastEpisodeId": "59343962292"
+      "lastRssKey": "ec8abd84-c77c-11f1-ac72-7fd0bb6a77ba",
+      "lastEpisodeTitle": "The Possessed Nuns of Loudun",
+      "lastEpisodeId": "59343962292",
+      "lastCheckedAt": 1791976570356
     },
     "44367": {
       "lastRssKey": "uk11wutvrngxukrp",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "e0a8abd7-f070-416f-aad6-083a57170c2a",
-      "lastEpisodeTitle": "1am ET, October 14 | The latest headlines from NPR",
+      "lastRssKey": "57f5868b-c18f-45cf-8750-8394d637d57d",
+      "lastEpisodeTitle": "7am ET, October 14 | The latest headlines from NPR",
       "lastEpisodeId": "61558516761",
-      "lastCheckedAt": 1791957057220
+      "lastCheckedAt": 1791976573646
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75765356",
@@ -139,9 +139,10 @@
       "lastCheckedAt": 1791800219714
     },
     "230598": {
-      "lastRssKey": "b8bef2fe-a54a-11f0-b1fc-67a9d5f21292",
-      "lastEpisodeTitle": "A Thing Of Nightmares",
-      "lastCheckedAt": 1791371887176
+      "lastRssKey": "b90d8a2c-a54a-11f0-b1fc-3b9845813b0d",
+      "lastEpisodeTitle": "The Disfigured Intruder",
+      "lastEpisodeId": "61716581533",
+      "lastCheckedAt": 1791976612989
     },
     "259125": {
       "lastRssKey": "6accccc78f90a39dfc5c5691",
@@ -165,10 +166,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "9936AF42-AE9E-4676-BE8D-90F5D6B34BE8",
-      "lastEpisodeTitle": "Why the EV Charging Business Is Booming",
-      "lastEpisodeId": "61661464339",
-      "lastCheckedAt": 1791881992112
+      "lastRssKey": "1647F54A-EF07-45ED-94AB-3B6258D858E4",
+      "lastEpisodeTitle": "Some Wearables Can Track Blood Pressure. Do They Work?",
+      "lastEpisodeId": "61712355733",
+      "lastCheckedAt": 1791976615287
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -177,10 +178,10 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "B9993DC1-7742-4E1E-89D8-9D1C86A98B0F",
-      "lastEpisodeTitle": "Big Banks Lead U.S. Stocks Lower",
+      "lastRssKey": "0346191C-89B2-4A63-8C5A-13FB71607464",
+      "lastEpisodeTitle": "Ukraine Says New Starlink Speed Limit Is Disrupting Its Strikes",
       "lastEpisodeId": "61690938190",
-      "lastCheckedAt": 1791927881088
+      "lastCheckedAt": 1791976615782
     },
     "331078": {
       "lastRssKey": "12ec1a2c-b823-11f1-957c-df96571fb077",
@@ -195,10 +196,10 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "715b7494-c78d-11f1-a670-67403583f992",
-      "lastEpisodeTitle": "1AM ET 10/14/2026 Newscast",
+      "lastRssKey": "bc00641e-c7bf-11f1-9b79-678ea17784b1",
+      "lastEpisodeTitle": "7AM ET 10/14/2026 Newscast",
       "lastEpisodeId": "61558991056",
-      "lastCheckedAt": 1791957094248
+      "lastCheckedAt": 1791976618016
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -249,10 +250,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4VCY31XX8C31VPSYZAXCW57",
-      "lastEpisodeTitle": "Less coverage, more profit",
+      "lastRssKey": "01M4VEHJCKGBC7SE1XFHB28AZK",
+      "lastEpisodeTitle": "Is AI solving the right problems for consumers?",
       "lastEpisodeId": "61647801267",
-      "lastCheckedAt": 1791939223081
+      "lastCheckedAt": 1791976623504
     },
     "432535": {
       "lastRssKey": "7519f2d2-1e3b-405d-b08e-1c3da35a65e7",
@@ -261,10 +262,10 @@
       "lastCheckedAt": 1791834997310
     },
     "437685": {
-      "lastRssKey": "6e065482-bc91-11f1-84e4-57550210970f",
-      "lastEpisodeTitle": "The 2026 Nobel Prizes",
-      "lastEpisodeId": "61665484609",
-      "lastCheckedAt": 1791910420780
+      "lastRssKey": "6e263964-bc91-11f1-84e4-d3ad76f929a9",
+      "lastEpisodeTitle": "The 2026 Ig Nobel Prizes",
+      "lastEpisodeId": "61717181052",
+      "lastCheckedAt": 1791976625568
     },
     "438184": {
       "lastRssKey": "57ea7220-c62b-11f1-86fa-2b79f7db4dc0",
@@ -361,10 +362,10 @@
       "lastCheckedAt": 1791800249347
     },
     "500708": {
-      "lastRssKey": "desiringgod.org-resource-e58941d8",
-      "lastEpisodeTitle": "Know God, Fight Lust",
-      "lastEpisodeId": "61667433502",
-      "lastCheckedAt": 1791910438512
+      "lastRssKey": "desiringgod.org-resource-72324dc4",
+      "lastEpisodeTitle": "Gratitude Unseats Lust",
+      "lastEpisodeId": "61719287832",
+      "lastCheckedAt": 1791976646259
     },
     "503644": {
       "lastRssKey": "245ecb67-2196-4c44-8049-c87b54c34906",
@@ -397,10 +398,10 @@
       "lastCheckedAt": 1789508283942
     },
     "522889": {
-      "lastRssKey": "1c505cac-c306-11f1-b685-f75638c47567",
-      "lastEpisodeTitle": "1046: The Pi Updates are insane",
-      "lastEpisodeId": "61619391092",
-      "lastCheckedAt": 1791835009736
+      "lastRssKey": "731d3ea2-c63e-11f1-a892-e3eeae403e64",
+      "lastEpisodeTitle": "1047: Adobe has a big problem",
+      "lastEpisodeId": "61720694715",
+      "lastCheckedAt": 1791976650165
     },
     "545784": {
       "lastRssKey": "3c695d7f1a2c7167e58db0403e954125",
@@ -432,10 +433,10 @@
       "lastCheckedAt": 1791957125782
     },
     "573431": {
-      "lastRssKey": "gid://art19-episode-locator/V0/YCrO2GlAIurp-6-BtP7865C14SZnqYOQWGxWm5Ifb7g",
-      "lastEpisodeTitle": "Listen Now: Audible True Crime – Ghost Story",
+      "lastRssKey": "gid://art19-episode-locator/V0/IzQE_dZDuxX1lNlGS1CXpL4coq2IOn4AhQZbZZ8FNos",
+      "lastEpisodeTitle": "Buffalo Wild Wings vs Wingstop | Chicken Fight | 2",
       "lastEpisodeId": "60943135901",
-      "lastCheckedAt": 1791835012995
+      "lastCheckedAt": 1791976655339
     },
     "577105": {
       "lastRssKey": "prx_7057_141e0c43-f935-41de-be94-708448052c4d",
@@ -474,10 +475,10 @@
       "lastCheckedAt": 1791835015235
     },
     "724143": {
-      "lastRssKey": "ea93dff2-c753-11f1-a822-a36dbf77deda",
-      "lastEpisodeTitle": "Flávio recua sobre escala 6x1, PT registra canal no WhatsApp e morre cantor Netinho",
+      "lastRssKey": "945e4abe-c7b7-11f1-a6b1-73720c3699b2",
+      "lastEpisodeTitle": "Senado vota fim da escala 6x1; canal ‘Exército do Lula’ sai do ar; condenação por estupro coletivo no Rio",
       "lastEpisodeId": "61698697211",
-      "lastCheckedAt": 1791939257975
+      "lastCheckedAt": 1791976658735
     },
     "739525": {
       "lastEpisodeId": "61460420611",
@@ -492,10 +493,10 @@
       "lastCheckedAt": 1791670487211
     },
     "743229": {
-      "lastEpisodeId": "61667039106",
-      "lastEpisodeTitle": "Mathematicians’ Latest Problem: What if A.I. Can Do Our Job?",
-      "lastRssKey": "5907e0b8-863f-4fa3-bee0-83ead32ae62a",
-      "lastCheckedAt": 1791910453986
+      "lastEpisodeId": "61718190245",
+      "lastEpisodeTitle": "The U.S. Tried to Choke Russia’s Energy Market. Then It Made a Diesel Deal.",
+      "lastRssKey": "75240ddf-73ba-457d-9e3c-77bc90779f4f",
+      "lastCheckedAt": 1791976662712
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -516,10 +517,10 @@
       "lastCheckedAt": 1791538073559
     },
     "744169": {
-      "lastRssKey": "953b0968-c1b8-11f1-a455-1bc142a8b318",
-      "lastEpisodeTitle": "Pink Monkey at the Honky-Tonk with Laura Hawley",
+      "lastRssKey": "bbcdeb28-c360-11f1-8772-631f19d7e1bc",
+      "lastEpisodeTitle": "The Power of No with Anna Holmes",
       "lastEpisodeId": "60586009465",
-      "lastCheckedAt": 1791371927015
+      "lastCheckedAt": 1791976664565
     },
     "744587": {
       "lastRssKey": "06fc3ed6-f62c-4e18-9cff-71473cdc608b",
@@ -569,10 +570,10 @@
       "lastCheckedAt": 1791910458259
     },
     "838740": {
-      "lastRssKey": "d7318df2-c5e0-11f1-be82-9750ae1b61df",
-      "lastEpisodeTitle": "COLLIN GOSSELIN: The Real Story Behind One of America’s Most-Watched Families",
-      "lastEpisodeId": "60819104702",
-      "lastCheckedAt": 1791800276196
+      "lastRssKey": "dd6a3126-c73c-11f1-abe8-d7586cf7a7ea",
+      "lastEpisodeTitle": "4 Ways to Make Dating Feel Exciting Again",
+      "lastEpisodeId": "61712521794",
+      "lastCheckedAt": 1791976668118
     },
     "853158": {
       "lastRssKey": "9ad2dd57-a288-4573-a80d-56a3f5d7ddda",
@@ -605,10 +606,10 @@
       "lastCheckedAt": 1791882042440
     },
     "923571": {
-      "lastEpisodeId": "61611025827",
-      "lastEpisodeTitle": "The Disappearance of Kelly Dwyer",
-      "lastRssKey": "abb98236-76e7-11f0-a0e6-d36cedddf115",
-      "lastCheckedAt": 1791927936752
+      "lastEpisodeId": "61712686852",
+      "lastEpisodeTitle": "Murder They Wrote: The End of the Dream",
+      "lastRssKey": "i4MwaM8kjx2GEKLrjSA4YKCmtIWT9sbf",
+      "lastCheckedAt": 1791976670882
     },
     "928708": {
       "lastRssKey": "c6828a18-c4e3-11f1-96fa-8fc1a023fc71",
@@ -733,10 +734,10 @@
       "lastCheckedAt": 1786559324168
     },
     "1183952": {
-      "lastRssKey": "a44683f6-40cd-48ba-92d2-fc9d4e037d7e",
-      "lastEpisodeTitle": "【呱吉】新資料夾(304)：休息一下馬上回來",
-      "lastEpisodeId": "61398670344",
-      "lastCheckedAt": 1791512752458
+      "lastRssKey": "7d254ef3-75f3-46d4-85d3-9e4ee52f467b",
+      "lastEpisodeTitle": "【呱吉直播】人生晚長EP127：初老的證明｜來賓：達康.come",
+      "lastEpisodeId": "61715390683",
+      "lastCheckedAt": 1791976694338
     },
     "1186507": {
       "lastRssKey": "729f6f33d4e683caa9d29d7d192c7371",
@@ -809,10 +810,10 @@
       "lastCheckedAt": 1791772545480
     },
     "1366771": {
-      "lastRssKey": "6acee4703dc1c1be4ac65ad4",
-      "lastEpisodeTitle": "Morning briefing Wednesday 14th October",
+      "lastRssKey": "6acf56fc3dc1c1be4acfd2f6",
+      "lastEpisodeTitle": "Afternoon Briefing Wednesday 14th October",
       "lastEpisodeId": "61703934412",
-      "lastCheckedAt": 1791957168325
+      "lastCheckedAt": 1791976702452
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -821,10 +822,10 @@
       "lastCheckedAt": 1791480710030
     },
     "1388001": {
-      "lastRssKey": "d6311c33-232e-4a22-990e-e5c7c7ff6f78",
-      "lastEpisodeTitle": "L’Arabie Saoudite désarçonnée par le défi des Houthis du Yémen",
+      "lastRssKey": "1b98d665-e0ad-4f13-bc67-45526143c617",
+      "lastEpisodeTitle": "Le report des élections palestiniennes, un mauvais coup à la démocratie et… à la France",
       "lastEpisodeId": "61661068342",
-      "lastCheckedAt": 1791882075583
+      "lastCheckedAt": 1791976703322
     },
     "1545709": {
       "lastRssKey": "audioboom-01a1306b-31ec-7784-beab-36f86b377033",
@@ -851,10 +852,10 @@
       "lastCheckedAt": 1791927966718
     },
     "2136580": {
-      "lastRssKey": "4dff17ff-c731-46c8-81ba-44c03c16bae9",
-      "lastEpisodeTitle": "Episode 396: CANADIENS NEARLY BLEW IT...BUT WIN IN SHOOTOUT vs SABRES!",
+      "lastRssKey": "8d4bb6b2-3738-4193-ba19-7efbb7d6837f",
+      "lastEpisodeTitle": "Episode 395: JACOB FOWLER STELLAR SHUTOUT FOR THE CANADIENS VS RED WINGS!",
       "lastEpisodeId": "61488869775",
-      "lastCheckedAt": 1791957170575
+      "lastCheckedAt": 1791976706138
     },
     "2136949": {
       "lastRssKey": "6ac553a0eea51f2aa345497e",
@@ -863,10 +864,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6acd13edab616ca9bee5b0b5",
-      "lastEpisodeTitle": "(Pop) Pourquoi plus de 100 médias français réclament 1,4 milliard d’€ à Meta… HugoDécrypte",
+      "lastRssKey": "6ace5e9d4af39643e8e46f95",
+      "lastEpisodeTitle": "(Pop) C’est quoi “Muse Wonder”, le modèle d’IA de Meta qui veut réaliser avec ChatGPT et Claude ?… HugoDécrypte",
       "lastEpisodeId": "61660529738",
-      "lastCheckedAt": 1791882078240
+      "lastCheckedAt": 1791976707850
     },
     "2574026": {
       "lastRssKey": "0052b4a6-c38c-11f1-9a53-8b7d6258a474",
@@ -1029,15 +1030,15 @@
       "lastCheckedAt": 1791800321598
     },
     "4894842": {
-      "lastRssKey": "abc155bf-c4e7-4324-b770-4c105d84cbc3",
-      "lastEpisodeTitle": "The Hidden Connection (PODCAST EXCLUSIVE EPISODE)",
-      "lastEpisodeId": "61610481287",
-      "lastCheckedAt": 1791800322399
+      "lastRssKey": "3f3b3491-5fa4-40ae-9325-ceae728f16f0",
+      "lastEpisodeTitle": "0 Days Since Last Accident (PODCAST EXCLUSIVE EPISODE)",
+      "lastEpisodeId": "61712366240",
+      "lastCheckedAt": 1791976718703
     },
     "4898105": {
-      "lastRssKey": "1c122b94-c5ea-11f1-9c11-6b365b029ecb",
-      "lastEpisodeTitle": "IGN Gets Hands-On With the New Marvel Comics App",
-      "lastCheckedAt": 1791910516145
+      "lastRssKey": "5a2d9246-c780-11f1-b7d6-f7884908af29",
+      "lastEpisodeTitle": "The Social Reckoning Bombs in the Box Office",
+      "lastCheckedAt": 1791976719431
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1098,10 +1099,10 @@
       "lastCheckedAt": 1791538127260
     },
     "5731394": {
-      "lastRssKey": "8556ec3c-c6aa-11f1-ab10-bbbb907f12ba",
-      "lastEpisodeTitle": "Igor Shesterkin Is Done For The Season And The Rangers Are Screwed",
+      "lastRssKey": "e93144e2-c762-11f1-98e2-f33ffab7f3ca",
+      "lastEpisodeTitle": "Sci Fi Section Ep 12: Chapter 25-31",
       "lastEpisodeId": "60007884583",
-      "lastCheckedAt": 1791910523124
+      "lastCheckedAt": 1791976725772
     },
     "5815838": {
       "lastRssKey": "112d81fa-1611-490d-966d-38af8e113ad1",
@@ -1116,10 +1117,10 @@
       "lastCheckedAt": 1791480732412
     },
     "5930143": {
-      "lastRssKey": "d6311c33-232e-4a22-990e-e5c7c7ff6f78",
-      "lastEpisodeTitle": "L’Arabie Saoudite désarçonnée par le défi des Houthis du Yémen",
-      "lastEpisodeId": "61611196735",
-      "lastCheckedAt": 1791882098884
+      "lastRssKey": "1b98d665-e0ad-4f13-bc67-45526143c617",
+      "lastEpisodeTitle": "Le report des élections palestiniennes, un mauvais coup à la démocratie et… à la France",
+      "lastEpisodeId": "61718127595",
+      "lastCheckedAt": 1791976728384
     },
     "5945547": {
       "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
@@ -1128,10 +1129,10 @@
       "lastCheckedAt": 1790864064387
     },
     "5972153": {
-      "lastRssKey": "c00ca422-c6d5-11f1-9303-57d5cc399318",
-      "lastEpisodeTitle": "Saudi alert system, IMF outlook and French fridge hack",
-      "lastEpisodeId": "61673381282",
-      "lastCheckedAt": 1791910526661
+      "lastRssKey": "24b41f18-c7a8-11f1-a220-3fca11f27d17",
+      "lastEpisodeTitle": "Self-replicating AI warning, Katie Zacharia and F1's Africa return",
+      "lastEpisodeId": "61719670490",
+      "lastCheckedAt": 1791976729283
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1249,10 +1250,10 @@
       "lastCheckedAt": 1791759946586
     },
     "6726996": {
-      "lastRssKey": "51046336-c61b-11f1-92ed-e71f8a2aa841",
-      "lastEpisodeTitle": "October 13 (Isaiah 44–45; Psalm 96; Acts 20)",
-      "lastEpisodeId": "61661809536",
-      "lastCheckedAt": 1791882108015
+      "lastRssKey": "7ba3af4c-c6e4-11f1-846f-6bc6d3639c63",
+      "lastEpisodeTitle": "October 14 (Isaiah 46–48; Psalm 97; Acts 21)",
+      "lastEpisodeId": "61712692729",
+      "lastCheckedAt": 1791976739962
     },
     "6744768": {
       "lastRssKey": "56c4d7e1-2bbf-4918-9416-4678408d476e",
@@ -1327,10 +1328,10 @@
       "lastCheckedAt": 1791538154003
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779930",
-      "lastEpisodeTitle": "Gang Busters - Three Safe Crackers",
+      "lastRssKey": "https://api.spreaker.com/episode/59779933",
+      "lastEpisodeTitle": "Bold Venture - Havens Venezuelan Isle",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1791910538654
+      "lastCheckedAt": 1791976745824
     },
     "6912659": {
       "lastRssKey": "ad6ac5f1-6717-435e-8595-89a8974680c0",
@@ -1429,10 +1430,10 @@
       "lastCheckedAt": 1791928025811
     },
     "7239415": {
-      "lastRssKey": "da6d21a0-c68c-11f1-963b-fb4d9ef85113",
-      "lastEpisodeTitle": "Something UNREAL is cooking and no one is talking about it...",
+      "lastRssKey": "523244ba-c7a3-11f1-a33d-e358ecadd638",
+      "lastEpisodeTitle": "Now it's getting fun...",
       "lastEpisodeId": "61647118090",
-      "lastCheckedAt": 1791856461265
+      "lastCheckedAt": 1791976753564
     },
     "7248222": {
       "lastRssKey": "6910d41c-c74e-11f1-9ee1-a77ee398a9c0",
@@ -1471,10 +1472,10 @@
       "lastCheckedAt": 1791800357026
     },
     "7348627": {
-      "lastRssKey": "1dfd422f-c7b2-4efa-9383-354a17151e4d",
-      "lastEpisodeTitle": "2.5 Hours of Unsolved Cases Too Dark For Netflix | 328 | True Crime Supercut",
+      "lastRssKey": "3acf8c99-0615-4361-8650-d71933d68aef",
+      "lastEpisodeTitle": "6 Hours of Chilling Cold Case Mysteries For Sleep | 327",
       "lastEpisodeId": "61561166200",
-      "lastCheckedAt": 1791939350212
+      "lastCheckedAt": 1791976756213
     },
     "7376606": {
       "lastRssKey": "c2f1145a-ed44-4a6c-baae-b5ffae53659b",
@@ -1501,10 +1502,10 @@
       "lastCheckedAt": 1791247096379
     },
     "7448514": {
-      "lastRssKey": "cmup09jog02iu01w1f03xe977",
-      "lastEpisodeTitle": "EP59｜反派學 vs. 犯罪心理學家的極限交鋒【ft. 忘形】",
+      "lastRssKey": "cmuzbkl74001e01xvcekscfge",
+      "lastEpisodeTitle": "EP60｜點個連結，帳戶秒歸零！虛擬貨幣詐欺離我們有多近？【ft. 加密貨幣與AI防詐專家 Lindy】",
       "lastEpisodeId": "59858095438",
-      "lastCheckedAt": 1791372026158
+      "lastCheckedAt": 1791976758001
     },
     "7485285": {
       "lastRssKey": "436057a0-7cde-4cb2-8c2d-15af327d215b",
@@ -1590,10 +1591,10 @@
       "lastCheckedAt": 1789640289064
     },
     "7641673": {
-      "lastRssKey": "8a59f9ac-2d03-438e-a5e7-ebe7004911dc",
-      "lastEpisodeTitle": "More WW2 Mysteries That Scholars Can't Explain",
+      "lastRssKey": "ced36c23-73d5-47d9-9626-2c25bd03b443",
+      "lastEpisodeTitle": "1 Hour of Ancient History and Lore Explained",
       "lastEpisodeId": "61708965775",
-      "lastCheckedAt": 1791957212628
+      "lastCheckedAt": 1791976763627
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
@@ -1643,10 +1644,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/398a9790-22b3-5a7d-b7cb-5c770c14b4ba",
-      "lastEpisodeTitle": "Dr. Ramani thinks single moms are great ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/51a01bc6-7edd-5b12-afac-803cefc8ef32",
+      "lastEpisodeTitle": "DEBUNKING the 4 biggest narcissism myths ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1791957214855
+      "lastCheckedAt": 1791976767859
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
@@ -1661,10 +1662,10 @@
       "lastCheckedAt": 1788281442246
     },
     "8008705": {
-      "lastRssKey": "3194407c-8426-4f85-978f-9eb8481cb787",
-      "lastEpisodeTitle": "Jungle Ki Shraapit Chattan: Paranormal Encounter in a Kerala Forest - Hindi Horror Story",
+      "lastRssKey": "697caacf-8ce5-4a5c-9717-5e58ba414dc5",
+      "lastEpisodeTitle": "Lincoln's Inn Ki Andheri Raat: Kolkata Haunted Mansion Story - Hindi Horror Story",
       "lastEpisodeId": "60725587480",
-      "lastCheckedAt": 1791166898354
+      "lastCheckedAt": 1791976769650
     }
   }
 }
