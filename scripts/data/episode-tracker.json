@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-14T11:16:07.012Z",
+  "lastRun": "2026-10-14T15:54:20.841Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f02e8956-cfc6-11f0-83c5-9f12527bae80",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "57f5868b-c18f-45cf-8750-8394d637d57d",
-      "lastEpisodeTitle": "7am ET, October 14 | The latest headlines from NPR",
+      "lastRssKey": "7d664cec-86ec-4317-9a18-296997b54e8d",
+      "lastEpisodeTitle": "11am ET, October 14 | The latest headlines from NPR",
       "lastEpisodeId": "61558516761",
-      "lastCheckedAt": 1791976573646
+      "lastCheckedAt": 1791993266315
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75765356",
@@ -61,10 +61,10 @@
       "lastCheckedAt": 1791939202947
     },
     "78573": {
-      "lastRssKey": "87b9804a-0657-402f-9924-e771f51a0f27",
-      "lastEpisodeTitle": "CUM ȘI-A SCHIMBAT CARIERA CU AI - ADRIAN LUBEN #IGDLCC 352",
-      "lastEpisodeId": "61161725213",
-      "lastCheckedAt": 1790958603427
+      "lastRssKey": "b4d80f5e-ed0f-4be9-b79f-158ebbe85381",
+      "lastEpisodeTitle": "„Nicușor Dan n-a trădat. A MINȚIT” | DUMITRU BORȚUN #IGDLCC 353",
+      "lastEpisodeId": "61730063293",
+      "lastCheckedAt": 1791993268314
     },
     "83316": {
       "lastRssKey": "50f497e6-c59c-11f1-89b8-3fc61e72e568",
@@ -178,10 +178,10 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "0346191C-89B2-4A63-8C5A-13FB71607464",
-      "lastEpisodeTitle": "Ukraine Says New Starlink Speed Limit Is Disrupting Its Strikes",
+      "lastRssKey": "0459E78B-1336-45EC-B99A-FF2BCE4E133E",
+      "lastEpisodeTitle": "Inflation Rises in September, Pressuring the Fed",
       "lastEpisodeId": "61690938190",
-      "lastCheckedAt": 1791976615782
+      "lastCheckedAt": 1791993296417
     },
     "331078": {
       "lastRssKey": "12ec1a2c-b823-11f1-957c-df96571fb077",
@@ -196,10 +196,10 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "bc00641e-c7bf-11f1-9b79-678ea17784b1",
-      "lastEpisodeTitle": "7AM ET 10/14/2026 Newscast",
+      "lastRssKey": "4310e3b8-c7e1-11f1-99e7-b33916ce2532",
+      "lastEpisodeTitle": "11AM ET 10/14/2026 Newscast",
       "lastEpisodeId": "61558991056",
-      "lastCheckedAt": 1791976618016
+      "lastCheckedAt": 1791993298281
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -220,10 +220,10 @@
       "lastCheckedAt": 1791881995314
     },
     "399669": {
-      "lastRssKey": "98918f36-f2e1-4cfe-8964-9ff02f655ac9",
-      "lastEpisodeTitle": "The Zodiac /// Part 2",
-      "lastEpisodeId": "61362597376",
-      "lastCheckedAt": 1791939219712
+      "lastRssKey": "f2268046-c7df-4d0b-9a1a-fd10aba32585",
+      "lastEpisodeTitle": "The Zodiac /// Part 4",
+      "lastEpisodeId": "61729629365",
+      "lastCheckedAt": 1791993299988
     },
     "415434": {
       "lastRssKey": "ca9d312a-c3c7-11f0-8340-8778d9878c4f",
@@ -250,10 +250,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4VEHJCKGBC7SE1XFHB28AZK",
-      "lastEpisodeTitle": "Is AI solving the right problems for consumers?",
+      "lastRssKey": "01M4X3TMNWRXG20ZVZ4AZ1JBTR",
+      "lastEpisodeTitle": "Changes are coming to some seniors' healthcare plans",
       "lastEpisodeId": "61647801267",
-      "lastCheckedAt": 1791976623504
+      "lastCheckedAt": 1791993304457
     },
     "432535": {
       "lastRssKey": "7519f2d2-1e3b-405d-b08e-1c3da35a65e7",
@@ -338,16 +338,16 @@
       "lastCheckedAt": 1791927901730
     },
     "490022": {
-      "lastRssKey": "12e22989-ea3b-44ec-98b7-5514b8a78131",
-      "lastEpisodeTitle": "Cornell 7: Frat Brothers Accused of Campus Gang Rape & Sending \"Free Pussy\" Snapchat",
-      "lastEpisodeId": "61614768626",
-      "lastCheckedAt": 1791800245603
+      "lastRssKey": "d82eadfc-ec5f-4685-9b73-7f49b5b47297",
+      "lastEpisodeTitle": "Cornell 7: Jane Doe’s Initial Police Report Released, Everything She Told Police About That Night",
+      "lastEpisodeId": "61728566073",
+      "lastCheckedAt": 1791993316277
     },
     "491579": {
-      "lastRssKey": "6ace2f8168b7ce6ffb0bf76a",
-      "lastEpisodeTitle": "Stuart Dallas: One Man, No City | The Square Ball",
+      "lastRssKey": "6acf8c1d6203da9f282dec79",
+      "lastEpisodeTitle": "Propaganda: Passing and Dribbling",
       "lastEpisodeId": "61679916642",
-      "lastCheckedAt": 1791910429936
+      "lastCheckedAt": 1791993317370
     },
     "497129": {
       "lastRssKey": "12381::3577747",
@@ -647,10 +647,10 @@
       "lastCheckedAt": 1791594418220
     },
     "980370": {
-      "lastRssKey": "6acd4daa1882f45a244792a2",
-      "lastEpisodeTitle": "Why it's so hard to listen when you disagree | Emily Kasriel",
+      "lastRssKey": "6acf9867b3381b9dbb7c315a",
+      "lastEpisodeTitle": "AI brain fry is real. Here’s what’s causing it | Julie Bedard",
       "lastEpisodeId": "61632132865",
-      "lastCheckedAt": 1791910476486
+      "lastCheckedAt": 1791993362233
     },
     "998969": {
       "lastRssKey": "audioboom-01a12cb6-5928-7522-b36b-75e2fc0f73a0",
@@ -681,16 +681,16 @@
       "lastCheckedAt": 1791145313695
     },
     "1035900": {
-      "lastRssKey": "c675eec2-a0f2-4881-a539-602dc21d44dd",
-      "lastEpisodeTitle": "\"Sowas baut man nicht!\" - Cities Skylines 2 mit Blaupause",
-      "lastEpisodeId": "61679478914",
-      "lastCheckedAt": 1791910483755
+      "lastRssKey": "cb00d4fe-4433-4e96-997b-4b73d9f01cc8",
+      "lastEpisodeTitle": "GTA 6 im Leaks-Wahn: Zerstören diese Enthüllungen unsere Vorfreude? | Radio Buschfunk",
+      "lastEpisodeId": "61728980373",
+      "lastCheckedAt": 1791993368395
     },
     "1047718": {
-      "lastRssKey": "6acc7a528f084a13d13c99d0",
-      "lastEpisodeTitle": "Triumphant Manchester City unfazed by Liverpool and Anfield hostility – Football Weekly",
-      "lastEpisodeId": "61446000362",
-      "lastCheckedAt": 1791835033015
+      "lastRssKey": "6acf28b88f08f3bf7741b81a",
+      "lastEpisodeTitle": "Martínez mouths off as Manchester United miss the mark in Madrid – Football Weekly podcast",
+      "lastEpisodeId": "61722037430",
+      "lastCheckedAt": 1791993368866
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-an-ummah-that-feels-broken",
@@ -722,10 +722,10 @@
       "lastCheckedAt": 1791910489692
     },
     "1116485": {
-      "lastRssKey": "6ace4c3831b733590eede473",
-      "lastEpisodeTitle": "Is Florian Wirtz THE PROBLEM For Liverpool? | The Deep Dive",
-      "lastEpisodeId": "61634438883",
-      "lastCheckedAt": 1791927955822
+      "lastRssKey": "6acf688ae505ff1da98f3c3b",
+      "lastEpisodeTitle": "Liverpool Interested in £100m Move for Alex Scott! | Redmen Bitesize",
+      "lastEpisodeId": "61724731821",
+      "lastCheckedAt": 1791993375327
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -852,10 +852,10 @@
       "lastCheckedAt": 1791927966718
     },
     "2136580": {
-      "lastRssKey": "8d4bb6b2-3738-4193-ba19-7efbb7d6837f",
-      "lastEpisodeTitle": "Episode 395: JACOB FOWLER STELLAR SHUTOUT FOR THE CANADIENS VS RED WINGS!",
-      "lastEpisodeId": "61488869775",
-      "lastCheckedAt": 1791976706138
+      "lastRssKey": "4dff17ff-c731-46c8-81ba-44c03c16bae9",
+      "lastEpisodeTitle": "Episode 396: CANADIENS NEARLY BLEW IT...BUT WIN IN SHOOTOUT vs SABRES!",
+      "lastEpisodeId": "61713022658",
+      "lastCheckedAt": 1791993385922
     },
     "2136949": {
       "lastRssKey": "6ac553a0eea51f2aa345497e",
@@ -1152,9 +1152,10 @@
       "lastCheckedAt": 1791910527676
     },
     "6154309": {
-      "lastRssKey": "e46912b0-9a70-44e8-aa69-cc38478c34cc",
-      "lastEpisodeTitle": "How to Become Hungry for God - 124",
-      "lastCheckedAt": 1791658128446
+      "lastRssKey": "2b7cdefb-9a79-4001-9420-ab0667c687b8",
+      "lastEpisodeTitle": "The Origin of Demons (giants, the flood, & the Book of Jubilees) w/Fred K. Price Jr. - 125",
+      "lastEpisodeId": "61729657168",
+      "lastCheckedAt": 1791993412837
     },
     "6264274": {
       "lastRssKey": "2a2b381f-77eb-44fc-a020-9bbed9b07b75",
@@ -1169,10 +1170,10 @@
       "lastCheckedAt": 1791927992838
     },
     "6413946": {
-      "lastRssKey": "b7c13f15-b086-4ba2-b39c-3b9d758b81e7",
-      "lastEpisodeTitle": "EP 842: Cárteles mexicanos roban autos rentados en Estados Unidos, Lemus justifica represión contra marcha de Guadalajara y Trabajadores del IMSS retoman protesta",
+      "lastRssKey": "92e3855c-90e0-4901-b29c-6badfbc4c823",
+      "lastEpisodeTitle": "EP 843: Liberan a delincuente en Morelos por chantaje de su grupo, El Papa tiene cáncer de pulmón y Adán Augusto defiende a Andy",
       "lastEpisodeId": "61679713972",
-      "lastCheckedAt": 1791910529057
+      "lastCheckedAt": 1791993414612
     },
     "6456494": {
       "lastRssKey": "6acef2bd94a3daa98e9257a3",
@@ -1204,10 +1205,10 @@
       "lastCheckedAt": 1791542483767
     },
     "6628686": {
-      "lastRssKey": "flightcast:01M4FVYJP3B49SM53H83DGB195",
-      "lastEpisodeTitle": "5 Red Flags Your Hair Loss Needs a Medical Workup",
+      "lastRssKey": "77e54b80-a3c2-11f1-8448-3f27ed799cf6",
+      "lastEpisodeTitle": "Moment: Want More Sex in Your Marriage? Start Doing THIS Outside the Bedroom",
       "lastEpisodeId": "61491511144",
-      "lastCheckedAt": 1791567038626
+      "lastCheckedAt": 1791993416835
     },
     "6634680": {
       "lastRssKey": "cb571878-467a-49c1-bb3a-a9e6128a2f0b",
@@ -1334,10 +1335,10 @@
       "lastCheckedAt": 1791976745824
     },
     "6912659": {
-      "lastRssKey": "ad6ac5f1-6717-435e-8595-89a8974680c0",
-      "lastEpisodeTitle": "#112 - As Envenenadoras de Uberaba e o mistério dos 12 mortos - Uberaba | Brasil",
+      "lastRssKey": "561d1781-bda9-4d36-9565-21d87a7de5ac",
+      "lastEpisodeTitle": "#113 - O Caso dos Irmãos Naves: o homem que voltou dos mortos - Araguari | Brasil",
       "lastEpisodeId": "60495183776",
-      "lastCheckedAt": 1791372019768
+      "lastCheckedAt": 1791993429843
     },
     "6926108": {
       "lastRssKey": "8f9bfeb6-c26e-11f1-bf39-63984e3888dc",
@@ -1472,10 +1473,10 @@
       "lastCheckedAt": 1791800357026
     },
     "7348627": {
-      "lastRssKey": "3acf8c99-0615-4361-8650-d71933d68aef",
-      "lastEpisodeTitle": "6 Hours of Chilling Cold Case Mysteries For Sleep | 327",
-      "lastEpisodeId": "61561166200",
-      "lastCheckedAt": 1791976756213
+      "lastRssKey": "1dfd422f-c7b2-4efa-9383-354a17151e4d",
+      "lastEpisodeTitle": "2.5 Hours of Unsolved Cases Too Dark For Netflix | 328",
+      "lastEpisodeId": "61703280523",
+      "lastCheckedAt": 1791993439782
     },
     "7376606": {
       "lastRssKey": "c2f1145a-ed44-4a6c-baae-b5ffae53659b",
@@ -1537,10 +1538,10 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
-      "lastRssKey": "28f2d3bd-3022-4afa-a0c9-008edf912168",
-      "lastEpisodeTitle": "Tuesday, October 13, 2026 - 5 Minute AI News",
+      "lastRssKey": "35b6eea5-03eb-4e90-b5f2-f693ca77a4af",
+      "lastEpisodeTitle": "Wednesday, October 14, 2026 - 5 Minute AI News",
       "lastEpisodeId": "61670582677",
-      "lastCheckedAt": 1791910553605
+      "lastCheckedAt": 1791993444291
     },
     "7551349": {
       "lastRssKey": "17448f4e-0e2a-4a64-80e4-b4dc0155cd7c",
@@ -1613,6 +1614,12 @@
       "lastEpisodeId": "61641827676",
       "lastCheckedAt": 1791856469898
     },
+    "7722206": {
+      "lastEpisodeId": "61705682664",
+      "lastEpisodeTitle": "The Strangest Facts About Earth You Were Never Taught",
+      "lastRssKey": "f1faeaa8-875e-453f-9c19-7ab3842d9e1c",
+      "lastCheckedAt": 1791993448374
+    },
     "7756959": {
       "lastRssKey": "80172f3e-c759-11f1-935c-2f2e77643f97",
       "lastEpisodeTitle": "Norteña: el universo creativo de Julieta Venegas | VA VA VA",
@@ -1644,10 +1651,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/51a01bc6-7edd-5b12-afac-803cefc8ef32",
-      "lastEpisodeTitle": "DEBUNKING the 4 biggest narcissism myths ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/831a86ed-ad52-59fd-9139-df7076660c37",
+      "lastEpisodeTitle": "The 3 SIGNS Youre Dealing With A COVERT NARCISSIST Dr. Ramani ~ Dr. Ramani",
       "lastEpisodeId": "61493953527",
-      "lastCheckedAt": 1791976767859
+      "lastCheckedAt": 1791993450947
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
