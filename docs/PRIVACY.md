@@ -4,7 +4,7 @@
 
 ## Our Core Commitments
 
-1. **Zero Ads, Forever:** We do not have banner ads, sponsor tracking pixels, or cross-site advertising SDKs. boxlore will never have ads.
+1. **No App Ads, Forever:** We do not have banner ads, sponsor tracking pixels, or cross-site advertising SDKs. boxlore will never show ads in the app. Podcasts may still carry ads placed by their creators.
 2. **Anonymous Usage & Zero Profile Linking:** Accounts in boxlore are completely optional and used purely for cloud backup and library sync across your devices. Your email is logged solely by Firebase (Google) for secure auth verification and is never stored on our application servers. Most importantly, **your account email is never connected, linked, or cross-referenced with your app usage or telemetry event profile**. Your telemetry activity remains strictly anonymous.
 3. **Discovery Without Ad Profiling:** We never sell your data, build advertising dossiers, or track you across the web. To help you discover new shows, the app sends bounded listening seeds (recent shows you played, liked, or completed) to our servers to run semantic vector search against our catalog. The server returns candidate shows statelessly—it does not build a persistent behavioral profile to monetize your attention.
 
