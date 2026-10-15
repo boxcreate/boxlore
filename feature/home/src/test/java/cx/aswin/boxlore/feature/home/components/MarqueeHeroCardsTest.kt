@@ -160,10 +160,10 @@ class MarqueeHeroCardsTest {
         assertEquals(listOf("show-b"), plays)
     }
 
-    @Test fun `collections advance on their own until a cover is chosen, then play and open the chosen episode`() {
+    @Test fun `collections advance on their own, pause after a cover is chosen, then carry on`() {
         val shows = listOf("a", "b", "c", "d").map(::show)
         items.value = listOf(SmartHeroItem(HeroType.RESUME_GRID, shows.first(), "", gridItems = shows))
-        // The strip keeps advancing while nothing is chosen, so the clock only moves when the test moves it.
+        // The strip keeps advancing, so the clock only moves when the test moves it.
         composeRule.mainClock.autoAdvance = false
         render()
         composeRule.mainClock.advanceTimeByFrame()
@@ -171,18 +171,23 @@ class MarqueeHeroCardsTest {
         composeRule.mainClock.advanceTimeBy(3_600L)
         composeRule.onNodeWithText("Jump back in · 2 of 4").assertExists()
 
-        // Choosing a cover stops the marquee. With the clock held, the test presses through semantics.
+        // Choosing a cover holds it for 8 seconds. With the clock held, the test presses through semantics.
         composeRule.onNodeWithTag("home_hero_collection_0").performSemanticsAction(SemanticsActions.OnClick)
         composeRule.mainClock.advanceTimeBy(500L)
         composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
-        composeRule.mainClock.advanceTimeBy(8_000L)
+        composeRule.mainClock.advanceTimeBy(4_000L)
         composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
 
+        // Play and details use the chosen episode.
         composeRule.onNodeWithTag("home_hero_collection_0_progress", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithTag("home_hero_play").performSemanticsAction(SemanticsActions.OnClick)
         composeRule.onNodeWithContentDescription("Open episode details").performSemanticsAction(SemanticsActions.OnClick)
         composeRule.mainClock.advanceTimeBy(500L)
         assertEquals(listOf("show-a"), plays)
         assertEquals(listOf("show-a"), details)
+
+        // Then the marquee carries on.
+        composeRule.mainClock.advanceTimeBy(4_000L)
+        composeRule.onNodeWithText("Jump back in · 2 of 4").assertExists()
     }
 }

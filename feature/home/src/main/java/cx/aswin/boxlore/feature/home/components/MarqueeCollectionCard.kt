@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -67,7 +68,8 @@ import kotlinx.coroutines.isActive
  * Marquee's Jump back in and New episodes cards: the chosen episode's cover fills the card, with the
  * collection's name and position at the top and the episode's words, Play and details at the bottom.
  * Below them a strip of covers picks the episode: while the card is on screen it advances on its own
- * every 3.5 seconds, until the listener taps a cover or scrolls the strip.
+ * every 3.5 seconds. Dragging the strip holds it, and after a tap or a drag it waits 8 seconds before
+ * moving on again, so the listener's choice stays put while they look at it.
  */
 @Composable
 @Suppress("LongParameterList")
@@ -86,11 +88,13 @@ internal fun MarqueeCollectionCard(
     val display = items.take(4)
     if (display.isEmpty()) return
     var selected by rememberSaveable(display.size) { mutableIntStateOf(0) }
-    var chosen by rememberSaveable { mutableStateOf(false) }
+    // Each tap or drag restarts the wait; a drag in progress holds the marquee.
+    var touches by remember { mutableIntStateOf(0) }
+    var holding by remember { mutableStateOf(false) }
     val index = selected.coerceIn(0, display.lastIndex)
     val podcast = display[index]
     val resume = mode == HeroGridMode.Resume
-    MarqueeAutoAdvance(running = active && !chosen && display.size > 1) { selected = (selected + 1) % display.size }
+    MarqueeAutoAdvance(running = active && !holding && display.size > 1, touches = touches) { selected = (selected + 1) % display.size }
     val look = rememberMarqueeLook(podcast.imageUrl)
     val shade = look.shade
     val item = SmartHeroItem(
@@ -140,8 +144,11 @@ internal fun MarqueeCollectionCard(
             Spacer(Modifier.height(16.dp))
             MarqueeStrip(display, index, resume, shade, onSelect = { picked ->
                 selected = picked
-                chosen = true
-            }, onScrolled = { chosen = true })
+                touches++
+            }, onDragging = { dragging ->
+                holding = dragging
+                if (dragging) touches++
+            })
         }
     }
 }
@@ -164,17 +171,22 @@ private fun MarqueeCollectionPosition(title: String, index: Int, count: Int, sha
     )
 }
 
-/** Calls [advance] every 3.5 seconds while [running] and Home is on screen. */
+/**
+ * Calls [advance] every 3.5 seconds while [running] and Home is on screen. Once the listener has
+ * touched the strip ([touches] above 0, and again each time it changes) it first waits 8 seconds.
+ */
 @Composable
-private fun MarqueeAutoAdvance(running: Boolean, advance: () -> Unit) {
+private fun MarqueeAutoAdvance(running: Boolean, touches: Int, advance: () -> Unit) {
     val currentAdvance by rememberUpdatedState(advance)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(running, lifecycle) {
+    LaunchedEffect(running, touches, lifecycle) {
         if (!running) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            var wait = if (touches > 0) MarqueeResumeMillis else MarqueeAdvanceMillis
             while (isActive) {
-                delay(MarqueeAdvanceMillis)
+                delay(wait)
                 currentAdvance()
+                wait = MarqueeAdvanceMillis
             }
         }
     }
@@ -187,11 +199,11 @@ private fun MarqueeAutoAdvance(running: Boolean, advance: () -> Unit) {
  */
 @Composable
 @Suppress("LongParameterList")
-private fun MarqueeStrip(items: List<Podcast>, selected: Int, resume: Boolean, card: ArtworkShade, onSelect: (Int) -> Unit, onScrolled: () -> Unit) {
+private fun MarqueeStrip(items: List<Podcast>, selected: Int, resume: Boolean, card: ArtworkShade, onSelect: (Int) -> Unit, onDragging: (Boolean) -> Unit) {
     val scroll = rememberScrollState()
     val dragged by scroll.interactionSource.collectIsDraggedAsState()
-    val currentOnScrolled by rememberUpdatedState(onScrolled)
-    LaunchedEffect(dragged) { if (dragged) currentOnScrolled() }
+    val currentOnDragging by rememberUpdatedState(onDragging)
+    LaunchedEffect(dragged) { currentOnDragging(dragged) }
     val size = marqueeBlockSize(items.size)
     val step = with(LocalDensity.current) { (size + MarqueeBlockGap).toPx() }
     LaunchedEffect(selected, step) {
@@ -247,5 +259,6 @@ private fun MarqueeBlock(podcast: Podcast, size: Dp, isSelected: Boolean, resume
 }
 
 private const val MarqueeAdvanceMillis = 3_500L
+private const val MarqueeResumeMillis = 8_000L
 private val MarqueeBlockGap = 10.dp
 private val MarqueeBlockShape = RoundedCornerShape(16.dp)
