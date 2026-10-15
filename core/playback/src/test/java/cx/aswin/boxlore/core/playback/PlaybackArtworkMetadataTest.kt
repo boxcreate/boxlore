@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.core.playback
 
+import android.net.Uri
 import android.os.Bundle
+import androidx.media3.common.MediaMetadata
 import cx.aswin.boxlore.core.testing.TestFixtures
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -19,5 +21,52 @@ class PlaybackArtworkMetadataTest {
         assertEquals(listOf("https://art/episode", "https://art/show"), extras.getStringArrayList(PlaybackArtworkMetadata.SOURCES))
         assertEquals("library_latest_episodes", extras.getString("source_entry_point"))
         assertEquals(null, existing.getStringArrayList(PlaybackArtworkMetadata.SOURCES))
+    }
+
+    // Regression: history saved the player's Android Auto artwork link, which outlived its cover.
+    @Test
+    fun `saved artwork is the item's real cover, never the player-only link`() {
+        val dead = Uri.parse("content://cx.aswin.boxlore.collage/local/38e72bd3")
+        val withSources = MediaMetadata.Builder().setArtworkUri(dead)
+            .setExtras(Bundle().apply { putStringArrayList(PlaybackArtworkMetadata.SOURCES, arrayListOf("content://cx.aswin.boxlore.collage/art/x", "https://art/episode")) })
+            .build()
+        assertEquals("https://art/episode", PlaybackArtworkMetadata.savedArtworkUrl(withSources))
+        assertEquals(null, PlaybackArtworkMetadata.savedArtworkUrl(MediaMetadata.Builder().setArtworkUri(dead).build()))
+        assertEquals("https://art/plain", PlaybackArtworkMetadata.savedArtworkUrl(MediaMetadata.Builder().setArtworkUri(Uri.parse("https://art/plain")).build()))
+        assertEquals(null, PlaybackArtworkMetadata.savedArtworkUrl(null))
+    }
+
+    @Test
+    fun `the original cover is kept ahead of existing sources when the player swaps the artwork`() {
+        val existing = Bundle().apply {
+            putStringArrayList(PlaybackArtworkMetadata.SOURCES, arrayListOf("https://art/show"))
+            putString("source_entry_point", "auto")
+        }
+        val extras = PlaybackArtworkMetadata.withOriginal(existing, "https://art/episode")
+        assertEquals(listOf("https://art/episode", "https://art/show"), extras.getStringArrayList(PlaybackArtworkMetadata.SOURCES))
+        assertEquals("auto", extras.getString("source_entry_point"))
+        assertEquals(listOf("https://art/show"), PlaybackArtworkMetadata.withOriginal(existing, "content://cx.aswin.boxlore.collage/local/1").getStringArrayList(PlaybackArtworkMetadata.SOURCES))
+        assertEquals(null, PlaybackArtworkMetadata.withOriginal(null, null).getStringArrayList(PlaybackArtworkMetadata.SOURCES))
+    }
+
+    // Regression: a show cover used as a fallback was saved in place of the item's own episode cover.
+    @Test
+    fun `a show-only fallback goes after an episode cover the item already carries`() {
+        val existing = Bundle().apply { putStringArrayList(PlaybackArtworkMetadata.SOURCES, arrayListOf("https://art/episode")) }
+        val extras = PlaybackArtworkMetadata.withOriginal(existing, "https://art/show", episodeCover = false)
+        assertEquals(listOf("https://art/episode", "https://art/show"), extras.getStringArrayList(PlaybackArtworkMetadata.SOURCES))
+        val metadata = MediaMetadata.Builder().setExtras(extras).build()
+        assertEquals("https://art/episode", PlaybackArtworkMetadata.savedArtworkUrl(metadata))
+        // With nothing else to go on, the show cover is still saved.
+        assertEquals(listOf("https://art/show"), PlaybackArtworkMetadata.withOriginal(null, "https://art/show", episodeCover = false).getStringArrayList(PlaybackArtworkMetadata.SOURCES))
+    }
+
+    // Regression: an incoming item's player-only artwork counted as a cover and skipped the catalogue lookup.
+    @Test
+    fun `an item whose only artwork is a player-only link still asks the catalogue for a cover`() {
+        val item = MediaMetadata.Builder().setArtworkUri(Uri.parse("content://cx.aswin.boxlore.collage/art/x")).build()
+        val local = PlaybackArtworkMetadata.savedArtworkUrl(item)
+        assertEquals(null, local)
+        assertEquals(true, cx.aswin.boxlore.core.playback.service.auto.AutoMediaResolutionPolicy.needsPlaybackMetadataFallback("Title", "Show", local))
     }
 }

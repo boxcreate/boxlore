@@ -58,7 +58,10 @@ dependencies {
     api(libs.coil.compose) // OptimizedImage composable uses Coil
     implementation(libs.kotlinx.coroutines.android)
 
+    testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.vintage.engine)
     testRuntimeOnly(libs.junit.platform.launcher)
+    // The player scheme runs on Android colour utilities.
+    testImplementation(libs.robolectric)
 }

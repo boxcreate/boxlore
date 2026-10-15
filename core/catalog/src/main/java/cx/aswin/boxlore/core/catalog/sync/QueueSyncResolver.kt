@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
+import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.network.model.QueueItemSyncDto
 import cx.aswin.boxlore.core.network.model.QueueSyncDto
 
@@ -170,28 +171,33 @@ class QueueSyncResolver(
 
         // Tier 2: Remote DTO Rich Metadata (if provided by peer device)
         val remoteTitle = dto.title
-        if (!remoteTitle.isNullOrBlank()) {
-            return QueueItem(
-                episodeId = dto.episodeId,
-                title = remoteTitle,
-                podcastId = dto.podcastId,
-                podcastTitle = dto.podcastTitle ?: "",
-                imageUrl = dto.imageUrl,
-                podcastImageUrl = dto.podcastImageUrl,
-                audioUrl = dto.audioUrl ?: "",
-                duration = dto.duration ?: 0,
-                pubDate = dto.pubDate ?: 0L,
-                description = dto.description,
-                position = dto.position,
-                contextType = dto.contextType ?: "MANUAL",
-                contextSourceId = dto.contextSourceId,
-            )
-        }
+        if (!remoteTitle.isNullOrBlank()) return hydrateFromPeer(dto, remoteTitle)
 
         return hydrateFromCatalogOrRss(dto)
             ?: hydrateFromHistory(dto)
             ?: hydrateFromNetwork(dto)
             ?: fallbackQueueItem(dto)
+    }
+
+    private suspend fun hydrateFromPeer(dto: QueueItemSyncDto, title: String): QueueItem {
+        // A peer's player-only cover link is dropped; this device's catalogue may still have the cover.
+        val imageUrl = persistableArtworkUrl(dto.imageUrl)
+        val catalog = if (imageUrl == null) hydrateFromCatalogOrRss(dto) else null
+        return QueueItem(
+            episodeId = dto.episodeId,
+            title = title,
+            podcastId = dto.podcastId,
+            podcastTitle = dto.podcastTitle ?: "",
+            imageUrl = imageUrl ?: catalog?.imageUrl?.takeIf { it.isNotBlank() },
+            podcastImageUrl = persistableArtworkUrl(dto.podcastImageUrl),
+            audioUrl = dto.audioUrl ?: "",
+            duration = dto.duration ?: 0,
+            pubDate = dto.pubDate ?: 0L,
+            description = dto.description,
+            position = dto.position,
+            contextType = dto.contextType ?: "MANUAL",
+            contextSourceId = dto.contextSourceId,
+        )
     }
 
     private suspend fun hydrateFromCatalogOrRss(dto: QueueItemSyncDto): QueueItem? {
@@ -241,8 +247,8 @@ class QueueSyncResolver(
                 title = history.episodeTitle,
                 podcastId = dto.podcastId.ifEmpty { history.podcastId },
                 podcastTitle = history.podcastName,
-                imageUrl = history.episodeImageUrl,
-                podcastImageUrl = history.podcastImageUrl,
+                imageUrl = persistableArtworkUrl(history.episodeImageUrl),
+                podcastImageUrl = persistableArtworkUrl(history.podcastImageUrl),
                 audioUrl = history.episodeAudioUrl ?: "",
                 duration = (history.durationMs / 1000L).toInt(),
                 pubDate = 0L,

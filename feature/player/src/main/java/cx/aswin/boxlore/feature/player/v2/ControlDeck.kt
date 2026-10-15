@@ -233,7 +233,11 @@ private fun TransportButton(
         modifier = modifier
             .clip(shape)
             .background(
-                if (quiet) colorScheme.surfaceContainerHigh else colorScheme.secondaryContainer
+                if (quiet) {
+                    colorScheme.surface.copy(alpha = 0.42f)
+                } else {
+                    colorScheme.primary.copy(alpha = 0.15f)
+                }
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -247,7 +251,7 @@ private fun TransportButton(
             forward = icon.forward,
             contentDescription = icon.contentDescription,
             modifier = Modifier.size(icon.size),
-            tint = if (quiet) colorScheme.onSurfaceVariant else colorScheme.onSecondaryContainer
+            tint = if (quiet) colorScheme.onSurfaceVariant else colorScheme.primary
         )
     }
 }
@@ -456,7 +460,7 @@ fun SecondaryRail(
         modifier = modifier
             .fillMaxWidth()
             .clip(groupTrayShape)
-            .background(colorScheme.surfaceContainer)
+            .background(colorScheme.primary.copy(alpha = 0.12f))
             .padding(8.dp)
     ) {
         AnimatedContent(
@@ -562,7 +566,7 @@ fun SpeedSheet(
                         modifier = Modifier
                             .height(44.dp)
                             .clip(CircleShape)
-                            .background(if (selected) colorScheme.primary else colorScheme.secondaryContainer)
+                            .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
                             .clickable { onSpeedSelected(speed) }
                             .padding(horizontal = 18.dp),
                         contentAlignment = Alignment.Center
@@ -571,7 +575,7 @@ fun SpeedSheet(
                             text = formatSpeedLabel(speed),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = GoogleSansWeight.semiBold,
-                            color = if (selected) colorScheme.onPrimary else colorScheme.onSecondaryContainer
+                            color = if (selected) colorScheme.onPrimary else colorScheme.onSurface
                         )
                     }
                 }
@@ -625,7 +629,7 @@ fun SleepSheet(
                         modifier = Modifier
                             .height(44.dp)
                             .clip(CircleShape)
-                            .background(if (selected) colorScheme.primary else colorScheme.secondaryContainer)
+                            .background(if (selected) colorScheme.primary else colorScheme.surfaceContainerHigh)
                             .clickable { onDurationSelected(minutes) }
                             .padding(horizontal = 18.dp),
                         contentAlignment = Alignment.Center
@@ -634,7 +638,7 @@ fun SleepSheet(
                             text = label,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = GoogleSansWeight.semiBold,
-                            color = if (selected) colorScheme.onPrimary else colorScheme.onSecondaryContainer
+                            color = if (selected) colorScheme.onPrimary else colorScheme.onSurface
                         )
                     }
                 }

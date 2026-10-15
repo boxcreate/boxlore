@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
+import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -187,5 +188,42 @@ class QueueDaoInMemoryTest {
         assertEquals(true, stored.isDirty)
         assertEquals(0L, stored.syncedAt)
         assertEquals(6L, stored.queueSequence)
+    }
+
+    // Regression: the repaired queue stayed clean, so the cloud copy kept the dead artwork links.
+    @Test
+    fun `a queue repair marks a synced queue for the next push without changing its sequence`() = runTest {
+        dao.upsertQueueMetadata(QueueMetadataEntity(id = 1, queueSequence = 5L, isDirty = false, syncedAt = 100L))
+        dao.insertQueueItem(item("a", 1).copy(imageUrl = "content://cx.aswin.boxlore.collage/art/abc", podcastImageUrl = "https://art/show.jpg"))
+
+        assertEquals(1, dao.repairPlaybackArtworkLinksForSync())
+        val marked = dao.getQueueMetadata()!!
+        assertEquals(true, marked.isDirty)
+        assertEquals(5L, marked.queueSequence)
+
+        dao.upsertQueueMetadata(marked.copy(isDirty = false))
+        assertEquals(0, dao.repairPlaybackArtworkLinksForSync())
+        assertEquals(false, dao.getQueueMetadata()!!.isDirty)
+    }
+
+    // Regression: queue rows built from the player could keep its Android Auto artwork link.
+    @Test
+    fun `player-only artwork links in the queue are swapped for real covers without reordering`() = runTest {
+        val dead = "content://cx.aswin.boxlore.collage/art/abc"
+        database.podcastDao().upsert(PodcastEntity(podcastId = "pod-1", title = "Podcast", author = "Host", imageUrl = "https://art/show.jpg", description = null))
+        dao.insertQueueItem(item("a", 1).copy(imageUrl = dead, podcastImageUrl = dead))
+        dao.insertQueueItem(item("b", 2).copy(imageUrl = "https://art/b.jpg"))
+        // An unsubscribed show: only the row's own show cover is left to fall back on.
+        dao.insertQueueItem(item("c", 3).copy(podcastId = "unsubscribed", imageUrl = dead, podcastImageUrl = "https://art/own-show.jpg"))
+
+        assertEquals(2, dao.repairPlaybackArtworkLinks())
+
+        val items = dao.getAllQueueItemsSync()
+        assertEquals(listOf("a", "b", "c"), items.map { it.episodeId })
+        assertEquals("https://art/show.jpg", items[0].imageUrl)
+        assertEquals("https://art/show.jpg", items[0].podcastImageUrl)
+        assertEquals("https://art/b.jpg", items[1].imageUrl)
+        assertEquals("https://art/own-show.jpg", items[2].imageUrl)
+        assertEquals(0, dao.repairPlaybackArtworkLinks())
     }
 }

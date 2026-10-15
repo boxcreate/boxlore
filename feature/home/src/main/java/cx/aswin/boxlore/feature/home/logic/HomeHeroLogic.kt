@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.home.logic
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -11,8 +12,6 @@ internal object HomeHeroLogic {
         session: PlaybackSession,
         subs: List<Podcast>,
     ): Podcast {
-        val epImage = session.imageUrl
-        val podImage = session.podcastImageUrl
         val ratio =
             if (session.durationMs > 0) {
                 (session.positionMs.toFloat() / session.durationMs.toFloat()).coerceIn(0f, 1f)
@@ -21,6 +20,10 @@ internal object HomeHeroLogic {
             }
         val finalPodId = session.podcastId.takeIf { it.isNotBlank() && it != "0" } ?: ""
         val parentPod = subs.find { it.id == finalPodId }
+        // A player-only artwork link saved by an older build would leave the card on the placeholder;
+        // skip it and fall back to the subscribed show's cover.
+        val epImage = persistableArtworkUrl(session.imageUrl)
+        val podImage = persistableArtworkUrl(session.podcastImageUrl) ?: persistableArtworkUrl(parentPod?.imageUrl)
         val parentTitle = parentPod?.title.orEmpty()
         val finalPodTitle =
             session.podcastTitle

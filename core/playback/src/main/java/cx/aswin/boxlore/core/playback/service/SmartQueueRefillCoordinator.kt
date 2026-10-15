@@ -121,7 +121,7 @@ class SmartQueueRefillCoordinator(
         title = item.mediaMetadata.title?.toString() ?: "",
         description = "",
         enclosureUrl = item.localConfiguration?.uri?.toString(),
-        image = item.mediaMetadata.artworkUri?.toString(),
+        image = cx.aswin.boxlore.core.playback.PlaybackArtworkMetadata.savedArtworkUrl(item.mediaMetadata),
         feedImage = podcast.imageUrl,
     )
 

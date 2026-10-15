@@ -35,6 +35,35 @@ class HomeHeroLogicTest {
         assertEquals("ep-1", podcast.latestEpisode?.id)
     }
 
+    // Regression: history kept a dead player-only link, so Jump back in showed the placeholder.
+    @Test
+    fun `session with player-only artwork links falls back to the subscribed show's cover`() {
+        val dead = "content://cx.aswin.boxlore.collage/local/38e72bd3ab3019a5bb9f93a3417dd2dcd604bc446a28153b388cc681156acf93"
+        val session =
+            PlaybackSession(
+                podcastId = "415434",
+                episodeId = "-120771577321563031",
+                positionMs = 2_577_967L,
+                durationMs = 4_992_130L,
+                timestamp = 1L,
+                episodeTitle = "HomeView: Apple just got serious about the smart home | Livestream",
+                podcastTitle = "The Vergecast",
+                imageUrl = dead,
+                podcastImageUrl = dead,
+                audioUrl = "https://example.com/a.mp3",
+            )
+        val vergecast = Podcast("415434", "The Vergecast", "The Verge", "https://megaphone.imgix.net/vergecast.jpg")
+
+        val subscribed = HomeHeroLogic.sessionToPodcast(session, subs = listOf(vergecast))
+        assertEquals("https://megaphone.imgix.net/vergecast.jpg", subscribed.imageUrl)
+        assertEquals("https://megaphone.imgix.net/vergecast.jpg", subscribed.fallbackImageUrl)
+        assertEquals("", subscribed.latestEpisode?.imageUrl)
+
+        val unsubscribed = HomeHeroLogic.sessionToPodcast(session, subs = emptyList())
+        assertEquals("", unsubscribed.imageUrl)
+        assertEquals(null, unsubscribed.fallbackImageUrl)
+    }
+
     @Test
     fun `unplayed hero label prefers NEXT for oldest sort`() {
         assertEquals("NEXT", HomeHeroLogic.unplayedHeroLabel("oldest", unplayedCount = 3, isFirst = true))

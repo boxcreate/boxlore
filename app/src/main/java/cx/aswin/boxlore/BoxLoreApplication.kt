@@ -276,6 +276,8 @@ class BoxLoreApplication :
     private fun scheduleOptionalStartup() {
         applicationScope.launch {
             startupWorkGate.runWhenReady {
+                // Before sync starts, so repaired history rows upload with their real covers.
+                repairPlaybackArtworkLinks()
                 val coordinator = container.cloudSyncTriggerCoordinator
                 withContext(Dispatchers.Main.immediate) { coordinator.start() }
                 CloudSyncWorker.schedulePeriodicSync(this@BoxLoreApplication)
@@ -285,6 +287,23 @@ class BoxLoreApplication :
             startupWorkGate.runWhenReady {
                 container.smartDownloadManager.reconcileScheduleWithPreferences()
             }
+        }
+    }
+
+    /**
+     * Older builds saved the player's Android Auto artwork links into history and the queue; they
+     * die with their covers and left Home on the placeholder. Each launch swaps any left for real
+     * covers; once none remain it changes nothing.
+     */
+    private suspend fun repairPlaybackArtworkLinks() {
+        runCatching {
+            val database = container.database
+            val history = database.listeningHistoryDao().repairPlaybackArtworkLinks()
+            val queue = database.queueDao().repairPlaybackArtworkLinksForSync()
+            if (history + queue > 0) android.util.Log.i("BoxLoreApplication", "Repaired player-only artwork links: history=$history queue=$queue")
+        }.onFailure { error ->
+            if (error is kotlinx.coroutines.CancellationException) throw error
+            android.util.Log.w("BoxLoreApplication", "Artwork link repair failed", error)
         }
     }
 

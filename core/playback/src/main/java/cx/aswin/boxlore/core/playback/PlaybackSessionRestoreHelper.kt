@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.persistableArtworkUrl
 internal data class RestoredSessionData(
     val lastSession: ListeningHistoryEntity,
     val episode: Episode,
@@ -197,7 +198,7 @@ internal object PlaybackSessionRestoreHelper {
                 title = lastSession.episodeTitle,
                 description = lastSession.episodeDescription ?: "",
                 audioUrl = baseAudioUrl,
-                imageUrl = lastSession.episodeImageUrl ?: currentItem?.mediaMetadata?.artworkUri?.toString(),
+                imageUrl = persistableArtworkUrl(lastSession.episodeImageUrl) ?: PlaybackArtworkMetadata.savedArtworkUrl(currentItem?.mediaMetadata),
                 podcastImageUrl = resolvedPodcastImageUrl,
                 podcastTitle = resolvedPodcastName,
                 podcastId = resolvedPodcastId,
@@ -239,10 +240,10 @@ internal object PlaybackSessionRestoreHelper {
         queueEpisode: Episode?,
         podcastRepository: PodcastRepository,
     ): String? =
-        lastSession.podcastImageUrl?.takeIf(String::isNotBlank)
-            ?: queueEpisode?.podcastImageUrl?.takeIf(String::isNotBlank)
-            ?: runCatching { podcastRepository.getEpisode(lastSession.episodeId) }.getOrNull()?.podcastImageUrl?.takeIf(String::isNotBlank)
-            ?: currentItem?.mediaMetadata?.artworkUri?.toString()?.takeIf(String::isNotBlank)
+        persistableArtworkUrl(lastSession.podcastImageUrl)
+            ?: persistableArtworkUrl(queueEpisode?.podcastImageUrl)
+            ?: persistableArtworkUrl(runCatching { podcastRepository.getEpisode(lastSession.episodeId) }.getOrNull()?.podcastImageUrl)
+            ?: PlaybackArtworkMetadata.savedArtworkUrl(currentItem?.mediaMetadata)
 
     private suspend fun resolvePodcastName(
         lastSession: ListeningHistoryEntity,
@@ -284,9 +285,9 @@ internal object PlaybackSessionRestoreHelper {
         baseEp: Episode?,
         currentItem: MediaItem?,
     ): Pair<String?, String?> {
-        val itemArtwork = currentItem?.mediaMetadata?.artworkUri?.toString()
-        val artwork = baseEp?.imageUrl?.takeIf(String::isNotBlank) ?: itemArtwork
-        val podcastArtwork = baseEp?.podcastImageUrl?.takeIf(String::isNotBlank) ?: itemArtwork
+        val itemArtwork = PlaybackArtworkMetadata.savedArtworkUrl(currentItem?.mediaMetadata)
+        val artwork = persistableArtworkUrl(baseEp?.imageUrl) ?: itemArtwork
+        val podcastArtwork = persistableArtworkUrl(baseEp?.podcastImageUrl) ?: itemArtwork
         return artwork to podcastArtwork
     }
 }

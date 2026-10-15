@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.playback.service
 
 import androidx.media3.common.MediaItem
+import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.playback.CastMediaMetadata
 import cx.aswin.boxlore.core.playback.PlaybackHistorySeedPolicy
 import cx.aswin.boxlore.core.playback.PlaybackHistorySeedSource
@@ -82,9 +83,9 @@ private suspend fun BoxLorePlaybackService.persistNaturalCompletionOnce(
                 podcastId = podcastId,
                 episodeTitle = episodeTitle,
                 episodeImageUrl =
-                queueItem?.imageUrl
-                    ?: fallbackMediaItem?.mediaMetadata?.artworkUri?.toString(),
-                podcastImageUrl = queueItem?.podcastImageUrl ?: podcast?.imageUrl,
+                persistableArtworkUrl(queueItem?.imageUrl)
+                    ?: cx.aswin.boxlore.core.playback.PlaybackArtworkMetadata.savedArtworkUrl(fallbackMediaItem?.mediaMetadata),
+                podcastImageUrl = persistableArtworkUrl(queueItem?.podcastImageUrl) ?: persistableArtworkUrl(podcast?.imageUrl),
                 episodeAudioUrl =
                 queueItem?.audioUrl
                     ?: fallbackMediaItem?.localConfiguration?.uri?.toString(),

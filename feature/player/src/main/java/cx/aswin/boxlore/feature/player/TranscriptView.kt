@@ -40,7 +40,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.delay
@@ -278,6 +280,12 @@ private fun TranscriptSyncButton(
         }
     }
 }
+
+/**
+ * Keeps a full-screen layer to [visibleHeight] when its container runs past the screen's foot (the
+ * player sheet's does), so controls pinned to the bottom stay on screen. Unspecified leaves it as is.
+ */
+fun Modifier.fitVisibleHeight(visibleHeight: Dp): Modifier = if (visibleHeight.isSpecified) height(visibleHeight) else this
 
 @Composable
 fun FullscreenTranscriptScreen(

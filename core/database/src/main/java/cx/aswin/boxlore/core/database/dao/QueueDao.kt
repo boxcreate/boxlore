@@ -127,6 +127,46 @@ interface QueueDao {
         upsertQueueMetadata(updated)
     }
 
+    /**
+     * Swaps a player-only artwork link (`content://<app>.collage/...`) saved by older builds for the
+     * episode's own cover, else the show's, else the row's own show cover, else nothing. Order and
+     * positions are untouched. Returns the rows changed; [repairPlaybackArtworkLinksForSync] also
+     * marks the queue for the next push.
+     */
+    @Query(
+        """
+        UPDATE queue_items SET
+            imageUrl = CASE WHEN imageUrl LIKE 'content://%.collage/%' THEN COALESCE(
+                (SELECT imageUrl FROM local_episodes WHERE local_episodes.episodeId = queue_items.episodeId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
+                (SELECT imageUrl FROM rss_episodes WHERE rss_episodes.episodeId = queue_items.episodeId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
+                (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = queue_items.podcastId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
+                CASE WHEN queue_items.podcastImageUrl != '' AND queue_items.podcastImageUrl NOT LIKE 'content://%.collage/%'
+                    THEN queue_items.podcastImageUrl END
+            ) ELSE imageUrl END,
+            podcastImageUrl = CASE WHEN podcastImageUrl LIKE 'content://%.collage/%' THEN
+                (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = queue_items.podcastId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%')
+            ELSE podcastImageUrl END
+        WHERE imageUrl LIKE 'content://%.collage/%' OR podcastImageUrl LIKE 'content://%.collage/%'
+        """,
+    )
+    suspend fun repairPlaybackArtworkLinks(): Int
+
+    /**
+     * Repairs player-only artwork links ([repairPlaybackArtworkLinks]) and, when any row changed,
+     * marks the queue dirty in the same transaction so the cloud copy drops the dead links too. The
+     * queue keeps its sequence: only artwork changed, not the order.
+     */
+    @Transaction
+    suspend fun repairPlaybackArtworkLinksForSync(): Int {
+        val changed = repairPlaybackArtworkLinks()
+        if (changed > 0) markQueueDirty()
+        return changed
+    }
+
     companion object {
         private const val MAX_RECENT_REMOVED_EPISODES = 50
         private val gson = Gson()
