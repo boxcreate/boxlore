@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Appearance > Layout picker for the Home hero cards. Block is the solid colour card; Cover fills the card with the artwork. -->
-    <string name="hero_card_style_title">Home hero cards</string>
+    <!-- Appearance > Home: the hero card style picker. Block is the solid colour card; Cover fills the card with the artwork. -->
+    <string name="hero_card_style_title">Hero cards</string>
+    <string name="hero_card_style_footer">The big cards at the top of Home.</string>
     <string name="hero_card_style_block">Block</string>
+    <string name="hero_card_style_block_description">Big type on a solid color block, with the artwork beside it.</string>
     <string name="hero_card_style_cover">Cover</string>
+    <string name="hero_card_style_cover_description">Full artwork, with the words on a shade behind them.</string>
     <!-- Shown under the picker only when Cover is chosen: the colour the artwork fades into behind the card's text. -->
     <string name="hero_cover_shade_title">Shade behind text</string>
+    <string name="hero_cover_shade_footer">Artwork takes a deep shade of each cover\'s own color. App theme uses your accent color.</string>
     <string name="hero_cover_shade_dark">Dark</string>
     <!-- Each card takes a deep shade of its own cover's colour. -->
     <string name="hero_cover_shade_artwork">Artwork</string>

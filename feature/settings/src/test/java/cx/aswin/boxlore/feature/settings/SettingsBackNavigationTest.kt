@@ -82,7 +82,7 @@ class SettingsBackNavigationTest {
 
     @Test
     fun themeReturnsToAppearanceAndCanBeOpenedDirectly() {
-        assertEquals(ProfileSettingsDestination.Appearance, "theme".toSettingsDestination())
+        assertEquals(ProfileSettingsDestination.Theme, "theme".toSettingsDestination())
         assertEquals(
             SettingsBackAction.NavigateTo(ProfileSettingsDestination.Appearance),
             resolveSettingsBackAction(false, ProfileSettingsDestination.Appearance, null),
@@ -99,6 +99,37 @@ class SettingsBackNavigationTest {
         assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.SyncAndBackups, ProfileSettingsDestination.Account))
         assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.Account, ProfileSettingsDestination.SyncAndBackups))
         assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Hub))
+        assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.CustomTheme, ProfileSettingsDestination.Theme))
+        assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.Appearance, ProfileSettingsDestination.AppearanceHome))
+        assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.AppearanceText, ProfileSettingsDestination.Appearance))
+    }
+
+    @Test
+    fun appearancePagesReturnToTheirParentAndDirectlyOpenedPagesLeaveSettings() {
+        listOf(
+            ProfileSettingsDestination.Theme,
+            ProfileSettingsDestination.AppearanceHome,
+            ProfileSettingsDestination.AppearancePlayer,
+            ProfileSettingsDestination.AppearanceNavigation,
+            ProfileSettingsDestination.AppearanceText,
+        ).forEach { page ->
+            assertEquals(
+                SettingsBackAction.NavigateTo(ProfileSettingsDestination.Appearance),
+                resolveSettingsBackAction(false, null, null, currentDestination = page),
+            )
+        }
+        // The custom theme editor returns to Theme & colors, which then returns to Appearance.
+        assertEquals(
+            SettingsBackAction.NavigateTo(ProfileSettingsDestination.Theme),
+            resolveSettingsBackAction(false, null, null, currentDestination = ProfileSettingsDestination.CustomTheme),
+        )
+        // Opened straight from a link, Theme & colors leaves Settings; opened from Appearance it returns there.
+        assertEquals(SettingsBackAction.NavigateBack, resolveSettingsBackAction(false, null, "theme", currentDestination = ProfileSettingsDestination.Theme))
+        assertEquals(
+            SettingsBackAction.NavigateTo(ProfileSettingsDestination.Appearance),
+            resolveSettingsBackAction(false, null, "appearance", currentDestination = ProfileSettingsDestination.Theme),
+        )
+        assertEquals(SettingsBackAction.NavigateBack, resolveSettingsBackAction(false, null, "appearance", currentDestination = ProfileSettingsDestination.Appearance))
     }
 
     @Test

@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.navigation
 
 import androidx.compose.animation.EnterTransition
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -10,6 +11,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.ListeningPeriod
+import cx.aswin.boxlore.core.playback.resumeSessions
+import cx.aswin.boxlore.feature.home.components.HeroStylePreview
 import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
 import cx.aswin.boxlore.feature.settings.AppearanceSettings
 import cx.aswin.boxlore.feature.settings.DownloadsNavigation
@@ -224,6 +227,11 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
                 scope.launch { userPrefs.setFullPlayerStyle(style) }
             },
         ),
+        // Appearance previews draw Home's real hero cards from the listener's recent episodes.
+        heroPreview = { style, coverShade, collection, modifier ->
+            val sessions by w.playbackRepository.resumeSessions.collectAsState(initial = emptyList())
+            HeroStylePreview(style, coverShade, collection, sessions, modifier)
+        },
     )
 }
 
