@@ -98,6 +98,7 @@ internal fun PodcastFeed(
     layout: PodcastFeedLayout,
 ) {
     val context = LocalContext.current
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     val posterColumns = boxlorePosterColumns(
         LocalBoxloreWindowLayout.current,
         boxloreContentWidthDp(),
@@ -140,9 +141,19 @@ internal fun PodcastFeed(
             verticalItemSpacing = HomeFeedSpacing.GridGap,
         ) {
             smartHeroItem(content, playback, callbacks, derivedState)
-            yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
-            dailyBriefingItem(feedState, playback, callbacks, context)
-            curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState, posterColumns)
+            if (tablet && feedState.briefing != null) {
+                item(span = StaggeredGridItemSpan.FullLine, key = "tablet_leading_sections", contentType = "tablet_leading_sections") {
+                    TabletHomeLeadingSections(
+                        showLibrary = shouldShowYourShows(content, feedState, loadingState),
+                        library = { YourShowsFeedSection(content, feedState, loadingState, playback, callbacks, derivedState) },
+                        briefing = { DailyBriefingFeedCard(feedState, playback, callbacks, context) },
+                    )
+                }
+            } else {
+                yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
+                dailyBriefingItem(feedState, playback, callbacks, context)
+            }
+            curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState, posterColumns, tablet = tablet)
             discoveryGreetingItem(feedState, callbacks)
             editorialFeedItems(content, feedState, loadingState, callbacks)
             discoverFeedItems(feedState, derivedState, callbacks, posterColumns)

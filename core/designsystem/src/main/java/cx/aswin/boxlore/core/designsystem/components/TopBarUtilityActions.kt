@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +19,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 
 /** Connected action segments; screen owners retain navigation and shortcut callbacks. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -114,12 +116,14 @@ private fun UtilityActionSegment(
 
     Surface(
         modifier = modifier
+            .then(if (cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout) Modifier.minimumInteractiveComponentSize() else Modifier)
             .size(width = 43.dp, height = 33.dp)
             .graphicsLayer {
                 scaleX = pressScale.value
                 scaleY = pressScale.value
             }
             .clip(shape)
+            .tabletInputFeedback(interactionSource, shape)
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = null,

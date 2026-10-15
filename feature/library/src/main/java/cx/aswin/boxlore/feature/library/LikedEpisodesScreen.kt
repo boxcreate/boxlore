@@ -81,6 +81,7 @@ fun LikedEpisodesScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
                         text = "Liked Episodes",
@@ -106,12 +107,14 @@ fun LikedEpisodesScreen(
                 is LibraryUiState.Success -> {
                     val liked = (uiState as LibraryUiState.Success).likedEpisodes
                     if (liked.isEmpty()) {
+                        Box(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility)) {
                         ExpressiveSolarSystemEmptyState(
                             title = "No Liked Episodes",
                             description = "Heart episodes you love to save them here.",
                             actionText = "Find Podcasts",
                             onExploreClick = onExploreClick
                         )
+                        }
                     } else {
                         LazyColumn(
                             modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode),

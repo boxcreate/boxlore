@@ -85,6 +85,8 @@ Bitmap callers can choose a shorter per-attempt timeout while retaining outer ca
 
 ## Testing notes
 
+- TabletFeaturedRow packs a two-column feature beside later posters with caller-supplied spacing. Card-width callers may choose a narrower family maximum; tight slots retain their extent while centering the bounded surface. Actual shell mini-player visibility supplies tablet footer clearance. Brief artwork scaling is configurable while existing callers retain Fit.
+
 - `BoxLoreNavigationRail` reuses the phone destinations, selection-index/retargeting functions, accent colors and Lore aurora. One icon selection surface travels between all four actions; labels remain on a readable neutral surface. Shell-provided rail/player-pane flags keep feature overlays clear of the actual chrome. Pure placement tests cover taskbar and docked-player clearance for both saved navigation styles.
 
 - `LocalBoxlorePaneBounds` carries the shell's window-relative content rectangle, alongside pane width. Fold-aware players intersect this rectangle with physical safe regions rather than treating a hinge's global bounds as local pane coordinates.
@@ -142,3 +144,9 @@ Classic navigation applies its system insets outside the minimum 80dp content he
 - Extended brand wordmarks and the LORE navigation brain are upright. Share cards use the plain upright wordmark at 280px wide. Stories stack “Listen on” above it in a centred signature below the content, clear of bottom story controls. Square message cards place the label and wordmark in one centred footer row with a 96px bottom inset. Labels retain a 12px size when the full export is displayed at 360px wide; artwork and title remain the main focus.
 
 The toolbar action segments use a compact 43 × 33 dp visual size. The available-update segment has a restrained shimmer across its surface.
+
+Expanded tablet modals use solid, inset-aware dialogs up to 640dp within one fold-safe region; phone calls delegate to the unchanged Material sheet. Finite tablet sheet forms can scroll while lazy lists own their viewports. Owners with custom Hidden confirmation supply the matching `centeredDismissAllowed` policy; Engagement defaults to blocking implicit dismissal, and the current ordinary survey/review states opt in explicitly. Shared custom-control feedback adds tablet hover/focus and secondary-click long-press ownership. Artwork upgrades use measured pixel buckets, retain sufficient larger targets and preserve phone keys. Window-size fallbacks exist only for isolated previews/tests.
+
+The Material BasicAlertDialog override delegates directly to the default host on phones and flat windows. On folded tablets it hosts the unchanged Material content in the shared safe dialog frame, including date pickers. Raw dialog owners use `BoxloreDialog`; their security and dismissal policies remain explicit. All tablet portal frames cap at 640dp; ordinary alerts retain Material's 560dp maximum.
+
+TabletFeaturedRow measures neighboring posters before applying the same height to the feature. The shared poster-height helper sums separately rounded artwork, measured text and padding pixels. AdaptiveOverflowRow measures native chips, packs the available width and uses a horizontal fallback if required controls cannot fit; features own labels, selection, callbacks and overflow menus.

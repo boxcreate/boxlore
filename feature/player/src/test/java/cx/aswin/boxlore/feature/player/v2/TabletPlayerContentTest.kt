@@ -1,20 +1,30 @@
 package cx.aswin.boxlore.feature.player.v2
 
 import android.app.Application
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.catalog.TranscriptSegment
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState
@@ -55,6 +65,8 @@ class TabletPlayerContentTest {
     private val episode = TestFixtures.episode(title = "A curious journey", description = "Notes about the places we discover.", imageUrl = PhoneGoldenRule.ARTWORK_URL)
     private val podcast = TestFixtures.podcast(imageUrl = PhoneGoldenRule.ARTWORK_URL)
     private val playback = mock(PlaybackRepository::class.java)
+    private lateinit var view: View
+    private var foreground = 0
 
     @Test
     fun `posture changes keep artwork controls and tabs inside their physical regions`() {
@@ -63,10 +75,15 @@ class TabletPlayerContentTest {
         advance()
         val art = fixture.compose.onNodeWithTag("tablet_player_artwork_region").fetchSemanticsNode().boundsInRoot
         val controls = fixture.compose.onNodeWithTag("tablet_player_controls_region").fetchSemanticsNode().boundsInRoot
+        val title = fixture.compose.onNodeWithText(episode.title).fetchSemanticsNode().boundsInRoot
+        val tabs = fixture.compose.onNodeWithText("Up next").fetchSemanticsNode().boundsInRoot
+        assertTrue(title.bottom <= 410f)
+        assertTrue("Tabletop support tabs remain visible at rest", tabs.top >= 431f && tabs.bottom <= 841f)
+        scrollToSupport()
         val support = fixture.compose.onNodeWithTag("tablet_player_support_region").fetchSemanticsNode().boundsInRoot
         assertTrue(art.bottom <= 410f)
         assertTrue("Controls: $controls; artwork: $art; support: $support", controls.top >= 431f)
-        assertTrue(support.top >= controls.bottom)
+        assertTrue(support.top >= 431f)
         assertTrue(support.bottom <= 841f)
     }
 
@@ -115,13 +132,62 @@ class TabletPlayerContentTest {
     fun `empty queue message remains readable in the short tabletop supporting region`() {
         window.value = tabletop()
         render(emptyQueue = true)
+        scrollToSupport()
         val message = fixture.compose.onNodeWithText("Queue is empty").fetchSemanticsNode().boundsInRoot
         val support = fixture.compose.onNodeWithTag("tablet_player_support_region").fetchSemanticsNode().boundsInRoot
         assertTrue(message.height >= 16f)
         assertTrue(message.top >= support.top && message.bottom <= support.bottom)
     }
 
-    private fun render(style: String = FullPlayerStyle.STANDARD, contextPane: Boolean = false, onOpen: () -> Unit = {}, video: Boolean = false, emptyQueue: Boolean = false) {
+    @Test
+    fun `context player exposes every control before supporting content`() {
+        window.value = BoxloreWindowLayout(1_280f, 800f)
+        render(contextPane = true)
+        fixture.compose.onNodeWithContentDescription("Complete", useUnmergedTree = true).assertIsDisplayed()
+        val lastControl = fixture.compose.onNodeWithContentDescription("Complete", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val support = fixture.compose.onNodeWithTag("tablet_player_support_region").fetchSemanticsNode().boundsInRoot
+        assertTrue(lastControl.bottom <= support.top)
+    }
+
+    @Test
+    fun `dark player header paints artwork foreground despite a black inherited content color`() {
+        render(dark = true)
+        val nodes = listOf(
+            fixture.compose.onNodeWithText("Now playing"),
+            fixture.compose.onNodeWithContentDescription("Share episode", useUnmergedTree = true),
+            fixture.compose.onNodeWithContentDescription("Minimize player", useUnmergedTree = true),
+        )
+        nodes.forEach { node ->
+            val bounds = node.fetchSemanticsNode().boundsInRoot
+            fixture.compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                val width = bounds.width.toInt()
+                val pixels = IntArray(width * bounds.height.toInt())
+                bitmap.getPixels(pixels, 0, width, bounds.left.toInt(), bounds.top.toInt(), width, bounds.height.toInt())
+                assertTrue("Header must paint its own foreground", pixels.any { it == foreground })
+                bitmap.recycle()
+            }
+        }
+    }
+
+    @Test
+    fun `tablet transcript keeps its tab and notifies the window owner on expand and close`() {
+        val requests = mutableListOf<Pair<PlayerFullscreenOverlay, Boolean>>()
+        render(transcript = true, fullscreenRequest = { overlay, visible -> requests += overlay to visible })
+        fixture.compose.onNodeWithText("Transcript").performClick()
+        advance()
+        fixture.compose.onNodeWithContentDescription("Open full-screen transcript").performClick()
+        advance()
+        fixture.compose.onNodeWithContentDescription("Close").performClick()
+        advance()
+        assertEquals(listOf(PlayerFullscreenOverlay.Transcript to true, PlayerFullscreenOverlay.Transcript to false), requests)
+        fixture.compose.onNodeWithContentDescription("Open full-screen transcript").assertExists()
+        fixture.compose.onNodeWithText("Words that follow the episode").assertExists()
+    }
+
+    @Suppress("LongParameterList")
+    private fun render(style: String = FullPlayerStyle.STANDARD, contextPane: Boolean = false, onOpen: () -> Unit = {}, video: Boolean = false, emptyQueue: Boolean = false, dark: Boolean = false, transcript: Boolean = false, fullscreenRequest: ((PlayerFullscreenOverlay, Boolean) -> Unit)? = null) {
         val downloads = mock(DownloadRepository::class.java)
         val prefs = mock(UserPreferencesRepository::class.java)
         `when`(playback.playerState).thenReturn(
@@ -132,6 +198,7 @@ class TabletPlayerContentTest {
                     duration = 3_600_000L,
                     queue = if (emptyQueue) listOf(episode) else listOf(episode, episode.copy(id = "next", title = "Next journey")),
                     currentChapters = listOf(Chapter(0.0, "Chapter one"), Chapter(120.0, "Chapter two")),
+                    currentTranscript = if (transcript) listOf(TranscriptSegment(0, 120_000, "Words that follow the episode")) else emptyList(),
                 ),
             ),
         )
@@ -142,11 +209,15 @@ class TabletPlayerContentTest {
         `when`(prefs.sameShowQueueOnlyStream).thenReturn(flowOf(false))
         fixture.prepare()
         fixture.setContent {
+            view = LocalView.current
             CompositionLocalProvider(
                 LocalBoxloreWindowLayout provides window.value,
+                LocalPlayerFullscreenRequest provides fullscreenRequest,
                 LocalBoxlorePaneBounds provides if (contextPane) BoxloreLayoutBounds(800f, 0f, 1_273f, 800f) else null,
             ) {
-                BoxLoreTheme(dynamicColor = false) {
+                BoxLoreTheme(darkTheme = dark, dynamicColor = false) {
+                    foreground = MaterialTheme.colorScheme.onSurface.toArgb()
+                    CompositionLocalProvider(LocalContentColor provides Color.Black) {
                     Box(if (contextPane) Modifier.width(473.dp).height(800.dp) else Modifier) {
                         FullPlayerV2(
                             FullPlayerDependencies(playback, downloads, prefs),
@@ -154,8 +225,20 @@ class TabletPlayerContentTest {
                             FullPlayerActions({}, {}, {}, {}, onOpenImmersivePlayer = onOpen),
                         )
                     }
+                    }
                 }
             }
+        }
+        advance()
+    }
+
+    private fun scrollToSupport() {
+        fixture.compose.mainClock.autoAdvance = true
+        try {
+            fixture.compose.onNodeWithTag("tablet_player_support_region").performScrollTo()
+            fixture.compose.waitForIdle()
+        } finally {
+            fixture.compose.mainClock.autoAdvance = false
         }
         advance()
     }

@@ -8,4 +8,5 @@
     <string name="player_no_transcript">No transcript available</string>
     <string name="player_preparing_transcript">Preparing transcript</string>
     <string name="player_no_notes">No episode notes available</string>
+    <string name="player_open_fullscreen_transcript">Open full-screen transcript</string>
 </resources>

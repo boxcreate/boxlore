@@ -50,6 +50,8 @@ class TabletAppShellTest {
     private val window = mutableStateOf(BoxloreWindowLayout(1_280f, 800f))
     private val playing = mutableStateOf(false)
     private val allowed = mutableStateOf(true)
+    private val navigationVisible = mutableStateOf(true)
+    private var paneBounds: cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds? = null
     private lateinit var navigation: TabletDetailNavigation
     private lateinit var restoration: StateRestorationTester
 
@@ -63,11 +65,12 @@ class TabletAppShellTest {
         advance()
         assertEquals("home", navigation.primary.currentDestination?.route)
         fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
+        fixture.compose.onNodeWithText("Close details").assertDoesNotExist()
         val primary = fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot
         val detail = fixture.compose.onNodeWithTag("detail_pane").fetchSemanticsNode().boundsInRoot
         assertTrue(detail.width in 360f..520f)
         assertTrue(primary.right + 15f <= detail.left)
-        fixture.compose.onNodeWithText("Close details").performClick()
+        fixture.compose.onNodeWithText("Back").performClick()
         advance()
         fixture.compose.onNodeWithText("Count 1").assertExists()
         assertEquals(initial.width, fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot.width, 1f)
@@ -80,13 +83,14 @@ class TabletAppShellTest {
         fixture.compose.onNodeWithText("Pane playback").assertExists()
         fixture.compose.onNodeWithText("Open show").performClick()
         advance()
+        fixture.compose.onNodeWithText("Docked playback").assertExists()
         fixture.compose.onNodeWithText("Open episode").performClick()
         advance()
         fixture.compose.onNodeWithText("Episode detail").assertExists()
         fixture.compose.runOnUiThread { fixture.compose.activity.onBackPressedDispatcher.onBackPressed() }
         advance()
         fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
-        fixture.compose.onNodeWithText("Now playing").performClick()
+        fixture.compose.onNodeWithText("Back").performClick()
         advance()
         fixture.compose.onNodeWithText("Pane playback").assertExists()
         assertEquals("home", navigation.primary.currentDestination?.route)
@@ -106,7 +110,7 @@ class TabletAppShellTest {
         restoration.emulateSavedInstanceStateRestore()
         advance()
         fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
-        fixture.compose.onNodeWithText("Now playing").performClick()
+        fixture.compose.onNodeWithText("Back").performClick()
         advance()
         fixture.compose.onNodeWithText("Count 1").assertExists()
     }
@@ -164,6 +168,27 @@ class TabletAppShellTest {
         assertTrue(!navigation.immersive)
     }
 
+    @Test
+    fun `onboarding without navigation occupies the lower tabletop region without a rail gutter`() {
+        val fold = cx.aswin.boxlore.core.designsystem.layout.BoxloreFold(
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState.HalfOpened,
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation.Horizontal,
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds(0f, 410f, 673f, 431f),
+            true,
+            true,
+        )
+        window.value = BoxloreWindowLayout(673f, 841f, listOf(fold))
+        navigationVisible.value = false
+        allowed.value = false
+        render()
+        val bounds = fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot
+        assertEquals(431f, bounds.top, 1f)
+        assertEquals(0f, bounds.left, 1f)
+        assertEquals(673f, bounds.width, 1f)
+        assertEquals(cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds(0f, 431f, 673f, 841f), paneBounds)
+        fixture.compose.onNodeWithText("Count 0").assertExists()
+    }
+
     private fun render() {
         fixture.prepare()
         restoration = StateRestorationTester(fixture.compose)
@@ -175,13 +200,14 @@ class TabletAppShellTest {
                     Box(Modifier.width(window.value.widthDp.dp).height(window.value.heightDp.dp)) {
                         TabletAppShell(
                             navigation,
-                            true,
+                            navigationVisible.value,
                             allowed.value,
                             playing.value,
                             "home",
                             {},
                             TabletShellContent(
                             primary = {
+                                paneBounds = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
                                 NavHost(primary, "home") {
                                     composable("home") {
                                         var count by rememberSaveable { mutableIntStateOf(0) }
@@ -200,6 +226,7 @@ class TabletAppShellTest {
                                     composable("podcast/{id}") { entry ->
                                         var count by rememberSaveable { mutableIntStateOf(0) }
                                         androidx.compose.foundation.layout.Column {
+                                            Button(onClick = { navigation.detail.popBackStack() }) { Text("Back") }
                                             Text("Show detail ${entry.arguments?.getString("id")}")
                                             Button(onClick = { count++ }) { Text("Show state $count") }
                                             Button(onClick = { navigation.navigate(navigation.detail, "episode/one") }) { Text("Open episode") }

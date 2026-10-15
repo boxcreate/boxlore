@@ -266,7 +266,7 @@ fun SettingsScreen(
 
     val actions = SettingsPagesActions(
         onNavigate = {
-            if (it == ProfileSettingsDestination.Theme || it == ProfileSettingsDestination.CustomTheme) previousDestination = ProfileSettingsDestination.Appearance
+            previousDestination = if (it == ProfileSettingsDestination.Theme || it == ProfileSettingsDestination.CustomTheme) ProfileSettingsDestination.Appearance else null
             destination = it
         },
         onReturnToHub = returnToHub,
@@ -284,14 +284,20 @@ fun SettingsScreen(
         ),
     )
 
-    SettingsAnimatedPages(
-        destination = destination,
-        config = config,
-        repositories = repositories,
-        contentBundle = contentBundle,
-        uiData = uiData,
-        actions = actions,
-    )
+    AdaptiveSettingsLayout(destination, config, actions.onNavigate) { displayedDestination ->
+        // The split already shows the category list; root Back exits instead of showing it again.
+        BackHandler(enabled = LocalSettingsSplitPane.current && previousDestination == null && destination != ProfileSettingsDestination.Hub) {
+            config.onBack()
+        }
+        SettingsAnimatedPages(
+            destination = displayedDestination,
+            config = config,
+            repositories = repositories,
+            contentBundle = contentBundle,
+            uiData = uiData,
+            actions = actions,
+        )
+    }
 
     SettingsDialogs(
         rssState = rssState,

@@ -21,6 +21,16 @@ class ImageRequestSizingTest {
     }
 
     @Test
+    fun `tablet artwork upgrades cover rendered pixels without per-pixel cache churn`() {
+        assertEquals(400, layoutImageTargetPixels(400, 0))
+        assertEquals(400, layoutImageTargetPixels(400, 320))
+        assertEquals(800, layoutImageTargetPixels(400, 700))
+        assertEquals(800, layoutImageTargetPixels(400, 701))
+        assertEquals(1024, layoutImageTargetPixels(800, 850))
+        assertEquals(2048, layoutImageTargetPixels(400, Int.MAX_VALUE))
+    }
+
+    @Test
     fun `local covers still bypass network proxy`() {
         assertEquals("content://artwork/1", "content://artwork/1".optimizedImageUrl(400))
     }

@@ -63,6 +63,7 @@ internal fun YourShowsSelectors(
     pinnedPodcastIds: Set<String>,
     onPodcastSelected: (String?) -> Unit,
     onTogglePin: (String) -> Unit,
+    vertical: Boolean = false,
 ) {
     val tileHeight = YourShowsLayout.TileHeight
     val interleaved = remember(podcasts) {
@@ -77,7 +78,11 @@ internal fun YourShowsSelectors(
             .coerceAtMost(YourShowsLayout.TileWidth)
         val itemModifier = Modifier.width(tileWidth).height(tileWidth)
         val items: List<Podcast?> = if (podcasts.size > 1) listOf(null) + podcasts else podcasts
-        if (podcasts.size <= 4) {
+        if (vertical) {
+            VerticalYourShowsSelectors(items) { podcast ->
+                ShowSelectorItem(podcast, podcasts.size, selectedPodcastId, lastSeenEpisodes, pinnedPodcastIds, onPodcastSelected, onTogglePin, Modifier.size(YourShowsLayout.TileWidth))
+            }
+        } else if (podcasts.size <= 4) {
             LazyRow(
                 contentPadding = PaddingValues(YourShowsLayout.Padding),
                 horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),

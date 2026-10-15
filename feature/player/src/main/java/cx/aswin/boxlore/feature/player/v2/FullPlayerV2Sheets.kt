@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
+import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
@@ -65,6 +66,7 @@ internal fun FullPlayerTranscriptOverlay(
     model: FullPlayerOverlayModel,
     ui: FullPlayerUiState
 ) {
+    val fullscreenRequest = LocalPlayerFullscreenRequest.current
     AnimatedVisibility(
         visible = ui.showFullscreenTranscript,
         enter = slideInVertically(initialOffsetY = { it }),
@@ -86,7 +88,11 @@ internal fun FullPlayerTranscriptOverlay(
                 playbackRepository.seekTo(seekPosition)
             },
             onPlayPause = { togglePlayback(model.state, playbackRepository) },
-            onClose = { ui.showFullscreenTranscript = false },
+            onClose = {
+                ui.showFullscreenTranscript = false
+                fullscreenRequest?.invoke(PlayerFullscreenOverlay.Transcript, false)
+            },
+            modifier = Modifier.boxloreFoldSafeViewport(),
             transcriptUrl = model.episode.transcriptUrl
         )
     }

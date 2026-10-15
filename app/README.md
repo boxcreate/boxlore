@@ -159,6 +159,8 @@ Episode push artwork keeps its six-second total deadline and uses 700ms per rout
 
 ## Testing notes
 
+- Tablet context details use their native Back toolbar and keep docked playback in the browsing pane. The context player can be minimized independently. Fullscreen media requests share an app-owned window host across docked/context presentations, restoring the originating presentation when closed.
+
 - `TabletAppShellTest` uses actual retained NavHosts with local destinations to cover nested Back, hidden-host lifecycle, primary/detail saved state, compact/portrait resize and external links. `TabletShellGeometryTest` covers pane closure, phone preservation, immersive bounds and tabletop docking. `TabletNavigationRailTest` checks all four existing actions share one selection indicator. Tablet variants of `ShellPhoneGoldenTest` render the actual shell/player with fixed mock flows; the phone branch remains the frozen fixture.
 
 - Local screenshot fixtures now provide the shared window model. The tablet before/after matrix is separate from the immutable phone baselines; see `docs/TESTING.md`. Product shell ownership remains in this module.
@@ -230,3 +232,9 @@ In-app release and upcoming notes hide GitHub pull-request links and parenthesiz
 Ordinary browsing of the update page is not persisted as a startup destination. Only a matching prepared pending update can restore the install page; stale visibility flags and completed-update sessions are cleared. Returning from Android install-permission settings still preserves the pending install flow.
 
 An initial update-check state must perform a lookup even when timestamps survived a process restart. Once a result exists, normal interval and retry limits apply; timestamps alone cannot leave the page indefinitely checking.
+
+Tablet transport keys use the existing playback repository actions and saved seek increments. The stable text-input interceptor leaves Space/arrows with focused editors and survives resizing. JVM regressions cover keyboard/mouse ownership, centered modal phone parity and dynamic reduced motion.
+
+The Activity owns the single adaptive window/posture collector above the app and cross-device sign-in dialog. Its UI snapshot also feeds the separate survey Compose portal, so portals do not create another window collector. Custom update/announcement dialogs and the import overlay use bounded, fold-safe tablet regions while keeping their existing content and dismissal actions.
+
+Local-only HistoryTabletAuditCaptureTest renders loaded/empty History in both tablet orientations and themes using fixed history and insight data. It does not read or modify listener history.

@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -45,6 +45,7 @@ import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -63,6 +64,7 @@ import cx.aswin.boxlore.core.designsystem.briefing.BriefingCoverMetadata
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingEditorialTheme
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Briefing
@@ -98,42 +100,42 @@ fun DailyBriefingCard(
             .getOrDefault(briefing.date)
     }
     val durationMinutes = if (chapters.isNotEmpty()) ((chapters.last().startTime + 30) / 60).toInt().coerceAtLeast(1) else null
-    val remainingMinutes = durationMinutes?.let { minutes ->
-        (minutes * (1 - (playbackProgress?.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f))).toInt().coerceAtLeast(1)
-    }
+    val remainingMinutes = briefingRemainingMinutes(durationMinutes, playbackProgress)
     fun track(action: String) = AnalyticsHelper.trackDailyBriefingInteraction(action, briefing.region, briefing.date)
 
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val metadata = briefingCardMetadata(displayDate, chapters, durationMinutes)
     val presentation = DailyBriefingPresentation(briefing, chapters, isPlaying, isBuffering, playbackStatus, playbackProgress, remainingMinutes)
     BriefingEditorialTheme {
-        Surface(onClick = { if (cardState == DailyBriefingCardState.NORMAL) onClick() }, shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 4.dp, modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxWidth()) {
+        Surface(onClick = { if (cardState == DailyBriefingCardState.NORMAL) onClick() }, shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 4.dp, modifier = modifier.boxloreCardWidth(if (tablet) BoxloreCardFamily.Reading else BoxloreCardFamily.Hero).fillMaxWidth()) {
             Box {
-                Column(Modifier.animateContentSize()) {
+                BriefingCardLayout(tablet = tablet, cover = {
                     BriefingCover(
                         region = briefing.region,
                         editionDate = briefing.date,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
+                        modifier = if (tablet) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(BRIEFING_COVER_ASPECT_RATIO).clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
+                        artworkContentScale = if (tablet) ContentScale.Crop else ContentScale.Fit,
                         trailing = {
+                            if (!tablet) {
                             Surface(Modifier.align(AbsoluteAlignment.TopRight).padding(8.dp), shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                                IconButton(onClick = {
-                                    track(if (cardState == DailyBriefingCardState.NORMAL) "dismiss_initiated" else "dismiss_cancelled")
-                                    cardState = if (cardState == DailyBriefingCardState.NORMAL) DailyBriefingCardState.CONFIRM_DISMISS else DailyBriefingCardState.NORMAL
-                                }) {
-                                    Icon(Icons.Rounded.Close, if (cardState == DailyBriefingCardState.NORMAL) stringResource(R.string.briefing_hide) else stringResource(R.string.briefing_cancel_hide), Modifier.size(20.dp))
-                                }
+                                BriefingDismissButton(cardState, { cardState = it }, ::track)
+                            }
                             }
                         },
                         footer = {
-                            val metadata = listOfNotNull(
-                                displayDate,
-                                chapters.takeIf { it.isNotEmpty() }?.let { pluralStringResource(R.plurals.briefing_story_count, it.size, it.size) },
-                                durationMinutes?.let { stringResource(R.string.briefing_listen_minutes, it) },
-                            ).joinToString(" · ")
-                            BriefingCoverMetadata(metadata, Modifier.align(Alignment.BottomStart))
+                            if (!tablet) BriefingCoverMetadata(metadata, Modifier.align(Alignment.BottomStart))
                         },
                     )
+                }, body = {
                     Surface(shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
                         AnimatedContent(cardState, label = "briefHomeState") { state ->
                             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                if (tablet) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(metadata, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        BriefingDismissButton(cardState, { cardState = it }, ::track)
+                                    }
+                                }
                                 when (state) {
                                     DailyBriefingCardState.NORMAL -> DailyBriefingNormalContent(
                                         presentation,
@@ -170,9 +172,31 @@ fun DailyBriefingCard(
                             }
                         }
                     }
-                }
+                })
             }
         }
+    }
+}
+
+@Composable
+private fun briefingCardMetadata(date: String, chapters: List<Chapter>, duration: Int?): String = listOfNotNull(
+    date,
+    chapters.takeIf { it.isNotEmpty() }?.let { pluralStringResource(R.plurals.briefing_story_count, it.size, it.size) },
+    duration?.let { stringResource(R.string.briefing_listen_minutes, it) },
+).joinToString(" · ")
+
+private fun briefingRemainingMinutes(duration: Int?, progress: Float?): Int? = duration?.let { minutes ->
+    (minutes * (1 - (progress?.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f))).toInt().coerceAtLeast(1)
+}
+
+@Composable
+private fun BriefingDismissButton(state: DailyBriefingCardState, onStateChange: (DailyBriefingCardState) -> Unit, track: (String) -> Unit) {
+    val normal = state == DailyBriefingCardState.NORMAL
+    IconButton(onClick = {
+        track(if (normal) "dismiss_initiated" else "dismiss_cancelled")
+        onStateChange(if (normal) DailyBriefingCardState.CONFIRM_DISMISS else DailyBriefingCardState.NORMAL)
+    }) {
+        Icon(Icons.Rounded.Close, stringResource(if (normal) R.string.briefing_hide else R.string.briefing_cancel_hide), Modifier.size(20.dp))
     }
 }
 

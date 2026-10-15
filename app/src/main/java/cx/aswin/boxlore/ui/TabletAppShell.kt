@@ -1,37 +1,26 @@
 package cx.aswin.boxlore.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationRail
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
@@ -50,6 +39,7 @@ internal data class TabletShellContent(
     val primary: @Composable () -> Unit,
     val details: @Composable () -> Unit,
     val player: @Composable (contextPane: Boolean) -> Unit,
+    val keyboardActions: PlaybackKeyboardActions = PlaybackKeyboardActions({}, {}, {}),
 )
 
 internal data class TabletShellGeometry(
@@ -62,7 +52,10 @@ internal data class TabletShellGeometry(
     val detailVisible: Boolean,
     val playerAvailable: Boolean,
     val playerVisible: Boolean,
-)
+) {
+    val contextPlayerVisible: Boolean get() = context != null && !detailVisible
+    fun miniPlayerVisible(immersive: Boolean): Boolean = playerVisible && !contextPlayerVisible && !immersive
+}
 
 internal fun tabletShellGeometry(
     window: BoxloreWindowLayout,
@@ -71,12 +64,12 @@ internal fun tabletShellGeometry(
     hasEpisode: Boolean,
     hasDetail: Boolean,
     immersive: Boolean,
+    playerDocked: Boolean = false,
 ): TabletShellGeometry {
     val railVisible = navigationVisible && window.usesTabletLayout
     val contextAllowed = navigationVisible && playerAllowed
-    val spec = boxlorePaneSpec(window, contextAllowed && (hasEpisode || hasDetail))
-    val full = BoxloreLayoutBounds(0f, 0f, window.widthDp, window.heightDp)
-    val primary = if (railVisible) spec.primary else full
+    val spec = boxlorePaneSpec(window, contextAllowed && ((hasEpisode && !playerDocked) || hasDetail))
+    val primary = if (railVisible) spec.primary else spec.primary.copy(left = spec.primary.left - spec.railWidthDp)
     val context = spec.context.takeIf { contextAllowed }
     val detailVisible = contextAllowed && hasDetail
     val playerAvailable = playerAllowed && hasEpisode && (railVisible || detailVisible)
@@ -85,15 +78,13 @@ internal fun tabletShellGeometry(
         primary.copy(left = primary.left - spec.railWidthDp, right = primary.left),
         context,
         context ?: primary,
-        playerCanvasBounds(window, primary, context, immersive),
+        playerCanvasBounds(window, primary, context.takeUnless { detailVisible }, immersive),
         railVisible,
         detailVisible,
         playerAvailable,
-        playerAvailable && playerCanSurface(detailVisible, context, immersive),
+        playerAvailable,
     )
 }
-
-private fun playerCanSurface(detail: Boolean, context: BoxloreLayoutBounds?, immersive: Boolean): Boolean = !detail || context == null || immersive
 
 private fun playerCanvasBounds(window: BoxloreWindowLayout, primary: BoxloreLayoutBounds, context: BoxloreLayoutBounds?, immersive: Boolean): BoxloreLayoutBounds =
     if (immersive || (context == null && window.foldSafeRegions().size > 1)) {
@@ -114,7 +105,7 @@ internal fun TabletAppShell(
     content: TabletShellContent,
 ) {
     val window = LocalBoxloreWindowLayout.current
-    val initialGeometry = tabletShellGeometry(window, navigationVisible, playerAllowed, hasEpisode, navigation.hasDetail, navigation.immersive)
+    val initialGeometry = tabletShellGeometry(window, navigationVisible, playerAllowed, hasEpisode, navigation.hasDetail, navigation.immersive, navigation.playerDocked)
     val phoneFooter = if (!window.usesTabletLayout && initialGeometry.detailVisible) {
         navigationChromeMetrics(LocalNavigationStyle.current).bottomNavigationClearance + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     } else {
@@ -134,52 +125,46 @@ internal fun TabletAppShell(
     CompositionLocalProvider(
         LocalTabletDetailNavigation provides navigation,
         cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreNavigationRailVisible provides geometry.railVisible,
-        cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePlayerPaneVisible provides (geometry.context != null),
+        cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePlayerPaneVisible provides geometry.contextPlayerVisible,
+        cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreMiniPlayerVisible provides geometry.miniPlayerVisible(navigation.immersive),
         cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreDockedPlayerBounds provides geometry.primary,
     ) {
+        TabletPlaybackKeyboard(window.usesTabletLayout && playerAllowed && hasEpisode, content.keyboardActions) { keyboardModifier ->
         TabletShellPhysicalLayout(
             geometry,
+            modifier = keyboardModifier,
             primary = content.primary,
             rail = {
                 if (geometry.railVisible) BoxLoreNavigationRail(activeTab, onNavigateTab, Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing))
             },
-            details = { TabletShellDetails(navigation, geometry.detailVisible, hasEpisode, content.details) },
+            details = { TabletShellDetails(navigation, geometry.detailVisible, content.details) },
             player = {
                 if (geometry.playerVisible) {
-                    playerState.SaveableStateProvider("tablet_player") { content.player(geometry.context != null && !navigation.immersive) }
+                    playerState.SaveableStateProvider("tablet_player") { content.player(geometry.contextPlayerVisible && !navigation.immersive) }
                 }
             },
         )
+        }
     }
 }
 
 @Composable
-private fun TabletShellDetails(navigation: TabletDetailNavigation, visible: Boolean, hasEpisode: Boolean, content: @Composable () -> Unit) {
+private fun TabletShellDetails(navigation: TabletDetailNavigation, visible: Boolean, content: @Composable () -> Unit) {
     if (!navigation.hostEnabled) return
     val hostState = rememberSaveableStateHolder()
     PaneLifecycle(visible) {
-    Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))) {
-        if (visible) {
-            Surface(color = MaterialTheme.colorScheme.surface) {
-                Row(Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = navigation::closeDetails) {
-                        Text(stringResource(if (hasEpisode) R.string.tablet_return_to_player else R.string.tablet_close_details))
-                    }
-                }
-            }
-        }
-        Box(Modifier.weight(1f)) {
+        Box(Modifier.fillMaxSize()) {
             if (visible || !navigation.hasDetail) {
                 hostState.SaveableStateProvider("detail_host", content = content)
             }
         }
-    }
     }
 }
 
 @Composable
 private fun TabletShellPhysicalLayout(
     geometry: TabletShellGeometry,
+    modifier: Modifier = Modifier,
     primary: @Composable () -> Unit,
     rail: @Composable () -> Unit,
     details: @Composable () -> Unit,
@@ -188,9 +173,13 @@ private fun TabletShellPhysicalLayout(
     Layout(content = {
         ShellRegion(geometry.primary, "primary_pane", primary)
         Box(Modifier.clipToBounds()) { rail() }
-        ShellRegion(geometry.detail, "detail_pane", details)
-        ShellRegion(geometry.player, "tablet_player_pane", player)
-    }, modifier = Modifier.fillMaxSize()) { measurables, constraints ->
+        ShellRegion(geometry.detail, "detail_pane") {
+            Box(if (geometry.context != null) Modifier.clip(MaterialTheme.shapes.extraLarge) else Modifier) { details() }
+        }
+        ShellRegion(geometry.player, "tablet_player_pane") {
+            Box(if (geometry.context != null && !geometry.detailVisible && geometry.player == geometry.context) Modifier.clip(MaterialTheme.shapes.extraLarge) else Modifier) { player() }
+        }
+    }, modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) { measurables, constraints ->
         val viewport = BoxloreLayoutBounds(0f, 0f, constraints.maxWidth / density, constraints.maxHeight / density)
         val primaryArea = geometry.primary.takeIf { it.width > 0f } ?: viewport
         val areas = listOf(primaryArea, geometry.rail.takeIf { geometry.railVisible }, geometry.detail.takeIf { geometry.detailVisible }, geometry.player.takeIf { geometry.playerVisible })

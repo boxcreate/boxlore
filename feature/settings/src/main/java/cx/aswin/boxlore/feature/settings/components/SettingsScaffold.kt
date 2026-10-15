@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TwoRowsTopAppBar
 import androidx.compose.runtime.Composable
@@ -40,7 +41,11 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.feature.settings.LocalSettingsPaneBackVisible
+import cx.aswin.boxlore.feature.settings.LocalSettingsSplitPane
 
 private val SETTINGS_CONTENT_BOTTOM_PADDING = 220.dp
 
@@ -57,7 +62,7 @@ internal fun SettingsScaffold(
     SettingsScaffoldFrame(title, onBack, modifier, actions, onUnconsumedTap) {
         Column(
             modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).widthIn(max = 720.dp).fillMaxWidth().verticalScroll(scrollState)
-                .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = SETTINGS_CONTENT_BOTTOM_PADDING),
+                .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = boxloreContentBottomPadding(SETTINGS_CONTENT_BOTTOM_PADDING)),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             content = content,
         )
@@ -73,7 +78,7 @@ internal fun SettingsLazyScaffold(
     SettingsScaffoldFrame(title, onBack, Modifier, {}, null) {
         LazyColumn(
             modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).widthIn(max = 720.dp).fillMaxWidth(),
-            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = SETTINGS_CONTENT_BOTTOM_PADDING),
+            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = boxloreContentBottomPadding(SETTINGS_CONTENT_BOTTOM_PADDING)),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             content = content,
         )
@@ -108,10 +113,19 @@ private fun SettingsScaffoldFrame(
         modifier =
         modifier
             .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+            .then(if (LocalSettingsSplitPane.current) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            TwoRowsTopAppBar(
+            if (LocalSettingsSplitPane.current) {
+                TopAppBar(
+                    modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
+                    title = { Text(title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                    navigationIcon = { if (LocalSettingsPaneBackVisible.current) SettingsBackButton(onBack) },
+                    actions = actions,
+                )
+            } else {
+                TwoRowsTopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = { expanded ->
                     val presentation = if (expanded) titlePresentation else compactTitlePresentation
                     Text(
@@ -138,9 +152,10 @@ private fun SettingsScaffoldFrame(
                 colors =
                 TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer,
                 ),
-            )
+                )
+            }
         },
     ) { innerPadding ->
         Box(
@@ -162,4 +177,9 @@ private fun SettingsScaffoldFrame(
             content()
         }
     }
+}
+
+@Composable
+private fun SettingsBackButton(onBack: () -> Unit) {
+    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
 }

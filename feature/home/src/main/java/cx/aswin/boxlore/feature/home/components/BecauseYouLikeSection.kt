@@ -35,6 +35,7 @@ import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.drawOutline
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -60,12 +61,15 @@ fun BecauseYouLikeSection(
     onChangePodcastClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     Column(modifier = modifier.fillMaxWidth()) {
-        BecauseYouLikeSeed(
+        if (!tablet) {
+            BecauseYouLikeSeed(
             podcast = podcast,
             onPodcastClick = onPodcastClick,
             onChangePodcastClick = onChangePodcastClick,
-        )
+            )
+        }
         DiscoveryExpressiveTheme {
             Column {
                 // Suggested shows retain their existing filtering and stable keys.
@@ -73,12 +77,13 @@ fun BecauseYouLikeSection(
                     HomeBecauseYouLikeLogic.filterRailPodcasts(suggestedPodcasts.list)
                 }
                 if (distinctSuggestedPodcasts.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(HomeFeedSpacing.RelatedRailGap))
+                    if (!tablet) Spacer(modifier = Modifier.height(HomeFeedSpacing.RelatedRailGap))
                     Column(verticalArrangement = Arrangement.spacedBy(HomeFeedSpacing.HeaderContentGap)) {
-                        HomeChildSectionHeader(
-                            title = stringResource(R.string.home_similar_shows),
-                            icon = RecommendationHeaderIcons.SimilarShows,
-                        )
+                        if (tablet) {
+                            TabletBecauseYouLikeHeader(podcast, stringResource(R.string.home_similar_shows), RecommendationHeaderIcons.SimilarShows, onPodcastClick, onChangePodcastClick)
+                        } else {
+                            HomeChildSectionHeader(title = stringResource(R.string.home_similar_shows), icon = RecommendationHeaderIcons.SimilarShows)
+                        }
 
                         HomeDiscoveryRail(compact = true) { cardWidth ->
                             items(
@@ -105,10 +110,11 @@ fun BecauseYouLikeSection(
                 if (distinctRecommendations.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(HomeFeedSpacing.RelatedRailGap))
                     Column(verticalArrangement = Arrangement.spacedBy(HomeFeedSpacing.HeaderContentGap)) {
-                        HomeChildSectionHeader(
-                            title = stringResource(R.string.home_recommended_episodes),
-                            icon = RecommendationHeaderIcons.EpisodesToTry,
-                        )
+                        if (tablet && distinctSuggestedPodcasts.isEmpty()) {
+                            TabletBecauseYouLikeHeader(podcast, stringResource(R.string.home_recommended_episodes), RecommendationHeaderIcons.EpisodesToTry, onPodcastClick, onChangePodcastClick)
+                        } else {
+                            HomeChildSectionHeader(title = stringResource(R.string.home_recommended_episodes), icon = RecommendationHeaderIcons.EpisodesToTry)
+                        }
 
                         HomeDiscoveryRail(compact = true) { cardWidth ->
                             items(

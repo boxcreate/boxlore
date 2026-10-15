@@ -95,6 +95,7 @@ fun FeedbackScreen(
         modifier = modifier.imePadding(),
         topBar = {
             TopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
                         text = "Share your thoughts",

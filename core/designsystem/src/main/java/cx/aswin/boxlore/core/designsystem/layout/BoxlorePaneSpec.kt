@@ -23,6 +23,7 @@ val LocalBoxlorePaneBounds = staticCompositionLocalOf<BoxloreLayoutBounds?> { nu
 /** Feature overlays reserve only chrome that is actually present in their shell. */
 val LocalBoxloreNavigationRailVisible = staticCompositionLocalOf { false }
 val LocalBoxlorePlayerPaneVisible = staticCompositionLocalOf { false }
+val LocalBoxloreMiniPlayerVisible = staticCompositionLocalOf { false }
 val LocalBoxloreDockedPlayerBounds = staticCompositionLocalOf<BoxloreLayoutBounds?> { null }
 
 fun boxlorePaneSpec(layout: BoxloreWindowLayout, contextOpen: Boolean): BoxlorePaneSpec {

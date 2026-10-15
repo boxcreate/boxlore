@@ -61,7 +61,10 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
+import cx.aswin.boxlore.core.playback.skipBackward
+import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.playback.stopAndClearQueue
+import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.fcm.FcmTopicHelper
 import cx.aswin.boxlore.fcm.isUpdaterAnnouncementAction
@@ -537,7 +540,7 @@ fun BoxLoreAppRoot(
             activeAnnouncement == null
 
     val artworkNavigation = remember { cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationColors() }
-    val windowLayout = rememberBoxloreWindowLayout()
+    val windowLayout = LocalBoxloreWindowLayout.current
     BoxLoreTheme(
         darkTheme = darkTheme,
         dynamicColor = useDynamicColor,
@@ -701,6 +704,7 @@ fun BoxLoreAppRoot(
                 activeTab = activeTab,
                 onNavigateTab = { navController.navigateBottomNavTab(it, activeTab) },
                 content = TabletShellContent(
+                    keyboardActions = PlaybackKeyboardActions(playbackRepository::togglePlayPause, playbackRepository::skipBackward, playbackRepository::skipForward),
                     details = { navigationContent(tabletNavigation.detail, true) },
                     player = { contextPane ->
                         TabletAppPlayer(

@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -66,7 +67,7 @@ fun HomeImportBanner(
     val headingTop = ((48.dp - firstLineHeight) / 2).coerceAtLeast(0.dp)
     val dismissTop = ((firstLineHeight - 48.dp) / 2).coerceAtLeast(0.dp)
     Column(
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth().padding(vertical = 8.dp).testTag("home_setup_banner"),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth().padding(vertical = if (LocalBoxloreWindowLayout.current.usesTabletLayout) 0.dp else 8.dp).testTag("home_setup_banner"),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -99,6 +100,10 @@ fun HomeImportBanner(
 
 @Composable
 private fun HomeSetupActions(onSuggestions: () -> Unit, onSearch: () -> Unit, onImport: () -> Unit) {
+    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+        TabletHomeSetupActions(onSuggestions, onSearch, onImport)
+        return
+    }
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val reflow = fontScale > 1.3f || maxWidth < 280.dp
@@ -192,6 +197,43 @@ private fun HomeSetupSecondary(label: Int, icon: ImageVector, onClick: () -> Uni
                 Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
                 Text(stringResource(label), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
             }
+        }
+    }
+}
+
+@Composable
+private fun TabletHomeSetupActions(onSuggestions: () -> Unit, onSearch: () -> Unit, onImport: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        TabletHomeSetupAction(R.string.home_setup_suggestions, R.string.home_setup_suggestions_description, Icons.Rounded.AutoAwesome, onSuggestions, true)
+        TabletHomeSetupAction(R.string.home_setup_search, R.string.home_setup_search_description, Icons.Rounded.Search, onSearch, false)
+        TabletHomeSetupAction(R.string.home_setup_import, R.string.home_setup_import_description, Icons.Rounded.Download, onImport, false)
+    }
+}
+
+@Composable
+private fun TabletHomeSetupAction(label: Int, description: Int, icon: ImageVector, onClick: () -> Unit, primary: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    val foreground = if (primary) scheme.onPrimaryContainer else scheme.onSurface
+    val shape = RoundedCornerShape(24.dp)
+    Surface(
+        color = if (primary) scheme.primaryContainer else scheme.surfaceContainerHigh,
+        contentColor = foreground,
+        shape = shape,
+        modifier = Modifier.fillMaxWidth().testTag(
+            when (label) {
+                R.string.home_setup_suggestions -> "home_setup_suggestions"
+                R.string.home_setup_search -> "home_setup_search"
+                else -> "home_setup_import"
+            },
+        ).semantics { role = Role.Button }.expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = shape, onClick = onClick),
+    ) {
+        Row(Modifier.padding(16.dp).heightIn(min = 56.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(label), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(description), style = MaterialTheme.typography.bodyMedium, color = if (primary) scheme.onPrimaryContainer else scheme.onSurfaceVariant)
+            }
+            Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(22.dp))
         }
     }
 }

@@ -24,6 +24,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import java.io.File
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -92,7 +93,7 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
         Coil.setImageLoader(requireNotNull(fixtureImageLoader))
     }
 
-    fun setContent(content: @Composable () -> Unit) {
+    fun setContent(foldSafeViewport: Boolean = false, content: @Composable () -> Unit) {
         // Keep the frozen phone fixture's composition and animation start frame unchanged.
         if (System.getProperty("boxlore.tabletCaptures") == null) {
             compose.setContent(content)
@@ -120,8 +121,13 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
             CompositionLocalProvider(
                 LocalBoxloreWindowLayout provides window,
                 LocalBoxlorePaneWidth provides configuration.width.toFloat(),
-                content = content,
-            )
+            ) {
+                if (foldSafeViewport && window.usesTabletLayout) {
+                    BoxLoreTheme(darkTheme = configuration.dark, dynamicColor = false) { GoldenFoldSafeViewport(window, content) }
+                } else {
+                    content()
+                }
+            }
         }
     }
 

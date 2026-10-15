@@ -171,6 +171,7 @@ fun LearnHistoryScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier
+                                .boxloreCardWidth(BoxloreCardFamily.Reading)
                                 .fillMaxSize()
                                 .padding(innerPadding),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(

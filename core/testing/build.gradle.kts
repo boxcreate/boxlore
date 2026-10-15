@@ -51,6 +51,7 @@ dependencies {
     api("org.mockito:mockito-core:5.14.2")
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.material3)
 
     testImplementation(libs.konsist)
     testImplementation(libs.junit.jupiter)

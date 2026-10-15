@@ -85,6 +85,8 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 
 ## Testing notes
 
+- Tablet Standard player measures actual title/control height before allocating artwork, leaving complete utility controls above safe drawing insets. Context metadata wraps beside a smaller cover; stacked/tabletop controls and supporting tabs flow through a finite scroll layout. Up next continuation and empty recovery share the queue scroller, with banner-aware reorder indices. The shell promotes video/transcript overlays to the whole window and restores their originating context/dock/immersive owner. Transcript expansion keeps its tab/sync state; video exit restores the tablet orientation. Phone defaults and metadata geometry remain unchanged.
+
 - Tablet players reuse the existing transport and supporting-content callbacks within bounded, fold-safe regions. Up next, Chapters, Transcript and Notes share saved tabs; a horizontal half-open fold puts artwork/title above the hinge and transport/support below. Context-pane presentation exposes an owner-supplied full-screen action and does not change system-bar appearance. Standard phone and BunPod paths remain separate.
 - `RetainedPlayerPresentation` is an optional app-owned UI scope for moving the same episode between pane and docked presentations. It retains supporting tabs and transient controls, restores them after recreation, and resets them for a different opaque episode ID. Without that scope, existing phone callers keep their local saved state.
 - The retained scope also remembers the settled expanded/collapsed presentation. Optional physical left/right docking insets keep the mini bar within a fold-safe browsing pane while its existing reveal motion opens into the full window. Zero-inset phone geometry retains its original values.
@@ -121,3 +123,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:playback` README](../../core/playback/README.md)
 - [`:app` README](../../app/README.md)
+
+Player phone geometry now reads the shell-provided legacy configuration dimensions, with preview/test fallbacks. Tablet secondary controls use the shared bounded modals and input feedback; the existing mini-player drag source remains separate from its expansion click source.
+
+The tabletop Standard player measures title/show metadata with artwork above the hinge, keeping transport and a visible supporting-tab row below it. Enlarged content retains its scroll fallback without crossing the physical hinge.

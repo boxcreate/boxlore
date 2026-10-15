@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -40,7 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -84,6 +88,7 @@ fun YourShowsSection(
     modifier: Modifier = Modifier,
     pinnedPodcastIds: Set<String> = emptySet(),
     onTogglePin: (String) -> Unit = {},
+    wideWithoutBrief: Boolean = false,
 ) {
     if (subscribedPodcasts.list.isEmpty()) return
     val contentTarget = selectedPodcastId ?: subscribedPodcasts.list.singleOrNull()?.id
@@ -97,7 +102,10 @@ fun YourShowsSection(
         HomeMixMode.OFFLINE -> HomeMixModeLogic.visibleOfflineItems(completedDownloads.list).isNotEmpty()
     }
 
-    Column(modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility)) {
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val sidebar = tablet && wideWithoutBrief && boxloreContentWidthDp() >= 672f
+    val moduleModifier = if (sidebar) modifier.wrapContentWidth().widthIn(max = 1_200.dp) else modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
+    Column(modifier = moduleModifier) {
         // --- Header ---
         Row(
             modifier =
@@ -149,14 +157,15 @@ fun YourShowsSection(
         }
 
         // One surface persists across Mix, show filtering, loading and caught-up states.
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(30.dp))
-                .background(homeMixModuleColor())
-                .homeMixBackdrop(enabled = showingMix && hasMixContent)
-                .testTag("home_your_shows_surface"),
-        ) {
+        YourShowsModuleFrame(
+            sidebar = sidebar,
+            selectorCount = subscribedPodcasts.list.size + if (subscribedPodcasts.list.size > 1) 1 else 0,
+            background = Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(homeMixModuleColor()).homeMixBackdrop(enabled = showingMix && hasMixContent),
+            selectors = {
+                if (sidebar && subscribedPodcasts.list.size == 1) {
+                    val onlyShow = subscribedPodcasts.list.single()
+                    TabletSingleShowSpotlight(onlyShow, LocalLastSeenEpisodes.current[onlyShow.id], CoverPin(onlyShow.id in pinnedPodcastIds) { onTogglePin(onlyShow.id) }, onPodcastClick)
+                } else {
             YourShowsSelectors(
                 podcasts = subscribedPodcasts.list,
                 selectedPodcastId = selectedPodcastId,
@@ -164,8 +173,11 @@ fun YourShowsSection(
                 pinnedPodcastIds = pinnedPodcastIds,
                 onPodcastSelected = onPodcastSelected,
                 onTogglePin = onTogglePin,
+                vertical = sidebar,
             )
-            YourShowsDivider()
+                }
+            },
+            content = {
             AnimatedContent(
                 targetState = contentTarget,
                 transitionSpec = { yourShowsContentTransform(forward = targetState != null) },
@@ -290,7 +302,8 @@ fun YourShowsSection(
                                     val visible = frame.episodes.list.take(8)
                                     // The rows and the See all footer form one connected list.
                                     val segments = visible.size + 1
-                                    visible.forEachIndexed { index, episode ->
+                                    YourShowsEpisodeRows(visible.size, allowGrid = sidebar) { index, columns ->
+                                        val episode = visible[index]
                                         val state = episodePlaybackState.map[episode.id]
                                         DenseEpisodeRow(
                                             episode = episode,
@@ -306,7 +319,7 @@ fun YourShowsSection(
                                                     )
                                                 },
                                             ),
-                                            shape = yourShowsListShape(index, segments),
+                                            shape = if (columns > 1) RoundedCornerShape(16.dp) else yourShowsListShape(index, segments),
                                             playback =
                                             DenseEpisodeRowPlayback(
                                                 overrideStatus = state?.first,
@@ -317,14 +330,19 @@ fun YourShowsSection(
                                             isEligibleForNewTag = episode.id in latestTwoIds,
                                         )
                                     }
-                                    SeeAllEpisodesRow(shape = yourShowsListShape(segments - 1, segments)) { onPodcastClick(selectedPodcast) }
+                                    if (!tablet) SeeAllEpisodesRow(shape = yourShowsListShape(segments - 1, segments)) { onPodcastClick(selectedPodcast) }
+                                }
+                                if (tablet) {
+                                    Spacer(Modifier.height(2.dp))
+                                    SeeAllEpisodesRow(shape = yourShowsListShape(1, 2)) { onPodcastClick(selectedPodcast) }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
+                    },
+        )
     }
 }
 

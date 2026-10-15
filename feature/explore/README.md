@@ -73,6 +73,8 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## Testing notes
 
+- Tablet featured results occupy the left two poster columns, with the next ranked results alongside them. For You, Top charts and semantic episode search preserve their original list projections, keys, absolute click positions and lazy tail items. Loading uses the same leading row; compact layouts remain unchanged. Lore enforces its 520dp deck cap before fill constraints, with a 640dp tablet stage limit; history heading and rows share a reading frame.
+
 - Tablet discovery grids pack by the shared Poster minimum while existing cards/skeletons use family maxima. Legacy hero and topic cards retain their internal designs. Local phone/tablet captures share fixed fixtures through `PhoneGoldenRule`.
 
 - `ExplorePhoneGoldenTest` captures Explore and Lore at both portrait phone sizes and short landscape in light/dark. Supplied data and mocked screen dependencies keep the local-only captures offline. Enable with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; [capture instructions](../../docs/screenshots/README.md) describe immutable baselines and exact pixel comparison.
@@ -104,3 +106,11 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:app` README](../../app/README.md)
 - [`:core:prefs` README](../../core/prefs/README.md)
+
+Lore uses the shell model and supplied pane for compact spacing; tablet custom controls show hover/focus. The genre menu becomes a bounded expanded dialog with scrollable finite content. Phone geometry and Lore callbacks are preserved.
+
+Tablet featured discovery cards match the natural height of adjacent posters, including full-height artwork. Genre selection measures real chip widths at the bounded pane root, retains the selected genre inline, and puts only remaining genres in More. Widening reveals additional chips; an all-fit row omits More. The compact shortlist and full compact menu retain their existing behavior.
+
+ExploreTabletAuditCaptureTest adds optional offline portrait/landscape captures for show search, episode search, topic results and empty/loading topics. It uses fixed fixtures without catalog requests or phone-baseline writes.
+
+Tablet poster results use explicit equal-height rows to preserve left-to-right visual ordering despite pixel rounding in staggered lanes; absolute callback/rank indices remain unchanged. Tablet search inputs fill their visible capsule so Clear follows its trailing edge.

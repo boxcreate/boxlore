@@ -41,6 +41,7 @@ import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
 import cx.aswin.boxlore.feature.library.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.library.PlayAllFab
 import cx.aswin.boxlore.feature.library.SubscriptionSort
@@ -603,9 +604,9 @@ private fun LatestEpisodesList(
         groupLatestByDateHeader(displayPodcasts, config.useSmartRank)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    LibraryPlaybackLayout(modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(), content = {
         LazyColumn(
-            contentPadding = PaddingValues(bottom = 240.dp, top = 4.dp),
+            contentPadding = PaddingValues(bottom = if (LocalBoxloreWindowLayout.current.usesTabletLayout) 24.dp else 240.dp, top = 4.dp),
             modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(),
         ) {
             item {
@@ -631,13 +632,14 @@ private fun LatestEpisodesList(
                 actions = actions,
             )
         }
+        }, playbackAction = {
         LatestPlayAllFab(
             displayPodcasts = displayPodcasts,
             isPlayerActive = config.isPlayerActive,
             onPlayEpisodes = actions.onPlayEpisodes,
             bottomPaddingOverride = config.playAllBottomPadding,
         )
-    }
+    })
 }
 
 @OptIn(ExperimentalFoundationApi::class)

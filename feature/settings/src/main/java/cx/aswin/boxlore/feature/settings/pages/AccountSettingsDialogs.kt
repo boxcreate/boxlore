@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.auth.AuthRepository
+import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -95,7 +96,7 @@ private fun DeleteAccountConfirmationDialog(
         onDismissRequest = onDismiss,
         title = { Text("Delete Account", fontWeight = GoogleSansWeight.bold) },
         text = {
-            Column {
+            Column(Modifier.tabletSheetScroll()) {
                 Text(
                     "Are you sure you want to delete your boxlore account? " +
                         "This permanently removes your cloud profile and cross-device sync data. " +

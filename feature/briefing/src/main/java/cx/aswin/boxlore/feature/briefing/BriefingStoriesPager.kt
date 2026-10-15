@@ -38,12 +38,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -309,8 +309,10 @@ private fun BriefingChapterPager(
         accentColor = uiState.accentColor,
     )
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
-    val maxCardHeight = (LocalConfiguration.current.screenHeightDp * STORY_CARD_MAX_SCREEN_FRACTION).dp
-    val scrollStoryAsOne = storyCardScrollsAsOne(LocalConfiguration.current.screenHeightDp)
+    val pane = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
+    val windowHeight = if (tablet && pane != null) pane.height.dp else boxloreConfigurationWindowSize().height
+    val maxCardHeight = windowHeight * STORY_CARD_MAX_SCREEN_FRACTION
+    val scrollStoryAsOne = storyCardScrollsAsOne(windowHeight.value.toInt())
     SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
         val availableWidth = (constraints.maxWidth - (PagerSidePadding * 2).roundToPx()).coerceAtLeast(0)
         val pageWidth = if (tablet) availableWidth.coerceAtMost(720.dp.roundToPx()) else availableWidth

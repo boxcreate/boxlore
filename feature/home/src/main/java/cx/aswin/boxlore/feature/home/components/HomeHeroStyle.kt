@@ -21,6 +21,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
 
@@ -46,7 +49,17 @@ internal object HomeHeroStyle {
 
 /** Shared by loaded heroes and their opaque loading cover, including enlarged text. */
 @Composable
-internal fun homeHeroHeight() = 416.dp + 200.dp * (LocalDensity.current.fontScale - 1f).coerceAtLeast(0f)
+internal fun homeHeroHeight(): androidx.compose.ui.unit.Dp {
+    val scale = LocalDensity.current.fontScale
+    val natural = 416.dp + 200.dp * (scale - 1f).coerceAtLeast(0f)
+    val window = LocalBoxloreWindowLayout.current
+    val pane = LocalBoxlorePaneBounds.current
+    return if (window.tabletopFold != null && pane != null && scale <= 1.1f) {
+        minOf(natural, (pane.height.dp - 80.dp - boxloreContentBottomPadding(0.dp)).coerceAtLeast(240.dp))
+    } else {
+        natural
+    }
+}
 
 internal data class HeroProgressState(val value: Float, val playing: Boolean)
 

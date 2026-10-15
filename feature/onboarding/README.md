@@ -113,6 +113,8 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 
 ## Testing notes
 
+- Tablet search respects IME insets, and suggestion forms remain reachable in short contiguous regions. Existing onboarding steps, state owners and phone composition remain unchanged.
+
 - Echo, suggestions, topic/activity/length pickers and search use a bounded tablet column. Search posters pack by the shared Poster spec; Echo keeps its existing height tiers and 420dp card cap. Local tablet captures include synthetic flat/tabletop windows.
 
 - `EchoPhoneGoldenTest` captures the opening Echo question at both portrait phone sizes and short landscape in light/dark using a manually advanced clock. It starts no request or clip preview. Captures are local only, enabled with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; see [capture instructions](../../docs/screenshots/README.md).
@@ -138,3 +140,5 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:prefs` README](../../core/prefs/README.md)
 - [`:app` README](../../app/README.md)
+
+Welcome shares the bounded tablet utility column with surface-appropriate status icons; Echo height tiers remain intact. About and suggestion details use fold-safe expanded dialogs with finite tablet scrolling. Phone sizing and artwork caller widths are preserved.

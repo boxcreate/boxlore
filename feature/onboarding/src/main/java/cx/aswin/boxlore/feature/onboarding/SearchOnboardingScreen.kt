@@ -81,7 +81,8 @@ internal fun OnboardingSearchScreen(
             .fillMaxSize()
             .boxloreCardWidth(BoxloreCardFamily.Utility)
             .background(MaterialTheme.colorScheme.surface)
-            .windowInsetsPadding(WindowInsets.statusBars),
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .then(if (LocalBoxloreWindowLayout.current.usesTabletLayout) Modifier.imePadding() else Modifier),
     ) {
         // Prominent search bar in top row next to back button
         Row(

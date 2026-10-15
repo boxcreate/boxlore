@@ -4,11 +4,17 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Surface
@@ -147,6 +153,7 @@ private fun TabletQueueContent(
         smartQueueEnabled = !sameShowOnly,
         sameShowContinuation = model.state.sameShowContinuation,
         showHeader = false,
+        scrollContinuation = true,
         actions = queueSheetActions(
             dependencies.playbackRepository,
             model.podcast,
@@ -170,7 +177,17 @@ private fun TabletTranscriptContent(
     flows: FullPlayerFlows,
     ui: FullPlayerUiState,
 ) {
+    val fullscreenRequest = LocalPlayerFullscreenRequest.current
     if (model.state.currentTranscript.isNotEmpty()) {
+        Column(Modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                IconButton(onClick = {
+                    ui.showFullscreenTranscript = true
+                    fullscreenRequest?.invoke(PlayerFullscreenOverlay.Transcript, true)
+                }) {
+                    Icon(Icons.Rounded.Fullscreen, stringResource(R.string.player_open_fullscreen_transcript), tint = display.colorScheme.onSurface)
+                }
+            }
         TranscriptView(
             transcript = model.state.currentTranscript,
             positionFlow = flows.position,
@@ -181,7 +198,10 @@ private fun TabletTranscriptContent(
             },
             isSyncEnabled = ui.isSyncEnabled,
             onSyncEnabledChange = { ui.isSyncEnabled = it },
+            transcriptUrl = model.episode.transcriptUrl,
+            modifier = Modifier.weight(1f),
         )
+        }
     } else {
         val loading = model.state.autoTranscriptState in setOf(AutoTranscriptState.CHECKING, AutoTranscriptState.GENERATING)
         TabletPlayerEmptyContent(stringResource(if (loading) R.string.player_preparing_transcript else R.string.player_no_transcript), loading)

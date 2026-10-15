@@ -14,6 +14,7 @@ kover {
 
 android {
     testOptions {
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
         }
@@ -80,6 +81,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.reorderable)
 
+    debugImplementation(libs.androidx.ui.test.manifest)
     testImplementation(projects.core.testing)
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)

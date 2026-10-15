@@ -55,4 +55,23 @@ class AdaptiveCardBoundsTest {
         val phone = compose.onNodeWithTag("painted_surface").fetchSemanticsNode().boundsInRoot
         assertEquals(900f, phone.width, 0.01f)
     }
+
+    @Test
+    fun `narrow reading caps still win inside tight tablet slots and leave phones unchanged`() {
+        val window = mutableStateOf(BoxloreWindowLayout(1_000f, 1_000f))
+        compose.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                Box(Modifier.width(900.dp), propagateMinConstraints = true) {
+                    Box(Modifier.fillMaxWidth().boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 520f)) {
+                        Box(Modifier.fillMaxWidth().height(48.dp).testTag("reading_surface"))
+                    }
+                }
+            }
+        }
+        val tablet = compose.onNodeWithTag("reading_surface").fetchSemanticsNode().boundsInRoot
+        assertEquals(520f, tablet.width, 0.01f)
+        assertEquals(450f, tablet.center.x, 0.01f)
+        compose.runOnIdle { window.value = BoxloreWindowLayout(800f, 360f) }
+        assertEquals(900f, compose.onNodeWithTag("reading_surface").fetchSemanticsNode().boundsInRoot.width, 0.01f)
+    }
 }

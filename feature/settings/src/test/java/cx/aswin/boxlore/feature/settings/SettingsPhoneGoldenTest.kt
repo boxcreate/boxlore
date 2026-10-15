@@ -1,10 +1,13 @@
 package cx.aswin.boxlore.feature.settings
 
 import android.app.Application
+import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import cx.aswin.boxlore.feature.settings.pages.LibraryBackupActions
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
+import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,9 +23,15 @@ class SettingsPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
 
     @Test fun settingsHub() {
         golden.prepare()
-        golden.setContent {
+        golden.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
-                SettingsHub(onBack = {}, onNavigate = {}, onCheckForUpdates = {})
+                AdaptiveSettingsLayout(ProfileSettingsDestination.Hub, SettingsScreenConfig(onBack = {}, onResetAnalytics = {}, onCheckForUpdates = {}), {}) { destination ->
+                    if (destination == ProfileSettingsDestination.Hub) {
+                        SettingsHub(onBack = {}, onNavigate = {}, onCheckForUpdates = {})
+                    } else {
+                        SyncAndBackupsPage(null, CloudSyncUiStatus.Idle, LibraryBackupActions({}, {}, {}, {}), {}, {})
+                    }
+                }
             }
         }
         golden.capture("settings")

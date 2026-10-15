@@ -46,7 +46,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -61,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalFontRoundness
@@ -90,8 +90,8 @@ internal fun MinimalPlayerContent(
     val queueGesture = rememberMinimalQueueGesture(display.isExpanded, actions.onQueue)
     val context = LocalContext.current
     val typography = remember(context) { buildBoxLoreTypography(context, FontRoundness.AXIS_CRISP) }
-    val windowHeightPx = LocalWindowInfo.current.containerSize.height
-    val windowHeight = with(LocalDensity.current) { if (windowHeightPx > 0) windowHeightPx.toDp() else Dp.Infinity }
+    val visibleHeight = boxloreVisibleWindowSize().height
+    val windowHeight = if (visibleHeight > 0.dp) visibleHeight else Dp.Infinity
     CompositionLocalProvider(LocalFontRoundness provides FontRoundness.AXIS_CRISP) {
         MaterialTheme(colorScheme = colors, typography = typography) {
             // The sheet's animation canvas deliberately extends below the window. Only this

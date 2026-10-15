@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -66,6 +67,7 @@ internal fun SelectorCover(
     onClick: () -> Unit,
     modifier: Modifier = Modifier.width(YourShowsLayout.TileWidth).height(YourShowsLayout.TileHeight),
     pin: CoverPin = CoverPin(),
+    maximumCoverSize: Dp = YourShowsLayout.CoverSize,
 ) {
     val latestEpisodeId = podcast.latestEpisode?.id
     val latestEpisodePubDate = podcast.latestEpisode?.publishedDate ?: 0L
@@ -104,7 +106,7 @@ internal fun SelectorCover(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box(modifier = Modifier.widthIn(max = YourShowsLayout.CoverSize).fillMaxWidth().aspectRatio(1f)) {
+        Box(modifier = Modifier.widthIn(max = maximumCoverSize).fillMaxWidth().aspectRatio(1f)) {
             OptimizedImage(
                 url = podcast.imageUrl,
                 fallbackUrls = podcast.artworkUrls(),

@@ -17,9 +17,9 @@ import cx.aswin.boxlore.feature.home.StableEpisodeList
 
 /**
  * Emits the "For You" section into a [LazyStaggeredGridScope].
- * The first recommendation stays full-line; body cards load one [EqualHeightPosterGrid]
- * row at a time with font-scaled three-line title feet.
+ * Phones retain the featured card and poster grid; tablets use one continuous recommendation rail.
  */
+@Suppress("LongParameterList") // Public feed parameters; compact and tablet compositions stay separate.
 fun LazyStaggeredGridScope.forYouItems(
     recommendations: StableEpisodeList,
     onEpisodeClick: (Episode, Podcast) -> Unit,
@@ -28,6 +28,23 @@ fun LazyStaggeredGridScope.forYouItems(
     showTasteHeader: Boolean = true,
     isFallback: Boolean = true,
     columns: Int = 2,
+    tablet: Boolean = false,
+) {
+    if (tablet && columns >= 3) {
+        tabletForYouItems(recommendations, onEpisodeClick, discoveryContextTitle, onBrowseRecommendations, showTasteHeader, isFallback)
+        return
+    }
+    compactForYouItems(recommendations, onEpisodeClick, discoveryContextTitle, onBrowseRecommendations, showTasteHeader, isFallback, columns)
+}
+
+private fun LazyStaggeredGridScope.compactForYouItems(
+    recommendations: StableEpisodeList,
+    onEpisodeClick: (Episode, Podcast) -> Unit,
+    discoveryContextTitle: String,
+    onBrowseRecommendations: () -> Unit,
+    showTasteHeader: Boolean,
+    isFallback: Boolean,
+    columns: Int,
 ) {
     val items = recommendations.list.take(HomeFeedSpacing.ForYouTotalCap)
 
@@ -147,4 +164,38 @@ private fun LazyStaggeredGridScope.forYouSkeletonItems(columns: Int) {
             }
         }
     }
+}
+
+private fun LazyStaggeredGridScope.tabletForYouItems(
+    recommendations: StableEpisodeList,
+    onEpisodeClick: (Episode, Podcast) -> Unit,
+    discoveryContextTitle: String,
+    onBrowse: () -> Unit,
+    showTasteHeader: Boolean,
+    isFallback: Boolean,
+) {
+    if (showTasteHeader) {
+        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_header", contentType = "for_you_header") {
+            HomePersonalRecommendationsHeader(isFallback, onBrowse)
+        }
+    }
+    item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero", contentType = "for_you_hero") {
+        if (recommendations.list.isNotEmpty()) {
+            LaunchedEffect(recommendations.list, discoveryContextTitle) {
+                AnalyticsHelper.trackHomeRecommendationsImpression(recommendations.list.size, recommendations.list.map { it.id }, discoveryContextTitle)
+            }
+        }
+        TabletRecommendationRail(recommendations.list.take(HomeFeedSpacing.ForYouTotalCap)) { episode, index, presentation ->
+            TabletRecommendationCard(episode, index, discoveryContextTitle, presentation, onEpisodeClick)
+        }
+    }
+}
+
+@Composable
+private fun TabletRecommendationCard(episode: Episode, index: Int, contextTitle: String, presentation: FeedMediaCardPresentation, onClick: (Episode, Podcast) -> Unit) {
+    val podcast = Podcast(id = episode.podcastId ?: "", title = episode.podcastTitle ?: "Podcast", artist = "", imageUrl = episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl?.takeIf { it.isNotBlank() } ?: "", description = "", genre = episode.podcastGenre ?: "Podcast")
+    CuratedEpisodeCard(episode = episode, podcast = podcast, showSubtitle = false, presentation = presentation, onClick = {
+        AnalyticsHelper.trackHomeRecommendationCardTapped(episode.id, episode.title, podcast.id, podcast.title, index, contextTitle)
+        onClick(episode, podcast)
+    })
 }

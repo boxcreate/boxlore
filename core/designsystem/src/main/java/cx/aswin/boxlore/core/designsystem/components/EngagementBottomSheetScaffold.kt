@@ -14,7 +14,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
@@ -25,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 
 /**
  * Shared bottom-sheet chrome for engagement flows (NPS survey, review prompt, feedback).
@@ -34,6 +34,7 @@ import cx.aswin.boxlore.core.designsystem.R
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList") // Engagement owners retain their explicit dismissal policy.
 fun EngagementBottomSheetScaffold(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
@@ -45,6 +46,7 @@ fun EngagementBottomSheetScaffold(
     properties: ModalBottomSheetProperties =
         ModalBottomSheetProperties(shouldDismissOnBackPress = false),
     showCloseButton: Boolean = true,
+    centeredDismissAllowed: Boolean = false,
     onCloseClick: () -> Unit = onDismissRequest,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -58,6 +60,7 @@ fun EngagementBottomSheetScaffold(
         dragHandle = null,
         contentWindowInsets = { WindowInsets.navigationBars },
         properties = properties,
+        centeredDismissAllowed = centeredDismissAllowed,
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(

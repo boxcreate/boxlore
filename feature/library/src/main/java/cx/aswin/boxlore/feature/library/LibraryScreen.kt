@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
@@ -176,6 +177,7 @@ fun LibraryContent(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             LargeTopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
                         text = "Library",
@@ -197,7 +199,7 @@ fun LibraryContent(
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer,
                 ),
             )
         },
@@ -224,6 +226,9 @@ fun LibraryContent(
                 }
             }
             is LibraryUiState.Success -> {
+                if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+                    TabletLibraryHub(uiState, onNavigateToSubscriptions, onNavigateToLiked, onNavigateToDownloads, onNavigateToHistory, Modifier.padding(innerPadding))
+                } else {
                 LazyColumn(
                     contentPadding = PaddingValues(
                         start = 16.dp,
@@ -312,6 +317,7 @@ fun LibraryContent(
                             shapes = historyShapes,
                         )
                     }
+                }
                 }
             }
         }

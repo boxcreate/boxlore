@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
  * No repository construction — deps come from [BoxLoreApplication.container].
  */
 class MainActivity : ComponentActivity() {
+    internal val windowLayoutState = mutableStateOf(cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout.Unspecified)
     private val intentState = mutableStateOf<android.content.Intent?>(null)
     private val warmStartIntent = mutableStateOf<android.content.Intent?>(null)
 
@@ -219,6 +220,8 @@ class MainActivity : ComponentActivity() {
         AnalyticsHelper.trackFirstLaunchIfNecessary(this)
 
         setContent {
+            val windowLayout = cx.aswin.boxlore.ui.rememberBoxloreWindowLayout()
+            androidx.compose.runtime.SideEffect { windowLayoutState.value = windowLayout }
             LaunchedEffect(Unit) {
                 withFrameNanos {}
                 withFrameNanos {}
@@ -226,6 +229,7 @@ class MainActivity : ComponentActivity() {
             }
             androidx.compose.runtime.CompositionLocalProvider(
                 cx.aswin.boxlore.updates.LocalPlayUpdateAction provides { playAppUpdateHelper.startUpdate() },
+                cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout provides windowLayout,
             ) {
             BoxLoreAppRoot(
                 activity = this@MainActivity,
@@ -238,7 +242,6 @@ class MainActivity : ComponentActivity() {
                     it.setUiForeground(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
                 },
             )
-            }
 
             pendingCrossDeviceAuthLink?.let { linkString ->
                 cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme {
@@ -249,6 +252,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                 }
+            }
             }
         }
     }

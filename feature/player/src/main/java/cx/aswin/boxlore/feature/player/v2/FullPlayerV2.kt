@@ -51,11 +51,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -100,6 +100,7 @@ data class FullPlayerActions(
     val onPodcastInfoClick: (Podcast) -> Unit,
     val onSwipeMinimizeTipDismissed: () -> Unit = {},
     val onOpenImmersivePlayer: (() -> Unit)? = null,
+    val onDockPlayer: (() -> Unit)? = null,
 )
 
 @Stable
@@ -211,6 +212,8 @@ fun FullPlayerV2(
     val localUi = rememberSaveable(episode.id, saver = FullPlayerUiStateSaver) { FullPlayerUiState() }
     val ui = LocalPlayerPresentationStore.current?.forEpisode(episode.id) ?: localUi
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val fullscreenRequest = LocalPlayerFullscreenRequest.current.takeIf { tablet }
+    val playerActions = fullscreenRequest?.let { request -> actions.copy(onFullscreenVideoChange = { request(PlayerFullscreenOverlay.Video, it) }) } ?: actions
     SideEffect { if (tablet) ui.moveSupportingContentToTabs() }
 
     val queueSnackbarHostState = remember { SnackbarHostState() }
@@ -225,7 +228,10 @@ fun FullPlayerV2(
     val isDownloading by remember(episode.id) { downloadRepository.isDownloading(episode.id) }
         .collectAsStateWithLifecycle(initialValue = false)
 
-    BackHandler(enabled = ui.showFullscreenTranscript) { ui.showFullscreenTranscript = false }
+    BackHandler(enabled = ui.showFullscreenTranscript) {
+        ui.showFullscreenTranscript = false
+        fullscreenRequest?.invoke(PlayerFullscreenOverlay.Transcript, false)
+    }
     BackHandler(enabled = ui.showInlineTranscript && !ui.showFullscreenTranscript) {
         ui.showInlineTranscript = false
     }
@@ -253,13 +259,13 @@ fun FullPlayerV2(
             model = FullPlayerBodyModel(state, episode, podcast, nextEpisode, isVideo, isVideoPodcast, FullPlayerDownloadState(isDownloaded, isDownloading)),
             dependencies = dependencies,
             display = display,
-            actions = actions,
+            actions = playerActions,
             flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
             ui = ui,
             resources = TabletPlayerResources(
                 FullPlayerBodyResources(scope, queueSnackbarHostState, statusBarPadding, navBarPadding, modifier),
                 PlayerQueueSheetResources(scope, queueSnackbarHostState, queueSheetState),
-                minimalPlayerActions(dependencies, state, ui, actions),
+                minimalPlayerActions(dependencies, state, ui, playerActions),
                 useMinimalPlayer(style, isVideoPodcast),
             ),
         )
@@ -268,7 +274,7 @@ fun FullPlayerV2(
             state = state,
             display = display,
             flows = PlayerProgressFlows(positionFlow, bufferedPositionFlow),
-            actions = minimalPlayerActions(dependencies, state, ui, actions),
+            actions = minimalPlayerActions(dependencies, state, ui, playerActions),
             modifier = modifier,
         )
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -288,7 +294,7 @@ fun FullPlayerV2(
             ),
             dependencies = dependencies,
             display = display,
-            actions = actions,
+            actions = playerActions,
             flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
             ui = ui,
             resources =
@@ -325,7 +331,7 @@ fun FullPlayerV2(
             chaptersSheetState,
             context,
         ),
-        actions = actions,
+        actions = playerActions,
     )
 
     // ------------------------------------------------------------------
@@ -336,7 +342,7 @@ fun FullPlayerV2(
         dependencies = dependencies,
         model = FullPlayerOverlayModel(state, episode, colorScheme, positionFlow),
         display = display,
-        actions = actions,
+        actions = playerActions,
         ui = ui,
     )
 }
@@ -411,9 +417,9 @@ private fun FullPlayerBody(
             .fillMaxSize()
             .playerCanvas(display.colorScheme),
     ) {
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
-        val screenHeight = configuration.screenHeightDp.dp
+        val windowSize = boxloreConfigurationWindowSize()
+        val screenWidth = windowSize.width
+        val screenHeight = windowSize.height
         val finalMaxHeight = screenHeight - resources.statusBarPadding - resources.navBarPadding
 
         Column(

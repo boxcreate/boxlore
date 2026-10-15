@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +29,7 @@ import cx.aswin.boxlore.feature.player.v2.FullPlayerActions
 import cx.aswin.boxlore.feature.player.v2.FullPlayerDependencies
 import cx.aswin.boxlore.feature.player.v2.FullPlayerDisplay
 import cx.aswin.boxlore.feature.player.v2.FullPlayerV2
+import cx.aswin.boxlore.feature.player.v2.LocalPlayerFullscreenRequest
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetActions
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
@@ -56,6 +58,7 @@ internal fun TabletAppPlayer(
     val colors = rememberPlayerColors(art)
     var fullscreenVideo by rememberSaveable(episode.id) { mutableStateOf(false) }
     val presentation = playerPresentationController()
+    val fullscreenRequest = rememberTabletPlayerFullscreenRequest(episode.id, navigation, presentation) { fullscreenVideo = it }
     val closeImmersive = {
         presentation?.expanded = false
         navigation.immersive = false
@@ -68,6 +71,7 @@ internal fun TabletAppPlayer(
     LaunchedEffect(options.expandTrigger) {
         if (options.expandTrigger > 0 && contextPane) openImmersive()
     }
+    CompositionLocalProvider(LocalPlayerFullscreenRequest provides fullscreenRequest) {
     androidx.compose.runtime.key("retained_tablet_player") {
         if (contextPane || navigation.immersive) {
             FullPlayerV2(
@@ -79,6 +83,10 @@ internal fun TabletAppPlayer(
                     onEpisodeInfoClick = actions.onEpisodeInfoClick,
                     onPodcastInfoClick = actions.onPodcastInfoClick,
                     onOpenImmersivePlayer = openImmersive,
+                    onDockPlayer = {
+                        presentation?.expanded = false
+                        navigation.playerDocked = true
+                    },
                 ),
             )
         } else {
@@ -113,5 +121,6 @@ internal fun TabletAppPlayer(
                 )
             }
         }
+    }
     }
 }

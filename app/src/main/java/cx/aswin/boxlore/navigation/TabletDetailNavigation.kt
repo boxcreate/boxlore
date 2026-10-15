@@ -28,9 +28,11 @@ internal class TabletDetailNavigation(
     val detail: NavHostController,
     immersive: MutableState<Boolean>,
     hostEnabled: MutableState<Boolean>,
+    playerDocked: MutableState<Boolean> = mutableStateOf(false),
 ) {
     var immersive by immersive
     var hostEnabled by hostEnabled
+    var playerDocked by playerDocked
     var splitAllowed by mutableStateOf(false)
     var hasDetail by mutableStateOf(false)
     var detailActive by mutableStateOf(false)
@@ -72,7 +74,8 @@ internal fun rememberTabletDetailNavigation(primary: NavHostController): TabletD
     }
     val immersive = rememberSaveable { mutableStateOf(false) }
     val enabled = rememberSaveable { mutableStateOf(false) }
-    val state = remember(primary, detail) { TabletDetailNavigation(primary, detail, immersive, enabled) }
+    val playerDocked = rememberSaveable { mutableStateOf(false) }
+    val state = remember(primary, detail) { TabletDetailNavigation(primary, detail, immersive, enabled, playerDocked) }
     DisposableEffect(state) {
         val listener = androidx.navigation.NavController.OnDestinationChangedListener { _, destination, _ ->
             state.hasDetail = destination.route != TabletContextRoot

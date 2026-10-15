@@ -50,7 +50,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -98,6 +97,7 @@ import cx.aswin.boxlore.core.designsystem.briefing.BriefingPageStatusBars
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingRegionMenu
 import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.model.Briefing
@@ -192,7 +192,7 @@ fun BriefingScreen(
         }
     }
     BriefingEditorialTheme {
-        Surface(modifier.fillMaxSize().onSizeChanged { coverHeight = it.width / BRIEFING_COVER_ASPECT_RATIO }, color = MaterialTheme.colorScheme.background) {
+        Surface(modifier.fillMaxSize().boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxSize().testTag("briefing_reading_frame").onSizeChanged { coverHeight = it.width / BRIEFING_COVER_ASPECT_RATIO }, color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxSize()) {
                 AnimatedContent(uiState, contentKey = { it.presentationKey() }, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "briefingState") { displayedState ->
                     when (displayedState) {

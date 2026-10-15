@@ -197,6 +197,7 @@ fun DownloadedShowEpisodesScreen(
             topBar = {
                 Row(
                     modifier = Modifier
+                        .boxloreCardWidth(BoxloreCardFamily.Utility)
                         .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.statusBars)
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = scrollFraction))

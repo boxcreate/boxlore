@@ -62,6 +62,7 @@ import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.core.playback.PlaybackArtworkResolver
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.pause
@@ -430,6 +431,7 @@ private fun PlayerSheetSurface(
                 !sheetState.isAnimationRunning,
         )
         val adaptedGeometry = geometry.adaptToBounds(bounds, content.isFullscreenVideo, rotation)
+        val expansionInteractionSource = remember { MutableInteractionSource() }
         Box(
             modifier =
             Modifier
@@ -465,11 +467,11 @@ private fun PlayerSheetSurface(
                         // ate mini controls for ~1–2s. Touch-slop still allows swipe-up
                         // expand from the collapsed mini player.
                         startDragImmediately = false,
-                    ).clickable(
+                    ).tabletInputFeedback(expansionInteractionSource, enabled = geometry.expansionFraction < 0.5f && !content.isFullscreenVideo).clickable(
                         enabled =
                         geometry.expansionFraction < 0.5f &&
                             !content.isFullscreenVideo,
-                        interactionSource = remember { MutableInteractionSource() },
+                        interactionSource = expansionInteractionSource,
                         indication = null,
                         onClickLabel = "Open player",
                     ) {

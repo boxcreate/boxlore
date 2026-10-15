@@ -125,6 +125,8 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 ## Testing notes
 
+- Tablet top bars align with their bounded content column and keep a flat surface. Footer clearance follows actual mini-player visibility. Support content and RSS match confirmation remain scrollable in short viewports; phone spacing remains unchanged.
+
 - Tablet settings use the shared Utility cap (720dp), including Smart Downloads, Feedback and Support outside the ordinary settings scaffold. Existing account/editor caps remain smaller or bound each editor column. Phone constraints are unchanged.
 
 - `SettingsPhoneGoldenTest` captures the Settings hub at both portrait phone sizes and short landscape in light/dark. Local captures use `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; recording never overwrites existing phone baselines. The older dialog/download Roborazzi tests also live in this module. See [capture instructions](../../docs/screenshots/README.md).
@@ -157,3 +159,9 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 - [`:feature:home` README](../home/README.md)
 - [`:feature:library` README](../library/README.md)
 - [`:app` README](../../app/README.md)
+
+Custom tablet avatar/stage controls show visible hover and keyboard focus while retaining syncing/disabled guards. Existing settings/account column limits and phone geometry are preserved.
+
+Tablet Settings uses a persistent category/detail split at 672dp of actual available width. Detail pages retain their composition owner through window resize, use a fixed header and clip transitions within their pane. Lateral category selection clears nested Back history; root Back exits the split, while Account/custom-theme Back returns to its parent. Onboarding and Support remain full-page. Category lists reserve actual playback clearance; ordinary detail/Account width caps remain 720/600dp. Offline local captures cover category pages and standalone download/feedback screens in portrait/landscape and both themes.
+
+Short folded alerts keep RSS fields/errors, analytics explanations and account-deletion information in a scrollable body while native action buttons remain visible. `TabletSettingsDialogTest` checks these actual dialogs at a synthetic tabletop fold with enlarged text, without performing account or network operations.

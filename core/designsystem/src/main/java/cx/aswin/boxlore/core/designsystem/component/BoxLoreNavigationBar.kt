@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.rememberGoogleSansFamily
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import kotlin.math.roundToInt
 
 enum class NavigationStyle(val key: String, val label: String,) {
@@ -391,6 +392,7 @@ private fun FloatingPrimaryNavItem(
                 scaleX = pressScale.value
                 scaleY = pressScale.value
             }
+            .tabletInputFeedback(interactionSource, NavSelectionShape)
             .selectable(
                 selected = selected,
                 role = Role.Tab,
@@ -520,7 +522,7 @@ private fun LoreNavActionFab(
         modifier = modifier.graphicsLayer {
             scaleX = pressScale.value
             scaleY = pressScale.value
-        }.selectable(
+        }.tabletInputFeedback(interactionSource, CircleShape).selectable(
             selected = selected,
             role = Role.Tab,
             interactionSource = interactionSource,

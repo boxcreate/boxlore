@@ -10,7 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -19,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 
 private const val AuroraSweepDurationMillis = 20_000
@@ -40,6 +43,11 @@ internal fun FloatingNavigationIndicatorAurora(indicatorIndex: State<Float>, act
     LaunchedEffect(active) {
         if (active) {
             while (isActive) {
+                val motionScale = coroutineContext[MotionDurationScale]
+                if (motionScale?.scaleFactor == 0f) {
+                    phase.snapTo(0f)
+                    snapshotFlow { motionScale.scaleFactor }.first { it > 0f }
+                }
                 val duration = ((1f - phase.value) * AuroraSweepDurationMillis).roundToInt().coerceAtLeast(1)
                 phase.animateTo(1f, tween(durationMillis = duration, easing = LinearEasing))
                 phase.snapTo(0f)

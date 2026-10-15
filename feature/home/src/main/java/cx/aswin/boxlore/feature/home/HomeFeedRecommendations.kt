@@ -32,6 +32,7 @@ import cx.aswin.boxlore.feature.home.components.HomeTopLevelSectionHeader
 import cx.aswin.boxlore.feature.home.components.PodcastCard
 import cx.aswin.boxlore.feature.home.components.forYouItems
 
+@Suppress("LongParameterList")
 internal fun LazyStaggeredGridScope.curatedForYouItems(
     content: PodcastFeedContent,
     feedState: PodcastFeedUiState,
@@ -40,6 +41,7 @@ internal fun LazyStaggeredGridScope.curatedForYouItems(
     callbacks: HomeFeedCallbacks,
     derivedState: PodcastFeedDerivedState,
     posterColumns: Int = 2,
+    tablet: Boolean = false,
 ) {
     if (!derivedState.hasBecauseYouLike && !derivedState.hasRecommendations) return
     if (!derivedState.hasBecauseYouLike) {
@@ -59,6 +61,7 @@ internal fun LazyStaggeredGridScope.curatedForYouItems(
             showTasteHeader = derivedState.hasBecauseYouLike,
             isFallback = recommendationState.isRecommendationsFallback,
             columns = posterColumns,
+            tablet = tablet,
         )
     }
 }

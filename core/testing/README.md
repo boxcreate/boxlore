@@ -9,7 +9,7 @@ Owns shared JVM test fixtures, dispatcher helpers, and architecture guards used 
 - `MainDispatcherExtension` installs a test main dispatcher for a test scope.
 - `TestFixtures` provides minimal podcast and episode builders.
 - `PhoneGoldenRule` and `PhoneGoldenConfiguration` provide the local, six-configuration phone capture matrix. Roborazzi writes actual renders; verification compares dimensions and every ARGB pixel. Recording refuses to overwrite an existing phone baseline.
-- The same fixtures support `-PtabletCaptures=before|after`: 600×960, 840×1280, 1280×800, 1600×1000 and 673×841 flat/tabletop, in light/dark. `setContent` supplies the shared window model for tablet after captures; before captures select the preserved legacy presentation. Phone captures retain their original composition and animation start frame. These review images are separate from immutable phone baselines.
+- The same fixtures support `-PtabletCaptures=before|after`: 600×960, 840×1280, 1280×800, 1600×1000 and 673×841 flat/tabletop, in light/dark. `setContent` supplies the shared window model for tablet after captures; before captures select the preserved legacy presentation. Phone captures retain their original composition and animation start frame. These review images are separate from immutable phone baselines. Standalone feature captures can opt into the same fold-safe viewport selection used by hidden-navigation shell routes; the full player retains its separate art/control regions. The phone branch still passes the original content directly to Compose.
 - `fakes.FakeLocalEpisodeCatalogPort` pages/sorts/searches in memory and returns null from `findByCatalogKey` when guid and enclosure are both blank.
 - `fakes.FakeDeviceIdentityPort` provides a deterministic or mutable device ID fake for sync tests.
 - Test dependencies such as JUnit Jupiter, coroutines-test, Turbine, and MockWebServer are exposed for modules that declare `testImplementation(projects.core.testing)`.
@@ -67,3 +67,5 @@ src/test/java/cx/aswin/boxlore/core/testing/architecture/
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:model` README](../model/README.md)
+
+Standalone tablet capture frames use an outer matching light/dark theme and solid surface for unused fold regions. The optional native fixture support depends on Material 3 for that backdrop; this adds no application release dependency. Phone capture composition bypasses the tablet frame.

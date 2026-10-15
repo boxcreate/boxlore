@@ -73,7 +73,7 @@ class ExplorePhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
 
     private fun render(name: String, route: String, content: @Composable () -> Unit) {
         golden.prepare()
-        golden.setContent {
+        golden.setContent(foldSafeViewport = true) {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 Surface(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize()) {

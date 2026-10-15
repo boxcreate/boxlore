@@ -42,12 +42,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import cx.aswin.boxlore.BuildConfig
 import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog as Dialog
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository.Announcement
 import cx.aswin.boxlore.ui.NativeDialogSystemBars
 import cx.aswin.boxlore.updates.ReleaseNotesMarkdown

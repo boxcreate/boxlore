@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 
 private const val TAG = "StylizedLogo"
 
@@ -44,7 +45,7 @@ fun TopControlBar(
     val collapsedPadding = 8.dp
 
     val expandedColor = MaterialTheme.colorScheme.surface
-    val collapsedColor = MaterialTheme.colorScheme.surfaceContainerLow
+    val collapsedColor = if (LocalBoxloreWindowLayout.current.usesTabletLayout) expandedColor else MaterialTheme.colorScheme.surfaceContainerLow
 
     // Update system status bar icon color to match background (evaluated once per theme change, not on scroll)
     val view = LocalView.current

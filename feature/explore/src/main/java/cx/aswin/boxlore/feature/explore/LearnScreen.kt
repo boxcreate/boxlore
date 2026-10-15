@@ -38,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
@@ -46,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
@@ -70,8 +70,13 @@ fun LearnScreen(
     onNavigateToHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val configuration = LocalConfiguration.current
-    val compactSpacing = configuration.screenWidthDp < 360 || configuration.screenHeightDp < 720
+    val pane = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
+    val windowSize = if (cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout && pane != null) {
+        androidx.compose.ui.unit.DpSize(pane.width.dp, pane.height.dp)
+    } else {
+        boxloreConfigurationWindowSize()
+    }
+    val compactSpacing = windowSize.width < 360.dp || windowSize.height < 720.dp
     val uiState by viewModel.uiState.collectAsState()
     val stablePlayerState = remember(playbackRepository) {
         playbackRepository.playerState
@@ -220,6 +225,7 @@ fun LearnScreen(
                             Spacer(modifier = Modifier.height(6.dp))
                             Box(
                                 modifier = Modifier
+                                    .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 560f)
                                     .fillMaxWidth()
                                     .padding(horizontal = 20.dp, vertical = if (compactSpacing) 0.dp else 4.dp)
                             ) {

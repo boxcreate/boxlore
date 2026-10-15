@@ -52,11 +52,11 @@ fun boxlorePosterColumns(
  * The slot keeps its original extent, so connected list and grid alignment remain predictable.
  */
 @Composable
-fun Modifier.boxloreCardWidth(family: BoxloreCardFamily): Modifier {
+fun Modifier.boxloreCardWidth(family: BoxloreCardFamily, maximumWidthDp: Float? = null): Modifier {
     val spec = boxloreCardSpec(LocalBoxloreWindowLayout.current, family)
     if (spec.preserveCallerGeometry) return this
     return layout { measurable, constraints ->
-        val maximum = min(constraints.maxWidth, (spec.maximumWidthDp * density).roundToInt())
+        val maximum = min(constraints.maxWidth, (min(spec.maximumWidthDp, maximumWidthDp ?: spec.maximumWidthDp) * density).roundToInt())
         val child = measurable.measure(constraints.copy(minWidth = min(constraints.minWidth, maximum), maxWidth = maximum))
         val width = if (constraints.hasBoundedWidth) constraints.maxWidth else constraints.constrainWidth(child.width)
         layout(width, child.height) { child.placeRelative((width - child.width) / 2, 0) }

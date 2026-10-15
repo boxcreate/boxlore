@@ -40,3 +40,7 @@ Provides UI and logic for viewing the user's listening history.
 ## See also
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
+
+History confirmations and the native date picker inherit the shared fold-safe Material dialog host. Existing picker state and date/filter callbacks remain unchanged.
+
+The tablet History header shares the same centered 720dp column as its insight and history content; compact phone header geometry is unchanged.

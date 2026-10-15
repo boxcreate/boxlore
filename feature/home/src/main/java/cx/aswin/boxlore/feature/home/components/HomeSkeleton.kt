@@ -281,6 +281,10 @@ fun YourShowsSkeleton(
     subscribedCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
+    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+        TabletYourShowsSkeleton(subscribedCount, modifier)
+        return
+    }
     val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
 

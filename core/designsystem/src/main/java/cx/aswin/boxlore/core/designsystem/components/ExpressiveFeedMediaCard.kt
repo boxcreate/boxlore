@@ -34,18 +34,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -136,19 +140,8 @@ fun FeedMediaCardSkeleton(
 
 @Composable
 private fun ExpressiveMediaTitle(title: String, modifier: Modifier, presentation: FeedMediaCardPresentation) {
-    val featured = presentation == FeedMediaCardPresentation.ExpressiveFeatured
-    val style = LocalTextStyle.current.merge(
-        MaterialTheme.typography.titleSmall.copy(
-            fontSize = if (featured) 16.sp else 14.sp,
-            lineHeight = if (featured) 24.sp else 20.sp,
-            platformStyle = PlatformTextStyle(includeFontPadding = false),
-            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
-        ),
-    )
-    // Measure actual paragraphs: nonlinear font scaling and empty-string metrics
-    // make a dp/sp multiplication or Text(minLines) insufficient for matching feet.
-    val measuredTitle = rememberTextMeasurer().measure(AnnotatedString("Hg\nHg\nHg"), style = style, softWrap = false)
-    val titleHeight = with(LocalDensity.current) { measuredTitle.size.height.toDp() }
+    val style = expressiveMediaTitleStyle(presentation)
+    val titleHeight = expressiveMediaTitleHeight(style)
     Box(modifier.height(titleHeight), contentAlignment = Alignment.CenterStart) {
         Text(
             text = title,
@@ -161,6 +154,32 @@ private fun ExpressiveMediaTitle(title: String, modifier: Modifier, presentation
 }
 
 @Composable
+private fun expressiveMediaTitleStyle(presentation: FeedMediaCardPresentation): TextStyle {
+    val featured = presentation == FeedMediaCardPresentation.ExpressiveFeatured
+    return LocalTextStyle.current.merge(
+        MaterialTheme.typography.titleSmall.copy(
+            fontSize = if (featured) 16.sp else 14.sp,
+            lineHeight = if (featured) 24.sp else 20.sp,
+            platformStyle = PlatformTextStyle(includeFontPadding = false),
+            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
+        ),
+    )
+}
+
+@Composable
+private fun expressiveMediaTitleHeight(style: TextStyle): Dp {
+    val measured = rememberTextMeasurer().measure(AnnotatedString("Hg\nHg\nHg"), style = style, softWrap = false)
+    return with(LocalDensity.current) { measured.size.height.toDp() }
+}
+
+/** Artwork plus the same measured three-line foot used by real posters and skeletons. */
+@Composable
+fun expressivePosterCardHeight(artworkWidth: Dp): Dp {
+    val titleHeight = expressiveMediaTitleHeight(expressiveMediaTitleStyle(FeedMediaCardPresentation.ExpressivePoster))
+    return with(LocalDensity.current) { (artworkWidth.roundToPx() + titleHeight.roundToPx() + 2 * 12.dp.roundToPx()).toDp() }
+}
+
+@Composable
 private fun ExpressiveMediaLayout(
     presentation: FeedMediaCardPresentation,
     artwork: @Composable (Modifier) -> Unit,
@@ -168,7 +187,8 @@ private fun ExpressiveMediaLayout(
     openIndicator: @Composable () -> Unit,
 ) {
     if (presentation == FeedMediaCardPresentation.ExpressiveFeatured) {
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+        BoxWithConstraints(Modifier.fillMaxWidth().then(if (tablet) Modifier.fillMaxHeight() else Modifier), propagateMinConstraints = tablet) {
             val artworkWidth = (maxWidth * 0.44f).coerceAtMost(176.dp)
             Row(
                 modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 152.dp),
@@ -183,6 +203,7 @@ private fun ExpressiveMediaLayout(
                 }
                 artwork(
                     Modifier.width(artworkWidth).fillMaxHeight()
+                        .then(if (tablet) Modifier.testTag("feed_featured_artwork") else Modifier)
                         .clip(RoundedCornerShape(topStart = 72.dp, topEnd = 0.dp, bottomStart = 16.dp, bottomEnd = 0.dp)),
                 )
             }

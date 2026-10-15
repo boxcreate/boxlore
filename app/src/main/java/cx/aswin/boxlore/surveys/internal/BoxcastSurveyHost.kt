@@ -144,7 +144,10 @@ internal class BoxcastSurveyHost(
                                     userPrefs.cachedFontRoundness,
                                 ),
                             ) {
-                                CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
+                                CompositionLocalProvider(
+                                    LocalSaveableStateRegistry provides registry,
+                                    cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout provides ((activity as? cx.aswin.boxlore.MainActivity)?.windowLayoutState?.value ?: cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout.Unspecified),
+                                ) {
                                     SurveySheet(
                                         survey = survey,
                                         onSurveyShown = { reportShownOnce() },
