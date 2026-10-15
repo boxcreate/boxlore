@@ -354,6 +354,41 @@ class QueueSyncResolverTest {
         assertEquals("Podcast pod-5", applied[3].podcastTitle)
     }
 
+    // Regression: a peer's titled queue item whose cover was a player-only link arrived with no artwork.
+    @Test
+    fun resolveQueue_peerItemWithPlayerOnlyCover_takesThisDevicesCatalogCover() = runTest {
+        fakeQueueSyncPort.metadata = QueueMetadataEntity(id = 1, queueSequence = 1L, isDirty = false)
+        database.localEpisodeCatalogDao().upsertEpisodes(
+            listOf(
+                LocalEpisodeEntity(
+                    episodeId = "ep-peer", podcastId = "pod-9", guid = "guid-9", title = "Catalog title", description = "",
+                    audioUrl = "https://example.com/peer.mp3", imageUrl = "https://example.com/peer.jpg", duration = 60, publishedDate = 1L,
+                    chaptersUrl = null, transcriptUrl = null, transcripts = null, persons = null, seasonNumber = null, episodeNumber = null,
+                    episodeType = null, enclosureType = null,
+                ),
+            ),
+        )
+        val remoteQueue = QueueSyncDto(
+            queueSequence = 2L,
+            queueUpdatedAt = 2000L,
+            items = listOf(
+                QueueItemSyncDto(
+                    episodeId = "ep-peer",
+                    podcastId = "pod-9",
+                    position = 0,
+                    title = "Peer title",
+                    imageUrl = "content://cx.aswin.boxlore.collage/art/peer",
+                ),
+            ),
+        )
+
+        resolver.resolveQueue(remoteQueue, syncedAt = 3000L)
+
+        val applied = fakeQueueSyncPort.appliedItems!!.single()
+        assertEquals("Peer title", applied.title)
+        assertEquals("https://example.com/peer.jpg", applied.imageUrl)
+    }
+
     private fun createQueueItem(
         episodeId: String,
         podcastId: String = "pod-1",

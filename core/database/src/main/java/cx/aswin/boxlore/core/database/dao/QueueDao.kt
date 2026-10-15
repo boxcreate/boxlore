@@ -129,8 +129,10 @@ interface QueueDao {
 
     /**
      * Swaps a player-only artwork link (`content://<app>.collage/...`) saved by older builds for the
-     * episode's own cover, else the show's, else nothing. Order, positions and queue metadata are
-     * untouched. Returns the rows changed.
+     * episode's own cover, else the show's, else the row's own show cover, else nothing. Order,
+     * positions and queue metadata are untouched, and the queue is not pushed for it: other devices
+     * drop the dead link on download and fill the cover from their own catalogue. Returns the rows
+     * changed.
      */
     @Query(
         """
@@ -141,7 +143,9 @@ interface QueueDao {
                 (SELECT imageUrl FROM rss_episodes WHERE rss_episodes.episodeId = queue_items.episodeId
                     AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
                 (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = queue_items.podcastId
-                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%')
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
+                CASE WHEN queue_items.podcastImageUrl != '' AND queue_items.podcastImageUrl NOT LIKE 'content://%.collage/%'
+                    THEN queue_items.podcastImageUrl END
             ) ELSE imageUrl END,
             podcastImageUrl = CASE WHEN podcastImageUrl LIKE 'content://%.collage/%' THEN
                 (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = queue_items.podcastId
