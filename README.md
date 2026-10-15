@@ -40,7 +40,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <a href="#yours"><b>Yours</b></a> ·
 <a href="#every-feature"><b>Every feature</b></a> ·
 <a href="#questions-people-ask"><b>Questions</b></a> ·
-<a href="#install"><b>Install</b></a>
+<a href="#install"><b>Install</b></a> ·
+<a href="docs/SOUL.md"><b>The soul of boxlore</b></a> ·
+<a href="docs/PRIVACY.md"><b>What we track</b></a>
 </p>
 
 <img src="docs/images/m3/divider.svg?v=a09a44e3" width="820" alt=""/>
