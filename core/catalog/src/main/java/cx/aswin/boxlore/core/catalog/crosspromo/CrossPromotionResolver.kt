@@ -32,7 +32,10 @@ class CrossPromotionResolver internal constructor(
             val direct = appleIds.singleOrNull()?.let { id -> lookupSafely("itunes:$id") }?.takeIf {
                 it.id != hostPodcastId && (namedLinks.isNotEmpty() || bestMatch(listOf(it), name, hostPodcastId) != null)
             }
-            direct ?: bestMatch(search(name), name, hostPodcastId)
+            // "Closereads: Donald Davidson" and "NeferTV with Ann Foster" are found by their shorter names.
+            direct ?: (listOf(name) + CrossPromotionNames.variants(name)).distinct().firstNotNullOfOrNull { query ->
+                bestMatch(search(query), name, hostPodcastId)
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
@@ -58,22 +61,42 @@ class CrossPromotionResolver internal constructor(
     }
 
     internal fun bestMatch(results: List<Podcast>, name: String, hostId: String?): Podcast? {
-        val query = CrossPromotionDetector.normalizedName(name)
-        val queryTokens = query.split(' ').toSet()
         val scored = results.distinctBy { it.id }.filter { it.id != hostId }.mapNotNull { podcast ->
-            val title = CrossPromotionDetector.normalizedName(podcast.title)
-            val titleTokens = title.split(' ').toSet()
-            val shared = queryTokens.intersect(titleTokens).size.toFloat()
-            val score = when {
-                query == title -> 100
-                queryTokens.size >= 2 && titleTokens.size >= 2 && (name.startsWith("${podcast.title}:", true) || podcast.title.startsWith("$name:", true)) -> 80
-                queryTokens.size >= 2 && shared / queryTokens.size >= .8f && shared / titleTokens.size >= .8f -> 75
-                else -> return@mapNotNull null
-            }
-            podcast to score
+            score(name, podcast.title)?.let { podcast to it }
         }.sortedByDescending { it.second }
         val best = scored.firstOrNull() ?: return null
         if (scored.getOrNull(1)?.let { best.second - it.second < 15 } == true) return null
         return best.first
+    }
+
+    /** How well a show titled [podcastTitle] fits the extracted [name], or null when it does not. */
+    private fun score(name: String, podcastTitle: String): Int? {
+        val query = CrossPromotionDetector.normalizedName(name)
+        val queryTokens = query.split(' ').toSet()
+        val title = CrossPromotionDetector.normalizedName(podcastTitle)
+        val titleTokens = title.split(' ').toSet()
+        val shared = queryTokens.intersect(titleTokens).size.toFloat()
+        return when {
+            query == title -> 100
+            query == CrossPromotionDetector.normalizedName(podcastTitle.substringBefore(" (")) && ' ' in query -> 80
+            colonPart(name, title) || queryTokens.size >= 2 && colonPart(podcastTitle, query) -> 80
+            queryTokens.size >= 2 && shared / queryTokens.size >= .8f && shared / titleTokens.size >= .8f -> 75
+            hostedVariant(query, title) -> 70
+            else -> null
+        }
+    }
+
+    /** "Fiasco: Benghazi" names a season of Fiasco; "Smoke Screen: Betrayal on the Bayou" ends with its show. */
+    private fun colonPart(full: String, normalizedPart: String): Boolean {
+        if (':' !in full || normalizedPart.length < 4) return false
+        val head = CrossPromotionDetector.normalizedName(full.substringBefore(':'))
+        val tail = CrossPromotionDetector.normalizedName(full.substringAfterLast(':'))
+        return head == normalizedPart || tail == normalizedPart && ' ' in normalizedPart
+    }
+
+    /** "Uncharted" and "Uncharted with Hannah Fry" are one show named with and without its host. */
+    private fun hostedVariant(query: String, title: String): Boolean {
+        val (shorter, longer) = if (query.length <= title.length) query to title else title to query
+        return shorter.length >= 4 && longer.startsWith("$shorter with ")
     }
 }
