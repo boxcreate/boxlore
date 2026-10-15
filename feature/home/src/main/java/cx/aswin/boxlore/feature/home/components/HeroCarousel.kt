@@ -69,64 +69,67 @@ fun HeroCarousel(
             onDispose {}
         }
 
-        if (classic) {
-            ClassicHeroItem(item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
-        } else if (item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID) {
-            HeroGridCard(
-                items = item.gridItems,
-                title = stringResource(R.string.home_hero_resume_collection),
-                mode = HeroGridMode.Resume,
-                onCellClick = onDetailsClick,
-                currentPlayingPodcastId = currentPlayingPodcastId,
-                currentPlayingEpisodeId = currentPlayingEpisodeId,
-                isPlaying = isPlaying,
-                modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
-                onPlaybackClick = onCollectionPlayback,
-                carouselItemDrawInfo = carouselItemDrawInfo,
-            )
-        } else if (item.type == cx.aswin.boxlore.feature.home.HeroType.NEW_EPISODES_GRID) {
-            HeroGridCard(
-                items = item.gridItems,
-                title = stringResource(R.string.home_hero_new_collection),
-                mode = HeroGridMode.NewEpisodes,
-                onCellClick = onDetailsClick,
-                currentPlayingPodcastId = currentPlayingPodcastId,
-                currentPlayingEpisodeId = currentPlayingEpisodeId,
-                isPlaying = isPlaying,
-                modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
-                onPlaybackClick = onCollectionPlayback,
-                carouselItemDrawInfo = carouselItemDrawInfo,
-            )
-        } else {
-            HeroCard(
-                item = item,
-                onClick = {
-                    val bundle =
-                        android.os.Bundle().apply {
-                            putString("entry_point", "home_hero_${item.type.name.lowercase()}")
-                            putInt("ep_carousel_position", i)
-                            putString("ep_layout_type", "full_card")
+        when {
+            classic -> ClassicHeroItem(item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
+            item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID -> {
+                HeroGridCard(
+                    items = item.gridItems,
+                    title = stringResource(R.string.home_hero_resume_collection),
+                    mode = HeroGridMode.Resume,
+                    onCellClick = onDetailsClick,
+                    currentPlayingPodcastId = currentPlayingPodcastId,
+                    currentPlayingEpisodeId = currentPlayingEpisodeId,
+                    isPlaying = isPlaying,
+                    modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
+                    onPlaybackClick = onCollectionPlayback,
+                    carouselItemDrawInfo = carouselItemDrawInfo,
+                )
+            }
+            item.type == cx.aswin.boxlore.feature.home.HeroType.NEW_EPISODES_GRID -> {
+                HeroGridCard(
+                    items = item.gridItems,
+                    title = stringResource(R.string.home_hero_new_collection),
+                    mode = HeroGridMode.NewEpisodes,
+                    onCellClick = onDetailsClick,
+                    currentPlayingPodcastId = currentPlayingPodcastId,
+                    currentPlayingEpisodeId = currentPlayingEpisodeId,
+                    isPlaying = isPlaying,
+                    modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
+                    onPlaybackClick = onCollectionPlayback,
+                    carouselItemDrawInfo = carouselItemDrawInfo,
+                )
+            }
+            else -> {
+                HeroCard(
+                    item = item,
+                    onClick = {
+                        val bundle =
+                            android.os.Bundle().apply {
+                                putString("entry_point", "home_hero_${item.type.name.lowercase()}")
+                                putInt("ep_carousel_position", i)
+                                putString("ep_layout_type", "full_card")
+                            }
+                        if (HomePlaybackStateLogic.isHeroItemPlaying(
+                                itemEpisodeId = item.podcast.latestEpisode?.id,
+                                itemPodcastId = item.podcast.id,
+                                currentPlayingEpisodeId = currentPlayingEpisodeId,
+                                currentPlayingPodcastId = currentPlayingPodcastId,
+                                isPlaying = isPlaying,
+                            )
+                        ) {
+                            onTogglePlayback(bundle)
+                        } else {
+                            onPlayClick(item.podcast, bundle)
                         }
-                    if (HomePlaybackStateLogic.isHeroItemPlaying(
-                            itemEpisodeId = item.podcast.latestEpisode?.id,
-                            itemPodcastId = item.podcast.id,
-                            currentPlayingEpisodeId = currentPlayingEpisodeId,
-                            currentPlayingPodcastId = currentPlayingPodcastId,
-                            isPlaying = isPlaying,
-                        )
-                    ) {
-                        onTogglePlayback(bundle)
-                    } else {
-                        onPlayClick(item.podcast, bundle)
-                    }
-                }, // Primary "Play" or "Pause" button action
-                onArrowClick = { onArrowClick(item, i) },
-                onToggleSubscription = { onToggleSubscription(item.podcast.id) },
-                currentPlayingPodcastId = currentPlayingPodcastId,
-                currentPlayingEpisodeId = currentPlayingEpisodeId,
-                isPlaying = isPlaying,
-                modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
-            )
+                    }, // Primary "Play" or "Pause" button action
+                    onArrowClick = { onArrowClick(item, i) },
+                    onToggleSubscription = { onToggleSubscription(item.podcast.id) },
+                    currentPlayingPodcastId = currentPlayingPodcastId,
+                    currentPlayingEpisodeId = currentPlayingEpisodeId,
+                    isPlaying = isPlaying,
+                    modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
+                )
+            }
         }
     }
     // Position dots are off for now; the strip keeps the 12dp gap to Your shows either way.
