@@ -68,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rebuild the custom theme editor with a persistent preview, accessible color controls, validated hex input and restored draft state. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Refine Classic, Pure and wallpaper-derived Material 3 color roles while preserving saved theme identities and custom seeds. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Replace the Home setup banner with a responsive Material 3 split layout, neutral raised action tiles, localized copy and an aligned dismissal control; preserve existing callbacks, eligibility, analytics and hero presentation. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `CrossPromotionDetector` is rebuilt on `CrossPromotionTitles`, `CrossPromotionNames` and `CrossPromotionDescription`; recall rose from about 0.2 to 0.83–0.91 at 0.92–0.98 precision on 817 hand-labelled catalog episodes (`CrossPromotionCorpusTest`). `CrossPromotionResolver` searches shorter name forms and matches colon, host and parenthetical titles. ([#1120](https://github.com/boxcreate/boxlore/pull/1120)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Preserve WorkManager input-merger constructors in optimized releases so one-time download and notification-hydration work can start. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -246,6 +247,11 @@ readme-copy:end pr=1117 -->
 ### Fixes
 - Improve tablet card sizing, spacing and dark-mode readability, and keep player controls above system navigation.
 readme-copy:end pr=1118 -->
+
+<!-- readme-copy:start pr=1120
+### Improvements
+- Episode pages recognise far more trailers and promos for other shows, and link to the show being promoted.
+readme-copy:end pr=1120 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
