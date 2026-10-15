@@ -41,7 +41,7 @@ class HomeHeroStyleTest {
             cx.aswin.boxlore.core.prefs.HeroCardStyle.DUOTONE,
             cx.aswin.boxlore.core.prefs.HeroCardStyle.HALO,
         ).forEach { style -> assertEquals(style, homeHeroStyle(style, tablet = true), style) }
-        assertEquals(cx.aswin.boxlore.core.prefs.HeroCardStyle.BLOCK, homeHeroStyle("unknown", tablet = true))
+        assertEquals(cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER, homeHeroStyle("unknown", tablet = true))
     }
 
     @Test fun `light and dark canvas use paired theme roles`() {

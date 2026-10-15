@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,14 +35,14 @@ class HeroCardStylePreferencesTest {
     }
 
     @Test
-    fun heroCardStyleDefaultsToBlockAndPersistsCover() = runTest {
+    fun heroCardStyleDefaultsToCoverAndPersistsPicks() = runTest {
         val repository = UserPreferencesRepository(context)
-        assertEquals(HeroCardStyle.BLOCK, repository.heroCardStyleStream.first())
-        assertEquals(HeroCardStyle.BLOCK, repository.cachedHeroCardStyle)
-
-        repository.setHeroCardStyle(HeroCardStyle.COVER)
         assertEquals(HeroCardStyle.COVER, repository.heroCardStyleStream.first())
-        assertEquals(HeroCardStyle.COVER, UserPreferencesRepository(context).cachedHeroCardStyle)
+        assertEquals(HeroCardStyle.COVER, repository.cachedHeroCardStyle)
+
+        repository.setHeroCardStyle(HeroCardStyle.BLOCK)
+        assertEquals(HeroCardStyle.BLOCK, repository.heroCardStyleStream.first())
+        assertEquals(HeroCardStyle.BLOCK, UserPreferencesRepository(context).cachedHeroCardStyle)
 
         repository.setHeroCardStyle(" Duotone ")
         assertEquals(HeroCardStyle.DUOTONE, repository.heroCardStyleStream.first())
@@ -61,7 +62,26 @@ class HeroCardStylePreferencesTest {
         assertEquals(true, HeroCardStyle.usesArtworkColors(HeroCardStyle.MARQUEE))
 
         repository.setHeroCardStyle("unknown")
-        assertEquals(HeroCardStyle.BLOCK, repository.heroCardStyleStream.first())
+        assertEquals(HeroCardStyle.COVER, repository.heroCardStyleStream.first())
+    }
+
+    @Test
+    fun unpickedDefaultsStayUnsavedSoALaterDefaultReachesThem() = runTest {
+        val repository = UserPreferencesRepository(context)
+        // Reading and hydrating must not save the default as if the listener had picked it.
+        repository.heroCardStyleStream.first()
+        repository.heroCoverShadeStream.first()
+        repository.hydrateMissingDataStoreFromFastCache()
+        val stored = context.userPreferencesDataStore.data.first()
+        assertNull(stored[Keys.HERO_CARD_STYLE])
+        assertNull(stored[Keys.HERO_COVER_SHADE])
+        val cache = context.getSharedPreferences(PrefsFileMigrator.Files.THEME_FAST_CACHE, Context.MODE_PRIVATE)
+        assertNull(cache.getString(HeroCardStyle.PREF_KEY, null))
+
+        // A pick restored by Google Backup into the cache alone still reaches DataStore.
+        cache.edit().putString(HeroCardStyle.PREF_KEY, HeroCardStyle.HALO).commit()
+        repository.hydrateMissingDataStoreFromFastCache()
+        assertEquals(HeroCardStyle.HALO, context.userPreferencesDataStore.data.first()[Keys.HERO_CARD_STYLE])
     }
 
     @Test

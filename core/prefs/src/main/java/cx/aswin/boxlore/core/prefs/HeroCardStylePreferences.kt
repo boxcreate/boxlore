@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Home hero card style ([HeroCardStyle]) and the Cover shade ([HeroCoverShade]); the fast cache
- * lets Home draw the right cards on its first frame.
+ * lets Home draw the right cards on its first frame. Only a picked value is cached or copied into
+ * DataStore, so listeners who never picked keep following the current default.
  */
 internal class HeroCardStylePreferences(private val store: DataStore<Preferences>, private val cache: SharedPreferences) {
     val cachedStyle: String
@@ -28,15 +29,15 @@ internal class HeroCardStylePreferences(private val store: DataStore<Preferences
     }
 
     val style: Flow<String> = preferences.map { preferences ->
-        val style = preferences[Keys.HERO_CARD_STYLE]?.let(HeroCardStyle::sanitize) ?: cachedStyle
-        cache.edit().putString(HeroCardStyle.PREF_KEY, style).apply()
-        style
+        val picked = preferences[Keys.HERO_CARD_STYLE]?.let(HeroCardStyle::sanitize)
+        picked?.let { cache.edit().putString(HeroCardStyle.PREF_KEY, it).apply() }
+        picked ?: cachedStyle
     }.distinctUntilChanged()
 
     val coverShade: Flow<String> = preferences.map { preferences ->
-        val shade = preferences[Keys.HERO_COVER_SHADE]?.let(HeroCoverShade::sanitize) ?: cachedCoverShade
-        cache.edit().putString(HeroCoverShade.PREF_KEY, shade).apply()
-        shade
+        val picked = preferences[Keys.HERO_COVER_SHADE]?.let(HeroCoverShade::sanitize)
+        picked?.let { cache.edit().putString(HeroCoverShade.PREF_KEY, it).apply() }
+        picked ?: cachedCoverShade
     }.distinctUntilChanged()
 
     suspend fun setStyle(style: String) {
@@ -51,8 +52,13 @@ internal class HeroCardStylePreferences(private val store: DataStore<Preferences
         store.edit { it[Keys.HERO_COVER_SHADE] = sanitized }
     }
 
+    /** Restores a cached pick (Google Backup restores the cache without DataStore); an unpicked default stays unsaved. */
     fun hydrate(preferences: MutablePreferences) {
-        preferences[Keys.HERO_CARD_STYLE] = preferences[Keys.HERO_CARD_STYLE] ?: cachedStyle
-        preferences[Keys.HERO_COVER_SHADE] = preferences[Keys.HERO_COVER_SHADE] ?: cachedCoverShade
+        cache.getString(HeroCardStyle.PREF_KEY, null)?.let { cached ->
+            preferences[Keys.HERO_CARD_STYLE] = preferences[Keys.HERO_CARD_STYLE] ?: HeroCardStyle.sanitize(cached)
+        }
+        cache.getString(HeroCoverShade.PREF_KEY, null)?.let { cached ->
+            preferences[Keys.HERO_COVER_SHADE] = preferences[Keys.HERO_COVER_SHADE] ?: HeroCoverShade.sanitize(cached)
+        }
     }
 }

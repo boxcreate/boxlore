@@ -63,7 +63,7 @@ data class AppearanceUiState(
     val miniPlayerSeekButtonsEnabled: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
     val navigationBlurLevel: String = NavigationBlurLevel.DEFAULT,
-    val heroCardStyle: String = HeroCardStyle.BLOCK,
+    val heroCardStyle: String = HeroCardStyle.DEFAULT,
     val heroCoverShade: String = HeroCoverShade.DEFAULT,
     val savedCustomTheme: ThemeSelection? = null,
     val fullPlayerStyle: String = FullPlayerStyle.STANDARD,

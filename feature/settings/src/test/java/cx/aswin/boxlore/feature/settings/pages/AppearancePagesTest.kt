@@ -32,7 +32,7 @@ import org.robolectric.annotation.GraphicsMode
 class AppearancePagesTest {
     @get:Rule val compose = createComposeRule()
 
-    private val baseState = AppearanceUiState(currentThemeConfig = "system", isDynamicColorEnabled = false, currentThemeBrand = "violet", currentSurfaceStyle = "classic_dynamic")
+    private val baseState = AppearanceUiState(currentThemeConfig = "system", isDynamicColorEnabled = false, currentThemeBrand = "violet", currentSurfaceStyle = "classic_dynamic", heroCardStyle = HeroCardStyle.BLOCK)
     private val state = mutableStateOf(baseState)
     private val styles = mutableListOf<String>()
     private val shades = mutableListOf<String>()
@@ -153,5 +153,8 @@ class AppearancePagesTest {
         assertEquals("bunpod · seek buttons on", summary.player)
         assertEquals("Crisp letters", summary.text)
         assertEquals("boxlore classic · artwork colors on", appearanceSummary(baseState).theme)
+        // Listeners who never picked see Cover on the Artwork shade.
+        val unpicked = AppearanceUiState(currentThemeConfig = "system", isDynamicColorEnabled = false, currentThemeBrand = "violet", currentSurfaceStyle = "classic_dynamic")
+        assertEquals("Cover hero cards, artwork shade", appearanceSummary(unpicked).home)
     }
 }
