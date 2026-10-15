@@ -18,10 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,19 +40,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
@@ -68,9 +59,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 /**
- * Marquee's Jump back in and New episodes cards: the chosen episode's cover fills the card, with the
- * collection's name and position on a solid chip above the episode's words, Play and details at the
- * bottom.
+ * Marquee's Jump back in and New episodes cards: the chosen episode's cover fills the card, with one
+ * chip for the collection's name, the episode's time and its place in the collection above the
+ * episode's title, show, Play and details at the bottom.
  * Below them a strip of covers picks the episode: while the card is on screen it advances on its own
  * every 5 seconds. Dragging the strip holds it, and after a tap or a drag it waits 8 seconds before
  * moving on again, so the listener's choice stays put while they look at it.
@@ -134,9 +125,12 @@ internal fun MarqueeCollectionCard(
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
             // The collection's name and position sit in the words' own column, so nothing can overlap them.
-            MarqueeCollectionPosition(title, index, display.size, shade)
+            val minutes = HomeHeroStyle.minutes(podcast, resume)?.let { heroDurationText(it) }
+            val time = minutes?.let { if (resume) stringResource(R.string.home_hero_remaining, it) else it }
+            MarqueeChip(marqueeCollectionLabel(title, index, display.size, time), shade, tag = "home_hero_collection_position")
             Spacer(Modifier.height(10.dp))
-            CoverCopy(item, shade, progressState = null)
+            // The chip already says Resume or new and how long; the words start at the title.
+            CoverCopy(item, shade, progressState = null, showContext = false)
             Spacer(Modifier.height(14.dp))
             Box(Modifier.width(MarqueeActionsWidth)) {
                 HeroActions(
@@ -158,25 +152,6 @@ internal fun MarqueeCollectionCard(
             })
         }
     }
-}
-
-/** "Jump back in · 2 of 4" on a solid chip in the card's colours, readable over any cover. */
-@Composable
-private fun MarqueeCollectionPosition(title: String, index: Int, count: Int, shade: ArtworkShade) {
-    val position = stringResource(R.string.home_hero_collection_position, index + 1, count)
-    Text(
-        buildAnnotatedString {
-            withStyle(SpanStyle(color = shade.content, fontWeight = GoogleSansWeight.bold)) { append(title) }
-            append(" · ")
-            append(position)
-        },
-        style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, lineHeight = 18.sp),
-        color = shade.softContent,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.clip(CircleShape).background(shade.container).padding(horizontal = 12.dp, vertical = 6.dp)
-            .testTag("home_hero_collection_position"),
-    )
 }
 
 /**

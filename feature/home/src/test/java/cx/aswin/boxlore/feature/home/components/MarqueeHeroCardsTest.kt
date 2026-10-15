@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -165,7 +166,25 @@ class MarqueeHeroCardsTest {
             composeRule.onNodeWithTag("home_hero_page_dots", useUnmergedTree = true).assertExists()
             composeRule.onNodeWithText("Your shows").assertExists()
         }
-        composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
+        composeRule.onNodeWithContentDescription("Jump back in, 1 of 4", substring = true).assertExists()
+    }
+
+    @Test fun `each card's label is one chip with the rank, the trend, or the episode's state and time`() {
+        val card = mutableStateOf(resumeItem())
+        composeRule.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                MarqueeHeroCard(card.value, {}, {}, null, null, false, upNext = emptyList(), onUpNext = {})
+            }
+        }
+        fun chip() = composeRule.onNodeWithTag("home_hero_marquee_chip", useUnmergedTree = true).fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single()
+        assertTrue(chip(), chip().startsWith("Resume, ") && chip().endsWith(" left"))
+        composeRule.onNodeWithTag("home_hero_context", useUnmergedTree = true).assertDoesNotExist()
+        card.value = SmartHeroItem(HeroType.SPOTLIGHT, show("b"), "#1 in US")
+        composeRule.waitForIdle()
+        assertEquals("#1 in US", chip())
+        card.value = SmartHeroItem(HeroType.SPOTLIGHT, show("c"), "Trending in Design")
+        composeRule.waitForIdle()
+        assertEquals("Trending in Design", chip())
     }
 
     @Test fun `the hero moves to its next card on its own`() {
@@ -216,16 +235,20 @@ class MarqueeHeroCardsTest {
         composeRule.mainClock.autoAdvance = false
         render(autoAdvance = true)
         composeRule.mainClock.advanceTimeByFrame()
-        composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
+        composeRule.onNodeWithContentDescription("Jump back in, 1 of 4", substring = true).assertExists()
+        // One label: the chip carries the time, so the words below it have no context line of their own.
+        val chip = composeRule.onNodeWithTag("home_hero_collection_position").fetchSemanticsNode()
+        assertTrue(chip.config[SemanticsProperties.ContentDescription].single().endsWith(" left"))
+        composeRule.onNodeWithTag("home_hero_context", useUnmergedTree = true).assertDoesNotExist()
         composeRule.mainClock.advanceTimeBy(5_100L)
-        composeRule.onNodeWithText("Jump back in · 2 of 4").assertExists()
+        composeRule.onNodeWithContentDescription("Jump back in, 2 of 4", substring = true).assertExists()
 
         // Choosing a cover holds it for 8 seconds. With the clock held, the test presses through semantics.
         composeRule.onNodeWithTag("home_hero_collection_0").performSemanticsAction(SemanticsActions.OnClick)
         composeRule.mainClock.advanceTimeBy(500L)
-        composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
+        composeRule.onNodeWithContentDescription("Jump back in, 1 of 4", substring = true).assertExists()
         composeRule.mainClock.advanceTimeBy(4_000L)
-        composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
+        composeRule.onNodeWithContentDescription("Jump back in, 1 of 4", substring = true).assertExists()
 
         // Play and details use the chosen episode.
         composeRule.onNodeWithTag("home_hero_collection_0_progress", useUnmergedTree = true).assertExists()
@@ -237,6 +260,6 @@ class MarqueeHeroCardsTest {
 
         // Then the marquee carries on.
         composeRule.mainClock.advanceTimeBy(4_000L)
-        composeRule.onNodeWithText("Jump back in · 2 of 4").assertExists()
+        composeRule.onNodeWithContentDescription("Jump back in, 2 of 4", substring = true).assertExists()
     }
 }

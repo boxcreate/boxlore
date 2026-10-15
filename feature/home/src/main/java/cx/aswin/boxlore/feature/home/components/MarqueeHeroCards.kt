@@ -273,7 +273,9 @@ internal fun MarqueeHeroCard(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
-            CoverCopy(item, shade, progressState)
+            MarqueeChip(marqueeContext(item), shade, tag = "home_hero_marquee_chip")
+            Spacer(Modifier.height(10.dp))
+            CoverCopy(item, shade, progressState, showContext = false)
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.width(MarqueeActionsWidth)) {
