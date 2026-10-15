@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.catalog.sync
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 
 /**
@@ -31,8 +32,8 @@ class HistorySyncResolver(
             episodeId = remote.episodeId,
             podcastId = remote.podcastId,
             episodeTitle = remote.episodeTitle ?: "",
-            episodeImageUrl = remote.episodeImageUrl,
-            podcastImageUrl = remote.podcastImageUrl,
+            episodeImageUrl = persistableArtworkUrl(remote.episodeImageUrl),
+            podcastImageUrl = persistableArtworkUrl(remote.podcastImageUrl),
             episodeAudioUrl = remote.episodeAudioUrl ?: "",
             podcastName = remote.podcastName ?: "",
             progressMs = remote.progressMs,
@@ -114,8 +115,8 @@ class HistorySyncResolver(
             ?: local.episodeTitle,
         podcastName = remote.podcastName?.takeIf { it.isNotBlank() && local.podcastName.isBlank() }
             ?: local.podcastName,
-        episodeImageUrl = local.episodeImageUrl ?: remote.episodeImageUrl,
-        podcastImageUrl = local.podcastImageUrl ?: remote.podcastImageUrl,
+        episodeImageUrl = persistableArtworkUrl(local.episodeImageUrl) ?: persistableArtworkUrl(remote.episodeImageUrl),
+        podcastImageUrl = persistableArtworkUrl(local.podcastImageUrl) ?: persistableArtworkUrl(remote.podcastImageUrl),
         episodeAudioUrl = if (local.episodeAudioUrl.isNullOrBlank() && !remote.episodeAudioUrl.isNullOrBlank()) {
             remote.episodeAudioUrl
         } else {

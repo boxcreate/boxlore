@@ -236,4 +236,32 @@ interface ListeningHistoryDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM listening_history WHERE episodeTitle = '' OR episodeTitle IS NULL LIMIT 1)")
     suspend fun hasAnyHistoryWithBlankTitle(): Boolean
+
+    /**
+     * Older builds could save the player's Android Auto artwork link (`content://<app>.collage/...`),
+     * which dies with its cover. Swaps each for the episode's own cover from the local or RSS
+     * catalogue, else the show's, else nothing so the next play or sync fills it in, and marks the
+     * row for sync so the cloud copy is corrected too. Returns the rows changed; once none are
+     * left it changes nothing.
+     */
+    @Query(
+        """
+        UPDATE listening_history SET
+            episodeImageUrl = CASE WHEN episodeImageUrl LIKE 'content://%.collage/%' THEN COALESCE(
+                (SELECT imageUrl FROM local_episodes WHERE local_episodes.episodeId = listening_history.episodeId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
+                (SELECT imageUrl FROM rss_episodes WHERE rss_episodes.episodeId = listening_history.episodeId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
+                (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = listening_history.podcastId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%')
+            ) ELSE episodeImageUrl END,
+            podcastImageUrl = CASE WHEN podcastImageUrl LIKE 'content://%.collage/%' THEN
+                (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = listening_history.podcastId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%')
+            ELSE podcastImageUrl END,
+            isDirty = 1
+        WHERE episodeImageUrl LIKE 'content://%.collage/%' OR podcastImageUrl LIKE 'content://%.collage/%'
+        """,
+    )
+    suspend fun repairPlaybackArtworkLinks(): Int
 }

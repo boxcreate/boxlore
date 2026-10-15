@@ -447,4 +447,39 @@ class ListeningHistoryDaoInMemoryTest {
         dao.markListeningHistorySynced(listOf("ep-1", "ep-2"), 1000L)
         assertEquals(0, dao.getDirtyCountFlow().first())
     }
+
+    // Regression: history kept the player's Android Auto artwork link after its cover was gone.
+    @Test
+    fun `player-only artwork links are repaired from the episode, then the show, and marked for sync`() = runTest {
+        val dead = "content://cx.aswin.boxlore.collage/local/38e72bd3ab3019a5bb9f93a3417dd2dcd604bc446a28153b388cc681156acf93"
+        database.podcastDao().upsert(PodcastEntity(podcastId = "415434", title = "The Vergecast", author = "The Verge", imageUrl = "https://art/show.jpg", description = null))
+        database.localEpisodeCatalogDao().upsertEpisodes(
+            listOf(
+                LocalEpisodeEntity(
+                    episodeId = "-120771577321563031", podcastId = "415434", guid = "ca9d312a", title = "HomeView", description = "",
+                    audioUrl = "https://example.com/homeview.mp3", imageUrl = "https://art/episode.jpg", duration = 4827, publishedDate = 1L,
+                    chaptersUrl = null, transcriptUrl = null, transcripts = null, persons = null, seasonNumber = null, episodeNumber = null,
+                    episodeType = "full", enclosureType = "audio/mpeg",
+                ),
+            ),
+        )
+        dao.upsert(history("-120771577321563031", podcastId = "415434", isDirty = false).copy(episodeImageUrl = dead, podcastImageUrl = dead))
+        dao.upsert(history("older", podcastId = "415434", isDirty = false).copy(episodeImageUrl = dead))
+        dao.upsert(history("unknown", podcastId = "gone", isDirty = false).copy(episodeImageUrl = dead, podcastImageUrl = dead))
+        dao.upsert(history("fine", isDirty = false).copy(episodeImageUrl = "https://art/fine.jpg"))
+
+        assertEquals(3, dao.repairPlaybackArtworkLinks())
+
+        val repaired = dao.getHistoryItem("-120771577321563031")!!
+        assertEquals("https://art/episode.jpg", repaired.episodeImageUrl)
+        assertEquals("https://art/show.jpg", repaired.podcastImageUrl)
+        assertTrue(repaired.isDirty)
+        assertEquals("https://art/show.jpg", dao.getHistoryItem("older")?.episodeImageUrl)
+        assertNull(dao.getHistoryItem("unknown")?.episodeImageUrl)
+        assertNull(dao.getHistoryItem("unknown")?.podcastImageUrl)
+        val untouched = dao.getHistoryItem("fine")!!
+        assertEquals("https://art/fine.jpg", untouched.episodeImageUrl)
+        assertFalse(untouched.isDirty)
+        assertEquals(0, dao.repairPlaybackArtworkLinks())
+    }
 }
