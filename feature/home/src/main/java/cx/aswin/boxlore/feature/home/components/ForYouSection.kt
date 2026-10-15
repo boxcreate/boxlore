@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.home.components
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -15,11 +16,13 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 
+@Immutable
+data class HomeRecommendationLayout(val columns: Int = 2, val tablet: Boolean = false)
+
 /**
  * Emits the "For You" section into a [LazyStaggeredGridScope].
  * Phones retain the featured card and poster grid; tablets use one continuous recommendation rail.
  */
-@Suppress("LongParameterList") // Public feed parameters; compact and tablet compositions stay separate.
 fun LazyStaggeredGridScope.forYouItems(
     recommendations: StableEpisodeList,
     onEpisodeClick: (Episode, Podcast) -> Unit,
@@ -27,14 +30,13 @@ fun LazyStaggeredGridScope.forYouItems(
     onBrowseRecommendations: () -> Unit,
     showTasteHeader: Boolean = true,
     isFallback: Boolean = true,
-    columns: Int = 2,
-    tablet: Boolean = false,
+    layout: HomeRecommendationLayout = HomeRecommendationLayout(),
 ) {
-    if (tablet && columns >= 3) {
+    if (layout.tablet && layout.columns >= 3) {
         tabletForYouItems(recommendations, onEpisodeClick, discoveryContextTitle, onBrowseRecommendations, showTasteHeader, isFallback)
         return
     }
-    compactForYouItems(recommendations, onEpisodeClick, discoveryContextTitle, onBrowseRecommendations, showTasteHeader, isFallback, columns)
+    compactForYouItems(recommendations, onEpisodeClick, discoveryContextTitle, onBrowseRecommendations, showTasteHeader, isFallback, layout.columns)
 }
 
 private fun LazyStaggeredGridScope.compactForYouItems(

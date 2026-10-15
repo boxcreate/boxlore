@@ -198,6 +198,22 @@ Home, Settings, and Info ViewModels are built through assemblers (`HomeViewModel
 
 The app shell owns adaptive player policy. Only Floating navigation with available player chrome can compact. The main Lore route temporarily forces compact presentation and restores the prior browsing state on exit; feature screens use the shared designsystem progress without importing the player feature. Lore may reclaim the released row in its bounded card viewport, while scrollable feed/list tail clearance remains stable. Playback ownership and persisted settings are unchanged.
 
+## Adaptive UI and state
+
+Every Android UI or behavior change must support the affected phone, tablet, foldable, and resizable-window states, including changes initially requested for phones and shared components used by multiple screens. Assess these states before editing and document the affected behavior and verification in the module README. Documentation-only changes do not require unrelated UI tests.
+
+- Use the shared `BoxloreWindowLayout` and fold/posture policy rather than assuming a device category or duplicating breakpoints. The current tablet gate is width **at least 600dp** and height **at least 480dp**; split layout additionally requires width **at least 840dp** and landscape dimensions (`widthDp > heightDp`). Narrow or short tablet windows must retain the compact behavior.
+- Resizing, rotation, split-screen, and fold/posture changes must adapt presentation without losing pending work. Retain content and its lifecycle/ViewModel/saved-state owners, unsaved drafts and reorderings, selection/navigation state, and scroll position across the affected transitions. Modal hosting must preserve content state and apply the current action, Back, and outside-dismiss callbacks/properties without duplicate invocations or unintended dismissal.
+- Adapt pane bounds, insets, keyboard clearance, and fold-safe placement while keeping controls reachable and preserving accessibility and reduced-motion behavior. Presentation changes must preserve the existing playback, data, navigation, analytics, and ranking ownership; never create another object graph or playback repository to support a layout.
+
+Changed adaptive behavior requires hermetic JVM regression coverage under `src/test`, using the existing Robolectric/Compose JVM fixtures when composition lifetime matters. Do not add Compose instrumentation, Espresso, or emulator CI. Select relevant cases from this mandatory coverage contract:
+
+- Exercise the same live content/state owner across compact-to-tablet **and** tablet-to-compact transitions, including both the 600dp width gate and the 480dp height gate when affected. Exercise the 840dp split-layout threshold, portrait/landscape changes, and fold/posture transitions when the changed surface uses them. Include boundary values on either side of the affected gates.
+- Assert retained drafts/reorderings, selection, scroll, and owner identity as applicable, then invoke the current callbacks and verify save, cancel, Back, and outside-dismiss behavior. Cover relevant loading, empty, error, and recovery states as well as populated content. Bug fixes must reproduce the actual failure and shared consumers where applicable.
+- Separate static geometry/policy checks from state-transition regressions: mounting fresh content independently at several sizes does not prove continuity. Policy tests alone do not prove that modal content survives recomposition or host changes.
+
+Report source inspection, executed JVM checks, and device verification separately. Include a manual acceptance path for the affected phone/tablet/foldable states and transitions; an untested state or unavailable device remains an explicit verification limitation.
+
 ## Upgrade failsafes
 
 Historical FQCNs and preference file names remain reachable so upgrades from older installs keep working. These bridges are permanent.

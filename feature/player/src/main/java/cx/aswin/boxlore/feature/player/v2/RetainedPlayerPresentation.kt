@@ -43,8 +43,8 @@ internal val PlayerPresentationStoreSaver = listSaver<PlayerPresentationStore, A
     restore = { values ->
         PlayerPresentationStore(
             values.first() as String,
-            requireNotNull(FullPlayerUiStateSaver.restore(values.drop(1).take(13).filterIsInstance<Boolean>())),
-            values.getOrNull(14) as? Boolean ?: false,
+            requireNotNull(FullPlayerUiStateSaver.restore(values.drop(1).dropLast(1).filterIsInstance<Boolean>())),
+            values.lastOrNull() as? Boolean ?: false,
         )
     },
 )

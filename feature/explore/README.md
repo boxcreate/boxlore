@@ -73,6 +73,10 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## Testing notes
 
+- `LoreTabletPaneSizeTest` covers pane sizing, missing-pane fallback, and width/height threshold transitions. Lore retains configuration-based phone geometry while tablet spacing follows the current shell-owned pane.
+
+- `ExploreGridResizeTest` scrolls the production search and topic grids before live compact/tablet width and height transitions, including changing tablet column counts, then verifies the same result remains visible and its original tap rank is retained. Every poster stays an independently keyed lazy item so the saved scroll anchor does not turn into a row index when resizing.
+
 - Tablet featured results occupy the left two poster columns, with the next ranked results alongside them. For You, Top charts and semantic episode search preserve their original list projections, keys, absolute click positions and lazy tail items. Loading uses the same leading row; compact layouts remain unchanged. Lore enforces its 520dp deck cap before fill constraints, with a 640dp tablet stage limit; history heading and rows share a reading frame.
 
 - Tablet discovery grids pack by the shared Poster minimum while existing cards/skeletons use family maxima. Legacy hero and topic cards retain their internal designs. Local phone/tablet captures share fixed fixtures through `PhoneGoldenRule`.
@@ -113,4 +117,4 @@ Tablet featured discovery cards match the natural height of adjacent posters, in
 
 ExploreTabletAuditCaptureTest adds optional offline portrait/landscape captures for show search, episode search, topic results and empty/loading topics. It uses fixed fixtures without catalog requests or phone-baseline writes.
 
-Tablet poster results use explicit equal-height rows to preserve left-to-right visual ordering despite pixel rounding in staggered lanes; absolute callback/rank indices remain unchanged. Tablet search inputs fill their visible capsule so Clear follows its trailing edge.
+Tablet poster results keep individual lazy keys and indices across compact/tablet column changes; cards retain their fixed title slots and absolute callback/rank indices. The tablet leading featured row retains its existing geometry. Tablet search inputs fill their visible capsule so Clear follows its trailing edge.

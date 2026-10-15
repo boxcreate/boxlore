@@ -116,17 +116,33 @@ internal class FullPlayerUiState {
     var isAudioOnly by mutableStateOf(false)
     var showRemoveDownloadDialog by mutableStateOf(false)
     var supportingTab by mutableStateOf(PlayerSupportingTab.UpNext)
+    var supportingContentUsesTablet by mutableStateOf(false)
+    var restoreSupportingContentOnCompact by mutableStateOf(false)
 
-    fun moveSupportingContentToTabs() {
-        supportingTab = when {
-            showInlineTranscript -> PlayerSupportingTab.Transcript
-            showChaptersSheet -> PlayerSupportingTab.Chapters
-            showQueueSheet -> PlayerSupportingTab.UpNext
-            else -> supportingTab
+    fun selectSupportingTab(tab: PlayerSupportingTab, restoreOnCompact: Boolean = true) {
+        supportingTab = tab
+        restoreSupportingContentOnCompact = restoreOnCompact
+    }
+
+    fun updateSupportingContent(tablet: Boolean) {
+        if (tablet) {
+            val openSurface = when {
+                showInlineTranscript -> PlayerSupportingTab.Transcript
+                showChaptersSheet -> PlayerSupportingTab.Chapters
+                showQueueSheet -> PlayerSupportingTab.UpNext
+                else -> null
+            }
+            openSurface?.let { selectSupportingTab(it) }
+            showInlineTranscript = false
+            showChaptersSheet = false
+            showQueueSheet = false
+        } else if (supportingContentUsesTablet) {
+            showInlineTranscript = restoreSupportingContentOnCompact && supportingTab == PlayerSupportingTab.Transcript
+            showChaptersSheet = restoreSupportingContentOnCompact && supportingTab == PlayerSupportingTab.Chapters
+            showQueueSheet = restoreSupportingContentOnCompact && supportingTab == PlayerSupportingTab.UpNext
+            restoreSupportingContentOnCompact = false
         }
-        showInlineTranscript = false
-        showChaptersSheet = false
-        showQueueSheet = false
+        supportingContentUsesTablet = tablet
     }
 }
 
@@ -147,6 +163,8 @@ internal val FullPlayerUiStateSaver =
                 state.supportingTab == PlayerSupportingTab.Chapters,
                 state.supportingTab == PlayerSupportingTab.Transcript,
                 state.supportingTab == PlayerSupportingTab.Notes,
+                state.supportingContentUsesTablet,
+                state.restoreSupportingContentOnCompact,
             )
         },
         restore = { values ->
@@ -167,6 +185,8 @@ internal val FullPlayerUiStateSaver =
                     values.getOrElse(12) { false } -> PlayerSupportingTab.Notes
                     else -> PlayerSupportingTab.UpNext
                 }
+                supportingContentUsesTablet = values.getOrElse(13) { false }
+                restoreSupportingContentOnCompact = values.getOrElse(14) { false }
             }
         },
     )
@@ -214,7 +234,7 @@ fun FullPlayerV2(
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     val fullscreenRequest = LocalPlayerFullscreenRequest.current.takeIf { tablet }
     val playerActions = fullscreenRequest?.let { request -> actions.copy(onFullscreenVideoChange = { request(PlayerFullscreenOverlay.Video, it) }) } ?: actions
-    SideEffect { if (tablet) ui.moveSupportingContentToTabs() }
+    SideEffect { ui.updateSupportingContent(tablet) }
 
     val queueSnackbarHostState = remember { SnackbarHostState() }
     val queueSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)

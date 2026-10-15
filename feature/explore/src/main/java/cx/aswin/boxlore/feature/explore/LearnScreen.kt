@@ -41,9 +41,14 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -70,12 +75,8 @@ fun LearnScreen(
     onNavigateToHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val pane = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
-    val windowSize = if (cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout && pane != null) {
-        androidx.compose.ui.unit.DpSize(pane.width.dp, pane.height.dp)
-    } else {
-        boxloreConfigurationWindowSize()
-    }
+    val windowSize = loreTabletPaneSize(LocalBoxloreWindowLayout.current, LocalBoxlorePaneBounds.current)
+        ?: boxloreConfigurationWindowSize()
     val compactSpacing = windowSize.width < 360.dp || windowSize.height < 720.dp
     val uiState by viewModel.uiState.collectAsState()
     val stablePlayerState = remember(playbackRepository) {
@@ -294,6 +295,9 @@ fun LearnScreen(
 }
 
 /** Keep playback action branching out of the screen layout; reuse the injected player. */
+internal fun loreTabletPaneSize(window: BoxloreWindowLayout, pane: BoxloreLayoutBounds?): DpSize? =
+    if (window.usesTabletLayout && pane != null) DpSize(pane.width.dp, pane.height.dp) else null
+
 private fun playLoreEpisode(
     episode: Episode,
     playerState: PlayerState,

@@ -4,17 +4,23 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -27,6 +33,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.BoxloreDialog
 import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
@@ -38,8 +45,10 @@ import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -138,6 +147,128 @@ class TabletModalTest {
         assertTrue(bounds.bottom <= 410f || bounds.top >= 431f)
         fixture.compose.onNodeWithText("Finish").performScrollTo().performClick()
         assertTrue(finished)
+    }
+
+    @Test
+    fun `dialog retains draft state and current owner across the tablet width boundary in both directions`() {
+        assertDialogRetainsDraftAcrossResize(
+            BoxloreWindowLayout(600f, 800f),
+            BoxloreWindowLayout(599f, 800f),
+        )
+    }
+
+    @Test
+    fun `dialog retains draft state and current owner across the phone width boundary in both directions`() {
+        assertDialogRetainsDraftAcrossResize(
+            BoxloreWindowLayout(599f, 800f),
+            BoxloreWindowLayout(600f, 800f),
+        )
+    }
+
+    @Test
+    fun `dialog retains draft state and current owner across the tablet height boundary in both directions`() {
+        assertDialogRetainsDraftAcrossResize(
+            BoxloreWindowLayout(1_280f, 480f),
+            BoxloreWindowLayout(1_280f, 479f),
+        )
+    }
+
+    @Test
+    fun `dialog retains draft state and current owner across the phone height boundary in both directions`() {
+        assertDialogRetainsDraftAcrossResize(
+            BoxloreWindowLayout(1_280f, 479f),
+            BoxloreWindowLayout(1_280f, 480f),
+        )
+    }
+
+    @Test
+    fun `dialog retains draft state and current owner while folding and unfolding`() {
+        val flat = BoxloreWindowLayout(1_280f, 800f)
+        assertDialogRetainsDraftAcrossResize(
+            flat,
+            flat.copy(
+                folds = listOf(
+                    BoxloreFold(
+                        BoxloreFoldState.HalfOpened,
+                        BoxloreFoldOrientation.Horizontal,
+                        BoxloreLayoutBounds(0f, 390f, 1_280f, 410f),
+                        true,
+                        true,
+                    ),
+                ),
+            ),
+        )
+    }
+
+    private fun assertDialogRetainsDraftAcrossResize(initial: BoxloreWindowLayout, resized: BoxloreWindowLayout) {
+        val window = mutableStateOf(initial)
+        val owner = mutableIntStateOf(0)
+        val savedDrafts = mutableListOf<Pair<Int, Int>>()
+        lateinit var dialogScroll: ScrollState
+        fixture.compose.mainClock.autoAdvance = false
+        fixture.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                BoxLoreTheme {
+                    val currentOwner = owner.intValue
+                    BoxloreDialog({}) {
+                        val draft = remember { mutableIntStateOf(0) }
+                        val scroll = rememberScrollState()
+                        val dialogView = LocalView.current
+                        SideEffect {
+                            view = dialogView
+                            dialogScroll = scroll
+                        }
+                        Column(Modifier.fillMaxWidth().height(200.dp).verticalScroll(scroll)) {
+                            Button({ draft.intValue++ }) { Text("Draft ${draft.intValue}") }
+                            repeat(8) { Text("Form option $it", Modifier.height(48.dp)) }
+                            Button({ savedDrafts += currentOwner to draft.intValue }) {
+                                Text("Save with owner $currentOwner")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        advance()
+        val originalHost = view
+        fixture.compose.onNodeWithText("Draft 0").performClick()
+        advance()
+        fixture.compose.onNodeWithText("Draft 1").assertExists()
+        fixture.compose.runOnIdle { runBlocking { dialogScroll.scrollTo(dialogScroll.maxValue) } }
+        advance()
+        val originalScroll = dialogScroll.value
+        assertTrue("The fixture must have an unsaved nonzero scroll position", originalScroll > 0)
+
+        fixture.compose.runOnIdle {
+            owner.intValue = 1
+            window.value = resized
+        }
+        advance()
+        fixture.compose.onNodeWithText("Draft 1").assertExists()
+        assertSame("Resizing must retain the native dialog host", originalHost, view)
+        assertEquals("Resizing must retain the form scroll position", originalScroll, dialogScroll.value)
+        fixture.compose.runOnIdle { runBlocking { dialogScroll.scrollTo(0) } }
+        advance()
+        fixture.compose.onNodeWithText("Draft 1").performClick()
+        advance()
+        fixture.compose.onNodeWithText("Draft 2").assertExists()
+        fixture.compose.runOnIdle { runBlocking { dialogScroll.scrollTo(dialogScroll.maxValue) } }
+        advance()
+        fixture.compose.onNodeWithText("Save with owner 1").performClick()
+        assertEquals(listOf(1 to 2), savedDrafts)
+        val editedScroll = dialogScroll.value
+        assertTrue(editedScroll > 0)
+
+        fixture.compose.runOnIdle {
+            owner.intValue = 2
+            window.value = initial
+        }
+        advance()
+        fixture.compose.onNodeWithText("Draft 2").assertExists()
+        assertSame("Returning across the threshold must retain the native dialog host", originalHost, view)
+        assertEquals("Returning must retain the edited form scroll position", editedScroll, dialogScroll.value)
+        fixture.compose.onNodeWithText("Save with owner 2").performClick()
+        assertEquals(listOf(1 to 2, 2 to 2), savedDrafts)
     }
 
     private fun render(window: BoxloreWindowLayout, dismissAllowed: Boolean = true, dismiss: () -> Unit) {

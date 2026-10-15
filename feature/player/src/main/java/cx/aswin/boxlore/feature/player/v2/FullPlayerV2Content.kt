@@ -299,22 +299,14 @@ internal fun fullPlayerClickActions(
 ) = SecondaryClickActions(
     onQueueClick = {
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("queue")
-        if (inlineSupportingContent) ui.supportingTab = PlayerSupportingTab.UpNext else ui.showQueueSheet = true
+        if (inlineSupportingContent) ui.selectSupportingTab(PlayerSupportingTab.UpNext) else ui.showQueueSheet = true
     },
     onChaptersClick = {
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("chapters_sheet")
-        if (inlineSupportingContent) ui.supportingTab = PlayerSupportingTab.Chapters else ui.showChaptersSheet = true
+        if (inlineSupportingContent) ui.selectSupportingTab(PlayerSupportingTab.Chapters) else ui.showChaptersSheet = true
     },
     onTranscriptClick = {
-        if (model.state.currentTranscript.isNotEmpty()) {
-            val visible = if (inlineSupportingContent) ui.supportingTab == PlayerSupportingTab.Transcript else ui.showInlineTranscript
-            cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction(if (visible) "transcript_hide" else "transcript_inline")
-            if (inlineSupportingContent) {
-                ui.supportingTab = if (visible) PlayerSupportingTab.UpNext else PlayerSupportingTab.Transcript
-            } else {
-                ui.showInlineTranscript = !ui.showInlineTranscript
-            }
-        }
+        togglePlayerTranscript(model.state, ui, inlineSupportingContent)
     },
     onLikeClick = {
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("like")

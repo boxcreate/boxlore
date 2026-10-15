@@ -16,7 +16,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,22 +52,33 @@ fun BoxloreDialog(
     panelTag: String = "boxlore_dialog_panel",
     content: @Composable () -> Unit,
 ) {
-    if (!LocalBoxloreWindowLayout.current.usesTabletLayout) {
-        Dialog(onDismissRequest, properties, content)
-        return
-    }
-    Dialog(
-        onDismissRequest,
-        properties = DialogProperties(
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val latestContent = rememberUpdatedState(content)
+    // Moving the same content preserves owner drafts and scroll state across layout changes.
+    val retainedContent = remember { movableContentOf { latestContent.value() } }
+    val dialogProperties = if (tablet) {
+        DialogProperties(
             dismissOnBackPress = properties.dismissOnBackPress,
             dismissOnClickOutside = properties.dismissOnClickOutside,
             securePolicy = properties.securePolicy,
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false,
-        ),
+        )
+    } else {
+        properties
+    }
+    Dialog(
+        onDismissRequest,
+        properties = dialogProperties,
     ) {
         val view = LocalView.current
-        SideEffect { (view.parent as? DialogWindowProvider)?.window?.setDimAmount(0f) }
+        val dialogWindow = (view.parent as? DialogWindowProvider)?.window
+        val nativeDim = remember(dialogWindow) { dialogWindow?.attributes?.dimAmount }
+        SideEffect { nativeDim?.let { dialogWindow?.setDimAmount(if (tablet) 0f else it) } }
+        if (!tablet) {
+            retainedContent()
+            return@Dialog
+        }
         val panel = remember { DialogPanelCoordinates() }
         val appearance = remember { Animatable(0.96f) }
         LaunchedEffect(Unit) { appearance.animateTo(1f, ExpressiveMotion.QuickSpring) }
@@ -90,7 +103,7 @@ fun BoxloreDialog(
                             alpha = ((appearance.value - 0.96f) / 0.04f).coerceIn(0f, 1f)
                         }.clip(MaterialTheme.shapes.extraLarge).onGloballyPositioned { panel.value = it }.testTag(panelTag),
                     propagateMinConstraints = true,
-                    content = { content() },
+                    content = { retainedContent() },
                 )
             }
         }

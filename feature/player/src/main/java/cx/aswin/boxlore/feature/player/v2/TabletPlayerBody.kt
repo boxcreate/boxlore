@@ -107,7 +107,7 @@ internal fun TabletFullPlayerBody(
                             model.state,
                             display,
                             PlayerProgressFlows(flows.position, flows.bufferedPosition),
-                            resources.minimalActions.copy(onQueue = { ui.supportingTab = PlayerSupportingTab.UpNext }),
+                            resources.minimalActions.copy(onQueue = { ui.selectSupportingTab(PlayerSupportingTab.UpNext) }),
                             section = MinimalPlayerSection.Heading,
                         )
                     } else if (regions.arrangement == TabletPlayerArrangement.HorizontalFold) {
@@ -122,7 +122,7 @@ internal fun TabletFullPlayerBody(
                             model.state,
                             display,
                             PlayerProgressFlows(flows.position, flows.bufferedPosition),
-                            resources.minimalActions.copy(onQueue = { ui.supportingTab = PlayerSupportingTab.UpNext }),
+                            resources.minimalActions.copy(onQueue = { ui.selectSupportingTab(PlayerSupportingTab.UpNext) }),
                             section = if (regions.artwork == null) MinimalPlayerSection.Embedded else MinimalPlayerSection.Transport,
                         )
                     } else {

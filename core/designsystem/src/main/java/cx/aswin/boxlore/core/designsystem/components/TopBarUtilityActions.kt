@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.BoxloreClickInteraction
+import cx.aswin.boxlore.core.designsystem.theme.BoxloreClickOptions
 import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 
@@ -125,9 +127,8 @@ private fun UtilityActionSegment(
             .clip(shape)
             .tabletInputFeedback(interactionSource, shape)
             .combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
+                interaction = BoxloreClickInteraction(interactionSource, null),
+                options = BoxloreClickOptions(role = Role.Button),
                 onClick = onClick,
                 onLongClick = onLongClick,
             ),

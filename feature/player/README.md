@@ -58,6 +58,7 @@ src/main/java/cx/aswin/boxlore/feature/player/
     PlayerHero.kt
     PlayerSeekbar.kt
     PlayerSheetScaffold.kt
+    PlayerTranscriptAction.kt
     PlayerTheme.kt
     logic/
 ```
@@ -85,12 +86,14 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 
 ## Testing notes
 
+- `PlayerTranscriptActionTest` covers the shared transcript quick action: phone inline visibility, tablet supporting-tab toggles, empty-transcript no-op, and migration between presentations with the same UI state owner.
+
 - Tablet Standard player measures actual title/control height before allocating artwork, leaving complete utility controls above safe drawing insets. Context metadata wraps beside a smaller cover; stacked/tabletop controls and supporting tabs flow through a finite scroll layout. Up next continuation and empty recovery share the queue scroller, with banner-aware reorder indices. The shell promotes video/transcript overlays to the whole window and restores their originating context/dock/immersive owner. Transcript expansion keeps its tab/sync state; video exit restores the tablet orientation. Phone defaults and metadata geometry remain unchanged.
 
 - Tablet players reuse the existing transport and supporting-content callbacks within bounded, fold-safe regions. Up next, Chapters, Transcript and Notes share saved tabs; a horizontal half-open fold puts artwork/title above the hinge and transport/support below. Context-pane presentation exposes an owner-supplied full-screen action and does not change system-bar appearance. Standard phone and BunPod paths remain separate.
 - `RetainedPlayerPresentation` is an optional app-owned UI scope for moving the same episode between pane and docked presentations. It retains supporting tabs and transient controls, restores them after recreation, and resets them for a different opaque episode ID. Without that scope, existing phone callers keep their local saved state.
 - The retained scope also remembers the settled expanded/collapsed presentation. Optional physical left/right docking insets keep the mini bar within a fold-safe browsing pane while its existing reveal motion opens into the full window. Zero-inset phone geometry retains its original values.
-- `TabletPlayerLayoutLogicTest`, `TabletPlayerContentTest` and `FullPlayerUiStateSaverTest` cover physical hinge bounds, global pane coordinates, posture changes, chapter seeking, BunPod tabletop layout, immersive callbacks, saved tabs and migration from phone supporting surfaces.
+- `TabletPlayerLayoutLogicTest`, `TabletPlayerContentTest` and `FullPlayerUiStateSaverTest` cover physical hinge bounds, global pane coordinates, posture changes, chapter seeking, BunPod tabletop layout, immersive callbacks, and saved tabs. Compact transcript, Chapters and queue surfaces return after tablet round trips; actual tablet selections transfer back while the default Up next tab and Notes do not open unsolicited compact sheets. State recreation preserves this intent and legacy saved expansion flags. Live production-host coverage crosses the 599/600dp width and 479/480dp height gates and returns from tabletop with the same transcript owner.
 
 - Up next, Notes and queue contents use shared tablet family bounds (720dp), preserving their existing internal layouts and phone modifiers. The shared local golden fixtures can also capture the player at the tablet/foldable matrix using `-PtabletCaptures=before|after`. These synthetic JVM renders are distinct from live device checks.
 

@@ -38,6 +38,7 @@ import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.EpisodeStatus
+import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
 import cx.aswin.boxlore.feature.home.StableEpisodeList
@@ -64,6 +65,10 @@ class HomeConnectedRailTest {
     private var infoClicks = 0
     private var plays = 0
     private var episodeClicks = 0
+    private val selectedLoading = mutableStateOf(false)
+    private val showEvents = mutableListOf<String>()
+    private val episodeEvents = mutableListOf<Triple<String, String, String>>()
+    private val playEvents = mutableListOf<Triple<String, String, PlaybackEntryPoint>>()
     private val episode = TestFixtures.episode(id = "episode", title = "An exceptionally long episode name with enough words to fill three lines and still need truncation", duration = 7500)
     private val podcasts = List(14) { index ->
         TestFixtures.podcast(id = "show-$index", title = "Show $index with a longer name", imageUrl = "")
@@ -403,6 +408,47 @@ class HomeConnectedRailTest {
         composeRule.onNodeWithTag("home_mix_episode_ep-0", useUnmergedTree = true).assertDoesNotExist()
     }
 
+    @Test fun `selected show keeps episode play and browse callbacks across sidebar resizing`() {
+        state.value = Scenario(count = 3, selected = "show-0", width = 1_200, tablet = true, episodeCount = 8)
+        render()
+        for (width in listOf(1_200, 640, 1_200)) {
+            state.value = state.value.copy(width = width)
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("home_filtered_episode_episode", useUnmergedTree = true).performClick()
+            composeRule.onNodeWithTag("home_mix_play_episode", useUnmergedTree = true).performClick()
+            composeRule.onNodeWithTag("home_filtered_see_all").performClick()
+            composeRule.onNodeWithTag("home_show_selector_show-0", useUnmergedTree = true).assertIsSelected()
+        }
+        assertEquals(List(3) { Triple("episode", "show-0", "home_filtered_latest_episodes") }, episodeEvents)
+        assertEquals(List(3) { Triple("episode", "show-0", PlaybackEntryPoint.GENERIC) }, playEvents)
+        assertEquals(List(3) { "show-0" }, showEvents)
+        composeRule.onNodeWithTag("home_selected_show_clear").performClick()
+        composeRule.onNodeWithTag("home_show_selector_mix", useUnmergedTree = true).assertIsSelected()
+    }
+
+    @Test fun `selected show loading and empty recovery keep their content states and actions`() {
+        state.value = Scenario(count = 3, selected = "show-0", width = 1_200, tablet = true, episodeCount = 0)
+        selectedLoading.value = true
+        render()
+        composeRule.onNodeWithText("No episodes available").assertDoesNotExist()
+        composeRule.onNodeWithTag("home_filtered_episodes").assertDoesNotExist()
+        composeRule.onNodeWithTag("home_filtered_see_all").assertDoesNotExist()
+
+        selectedLoading.value = false
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("No episodes available").assertExists()
+        composeRule.onNodeWithTag("home_filtered_see_all").assertDoesNotExist()
+
+        state.value = state.value.copy(episodeCount = 3)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("No episodes available").assertDoesNotExist()
+        composeRule.onNodeWithTag("home_filtered_episodes").assertExists()
+        composeRule.onNodeWithTag("home_mix_play_episode", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithTag("home_filtered_see_all").performClick()
+        assertEquals(listOf(Triple("episode", "show-0", PlaybackEntryPoint.GENERIC)), playEvents)
+        assertEquals(listOf("show-0"), showEvents)
+    }
+
     private fun render() {
         composeRule.setContent {
             val scenario = state.value
@@ -433,19 +479,28 @@ class HomeConnectedRailTest {
                                     episode.copy(id = if (index == 0) episode.id else "selected-$index", title = if (scenario.distinctEpisodes) "${scenario.selected} episode" else episode.title)
                                 }
                                 ),
-                                isSelectedPodcastLoading = false,
+                                isSelectedPodcastLoading = selectedLoading.value,
                                 isSelectedRssRefreshing = false,
                                 episodePlaybackState = StablePlaybackStateMap(emptyMap()),
                                 onPodcastSelected = { state.value = state.value.copy(selected = it) },
-                                onPodcastClick = { infoClicks++ },
-                                onEpisodeClick = { _, _, _ -> episodeClicks++ },
+                                onPodcastClick = { podcast ->
+                                    infoClicks++
+                                    showEvents += podcast.id
+                                },
+                                onEpisodeClick = { clickedEpisode, podcast, source ->
+                                    episodeClicks++
+                                    episodeEvents += Triple(clickedEpisode.id, podcast.id, source)
+                                },
                                 onPlayMix = {},
                                 onMixModeChanged = {},
                                 selectedMixMode = scenario.mode,
                                 completedDownloads = StableCompletedDownloadList(
                                     if (scenario.mode == HomeMixMode.OFFLINE) listOf(CompletedDownloadItem(episode, podcasts.first(), 1L)) else emptyList(),
                                 ),
-                                onPlayEpisode = { _, _, _ -> plays++ },
+                                onPlayEpisode = { playedEpisode, podcast, entryPoint ->
+                                    plays++
+                                    playEvents += Triple(playedEpisode.id, podcast.id, entryPoint)
+                                },
                                 onViewLibrary = {},
                                 onViewDownloads = {},
                                 wideWithoutBrief = scenario.tablet,

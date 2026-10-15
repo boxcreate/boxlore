@@ -384,7 +384,6 @@ fun ExploreContent(
                                 title = state.currentVibe,
                                 podcasts = gridItems,
                                 loading = state.isLoading,
-                                columns = tabletColumns,
                                 onBack = onTopicBack,
                                 onPodcastClick = { podcast, index ->
                                     onPodcastClick(podcast.id, "explore_vibe", state.currentCategory, index)
@@ -591,7 +590,7 @@ fun ExploreContent(
                                                 )
                                             }
                                         }
-                                        orderedExploreItems(gridItems, tabletColumns, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, index ->
+                                        orderedExploreItems(gridItems, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, index ->
                                             val entryPointStr = "explore_search"
                                             ExploreBrowsePodcastCard(
                                                 podcast = podcast,
@@ -612,7 +611,7 @@ fun ExploreContent(
                                                     modifier = Modifier.padding(top = 8.dp),
                                                 )
                                             }
-                                            orderedExploreItems(alsoFound, tabletColumns, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "also") }) { podcast, index ->
+                                            orderedExploreItems(alsoFound, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "also") }) { podcast, index ->
                                                 ExploreBrowsePodcastCard(
                                                     podcast = podcast,
                                                     featured = false,
@@ -797,7 +796,7 @@ fun ExploreContent(
                                     }
 
                                     val showGenreChip = state.currentCategory == "All"
-                                    orderedExploreItems(gridItems, tabletColumns, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, index ->
+                                    orderedExploreItems(gridItems, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, index ->
                                         ExploreBrowsePodcastCard(
                                             podcast = podcast,
                                             featured = false,

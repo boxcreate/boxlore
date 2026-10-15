@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.content.ContentDaypart
@@ -61,6 +62,7 @@ class HomeDiscoveryFeedSpacingTest {
     private val showRecommendations = mutableStateOf(false)
     private val showRelated = mutableStateOf(true)
     private val fallback = mutableStateOf(false)
+    private val recommendationLayout = mutableStateOf(HomeRecommendationLayout())
     private val browseEvents = mutableListOf<Triple<String?, String?, String?>>()
     private lateinit var gridState: LazyStaggeredGridState
     private val definitions = editorialRowDefinitionsFor(ContentDaypart.MORNING)
@@ -192,6 +194,46 @@ class HomeDiscoveryFeedSpacingTest {
         org.junit.Assert.assertTrue(positions[0].bottom < positions[1].top && positions[1].left < positions[2].left)
     }
 
+    @Test fun `adaptive personal recommendations keep their cap order and episode attribution`() {
+        showRecommendations.value = true
+        showRelated.value = false
+        val recommendations = List(12) { index ->
+            Episode("rec$index", "Recommendation $index", "", "").copy(podcastId = "show$index", podcastTitle = "Show $index")
+        }
+        val clicks = mutableListOf<Triple<String, String, String?>>()
+        renderRecommendations(
+            content.copy(recommendations = StableEpisodeList(recommendations)),
+            callbacks.copy(onEpisodeClick = { episode, podcast, source -> clicks += Triple(episode.id, podcast.id, source) }),
+        )
+        composeRule.onNodeWithText("Recommendation 0").performClick()
+
+        recommendationLayout.value = HomeRecommendationLayout(columns = 3, tablet = true)
+        composeRule.waitForIdle()
+        assertEquals(listOf("curated_header", "for_you_hero", "discovery_greeting"), visibleKeys())
+        composeRule.onNodeWithText("Recommendation 0").assertExists()
+        composeRule.onNodeWithTag("tablet_recommendation_rail").performScrollToIndex(8)
+        composeRule.onNodeWithText("Recommendation 8").performClick()
+        composeRule.onNodeWithTag("tablet_recommendation_9").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(label(R.string.home_recommendations_see_all)).performClick()
+
+        recommendationLayout.value = HomeRecommendationLayout(columns = 2, tablet = false)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("tablet_recommendation_rail").assertDoesNotExist()
+        recommendations.take(9).forEach { composeRule.onNodeWithText(it.title).assertExists() }
+        recommendations.drop(9).forEach { composeRule.onNodeWithText(it.title).assertDoesNotExist() }
+        composeRule.onNodeWithText("Recommendation 8").performClick()
+        composeRule.onNodeWithContentDescription(label(R.string.home_recommendations_see_all)).performClick()
+        assertEquals(
+            listOf(
+                Triple("rec0", "show0", "home_for_you"),
+                Triple("rec8", "show8", "home_for_you"),
+                Triple("rec8", "show8", "home_for_you"),
+            ),
+            clicks,
+        )
+        assertEquals(List(2) { Triple(null, "home_for_you_see_all", "foryou") }, browseEvents)
+    }
+
     @Test fun `Explore browse and view more keep all and genre destinations with existing show tap context`() {
         val selected = mutableStateOf<String?>(null)
         val showEvents = mutableListOf<Pair<String?, Int?>>()
@@ -233,7 +275,10 @@ class HomeDiscoveryFeedSpacingTest {
         assertEquals(listOf("News" to 1), showEvents)
     }
 
-    private fun renderRecommendations(recommendationContent: PodcastFeedContent = content) {
+    private fun renderRecommendations(
+        recommendationContent: PodcastFeedContent = content,
+        recommendationCallbacks: HomeFeedCallbacks = callbacks,
+    ) {
         composeRule.setContent {
             BoxLoreTheme(dynamicColor = false) {
                 gridState = rememberLazyStaggeredGridState()
@@ -253,8 +298,9 @@ class HomeDiscoveryFeedSpacingTest {
                             isRecommendationsFallback = fallback.value,
                         ),
                         PodcastFeedPlayback(HomePlaybackUi(null, null, false), StablePlaybackStateMap(emptyMap())),
-                        callbacks,
+                        recommendationCallbacks,
                         derivedState.copy(hasBecauseYouLike = showRelated.value, hasRecommendations = showRecommendations.value),
+                        recommendationLayout.value,
                     )
                     discoveryGreetingItem(feedState, callbacks)
                 }

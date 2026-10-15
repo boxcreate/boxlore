@@ -90,7 +90,7 @@ internal fun TabletPlayerSupport(
                                     PlayerSupportingTab.Notes -> null
                                 }
                                 event?.let { cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction(it) }
-                                ui.supportingTab = tab
+                                ui.selectSupportingTab(tab)
                             }
                         },
                         text = { Text(stringResource(tab.label), maxLines = 1) },

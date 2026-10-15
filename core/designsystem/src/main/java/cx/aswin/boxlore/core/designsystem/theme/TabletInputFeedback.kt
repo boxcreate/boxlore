@@ -9,6 +9,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -21,6 +23,7 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
@@ -53,55 +56,76 @@ private fun Modifier.tabletSecondaryClick(enabled: Boolean, onLongClick: (() -> 
     if (!LocalBoxloreWindowLayout.current.usesTabletLayout || onLongClick == null) return@composed this
     val action by rememberUpdatedState(onLongClick)
     pointerInput(enabled) {
-        if (!enabled) return@pointerInput
-        awaitPointerEventScope {
-            var secondaryGesture = false
-            while (true) {
-                val event = awaitPointerEvent(PointerEventPass.Main)
-                val secondaryPress = event.type == PointerEventType.Press && event.buttons.isSecondaryPressed && !secondaryGesture
-                if (secondaryPress && event.changes.none { it.isConsumed }) {
-                    secondaryGesture = true
-                    action()
-                }
-                if (secondaryGesture) {
-                    event.changes.forEach { it.consume() }
-                    if (!event.buttons.isSecondaryPressed) secondaryGesture = false
-                }
-            }
-        }
+        if (enabled) detectTabletSecondaryClicks { action() }
     }
 }
 
-@Suppress("LongParameterList") // Mirrors Foundation's public click contract.
+private suspend fun PointerInputScope.detectTabletSecondaryClicks(action: () -> Unit) = awaitPointerEventScope {
+    val gesture = TabletSecondaryClickGesture()
+    while (true) {
+        val event = awaitPointerEvent(PointerEventPass.Main)
+        val handling = gesture.update(
+            isPress = event.type == PointerEventType.Press,
+            secondaryPressed = event.buttons.isSecondaryPressed,
+            consumed = event.changes.any { it.isConsumed },
+        )
+        if (handling == SecondaryClickHandling.InvokeAndConsume) action()
+        if (handling != SecondaryClickHandling.Ignore) event.changes.forEach { it.consume() }
+    }
+}
+
+internal enum class SecondaryClickHandling { Ignore, Consume, InvokeAndConsume }
+
+/** One pointer-input coroutine owns one gesture; cancellation drops its ownership. */
+internal class TabletSecondaryClickGesture {
+    private var active = false
+
+    fun update(isPress: Boolean, secondaryPressed: Boolean, consumed: Boolean): SecondaryClickHandling {
+        if (!active) {
+            if (!isPress || !secondaryPressed || consumed) return SecondaryClickHandling.Ignore
+            active = true
+            return SecondaryClickHandling.InvokeAndConsume
+        }
+        active = secondaryPressed
+        return SecondaryClickHandling.Consume
+    }
+}
+
+/** Optional native click behavior shared by implicit and explicit interaction sources. */
+@Immutable
+data class BoxloreClickOptions(
+    val role: Role? = null,
+    val onDoubleClick: (() -> Unit)? = null,
+    val hapticFeedbackEnabled: Boolean = true,
+)
+
+/** A supplied instance preserves explicit null source/indication values. */
+@Stable
+data class BoxloreClickInteraction(
+    val interactionSource: MutableInteractionSource?,
+    val indication: Indication?,
+)
+
 fun Modifier.boxloreCombinedClickable(
     enabled: Boolean = true,
     onClickLabel: String? = null,
-    role: Role? = null,
     onLongClickLabel: String? = null,
     onLongClick: (() -> Unit)? = null,
-    onDoubleClick: (() -> Unit)? = null,
-    hapticFeedbackEnabled: Boolean = true,
+    options: BoxloreClickOptions = BoxloreClickOptions(),
+    interaction: BoxloreClickInteraction? = null,
     onClick: () -> Unit,
 ): Modifier = composed {
-    if (!LocalBoxloreWindowLayout.current.usesTabletLayout) {
-        combinedClickable(enabled, onClickLabel, role, onLongClickLabel, onLongClick, onDoubleClick, hapticFeedbackEnabled, onClick)
+    val nativeInteraction = interaction ?: if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+        BoxloreClickInteraction(remember { MutableInteractionSource() }, LocalIndication.current)
     } else {
-        boxloreCombinedClickable(remember { MutableInteractionSource() }, LocalIndication.current, enabled, onClickLabel, role, onLongClickLabel, onLongClick, onDoubleClick, hapticFeedbackEnabled, onClick)
+        null
+    }
+    if (nativeInteraction == null) {
+        combinedClickable(enabled, onClickLabel, options.role, onLongClickLabel, onLongClick, options.onDoubleClick, options.hapticFeedbackEnabled, onClick)
+    } else {
+        combinedClickable(
+            nativeInteraction.interactionSource, nativeInteraction.indication, enabled, onClickLabel, options.role,
+            onLongClickLabel, onLongClick, options.onDoubleClick, options.hapticFeedbackEnabled, onClick,
+        ).tabletSecondaryClick(enabled, onLongClick)
     }
 }
-
-@Suppress("LongParameterList") // Mirrors Foundation's explicit interaction-source overload.
-fun Modifier.boxloreCombinedClickable(
-    interactionSource: MutableInteractionSource?,
-    indication: Indication?,
-    enabled: Boolean = true,
-    onClickLabel: String? = null,
-    role: Role? = null,
-    onLongClickLabel: String? = null,
-    onLongClick: (() -> Unit)? = null,
-    onDoubleClick: (() -> Unit)? = null,
-    hapticFeedbackEnabled: Boolean = true,
-    onClick: () -> Unit,
-): Modifier = combinedClickable(
-    interactionSource, indication, enabled, onClickLabel, role, onLongClickLabel, onLongClick, onDoubleClick, hapticFeedbackEnabled, onClick,
-).tabletSecondaryClick(enabled, onLongClick)

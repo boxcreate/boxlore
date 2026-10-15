@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
@@ -40,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.designsystem.theme.BoxloreClickInteraction
+import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
@@ -189,6 +192,121 @@ class TabletInputTest {
         assertEquals(1, inner)
         assertEquals(0, outer)
         assertEquals(0, clicks)
+    }
+
+    @Test
+    fun `secondary click follows live width height callback and enablement changes for both source modes`() {
+        val window = mutableStateOf(BoxloreWindowLayout(600f, 480f))
+        val enabled = mutableStateOf(true)
+        val hasAction = mutableStateOf(true)
+        val updatedAction = mutableStateOf(false)
+        val originalMenus = IntArray(3)
+        val currentMenus = IntArray(3)
+        val clicks = IntArray(3)
+        fixture.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                BoxLoreTheme {
+                    Column {
+                        repeat(3) { index ->
+                            val source = remember { MutableInteractionSource() }
+                            val action: (() -> Unit)? = if (hasAction.value) {
+                                if (updatedAction.value) ({ currentMenus[index]++ }) else ({ originalMenus[index]++ })
+                            } else {
+                                null
+                            }
+                            Text(
+                                "Card",
+                                Modifier.size(160.dp, 80.dp).testTag("source_$index").boxloreCombinedClickable(
+                                    enabled = enabled.value,
+                                    onLongClick = action,
+                                    interaction = when (index) {
+                                        0 -> null
+                                        1 -> BoxloreClickInteraction(source, null)
+                                        else -> BoxloreClickInteraction(null, null)
+                                    },
+                                    onClick = { clicks[index]++ },
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        fun secondaryClick() = repeat(3) { index ->
+            fixture.compose.onNodeWithTag("source_$index").performMouseInput { click(button = MouseButton.Secondary) }
+        }
+        secondaryClick()
+        assertEquals(listOf(1, 1, 1), originalMenus.toList())
+        fixture.compose.runOnIdle { updatedAction.value = true }
+        advance()
+        secondaryClick()
+        assertEquals(listOf(1, 1, 1), currentMenus.toList())
+        listOf(BoxloreWindowLayout(599f, 480f), BoxloreWindowLayout(600f, 479f)).forEachIndexed { transition, compact ->
+            fixture.compose.runOnIdle { window.value = compact }
+            advance()
+            secondaryClick()
+            assertEquals(List(3) { transition + 1 }, currentMenus.toList())
+            repeat(3) { index -> fixture.compose.onNodeWithTag("source_$index").performMouseInput { click() } }
+            fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(600f, 480f) }
+            advance()
+            secondaryClick()
+            assertEquals(List(3) { transition + 2 }, currentMenus.toList())
+        }
+        val nativeClicks = clicks.toList()
+        fixture.compose.runOnIdle { enabled.value = false }
+        advance()
+        secondaryClick()
+        repeat(3) { index -> fixture.compose.onNodeWithTag("source_$index").performMouseInput { click() } }
+        assertEquals(nativeClicks, clicks.toList())
+        assertEquals(listOf(3, 3, 3), currentMenus.toList())
+        fixture.compose.runOnIdle {
+            enabled.value = true
+            hasAction.value = false
+        }
+        advance()
+        secondaryClick()
+        assertEquals(listOf(3, 3, 3), currentMenus.toList())
+        fixture.compose.runOnIdle { hasAction.value = true }
+        advance()
+        secondaryClick()
+        assertEquals(listOf(4, 4, 4), currentMenus.toList())
+        assertEquals(listOf(1, 1, 1), originalMenus.toList())
+    }
+
+    @Test
+    fun `disabling during a held secondary gesture cancels its owner and reenabling starts cleanly`() {
+        val enabled = mutableStateOf(true)
+        var menus = 0
+        var clicks = 0
+        fixture.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(600f, 480f)) {
+                BoxLoreTheme {
+                    Text(
+                        "Card",
+                        Modifier.size(160.dp, 80.dp).testTag("card")
+                            .expressiveClickable(enabled = enabled.value, onLongClick = { menus++ }, onClick = { clicks++ }),
+                    )
+                }
+            }
+        }
+        val target = fixture.compose.onNodeWithTag("card")
+        target.performMouseInput {
+            moveTo(center)
+            press(MouseButton.Secondary)
+        }
+        assertEquals(1, menus)
+        fixture.compose.runOnIdle { enabled.value = false }
+        advance()
+        target.performMouseInput { release(MouseButton.Secondary) }
+        assertEquals(1, menus)
+        assertEquals(0, clicks)
+        fixture.compose.runOnIdle { enabled.value = true }
+        advance()
+        target.performMouseInput { click(button = MouseButton.Secondary) }
+        assertEquals(2, menus)
+        assertEquals(0, clicks)
+        target.performMouseInput { click() }
+        assertEquals(1, clicks)
     }
 
     @Test

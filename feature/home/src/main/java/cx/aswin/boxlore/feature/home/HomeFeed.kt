@@ -28,6 +28,7 @@ import cx.aswin.boxlore.feature.home.components.HeroCarousel
 import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 import cx.aswin.boxlore.feature.home.components.HomeLoadingHandoffMillis
 import cx.aswin.boxlore.feature.home.components.HomeLoadingReveal
+import cx.aswin.boxlore.feature.home.components.HomeRecommendationLayout
 import cx.aswin.boxlore.feature.home.logic.shouldAnimateHomeShimmer
 import cx.aswin.boxlore.feature.home.logic.showHomeDiscoveryContent
 import kotlinx.coroutines.delay
@@ -153,7 +154,7 @@ internal fun PodcastFeed(
                 yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
                 dailyBriefingItem(feedState, playback, callbacks, context)
             }
-            curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState, posterColumns, tablet = tablet)
+            curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState, HomeRecommendationLayout(posterColumns, tablet))
             discoveryGreetingItem(feedState, callbacks)
             editorialFeedItems(content, feedState, loadingState, callbacks)
             discoverFeedItems(feedState, derivedState, callbacks, posterColumns)

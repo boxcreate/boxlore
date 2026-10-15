@@ -33,13 +33,15 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
 
+private const val TABLET_CAPTURES_PROPERTY = "boxlore.tabletCaptures"
+
 /** Fixed local capture inputs; changing these never replaces an existing phone baseline. */
 data class PhoneGoldenConfiguration(val width: Int, val height: Int, val dark: Boolean, val posture: String = "") {
     override fun toString(): String = "${width}x$height-${if (dark) "dark" else "light"}${if (posture.isEmpty()) "" else "-$posture"}"
 
     companion object {
         fun matrix(): List<Array<Any>> {
-            val sizes = if (System.getProperty("boxlore.tabletCaptures") != null) {
+            val sizes = if (System.getProperty(TABLET_CAPTURES_PROPERTY) != null) {
                 listOf(Triple(600, 960, ""), Triple(840, 1_280, ""), Triple(1_280, 800, ""), Triple(1_600, 1_000, ""), Triple(673, 841, "flat"), Triple(673, 841, "tabletop"))
             } else {
                 listOf(Triple(360, 800, ""), Triple(412, 915, ""), Triple(800, 360, ""))
@@ -95,11 +97,11 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
 
     fun setContent(foldSafeViewport: Boolean = false, content: @Composable () -> Unit) {
         // Keep the frozen phone fixture's composition and animation start frame unchanged.
-        if (System.getProperty("boxlore.tabletCaptures") == null) {
+        if (System.getProperty(TABLET_CAPTURES_PROPERTY) == null) {
             compose.setContent(content)
             return
         }
-        val window = if (System.getProperty("boxlore.tabletCaptures") == "before") {
+        val window = if (System.getProperty(TABLET_CAPTURES_PROPERTY) == "before") {
             BoxloreWindowLayout.Unspecified
         } else {
             val folds = if (configuration.posture == "tabletop") {
@@ -137,7 +139,7 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
         compose.waitForIdle()
         val root = File(requireNotNull(System.getProperty("boxlore.projectRoot")))
         val filename = "$screen-$configuration.png"
-        val tabletMode = System.getProperty("boxlore.tabletCaptures")
+        val tabletMode = System.getProperty(TABLET_CAPTURES_PROPERTY)
         val directory = if (tabletMode == null) "phone-goldens/actual" else "tablet-captures/$tabletMode"
         val actual = File(root, "build/reports/$directory/$filename")
         requireNotNull(actual.parentFile).mkdirs()

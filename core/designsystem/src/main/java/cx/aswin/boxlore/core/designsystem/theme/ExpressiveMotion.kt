@@ -173,8 +173,7 @@ fun Modifier.expressiveClickable(
             shape = shape,
         )
         .combinedClickable(
-            interactionSource = interactionSource,
-            indication = indication,
+            interaction = BoxloreClickInteraction(interactionSource, indication),
             enabled = enabled,
             onLongClickLabel = onLongClickLabel,
             onLongClick = onLongClick,

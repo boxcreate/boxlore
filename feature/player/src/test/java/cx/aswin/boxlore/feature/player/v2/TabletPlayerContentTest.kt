@@ -186,8 +186,31 @@ class TabletPlayerContentTest {
         fixture.compose.onNodeWithText("Words that follow the episode").assertExists()
     }
 
+    @Test
+    fun `live player restores its inline transcript across width and height gates`() {
+        val store = PlayerPresentationStore(episode.id, FullPlayerUiState().apply { showInlineTranscript = true })
+        window.value = BoxloreWindowLayout(599f, 841f)
+        render(transcript = true, presentationStore = store)
+        fixture.compose.onNodeWithContentDescription("Open fullscreen transcript").assertExists()
+
+        listOf(
+            BoxloreWindowLayout(600f, 841f),
+            BoxloreWindowLayout(599f, 841f),
+            BoxloreWindowLayout(840f, 480f),
+            BoxloreWindowLayout(840f, 479f),
+            tabletop(),
+            BoxloreWindowLayout(599f, 841f),
+        ).forEach { layout ->
+            fixture.compose.runOnIdle { window.value = layout }
+            advance()
+            assertEquals("The same episode state survives resizing", store.ui, store.forEpisode(episode.id))
+            assertEquals("Inline transcript at ${layout.widthDp} x ${layout.heightDp}", !layout.usesTabletLayout, store.ui.showInlineTranscript)
+            fixture.compose.onNodeWithContentDescription(if (layout.usesTabletLayout) "Open full-screen transcript" else "Open fullscreen transcript").assertExists()
+        }
+    }
+
     @Suppress("LongParameterList")
-    private fun render(style: String = FullPlayerStyle.STANDARD, contextPane: Boolean = false, onOpen: () -> Unit = {}, video: Boolean = false, emptyQueue: Boolean = false, dark: Boolean = false, transcript: Boolean = false, fullscreenRequest: ((PlayerFullscreenOverlay, Boolean) -> Unit)? = null) {
+    private fun render(style: String = FullPlayerStyle.STANDARD, contextPane: Boolean = false, onOpen: () -> Unit = {}, video: Boolean = false, emptyQueue: Boolean = false, dark: Boolean = false, transcript: Boolean = false, fullscreenRequest: ((PlayerFullscreenOverlay, Boolean) -> Unit)? = null, presentationStore: PlayerPresentationStore? = null) {
         val downloads = mock(DownloadRepository::class.java)
         val prefs = mock(UserPreferencesRepository::class.java)
         `when`(playback.playerState).thenReturn(
@@ -212,6 +235,7 @@ class TabletPlayerContentTest {
             view = LocalView.current
             CompositionLocalProvider(
                 LocalBoxloreWindowLayout provides window.value,
+                LocalPlayerPresentationStore provides presentationStore,
                 LocalPlayerFullscreenRequest provides fullscreenRequest,
                 LocalBoxlorePaneBounds provides if (contextPane) BoxloreLayoutBounds(800f, 0f, 1_273f, 800f) else null,
             ) {

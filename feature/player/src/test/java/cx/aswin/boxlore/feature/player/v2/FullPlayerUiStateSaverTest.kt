@@ -54,17 +54,124 @@ class FullPlayerUiStateSaverTest {
     @Test
     fun `resizing an open supporting surface moves it to its tablet tab`() {
         val state = FullPlayerUiState().apply { showInlineTranscript = true }
-        state.moveSupportingContentToTabs()
+        state.updateSupportingContent(true)
         assertEquals(PlayerSupportingTab.Transcript, state.supportingTab)
         assertFalse(state.showInlineTranscript)
         state.showChaptersSheet = true
-        state.moveSupportingContentToTabs()
+        state.updateSupportingContent(true)
         assertEquals(PlayerSupportingTab.Chapters, state.supportingTab)
         assertFalse(state.showChaptersSheet)
         state.showQueueSheet = true
-        state.moveSupportingContentToTabs()
+        state.updateSupportingContent(true)
         assertEquals(PlayerSupportingTab.UpNext, state.supportingTab)
         assertFalse(state.showQueueSheet)
+    }
+
+    @Test
+    fun `each compact supporting surface survives repeated tablet round trips`() {
+        listOf(PlayerSupportingTab.Transcript, PlayerSupportingTab.Chapters, PlayerSupportingTab.UpNext).forEach { tab ->
+            val state = FullPlayerUiState().apply {
+                showInlineTranscript = tab == PlayerSupportingTab.Transcript
+                showChaptersSheet = tab == PlayerSupportingTab.Chapters
+                showQueueSheet = tab == PlayerSupportingTab.UpNext
+                showSleepSheet = true
+                isSyncEnabled = false
+            }
+            repeat(3) {
+                state.updateSupportingContent(true)
+                state.updateSupportingContent(true)
+                assertEquals(tab, state.supportingTab)
+                assertSurface(state, null)
+                state.updateSupportingContent(false)
+                assertSurface(state, tab)
+                state.updateSupportingContent(false)
+                assertSurface(state, tab)
+                assertTrue(state.showSleepSheet)
+                assertFalse(state.isSyncEnabled)
+            }
+        }
+    }
+
+    @Test
+    fun `default tablet tab and notes never open an unsolicited compact sheet`() {
+        val state = FullPlayerUiState()
+        state.updateSupportingContent(true)
+        state.updateSupportingContent(false)
+        assertSurface(state, null)
+
+        state.updateSupportingContent(true)
+        state.selectSupportingTab(PlayerSupportingTab.Notes)
+        state.updateSupportingContent(false)
+        assertSurface(state, null)
+        assertEquals(PlayerSupportingTab.Notes, state.supportingTab)
+    }
+
+    @Test
+    fun `explicit tablet selection restores the selected compact surface`() {
+        PlayerSupportingTab.entries.forEach { tab ->
+            val state = FullPlayerUiState().apply { showInlineTranscript = true }
+            state.updateSupportingContent(true)
+            state.selectSupportingTab(tab)
+            state.updateSupportingContent(false)
+            assertSurface(state, tab.takeUnless { it == PlayerSupportingTab.Notes })
+        }
+    }
+
+    @Test
+    fun `closing compact support prevents it reopening on a later resize`() {
+        val state = FullPlayerUiState().apply { showInlineTranscript = true }
+        state.updateSupportingContent(true)
+        state.updateSupportingContent(false)
+        state.showInlineTranscript = false
+        state.updateSupportingContent(true)
+        state.updateSupportingContent(false)
+        assertSurface(state, null)
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `tablet transition intent survives local state recreation before compacting`() {
+        listOf(PlayerSupportingTab.Transcript, PlayerSupportingTab.Chapters, PlayerSupportingTab.UpNext).forEach { tab ->
+            val state = FullPlayerUiState()
+            state.updateSupportingContent(true)
+            state.selectSupportingTab(tab)
+            val saved = with(FullPlayerUiStateSaver) { SaverScope { true }.save(state) } as List<Boolean>
+            val restored = requireNotNull(FullPlayerUiStateSaver.restore(saved))
+            restored.updateSupportingContent(false)
+            assertSurface(restored, tab)
+        }
+    }
+
+    @Test
+    fun `retained store restores compact intent without confusing it with expansion`() {
+        listOf(false, true).forEach { expanded ->
+            val state = FullPlayerUiState().apply { showInlineTranscript = true }
+            state.updateSupportingContent(true)
+            val store = PlayerPresentationStore("rss:episode/one", state, expanded)
+            val saved = with(PlayerPresentationStoreSaver) { SaverScope { true }.save(store) }
+            val restored = requireNotNull(PlayerPresentationStoreSaver.restore(requireNotNull(saved)))
+            assertEquals(expanded, restored.expanded)
+            restored.forEpisode("rss:episode/one").updateSupportingContent(false)
+            assertSurface(restored.ui, PlayerSupportingTab.Transcript)
+        }
+    }
+
+    @Test
+    fun `legacy retained layouts preserve flags tabs and expansion without inventing compact intent`() {
+        listOf(10, 13).forEach { flagCount ->
+            listOf(false, true).forEach { expanded ->
+                val legacyFlags = MutableList(flagCount) { false }
+                legacyFlags[3] = true
+                if (flagCount == 13) legacyFlags[11] = true
+                val restored = requireNotNull(PlayerPresentationStoreSaver.restore(listOf("rss:episode/one") + legacyFlags + expanded))
+                assertEquals(expanded, restored.expanded)
+                assertTrue(restored.ui.showSleepSheet)
+                assertEquals(if (flagCount == 13) PlayerSupportingTab.Transcript else PlayerSupportingTab.UpNext, restored.ui.supportingTab)
+                restored.ui.updateSupportingContent(true)
+                restored.ui.updateSupportingContent(false)
+                assertSurface(restored.ui, null)
+            }
+        }
     }
 
     @Test
@@ -80,5 +187,13 @@ class FullPlayerUiStateSaverTest {
         assertEquals(PlayerSupportingTab.Notes, restored.forEpisode("rss:episode/one").supportingTab)
         assertTrue(restored.expanded)
         assertEquals(PlayerSupportingTab.UpNext, restored.forEpisode("-42").supportingTab)
+        assertFalse(restored.ui.supportingContentUsesTablet)
+        assertFalse(restored.ui.restoreSupportingContentOnCompact)
+    }
+
+    private fun assertSurface(state: FullPlayerUiState, expected: PlayerSupportingTab?) {
+        assertEquals(expected == PlayerSupportingTab.Transcript, state.showInlineTranscript)
+        assertEquals(expected == PlayerSupportingTab.Chapters, state.showChaptersSheet)
+        assertEquals(expected == PlayerSupportingTab.UpNext, state.showQueueSheet)
     }
 }

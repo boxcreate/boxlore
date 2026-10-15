@@ -42,24 +42,14 @@ private fun <T> LazyStaggeredGridScope.tabletExploreItems(
             },
         )
     }
-    orderedExploreItems(posters.drop(alongside), columns, { index, value -> posterKey(index + alongside, value) }) { value, index ->
+    orderedExploreItems(posters.drop(alongside), { index, value -> posterKey(index + alongside, value) }) { value, index ->
         card(value, false, index + alongside + 1)
     }
 }
 
-internal fun <T> LazyStaggeredGridScope.orderedExploreItems(values: List<T>, columns: Int, itemKey: (Int, T) -> String, card: @Composable (T, Int) -> Unit) {
-    if (columns < 3) {
-        itemsIndexed(values, key = itemKey) { index, value -> card(value, index) }
-        return
-    }
-    values.chunked(columns).forEachIndexed { rowIndex, row ->
-        val start = rowIndex * columns
-        item(key = "tablet_row_${itemKey(start, row.first())}", span = StaggeredGridItemSpan.FullLine) {
-            EqualHeightPosterGrid(columns = columns, horizontalSpacing = 12.dp, verticalSpacing = 12.dp) {
-                row.forEachIndexed { column, value -> key(itemKey(start + column, value)) { card(value, start + column) } }
-            }
-        }
-    }
+/** Each result keeps its lazy identity and index when the window changes column count. */
+internal fun <T> LazyStaggeredGridScope.orderedExploreItems(values: List<T>, itemKey: (Int, T) -> String, card: @Composable (T, Int) -> Unit) {
+    itemsIndexed(values, key = itemKey) { index, value -> card(value, index) }
 }
 
 internal fun LazyStaggeredGridScope.tabletRecommendationItems(episodes: List<Episode>, columns: Int, onEpisodeClick: (Episode, Podcast) -> Unit) {

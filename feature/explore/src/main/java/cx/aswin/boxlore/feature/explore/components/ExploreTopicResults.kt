@@ -50,7 +50,6 @@ internal fun LazyStaggeredGridScope.exploreTopicResults(
     title: String,
     podcasts: List<Podcast>,
     loading: Boolean,
-    columns: Int,
     onBack: () -> Unit,
     onPodcastClick: (Podcast, Int) -> Unit,
 ) {
@@ -79,7 +78,6 @@ internal fun LazyStaggeredGridScope.exploreTopicResults(
         }
         else -> orderedExploreItems(
             podcasts,
-            columns,
             itemKey = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "topic") },
         ) { podcast, index ->
             ExploreBrowsePodcastCard(
