@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-15T17:37:05.671Z",
+  "lastRun": "2026-10-15T20:57:47.733Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0dfcfea-cfc6-11f0-83c5-df5cfc8cd54e",
@@ -25,16 +25,16 @@
       "lastCheckedAt": 1791976569864
     },
     "9926": {
-      "lastRssKey": "ec8abd84-c77c-11f1-ac72-7fd0bb6a77ba",
-      "lastEpisodeTitle": "The Possessed Nuns of Loudun",
-      "lastEpisodeId": "59343962292",
-      "lastCheckedAt": 1791976570356
+      "lastEpisodeId": "61530731207",
+      "lastEpisodeTitle": "Panic in the Streets: The War of the Worlds Radio Broadcast",
+      "lastRssKey": "669983b0-c1e9-11f1-b573-83391e400189",
+      "lastCheckedAt": 1792097870659
     },
     "44367": {
-      "lastRssKey": "uk11wutvrngxukrp",
-      "lastEpisodeTitle": "712: Mildly Technologically Traumatized",
+      "lastRssKey": "czlnqljwtkwxcdrw",
+      "lastEpisodeTitle": "713: I Have Medium Hopes",
       "lastEpisodeId": "61459013244",
-      "lastCheckedAt": 1791498155050
+      "lastCheckedAt": 1792097871958
     },
     "48166": {
       "lastRssKey": "68b66323-6e74-4c90-8157-ef3f1ed0d042",
@@ -49,16 +49,16 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "30f5d3ce-5c1a-4cb9-ae9e-a1d238b8e5fc",
-      "lastEpisodeTitle": "1pm ET, October 15 | The latest headlines from NPR",
+      "lastRssKey": "90347918-7aee-43b7-a8e0-b04ea60e7098",
+      "lastEpisodeTitle": "4pm ET, October 15 | The latest headlines from NPR",
       "lastEpisodeId": "61772764727",
-      "lastCheckedAt": 1792085831355
+      "lastCheckedAt": 1792097874481
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75794512",
-      "lastEpisodeTitle": "US to buy Russian diesel, gymkhana policy, and urban livelihood mission",
-      "lastEpisodeId": "61749817441",
-      "lastCheckedAt": 1792028403537
+      "lastRssKey": "https://api.spreaker.com/episode/75811763",
+      "lastEpisodeTitle": "The Catch Up: Defence PSU gives tender for anti-tank missile (15 October)",
+      "lastEpisodeId": "61785584553",
+      "lastCheckedAt": 1792097875910
     },
     "78573": {
       "lastRssKey": "b4d80f5e-ed0f-4be9-b79f-158ebbe85381",
@@ -179,10 +179,10 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "5F9B03A8-5D73-4C4D-810C-684D35D44A47",
-      "lastEpisodeTitle": "Trump Cancels Plan to Livestream Execution of Fort Hood Shooter",
-      "lastEpisodeId": "61780184180",
-      "lastCheckedAt": 1792085845024
+      "lastRssKey": "DBEB577C-EE6F-469A-924F-F17B2588B249",
+      "lastEpisodeTitle": "Investors Rotate Out of Tech and Into Treasuries",
+      "lastEpisodeId": "61791522904",
+      "lastCheckedAt": 1792097911952
     },
     "331078": {
       "lastRssKey": "13887818-b823-11f1-957c-073ba46e3b04",
@@ -197,10 +197,10 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "3110448a-c8bb-11f1-bf49-1799be29cd49",
-      "lastEpisodeTitle": "1PM ET 10/15/2026 Newscast",
+      "lastRssKey": "5680a73c-c8d4-11f1-9913-2f68deefce2b",
+      "lastEpisodeTitle": "4PM ET 10/15/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792085846892
+      "lastCheckedAt": 1792097913506
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -239,10 +239,10 @@
       "lastCheckedAt": 1791746498163
     },
     "431205": {
-      "lastRssKey": "103acb50-86e8-4a34-bfae-a986acf1f6af",
-      "lastEpisodeTitle": "Goldman Sachs CEO, The Debt Dilemma, and Open A-Spy? 10/14/26",
-      "lastEpisodeId": "61736475387",
-      "lastCheckedAt": 1792008016930
+      "lastRssKey": "3e4fb8d1-d9d2-4179-8804-2ac1fee15c14",
+      "lastEpisodeTitle": "Risk off, Rate Reprieve and a new OpenAI Lawsuit 10/15/26",
+      "lastEpisodeId": "61787232166",
+      "lastCheckedAt": 1792097919087
     },
     "431211": {
       "lastEpisodeId": "6188636",
@@ -292,10 +292,10 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
-      "lastRssKey": "0273cfa1-0508-479e-aa44-1064b52a14f9",
-      "lastEpisodeTitle": "GrokBot is Now in Cybercab | Tesla Time News 688",
-      "lastEpisodeId": "61688081901",
-      "lastCheckedAt": 1791927894087
+      "lastRssKey": "81a9d597-62aa-41dd-85ca-71a743712258",
+      "lastEpisodeTitle": "We Told You! | Tesla Time News 689",
+      "lastEpisodeId": "61788686824",
+      "lastCheckedAt": 1792097924311
     },
     "462634": {
       "lastRssKey": "gid://art19-episode-locator/V0/SMHdx5oujav94cVL--T2BOxs_s0ZuGgXnuJkwWOuJNw",
@@ -333,10 +333,10 @@
       "lastCheckedAt": 1791800244261
     },
     "483834": {
-      "lastRssKey": "6acfb46137f0bd18cc481e86",
-      "lastEpisodeTitle": "Yellowjackets S4 Alanis Morissette Teaser, Narnia: The Magician’s Nephew trailer — October 14th, 2026",
-      "lastEpisodeId": "61548027601",
-      "lastCheckedAt": 1792008029510
+      "lastRssKey": "6ad1154a7c5c47f85e059eb4",
+      "lastEpisodeTitle": "New Legend of Zelda: Ocarina of Time Remake Trailer, Abbott Elementary S6 Guest Stars— October 15th, 2026",
+      "lastEpisodeId": "61790264943",
+      "lastCheckedAt": 1792097929310
     },
     "490022": {
       "lastRssKey": "d82eadfc-ec5f-4685-9b73-7f49b5b47297",
@@ -847,10 +847,10 @@
       "lastCheckedAt": 1790385270880
     },
     "1963447": {
-      "lastRssKey": "77bd0086-c649-11f1-bdc1-67349d345f44",
-      "lastEpisodeTitle": "\"Trick Or Treat\" By Violent Harvest | CREEPYPASTA",
+      "lastRssKey": "e167c920-c7e4-11f1-a190-87b4a26c3400",
+      "lastEpisodeTitle": "ATRD Ep. 245 - 6 True Scary Stories (FB Marketplace & Fast Food)",
       "lastEpisodeId": "61691223762",
-      "lastCheckedAt": 1791927966718
+      "lastCheckedAt": 1792098003425
     },
     "2136580": {
       "lastRssKey": "a97838bb-2b0d-4dc8-8e84-717992a2c7d8",
@@ -865,10 +865,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6acfb249bcff4cbbf6a7eac6",
-      "lastEpisodeTitle": "(Pop) Les frappes sur les data centers russes ont-elles freiné les bots sur les réseaux sociaux ?… HugoDécrypte",
+      "lastRssKey": "6ad10596e71f48696c984e11",
+      "lastEpisodeTitle": "Pourquoi le 17 octobre sera potentiellement inédit (15/10)",
       "lastEpisodeId": "61660529738",
-      "lastCheckedAt": 1792047706222
+      "lastCheckedAt": 1792098005465
     },
     "2574026": {
       "lastRssKey": "0052b4a6-c38c-11f1-9a53-8b7d6258a474",
@@ -1659,10 +1659,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/5fe65e84-4c75-5b25-bb98-76c93c83200c",
-      "lastEpisodeTitle": "Complex trauma and narcissistic relationships I Dr. Ingrids insights ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/4cc3f77c-1073-5b43-9e11-6baddcb2d9b6",
+      "lastEpisodeTitle": "WORKSHOPSelf compassion as a tool for healing from narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "61761430954",
-      "lastCheckedAt": 1792085989597
+      "lastCheckedAt": 1792098083303
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
