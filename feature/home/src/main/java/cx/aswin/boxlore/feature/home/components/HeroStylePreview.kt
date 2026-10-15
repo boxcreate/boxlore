@@ -65,6 +65,8 @@ private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<P
                 CoverHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             HeroCardStyle.DUOTONE ->
                 DuotoneHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
+            HeroCardStyle.TIDE ->
+                TideHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             HeroCardStyle.HALO ->
                 HaloHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             else -> HeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {})
@@ -77,6 +79,8 @@ private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<P
                 CoverHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             HeroCardStyle.DUOTONE ->
                 DuotoneHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
+            HeroCardStyle.TIDE ->
+                TideHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             HeroCardStyle.HALO ->
                 HaloHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             else -> HeroCard(item, onClick = {}, onArrowClick = {}, onToggleSubscription = {})

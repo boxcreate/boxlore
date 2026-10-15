@@ -9,6 +9,8 @@
     <string name="hero_card_style_block_description">Big type on a solid color block, with the artwork beside it.</string>
     <string name="hero_card_style_cover">Cover</string>
     <string name="hero_card_style_cover_description">Full artwork, with the words on a shade behind them.</string>
+    <string name="hero_card_style_tide">Tide</string>
+    <string name="hero_card_style_tide_description">The whole cover above a wavy panel, with a round play button.</string>
     <string name="hero_card_style_duotone">Duotone</string>
     <string name="hero_card_style_duotone_description">Artwork in two tones, so the words always stand out.</string>
     <string name="hero_card_style_halo">Halo</string>
@@ -16,9 +18,9 @@
     <!-- Shown under the picker when Duotone is chosen: the two tones the artwork is redrawn in. Same choice as Cover's shade. -->
     <string name="hero_duotone_colors_title">Duotone colors</string>
     <string name="hero_duotone_colors_footer">Dark redraws covers in black and white. Artwork uses each cover\'s own color. App theme uses your accent color.</string>
-    <!-- Shown under the picker when Halo is chosen: the colour of the card behind the shaped artwork. Same choice as Cover's shade. -->
-    <string name="hero_halo_colors_title">Card color</string>
-    <string name="hero_halo_colors_footer">Dark keeps cards near black. Artwork takes each cover\'s own color. App theme uses your accent color.</string>
+    <!-- Shown under the picker when Tide or Halo is chosen: the colour of the card around the artwork. Same choice as Cover's shade. -->
+    <string name="hero_card_colors_title">Card color</string>
+    <string name="hero_card_colors_footer">Dark keeps cards near black. Artwork takes each cover\'s own color. App theme uses your accent color.</string>
     <!-- Shown under the picker only when Cover is chosen: the colour the artwork fades into behind the card's text. -->
     <string name="hero_cover_shade_title">Shade behind text</string>
     <string name="hero_cover_shade_footer">Artwork takes a deep shade of each cover\'s own color. App theme uses your accent color.</string>

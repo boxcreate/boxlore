@@ -48,6 +48,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
@@ -127,10 +128,17 @@ internal fun CoverHeroCard(
 
 /**
  * The words over a full-artwork card: an optional one-line context (Cover's; Duotone shows the solid
- * cards' context block at the top instead), the measured title, the show name and progress.
+ * cards' context block at the top instead), the measured title, the show name and progress. The
+ * context stops [contextEndInset] short of the end, clear of anything beside it (Tide's Play disc).
  */
 @Composable
-internal fun CoverCopy(item: SmartHeroItem, shade: ArtworkShade, progressState: HeroProgressState?, showContext: Boolean = true) {
+internal fun CoverCopy(
+    item: SmartHeroItem,
+    shade: ArtworkShade,
+    progressState: HeroProgressState?,
+    showContext: Boolean = true,
+    contextEndInset: Dp = 0.dp,
+) {
     val measurer = rememberTextMeasurer()
     val baseStyle = heroTitleStyle()
     val title = heroTitle(item)
@@ -149,7 +157,7 @@ internal fun CoverCopy(item: SmartHeroItem, shade: ArtworkShade, progressState: 
                     color = shade.softContent,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.testTag("home_hero_context"),
+                    modifier = Modifier.padding(end = contextEndInset).testTag("home_hero_context"),
                 )
                 Spacer(Modifier.height(8.dp))
             }

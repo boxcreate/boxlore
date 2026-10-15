@@ -240,7 +240,7 @@ private fun rememberHeroSwipeTelemetry(cardCount: Int): androidx.compose.runtime
     return maxScrolledIndex
 }
 
-/** Cover's, Duotone's or Halo's Jump back in / New episodes card. */
+/** The artwork styles' Jump back in / New episodes card. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("LongParameterList")
@@ -270,11 +270,13 @@ private fun FullArtworkGridCard(
         )
         HeroCardStyle.HALO ->
             HaloHeroGridCard(items, title, mode, onCellClick, onPlaybackClick, playing.podcastId, playing.episodeId, playing.isPlaying, modifier)
+        HeroCardStyle.TIDE ->
+            TideHeroGridCard(items, title, mode, onCellClick, onPlaybackClick, playing.podcastId, playing.episodeId, playing.isPlaying, modifier)
         else -> CoverHeroGridCard(items, title, mode, onCellClick, onPlaybackClick, playing.podcastId, playing.episodeId, playing.isPlaying, modifier)
     }
 }
 
-/** Cover's, Duotone's or Halo's single-episode card. */
+/** The artwork styles' single-episode card. */
 @Composable
 @Suppress("LongParameterList")
 private fun FullArtworkHeroCard(
@@ -290,6 +292,7 @@ private fun FullArtworkHeroCard(
     when (style) {
         HeroCardStyle.DUOTONE -> DuotoneHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
         HeroCardStyle.HALO -> HaloHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
+        HeroCardStyle.TIDE -> TideHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
         else -> CoverHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -41,15 +42,16 @@ internal fun HeroSkeletonCard(style: String) {
         HeroCardStyle.COVER -> CoverHeroSkeletonCard(tones)
         HeroCardStyle.DUOTONE -> DuotoneHeroSkeletonCard(tones)
         HeroCardStyle.HALO -> HaloHeroSkeletonCard(tones)
+        HeroCardStyle.TIDE -> TideHeroSkeletonCard(tones)
         else -> BlockHeroSkeletonCard(tones)
     }
 }
 
-/** The next card's sliver: artwork for Cover and Duotone, whose art fills the card; solid otherwise. */
+/** The next card's sliver: artwork for Cover, Duotone and Tide, whose art fills its middle; solid otherwise. */
 @Composable
 internal fun HeroSkeletonPeek(style: String) {
     val tones = heroSkeletonTones()
-    val artwork = style == HeroCardStyle.COVER || style == HeroCardStyle.DUOTONE
+    val artwork = style == HeroCardStyle.COVER || style == HeroCardStyle.DUOTONE || style == HeroCardStyle.TIDE
     Box(
         Modifier.clip(HomeHeroStyle.CardShape).background(tones.surface)
             .then(if (artwork) Modifier.m3Shimmer(tones.base, tones.highlight) else Modifier),
@@ -172,6 +174,32 @@ private fun HaloHeroSkeletonCard(tones: HeroSkeletonTones) {
             context.placeRelative(20.dp.roundToPx(), 20.dp.roundToPx())
             cover.placeRelative(geometry.coverStart.dp.roundToPx(), geometry.coverTop.dp.roundToPx())
         }
+    }
+}
+
+/**
+ * Tide: the cover's square shimmering at the top, the solid wavy panel and the Play disc laid out by the
+ * card's own [TideCardLayout] for the context line, two-line title and show line below.
+ */
+@Composable
+private fun TideHeroSkeletonCard(tones: HeroSkeletonTones) {
+    Box(Modifier.fillMaxSize().clip(HomeHeroStyle.CardShape).background(tones.surface).testTag(skeletonTag(HeroCardStyle.TIDE))) {
+        TideCardLayout(
+            cover = { Box(Modifier.m3Shimmer(tones.base, tones.highlight)) },
+            panel = { TidePanel(tones.surface) },
+            copy = {
+                Column {
+                    SkeletonLine(0.5f, 12.dp, tones.base, tones.highlight, Modifier.padding(end = TideDiscReserve))
+                    Spacer(Modifier.height(12.dp))
+                    FullArtworkSkeletonCopy(tones.base, tones.highlight)
+                }
+            },
+            disc = {
+                Box(Modifier.background(tones.surface, CircleShape), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(56.dp).m3Shimmer(tones.base, tones.highlight, CircleShape))
+                }
+            },
+        )
     }
 }
 

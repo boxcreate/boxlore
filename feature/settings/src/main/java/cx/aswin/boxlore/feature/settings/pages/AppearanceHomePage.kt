@@ -25,6 +25,7 @@ private data class HeroStyleOption(val key: String, val label: Int, val descript
 private val HeroStyleOptions = listOf(
     HeroStyleOption(HeroCardStyle.BLOCK, R.string.hero_card_style_block, R.string.hero_card_style_block_description),
     HeroStyleOption(HeroCardStyle.COVER, R.string.hero_card_style_cover, R.string.hero_card_style_cover_description),
+    HeroStyleOption(HeroCardStyle.TIDE, R.string.hero_card_style_tide, R.string.hero_card_style_tide_description),
     HeroStyleOption(HeroCardStyle.DUOTONE, R.string.hero_card_style_duotone, R.string.hero_card_style_duotone_description),
     HeroStyleOption(HeroCardStyle.HALO, R.string.hero_card_style_halo, R.string.hero_card_style_halo_description),
 )
@@ -32,7 +33,7 @@ private val HeroStyleOptions = listOf(
 /** The colour choice's name and footer for each style that colours its cards from the artwork. */
 private fun heroColorsCopy(style: String): Pair<Int, Int> = when (style) {
     HeroCardStyle.DUOTONE -> R.string.hero_duotone_colors_title to R.string.hero_duotone_colors_footer
-    HeroCardStyle.HALO -> R.string.hero_halo_colors_title to R.string.hero_halo_colors_footer
+    HeroCardStyle.HALO, HeroCardStyle.TIDE -> R.string.hero_card_colors_title to R.string.hero_card_colors_footer
     else -> R.string.hero_cover_shade_title to R.string.hero_cover_shade_footer
 }
 
