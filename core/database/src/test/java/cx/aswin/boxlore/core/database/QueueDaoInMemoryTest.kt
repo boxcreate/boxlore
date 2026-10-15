@@ -196,14 +196,17 @@ class QueueDaoInMemoryTest {
         database.podcastDao().upsert(PodcastEntity(podcastId = "pod-1", title = "Podcast", author = "Host", imageUrl = "https://art/show.jpg", description = null))
         dao.insertQueueItem(item("a", 1).copy(imageUrl = dead, podcastImageUrl = dead))
         dao.insertQueueItem(item("b", 2).copy(imageUrl = "https://art/b.jpg"))
+        // An unsubscribed show: only the row's own show cover is left to fall back on.
+        dao.insertQueueItem(item("c", 3).copy(podcastId = "unsubscribed", imageUrl = dead, podcastImageUrl = "https://art/own-show.jpg"))
 
-        assertEquals(1, dao.repairPlaybackArtworkLinks())
+        assertEquals(2, dao.repairPlaybackArtworkLinks())
 
         val items = dao.getAllQueueItemsSync()
-        assertEquals(listOf("a", "b"), items.map { it.episodeId })
+        assertEquals(listOf("a", "b", "c"), items.map { it.episodeId })
         assertEquals("https://art/show.jpg", items[0].imageUrl)
         assertEquals("https://art/show.jpg", items[0].podcastImageUrl)
         assertEquals("https://art/b.jpg", items[1].imageUrl)
+        assertEquals("https://art/own-show.jpg", items[2].imageUrl)
         assertEquals(0, dao.repairPlaybackArtworkLinks())
     }
 }

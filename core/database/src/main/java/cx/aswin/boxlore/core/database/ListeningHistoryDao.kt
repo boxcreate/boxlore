@@ -240,28 +240,40 @@ interface ListeningHistoryDao {
     /**
      * Older builds could save the player's Android Auto artwork link (`content://<app>.collage/...`),
      * which dies with its cover. Swaps each for the episode's own cover from the local or RSS
-     * catalogue, else the show's, else nothing so the next play or sync fills it in, and marks the
-     * row for sync so the cloud copy is corrected too. Returns the rows changed; once none are
-     * left it changes nothing.
+     * catalogue, else the show's, else the row's own show cover, else nothing so the next play or
+     * sync fills it in. A row is marked for sync only when every dead link found a real cover, so
+     * an emptied field never overwrites a cover another device already uploaded. Returns the rows
+     * changed; once none are left it changes nothing.
      */
     @Query(
         """
         UPDATE listening_history SET
-            episodeImageUrl = CASE WHEN episodeImageUrl LIKE 'content://%.collage/%' THEN COALESCE(
-                (SELECT imageUrl FROM local_episodes WHERE local_episodes.episodeId = listening_history.episodeId
-                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
-                (SELECT imageUrl FROM rss_episodes WHERE rss_episodes.episodeId = listening_history.episodeId
-                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
-                (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = listening_history.podcastId
-                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%')
-            ) ELSE episodeImageUrl END,
-            podcastImageUrl = CASE WHEN podcastImageUrl LIKE 'content://%.collage/%' THEN
-                (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = listening_history.podcastId
-                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%')
-            ELSE podcastImageUrl END,
-            isDirty = 1
-        WHERE episodeImageUrl LIKE 'content://%.collage/%' OR podcastImageUrl LIKE 'content://%.collage/%'
+            episodeImageUrl = CASE WHEN episodeImageUrl LIKE $PLAYER_ONLY_ART THEN $HISTORY_EPISODE_COVER ELSE episodeImageUrl END,
+            podcastImageUrl = CASE WHEN podcastImageUrl LIKE $PLAYER_ONLY_ART THEN $HISTORY_SHOW_COVER ELSE podcastImageUrl END,
+            isDirty = CASE WHEN (IFNULL(episodeImageUrl, '') NOT LIKE $PLAYER_ONLY_ART OR $HISTORY_EPISODE_COVER IS NOT NULL)
+                AND (IFNULL(podcastImageUrl, '') NOT LIKE $PLAYER_ONLY_ART OR $HISTORY_SHOW_COVER IS NOT NULL)
+                THEN 1 ELSE isDirty END
+        WHERE episodeImageUrl LIKE $PLAYER_ONLY_ART OR podcastImageUrl LIKE $PLAYER_ONLY_ART
         """,
     )
     suspend fun repairPlaybackArtworkLinks(): Int
 }
+
+/** A player-only artwork link (`content://<app>.collage/...`), as a LIKE pattern. */
+private const val PLAYER_ONLY_ART = "'content://%.collage/%'"
+
+/** A history row's real episode cover: catalogue episode, then catalogue show, then the row's own show cover. */
+private const val HISTORY_EPISODE_COVER = """COALESCE(
+    (SELECT imageUrl FROM local_episodes WHERE local_episodes.episodeId = listening_history.episodeId
+        AND imageUrl != '' AND imageUrl NOT LIKE $PLAYER_ONLY_ART),
+    (SELECT imageUrl FROM rss_episodes WHERE rss_episodes.episodeId = listening_history.episodeId
+        AND imageUrl != '' AND imageUrl NOT LIKE $PLAYER_ONLY_ART),
+    (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = listening_history.podcastId
+        AND imageUrl != '' AND imageUrl NOT LIKE $PLAYER_ONLY_ART),
+    CASE WHEN listening_history.podcastImageUrl != '' AND listening_history.podcastImageUrl NOT LIKE $PLAYER_ONLY_ART
+        THEN listening_history.podcastImageUrl END
+)"""
+
+/** A history row's real show cover from the catalogue. */
+private const val HISTORY_SHOW_COVER = """(SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = listening_history.podcastId
+    AND imageUrl != '' AND imageUrl NOT LIKE $PLAYER_ONLY_ART)"""

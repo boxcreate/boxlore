@@ -467,8 +467,10 @@ class ListeningHistoryDaoInMemoryTest {
         dao.upsert(history("older", podcastId = "415434", isDirty = false).copy(episodeImageUrl = dead))
         dao.upsert(history("unknown", podcastId = "gone", isDirty = false).copy(episodeImageUrl = dead, podcastImageUrl = dead))
         dao.upsert(history("fine", isDirty = false).copy(episodeImageUrl = "https://art/fine.jpg"))
+        // An unsubscribed show: only the row's own show cover is left to fall back on.
+        dao.upsert(history("own-show", podcastId = "unsubscribed", isDirty = false).copy(episodeImageUrl = dead, podcastImageUrl = "https://art/own-show.jpg"))
 
-        assertEquals(3, dao.repairPlaybackArtworkLinks())
+        assertEquals(4, dao.repairPlaybackArtworkLinks())
 
         val repaired = dao.getHistoryItem("-120771577321563031")!!
         assertEquals("https://art/episode.jpg", repaired.episodeImageUrl)
@@ -477,6 +479,11 @@ class ListeningHistoryDaoInMemoryTest {
         assertEquals("https://art/show.jpg", dao.getHistoryItem("older")?.episodeImageUrl)
         assertNull(dao.getHistoryItem("unknown")?.episodeImageUrl)
         assertNull(dao.getHistoryItem("unknown")?.podcastImageUrl)
+        // Emptied covers stay local, so they never overwrite a cover another device uploaded.
+        assertFalse(dao.getHistoryItem("unknown")!!.isDirty)
+        val ownShow = dao.getHistoryItem("own-show")!!
+        assertEquals("https://art/own-show.jpg", ownShow.episodeImageUrl)
+        assertTrue(ownShow.isDirty)
         val untouched = dao.getHistoryItem("fine")!!
         assertEquals("https://art/fine.jpg", untouched.episodeImageUrl)
         assertFalse(untouched.isDirty)
