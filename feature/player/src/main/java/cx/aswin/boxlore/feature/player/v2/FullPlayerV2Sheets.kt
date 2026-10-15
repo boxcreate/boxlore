@@ -114,7 +114,8 @@ internal fun FullPlayerModalSheets(
     resources: FullPlayerModalResources,
     actions: FullPlayerActions? = null,
 ) {
-    if (ui.showQueueSheet) {
+    val usesTabletLayout = cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout
+    if (ui.showQueueSheet && !usesTabletLayout) {
         PlayerQueueSheet(
             playbackRepository = dependencies.playbackRepository,
             userPrefs = dependencies.userPrefs,
@@ -128,7 +129,7 @@ internal fun FullPlayerModalSheets(
             actions = actions,
         )
     }
-    if (ui.showChaptersSheet) {
+    if (ui.showChaptersSheet && !usesTabletLayout) {
         PlayerChaptersSheet(
             playbackRepository = dependencies.playbackRepository,
             state = model.state,

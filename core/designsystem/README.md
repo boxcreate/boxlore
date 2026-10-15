@@ -85,6 +85,8 @@ Bitmap callers can choose a shorter per-attempt timeout while retaining outer ca
 
 ## Testing notes
 
+- `LocalBoxlorePaneBounds` carries the shell's window-relative content rectangle, alongside pane width. Fold-aware players intersect this rectangle with physical safe regions rather than treating a hinge's global bounds as local pane coordinates.
+
 - `BoxloreWindowLayoutTest` covers exact width/height boundaries, portrait inner foldables, split-screen halves, short landscape phones, optional 360–520dp context panes and horizontal/vertical hinges. Every phone pane spec retains the full original viewport and zero rail/context space.
 
 - Brief player artwork uses `:core:model`'s `BriefingArtwork` named-resource contract, shared with upgrade and restore compatibility repair. Weekday covers remain independent of fixed player artwork.

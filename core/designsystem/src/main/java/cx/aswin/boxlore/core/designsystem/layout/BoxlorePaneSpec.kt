@@ -17,6 +17,9 @@ data class BoxlorePaneSpec(
 /** The shell supplies each pane's width; features never infer it from the full window. */
 val LocalBoxlorePaneWidth = staticCompositionLocalOf { 0f }
 
+/** Window-relative physical bounds, supplied by the shell for context and immersive players. */
+val LocalBoxlorePaneBounds = staticCompositionLocalOf<BoxloreLayoutBounds?> { null }
+
 fun boxlorePaneSpec(layout: BoxloreWindowLayout, contextOpen: Boolean): BoxlorePaneSpec {
     val fullWindow = BoxloreLayoutBounds(0f, 0f, layout.widthDp, layout.heightDp)
     if (!layout.usesTabletLayout) {

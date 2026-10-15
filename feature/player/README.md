@@ -85,6 +85,10 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 
 ## Testing notes
 
+- Tablet players reuse the existing transport and supporting-content callbacks within bounded, fold-safe regions. Up next, Chapters, Transcript and Notes share saved tabs; a horizontal half-open fold puts artwork/title above the hinge and transport/support below. Context-pane presentation exposes an owner-supplied full-screen action and does not change system-bar appearance. Standard phone and BunPod paths remain separate.
+- `RetainedPlayerPresentation` is an optional app-owned UI scope for moving the same episode between pane and docked presentations. It retains supporting tabs and transient controls, restores them after recreation, and resets them for a different opaque episode ID. Without that scope, existing phone callers keep their local saved state.
+- `TabletPlayerLayoutLogicTest`, `TabletPlayerContentTest` and `FullPlayerUiStateSaverTest` cover physical hinge bounds, global pane coordinates, posture changes, chapter seeking, BunPod tabletop layout, immersive callbacks, saved tabs and migration from phone supporting surfaces.
+
 - Up next, Notes and queue contents use shared tablet family bounds (720dp), preserving their existing internal layouts and phone modifiers. The shared local golden fixtures can also capture the player at the tablet/foldable matrix using `-PtabletCaptures=before|after`. These synthetic JVM renders are distinct from live device checks.
 
 - `PlayerPhoneGoldenTest` captures the Standard full player at both portrait phone sizes and short landscape in light/dark. Fixed player/download/preference flows start no media service. Captures are local only, enabled with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; see [capture instructions](../../docs/screenshots/README.md).

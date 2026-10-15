@@ -1,6 +1,6 @@
 # Tablet and foldable layout implementation
 
-Status: phases 1 and 2 are committed locally; phase 3 has passed validation. Player and shell work is not done yet. This document is updated with the remaining phases before handoff.
+Status: phases 1–3 are committed locally; phase 4 has passed its complete gate and visual review. The split shell and phase 6 work are not done yet.
 
 ## Scope and preservation
 
@@ -169,6 +169,7 @@ The index includes named card containers, their loading forms, and named interna
 - Phone current renders: `build/reports/phone-goldens/actual/`.
 - Tablet before: `output/tablet-layouts/before/` (132 PNGs), also `build/reports/tablet-captures/before/`.
 - Card-sizing review pass: `output/tablet-layouts/phase3-card-sizing/` (132 images). These are work in progress; the player and rail/split shell are not applied yet. Final after captures are not done.
+- Player review pass: `output/tablet-layouts/phase4-player/` (12 images). Portrait controls remain visible at 600dp; tabletop art and transport stay on opposite sides of the synthetic hinge. Final shell captures are not done.
 - Teal artwork is a fixed, in-memory test image; fixtures perform no network requests. Synthetic hinges do not prove device posture handling.
 
 ## Dependency change
@@ -188,13 +189,14 @@ bash scripts/ci/check-feature-no-posthog.sh
 - Phase 1: complete; 66 phone images committed alone. Full gate passed after hand-fixing new-test lint.
 - Phase 2: complete; all units, coverage, dependency guards, Android lint and 66 phone images passed. Two new-model ktlint tasks failed in the first full run, were fixed by hand, and `detekt ktlintCheck :core:designsystem:testDebugUnitTest --tests '*BoxloreWindowLayoutTest' installDebug --max-workers=2` passed (9 window cases). Installed on the connected phone; no interaction claim is made.
 - Phase 3: complete full gate passed, including merged coverage, dependency guards, Android lint and all 66 phone images. Focused loose/tight slot tests passed. The first pass caught an Echo capture-wrapper start-frame change and a loose-slot viewport issue; both were fixed with the phone baselines unchanged. Installed on the connected phone.
+- Phase 4: the full gate passed in 2m21s, including all 66 unchanged phone images, JVM player/posture/video/state tests, merged coverage, static checks and dependency guards. Visual review caught clipped portrait controls and a cramped tabletop empty message; both were fixed and reverified. `installDebug` was attempted after a successful debug build but the phone had disconnected (`No connected devices`), so phase 4 device installation and interaction checks are not done.
 - Tablet before: `:app:testDebugUnitTest :feature:explore:testDebugUnitTest :feature:info:testDebugUnitTest :feature:player:testDebugUnitTest :feature:onboarding:testDebugUnitTest :feature:settings:testDebugUnitTest -PtabletCaptures=before --tests '*PhoneGoldenTest' --max-workers=2` passed, 132 images.
 - Remote CI, real folding hardware and finished tablet interaction validation: not done.
 
 ## Remaining work and proposals
 
-Player tabs/tabletop regions, rail/split context navigation, saved pane state, modal adaptation, keyboard/secondary-click behavior and final captures are not done yet. No card internal redesign has been introduced. Potential future proposals: a wide editorial briefing composition, a richer expanded library hub, and a wider Lore reading format require separate product review; the current work retains their existing designs.
+Rail/split context navigation, saved pane state, modal adaptation, keyboard/secondary-click behavior and final captures are not done yet. The player has bounded portrait/column layouts, fold-safe tabletop regions and saved Up next / Chapters / Transcript / Notes tabs. Existing playback and supporting-content actions are reused. No card internal redesign has been introduced. Potential future proposals: a wide editorial briefing composition, a richer expanded library hub, and a wider Lore reading format require separate product review; the current work retains their existing designs.
 
 ## Local state
 
-Branch `one/tablet-layouts` starts at `66efd4d3`. Phase 1 commit `0bb5744b`; phase 2 commit `8defb51d`. All work remains local. No push, PR, merge or deployment is part of this task.
+Branch `one/tablet-layouts` starts at `66efd4d3`. Phase 1 commit `0bb5744b`; phase 2 commit `8defb51d`; phase 3 commit `7f827380`. All work remains local. No push, PR, merge or deployment is part of this task.

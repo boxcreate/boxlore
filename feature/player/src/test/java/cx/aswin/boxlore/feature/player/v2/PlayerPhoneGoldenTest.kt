@@ -42,6 +42,7 @@ class PlayerPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
         val prefs = mock(UserPreferencesRepository::class.java)
         `when`(prefs.fullPlayerStyleStream).thenReturn(flowOf(FullPlayerStyle.STANDARD))
         `when`(prefs.cachedFullPlayerStyle).thenReturn(FullPlayerStyle.STANDARD)
+        `when`(prefs.sameShowQueueOnlyStream).thenReturn(flowOf(false))
         golden.prepare()
         golden.setContent {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {

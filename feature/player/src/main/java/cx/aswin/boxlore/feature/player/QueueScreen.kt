@@ -73,6 +73,7 @@ data class QueueItemDisplay(
  * is hidden from this sheet, so callers must map them with QueueMath.uiIndexToQueueIndex.
  */
 @Composable
+@Suppress("LongParameterList")
 fun QueueSheetContent(
     queue: List<Episode>,
     currentPodcast: Podcast?,
@@ -81,48 +82,51 @@ fun QueueSheetContent(
     modifier: Modifier = Modifier,
     smartQueueEnabled: Boolean = true,
     sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
+    showHeader: Boolean = true,
 ) {
     val lazyListState = rememberLazyListState()
     val dragStartIndex = remember { mutableIntStateOf(-1) }
 
     Column(modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxWidth()) {
-        // Header: "Up Next" + Close button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Up Next",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = GoogleSansWeight.bold,
-                color = colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = "${queue.size} episodes",
-                style = MaterialTheme.typography.bodyMedium,
-                color = colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            IconButton(onClick = actions.onClose) {
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = "Close queue",
-                    tint = colorScheme.onSurface
+        if (showHeader) {
+            // Header: "Up Next" + Close button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Up Next",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = GoogleSansWeight.bold,
+                    color = colorScheme.onSurface
                 )
-            }
-        }
 
-        HorizontalDivider(
-            color = colorScheme.outlineVariant.copy(alpha = 0.3f),
-            modifier = Modifier.padding(horizontal = 20.dp)
-        )
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "${queue.size} episodes",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                IconButton(onClick = actions.onClose) {
+                    Icon(
+                        Icons.Rounded.Close,
+                        contentDescription = "Close queue",
+                        tint = colorScheme.onSurface
+                    )
+                }
+            }
+
+            HorizontalDivider(
+                color = colorScheme.outlineVariant.copy(alpha = 0.3f),
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
 
         if (sameShowContinuation.visible && sameShowContinuation.availableCount > 0) {
             SameShowContinuationBanner(
@@ -139,6 +143,7 @@ fun QueueSheetContent(
                 smartQueueEnabled = smartQueueEnabled,
                 colorScheme = colorScheme,
                 onEnableSmartQueue = actions.onEnableSmartQueue,
+                compact = !showHeader,
             )
         } else {
             val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -186,11 +191,12 @@ private fun QueueEmptyState(
     smartQueueEnabled: Boolean,
     colorScheme: ColorScheme,
     onEnableSmartQueue: () -> Unit,
+    compact: Boolean = false,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 48.dp),
+            .padding(horizontal = 32.dp, vertical = if (compact) 16.dp else 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

@@ -176,7 +176,8 @@ internal fun FullPlayerControls(
     dependencies: FullPlayerDependencies,
     flows: FullPlayerFlows,
     ui: FullPlayerUiState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    inlineSupportingContent: Boolean = false,
 ) {
     if (model.state.duration > 0) {
         PlayerSeekbar(
@@ -194,7 +195,7 @@ internal fun FullPlayerControls(
     Spacer(modifier = Modifier.height(if (model.isCompact) 14.dp else 18.dp))
     FullPlayerPrimaryControls(model, dependencies.playbackRepository)
     Spacer(modifier = Modifier.height(if (model.isCompact) 14.dp else 18.dp))
-    FullPlayerSecondaryControls(model, dependencies, ui, scope)
+    FullPlayerSecondaryControls(model, dependencies, ui, scope, inlineSupportingContent)
 }
 
 @Composable
@@ -232,7 +233,8 @@ internal fun FullPlayerSecondaryControls(
     model: FullPlayerControlModel,
     dependencies: FullPlayerDependencies,
     ui: FullPlayerUiState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    inlineSupportingContent: Boolean = false,
 ) {
     SecondaryRail(
         playback = SecondaryPlaybackState(
@@ -246,7 +248,7 @@ internal fun FullPlayerSecondaryControls(
                 ChapterRepository.hasChaptersInDescription(model.episode.description),
             hasTranscript = model.state.currentTranscript.isNotEmpty() ||
                 !model.episode.transcriptUrl.isNullOrEmpty(),
-            isTranscriptVisible = ui.showInlineTranscript,
+            isTranscriptVisible = if (inlineSupportingContent) ui.supportingTab == PlayerSupportingTab.Transcript else ui.showInlineTranscript,
             isChaptersLoading = model.state.isChaptersLoading,
             autoTranscriptState = model.state.autoTranscriptState,
             autoChaptersState = model.state.autoChaptersState
@@ -259,7 +261,7 @@ internal fun FullPlayerSecondaryControls(
         ),
         colorScheme = model.colorScheme,
         selectionActions = fullPlayerSelectionActions(dependencies.playbackRepository),
-        clickActions = fullPlayerClickActions(model, dependencies, ui, scope)
+        clickActions = fullPlayerClickActions(model, dependencies, ui, scope, inlineSupportingContent)
     )
 }
 
@@ -286,22 +288,26 @@ internal fun fullPlayerClickActions(
     model: FullPlayerControlModel,
     dependencies: FullPlayerDependencies,
     ui: FullPlayerUiState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    inlineSupportingContent: Boolean = false,
 ) = SecondaryClickActions(
     onQueueClick = {
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("queue")
-        ui.showQueueSheet = true
+        if (inlineSupportingContent) ui.supportingTab = PlayerSupportingTab.UpNext else ui.showQueueSheet = true
     },
     onChaptersClick = {
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("chapters_sheet")
-        ui.showChaptersSheet = true
+        if (inlineSupportingContent) ui.supportingTab = PlayerSupportingTab.Chapters else ui.showChaptersSheet = true
     },
     onTranscriptClick = {
         if (model.state.currentTranscript.isNotEmpty()) {
-            cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction(
-                if (ui.showInlineTranscript) "transcript_hide" else "transcript_inline"
-            )
-            ui.showInlineTranscript = !ui.showInlineTranscript
+            val visible = if (inlineSupportingContent) ui.supportingTab == PlayerSupportingTab.Transcript else ui.showInlineTranscript
+            cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction(if (visible) "transcript_hide" else "transcript_inline")
+            if (inlineSupportingContent) {
+                ui.supportingTab = if (visible) PlayerSupportingTab.UpNext else PlayerSupportingTab.Transcript
+            } else {
+                ui.showInlineTranscript = !ui.showInlineTranscript
+            }
         }
     },
     onLikeClick = {
