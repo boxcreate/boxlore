@@ -52,7 +52,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <img src="docs/images/brand/whats-new.svg" width="100%" alt="What’s new: release notes, and what’s coming next"/>
 
 <details>
-<summary><b>Read the release notes</b></summary>
+<summary align="right"><b>Read the release notes</b></summary>
 
 <!-- upcoming-changes:start -->
 
@@ -196,11 +196,12 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 <img src="docs/images/brand/yours.svg" width="100%" alt="Yours. Whatever you want it to be. The same Home screen in three different looks."/>
 
-- **Indigo, seafoam, or your wallpaper?** Pick from sixteen themes, make your own colours, or go Pure black.
+- **Classic, Pure, or Material 3?** Start from one of three styles, or build your own theme from any colour you like.
 - **Floating navigation, or a classic bar?** Choose that, and rounder or crisper type.
 - **Skip the intro?** Set where playback starts, and how far each skip goes.
 - **Tagged *Tech*, but it’s really *Philosophy*?** Then it’s *Philosophy*. Give any show you follow your own tag and icon.
-- **Coming from another app?** Import your shows, add any RSS feed, even private ones, and back up everything.
+- **Coming from another app?** Import your shows, add any RSS feed by its link, including private ones, and back up everything.
+- **And much, much more.** See [every feature](#every-feature).
 
 <p align="center">
 <img src="docs/images/brand/screens/homescreen.png" width="30%" alt="boxlore Home with Your Shows"/>&nbsp;
@@ -222,7 +223,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 | **Audio and video player** | Play audio and video episodes with speed controls, a sleep timer, chapters, transcripts, intro and outro skipping, and a queue you can reorder. |
 | **Downloads and library** | Keep subscriptions, new episodes, downloads, likes, and listening history together. Smart Downloads can prepare episodes for offline listening. |
 | **Folders and tags** | Group shows into folders, and give any show you follow your own tag and icon. |
-| **Themes and layout** | Pick from sixteen themes or make your own, use wallpaper colours or Pure, and choose floating or classic navigation, type roundness, player layout, and seek buttons. |
+| **Themes and layout** | Choose Classic, Pure or Material 3 colours, or build a custom theme from any colour. Pick floating or classic navigation, type roundness, player layout, and seek buttons. |
 | **Alerts and widgets** | Choose which shows can send new-episode alerts. Home-screen widgets show playback controls, subscriptions, or new episodes. |
 | **TV and car playback** | Send playback to supported TVs and speakers with Google Cast, or listen through Android Auto. |
 | **Import and backup** | Import a subscription file (OPML) from another podcast app, add any RSS feed by link, and export your subscriptions or a full library backup whenever you need. |
@@ -259,7 +260,7 @@ boxlore plays public podcasts from the <a href="https://podcastindex.org/">Podca
 <details>
 <summary><b>Can I add a private or paid feed?</b></summary>
 <br/>
-Yes. Go to <b>Settings → Library</b> and add the feed’s link. Keep new-episode alerts off for private feeds.
+Yes, if the feed has its own private link. Go to <b>Settings → Library</b> and add it. Feeds that need a separate username and password aren’t supported yet, and new-episode alerts should stay off for private feeds.
 </details>
 
 <details>
