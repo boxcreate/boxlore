@@ -30,7 +30,7 @@ And it is yours. Change how it looks, retag a show, turn off what you don't need
 
 It might feel counterintuitive for us to champion open source while releasing boxlore under the [PolyForm Strict License](https://polyformproject.org/licenses/strict/1.0.0). 
 
-We keep the entire codebase source-available because we believe in absolute transparency: you should be able to inspect every line of code, see exactly how it handles your data, learn from how it's built, and run it for your own personal use.
+We keep the app's code source-available because we believe in transparency: you should be able to inspect the app you install, see how it handles your data, learn from how it's built, and run it for your own personal use. The servers behind search and recommendations are private; [What we track and why](PRIVACY.md) explains what they receive.
 
 Our only restriction is **redistribution**.
 

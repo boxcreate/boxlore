@@ -283,7 +283,7 @@ Android may ask you to allow installation from your browser or file manager when
 
 Ideas from listeners shape the roadmap. If something breaks or feels missing, tell us.
 
-boxlore is source-available under the [PolyForm Strict License 1.0.0](LICENSE). Noncommercial use is allowed; redistribution and derivative works are restricted by the license.
+The boxlore Android app is source-available under the [PolyForm Strict License 1.0.0](LICENSE). The servers behind search and recommendations are private. Noncommercial use is allowed; redistribution and derivative works are restricted by the license.
 
 <div align="center">
 
