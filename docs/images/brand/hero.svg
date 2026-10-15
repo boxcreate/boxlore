@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="boxlore. Curious. Calm. Yours. A podcast app for Android that goes looking with you."><title>boxlore. Curious. Calm. Yours. A podcast app for Android that goes looking with you.</title><style>
 .drift{transform-box:fill-box;transform-origin:center;animation:drift 14s ease-in-out infinite}
-@keyframes drift{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(-10px,12px) rotate(-2deg)}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(14px)}}
 .q{opacity:0;animation:q 12s infinite both}
 .q0{opacity:1}
 @keyframes q{0%{opacity:0;transform:translateY(10px)}3%{opacity:1;transform:none}22%{opacity:1;transform:none}25%{opacity:0;transform:translateY(-10px)}100%{opacity:0}}

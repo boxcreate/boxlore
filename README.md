@@ -1,6 +1,6 @@
 <div align="center" id="top">
 
-<img src="docs/images/brand/hero.svg?v=ecfe4a1f" width="100%" alt="boxlore. Curious. Calm. Yours. A podcast app for Android that goes looking with you."/>
+<img src="docs/images/brand/hero.svg?v=be3ccc0a" width="100%" alt="boxlore. Curious. Calm. Yours. A podcast app for Android that goes looking with you."/>
 
 <br/><br/>
 
