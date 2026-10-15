@@ -307,6 +307,7 @@ private fun BriefingChapterPager(
         accentColor = uiState.accentColor,
     )
     val maxCardHeight = (LocalConfiguration.current.screenHeightDp * STORY_CARD_MAX_SCREEN_FRACTION).dp
+    val scrollStoryAsOne = storyCardScrollsAsOne(LocalConfiguration.current.screenHeightDp)
     SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
         val pageWidth = (constraints.maxWidth - (PagerSidePadding * 2).roundToPx()).coerceAtLeast(0)
         val tallest = subcompose("measure") {
@@ -324,7 +325,7 @@ private fun BriefingChapterPager(
                 key = { page -> stableChapterKey(uiState.chapters[page]) },
                 modifier = Modifier.fillMaxWidth().height(tallest.toDp()),
             ) { page ->
-                BriefingStoryCard(cardState(page), actions)
+                BriefingStoryCard(cardState(page), actions, scrollAsOne = scrollStoryAsOne)
             }
         }.single().measure(constraints.copy(minHeight = 0))
         layout(pager.width, pager.height) { pager.place(0, 0) }

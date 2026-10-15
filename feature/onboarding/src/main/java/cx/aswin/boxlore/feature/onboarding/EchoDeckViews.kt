@@ -322,7 +322,10 @@ internal fun EchoPickedNote(deck: EchoDeck, modifier: Modifier = Modifier) {
         val grew = deck.reactions.size > seen
         seen = deck.reactions.size
         val last = deck.reactions.lastOrNull()
-        if (!grew || last == null || !EchoDeckLogic.picks(last.reaction)) return@LaunchedEffect
+        if (!grew || last == null || !EchoDeckLogic.picks(last.reaction)) {
+            shown = null
+            return@LaunchedEffect
+        }
         shown = last.title
         delay(EchoPickedNoteMillis)
         shown = null

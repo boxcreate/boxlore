@@ -57,25 +57,42 @@ internal data class BriefingStoryCardState(
     val accentColor: Color,
 )
 
+/** Below this window height a pager card scrolls as one piece instead of pinning its actions. */
+internal const val STORY_CARD_PINNED_MIN_WINDOW_DP = 480
+
+/**
+ * Whether a pager card scrolls as one piece. Only short windows (a phone on its side, a split
+ * screen) do, because pinned actions there would leave no room for the heading and story.
+ */
+internal fun storyCardScrollsAsOne(windowHeightDp: Int): Boolean = windowHeightDp < STORY_CARD_PINNED_MIN_WINDOW_DP
+
 /**
  * One story. In the pager ([fillHeight]) the card takes the pager's height and pins related
- * episodes and Play to the bottom; a story taller than that scrolls inside its text area. Without
- * [fillHeight] the card wraps its full content so the pager can measure it.
+ * episodes and Play to the bottom; a story taller than that scrolls inside its text area. In a
+ * short window ([scrollAsOne]) the whole card scrolls instead, so the heading, story and actions
+ * all stay reachable. Without [fillHeight] the card wraps its full content so the pager can
+ * measure it.
  */
 @Composable
 internal fun BriefingStoryCard(
     state: BriefingStoryCardState,
     actions: BriefingStoriesPagerActions,
     fillHeight: Boolean = true,
+    scrollAsOne: Boolean = false,
 ) {
     val height = if (fillHeight) Modifier.fillMaxHeight() else Modifier
+    val scrollCard = fillHeight && scrollAsOne
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth().then(height),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().then(height).padding(18.dp)) {
-            if (fillHeight) {
+        Column(
+            modifier = Modifier.fillMaxWidth().then(height)
+                .then(if (scrollCard) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                .padding(18.dp),
+        ) {
+            if (fillHeight && !scrollCard) {
                 Column(Modifier.weight(1f)) {
                     StoryCardTop(state)
                     StoryParagraph(paragraph = state.paragraph, scrollable = true, modifier = Modifier.weight(1f, fill = false))

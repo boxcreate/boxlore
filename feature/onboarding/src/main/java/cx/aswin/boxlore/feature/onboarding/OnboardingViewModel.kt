@@ -358,14 +358,7 @@ class OnboardingViewModel(
                 if (podcastId in state.subscribedPodcastIds) {
                     state.selectedPodcasts - podcastId
                 } else {
-                    val podcast =
-                        state.searchResults.find { it.id == podcastId }
-                            ?: state.aiCurriculumRows
-                                .flatMap { it.podcasts }
-                                .map { it.toPodcast() }
-                                .find { it.id == podcastId }
-                            ?: state.genreChartsPodcasts.find { it.id == podcastId }
-                            ?: state.popularPodcasts.find { it.id == podcastId }
+                    val podcast = OnboardingSuggestionsPresentation.findShow(state, podcastId)
                     if (podcast != null) {
                         state.selectedPodcasts + (podcastId to podcast)
                     } else {

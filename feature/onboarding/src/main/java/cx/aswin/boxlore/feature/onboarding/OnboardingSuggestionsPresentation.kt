@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.onboarding
 
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
+import cx.aswin.boxlore.core.network.model.toPodcast
 
 internal enum class SuggestionsOrigin { Echo, Genres, Search, Library }
 
@@ -79,7 +80,7 @@ internal object OnboardingSuggestionsPresentation {
     fun lanes(uiState: OnboardingUiState, picksTitle: String): List<OnboardingSuggestionsLane> {
         val base = OnboardingSuggestionsLanes.deduplicateLanes(
             OnboardingSuggestionsLanes.build(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres),
-        )
+        ).map { lane -> lane.copy(podcasts = OnboardingSuggestionsLanes.deduplicatePodcasts(lane.podcasts)) }
         val picks = OnboardingSuggestionsLanes.deduplicatePodcasts(uiState.aiPicks)
         if (origin(uiState) != SuggestionsOrigin.Echo || picks.isEmpty()) return base
         val pickIds = picks.map { it.id }.toSet()
@@ -88,6 +89,17 @@ internal object OnboardingSuggestionsPresentation {
     }
 
     const val PICKS_LANE_ID = "picks"
+
+    /**
+     * The show to add when the listener taps one on the suggestions screen. Echo's chat picks are
+     * included, so a pick removed from Your picks can be added back.
+     */
+    fun findShow(uiState: OnboardingUiState, id: String): Podcast? =
+        uiState.searchResults.find { it.id == id }
+            ?: uiState.aiCurriculumRows.flatMap { it.podcasts }.map { it.toPodcast() }.find { it.id == id }
+            ?: uiState.genreChartsPodcasts.find { it.id == id }
+            ?: uiState.popularPodcasts.find { it.id == id }
+            ?: uiState.aiPicks.find { it.id == id }
 
     /** Whether back from suggestions should wipe curriculum/charts (search / OPML paths). */
     fun shouldClearSuggestionPayloadOnBack(nextStep: OnboardingStep): Boolean = nextStep == OnboardingStep.SEARCH || nextStep == OnboardingStep.WELCOME

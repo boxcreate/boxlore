@@ -21,10 +21,10 @@ internal object OnboardingAiStart {
 
     /**
      * Drops built rows and the picks inside them, so a rebuild never subscribes shows the listener
-     * can no longer see. Search side-trip picks outside the rows stay selected.
+     * can no longer see. Search side-trip picks outside the rows and Echo's chat picks stay selected.
      */
     fun withoutResults(state: OnboardingUiState): OnboardingUiState {
-        val rowIds = state.aiCurriculumRows.flatMap { it.podcasts }.map { it.id.toString() }.toSet()
+        val rowIds = state.aiCurriculumRows.flatMap { it.podcasts }.map { it.id.toString() }.toSet() - state.aiPicks.map { it.id }.toSet()
         if (rowIds.isEmpty() && state.aiCurriculumRows.isEmpty()) return state
         return state.copy(
             aiCurriculumRows = emptyList(),

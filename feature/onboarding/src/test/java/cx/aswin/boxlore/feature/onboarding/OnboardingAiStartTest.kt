@@ -43,6 +43,30 @@ class OnboardingAiStartTest {
     }
 
     @Test
+    fun `changing answers preserves selected chat picks even when curriculum repeats them`() {
+        val rows = listOf(
+            OnboardingCurriculumRowDto(
+                rowTitle = "Shows",
+                podcasts = listOf(
+                    OnboardingCurriculumPodcastDto(1, title = "Chat pick"),
+                    OnboardingCurriculumPodcastDto(2, title = "Suggestion"),
+                    OnboardingCurriculumPodcastDto(3, title = "Removed chat pick"),
+                ),
+            ),
+        )
+        val state = OnboardingUiState(
+            aiCurriculumRows = rows,
+            aiPicks = listOf(podcast("1"), podcast("3")),
+            selectedPodcasts = mapOf("1" to podcast("1"), "2" to podcast("2")),
+            subscribedPodcastIds = setOf("1", "2"),
+        )
+        val changed = OnboardingAiStart.withoutResults(state)
+        assertTrue(changed.aiCurriculumRows.isEmpty())
+        assertEquals(setOf("1"), changed.subscribedPodcastIds)
+        assertEquals(setOf("1"), changed.selectedPodcasts.keys)
+    }
+
+    @Test
     fun `nothing to drop leaves the state untouched`() {
         val state = OnboardingUiState(subscribedPodcastIds = setOf("5"))
         assertSame(state, OnboardingAiStart.withoutResults(state))

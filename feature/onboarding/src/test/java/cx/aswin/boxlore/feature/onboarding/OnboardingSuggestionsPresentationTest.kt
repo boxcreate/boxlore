@@ -142,6 +142,24 @@ class OnboardingSuggestionsPresentationTest {
         assertFalse(cleared.reachedSuggestionsViaAiFlow)
     }
 
+    @Test
+    fun `every suggestions lane deduplicates show IDs before lazy keys are built`() {
+        val state = OnboardingUiState(
+            aiCurriculumRows = rows(1, 1, 2),
+            genreChartsPodcasts = listOf(show("3"), show("3"), show("4")),
+        )
+        val lanes = OnboardingSuggestionsPresentation.lanes(state, "Your picks")
+        assertEquals(listOf("1", "2"), lanes[0].podcasts.map { it.id })
+        assertEquals(listOf("3", "4"), lanes[1].podcasts.map { it.id })
+    }
+
+    @Test
+    fun `a chat pick removed from Your picks can be found again to add it back`() {
+        val state = OnboardingUiState(aiPicks = listOf(show("7")))
+        assertEquals("7", OnboardingSuggestionsPresentation.findShow(state, "7")?.id)
+        assertEquals(null, OnboardingSuggestionsPresentation.findShow(state, "8"))
+    }
+
     private fun show(id: String) = Podcast(id = id, title = "Show $id", artist = "Host", imageUrl = "")
 
     private fun rows(vararg ids: Long) =

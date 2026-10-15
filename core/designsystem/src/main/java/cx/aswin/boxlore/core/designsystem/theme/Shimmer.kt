@@ -3,7 +3,9 @@ package cx.aswin.boxlore.core.designsystem.theme
 import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -18,6 +20,7 @@ import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.platform.InspectorInfo
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -66,11 +69,24 @@ private class ShimmerNode(private var base: Color, private var highlight: Color)
     override fun onAttach() {
         sharedPhase = currentValueOf(LocalShimmerPhase)
         if (sharedPhase != null) return
-        // An infinite-animation frame, like an infinite transition, so tests can still go idle.
+        // An infinite-animation frame, like an infinite transition, so tests can still go idle. It
+        // follows the system animation speed and holds still while animations are off.
         coroutineScope.launch {
-            val start = withInfiniteAnimationFrameMillis { it }
+            val motionScale = coroutineContext[MotionDurationScale]
+            var start = withInfiniteAnimationFrameMillis { it }
+            var previousScale = motionScale?.scaleFactor ?: 1f
             while (isActive) {
-                withInfiniteAnimationFrameMillis { now -> ownPhase.floatValue = ((now - start) % ShimmerCycleMillis).toFloat() / ShimmerCycleMillis }
+                withInfiniteAnimationFrameMillis { now ->
+                    val scale = motionScale?.scaleFactor ?: 1f
+                    if (scale != previousScale) {
+                        start = now
+                        previousScale = scale
+                    }
+                    ownPhase.floatValue = if (scale == 0f) 0f else (((now - start) / scale) % ShimmerCycleMillis) / ShimmerCycleMillis
+                }
+                if (previousScale == 0f) {
+                    snapshotFlow { motionScale?.scaleFactor ?: 1f }.first { it > 0f }
+                }
             }
         }
     }
