@@ -10,8 +10,17 @@ import org.junit.jupiter.api.Test
 
 class CrossPromotionDetectorTest {
     private val detector = CrossPromotionDetector()
-    private fun episode(title: String, duration: Int = 1800, type: String? = "full", description: String = "Discussion notes.") =
-        Episode(id = "ep", title = title, audioUrl = "https://example.org/audio.mp3", duration = duration, episodeType = type, description = description)
+    private fun episode(title: String, duration: Int = 1800, type: String? = "full", description: String = "Discussion notes.", artwork: Boolean = false) =
+        Episode(
+            id = "ep",
+            title = title,
+            audioUrl = "https://example.org/audio.mp3",
+            duration = duration,
+            episodeType = type,
+            description = description,
+            imageUrl = if (artwork) "https://art.example/episode.jpg" else null,
+            podcastImageUrl = "https://art.example/show.jpg",
+        )
 
     @Test
     fun `explicit feed exchanges work independently of duration or numbering`() {
@@ -24,9 +33,17 @@ class CrossPromotionDetectorTest {
     }
 
     @Test
-    fun `introductions and previews require supporting evidence`() {
-        listOf("Introducing: The Daily", "Listen Now: The Daily", "Special Preview: The Daily", "Introducing The Daily", "NPR Presents: The Daily", "Presented by NPR: The Daily", "From the creators of Serial: The Daily").forEach { title ->
+    fun `delimited introductions are possible promotions while presenters and plain introductions need evidence`() {
+        listOf("Introducing: The Daily", "Listen Now: The Daily", "Special Preview: The Daily").forEach { title ->
+            val result = detector.detect(episode(title), "Host")
+            assertTrue(result.isCrossPromotion, title)
+            assertEquals("The Daily", result.extractedShowName)
+            assertEquals(CrossPromotionConfidence.MEDIUM, result.confidence)
+        }
+        listOf("Introducing The Daily", "NPR Presents: The Daily", "Presented by NPR: The Daily", "From the creators of Serial: The Daily").forEach { title ->
             assertFalse(detector.detect(episode(title), "Host").isCrossPromotion, title)
+        }
+        listOf("Introducing: The Daily", "Listen Now: The Daily", "Special Preview: The Daily", "Introducing The Daily", "NPR Presents: The Daily", "Presented by NPR: The Daily", "From the creators of Serial: The Daily").forEach { title ->
             val result = detector.detect(episode(title, type = "trailer", description = "Subscribe to The Daily wherever you get podcasts."), "Host")
             assertTrue(result.isCrossPromotion, title)
             assertEquals("The Daily", result.extractedShowName)
@@ -106,7 +123,10 @@ class CrossPromotionDetectorTest {
     @Test
     fun `description cannot corroborate a shorter show prefix or an unrelated mention`() {
         listOf("Listen to Serial Killers every Wednesday.", "We discuss Serial on this episode.", "Follow us on Instagram for more Serial updates.").forEach { description ->
-            assertFalse(detector.detect(episode("Introducing: Serial", description = description), "Host").isCrossPromotion, description)
+            assertFalse(detector.detect(episode("Discover: Serial", description = description), "Host").isCrossPromotion, description)
+            val introduced = detector.detect(episode("Introducing: Serial", description = description), "Host")
+            assertEquals(CrossPromotionConfidence.MEDIUM, introduced.confidence, description)
+            assertFalse(CrossPromotionIndicator.DESCRIPTION_PROMO_LANGUAGE in introduced.matchedIndicators, description)
         }
         assertFalse(detector.detect(episode("Morning headlines", duration = 90, description = "Listen to Another Show every Wednesday."), "Host").isCrossPromotion)
     }
@@ -118,6 +138,66 @@ class CrossPromotionDetectorTest {
         }
         listOf("Follow our new podcast Another Show every Monday", "Listen to Another Show on Apple Podcasts", "Check out our show Another Show for more stories", "Introducing our new podcast “Another Show” today").forEach {
             assertEquals("Another Show", detector.detect(episode("A special preview", type = "trailer", description = it), "Host").extractedShowName, it)
+        }
+    }
+
+    @Test
+    fun `announced show keeps its name without season decoration`() {
+        // Blood Trails was announced in other hunting shows' feeds and never reached the episode page.
+        val description = "This season on Blood Trails, host Jordan Sillars follows eight brand-new cases. Follow Blood Trails on Apple, Spotify, YouTube or wherever you listen."
+        listOf("Announcing: Blood Trails, Season Two", "Announcing: Blood Trails, Season Three").forEach { title ->
+            val result = detector.detect(episode(title, description = description), "Wired To Hunt Podcast")
+            assertTrue(result.isCrossPromotion, title)
+            assertEquals("Blood Trails", result.extractedShowName)
+            assertEquals(CrossPromotionConfidence.HIGH, result.confidence)
+        }
+        val trailer = detector.detect(episode("Announcing: Blood Trails, Season Three", duration = 114, artwork = true, description = "Eight brand-new cases."), "The American West")
+        assertEquals("Blood Trails", trailer.extractedShowName)
+        assertTrue(CrossPromotionIndicator.DISTINCT_ARTWORK in trailer.matchedIndicators)
+    }
+
+    @Test
+    fun `episode artwork of its own corroborates a presented show`() {
+        assertTrue(detector.detect(episode("Wondery Presents: Bunga Bunga", artwork = true), "Detective Trapp").isCrossPromotion)
+        assertFalse(detector.detect(episode("Wondery Presents: Bunga Bunga"), "Detective Trapp").isCrossPromotion)
+    }
+
+    @Test
+    fun `own series premium previews topics events and mixes are not promotions`() {
+        mapOf(
+            "Introducing: Nightingale Halloween" to "Nightingale",
+            "Introducing Gangster Presents: The Story of Ronnie Biggs" to "Gangster",
+            "Monster Presents: Insomniac [trailer]" to "Monster Presents: Insomniac",
+            "Introducing ‘New York Times Narrated’" to "The New York Times Narrated",
+            "Bonus #200 - Alex Pavone [PATREON PREVIEW]" to "Stavvy's World",
+            "INTRODUCING the RAMPAGE ROOKIES! Janelle Soukup & Hannah Bergemann on Red Bull Rampage" to "Just Ride",
+            "Meet the 26-Year-Old Saving L.A. Cinemas" to "Screen Talk",
+            "Deep Ghosh presents United We Rise Podcast Nr. 197" to "United We Stream Podcast",
+            "Announcing ROOTCON 2023!" to "Woodland War Machine",
+            "Beyond the Garden: new season trailer" to "Why Women Grow",
+        ).forEach { (title, host) ->
+            assertFalse(detector.detect(episode(title, duration = 120, artwork = true, description = "A short update for listeners."), host).isCrossPromotion, title)
+        }
+        val season = episode("Introducing: The Old Man Is Still Alive", artwork = true, description = "A preview of the new season of You Must Remember This, about directors late in their careers.")
+        assertFalse(detector.detect(season, "You Must Remember This").isCrossPromotion)
+    }
+
+    @Test
+    fun `new show wording and notes name the promoted show`() {
+        listOf(
+            episode("We Made a New Podcast Called Conversations with Ghosts! You Can Listen NOW!") to "Conversations with Ghosts",
+            episode("I think you might like Multispective Podcast") to "Multispective Podcast",
+            episode("Special Bonus - Introducing: Civilian or Spy") to "Civilian or Spy",
+            episode("Comfort Eating with Grace Dent: episode one of a new podcast") to "Comfort Eating with Grace Dent",
+            episode("Coming Soon: Evan’s new show, “Shell Game”", duration = 206) to "Shell Game",
+            episode("Burned by a Paper Sun - Feed Drop") to "Burned by a Paper Sun",
+            episode("Feed Drop: Why Only 10% of Companies Succeed With AI", description = "Enjoy a special episode from our friends at the Modern CTO podcast. Read the transcript here.") to "Modern CTO",
+            episode("My New Podcast", description = "And here’s my new show, Help Wanted: https://example.org/help-wanted") to "Help Wanted",
+            episode("Backyardigans Guess & Go", duration = 180, artwork = true, description = "Get ready for a brand new podcast called Backyardigans Guess & Go! New episodes weekly.") to "Backyardigans Guess & Go",
+        ).forEach { (episode, name) ->
+            val result = detector.detect(episode, "Host")
+            assertTrue(result.isCrossPromotion, episode.title)
+            assertEquals(name, result.extractedShowName, episode.title)
         }
     }
 }
