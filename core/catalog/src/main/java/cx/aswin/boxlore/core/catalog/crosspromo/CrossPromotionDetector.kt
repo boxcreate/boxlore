@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.model.CrossPromotionIndicator
 import cx.aswin.boxlore.core.model.CrossPromotionResult
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.ShowNotes
+import java.util.Locale
 
 /**
  * Decides whether an episode promotes another show and names it. The title's wording says how
@@ -13,10 +14,10 @@ import cx.aswin.boxlore.core.model.ShowNotes
  * corroborate it. [CrossPromotionResolver] still has to find the named show before anything shows.
  */
 class CrossPromotionDetector {
-    private val previewTitle = Regex(
-        """(?i)^\W*(?:(?:a|an|the)\s+)?(?:special\s+|sneak\s+|exclusive\s+)?(?:preview|trailer|introducing|feed drop|sneak peek|announcing|""" +
-            """coming soon|listen now|announcement|(?:(?:my|our)\s+)?(?:brand[- ])?new (?:show|podcast|series))\b|\b(?:preview|trailer|feed drop)\W*$""",
-    )
+    // Titles that open with a preview word ("A special preview", "Introducing", "My new podcast") or end with one.
+    private val previewWords = setOf("preview", "trailer", "introducing", "announcing", "announcement")
+    private val previewPhrases = setOf("feed drop", "sneak peek", "coming soon", "listen now")
+    private val previewTail = Regex("""(?i)\b(?:preview|trailer|feed drop)\W*$""")
     private val newShowTitle = Regex("""(?i)^\W*(?:(?:my|our)\s+)?(?:brand[- ])?new (?:show|podcast|series)\W*$""")
     private val lowercaseLead = Regex("""^(?:the|a|an|our|my|this|these|those|some|all)\s""")
     private val ownSeriesTitle = Regex("""(?i)\bour (?:new )?(?:\d+-part )?(?:series|season|episode|mini-?series)\b|\bnew season (?:trailer|teaser|preview)\b""")
@@ -96,7 +97,7 @@ class CrossPromotionDetector {
 
     /** A preview whose title does not name the show but whose notes do. */
     private fun described(title: String, notes: ShowNotes, signals: Signals, host: String): CrossPromotionResult? {
-        val preview = previewTitle.containsMatchIn(title)
+        val preview = isPreviewTitle(title)
         val corroborated = signals.trailer || preview && (signals.short || signals.otherArtwork || newShowTitle.containsMatchIn(title))
         if (!corroborated || CrossPromotionDescription.premium(signals.promoText)) return null
         val name = CrossPromotionDescription.friendsName(notes.plainText)?.takeIf { !CrossPromotionNames.sameShow(it, host) }
@@ -104,6 +105,21 @@ class CrossPromotionDetector {
         if (CrossPromotionNames.related(name, host)) return null
         val confidence = if (signals.trailer) CrossPromotionConfidence.HIGH else CrossPromotionConfidence.MEDIUM
         return promoted(name, confidence, CrossPromotionIndicator.DESCRIPTION_PROMO_LANGUAGE, supports = true, signals)
+    }
+
+    private fun isPreviewTitle(title: String): Boolean {
+        val words = title.lowercase(Locale.ROOT).split(Regex("[^\\p{L}\\p{N}]+")).filter(String::isNotEmpty)
+        val afterArticle = if (words.firstOrNull() in setOf("a", "an", "the")) words.drop(1) else words
+        val afterAdjective = if (afterArticle.firstOrNull() in setOf("special", "sneak", "exclusive")) afterArticle.drop(1) else afterArticle
+        return opensPreview(afterArticle) || opensPreview(afterAdjective) || previewTail.containsMatchIn(title)
+    }
+
+    private fun opensPreview(words: List<String>): Boolean {
+        if (words.firstOrNull() in previewWords || words.take(2).joinToString(" ") in previewPhrases) return true
+        // "My new podcast", "our brand-new show", "new series".
+        var next = if (words.firstOrNull() in setOf("my", "our")) 1 else 0
+        if (words.getOrNull(next) == "brand") next++
+        return words.getOrNull(next) == "new" && words.getOrNull(next + 1) in setOf("show", "podcast", "series")
     }
 
     /** The first form of [name] that the notes invite listeners to, if any. */
