@@ -70,6 +70,12 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Smaller app download while retaining artwork, fonts and notification sounds. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
+<li>Meet Echo when you first open boxlore: answer a few questions, react to a few shows, then pick what to follow. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
+<li>Home is tidier, loads more smoothly, and has a new Because you like card. Prefer the earlier hero cards? Choose Classic in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
+<li>The player and mini player take their colours from the show’s cover, with progress shown around the cover. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
+<li>Lore cards show the whole question and story, and the deck moves smoothly as you swipe. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
+<li>The boxlore brief shows its layout while an edition loads. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
+<li>Add a soft blur behind the floating navigation bar, or turn it off, in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
 <li>Meet boxlore with a new welcome screen: moving podcast covers, a playful invitation and clear choices to find shows, search or import your library. <a href="https://github.com/boxcreate/boxlore/pull/1115"><img src="https://img.shields.io/badge/PR-1115-6750A4?style=flat-square" alt="PR #1115" height="18"/></a></li>
 <li>Welcome adapts to smaller screens and larger text, and respects your phone's animation settings. <a href="https://github.com/boxcreate/boxlore/pull/1115"><img src="https://img.shields.io/badge/PR-1115-6750A4?style=flat-square" alt="PR #1115" height="18"/></a></li>
 <li>Choose the new bunpod player in Appearance settings for a minimal listening screen with larger titles, artwork-inspired colors and expressive controls. Your queue and miniplayer stay the same. <a href="https://github.com/boxcreate/boxlore/pull/1114"><img src="https://img.shields.io/badge/PR-1114-6750A4?style=flat-square" alt="PR #1114" height="18"/></a></li>
@@ -109,6 +115,8 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Show pages no longer load forever when show details can’t be reached. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
+<li>The boxlore brief card stays on Home until you finish or hide it. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
 <li>Older Briefs show the correct artwork after an update or cloud restore, without losing listening progress. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>
 <li>Episode artwork can fall back to the show cover when its image is unavailable. <a href="https://github.com/boxcreate/boxlore/pull/1111"><img src="https://img.shields.io/badge/PR-1111-6750A4?style=flat-square" alt="PR #1111" height="18"/></a></li>
 <li>Covers that failed to load can recover after reconnecting or loading successfully on another page. <a href="https://github.com/boxcreate/boxlore/pull/1111"><img src="https://img.shields.io/badge/PR-1111-6750A4?style=flat-square" alt="PR #1111" height="18"/></a></li>

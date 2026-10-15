@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add an optional bunpod audio player with persisted appearance preferences, adaptive typography, locale-aware title hyphenation and expressive control shapes. ([#1114](https://github.com/boxcreate/boxlore/pull/1114)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add regression coverage for player style persistence, control interactions, window sizing and artwork palette contrast. ([#1114](https://github.com/boxcreate/boxlore/pull/1114)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add hermetic tests for welcome reel velocity and wrapping, word-loop ordering and timing, readable holds, reduced motion and long-running clocks. ([#1115](https://github.com/boxcreate/boxlore/pull/1115)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Echo onboarding conversation (`EchoOnboardingScreen`, `EchoShowDeck`, holo show cards with media3 clip previews) on the `guided_v1` next-turn contract and probe deck. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Shared artwork palette extractor in `:core:designsystem` (`ArtworkPalette`, `ArtworkColorScheme`, `OnScreenArtwork`), used by detail pages and the player. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Home hero card style (`HeroCardStyle`, Standard/Classic, `ClassicHeroCards`) and navigation blur level (`NavigationBlurLevel`, `FloatingNavigationBlur` on Haze 1.6.9) preferences. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `HomeRevealStage` staged cold-start reveal and a carousel-matched hero skeleton. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `PodcastInfoLoadRecovery` and `BriefingLoadingContent`. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add hermetic JVM coverage for setup actions, button semantics, narrow and enlarged-text layouts, first-line dismissal alignment and RTL geometry. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -50,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use solid Daily Mix episode-card surfaces across themes. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Redesign the first-launch welcome screen with curated bundled cover reels, coordinated headline entry, accent-coloured rotating words and icons, and compact Material 3 discovery/search/import actions. ([#1115](https://github.com/boxcreate/boxlore/pull/1115)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Share lifecycle-aware, system-scaled motion across welcome artwork and copy, with stable accessibility semantics, reduced-motion presentation and responsive text layout. ([#1115](https://github.com/boxcreate/boxlore/pull/1115)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Suggestions screen lanes with Your picks; nothing preselected. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `HomeYourShowsRanker` ranks Your shows within a budget; Because you like seed card redesign; the brief card hides only when finished or dismissed. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Player colours use a tonal scheme seeded from the cover; split-pill mini player; `PlayerSheetRevealLogic` fade-through. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Lore cards show full text with `LoreDeckMotion`; `m3Shimmer` is a draw-only `Modifier.Node`. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -75,6 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unify artwork fallback sources and bounded recovery across UI, playback, widgets, share cards and notification artwork while preserving optimized sizes and existing cache identities. ([#1111](https://github.com/boxcreate/boxlore/pull/1111)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Retain valid feed artwork when catalog image fields are blank, and expire failed playback bitmap requests instead of caching failures indefinitely. ([#1111](https://github.com/boxcreate/boxlore/pull/1111)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Repair legacy numeric Brief artwork references in listening history, queue and downloads on open and restored writes, preserving all non-artwork state. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Podcast Info no longer spins forever when show details fail. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- User-facing strings use boxlore, all lowercase. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -210,6 +221,19 @@ readme-copy:end pr=1115 -->
 ### Improvements
 - Home’s setup options now use a compact layout with clearer choices to find shows, search podcasts or import your library.
 readme-copy:end pr=1116 -->
+
+<!-- readme-copy:start pr=1117
+### Improvements
+- Meet Echo when you first open boxlore: answer a few questions, react to a few shows, then pick what to follow.
+- Home is tidier, loads more smoothly, and has a new Because you like card. Prefer the earlier hero cards? Choose Classic in Appearance.
+- The player and mini player take their colours from the show’s cover, with progress shown around the cover.
+- Lore cards show the whole question and story, and the deck moves smoothly as you swipe.
+- The boxlore brief shows its layout while an edition loads.
+- Add a soft blur behind the floating navigation bar, or turn it off, in Appearance.
+### Fixes
+- Show pages no longer load forever when show details can’t be reached.
+- The boxlore brief card stays on Home until you finish or hide it.
+readme-copy:end pr=1117 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
