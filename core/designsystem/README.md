@@ -6,6 +6,8 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 
 ## Public API
 
+- `layout.BoxloreWindowLayout` is the app-supplied window/fold model. Width classes are Compact (<600dp), Medium (600–839dp), Expanded (840–1199dp) and Large (≥1200dp); height classes use 480/900dp. Tablet layouts require both ≥600dp width and ≥480dp height, so short landscape phones retain their phone geometry. Split layouts additionally require ≥840dp and landscape. `LocalBoxloreWindowLayout` defaults to the existing phone presentation for isolated previews; the app supplies real bounds once. Pure `boxlorePaneSpec` and `foldSafeRegions` select bounded panes/contiguous hinge-free regions without touching feature data, ranking or playback. `LocalBoxlorePaneWidth` carries actual content width, distinct from full window width.
+
 - Daily edition inherits the listener theme through solid Material 3 backgrounds and panels. `BriefingCover` displays the uncropped 16:10 image with a live masthead and an optional localized contrast scrim for the page logo; Home metadata uses a local bottom scrim. Page callers clip the lower image corners and keep content on an opaque background, without artwork fades or glass layers. `BriefingPageStatusBars` keeps system icons readable over the cover and restores theme styling on exit. Bundled WebP artwork includes seven covers each for Global, India, UK and US; `briefingCoverResource` selects Monday–Sunday from the edition date, with Monday as the invalid-date fallback. `briefingPlayerResource` keeps the fixed branded regional squares and legacy drawable names. Named resource URIs and the player resource keep file preserve playback artwork across builds.
 
 - `OptimizedImage.fallbackUrls` and `FeedMediaCard.fallbackImageUrls` retain alternate artwork until actual load failure, rather than selecting one URL up front. `ArtworkAttempts` tries optimized then original for at most four distinct images, followed by at most one recovery attempt for a transient failure. HTTP 403/404/429 and decoding failures do not get an immediate retry. `ArtworkLoadPolicy` bounds hints to 256 entries with 30-second transient and five-minute permanent cooldowns; known successful routes can recover a failed tile across screens and sizes. Each remembered route keeps the pixel width it was requested at, so a larger image only reuses a route at least as large (or the original); a smaller copy, such as a cover chip's thumbnail, is tried only after the larger request's own routes fail. Reusing it first made larger cards randomly blurry. Foreground reentry and reconnection refresh only failed tiles; there is no polling or recomposition retry loop. Each request has an eight-second timeout. `loadArtworkBitmap` shares the process Coil cache with widgets, share cards and push artwork while propagating cancellation. Existing `URL-wWIDTH` UI cache keys and artwork dimensions are preserved. Policy and actual Compose/error/recovery regressions are JVM tests.
@@ -45,6 +47,7 @@ src/main/java/cx/aswin/boxlore/core/designsystem/
   component/
   components/
   list/
+  layout/                       # pure window/fold and pane specifications
   share/
   theme/
 src/main/res/
@@ -79,6 +82,8 @@ src/main/res/
 Bitmap callers can choose a shorter per-attempt timeout while retaining outer cancellation; successful-source callbacks identify the original source rather than its transport route.
 
 ## Testing notes
+
+- `BoxloreWindowLayoutTest` covers exact width/height boundaries, portrait inner foldables, split-screen halves, short landscape phones, optional 360–520dp context panes and horizontal/vertical hinges. Every phone pane spec retains the full original viewport and zero rail/context space.
 
 - Brief player artwork uses `:core:model`'s `BriefingArtwork` named-resource contract, shared with upgrade and restore compatibility repair. Weekday covers remain independent of fixed player artwork.
 

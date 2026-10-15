@@ -6,6 +6,8 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 
 ## Public API
 
+- `BoxLoreAppRoot` computes one `BoxloreWindowLayout` and provides it through the design system. Stable Adaptive's window metrics and WindowInfoTracker-backed folding collector react to resizing, multi-window and posture changes; feature/data producers are not restarted. Native folding bounds convert from window pixels to dp once. Configuration dimensions remain available separately for existing phone geometry. Adaptive 1.1.0 preserves the current Compose graph: 1.2.0 requires Foundation 1.9.0 and 1.3.0 requires Compose 1.10.0. The Compose BOM is unchanged. Player detail-route helpers preserve existing encoding, metadata fallbacks and Brief routing while keeping the app root below the source-size limit.
+
 - Appearance wiring exposes the persisted full-player style and forwards selection to `:core:prefs`. The existing player overlay chooses the audio presentation without changing navigation, player ownership, playback or the miniplayer. Standard remains the default, and video retains its current presentation.
 - The Floating navigation bar can sit over a blur of the page (`FloatingNavigationBlur`, Settings > Appearance > Blur behind the bar: Off / Soft / Medium / Strong, Soft by default). The shell marks the page as a Haze source (`dev.chrisbanes.haze` 1.6.9, which adds no Compose version) and draws one blur strip, on a scaled-down copy, behind the bar: sized to the bar and system inset plus the level's reach above the bar. The mini player is left out, so the strip keeps its size when playback starts instead of growing up behind the player. An eased mask (cubic ease-in) fades blur and tint in together over the reach, so the top edge never shows. Levels set the reach (28 / 40 / 56dp), blur radius (8 / 14 / 22dp) and page-colour tint (6 / 14 / 26%). The bar and mini player stay solid; nothing blurs with the Classic bar or Off. `FloatingNavigationBlurTest` covers when it shows, that each level is stronger and reaches higher, the fade curve and the strip height.
 - The shell passes the Home hero card style (Settings > Appearance > Home hero cards) into the settings state; Home reads the same preference directly.
@@ -153,6 +155,8 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 Episode push artwork keeps its six-second total deadline and uses 700ms per route, allowing later episode/show candidates within that budget.
 
 ## Testing notes
+
+- `BoxloreFoldAdapterTest` verifies density conversion and flat/tabletop feature metadata. `PlayerDetailNavigationTest` preserves opaque RSS IDs, negative show IDs, encoded titles, the description bound, attribution and Brief routes.
 
 - `ShellPhoneGoldenTest` captures supplied Home loaded/loading and Library states, plus the mini player over Home with Floating navigation. The local matrix covers 360×800, 412×915 and 800×360dp in both themes; use `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`. These captures do not start the production application. See [screenshot instructions](../docs/screenshots/README.md).
 

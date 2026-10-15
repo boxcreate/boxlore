@@ -20,7 +20,9 @@ composeBom = "2024.12.01"
 material3 = "1.5.0-alpha11"
 # 1.6.x is built on Compose 1.8, so adding it changes no Compose version in the app.
 haze = "1.6.9"
-material3-adaptive = "1.0.0-alpha06"
+# Newest stable Adaptive that does not raise the existing Compose runtime/UI/Foundation graph.
+material3-adaptive = "1.1.0"
+window = "1.4.0"
 navigationCompose = "2.8.5"
 coil = "2.6.0"
 retrofit = "2.9.0"
@@ -79,7 +81,9 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
-androidx-material3-adaptive = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite", version = "1.0.0-alpha06" }
+androidx-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive", version.ref = "material3-adaptive" }
+androidx-material3-adaptive-layout = { group = "androidx.compose.material3.adaptive", name = "adaptive-layout", version.ref = "material3-adaptive" }
+androidx-window = { group = "androidx.window", name = "window", version.ref = "window" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version = "1.6.1" }

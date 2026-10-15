@@ -59,6 +59,7 @@ import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalS
 import cx.aswin.boxlore.core.designsystem.components.RepairProgressPopup
 import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopup
 import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopupDismissReason
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.model.Episode
@@ -75,7 +76,6 @@ import cx.aswin.boxlore.fcm.shouldSuppressAnnouncement
 import cx.aswin.boxlore.feature.home.ModeSwitchState
 import cx.aswin.boxlore.feature.onboarding.generateRecommendationsFromOpml
 import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
-import cx.aswin.boxlore.feature.player.v2.PlayerSheetActions
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
 import cx.aswin.boxlore.lifecycle.DownloadBandwidthEffect
@@ -543,6 +543,7 @@ fun BoxLoreAppRoot(
             activeAnnouncement == null
 
     val artworkNavigation = remember { cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationColors() }
+    val windowLayout = rememberBoxloreWindowLayout()
     BoxLoreTheme(
         darkTheme = darkTheme,
         dynamicColor = useDynamicColor,
@@ -552,7 +553,7 @@ fun BoxLoreAppRoot(
         fontRoundness = fontRoundness,
     ) {
         cx.aswin.boxlore.updates.AppUpdatesHost(application.container.appUpdates, activity) {
-        CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
+        CompositionLocalProvider(LocalBoxloreWindowLayout provides windowLayout, cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
             loreQueueConflictEpisode?.let { pendingLoreEpisode ->
                 LoreQueueConflictDialog(
                     pendingLoreEpisode = pendingLoreEpisode,
@@ -859,45 +860,7 @@ fun BoxLoreAppRoot(
                             },
                         ),
                         actions =
-                        PlayerSheetActions(
-                            onSheetInteractionChanged = adaptivePlayer.onSheetInteractionChanged,
-                            onEpisodeInfoClick = { episode ->
-                                if (episode.id.startsWith("briefing_")) {
-                                    val region = episode.id.removePrefix("briefing_").substringBefore("_")
-                                    navController.navigate("briefing?region=$region") {
-                                        launchSingleTop = true
-                                    }
-                                } else {
-                                    val podcast = playbackRepository.playerState.value.currentPodcast
-                                    val resolvedPodcastId = episode.podcastId ?: podcast?.id ?: "unknown"
-                                    val resolvedPodcastTitle = episode.podcastTitle ?: podcast?.title ?: "Podcast"
-                                    val resolvedImageUrl = episode.imageUrl ?: episode.podcastImageUrl ?: podcast?.imageUrl
-
-                                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                                    navController.navigate(
-                                        "episode/${encode(episode.id)}/${encode(episode.title)}/" +
-                                            "${encode(episode.description.take(500))}/" +
-                                            "${encode(resolvedImageUrl)}/" +
-                                            "${encode(episode.audioUrl)}/" +
-                                            "${episode.duration}/${encode(resolvedPodcastId)}/" +
-                                            "${encode(resolvedPodcastTitle)}" +
-                                            "?entryPoint=player_ui",
-                                    ) { launchSingleTop = true }
-                                }
-                            },
-                            onPodcastInfoClick = { podcast ->
-                                if (podcast.id.startsWith("briefing_")) {
-                                    val region = podcast.id.removePrefix("briefing_")
-                                    navController.navigate("briefing?region=$region") {
-                                        launchSingleTop = true
-                                    }
-                                } else {
-                                    navController.navigate(
-                                        "podcast/${android.net.Uri.encode(podcast.id)}?entryPoint=player_ui",
-                                    ) { launchSingleTop = true }
-                                }
-                            },
-                        ),
+                        playerSheetActions(navController, playbackRepository, adaptivePlayer.onSheetInteractionChanged),
                         modifier = Modifier.align(Alignment.TopStart),
                     )
                 }

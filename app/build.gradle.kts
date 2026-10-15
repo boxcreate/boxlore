@@ -201,6 +201,8 @@ dependencies {
 
     // Expressive additions
     implementation(libs.androidx.material3.adaptive)
+    implementation(libs.androidx.material3.adaptive.layout)
+    implementation(libs.androidx.window)
     implementation(libs.androidx.palette.ktx)
 
     // Navigation
