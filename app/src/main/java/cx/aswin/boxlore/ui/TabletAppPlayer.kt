@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.platform.LocalDensity
@@ -24,12 +25,12 @@ import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreDockedPlayerBounds
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
 import cx.aswin.boxlore.core.playback.PlaybackArtworkResolver
-import cx.aswin.boxlore.core.playback.PlayerState
 import cx.aswin.boxlore.feature.player.v2.FullPlayerActions
 import cx.aswin.boxlore.feature.player.v2.FullPlayerDependencies
 import cx.aswin.boxlore.feature.player.v2.FullPlayerDisplay
 import cx.aswin.boxlore.feature.player.v2.FullPlayerV2
 import cx.aswin.boxlore.feature.player.v2.LocalPlayerFullscreenRequest
+import cx.aswin.boxlore.feature.player.v2.PlayerPresentationController
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetActions
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
@@ -52,7 +53,9 @@ internal fun TabletAppPlayer(
     val stableState = remember(dependencies.playbackRepository) {
         dependencies.playbackRepository.playerState.map { it.copy(position = 0, bufferedPosition = 0) }.distinctUntilChanged()
     }
-    val state by stableState.collectAsStateWithLifecycle(initialValue = PlayerState())
+    // Start from the current state so a newly composed player never shows a blank frame.
+    val initial = remember(dependencies.playbackRepository) { dependencies.playbackRepository.playerState.value.copy(position = 0, bufferedPosition = 0) }
+    val state by stableState.collectAsStateWithLifecycle(initialValue = initial)
     val episode = state.currentEpisode ?: return
     val art = PlaybackArtworkResolver.resolveEpisodeImageUrl(episode.imageUrl, episode.podcastImageUrl, state.currentPodcast?.imageUrl)
     val colors = rememberPlayerColors(art)
@@ -67,6 +70,7 @@ internal fun TabletAppPlayer(
         presentation?.expanded = true
         navigation.immersive = true
     }
+    val dockedActions = rememberDockedPlayerActions(navigation, presentation, actions)
     BackHandler(enabled = navigation.immersive, onBack = closeImmersive)
     LaunchedEffect(options.expandTrigger) {
         if (options.expandTrigger > 0 && contextPane) openImmersive()
@@ -117,10 +121,31 @@ internal fun TabletAppPlayer(
                         collapsedLeftInset = leftInset,
                         collapsedRightInset = rightInset,
                     ),
-                    actions,
+                    dockedActions,
                 )
             }
         }
     }
     }
+}
+
+/** Reopening a docked player returns it to its pane whenever the window can show one. */
+@Composable
+private fun rememberDockedPlayerActions(navigation: TabletDetailNavigation, presentation: PlayerPresentationController?, actions: PlayerSheetActions): PlayerSheetActions {
+    val undock = {
+        navigation.playerDocked = false
+        presentation?.expanded = false
+    }
+    // Covers a sheet expanded in a single pane before the window widened to a split layout.
+    LaunchedEffect(navigation, presentation) {
+        snapshotFlow { navigation.playerDocked && navigation.playerPaneAvailable && presentation?.expanded == true && !navigation.immersive }
+            .collect { reopened -> if (reopened) undock() }
+    }
+    return actions.copy(
+        onOpenRequest = {
+            val toPane = navigation.playerDocked && navigation.playerPaneAvailable
+            if (toPane) undock()
+            toPane
+        },
+    )
 }

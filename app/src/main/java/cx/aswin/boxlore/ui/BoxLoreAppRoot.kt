@@ -629,7 +629,11 @@ fun BoxLoreAppRoot(
                             style = navigationStyle,
                             isMiniPlayerVisible = currentEpisode != null &&
                                 shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching) &&
-                                !cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePlayerPaneVisible.current,
+                                !cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePlayerPaneVisible.current &&
+                                dockedPlayerCoversPane(
+                                    cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current,
+                                    cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreDockedPlayerBounds.current,
+                                ),
                             navigationRailVisible = true,
                         )
                     } else {
@@ -809,6 +813,7 @@ fun BoxLoreAppRoot(
                     BoxLoreNavigationBar(
                         currentRoute = activeTab,
                         onNavigate = { route ->
+                            tabletNavigation.revealPrimary()
                             navController.navigateBottomNavTab(route, activeTab)
                         },
                         style = navigationStyle,

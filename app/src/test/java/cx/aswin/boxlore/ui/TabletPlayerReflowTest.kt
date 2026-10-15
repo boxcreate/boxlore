@@ -78,7 +78,42 @@ class TabletPlayerReflowTest {
         assertEquals(pane.width, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot.width, 1f)
     }
 
-    private fun render() {
+    @Test
+    fun `a docked player returns to its pane when reopened in either orientation`() {
+        window.value = BoxloreWindowLayout(1_280f, 800f)
+        render()
+        val pane = fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot
+        val collapse = fixture.compose.activity.getString(cx.aswin.boxlore.feature.player.R.string.minimal_collapse)
+        fun dock() {
+            fixture.compose.onNodeWithContentDescription(collapse).performClick()
+            advance()
+            assertEquals(1_200f, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot.width, 1f)
+        }
+        dock()
+        fixture.compose.onNodeWithText(episode.title).performClick()
+        advance()
+        assertEquals(pane, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot)
+
+        dock()
+        fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(840f, 1_280f) }
+        advance()
+        fixture.compose.onNodeWithText(episode.title).performClick()
+        advance()
+        fixture.compose.onNodeWithTag("tablet_player_artwork_region", useUnmergedTree = true).assertExists()
+        fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(1_280f, 800f) }
+        advance()
+        assertEquals(pane, fixture.compose.onNodeWithTag("tablet_player_pane").fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test
+    fun `the first player frame already shows the current episode`() {
+        window.value = BoxloreWindowLayout(1_280f, 800f)
+        fixture.compose.mainClock.autoAdvance = false
+        render(advanceAfter = false)
+        fixture.compose.onNodeWithText(episode.title, useUnmergedTree = true).assertExists()
+    }
+
+    private fun render(advanceAfter: Boolean = true) {
         fixture.prepare()
         fixture.setContent {
             CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
@@ -89,7 +124,7 @@ class TabletPlayerReflowTest {
                 }
             }
         }
-        advance()
+        if (advanceAfter) advance()
     }
 
     private fun advance() {

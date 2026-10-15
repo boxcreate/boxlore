@@ -86,6 +86,10 @@ internal fun tabletShellGeometry(
     )
 }
 
+/** The docked mini player spans the primary pane, so only panes that overlap it horizontally reserve its height. */
+internal fun dockedPlayerCoversPane(pane: BoxloreLayoutBounds?, dock: BoxloreLayoutBounds?): Boolean =
+    pane == null || dock == null || (pane.left < dock.right && dock.left < pane.right)
+
 private fun playerCanvasBounds(window: BoxloreWindowLayout, primary: BoxloreLayoutBounds, context: BoxloreLayoutBounds?, immersive: Boolean): BoxloreLayoutBounds =
     if (immersive || (context == null && window.foldSafeRegions().size > 1)) {
         BoxloreLayoutBounds(0f, 0f, window.widthDp, window.heightDp)
@@ -117,11 +121,7 @@ internal fun TabletAppShell(
     LaunchedEffect(window.usesTabletLayout, presentation?.expanded) {
         if (!window.usesTabletLayout && presentation?.expanded == false) navigation.immersive = false
     }
-    SideEffect {
-        navigation.detailActive = geometry.detailVisible
-        navigation.splitAllowed = navigationVisible && playerAllowed && window.usesSplitLayout
-        if (window.usesTabletLayout) navigation.hostEnabled = true
-    }
+    SideEffect { navigation.updateShellState(geometry, window, navigationVisible && playerAllowed) }
     CompositionLocalProvider(
         LocalTabletDetailNavigation provides navigation,
         cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreNavigationRailVisible provides geometry.railVisible,
@@ -135,7 +135,16 @@ internal fun TabletAppShell(
             modifier = keyboardModifier,
             primary = content.primary,
             rail = {
-                if (geometry.railVisible) BoxLoreNavigationRail(activeTab, onNavigateTab, Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing))
+                if (geometry.railVisible) {
+                    BoxLoreNavigationRail(
+                        activeTab,
+                        { tab ->
+                            navigation.revealPrimary()
+                            onNavigateTab(tab)
+                        },
+                        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
+                    )
+                }
             },
             details = { TabletShellDetails(navigation, geometry.detailVisible, content.details) },
             player = {
@@ -146,6 +155,14 @@ internal fun TabletAppShell(
         )
         }
     }
+}
+
+private fun TabletDetailNavigation.updateShellState(geometry: TabletShellGeometry, window: BoxloreWindowLayout, contextAllowed: Boolean) {
+    detailActive = geometry.detailVisible
+    detailCoversPrimary = geometry.detailVisible && geometry.context == null
+    playerPaneAvailable = contextAllowed && boxlorePaneSpec(window, true).context != null
+    splitAllowed = contextAllowed && window.usesSplitLayout
+    if (window.usesTabletLayout) hostEnabled = true
 }
 
 @Composable

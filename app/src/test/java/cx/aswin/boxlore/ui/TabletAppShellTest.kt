@@ -16,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -169,6 +170,75 @@ class TabletAppShellTest {
     }
 
     @Test
+    fun `primary tabs reveal their pane when a retained detail covers it after resizing`() {
+        render()
+        fixture.compose.onNodeWithText("Open show").performClick()
+        advance()
+        fixture.compose.onNodeWithText("Explore").performClick()
+        advance()
+        assertEquals("explore", navigation.primary.currentDestination?.route)
+        fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
+
+        fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(840f, 1_280f) }
+        advance()
+        val primary = fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot
+        assertEquals(primary, fixture.compose.onNodeWithTag("detail_pane").fetchSemanticsNode().boundsInRoot)
+        fixture.compose.onNodeWithText("Library").performClick()
+        advance()
+        assertEquals("library", navigation.primary.currentDestination?.route)
+        assertEquals(TabletContextRoot, navigation.detail.currentDestination?.route)
+        fixture.compose.onNodeWithText("Show detail rss:show/test").assertDoesNotExist()
+        fixture.compose.onNodeWithText("Primary library").assertIsDisplayed()
+
+        // Compact windows use the app's bottom bar, which calls the same reveal before navigating.
+        fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(1_280f, 800f) }
+        advance()
+        fixture.compose.runOnUiThread { navigation.navigate(navigation.primary, "podcast/rss%3Ashow%2Ftest") }
+        advance()
+        fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(480f, 960f) }
+        advance()
+        fixture.compose.onNodeWithText("Show detail rss:show/test").assertExists()
+        fixture.compose.runOnUiThread {
+            navigation.revealPrimary()
+            navigation.primary.navigate("home")
+        }
+        advance()
+        assertTrue(!navigation.hasDetail)
+        fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(1_280f, 800f) }
+        advance()
+        fixture.compose.onNodeWithText("Show detail rss:show/test").assertDoesNotExist()
+        assertEquals(1_200f, fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot.width, 1f)
+    }
+
+    @Test
+    fun `warm detail links keep the context root so Back and close details clear the pane`() {
+        render()
+        val browsingWidth = fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot.width
+        val closers = listOf<() -> Unit>(
+            { fixture.compose.activity.onBackPressedDispatcher.onBackPressed() },
+            { navigation.closeDetails() },
+        )
+        closers.forEach { close ->
+            fixture.compose.onNodeWithText("Open show").performClick()
+            advance()
+            fixture.compose.runOnUiThread { navigation.handleDeepLink(Intent(Intent.ACTION_VIEW, Uri.parse("boxlore://episode/notification"))) }
+            advance()
+            fixture.compose.onNodeWithText("Episode detail").assertExists()
+            assertEquals(
+                listOf(TabletContextRoot, "episode/{id}"),
+                navigation.detail.currentBackStack.value.mapNotNull { it.destination.route },
+            )
+            fixture.compose.runOnUiThread { close() }
+            advance()
+            assertEquals(TabletContextRoot, navigation.detail.currentDestination?.route)
+            assertTrue(!navigation.hasDetail)
+            fixture.compose.onNodeWithText("Episode detail").assertDoesNotExist()
+            assertEquals(browsingWidth, fixture.compose.onNodeWithTag("primary_pane").fetchSemanticsNode().boundsInRoot.width, 1f)
+            assertEquals("home", navigation.primary.currentDestination?.route)
+        }
+    }
+
+    @Test
     fun `onboarding without navigation occupies the lower tabletop region without a rail gutter`() {
         val fold = cx.aswin.boxlore.core.designsystem.layout.BoxloreFold(
             cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState.HalfOpened,
@@ -204,7 +274,7 @@ class TabletAppShellTest {
                             allowed.value,
                             playing.value,
                             "home",
-                            {},
+                            { tab -> navigation.primary.navigate(tab) },
                             TabletShellContent(
                             primary = {
                                 paneBounds = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
@@ -217,6 +287,8 @@ class TabletAppShellTest {
                                         }
                                     }
                                     composable("settings") { Text("Primary settings") }
+                                    composable("explore") { Text("Primary explore") }
+                                    composable("library") { Text("Primary library") }
                                     composable("episode/{id}", deepLinks = listOf(navDeepLink { uriPattern = "boxlore://episode/{id}" })) { Text("Primary episode") }
                                 }
                             },

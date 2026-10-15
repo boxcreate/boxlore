@@ -1,6 +1,5 @@
 <resources>
     <string name="tablet_return_to_player">Now playing</string>
-    <string name="tablet_close_details">Close details</string>
     <string name="tablet_alpha_title">Tablet layouts are in alpha</string>
     <string name="tablet_alpha_body">If anything looks odd or stops working, please let us know. We’ll fix it as soon as we can.</string>
     <!-- The placeholder displays the same feedback icon as the Home top bar. -->

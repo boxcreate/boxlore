@@ -13,9 +13,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
 
 internal const val TabletContextRoot = "tablet_context_root"
 
@@ -37,6 +39,12 @@ internal class TabletDetailNavigation(
     var hasDetail by mutableStateOf(false)
     var detailActive by mutableStateOf(false)
 
+    /** True when undocking would show the player in a context pane beside browsing. */
+    var playerPaneAvailable by mutableStateOf(false)
+
+    /** True when the visible detail occupies the primary pane's bounds instead of sitting beside it. */
+    var detailCoversPrimary by mutableStateOf(false)
+
     fun navigate(source: NavHostController, route: String, options: NavOptionsBuilder.() -> Unit = {}) {
         if (isArtworkDetailRoute(route) && (splitAllowed || source === detail)) {
             immersive = false
@@ -53,15 +61,34 @@ internal class TabletDetailNavigation(
 
     fun handleDeepLink(intent: Intent): Boolean {
         immersive = false
-        // A warm link already belongs to this Activity; context routing must not rebuild its task.
-        val inPlace = Intent(intent).apply { flags = flags and (Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK).inv() }
-        if (splitAllowed && detail.handleDeepLink(inPlace)) return true
+        if (splitAllowed && openDetailLink(intent)) return true
         if (hasDetail) closeDetails()
         return primary.handleDeepLink(intent)
     }
 
+    /**
+     * NavController.handleDeepLink replaces the whole graph, which would drop the context root and leave
+     * Back and closeDetails() nothing to return to. The linked screen replaces any open details instead.
+     */
+    private fun openDetailLink(intent: Intent): Boolean {
+        val uri = intent.data ?: return false
+        val request = NavDeepLinkRequest.Builder.fromUri(uri).apply {
+            intent.action?.let(::setAction)
+            intent.type?.let(::setMimeType)
+        }.build()
+        // Until the detail host has set its graph, links open in the primary pane.
+        if (detail.currentBackStackEntry == null || !detail.graph.hasDeepLink(request)) return false
+        detail.navigate(request, navOptions { popUpTo(TabletContextRoot) })
+        return true
+    }
+
     fun closeDetails() {
         detail.popBackStack(TabletContextRoot, inclusive = false)
+    }
+
+    /** Rail and bottom-bar taps navigate the primary pane, so a detail covering it closes first. */
+    fun revealPrimary() {
+        if (detailCoversPrimary) closeDetails()
     }
 }
 

@@ -85,4 +85,15 @@ class TabletShellGeometryTest {
             }
         }
     }
+
+    @Test
+    fun `only panes under the docked mini player reserve its height`() {
+        val split = tabletShellGeometry(BoxloreWindowLayout(1_280f, 800f), true, true, true, true, false, playerDocked = true)
+        assertTrue(split.context != null)
+        assertTrue(dockedPlayerCoversPane(split.primary, split.primary))
+        assertFalse(dockedPlayerCoversPane(split.detail, split.primary))
+        val portrait = tabletShellGeometry(BoxloreWindowLayout(840f, 1_280f), true, true, true, true, false)
+        assertTrue(dockedPlayerCoversPane(portrait.detail, portrait.primary))
+        assertTrue(dockedPlayerCoversPane(null, portrait.primary))
+    }
 }
