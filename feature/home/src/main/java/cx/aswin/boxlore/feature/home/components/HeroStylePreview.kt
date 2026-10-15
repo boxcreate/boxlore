@@ -49,7 +49,7 @@ fun HeroStylePreview(
         Box(Modifier.size(PreviewCardWidth * scale, cardHeight * scale)) {
             Box(Modifier.requiredSize(PreviewCardWidth, cardHeight).graphicsLayer { scaleX = scale; scaleY = scale }) {
                 CompositionLocalProvider(LocalHeroCoverShade provides coverShade) {
-                    HeroPreviewCard(HeroCardStyle.sanitize(style) == HeroCardStyle.COVER, collection, podcasts)
+                    HeroPreviewCard(HeroCardStyle.sanitize(style), collection, podcasts)
                 }
             }
         }
@@ -57,21 +57,25 @@ fun HeroStylePreview(
 }
 
 @Composable
-private fun HeroPreviewCard(cover: Boolean, collection: Boolean, podcasts: List<Podcast>) {
-    val first = podcasts.first()
+private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<Podcast>) {
     if (collection) {
         val title = stringResource(R.string.home_hero_resume_collection)
-        if (cover) {
-            CoverHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
-        } else {
-            HeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {})
+        when (style) {
+            HeroCardStyle.COVER ->
+                CoverHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
+            HeroCardStyle.DUOTONE ->
+                DuotoneHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
+            else -> HeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {})
         }
     } else {
+        val first = podcasts.first()
         val item = SmartHeroItem(HeroType.RESUME, first, "Resume", description = first.latestEpisode?.title)
-        if (cover) {
-            CoverHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
-        } else {
-            HeroCard(item, onClick = {}, onArrowClick = {}, onToggleSubscription = {})
+        when (style) {
+            HeroCardStyle.COVER ->
+                CoverHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
+            HeroCardStyle.DUOTONE ->
+                DuotoneHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
+            else -> HeroCard(item, onClick = {}, onArrowClick = {}, onToggleSubscription = {})
         }
     }
 }

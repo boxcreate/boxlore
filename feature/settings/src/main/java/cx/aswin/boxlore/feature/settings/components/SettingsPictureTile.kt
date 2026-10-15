@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.settings.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,13 +27,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
@@ -132,6 +138,33 @@ internal fun SettingsPicture(modifier: Modifier = Modifier, content: @Composable
         )
     }
 }
+
+/**
+ * [items] as one horizontally scrolling row of [tileWidth] tiles that share the tallest one's
+ * height, opening scrolled to [selectedIndex] so the current choice is in view.
+ */
+@Composable
+internal fun <T> SettingsPictureRow(
+    items: List<T>,
+    selectedIndex: Int,
+    modifier: Modifier = Modifier,
+    tileWidth: Dp = 168.dp,
+    tile: @Composable (item: T, modifier: Modifier) -> Unit,
+) {
+    val scroll = rememberScrollState()
+    val step = with(LocalDensity.current) { (tileWidth + TileGap).roundToPx() }
+    LaunchedEffect(Unit) {
+        if (selectedIndex > 0) scroll.scrollTo(selectedIndex * step)
+    }
+    Row(
+        modifier.fillMaxWidth().horizontalScroll(scroll).height(IntrinsicSize.Min).selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(TileGap),
+    ) {
+        items.forEach { item -> tile(item, Modifier.width(tileWidth).fillMaxHeight()) }
+    }
+}
+
+private val TileGap = 8.dp
 
 /** [items] as equal-width tiles in rows of [columns]; tiles in a row share the tallest one's height. */
 @Composable

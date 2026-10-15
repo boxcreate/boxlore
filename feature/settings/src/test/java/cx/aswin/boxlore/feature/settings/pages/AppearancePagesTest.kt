@@ -106,7 +106,19 @@ class AppearancePagesTest {
         compose.onNodeWithText("Cover").assertIsSelected()
         compose.onNodeWithText("Dark").performScrollTo().performClick()
         assertEquals(listOf(HeroCoverShade.DARK), shades)
+
+        // The styles scroll sideways; Duotone takes the same colours under its own name.
+        compose.onNodeWithText("Duotone").performScrollTo().performClick()
+        assertEquals(listOf(HeroCardStyle.COVER, HeroCardStyle.DUOTONE), styles)
+        compose.onNodeWithText("Shade behind text").assertDoesNotExist()
+        compose.onNodeWithText("Duotone colors").assertExists()
         assertEquals("Buttons drawn inside previews never react", 0, previewButtonClicks)
+    }
+
+    @Test
+    fun `summary names the duotone colours`() {
+        assertEquals("Duotone hero cards, black and white", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.DUOTONE, heroCoverShade = HeroCoverShade.DARK)).home)
+        assertEquals("Duotone hero cards, artwork tones", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.DUOTONE)).home)
     }
 
     @Test

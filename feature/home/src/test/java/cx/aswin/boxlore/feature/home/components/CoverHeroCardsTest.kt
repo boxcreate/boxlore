@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.EpisodeStatus
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.HeroType
@@ -50,7 +51,7 @@ class CoverHeroCardsTest {
     private fun render(playingEpisode: String? = null) {
         composeRule.setContent {
             BoxLoreTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalCoverHeroCards provides cover.value, LocalHeroCoverShade provides shade.value) {
+                CompositionLocalProvider(LocalHeroCardStyle provides (if (cover.value) HeroCardStyle.COVER else HeroCardStyle.BLOCK), LocalHeroCoverShade provides shade.value) {
                     HeroCarousel(
                         heroItems = StableHeroList(listOf(item.value)),
                         onPlayClick = { podcast, _ -> plays += podcast.id },

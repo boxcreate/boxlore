@@ -125,8 +125,12 @@ internal fun CoverHeroCard(
     }
 }
 
+/**
+ * The words over a full-artwork card: an optional one-line context (Cover's; Duotone shows the solid
+ * cards' context block at the top instead), the measured title, the show name and progress.
+ */
 @Composable
-private fun CoverCopy(item: SmartHeroItem, shade: ArtworkShade, progressState: HeroProgressState?) {
+internal fun CoverCopy(item: SmartHeroItem, shade: ArtworkShade, progressState: HeroProgressState?, showContext: Boolean = true) {
     val measurer = rememberTextMeasurer()
     val baseStyle = heroTitleStyle()
     val title = heroTitle(item)
@@ -138,15 +142,17 @@ private fun CoverCopy(item: SmartHeroItem, shade: ArtworkShade, progressState: H
             measureHeroTitle(title, baseStyle, measurer, Constraints(maxWidth = width), Int.MAX_VALUE).layoutInput.style
         }
         Column(Modifier.fillMaxWidth()) {
-            Text(
-                coverContext(item, shade.content),
-                style = HeroContextTypography.label(),
-                color = shade.softContent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.testTag("home_hero_context"),
-            )
-            Spacer(Modifier.height(8.dp))
+            if (showContext) {
+                Text(
+                    coverContext(item, shade.content),
+                    style = HeroContextTypography.label(),
+                    color = shade.softContent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("home_hero_context"),
+                )
+                Spacer(Modifier.height(8.dp))
+            }
             Text(
                 title,
                 style = titleStyle,

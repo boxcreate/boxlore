@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
@@ -33,7 +34,7 @@ fun HeroCarousel(
     modifier: Modifier = Modifier,
 ) {
     if (heroItems.list.isEmpty()) return
-    val cover = LocalCoverHeroCards.current
+    val style = HeroCardStyle.sanitize(LocalHeroCardStyle.current)
     val playing = HeroPlayingState(currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying)
 
     val carouselState = rememberCarouselState { heroItems.list.size }
@@ -63,14 +64,13 @@ fun HeroCarousel(
         )
 
         androidx.compose.runtime.DisposableEffect(i) {
-            if (i > maxScrolledIndex.intValue) {
-                maxScrolledIndex.intValue = i
-            }
+            if (i > maxScrolledIndex.intValue) maxScrolledIndex.intValue = i
             onDispose {}
         }
 
         when {
-            cover -> CoverHeroItem(item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
+            HeroCardStyle.usesArtworkColors(style) ->
+                FullArtworkHeroItem(style == HeroCardStyle.DUOTONE, item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
             item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID -> {
                 HeroGridCard(
                     items = item.gridItems,
@@ -172,12 +172,14 @@ private fun collectionPlaybackAction(
 internal data class HeroPlayingState(val podcastId: String?, val episodeId: String?, val isPlaying: Boolean)
 
 /**
- * The Cover option's cards, on the same carousel, playback and details callbacks. As on the solid
- * cards, a collection tile opens its episode and the Play button on its cover plays it.
+ * The Cover and Duotone options' cards, on the same carousel, playback and details callbacks. As on
+ * the solid cards, a collection item opens its episode and the Play button on its cover plays it.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("LongParameterList")
-private fun androidx.compose.material3.carousel.CarouselItemScope.CoverHeroItem(
+private fun androidx.compose.material3.carousel.CarouselItemScope.FullArtworkHeroItem(
+    duotone: Boolean,
     item: SmartHeroItem,
     position: Int,
     onCollectionPlayback: (Podcast) -> Unit,
@@ -191,19 +193,37 @@ private fun androidx.compose.material3.carousel.CarouselItemScope.CoverHeroItem(
     when (item.type) {
         cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID, cx.aswin.boxlore.feature.home.HeroType.NEW_EPISODES_GRID -> {
             val resume = item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID
-            CoverHeroGridCard(
-                items = item.gridItems,
-                title = stringResource(if (resume) R.string.home_hero_resume_collection else R.string.home_hero_new_collection),
-                mode = if (resume) HeroGridMode.Resume else HeroGridMode.NewEpisodes,
-                onCellClick = onDetailsClick,
-                onPlaybackClick = onCollectionPlayback,
-                currentPlayingPodcastId = playing.podcastId,
-                currentPlayingEpisodeId = playing.episodeId,
-                isPlaying = playing.isPlaying,
-                modifier = Modifier.maskClip(shape),
-            )
+            val title = stringResource(if (resume) R.string.home_hero_resume_collection else R.string.home_hero_new_collection)
+            val mode = if (resume) HeroGridMode.Resume else HeroGridMode.NewEpisodes
+            if (duotone) {
+                DuotoneHeroGridCard(
+                    items = item.gridItems,
+                    title = title,
+                    mode = mode,
+                    onCellClick = onDetailsClick,
+                    onPlaybackClick = onCollectionPlayback,
+                    currentPlayingPodcastId = playing.podcastId,
+                    currentPlayingEpisodeId = playing.episodeId,
+                    isPlaying = playing.isPlaying,
+                    modifier = Modifier.maskClip(shape),
+                    carouselItemDrawInfo = carouselItemDrawInfo,
+                )
+            } else {
+                CoverHeroGridCard(
+                    items = item.gridItems,
+                    title = title,
+                    mode = mode,
+                    onCellClick = onDetailsClick,
+                    onPlaybackClick = onCollectionPlayback,
+                    currentPlayingPodcastId = playing.podcastId,
+                    currentPlayingEpisodeId = playing.episodeId,
+                    isPlaying = playing.isPlaying,
+                    modifier = Modifier.maskClip(shape),
+                )
+            }
         }
-        else -> CoverHeroCard(
+        else -> FullArtworkHeroCard(
+            duotone = duotone,
             item = item,
             onClick = {
                 val bundle = android.os.Bundle().apply {
@@ -243,4 +263,24 @@ private fun rememberHeroSwipeTelemetry(cardCount: Int): androidx.compose.runtime
         }
     }
     return maxScrolledIndex
+}
+
+/** Cover's or Duotone's single-episode card. */
+@Composable
+@Suppress("LongParameterList")
+private fun FullArtworkHeroCard(
+    duotone: Boolean,
+    item: SmartHeroItem,
+    onClick: () -> Unit,
+    onArrowClick: () -> Unit,
+    currentPlayingPodcastId: String?,
+    currentPlayingEpisodeId: String?,
+    isPlaying: Boolean,
+    modifier: Modifier,
+) {
+    if (duotone) {
+        DuotoneHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
+    } else {
+        CoverHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
+    }
 }

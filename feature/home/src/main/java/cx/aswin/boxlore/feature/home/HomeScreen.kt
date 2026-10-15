@@ -36,9 +36,8 @@ import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
-import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
-import cx.aswin.boxlore.feature.home.components.LocalCoverHeroCards
+import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
 import cx.aswin.boxlore.feature.home.components.LocalHeroCoverShade
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.home.components.TopControlBar
@@ -344,7 +343,7 @@ fun HomeRoute(
 
     androidx.compose.runtime.CompositionLocalProvider(
         LocalLastSeenEpisodes provides lastSeenEpisodes,
-        LocalCoverHeroCards provides (heroCardStyle == HeroCardStyle.COVER),
+        LocalHeroCardStyle provides heroCardStyle,
         LocalHeroCoverShade provides heroCoverShade,
     ) {
         HomeScreen(

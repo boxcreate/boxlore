@@ -14,7 +14,7 @@ import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsPicture
-import cx.aswin.boxlore.feature.settings.components.SettingsPictureGrid
+import cx.aswin.boxlore.feature.settings.components.SettingsPictureRow
 import cx.aswin.boxlore.feature.settings.components.SettingsPictureTile
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import cx.aswin.boxlore.feature.settings.components.SettingsSwitchRow
@@ -25,11 +25,13 @@ private data class HeroStyleOption(val key: String, val label: Int, val descript
 private val HeroStyleOptions = listOf(
     HeroStyleOption(HeroCardStyle.BLOCK, R.string.hero_card_style_block, R.string.hero_card_style_block_description),
     HeroStyleOption(HeroCardStyle.COVER, R.string.hero_card_style_cover, R.string.hero_card_style_cover_description),
+    HeroStyleOption(HeroCardStyle.DUOTONE, R.string.hero_card_style_duotone, R.string.hero_card_style_duotone_description),
 )
 
 /**
- * Home: the hero card style as picture tiles drawn from the real cards, a larger preview of the
- * picked style with its Jump back in card, Cover's shade, and the top bar shortcuts.
+ * Home: a preview of the picked hero card style with its Jump back in card, every style as a
+ * scrolling row of picture tiles drawn from the real cards, the colours Cover and Duotone take, and
+ * the top bar shortcuts.
  */
 @Composable
 internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceActions, heroPreview: AppearanceHeroPreview?, onBack: () -> Unit) {
@@ -42,7 +44,7 @@ internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceAct
             }
         }
         SettingsTileSection(title = stringResource(R.string.hero_card_style_title), footer = stringResource(R.string.hero_card_style_footer)) {
-            SettingsPictureGrid(HeroStyleOptions, columns = 2) { option, modifier ->
+            SettingsPictureRow(HeroStyleOptions, selectedIndex = HeroStyleOptions.indexOfFirst { it.key == style }) { option, modifier ->
                 SettingsPictureTile(
                     label = stringResource(option.label),
                     description = stringResource(option.description),
@@ -58,12 +60,13 @@ internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceAct
                 }
             }
         }
-        // Only Cover cards have a shade behind the words, so the choice shows only with them.
-        if (style == HeroCardStyle.COVER) {
-            SettingsGroup(footer = stringResource(R.string.hero_cover_shade_footer)) {
+        // Cover and Duotone draw the artwork across the card, so only they take these colours.
+        if (HeroCardStyle.usesArtworkColors(style)) {
+            val duotone = style == HeroCardStyle.DUOTONE
+            SettingsGroup(footer = stringResource(if (duotone) R.string.hero_duotone_colors_footer else R.string.hero_cover_shade_footer)) {
                 SettingsContent {
                     AppearanceChoicePicker(
-                        label = stringResource(R.string.hero_cover_shade_title),
+                        label = stringResource(if (duotone) R.string.hero_duotone_colors_title else R.string.hero_cover_shade_title),
                         options = listOf(
                             HeroCoverShade.DARK to stringResource(R.string.hero_cover_shade_dark),
                             HeroCoverShade.ARTWORK to stringResource(R.string.hero_cover_shade_artwork),

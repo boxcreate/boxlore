@@ -21,16 +21,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkColorTransitionMillis
+import cx.aswin.boxlore.core.designsystem.theme.ArtworkDuotone
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkPalette
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
 import cx.aswin.boxlore.core.designsystem.theme.cachedArtworkPalette
 import cx.aswin.boxlore.core.designsystem.theme.loadArtworkPalette
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
 
-/** True when the listener chose Cover hero cards in Appearance settings. */
-val LocalCoverHeroCards = staticCompositionLocalOf { false }
+/** The hero card style the listener chose in Appearance settings ([HeroCardStyle]); Block by default. */
+val LocalHeroCardStyle = staticCompositionLocalOf { HeroCardStyle.BLOCK }
 
-/** The shade Cover cards fade into behind their words ([HeroCoverShade]). */
+/** The colours Cover and Duotone cards take ([HeroCoverShade]): a shade behind Cover's words, Duotone's two tones. */
 val LocalHeroCoverShade = staticCompositionLocalOf { HeroCoverShade.DEFAULT }
 
 /**
@@ -54,6 +56,41 @@ internal fun coverShade(mode: String, palette: ArtworkPalette?, primary: Color):
 internal fun rememberCoverShade(imageUrl: String?): ArtworkShade {
     val mode = HeroCoverShade.sanitize(LocalHeroCoverShade.current)
     val primary = MaterialTheme.colorScheme.primary
+    val palette = rememberHeroArtworkPalette(imageUrl, mode)
+    return remember(mode, palette, primary) { coverShade(mode, palette, primary) }.animated()
+}
+
+/**
+ * The two tones a Duotone card redraws a cover in, from the same choice as Cover's shade: Dark is
+ * black and white, App theme the theme's [primary], Artwork the cover's seed (black and white for a
+ * cover with no meaningful colour).
+ */
+internal fun duotoneTones(mode: String, palette: ArtworkPalette?, primary: Color): ArtworkDuotone = when (HeroCoverShade.sanitize(mode)) {
+    HeroCoverShade.DARK -> ArtworkDuotone.Neutral
+    HeroCoverShade.THEME -> ArtworkDuotone.fromColor(primary)
+    else -> palette?.let(ArtworkDuotone::fromPalette) ?: ArtworkDuotone.Neutral
+}
+
+/** A Duotone card's look: the cover's two tones and the words and buttons drawn over them. */
+internal data class DuotoneLook(val duotone: ArtworkDuotone, val shade: ArtworkShade)
+
+/** [duotoneTones] and [coverShade] for the cover at [imageUrl], easing in like [rememberCoverShade]. */
+@Composable
+internal fun rememberDuotoneLook(imageUrl: String?): DuotoneLook {
+    val mode = HeroCoverShade.sanitize(LocalHeroCoverShade.current)
+    val primary = MaterialTheme.colorScheme.primary
+    val palette = rememberHeroArtworkPalette(imageUrl, mode)
+    val shade = remember(mode, palette, primary) { coverShade(mode, palette, primary) }.animated()
+    val tones = remember(mode, palette, primary) { duotoneTones(mode, palette, primary) }
+    val spec = remember { tween<Color>(ArtworkColorTransitionMillis, easing = FastOutSlowInEasing) }
+    val shadow by animateColorAsState(tones.shadow, spec, label = "duotoneShadow")
+    val highlight by animateColorAsState(tones.highlight, spec, label = "duotoneHighlight")
+    return DuotoneLook(ArtworkDuotone(shadow, highlight), shade)
+}
+
+/** The cover's palette in Artwork mode (cached ones at once, others once read); null in the other modes. */
+@Composable
+private fun rememberHeroArtworkPalette(imageUrl: String?, mode: String): ArtworkPalette? {
     val context = LocalContext.current
     val url = imageUrl?.trim()?.takeIf(String::isNotEmpty)
     val artwork = mode == HeroCoverShade.ARTWORK
@@ -61,7 +98,7 @@ internal fun rememberCoverShade(imageUrl: String?): ArtworkShade {
     LaunchedEffect(url, artwork) {
         if (artwork && url != null && palette == null) palette = runCatching { loadArtworkPalette(context, url) }.getOrNull()
     }
-    return remember(mode, palette, primary) { coverShade(mode, palette, primary) }.animated()
+    return palette
 }
 
 @Composable
