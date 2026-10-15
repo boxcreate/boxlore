@@ -48,4 +48,25 @@ class PlaybackArtworkMetadataTest {
         assertEquals(listOf("https://art/show"), PlaybackArtworkMetadata.withOriginal(existing, "content://cx.aswin.boxlore.collage/local/1").getStringArrayList(PlaybackArtworkMetadata.SOURCES))
         assertEquals(null, PlaybackArtworkMetadata.withOriginal(null, null).getStringArrayList(PlaybackArtworkMetadata.SOURCES))
     }
+
+    // Regression: a show cover used as a fallback was saved in place of the item's own episode cover.
+    @Test
+    fun `a show-only fallback goes after an episode cover the item already carries`() {
+        val existing = Bundle().apply { putStringArrayList(PlaybackArtworkMetadata.SOURCES, arrayListOf("https://art/episode")) }
+        val extras = PlaybackArtworkMetadata.withOriginal(existing, "https://art/show", episodeCover = false)
+        assertEquals(listOf("https://art/episode", "https://art/show"), extras.getStringArrayList(PlaybackArtworkMetadata.SOURCES))
+        val metadata = MediaMetadata.Builder().setExtras(extras).build()
+        assertEquals("https://art/episode", PlaybackArtworkMetadata.savedArtworkUrl(metadata))
+        // With nothing else to go on, the show cover is still saved.
+        assertEquals(listOf("https://art/show"), PlaybackArtworkMetadata.withOriginal(null, "https://art/show", episodeCover = false).getStringArrayList(PlaybackArtworkMetadata.SOURCES))
+    }
+
+    // Regression: an incoming item's player-only artwork counted as a cover and skipped the catalogue lookup.
+    @Test
+    fun `an item whose only artwork is a player-only link still asks the catalogue for a cover`() {
+        val item = MediaMetadata.Builder().setArtworkUri(Uri.parse("content://cx.aswin.boxlore.collage/art/x")).build()
+        val local = PlaybackArtworkMetadata.savedArtworkUrl(item)
+        assertEquals(null, local)
+        assertEquals(true, cx.aswin.boxlore.core.playback.service.auto.AutoMediaResolutionPolicy.needsPlaybackMetadataFallback("Title", "Show", local))
+    }
 }

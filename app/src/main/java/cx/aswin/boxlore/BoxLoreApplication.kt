@@ -299,7 +299,7 @@ class BoxLoreApplication :
         runCatching {
             val database = container.database
             val history = database.listeningHistoryDao().repairPlaybackArtworkLinks()
-            val queue = database.queueDao().repairPlaybackArtworkLinks()
+            val queue = database.queueDao().repairPlaybackArtworkLinksForSync()
             if (history + queue > 0) android.util.Log.i("BoxLoreApplication", "Repaired player-only artwork links: history=$history queue=$queue")
         }.onFailure { error ->
             if (error is kotlinx.coroutines.CancellationException) throw error

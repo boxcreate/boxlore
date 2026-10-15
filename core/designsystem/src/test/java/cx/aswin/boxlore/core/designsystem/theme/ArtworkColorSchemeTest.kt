@@ -7,32 +7,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
 import com.materialkolor.hct.Hct
-import kotlin.math.abs
-import kotlin.math.min
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ArtworkColorSchemeTest {
-    private fun hct(hue: Double, chroma: Double, tone: Double) = Hct.from(hue, chroma, tone).toInt()
+    private val palettes = ArtworkSchemeFixtures.palettes
+    private val styles = ArtworkSchemeFixtures.styles
 
-    // Seeds the picker can return: any hue, chroma at least 8, tone 12 to 92.
-    private val palettes: List<ArtworkPalette> = buildList {
-        for (hue in 0 until 360 step 30) {
-            for ((chroma, tone) in listOf(12.0 to 20.0, 70.0 to 55.0, 40.0 to 88.0)) {
-                add(ArtworkPalette(seed = hct(hue.toDouble(), chroma, tone), average = hct(hue.toDouble(), chroma, tone)))
-            }
-        }
-    }
+    private fun hct(hue: Double, chroma: Double, tone: Double) = ArtworkSchemeFixtures.hct(hue, chroma, tone)
 
-    private val styles = listOf(
-        false to SurfaceStyles.STANDARD,
-        true to SurfaceStyles.STANDARD,
-        true to SurfaceStyles.AMOLED,
-        false to SurfaceStyles.PURE_WHITE,
-        true to SurfaceStyles.DYNAMIC_OLED_WHITE,
-        false to SurfaceStyles.DYNAMIC_OLED_WHITE,
-    )
+    private fun textPairs(scheme: ColorScheme) = ArtworkSchemeFixtures.textPairs(scheme)
+
+    private fun hueGap(a: Double, b: Double) = ArtworkSchemeFixtures.hueGap(a, b)
 
     @Test
     fun `page text and buttons stay readable for any cover, mode and pure style`() {
@@ -93,20 +80,8 @@ class ArtworkColorSchemeTest {
         assertEquals(200.0, artworkHueForDarkTone(200.0))
     }
 
-    private fun textPairs(scheme: ColorScheme) = listOf(
-        "onSurface/background" to (scheme.onSurface to scheme.background),
-        "onBackground/background" to (scheme.onBackground to scheme.background),
-        "onSurface/surface" to (scheme.onSurface to scheme.surface),
-        "onSurfaceVariant/surface" to (scheme.onSurfaceVariant to scheme.surface),
-        "onPrimary/primary" to (scheme.onPrimary to scheme.primary),
-        "onPrimaryContainer/primaryContainer" to (scheme.onPrimaryContainer to scheme.primaryContainer),
-        "onSecondaryContainer/secondaryContainer" to (scheme.onSecondaryContainer to scheme.secondaryContainer),
-    )
-
     private fun assertReadable(foreground: Color, background: Color, minimum: Float, where: String) {
         val contrast = artworkContrast(foreground, background)
         assertTrue(contrast >= minimum, "$where: contrast=$contrast")
     }
-
-    private fun hueGap(a: Double, b: Double) = abs(a - b).let { min(it, 360.0 - it) }
 }
