@@ -41,9 +41,10 @@ import cx.aswin.boxlore.feature.info.logic.loadArtworkSeed
 private data class ArtworkResult(val urls: List<String>, val palette: ArtworkPalette?, val complete: Boolean)
 
 /**
- * The page and navbar share the same animated palette, read from the cover by the shared artwork
- * extractor (the player reads the same one); saved app colors stay independent. The blurred-cover
- * backdrop's strength follows the cover too, easing on the same clock as the colours.
+ * The page and navbar share the same animated palette: a Material scheme built from the seed the
+ * shared artwork picker reads from the cover (the player and Home's hero cards use the same seed);
+ * saved app colors stay independent. The blurred-cover backdrop's strength follows the cover's mean
+ * colour, easing on the same clock as the colours.
  */
 @Composable
 internal fun ArtworkInfoTheme(imageUrls: List<String?>, isLoading: Boolean = false, content: @Composable () -> Unit) {

@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 private const val PaletteSizePx = 128
-private const val PaletteColours = 24
+private const val PaletteColours = 16
 private const val AverageSizePx = 8
 
 /** One process-wide cache keyed by artwork URL, so a cover read for a page also colours the player. */
@@ -57,8 +57,8 @@ private fun readOnScreenPalette(bitmap: Bitmap): ArtworkPalette? {
 }
 
 private fun readArtworkPalette(bitmap: Bitmap): ArtworkPalette? {
-    // Without the default filter, white margins and black lettering count toward a neutral ground.
-    val swatches = Palette.from(bitmap).clearFilters().maximumColorCount(PaletteColours).generate().swatches
+    // Palette's default filter already drops near-black and near-white swatches before the picker runs.
+    val swatches = Palette.from(bitmap).maximumColorCount(PaletteColours).generate().swatches
     return extractArtworkPalette(swatches.map { ArtworkColorCandidate(it.rgb, it.population) }, bitmap.averageColour())
 }
 
