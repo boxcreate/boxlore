@@ -106,20 +106,7 @@ internal suspend fun HomeViewModel.fetchBecauseYouLikeRecommendations(
 ) {
     withContext(Dispatchers.Default) {
         val currentSlotKey = BecauseYouLikeRotationLogic.currentSlotKey(clock)
-
-        if (!forceRefresh &&
-            boxcastPrefs.getCachedBylPodcastId() == podcast.id &&
-            boxcastPrefs.getCachedBylSlot() == currentSlotKey
-        ) {
-            if (_becauseYouLikeRecommendations.value.isNotEmpty() && _becauseYouLikePodcasts.value.isNotEmpty()) {
-                android.util.Log.d(
-                    "HomeViewModel",
-                    "BYL cache hit in memory for ${podcast.id} in slot $currentSlotKey; skipping network fetch.",
-                )
-                return@withContext
-            }
-            if (restoreCachedBecauseYouLike(podcast.id, currentSlotKey)) return@withContext
-        }
+        if (!forceRefresh && reuseCachedBecauseYouLike(podcast.id, currentSlotKey)) return@withContext
 
         _isBecauseYouLikeLoading.value = true
         try {
@@ -160,22 +147,7 @@ internal suspend fun HomeViewModel.fetchBecauseYouLikeRecommendations(
 
             _becauseYouLikePodcasts.value = ranked.first
             _becauseYouLikeRecommendations.value = ranked.second
-
-            try {
-                val json = Json { ignoreUnknownKeys = true }
-                val serializedEpisodes = json.encodeToString(ranked.second)
-                val serializedPodcasts = json.encodeToString(ranked.first)
-                boxcastPrefs.saveBylCache(
-                    episodesJson = serializedEpisodes,
-                    podcastsJson = serializedPodcasts,
-                    podcastId = id,
-                    slotKey = currentSlotKey,
-                )
-            } catch (ce: CancellationException) {
-                throw ce
-            } catch (ce: Exception) {
-                android.util.Log.e("HomeViewModel", "Failed to cache because-you-like recommendations", ce)
-            }
+            saveBecauseYouLikeCache(ranked, id, currentSlotKey)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -232,6 +204,32 @@ internal suspend fun HomeViewModel.rankBecauseYouLike(
         )
     return HomeBecauseYouLikeLogic.sortPodcastsByEpisodeScores(podcasts, podcastScores) to
         HomeBecauseYouLikeLogic.sortEpisodesByScores(episodes, episodeScores)
+}
+
+/** True when this slot's picks for [podcastId] are already shown or restored from disk, so no request is needed. */
+private fun HomeViewModel.reuseCachedBecauseYouLike(podcastId: String, slotKey: String): Boolean {
+    if (boxcastPrefs.getCachedBylPodcastId() != podcastId || boxcastPrefs.getCachedBylSlot() != slotKey) return false
+    if (_becauseYouLikeRecommendations.value.isNotEmpty() && _becauseYouLikePodcasts.value.isNotEmpty()) {
+        android.util.Log.d("HomeViewModel", "BYL cache hit in memory for $podcastId in slot $slotKey; skipping network fetch.")
+        return true
+    }
+    return restoreCachedBecauseYouLike(podcastId, slotKey)
+}
+
+private fun HomeViewModel.saveBecauseYouLikeCache(ranked: Pair<List<Podcast>, List<Episode>>, podcastId: String, slotKey: String) {
+    try {
+        val json = Json { ignoreUnknownKeys = true }
+        boxcastPrefs.saveBylCache(
+            episodesJson = json.encodeToString(ranked.second),
+            podcastsJson = json.encodeToString(ranked.first),
+            podcastId = podcastId,
+            slotKey = slotKey,
+        )
+    } catch (ce: CancellationException) {
+        throw ce
+    } catch (ce: Exception) {
+        android.util.Log.e("HomeViewModel", "Failed to cache because-you-like recommendations", ce)
+    }
 }
 
 private fun HomeViewModel.restoreCachedBecauseYouLike(podcastId: String, slotKey: String): Boolean {
