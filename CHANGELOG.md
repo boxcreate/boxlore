@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PodcastInfoLoadRecovery` and `BriefingLoadingContent`. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add adaptive tablet/foldable window, card and pane specifications, side navigation and retained detail/player hosts. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Add a tablet-only alpha startup screen with persistent acknowledgment before Welcome. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Home hero card styles Cover (replaces Classic), Tide, Duotone, Halo and Marquee alongside Block, each with its own skeleton and `HeroCoverShade` colour options. Marquee adds a pinned cover, frosted top bar, scroll stop, auto-advance and label chips. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Settings Appearance overview with Home, Player, Navigation and Text pages and picture tiles. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add hermetic JVM coverage for setup actions, button semantics, narrow and enlarged-text layouts, first-line dismissal alignment and RTL geometry. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -62,6 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Player colours use a tonal scheme seeded from the cover; split-pill mini player; `PlayerSheetRevealLogic` fade-through. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Lore cards show full text with `LoreDeckMotion`; `m3Shimmer` is a draw-only `Modifier.Node`. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Adapt Home modules, discovery rows, Settings, reading surfaces, dialogs and keyboard/mouse input to available tablet panes. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `HeroCardStyle.DEFAULT` is Cover on the Artwork shade, and `HeroCardStylePreferences` saves only picked values. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- On tablets the artwork hero cards use the Hero width bound and Marquee falls back to Cover (`homeHeroStyle`); below `ShortHeroHeight` (tabletop folds) Duotone moves its time into the copy and Halo shows as Cover. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -92,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Podcast Info no longer spins forever when show details fail. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - User-facing strings use boxlore, all lowercase. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Keep tablet playback controls clear of system navigation, preserve ranked result ordering and improve artwork-themed dark-mode foregrounds. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Halo's Play badge is no longer clipped. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -250,6 +255,13 @@ readme-copy:end pr=1117 -->
 ### Fixes
 - Improve tablet card sizing, spacing and dark-mode readability, and keep player controls above system navigation.
 readme-copy:end pr=1118 -->
+
+<!-- readme-copy:start pr=1119
+### Improvements
+- Home's top cards now show each show's full cover. Pick Block, Cover, Tide, Duotone, Halo or Marquee, with colour options for each, in Settings > Appearance > Home.
+- Marquee puts one big cover under the top bar and moves to the next card on its own, pausing while you touch it. Tablets show Cover cards instead.
+- Appearance settings open on a short overview, with separate pages for Home, the player, navigation and text.
+readme-copy:end pr=1119 -->
 
 <!-- readme-copy:start pr=1120
 ### Improvements
