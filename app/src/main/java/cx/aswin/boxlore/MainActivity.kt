@@ -71,6 +71,26 @@ class MainActivity : ComponentActivity() {
     private var consumedAuthLink: String? = null
     private var inFlightAuthLink: String? = null
     private var pendingCrossDeviceAuthLink by mutableStateOf<String?>(null)
+    private val tabletAlphaPrefs by lazy { cx.aswin.boxlore.core.prefs.BoxcastPrefs(this) }
+    internal var tabletAlphaNoticePending by mutableStateOf(false)
+        private set
+    private var resumePromptsAfterTabletNotice = false
+
+    private fun restoreTabletAlphaNotice(savedInstanceState: Bundle?) {
+        val bounds = windowManager.currentWindowMetrics.bounds
+        val density = resources.displayMetrics.density
+        tabletAlphaNoticePending = cx.aswin.boxlore.ui.shouldShowTabletAlphaNotice(
+            cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(bounds.width() / density, bounds.height() / density),
+            tabletAlphaPrefs.hasAcknowledgedTabletAlphaNotice(),
+            savedInstanceState?.takeIf { it.containsKey(KEY_TABLET_ALPHA_NOTICE_PENDING) }?.getBoolean(KEY_TABLET_ALPHA_NOTICE_PENDING),
+        )
+    }
+
+    private fun acknowledgeTabletAlphaNotice() {
+        tabletAlphaPrefs.acknowledgeTabletAlphaNotice()
+        tabletAlphaNoticePending = false
+        resumePromptsAfterTabletNotice = true
+    }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
@@ -163,6 +183,10 @@ class MainActivity : ComponentActivity() {
                 .getInstance()
                 .get(java.util.Calendar.HOUR_OF_DAY),
         )
+        if (!tabletAlphaNoticePending) resumeForegroundPrompts()
+    }
+
+    private fun resumeForegroundPrompts() {
         NpsSurveyTriggers.check(
             surveyPrefs = surveyPrefs,
             engagementCoordinator = engagementCoordinator,
@@ -190,12 +214,14 @@ class MainActivity : ComponentActivity() {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_CONSUMED_AUTH_LINK, consumedAuthLink)
         outState.putString(KEY_PENDING_CROSS_DEVICE_AUTH_LINK, pendingCrossDeviceAuthLink)
+        outState.putBoolean(KEY_TABLET_ALPHA_NOTICE_PENDING, tabletAlphaNoticePending)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         (application as BoxLoreApplication).startupWorkGate.onUiCreated()
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        restoreTabletAlphaNotice(savedInstanceState)
         consumedAuthLink = savedInstanceState?.getString(KEY_CONSUMED_AUTH_LINK) ?: consumedAuthLink
         pendingCrossDeviceAuthLink = savedInstanceState?.getString(KEY_PENDING_CROSS_DEVICE_AUTH_LINK)
         handlePlayerIntent(intent)
@@ -222,14 +248,37 @@ class MainActivity : ComponentActivity() {
         setContent {
             val windowLayout = cx.aswin.boxlore.ui.rememberBoxloreWindowLayout()
             androidx.compose.runtime.SideEffect { windowLayoutState.value = windowLayout }
-            LaunchedEffect(Unit) {
+            LaunchedEffect(tabletAlphaNoticePending) {
                 withFrameNanos {}
                 withFrameNanos {}
-                appUpdates.foreground()
+                if (tabletAlphaNoticePending) {
+                    (application as BoxLoreApplication).startupWorkGate.markReady()
+                } else {
+                    appUpdates.foreground()
+                    if (resumePromptsAfterTabletNotice && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                        resumePromptsAfterTabletNotice = false
+                        resumeForegroundPrompts()
+                    }
+                }
             }
             androidx.compose.runtime.CompositionLocalProvider(
                 cx.aswin.boxlore.updates.LocalPlayUpdateAction provides { playAppUpdateHelper.startUpdate() },
                 cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout provides windowLayout,
+            ) {
+            cx.aswin.boxlore.ui.TabletAlphaStartupGate(
+                pending = tabletAlphaNoticePending,
+                onAcknowledge = ::acknowledgeTabletAlphaNotice,
+                noticeTheme = { notice ->
+                    val preferences = (application as BoxLoreApplication).userPreferencesRepository
+                    cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme(
+                        darkTheme = cx.aswin.boxlore.core.designsystem.theme.darkThemeFromConfig(this@MainActivity, preferences.cachedThemeConfig),
+                        dynamicColor = preferences.cachedUseDynamicColor,
+                        themeBrand = preferences.cachedThemeBrand,
+                        surfaceStyle = preferences.cachedSurfaceStyle,
+                        fontRoundness = cx.aswin.boxlore.core.designsystem.theme.FontRoundness.axisValue(preferences.cachedFontRoundness),
+                        content = notice,
+                    )
+                },
             ) {
             BoxLoreAppRoot(
                 activity = this@MainActivity,
@@ -254,12 +303,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
             }
+            }
         }
     }
 
     companion object {
         private const val KEY_CONSUMED_AUTH_LINK = "cx.aswin.boxlore.consumed_auth_link"
         private const val KEY_PENDING_CROSS_DEVICE_AUTH_LINK = "cx.aswin.boxlore.pending_cross_device_auth_link"
+        private const val KEY_TABLET_ALPHA_NOTICE_PENDING = "cx.aswin.boxlore.tablet_alpha_notice_pending"
         private var lastConsumedAuthLink: String? = null
     }
 }
