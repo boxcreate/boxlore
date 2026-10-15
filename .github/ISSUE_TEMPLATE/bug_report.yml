@@ -1,44 +1,48 @@
-name: 🐛 Bug Report
-description: Report a reproducible bug or unexpected behavior in boxlore
+name: Bug report
+description: Something in boxlore doesn't work the way it should
 title: "[Bug]: "
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug! Please fill out the details below so we can track and resolve it quickly.
+        Thanks for reporting this. One bug per report, with as much detail as you can, helps it get fixed sooner.
+
+        If boxlore closed or froze, use the crash report instead. To report a security issue, use the private security link on the previous page.
 
   - type: input
     id: app-version
     attributes:
-      label: App Version
-      description: "Which version of boxlore are you running? (Found in Settings > About or app info page)"
-      placeholder: "e.g. v0.0.24"
+      label: App version
+      description: "Find it in Settings > About, or in Android's app info for boxlore."
+      placeholder: "e.g. 0.0.28"
     validations:
       required: true
 
   - type: input
     id: device
     attributes:
-      label: Device & Android Version
-      description: "Your device model and operating system version"
-      placeholder: "e.g. Pixel 8 (Android 15), Samsung S23 (One UI 6.1)"
+      label: Device and Android version
+      description: "Your phone or tablet model and the Android version it runs."
+      placeholder: "e.g. Pixel 8, Android 15 or Galaxy S23, One UI 6.1"
     validations:
       required: true
 
   - type: dropdown
     id: area
     attributes:
-      label: Which area is affected?
+      label: Where in boxlore?
       options:
         - Playback
-        - Player UI
+        - Player screen
         - Search & Explore
-        - Home & Recommendations
-        - Library & Offline
+        - Lore
+        - Home & recommendations
+        - The boxlore brief
+        - Library & downloads
         - Onboarding
         - Widgets
-        - Platform (Wear/TV/Tablet/Cast)
-        - Backend & Catalog
+        - Android Auto, Cast & other devices
+        - Backend & catalog
         - Developer / CI
         - Other
     validations:
@@ -48,8 +52,8 @@ body:
     id: description
     attributes:
       label: What happened?
-      description: "Describe the bug clearly. What did you expect vs what actually happened?"
-      placeholder: "When I open a show with 500+ episodes, the episode list flickers and..."
+      description: "What did you expect, and what happened instead?"
+      placeholder: "When I open a show with more than 500 episodes, the episode list flickers."
     validations:
       required: true
 
@@ -57,20 +61,20 @@ body:
     id: steps
     attributes:
       label: Steps to reproduce
-      description: "Step-by-step instructions to reproduce the issue"
+      description: "The steps that lead to the bug, starting from opening boxlore."
       placeholder: |
-        1. Launch boxlore
-        2. Go to 'Library' tab
-        3. Tap on show '...'
-        4. Observe ...
+        1. Open boxlore
+        2. Go to Library
+        3. Tap the show '...'
+        4. See ...
     validations:
       required: false
 
   - type: textarea
     id: logs
     attributes:
-      label: Relevant Logs or Stack Trace
-      description: "If you have logcat output or error logs, paste them here"
+      label: Logs or stack trace
+      description: "If you have logcat output or an error log, paste it here."
       render: shell
     validations:
       required: false
@@ -78,17 +82,17 @@ body:
   - type: textarea
     id: media
     attributes:
-      label: Screenshots / Screen Recording
-      description: "Drag and drop any screenshots or screen recordings that help illustrate the issue"
+      label: Screenshots or screen recording
+      description: "Drag screenshots or a short recording here. A recording often shows what words can't."
     validations:
       required: false
 
   - type: checkboxes
     id: checkboxes
     attributes:
-      label: Confirmation
+      label: Before you submit
       options:
-        - label: "I have verified this issue exists on the latest release of boxlore."
+        - label: "This happens on the latest release of boxlore."
           required: true
-        - label: "I searched existing GitHub issues and confirmed this is not a duplicate."
+        - label: "I searched existing issues, and this isn't a duplicate."
           required: false

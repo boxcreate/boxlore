@@ -1,29 +1,31 @@
-name: ⚡ Enhancement
-description: Suggest an improvement, refinement, or optimization to an existing feature
+name: Enhancement
+description: Change or refine something boxlore already does
 title: "[Enhancement]: "
 body:
   - type: markdown
     attributes:
       value: |
-        Have a suggestion to refine, polish, or optimize an existing feature in boxlore? We'd love to hear it! ⚡
+        Use this to suggest a change to something boxlore already does. For something new, use the feature request instead.
 
   - type: dropdown
     id: area
     attributes:
-      label: Which area does this relate to?
+      label: Which part of boxlore?
       options:
         - Playback
-        - Player UI
+        - Player screen
         - Search & Explore
-        - Home & Recommendations
-        - Library & Offline
+        - Lore
+        - Home & recommendations
+        - The boxlore brief
+        - Library & downloads
         - Onboarding
         - Widgets
-        - Platform (Wear/TV/Tablet/Cast)
+        - Android Auto, Cast & other devices
         - iOS
-        - Backend & Catalog
+        - Backend & catalog
         - Analytics
-        - Performance & Optimization
+        - Performance
         - Developer / CI
         - Other
     validations:
@@ -32,34 +34,34 @@ body:
   - type: textarea
     id: current-behavior
     attributes:
-      label: Current Behavior
-      description: "How does the feature currently work or behave?"
-      placeholder: "Currently, when viewing..."
+      label: How it works today
+      description: "Describe what boxlore does now."
+      placeholder: "When I open a show, the newest episode is..."
     validations:
       required: true
 
   - type: textarea
     id: proposed-enhancement
     attributes:
-      label: Proposed Enhancement
-      description: "What improvement, refinement, or optimization would you like to see?"
-      placeholder: "It would be great if..."
+      label: What you'd change
+      description: "Describe the change you'd like to see."
+      placeholder: "It would help if..."
     validations:
       required: true
 
   - type: textarea
     id: motivation
     attributes:
-      label: Problem & Motivation
-      description: "Why would this change improve the user experience or performance?"
-      placeholder: "This makes navigation faster / reduces clutter because..."
+      label: Why it matters
+      description: "What would this make easier, faster or clearer for you?"
+      placeholder: "I'd get to the episode I want with one tap instead of three, because..."
     validations:
       required: true
 
   - type: textarea
     id: mockups
     attributes:
-      label: Mockups, Screenshots, or References
-      description: "Any concept sketches, mockups, or examples illustrating the idea"
+      label: Mockups, screenshots or examples
+      description: "Sketches, mockups, or how another app handles it."
     validations:
       required: false

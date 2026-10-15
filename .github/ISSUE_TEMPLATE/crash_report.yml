@@ -1,26 +1,26 @@
-name: 💥 Crash or ANR Report
-description: Report an application crash, freeze, or ANR (Application Not Responding)
+name: Crash or freeze report
+description: boxlore closed unexpectedly, froze, or showed an "isn't responding" (ANR) message
 title: "[Crash]: "
 body:
   - type: markdown
     attributes:
       value: |
-        We take stability issues and crashes very seriously. Thank you for reporting this so we can investigate and fix it immediately!
+        Thanks for reporting this. Crashes and freezes are among the first things we look at. A stack trace and the steps that led up to it help most.
 
   - type: input
     id: app-version
     attributes:
-      label: App Version & Build
-      description: "Which version of boxlore are you running? (Found in Settings > About)"
-      placeholder: "e.g. v0.0.24"
+      label: App version
+      description: "Find it in Settings > About, or in Android's app info for boxlore."
+      placeholder: "e.g. 0.0.28"
     validations:
       required: true
 
   - type: input
     id: device
     attributes:
-      label: Device & Android Version
-      description: "Device model and Android OS version"
+      label: Device and Android version
+      description: "Your phone or tablet model and the Android version it runs."
       placeholder: "e.g. Pixel 7 Pro, Android 14"
     validations:
       required: true
@@ -28,17 +28,19 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: Which area did the crash happen in?
+      label: Where were you in boxlore?
       options:
         - Playback
-        - Player UI
-        - Library & Offline
+        - Player screen
+        - Library & downloads
         - Search & Explore
-        - Home & Recommendations
+        - Lore
+        - Home & recommendations
+        - The boxlore brief
         - Onboarding
         - Widgets
-        - Platform (Wear/TV/Tablet/Cast)
-        - Backend & Catalog
+        - Android Auto, Cast & other devices
+        - Backend & catalog
         - Other
     validations:
       required: true
@@ -46,20 +48,20 @@ body:
   - type: dropdown
     id: frequency
     attributes:
-      label: Reproducibility
+      label: How often does it happen?
       options:
-        - "Always (100% reproducible on every attempt)"
-        - "Frequently (Occurs often under specific conditions)"
-        - "Intermittently (Hard to reproduce, happens sometimes)"
-        - "Happened once"
+        - "Every time I try"
+        - "Often, under certain conditions"
+        - "Sometimes, and it's hard to reproduce"
+        - "It happened once"
     validations:
       required: true
 
   - type: textarea
     id: stacktrace
     attributes:
-      label: Crash Log / Stack Trace
-      description: "Please paste the Android crash log or logcat output (if available)"
+      label: Crash log or stack trace
+      description: "Paste the Android crash log or logcat output, if you have it."
       placeholder: |
         FATAL EXCEPTION: main
         java.lang.NullPointerException: ...
@@ -70,19 +72,19 @@ body:
   - type: textarea
     id: steps
     attributes:
-      label: Steps to Reproduce
-      description: "What were you doing right before the crash occurred?"
+      label: Steps to reproduce
+      description: "What were you doing right before it crashed or froze?"
       placeholder: |
         1. Open boxlore
-        2. Tap on ...
-        3. App immediately closes
+        2. Tap ...
+        3. boxlore closes
     validations:
       required: true
 
   - type: checkboxes
     id: checkboxes
     attributes:
-      label: Confirmation
+      label: Before you submit
       options:
-        - label: "I have verified this crash exists on the latest release of boxlore."
+        - label: "This happens on the latest release of boxlore."
           required: true
