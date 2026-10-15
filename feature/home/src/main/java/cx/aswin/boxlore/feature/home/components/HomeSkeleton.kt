@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardSkeleton
 import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import kotlin.math.roundToInt
@@ -80,6 +84,18 @@ fun HomeSkeleton(modifier: Modifier = Modifier) {
 @Composable
 fun HeroSkeleton(modifier: Modifier = Modifier) {
     val style = HeroCardStyle.sanitize(LocalHeroCardStyle.current)
+    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+        // Tablets show a row of hero cards; Home already swaps Marquee for Cover there (see homeHeroStyle).
+        androidx.compose.foundation.lazy.LazyRow(
+            modifier = modifier.fillMaxWidth().height(homeHeroHeight()).testTag("home_hero_skeleton"),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            items(count = 6, key = { "hero_skeleton_$it" }) {
+                Box(Modifier.width(320.dp).fillMaxHeight(), propagateMinConstraints = true) { HeroSkeletonCard(style) }
+            }
+        }
+        return
+    }
     if (style == HeroCardStyle.MARQUEE) {
         // One card across the whole width, as tall as Marquee's hero.
         Box(modifier.fillMaxWidth().height(marqueeHeroHeight()).testTag("home_hero_skeleton")) { HeroSkeletonCard(style) }
@@ -233,10 +249,14 @@ fun YourShowsSkeleton(
     subscribedCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
+    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+        TabletYourShowsSkeleton(subscribedCount, modifier)
+        return
+    }
     val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
 
-    Column(modifier = modifier.padding(bottom = 16.dp)) {
+    Column(modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility).padding(bottom = 16.dp)) {
         // Section Header Row
         Row(
             modifier =

@@ -7,7 +7,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material3.ripple
@@ -19,6 +18,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
 
 /**
  * Material 3 Expressive Motion Physics.
@@ -77,7 +77,8 @@ private fun Modifier.expressivePressLayer(
     shape: Shape?,
 ): Modifier {
     val clipped = if (shape == null) this else clip(shape)
-    if (feedback != ExpressivePressFeedback.Control || !pressScaleEnabled) return clipped
+    val inputFeedback = Modifier.tabletInputFeedback(interactionSource, shape ?: androidx.compose.ui.graphics.RectangleShape, enabled)
+    if (feedback != ExpressivePressFeedback.Control || !pressScaleEnabled) return clipped.then(inputFeedback)
     val pressed by interactionSource.collectIsPressedAsState()
     val scale = animateFloatAsState(
         targetValue = if (enabled && pressed) 0.97f else 1f,
@@ -88,7 +89,7 @@ private fun Modifier.expressivePressLayer(
     return graphicsLayer {
         scaleX = scale.value
         scaleY = scale.value
-    }.then(if (shape == null) Modifier else Modifier.clip(shape))
+    }.then(if (shape == null) Modifier else Modifier.clip(shape)).then(inputFeedback)
 }
 
 /**
@@ -172,8 +173,7 @@ fun Modifier.expressiveClickable(
             shape = shape,
         )
         .combinedClickable(
-            interactionSource = interactionSource,
-            indication = indication,
+            interaction = BoxloreClickInteraction(interactionSource, indication),
             enabled = enabled,
             onLongClickLabel = onLongClickLabel,
             onLongClick = onLongClick,

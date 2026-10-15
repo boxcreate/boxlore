@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -44,6 +43,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.explore.R
+import cx.aswin.boxlore.feature.explore.orderedExploreItems
 
 /** Topic destinations retain the catalog's ordering and card positions. */
 internal fun LazyStaggeredGridScope.exploreTopicResults(
@@ -76,10 +76,10 @@ internal fun LazyStaggeredGridScope.exploreTopicResults(
                 }
             }
         }
-        else -> itemsIndexed(
+        else -> orderedExploreItems(
             podcasts,
-            key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "topic") },
-        ) { index, podcast ->
+            itemKey = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "topic") },
+        ) { podcast, index ->
             ExploreBrowsePodcastCard(
                 podcast = podcast,
                 featured = false,

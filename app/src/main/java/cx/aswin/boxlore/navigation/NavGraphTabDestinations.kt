@@ -28,7 +28,7 @@ internal fun androidx.navigation.NavGraphBuilder.addOnboardingDestination(w: Nav
             viewModel = onboardingViewModel,
             onComplete = {
                 w.session.onOnboardingCompleted()
-                navController.navigate("home") {
+                w.navigate("home") {
                     popUpTo("onboarding") { inclusive = true }
                 }
             },
@@ -86,50 +86,50 @@ internal fun androidx.navigation.NavGraphBuilder.addHomeDestination(w: NavGraphW
             userPreferencesRepository = userPrefs,
             navController = navController,
             onPodcastClick = { podcast, entryPointStr, genreStr, depthVal ->
-                navigateHomePodcast(navController, podcast, entryPointStr, genreStr, depthVal)
+                navigateHomePodcast(navController, podcast, entryPointStr, genreStr, depthVal, navigate = { w.navigate(it) })
             },
             onPlayClick = { podcast, bundle ->
                 val episode = podcast.latestEpisode ?: return@HomeRoute
                 queueManager.playEpisode(episode, podcast, entryPointContext = bundle)
             },
             onHeroArrowClick = { heroItem, carouselPos ->
-                navigateHomeHeroArrow(navController, heroItem, carouselPos)
+                navigateHomeHeroArrow(navController, heroItem, carouselPos, navigate = { w.navigate(it) })
             },
             onEpisodeClick = { episode, podcast, entryPointStr ->
-                navigateHomeEpisode(navController, episode, podcast, entryPointStr)
+                navigateHomeEpisode(navController, episode, podcast, entryPointStr, navigate = { w.navigate(it) })
             },
             onNavigateToLibrary = {
-                navController.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) {
+                w.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) {
                     popUpTo("home") { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
             },
             onNavigateToDownloads = {
-                navController.navigate(NavRoutes.LIBRARY_DOWNLOADS)
+                w.navigate(NavRoutes.LIBRARY_DOWNLOADS)
             },
             onNavigateToLatestEpisodes = {
-                navController.navigate("library/subscriptions?tab=1")
+                w.navigate("library/subscriptions?tab=1")
             },
             onNavigateToExplore = { category, entryPoint, tab ->
                 navigateHomeExplore(navController, category, entryPoint, tab)
             },
-            onNavigateToSettings = { navController.navigate("settings?page=hub") },
+            onNavigateToSettings = { w.navigate("settings?page=hub") },
             onNavigateToPlayStoreReview = { launchInAppReview(context) },
             onSubmitFeedback = onSubmitFeedback,
             onFeedbackClick = { w.actions.onShowFeedbackSheet() },
-            onNavigateToDebug = { navController.navigate("debug") },
+            onNavigateToDebug = { w.navigate("debug") },
             onImportClick = {
                 opmlCallbacks.onSourceChange("home_import_banner")
                 opmlCallbacks.onImportStateChange(OpmlImportState.ShowSelector)
             },
             onAiOnboardingClick = {
                 onboardingViewModel.startOnboarding("home_import_banner")
-                navController.navigate("onboarding")
+                w.navigate("onboarding")
             },
             onInitialContentReady = w.session.onInitialHomeContentReady,
             onBriefingClick = { region ->
-                navController.navigate("briefing?region=$region")
+                w.navigate("briefing?region=$region")
             },
         )
     }
@@ -170,7 +170,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
             viewModel = viewModel,
             playbackRepository = playbackRepository,
             bottomContentPadding = miniPlayerPadding,
-            onNavigateToHistory = { navController.navigate("learn/history") },
+            onNavigateToHistory = { w.navigate("learn/history") },
             onEpisodeClick = { episode ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                 val route =
@@ -180,7 +180,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
                         "${encode(episode.audioUrl)}/" +
                         "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
                         "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
-                navController.navigate(route)
+                w.navigate(route)
             },
             onQueueEpisode = { episode ->
                 scope.launchCoroutine {
@@ -201,7 +201,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
             },
             onPodcastClick = { feedId, _, _, _ ->
                 val pId = feedId?.toString() ?: ""
-                navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=learn")
+                w.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=learn")
             },
         )
     }
@@ -236,7 +236,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
                         "${encode(episode.audioUrl)}/" +
                         "${episode.duration}/${encode(episode.podcastId ?: "learn")}/" +
                         "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=learn"
-                navController.navigate(route)
+                w.navigate(route)
             },
         )
     }
@@ -282,7 +282,7 @@ internal fun androidx.navigation.NavGraphBuilder.addBriefingDestination(w: NavGr
                         "${encode(episode.audioUrl)}/" +
                         "${episode.duration}/${encode(episode.podcastId ?: "briefing")}/" +
                         "${encode(episode.podcastTitle ?: "Podcast")}?entryPoint=briefing"
-                navController.navigate(route)
+                w.navigate(route)
             },
         )
     }
@@ -353,11 +353,11 @@ internal fun androidx.navigation.NavGraphBuilder.addExploreDestination(w: NavGra
                 if (genreStr != null) params.add("genre=$genreStr")
                 if (depthVal != null) params.add("depth=$depthVal")
                 if (params.isNotEmpty()) route += "?" + params.joinToString("&")
-                navController.navigate(route)
+                w.navigate(route)
             },
             onEpisodeClick = { episode, podcast ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                navController.navigate(
+                w.navigate(
                     "episode/${encode(episode.id)}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +
                         "${encode(episode.imageUrl)}/" +
@@ -367,7 +367,7 @@ internal fun androidx.navigation.NavGraphBuilder.addExploreDestination(w: NavGra
                         "?entryPoint=explore_for_you",
                 )
             },
-            onNavigateToRegionSettings = { navController.navigate("settings?page=library") },
+            onNavigateToRegionSettings = { w.navigate("settings?page=library") },
         )
     }
 }

@@ -37,6 +37,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.PodrollItem
@@ -237,7 +239,7 @@ internal fun RecommendedPodcastCard(
 ) {
     Surface(
         modifier =
-        modifier
+        modifier.boxloreCardWidth(BoxloreCardFamily.RailItem)
             .expressiveClickable(shape = MaterialTheme.shapes.medium) {
                 val targetId =
                     if (!item.uuid.isNullOrBlank()) {

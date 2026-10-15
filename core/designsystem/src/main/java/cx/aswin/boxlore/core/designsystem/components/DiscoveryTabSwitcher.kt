@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import kotlin.math.abs
 
 data class DiscoveryTab(val label: String, val icon: ImageVector? = null, val badgeCount: Int = 0)
@@ -104,7 +105,7 @@ private fun DiscoveryTabItem(tab: DiscoveryTab, selected: Boolean, coverage: Flo
     val content = lerp(MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.onPrimaryContainer, coverage)
     val interactionSource = remember { MutableInteractionSource() }
     Row(
-        modifier.clip(CircleShape).selectable(
+        modifier.clip(CircleShape).tabletInputFeedback(interactionSource, CircleShape).selectable(
             selected = selected,
             interactionSource = interactionSource,
             indication = null,

@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.feature.settings.R
 
 /** Stable Compose [testTag] ids for Settings RSS dialog instrumentation / Maestro. */
@@ -60,7 +61,7 @@ internal fun AddRssFeedDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().tabletSheetScroll(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
@@ -164,7 +165,7 @@ internal fun RssMatchConfirmationDialog(
         },
         title = { Text("Is this the same show?") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.tabletSheetScroll(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text =
                     "“$rssTitle” looks like your existing subscription to " +

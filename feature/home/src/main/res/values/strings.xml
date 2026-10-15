@@ -90,4 +90,7 @@
     <string name="home_shows_pinned">Pinned</string>
     <string name="home_mix_played">Played</string>
     <string name="home_mix_downloaded">Downloaded</string>
+    <string name="home_setup_suggestions_description">Get recommendations based on what you enjoy.</string>
+    <string name="home_setup_search_description">Find a show, topic, or episode.</string>
+    <string name="home_setup_import_description">Bring subscriptions from another podcast app.</string>
 </resources>

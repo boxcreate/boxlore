@@ -20,6 +20,8 @@
     <string name="hero_duotone_colors_footer">Dark redraws covers in black and white. Artwork uses each cover\'s own color. App theme uses your accent color.</string>
     <string name="hero_card_style_marquee">Marquee</string>
     <string name="hero_card_style_marquee_description">A full-width cover under the top bar, with the next cards beside Play.</string>
+    <!-- Marquee's tile on tablets, where Home shows Cover cards instead. -->
+    <string name="hero_card_style_marquee_description_tablet">A full-width cover on phones. Tablets show Cover cards instead.</string>
     <!-- Shown under the picker when Marquee is chosen: covers in full colour or redrawn in two tones. Same choice as Cover's shade. -->
     <string name="hero_marquee_colors_title">Cover colors</string>
     <string name="hero_marquee_colors_footer">Full color shows covers as they are. Artwork redraws them in two tones of their own color. App theme uses your accent color.</string>

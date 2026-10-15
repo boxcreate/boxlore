@@ -34,12 +34,14 @@ internal fun briefingCoverPainter(region: String, editionDate: String): Painter 
 
 /** Uncropped landscape artwork; contrast is confined to the masthead and metadata. */
 @Composable
+@Suppress("LongParameterList")
 fun BriefingCover(
     region: String,
     editionDate: String,
     modifier: Modifier = Modifier,
     mastheadTopPadding: Dp = 16.dp,
     mastheadScrim: Boolean = false,
+    artworkContentScale: ContentScale = ContentScale.Fit,
     trailing: @Composable BoxScope.() -> Unit = {},
     footer: @Composable BoxScope.() -> Unit = {},
 ) {
@@ -47,7 +49,7 @@ fun BriefingCover(
         Image(
             painter = briefingCoverPainter(region, editionDate),
             contentDescription = null,
-            contentScale = ContentScale.Fit,
+            contentScale = artworkContentScale,
             modifier = Modifier.fillMaxSize(),
         )
         if (mastheadScrim) {

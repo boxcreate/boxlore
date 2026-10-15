@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.home.components
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -15,10 +16,12 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 
+@Immutable
+data class HomeRecommendationLayout(val columns: Int = 2, val tablet: Boolean = false)
+
 /**
  * Emits the "For You" section into a [LazyStaggeredGridScope].
- * The first recommendation stays full-line; body cards load one [EqualHeightPosterGrid]
- * row at a time with font-scaled three-line title feet.
+ * Phones retain the featured card and poster grid; tablets use one continuous recommendation rail.
  */
 fun LazyStaggeredGridScope.forYouItems(
     recommendations: StableEpisodeList,
@@ -27,6 +30,23 @@ fun LazyStaggeredGridScope.forYouItems(
     onBrowseRecommendations: () -> Unit,
     showTasteHeader: Boolean = true,
     isFallback: Boolean = true,
+    layout: HomeRecommendationLayout = HomeRecommendationLayout(),
+) {
+    if (layout.tablet && layout.columns >= 3) {
+        tabletForYouItems(recommendations, onEpisodeClick, discoveryContextTitle, onBrowseRecommendations, showTasteHeader, isFallback)
+        return
+    }
+    compactForYouItems(recommendations, onEpisodeClick, discoveryContextTitle, onBrowseRecommendations, showTasteHeader, isFallback, layout.columns)
+}
+
+private fun LazyStaggeredGridScope.compactForYouItems(
+    recommendations: StableEpisodeList,
+    onEpisodeClick: (Episode, Podcast) -> Unit,
+    discoveryContextTitle: String,
+    onBrowseRecommendations: () -> Unit,
+    showTasteHeader: Boolean,
+    isFallback: Boolean,
+    columns: Int,
 ) {
     val items = recommendations.list.take(HomeFeedSpacing.ForYouTotalCap)
 
@@ -37,7 +57,7 @@ fun LazyStaggeredGridScope.forYouItems(
     }
 
     if (items.isEmpty()) {
-        forYouSkeletonItems()
+        forYouSkeletonItems(columns)
         return
     }
 
@@ -79,11 +99,11 @@ fun LazyStaggeredGridScope.forYouItems(
     }
 
     val remaining = items.drop(1)
-    remaining.chunked(2).forEachIndexed { row, rowItems ->
+    remaining.chunked(columns).forEachIndexed { row, rowItems ->
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_$row", contentType = "for_you_body") {
-            EqualHeightPosterGrid {
+            EqualHeightPosterGrid(columns = columns) {
                 rowItems.forEachIndexed { index, ep ->
-                    val originalIndex = row * 2 + index + 1
+                    val originalIndex = row * columns + index + 1
                     val parentPodcast =
                         Podcast(
                             id = ep.podcastId ?: "",
@@ -135,15 +155,49 @@ internal fun HomePersonalRecommendationsHeader(
     )
 }
 
-private fun LazyStaggeredGridScope.forYouSkeletonItems() {
+private fun LazyStaggeredGridScope.forYouSkeletonItems(columns: Int) {
     item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero", contentType = "for_you_hero") {
         HomeMediaCardSkeleton(presentation = FeedMediaCardPresentation.ExpressiveFeatured)
     }
-    repeat((HomeFeedSpacing.ForYouBodyCount + 1) / 2) { row ->
+    repeat((HomeFeedSpacing.ForYouBodyCount + columns - 1) / columns) { row ->
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_$row", contentType = "for_you_body") {
-            EqualHeightPosterGrid {
-                repeat(2) { HomeMediaCardSkeleton() }
+            EqualHeightPosterGrid(columns = columns) {
+                repeat((HomeFeedSpacing.ForYouBodyCount - row * columns).coerceAtMost(columns)) { HomeMediaCardSkeleton() }
             }
         }
     }
+}
+
+private fun LazyStaggeredGridScope.tabletForYouItems(
+    recommendations: StableEpisodeList,
+    onEpisodeClick: (Episode, Podcast) -> Unit,
+    discoveryContextTitle: String,
+    onBrowse: () -> Unit,
+    showTasteHeader: Boolean,
+    isFallback: Boolean,
+) {
+    if (showTasteHeader) {
+        item(span = StaggeredGridItemSpan.FullLine, key = "for_you_header", contentType = "for_you_header") {
+            HomePersonalRecommendationsHeader(isFallback, onBrowse)
+        }
+    }
+    item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero", contentType = "for_you_hero") {
+        if (recommendations.list.isNotEmpty()) {
+            LaunchedEffect(recommendations.list, discoveryContextTitle) {
+                AnalyticsHelper.trackHomeRecommendationsImpression(recommendations.list.size, recommendations.list.map { it.id }, discoveryContextTitle)
+            }
+        }
+        TabletRecommendationRail(recommendations.list.take(HomeFeedSpacing.ForYouTotalCap)) { episode, index, presentation ->
+            TabletRecommendationCard(episode, index, discoveryContextTitle, presentation, onEpisodeClick)
+        }
+    }
+}
+
+@Composable
+private fun TabletRecommendationCard(episode: Episode, index: Int, contextTitle: String, presentation: FeedMediaCardPresentation, onClick: (Episode, Podcast) -> Unit) {
+    val podcast = Podcast(id = episode.podcastId ?: "", title = episode.podcastTitle ?: "Podcast", artist = "", imageUrl = episode.podcastImageUrl?.takeIf { it.isNotBlank() } ?: episode.imageUrl?.takeIf { it.isNotBlank() } ?: "", description = "", genre = episode.podcastGenre ?: "Podcast")
+    CuratedEpisodeCard(episode = episode, podcast = podcast, showSubtitle = false, presentation = presentation, onClick = {
+        AnalyticsHelper.trackHomeRecommendationCardTapped(episode.id, episode.title, podcast.id, podcast.title, index, contextTitle)
+        onClick(episode, podcast)
+    })
 }

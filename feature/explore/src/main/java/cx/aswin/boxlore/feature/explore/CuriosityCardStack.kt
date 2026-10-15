@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -40,8 +40,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.artworkDeepShade
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.core.playback.PlayerState
 import kotlin.math.roundToInt
 
@@ -85,8 +90,11 @@ fun CuriosityCardStack(
     // A fourth card waits hidden behind the deck and fades into third place during a swipe.
     val visibleCards = questions.take(LoreDeckDepth + 1)
 
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     Box(
         modifier = modifier
+            .boxloreCardWidth(BoxloreCardFamily.Reading, maximumWidthDp = 520f)
+            .then(if (tablet) Modifier.wrapContentHeight(Alignment.Top).heightIn(max = 640.dp) else Modifier)
             .fillMaxSize()
             .widthIn(max = 520.dp)
             .padding(bottom = 28.dp),
@@ -227,10 +235,13 @@ private fun CuriosityCardContent(
 ) {
     val cardShape = MaterialTheme.shapes.extraLarge
     val cardInteractionSource = remember { MutableInteractionSource() }
-    val windowSize = LocalWindowInfo.current.containerSize
-    val compactSpacing = with(LocalDensity.current) {
-        windowSize.width.toDp() < 360.dp || windowSize.height.toDp() < 720.dp
+    val pane = cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current
+    val windowSize = if (cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout && pane != null) {
+        androidx.compose.ui.unit.DpSize(pane.width.dp, pane.height.dp)
+    } else {
+        boxloreVisibleWindowSize()
     }
+    val compactSpacing = windowSize.width < 360.dp || windowSize.height < 720.dp
 
     OutlinedCard(
         shape = cardShape,
@@ -239,9 +250,10 @@ private fun CuriosityCardContent(
         modifier = modifier
             .fillMaxWidth()
             .fillMaxHeight()
+            .then(if (interactive) Modifier.testTag("lore_active_card") else Modifier)
             .then(
                 if (interactive) {
-                    Modifier.clickable(
+                    Modifier.tabletInputFeedback(cardInteractionSource, cardShape).clickable(
                         interactionSource = cardInteractionSource,
                         indication = null,
                         role = Role.Button,

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
@@ -40,7 +39,10 @@ class AppearancePagesTest {
     private var previewButtonClicks = 0
 
     private val actions = AppearanceActions(
-        {}, {}, {}, {},
+        {},
+        {},
+        {},
+        {},
         onSetHeroCardStyle = { style ->
             styles += style
             state.value = state.value.copy(heroCardStyle = style)

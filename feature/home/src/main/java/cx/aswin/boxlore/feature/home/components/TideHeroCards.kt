@@ -52,6 +52,8 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -101,7 +103,7 @@ internal fun TideHeroCard(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.fillMaxSize().testTag("home_hero_tide"),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_tide"),
     ) {
         TideCardLayout(
             cover = {
@@ -118,7 +120,13 @@ internal fun TideHeroCard(
             copy = { CoverCopy(item, shade, progressState = null, contextEndInset = TideDiscReserve) },
             disc = {
                 TidePlayDisc(
-                    icon = if (!hasEpisode) TideDiscIcon.Details else if (pause) TideDiscIcon.Pause else TideDiscIcon.Play,
+                    icon = if (!hasEpisode) {
+                        TideDiscIcon.Details
+                    } else if (pause) {
+                        TideDiscIcon.Pause
+                    } else {
+                        TideDiscIcon.Play
+                    },
                     label = label,
                     progress = progressState,
                     shade = shade,
@@ -154,7 +162,12 @@ internal fun TideCardLayout(
     disc: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Layout(content = { cover(); panel(); copy(); disc() }, modifier = modifier.fillMaxSize()) { measurables, constraints ->
+    Layout(content = {
+        cover()
+        panel()
+        copy()
+        disc()
+    }, modifier = modifier.fillMaxSize()) { measurables, constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight
         val inset = TideInset.roundToPx()
@@ -279,7 +292,7 @@ internal fun TideHeroGridCard(
     Card(
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.fillMaxSize().testTag("home_hero_tide_collection"),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_tide_collection"),
     ) {
         TideCollectionLayout(
             square = square,
@@ -333,7 +346,11 @@ internal fun TideHeroGridCard(
  */
 @Composable
 private fun TideCollectionLayout(square: Boolean, count: Int, covers: @Composable () -> Unit, panel: @Composable () -> Unit, copy: @Composable () -> Unit) {
-    Layout(content = { covers(); panel(); copy() }, modifier = Modifier.fillMaxSize()) { measurables, constraints ->
+    Layout(content = {
+        covers()
+        panel()
+        copy()
+    }, modifier = Modifier.fillMaxSize()) { measurables, constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight
         val inset = TideInset.roundToPx()

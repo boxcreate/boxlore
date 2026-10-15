@@ -9,7 +9,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -52,7 +51,12 @@ fun HeroStylePreview(
     BoxWithConstraints(modifier.clipToBounds(), contentAlignment = Alignment.Center) {
         val scale = minOf(maxWidth / PreviewCardWidth, maxHeight / cardHeight)
         Box(Modifier.size(PreviewCardWidth * scale, cardHeight * scale)) {
-            Box(Modifier.requiredSize(PreviewCardWidth, cardHeight).graphicsLayer { scaleX = scale; scaleY = scale }) {
+            Box(
+                Modifier.requiredSize(PreviewCardWidth, cardHeight).graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            ) {
                 CompositionLocalProvider(LocalHeroCoverShade provides coverShade) {
                     HeroPreviewCard(HeroCardStyle.sanitize(style), collection, podcasts, upNext)
                 }

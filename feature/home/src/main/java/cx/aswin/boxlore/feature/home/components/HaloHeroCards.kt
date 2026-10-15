@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -74,11 +76,32 @@ import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
  * Resume progress along the part of the ring the card shows ([haloGeometry]). While its episode
  * plays, the cookie and ring turn like the compact player ([rememberHaloRotation]). The solid cards'
  * context block sits beside the cover, and Cover's title, show name and Play / details pair sit at
- * the bottom. At large text sizes the context runs across the top and the cover sits below it.
+ * the bottom. At large text sizes the context runs across the top and the cover sits below it. The
+ * ring needs a full-height card, so a short one (the hero above a tabletop fold) shows as Cover.
  */
 @Composable
 @Suppress("LongParameterList")
 internal fun HaloHeroCard(
+    item: SmartHeroItem,
+    onClick: () -> Unit,
+    onArrowClick: () -> Unit,
+    currentPlayingPodcastId: String?,
+    currentPlayingEpisodeId: String?,
+    isPlaying: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier) {
+        if (maxHeight < ShortHeroHeight) {
+            CoverHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying)
+        } else {
+            HaloFullHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying)
+        }
+    }
+}
+
+@Composable
+@Suppress("LongParameterList")
+private fun HaloFullHeroCard(
     item: SmartHeroItem,
     onClick: () -> Unit,
     onArrowClick: () -> Unit,
@@ -104,7 +127,7 @@ internal fun HaloHeroCard(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.fillMaxSize().testTag("home_hero_halo"),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_halo"),
     ) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val contextHeight = if (wide) heroWideContextHeight(item, maxWidth - HaloInset * 2) else 0.dp
@@ -166,7 +189,7 @@ internal fun HaloHeroGridCard(
     Card(
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = shade.deep, contentColor = shade.content),
-        modifier = modifier.fillMaxSize().testTag("home_hero_halo_collection"),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_halo_collection"),
     ) {
         Column(Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 12.dp)) {
             HeroCollectionHeading(title, displayItems.size, shade.softContent)

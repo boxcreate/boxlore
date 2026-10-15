@@ -70,6 +70,8 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Smaller app download while retaining artwork, fonts and notification sounds. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
+<li>Tablets and foldables now have layouts that fit their space, with side navigation, split Settings and more room for browsing and playback. <a href="https://github.com/boxcreate/boxlore/pull/1118"><img src="https://img.shields.io/badge/PR-1118-6750A4?style=flat-square" alt="PR #1118" height="18"/></a></li>
+<li>Tablet layouts are in alpha. A one-time notice before Welcome shows how to send feedback from the Home top bar. <a href="https://github.com/boxcreate/boxlore/pull/1118"><img src="https://img.shields.io/badge/PR-1118-6750A4?style=flat-square" alt="PR #1118" height="18"/></a></li>
 <li>Meet Echo when you first open boxlore: answer a few questions, react to a few shows, then pick what to follow. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
 <li>Home is tidier, loads more smoothly, and has a new Because you like card. Prefer the earlier hero cards? Choose Classic in Appearance. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
 <li>The player and mini player take their colours from the show’s cover, with progress shown around the cover. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
@@ -115,6 +117,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Improve tablet card sizing, spacing and dark-mode readability, and keep player controls above system navigation. <a href="https://github.com/boxcreate/boxlore/pull/1118"><img src="https://img.shields.io/badge/PR-1118-6750A4?style=flat-square" alt="PR #1118" height="18"/></a></li>
 <li>Show pages no longer load forever when show details can’t be reached. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
 <li>The boxlore brief card stays on Home until you finish or hide it. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
 <li>Older Briefs show the correct artwork after an update or cloud restore, without losing listening progress. <a href="https://github.com/boxcreate/boxlore/pull/1113"><img src="https://img.shields.io/badge/PR-1113-6750A4?style=flat-square" alt="PR #1113" height="18"/></a></li>

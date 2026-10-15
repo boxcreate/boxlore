@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.feature.settings.R
@@ -48,17 +49,20 @@ private fun heroColorsCopy(style: String): Pair<Int, Int> = when (style) {
 internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceActions, heroPreview: AppearanceHeroPreview?, onBack: () -> Unit) {
     val style = HeroCardStyle.sanitize(state.heroCardStyle)
     val shade = HeroCoverShade.sanitize(state.heroCoverShade)
+    // Marquee is a phone layout; tablets show Cover cards, so the preview does too.
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val previewStyle = if (tablet && style == HeroCardStyle.MARQUEE) HeroCardStyle.COVER else style
     SettingsScaffold(title = "Home", onBack = onBack) {
         if (heroPreview != null) {
             SettingsTileSection(title = stringResource(R.string.hero_card_preview_title)) {
-                AppearanceHeroPreviewStage(style, shade, heroPreview, height = 260.dp)
+                AppearanceHeroPreviewStage(previewStyle, shade, heroPreview, height = 260.dp)
             }
         }
         SettingsTileSection(title = stringResource(R.string.hero_card_style_title), footer = stringResource(R.string.hero_card_style_footer)) {
             SettingsPictureRow(HeroStyleOptions, selectedIndex = HeroStyleOptions.indexOfFirst { it.key == style }) { option, modifier ->
                 SettingsPictureTile(
                     label = stringResource(option.label),
-                    description = stringResource(option.description),
+                    description = stringResource(if (tablet && option.key == HeroCardStyle.MARQUEE) R.string.hero_card_style_marquee_description_tablet else option.description),
                     selected = style == option.key,
                     onClick = { actions.onSetHeroCardStyle(option.key) },
                     modifier = modifier,

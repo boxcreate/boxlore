@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.toolbarWarningActionText
@@ -63,6 +65,7 @@ internal fun ToolbarWarningBanner(
             modifier =
             Modifier
                 .fillMaxWidth()
+                .boxloreCardWidth(BoxloreCardFamily.Utility)
                 .padding(horizontal = 16.dp, vertical = 6.dp),
         ) {
             Column(

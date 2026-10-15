@@ -14,9 +14,12 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.feature.history.R
 
 internal data class HistoryTopBarState(
@@ -40,6 +43,7 @@ internal fun HistoryTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     LargeTopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
         title = {
             Text(
                 text = stringResource(R.string.history_title),

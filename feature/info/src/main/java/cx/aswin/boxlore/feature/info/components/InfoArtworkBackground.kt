@@ -60,6 +60,7 @@ internal fun InfoArtworkBackground(
             url = imageUrl,
             fallbackUrls = fallbackUrls,
             proxyWidth = 400,
+            adaptToLayout = false,
             contentDescription = null,
             modifier = Modifier.fillMaxSize().graphicsLayer {
                 // Overscan keeps blur sampling away from the original image edges.

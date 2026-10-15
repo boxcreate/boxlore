@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,7 +46,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.layout.boxloreVisibleWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalFontRoundness
@@ -72,6 +73,8 @@ import java.util.Locale
 import kotlin.math.max
 
 /** Original Compose presentation inspired by BunPod; uses boxlore's unchanged player services. */
+internal enum class MinimalPlayerSection { Full, Embedded, Heading, Transport }
+
 @Composable
 internal fun MinimalPlayerContent(
     state: PlayerState,
@@ -79,15 +82,16 @@ internal fun MinimalPlayerContent(
     flows: PlayerProgressFlows,
     actions: MinimalPlayerActions,
     modifier: Modifier = Modifier,
+    section: MinimalPlayerSection = MinimalPlayerSection.Full,
 ) {
     val colors = display.colorScheme
-    val statusInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val statusInset = if (section == MinimalPlayerSection.Full) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
+    val navInset = if (section == MinimalPlayerSection.Full) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
     val queueGesture = rememberMinimalQueueGesture(display.isExpanded, actions.onQueue)
     val context = LocalContext.current
     val typography = remember(context) { buildBoxLoreTypography(context, FontRoundness.AXIS_CRISP) }
-    val windowHeightPx = LocalWindowInfo.current.containerSize.height
-    val windowHeight = with(LocalDensity.current) { if (windowHeightPx > 0) windowHeightPx.toDp() else Dp.Infinity }
+    val visibleHeight = boxloreVisibleWindowSize().height
+    val windowHeight = if (visibleHeight > 0.dp) visibleHeight else Dp.Infinity
     CompositionLocalProvider(LocalFontRoundness provides FontRoundness.AXIS_CRISP) {
         MaterialTheme(colorScheme = colors, typography = typography) {
             // The sheet's animation canvas deliberately extends below the window. Only this
@@ -99,17 +103,25 @@ internal fun MinimalPlayerContent(
             ) {
                 MinimalPlayerLayout(
                     modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(horizontal = 24.dp),
-                    handle = { MinimalPlayerHandle(colors, actions.onCollapse) },
-                    heading = { MinimalPlayerHeading(state, colors, actions) },
+                    handle = {
+                        if (section == MinimalPlayerSection.Full) MinimalPlayerHandle(colors, actions.onCollapse) else Spacer(Modifier.height(0.dp))
+                    },
+                    heading = {
+                        if (section != MinimalPlayerSection.Transport) MinimalPlayerHeading(state, colors, actions) else Spacer(Modifier.height(0.dp))
+                    },
                     transport = {
-                        Column {
-                            MinimalPlayerProgress(state, flows, display.isExpanded, colors, actions.onSeek)
-                            MinimalPlayerControls(state, colors, actions)
-                            Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-                                IconButton(onClick = actions.onQueue, modifier = Modifier.size(48.dp)) {
-                                    Icon(Icons.Rounded.ExpandLess, stringResource(R.string.minimal_up_next), Modifier.size(26.dp), tint = colors.onSurfaceVariant)
+                        if (section != MinimalPlayerSection.Heading) {
+                            Column {
+                                MinimalPlayerProgress(state, flows, display.isExpanded, colors, actions.onSeek)
+                                MinimalPlayerControls(state, colors, actions)
+                                Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+                                    IconButton(onClick = actions.onQueue, modifier = Modifier.size(48.dp)) {
+                                        Icon(Icons.Rounded.ExpandLess, stringResource(R.string.minimal_up_next), Modifier.size(26.dp), tint = colors.onSurfaceVariant)
+                                    }
                                 }
                             }
+                        } else {
+                            Spacer(Modifier.height(0.dp))
                         }
                     },
                 )

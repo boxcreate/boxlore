@@ -51,6 +51,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.player.formatTime
 import kotlinx.coroutines.delay
@@ -124,6 +126,7 @@ internal fun VideoFullscreenOverlay(
                 ) {
                     Box(
                         modifier = Modifier
+                            .boxloreFoldSafeViewport()
                             .fillMaxSize()
                             .background(Color.Black.copy(alpha = 0.5f))
                     ) {
@@ -162,6 +165,8 @@ internal fun FullscreenVideoSystemUi(
     onExit: () -> Unit
 ) {
     if (!visible) return
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val originalOrientation = remember(activity) { activity?.requestedOrientation }
     DisposableEffect(isLandscape) {
         activity?.requestedOrientation = if (isLandscape) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
@@ -176,7 +181,7 @@ internal fun FullscreenVideoSystemUi(
                 androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         onDispose {
-            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            activity?.requestedOrientation = if (tablet) originalOrientation ?: android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             if (window != null) {
                 androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
                     .show(androidx.core.view.WindowInsetsCompat.Type.systemBars())

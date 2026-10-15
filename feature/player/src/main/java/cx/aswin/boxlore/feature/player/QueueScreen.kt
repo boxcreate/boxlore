@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -71,6 +73,7 @@ data class QueueItemDisplay(
  * is hidden from this sheet, so callers must map them with QueueMath.uiIndexToQueueIndex.
  */
 @Composable
+@Suppress("LongParameterList")
 fun QueueSheetContent(
     queue: List<Episode>,
     currentPodcast: Podcast?,
@@ -79,50 +82,18 @@ fun QueueSheetContent(
     modifier: Modifier = Modifier,
     smartQueueEnabled: Boolean = true,
     sameShowContinuation: SameShowContinuationState = SameShowContinuationState.HIDDEN,
+    showHeader: Boolean = true,
+    scrollContinuation: Boolean = false,
 ) {
     val lazyListState = rememberLazyListState()
     val dragStartIndex = remember { mutableIntStateOf(-1) }
+    val showContinuation = sameShowContinuation.visible && sameShowContinuation.availableCount > 0
+    val headerItems = if (scrollContinuation && showContinuation) 1 else 0
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        // Header: "Up Next" + Close button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Up Next",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = GoogleSansWeight.bold,
-                color = colorScheme.onSurface
-            )
+    Column(modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxWidth()) {
+        QueueSheetHeader(showHeader, queue.size, colorScheme, actions.onClose)
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = "${queue.size} episodes",
-                style = MaterialTheme.typography.bodyMedium,
-                color = colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            IconButton(onClick = actions.onClose) {
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = "Close queue",
-                    tint = colorScheme.onSurface
-                )
-            }
-        }
-
-        HorizontalDivider(
-            color = colorScheme.outlineVariant.copy(alpha = 0.3f),
-            modifier = Modifier.padding(horizontal = 20.dp)
-        )
-
-        if (sameShowContinuation.visible && sameShowContinuation.availableCount > 0) {
+        if (showContinuation && !scrollContinuation) {
             SameShowContinuationBanner(
                 state = sameShowContinuation,
                 onAddEpisodes = actions.onAddSameShowEpisodes,
@@ -132,21 +103,32 @@ fun QueueSheetContent(
             )
         }
 
-        if (queue.isEmpty()) {
+        if (queue.isEmpty() && !scrollContinuation) {
             QueueEmptyState(
                 smartQueueEnabled = smartQueueEnabled,
                 colorScheme = colorScheme,
                 onEnableSmartQueue = actions.onEnableSmartQueue,
+                compact = !showHeader,
             )
         } else {
             val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-                actions.onMove(from.index, to.index)
+                if (queue.isNotEmpty()) actions.onMove(queueReorderIndex(from.index, headerItems, queue.size), queueReorderIndex(to.index, headerItems, queue.size))
             }
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
+                if (scrollContinuation && showContinuation) {
+                    item(key = "tablet_queue_continuation", contentType = "continuation") {
+                        SameShowContinuationBanner(sameShowContinuation, actions.onAddSameShowEpisodes, actions.onDismissSameShowBanner, colorScheme, onEpisodeClick = actions.onEpisodeInfoClick)
+                    }
+                }
+                if (queue.isEmpty()) {
+                    item(key = "tablet_queue_empty", contentType = "empty") {
+                        QueueEmptyState(smartQueueEnabled, colorScheme, actions.onEnableSmartQueue, compact = !showHeader)
+                    }
+                }
                 itemsIndexed(
                     items = queue,
                     key = { _, episode -> episode.id }
@@ -180,15 +162,59 @@ fun QueueSheetContent(
 }
 
 @Composable
+private fun QueueSheetHeader(visible: Boolean, count: Int, colorScheme: ColorScheme, onClose: () -> Unit) {
+    if (visible) {
+            // Header: "Up Next" + Close button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Up Next",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = GoogleSansWeight.bold,
+                    color = colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "$count episodes",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                IconButton(onClick = onClose) {
+                    Icon(
+                        Icons.Rounded.Close,
+                        contentDescription = "Close queue",
+                        tint = colorScheme.onSurface
+                    )
+                }
+            }
+
+            HorizontalDivider(
+                color = colorScheme.outlineVariant.copy(alpha = 0.3f),
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+}
+
+@Composable
 private fun QueueEmptyState(
     smartQueueEnabled: Boolean,
     colorScheme: ColorScheme,
     onEnableSmartQueue: () -> Unit,
+    compact: Boolean = false,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 48.dp),
+            .padding(horizontal = 32.dp, vertical = if (compact) 16.dp else 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -563,3 +589,7 @@ fun SameShowContinuationBanner(
         }
     }
 }
+
+/** Presentation-only rows do not change the queue indices delivered to the existing owner. */
+internal fun queueReorderIndex(lazyIndex: Int, headerItems: Int, queueSize: Int): Int =
+    (lazyIndex - headerItems).coerceIn(0, (queueSize - 1).coerceAtLeast(0))

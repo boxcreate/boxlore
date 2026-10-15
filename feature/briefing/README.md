@@ -62,6 +62,10 @@ src/main/java/cx/aswin/boxlore/feature/briefing/
 
 ## Testing notes
 
+- Tablet editions and loading covers share a centered 720dp reading frame, including page actions and cover-height/status-bar tracking. Home owns its separately adapted horizontal Brief card; story, source, edition and playback callbacks remain unchanged.
+
+- Tablet story pages use a bounded 720dp reading width, exposing additional pages in wider viewports. Height measurement uses that same page width; loading and reporting panels share the cap. Phone paging and story content stay unchanged.
+
 - Unit tests live under `feature/briefing/src/test`.
 - `BriefingViewModelLoadingTest` exercises the ViewModel's production `BriefingLoader` with suspend fakes: saved/explicit/follow-app initialization, delayed preferences versus user selection, retries, missing metadata, chapter failures, progress restoration, and noncooperative cancelled metadata/chapter responses. The loader remains route-scope owned and constructs no repositories or media services.
 - `BriefingScreenTest` checks phone-sized cover/logo/navigation geometry, light/dark status-bar transitions and restoration, enlarged RTL controls, playback, story navigation and sources. Set `BOXLORE_UI_TEST_ARTIFACTS` to an existing local folder to export native JVM renders for visual inspection.
@@ -84,3 +88,5 @@ src/main/java/cx/aswin/boxlore/feature/briefing/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:playback` README](../../core/playback/README.md)
 - [`:app` README](../../app/README.md)
+
+Tablet story height follows the supplied content pane, and edition/source sheets use the shared expanded dialog adapter. Phone configuration tiers and source actions are preserved.

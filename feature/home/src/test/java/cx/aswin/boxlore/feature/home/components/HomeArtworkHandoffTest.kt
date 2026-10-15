@@ -5,11 +5,16 @@ import android.graphics.Canvas
 import android.graphics.drawable.ColorDrawable
 import android.view.View
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
@@ -33,6 +38,8 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import cx.aswin.boxlore.core.designsystem.components.ArtworkLoadPolicy
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.StableEpisodeList
 import cx.aswin.boxlore.feature.home.StablePlaybackStateMap
@@ -240,12 +247,112 @@ class HomeArtworkHandoffTest {
         assertTrue("Cached recovery must not start an endless loop", requests.size <= 4)
     }
 
-    private fun installArtworkFetcher(requests: MutableList<String>, fetch: suspend (String) -> android.graphics.drawable.Drawable) {
+    @Test
+    fun `tablet measured artwork uses one matching proxy decoder and cache target`() {
+        val requests = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val targets = java.util.Collections.synchronizedList(mutableListOf<coil.size.Size>())
+        val width = mutableStateOf(300.dp)
+        installArtworkFetcher(requests, { targets.add(it.size) }) {
+            val bitmap = Bitmap.createBitmap(640, 640, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.GREEN) }
+            android.graphics.drawable.BitmapDrawable(RuntimeEnvironment.getApplication().resources, bitmap)
+        }
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(2f),
+                LocalBoxloreWindowLayout provides BoxloreWindowLayout(1_280f, 800f),
+            ) {
+                MaterialTheme {
+                    OptimizedImage("https://example.invalid/tablet-size", 400, null, Modifier.requiredSize(width.value, 100.dp))
+                }
+            }
+        }
+        composeRule.mainClock.advanceTimeBy(1_600)
+        composeRule.waitForIdle()
+        assertEquals(1, requests.size)
+        assertTrue(requests.toString(), requests.single().contains("w=640"))
+        assertEquals(coil.size.Size(640, 640), targets.single())
+        val cache = cx.aswin.boxlore.core.designsystem.components.OnScreenArtwork.memoryKey("https://example.invalid/tablet-size")
+        assertTrue(cache?.key?.endsWith("-w640") == true)
+        composeRule.runOnIdle { width.value = 301.dp }
+        composeRule.mainClock.advanceTimeBy(1_600)
+        composeRule.waitForIdle()
+        assertEquals("Small resize must retain the same bucket", 1, requests.size)
+        composeRule.runOnIdle { width.value = 100.dp }
+        composeRule.mainClock.advanceTimeBy(1_600)
+        composeRule.waitForIdle()
+        assertEquals("Shrinking retains the sufficient loaded target", 1, requests.size)
+    }
+
+    @Test
+    fun `tablet artwork waits while hidden and loads once it has room`() {
+        val requests = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val size = mutableStateOf(0.dp)
+        val tablet = mutableStateOf(true)
+        val contentSized = mutableStateOf(false)
+        installArtworkFetcher(requests, memoryCache = false) {
+            android.graphics.drawable.BitmapDrawable(
+                RuntimeEnvironment.getApplication().resources,
+                Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.GREEN) },
+            )
+        }
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalBoxloreWindowLayout provides if (tablet.value) BoxloreWindowLayout(1_280f, 800f) else BoxloreWindowLayout.Unspecified,
+            ) {
+                MaterialTheme {
+                    OptimizedImage("https://example.invalid/hidden-pane", 100, null, Modifier.requiredSize(size.value))
+                    if (contentSized.value) {
+                        // No size of its own: the artwork must load before it can measure larger than 0px.
+                        Box(Modifier.horizontalScroll(rememberScrollState()).verticalScroll(rememberScrollState())) {
+                            OptimizedImage("https://example.invalid/content-sized", 100, null)
+                        }
+                    }
+                }
+            }
+        }
+        fun settle(frames: Int = 6) {
+            composeRule.runOnUiThread { Snapshot.sendApplyNotifications() }
+            repeat(frames) { composeRule.mainClock.advanceTimeByFrame() }
+            composeRule.waitForIdle()
+        }
+        fun requestsSince(previous: Int) = requests.drop(previous)
+        settle()
+        for (hidden in listOf(0.dp, 1.dp)) {
+            composeRule.runOnIdle { size.value = hidden }
+            settle()
+        }
+        assertEquals("A hidden pane does not request artwork", emptyList<String>(), requests.toList())
+        composeRule.runOnIdle { size.value = 300.dp }
+        settle()
+        assertEquals(1, requests.size)
+        assertTrue(requests.toString(), requests.last().contains("w=400"))
+
+        // Phone round trips reuse the last measurement, so the tablet target returns on the first frame.
+        repeat(2) {
+            val before = requests.size
+            composeRule.runOnIdle { tablet.value = false }
+            settle()
+            composeRule.runOnIdle { tablet.value = true }
+            settle(frames = 1)
+            assertEquals(requestsSince(before).toString(), 2, requestsSince(before).size)
+            assertTrue(requests.toString(), requests.last().endsWith("w=400&q=85&output=webp"))
+        }
+
+        val before = requests.size
+        composeRule.runOnIdle { contentSized.value = true }
+        settle()
+        assertTrue(requestsSince(before).toString(), requestsSince(before).any { it.contains("content-sized") })
+    }
+
+    private fun installArtworkFetcher(requests: MutableList<String>, onOptions: (coil.request.Options) -> Unit = {}, memoryCache: Boolean = true, fetch: suspend (String) -> android.graphics.drawable.Drawable) {
         val context = RuntimeEnvironment.getApplication()
         originalImageLoader = Coil.imageLoader(context)
-        testImageLoader = ImageLoader.Builder(context).fetcherDispatcher(kotlinx.coroutines.Dispatchers.Unconfined).interceptorDispatcher(kotlinx.coroutines.Dispatchers.Unconfined).components {
+        testImageLoader = ImageLoader.Builder(context).apply { if (!memoryCache) memoryCache(null) }.fetcherDispatcher(kotlinx.coroutines.Dispatchers.Unconfined).interceptorDispatcher(kotlinx.coroutines.Dispatchers.Unconfined).components {
             add(
-                Fetcher.Factory<android.net.Uri> { data, _, _ ->
+                Fetcher.Factory<android.net.Uri> { data, options, _ ->
+                onOptions(options)
                 object : Fetcher {
                     override suspend fun fetch(): DrawableResult {
                         requests.add(data.toString())

@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -18,12 +19,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.model.artworkUrls
 import java.io.IOException
 import kotlinx.coroutines.delay
@@ -40,9 +43,11 @@ fun OptimizedImage(
     colorFilter: ColorFilter? = null,
     errorContent: (@Composable BoxScope.() -> Unit)? = null,
     fallbackUrls: List<String?> = emptyList(),
+    adaptToLayout: Boolean = true,
 ) {
     val sources = remember(url, fallbackUrls) { artworkUrls(url, *fallbackUrls.toTypedArray()) }
-    val width = remember(proxyWidth) { imageTargetPixels(proxyWidth) }
+    val sizing = artworkLayoutSizing(proxyWidth, modifier, adaptToLayout)
+    val width = sizing.width
     val recoveryGeneration = LocalArtworkRecoveryGeneration.current
     var cachedRecovery by remember(sources, width) { mutableStateOf(0) }
     val attempts = remember(sources, width, cachedRecovery) { ArtworkAttempts(sources, width) }
@@ -66,12 +71,12 @@ fun OptimizedImage(
             cachedRecovery += 1
         }
     }
-    Box(modifier.semantics { contentDescription?.let { this.contentDescription = it } }) {
+    Box(sizing.modifier.semantics { contentDescription?.let { this.contentDescription = it } }) {
         OptimizedImageLoadingPlaceholder()
         val attempt = current
         if (attempt == null) {
             OptimizedImageFailureContent(errorContent)
-        } else {
+        } else if (sizing.ready) {
             key(attempt) {
             ArtworkAttemptImage(attempt, width, contentScale, colorFilter) { error ->
                 if (error == null) {
@@ -147,4 +152,27 @@ private fun trackProxyFallback(url: String, proxyWidth: Int) {
             sampleMultiplier = 10,
         )
     }
+}
+
+private data class ArtworkLayoutSizing(val width: Int, val modifier: Modifier, val ready: Boolean)
+
+@Composable
+private fun artworkLayoutSizing(proxyWidth: Int, modifier: Modifier, adaptToLayout: Boolean): ArtworkLayoutSizing {
+    val tablet = adaptToLayout && LocalBoxloreWindowLayout.current.usesTabletLayout
+    // Kept across phone/tablet changes so returning to a tablet layout never waits for another resize.
+    var measuredPixels by remember { mutableIntStateOf(0) }
+    var hasRoom by remember { mutableStateOf(false) }
+    val width = if (tablet) layoutImageTargetPixels(proxyWidth, measuredPixels) else imageTargetPixels(proxyWidth)
+    val sizedModifier = if (tablet) {
+        modifier.layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            measuredPixels = maxOf(measuredPixels, placeable.width, placeable.height)
+            // A hidden 1px pane waits; artwork sized by its own content loads at the requested size.
+            if (constraints.maxWidth > 1 && constraints.maxHeight > 1) hasRoom = true
+            layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+        }
+    } else {
+        modifier
+    }
+    return ArtworkLayoutSizing(width, sizedModifier, !tablet || measuredPixels > 1 || hasRoom)
 }

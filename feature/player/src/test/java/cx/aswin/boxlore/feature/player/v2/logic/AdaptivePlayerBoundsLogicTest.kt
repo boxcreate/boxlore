@@ -31,6 +31,22 @@ class AdaptivePlayerBoundsLogicTest {
     }
 
     @Test
+    fun foldSafeDockingKeepsMiniInsideItsPaneAndExpandsIntoTheWholeWindow() {
+        val folded = input.copy(containerWidth = 673.dp, containerHeight = 841.dp, collapsedLeftInset = 80.dp, adaptiveEnabled = false)
+        for (rtl in listOf(false, true)) {
+            val collapsed = calculateAdaptivePlayerBounds(folded.copy(isRtl = rtl))
+            assertEquals(96.dp, collapsed.offsetX)
+            assertEquals(561.dp, collapsed.width)
+            val expanded = calculateAdaptivePlayerBounds(folded.copy(isRtl = rtl, expansionFraction = 1f))
+            assertEquals(0.dp, expanded.offsetX)
+            assertEquals(673.dp, expanded.width)
+        }
+        val bounded = calculateAdaptivePlayerBounds(folded.copy(collapsedLeftInset = 900.dp, collapsedRightInset = 900.dp))
+        assertEquals(0.dp, bounded.width)
+        assertTrue(bounded.offsetX <= 673.dp)
+    }
+
+    @Test
     fun compactEndpointOccupiesExternalActionSlot() {
         val bounds = calculateAdaptivePlayerBounds(input.copy(compactFraction = 1f))
 

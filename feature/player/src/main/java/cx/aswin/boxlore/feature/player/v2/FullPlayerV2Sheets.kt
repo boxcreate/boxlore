@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
+import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
@@ -67,6 +68,7 @@ internal fun FullPlayerTranscriptOverlay(
     ui: FullPlayerUiState,
     visibleHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified,
 ) {
+    val fullscreenRequest = LocalPlayerFullscreenRequest.current
     AnimatedVisibility(
         visible = ui.showFullscreenTranscript,
         enter = slideInVertically(initialOffsetY = { it }),
@@ -88,8 +90,12 @@ internal fun FullPlayerTranscriptOverlay(
                 playbackRepository.seekTo(seekPosition)
             },
             onPlayPause = { togglePlayback(model.state, playbackRepository) },
-            onClose = { ui.showFullscreenTranscript = false },
-            modifier = Modifier.fitVisibleHeight(visibleHeight),
+            onClose = {
+                ui.showFullscreenTranscript = false
+                fullscreenRequest?.invoke(PlayerFullscreenOverlay.Transcript, false)
+            },
+            // The sheet can be taller than the screen; keep the controls in view, then away from a fold.
+            modifier = Modifier.fitVisibleHeight(visibleHeight).boxloreFoldSafeViewport(),
             transcriptUrl = model.episode.transcriptUrl
         )
     }
@@ -117,7 +123,8 @@ internal fun FullPlayerModalSheets(
     resources: FullPlayerModalResources,
     actions: FullPlayerActions? = null,
 ) {
-    if (ui.showQueueSheet) {
+    val usesTabletLayout = cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout
+    if (ui.showQueueSheet && !usesTabletLayout) {
         PlayerQueueSheet(
             playbackRepository = dependencies.playbackRepository,
             userPrefs = dependencies.userPrefs,
@@ -131,7 +138,7 @@ internal fun FullPlayerModalSheets(
             actions = actions,
         )
     }
-    if (ui.showChaptersSheet) {
+    if (ui.showChaptersSheet && !usesTabletLayout) {
         PlayerChaptersSheet(
             playbackRepository = dependencies.playbackRepository,
             state = model.state,

@@ -65,7 +65,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
         val briefingRegion = briefingRegionFromPodcastId(podcastId)
         if (briefingRegion != null) {
             LaunchedEffect(podcastId) {
-                navController.navigate("briefing?region=$briefingRegion") {
+                w.navigate("briefing?region=$briefingRegion") {
                     popUpTo("podcast/{podcastId}?entryPoint={entryPoint}&genre={genre}&depth={depth}&query={query}") {
                         inclusive = true
                     }
@@ -117,7 +117,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
             onBack = { navController.popBackStack() },
             bottomContentPadding = miniPlayerBottomPadding(isPlayerVisible),
             onPodcastClick = { pId ->
-                navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=podroll")
+                w.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=podroll")
             },
             onEpisodeClick = { episode, entryPointStr, index ->
                 val state = viewModel.uiState.value
@@ -128,6 +128,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
                     index = index,
                     podcastId = podcastIdFromInfoUiState(state, podcastId),
                     podcastTitle = podcastTitleFromInfoUiState(state, "Podcast"),
+                    navigate = { w.navigate(it) },
                 )
             },
             onPlayEpisode = { episode ->
@@ -191,7 +192,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w
         val briefingRegion = briefingRegionFromEpisodeId(episodeId)
         if (briefingRegion != null) {
             LaunchedEffect(episodeId) {
-                navController.navigate("briefing?region=$briefingRegion") {
+                w.navigate("briefing?region=$briefingRegion") {
                     popUpTo(
                         "episode/{episodeId}/{episodeTitle}/{episodeDescription}/{episodeImageUrl}/{episodeAudioUrl}/{episodeDuration}/{podcastId}/{podcastTitle}?entryPoint={entryPoint}&vibeId={vibeId}&carouselPosition={carouselPosition}",
                     ) { inclusive = true }
@@ -240,10 +241,10 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeFullPathDestination(w
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
             onPodcastClick = { pId ->
-                navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
+                w.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
             },
             onEpisodeClick = { ep ->
-                navigateRelatedEpisode(navController, ep, podcastId, podcastTitle)
+                navigateRelatedEpisode(navController, ep, podcastId, podcastTitle, navigate = { w.navigate(it) })
             },
             onPlay = {
                 val episode = cx.aswin.boxlore.core.model.Episode(
@@ -423,7 +424,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
             viewModel = viewModel,
             onBack = { navController.popBackStack() },
             onPodcastClick = { pId ->
-                navController.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
+                w.navigate("podcast/${android.net.Uri.encode(pId)}?entryPoint=episode_info")
             },
             onEpisodeClick = { ep ->
                 navigateRelatedEpisode(
@@ -431,6 +432,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
                     ep,
                     successState?.podcastId ?: "",
                     successState?.podcastTitle ?: "Podcast",
+                    navigate = { w.navigate(it) },
                 )
             },
             onPlay = {

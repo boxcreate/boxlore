@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -34,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -56,18 +54,17 @@ import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPaddin
 import cx.aswin.boxlore.core.designsystem.component.appMiniPlayerTopOffset
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
-import cx.aswin.boxlore.core.designsystem.components.RepairProgressPopup
-import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopup
-import cx.aswin.boxlore.core.designsystem.components.SleepTimerPopupDismissReason
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
-import cx.aswin.boxlore.core.playback.dismissLateNightNudge
-import cx.aswin.boxlore.core.playback.setSleepTimer
+import cx.aswin.boxlore.core.playback.skipBackward
+import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.core.playback.stopAndClearQueue
+import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import cx.aswin.boxlore.fcm.FcmTopicHelper
 import cx.aswin.boxlore.fcm.isUpdaterAnnouncementAction
@@ -75,7 +72,6 @@ import cx.aswin.boxlore.fcm.shouldSuppressAnnouncement
 import cx.aswin.boxlore.feature.home.ModeSwitchState
 import cx.aswin.boxlore.feature.onboarding.generateRecommendationsFromOpml
 import cx.aswin.boxlore.feature.onboarding.markOnboardingCompletedSilent
-import cx.aswin.boxlore.feature.player.v2.PlayerSheetActions
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetLayout
 import cx.aswin.boxlore.feature.player.v2.PlayerSheetScaffold
 import cx.aswin.boxlore.lifecycle.DownloadBandwidthEffect
@@ -132,6 +128,7 @@ fun BoxLoreAppRoot(
 ) {
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
+    val tabletNavigation = cx.aswin.boxlore.navigation.rememberTabletDetailNavigation(navController)
 
     val currentWarmIntent = warmStartIntent.value
     LaunchedEffect(currentWarmIntent) {
@@ -148,9 +145,9 @@ fun BoxLoreAppRoot(
                         linkHost = uri?.host,
                         coldStart = false,
                     )
-                    navController.handleDeepLink(if (intent.data != null) intent else deepLinkIntent)
+                    tabletNavigation.handleDeepLink(if (intent.data != null) intent else deepLinkIntent)
                 },
-                navigate = { navController.navigate(it) },
+                navigate = { tabletNavigation.navigate(navController, it) },
                 openExternal = { activity.startActivity(externalPushActionIntent(it)) },
                 openUpdater = { download ->
                     if (download) {
@@ -295,7 +292,7 @@ fun BoxLoreAppRoot(
                 }
             if (path != null) {
                 onboardingViewModel.markOnboardingCompletedSilent { onboardingCompleted = true }
-                navController.navigate(path) { launchSingleTop = true }
+                tabletNavigation.navigate(navController, path) { launchSingleTop = true }
             }
         }
     }
@@ -544,6 +541,7 @@ fun BoxLoreAppRoot(
             activeAnnouncement == null
 
     val artworkNavigation = remember { cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationColors() }
+    val windowLayout = LocalBoxloreWindowLayout.current
     BoxLoreTheme(
         darkTheme = darkTheme,
         dynamicColor = useDynamicColor,
@@ -553,7 +551,7 @@ fun BoxLoreAppRoot(
         fontRoundness = fontRoundness,
     ) {
         cx.aswin.boxlore.updates.AppUpdatesHost(application.container.appUpdates, activity) {
-        CompositionLocalProvider(cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
+        CompositionLocalProvider(LocalBoxloreWindowLayout provides windowLayout, cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
             loreQueueConflictEpisode?.let { pendingLoreEpisode ->
                 LoreQueueConflictDialog(
                     pendingLoreEpisode = pendingLoreEpisode,
@@ -611,10 +609,124 @@ fun BoxLoreAppRoot(
                 )
             }
 
+            val navigationContent: @Composable (androidx.navigation.NavHostController, Boolean) -> Unit = { controller, detailOnly ->
+            BoxLoreNavHost(
+                navController = controller,
+                application = application,
+                session =
+                NavHostSession(
+                    onboardingCompleted = onboardingCompleted,
+                    onOnboardingCompleted = { onboardingCompleted = true },
+                    onInitialHomeContentReady = {
+                        isInitialHomeContentReady = true
+                        startupWorkGate.markReady()
+                    },
+                    onboardingViewModel = onboardingViewModel,
+                    hasDeepLink = hasDeepLink,
+                    openedToLandingOnLaunch = openedToLandingOnLaunch,
+                    currentEpisode = currentEpisode,
+                    miniPlayerPadding = if (windowLayout.usesTabletLayout) {
+                        appBottomChromeContentPadding(
+                            style = navigationStyle,
+                            isMiniPlayerVisible = currentEpisode != null &&
+                                shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching) &&
+                                !cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePlayerPaneVisible.current &&
+                                dockedPlayerCoversPane(
+                                    cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds.current,
+                                    cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreDockedPlayerBounds.current,
+                                ),
+                            navigationRailVisible = true,
+                        )
+                    } else {
+                        miniPlayerPadding
+                    },
+                    showFeatureDialog = showFeatureDialog,
+                    hasSeenMarkPlayedTip = hasSeenMarkPlayedTip,
+                    permissionLauncher = permissionLauncher,
+                    appInstanceId = appInstanceId,
+                ),
+                opmlCallbacks =
+                NavOpmlCallbacks(
+                    importState = opmlImportState,
+                    onImportStateChange = { opmlImportState = it },
+                    triggerKey = importTriggerKey,
+                    onTriggerKeyChange = { importTriggerKey = it },
+                    onSourceChange = { opmlImportSource = it },
+                    performJsonImport = ::performJsonImport,
+                ),
+                actions =
+                NavHostActions(
+                    onLoreQueueConflictEpisode = { loreQueueConflictEpisode = it },
+                    queueLoreEpisode = queueLoreEpisode,
+                    onShowFeedbackSheet = { navController.navigate("feedback") },
+                    onSubmitFeedback = onSubmitFeedback,
+                    onSupportPageVisibilityChanged = { isSupportPageActive = it },
+                    onAccountPageVisibilityChanged = { isAccountPageActive = it },
+                ),
+                settingsState =
+                NavSettingsState(
+                    currentRegion = currentRegion,
+                    contentLanguages = contentLanguages,
+                    themeConfig = themeConfig,
+                    useDynamicColor = useDynamicColor,
+                    themeBrand = themeBrand,
+                    surfaceStyle = surfaceStyle,
+                    artworkColorsEnabled = artworkColorsEnabled,
+                    navigationBlurLevel = navigationBlurLevel,
+                    heroCardStyle = heroCardStyle,
+                    heroCoverShade = heroCoverShade,
+                    savedCustomTheme = savedCustomTheme,
+                    fontRoundness = fontRoundnessKey,
+                    navigationStyle = navigationStyleKey,
+                    openAppTo = openAppToKey,
+                    skipBehavior = skipBehavior,
+                    skipBeginningMs = skipBeginningMs,
+                    skipEndingMs = skipEndingMs,
+                    seekBackwardMs = seekBackwardMs,
+                    seekForwardMs = seekForwardMs,
+                    miniPlayerSeekButtonsEnabled = miniPlayerSeekButtonsEnabled,
+                    fullPlayerStyle = fullPlayerStyle,
+                    hideCompletedInHome = hideCompletedInHome,
+                    hideCompletedInSubs = hideCompletedInSubs,
+                    hideCompletedInShowDetails = hideCompletedInShowDetails,
+                    restartForgottenEpisodes = restartForgottenEpisodes,
+                    sameShowQueueOnly = sameShowQueueOnly,
+                    homeShortcutsInLibrary = homeShortcutsInLibrary,
+                    widgetAppearance = widgetAppearance,
+                    exploreDefaultTab = exploreDefaultTab,
+                    subscriptionsDefaultTab = subscriptionsDefaultTab,
+                    subscriptionsTabStyle = subscriptionsTabStyle,
+                ),
+                detailsOnly = detailOnly,
+            )
+            }
+            val activeTab = resolveBottomNavTab(currentRoute, remember(navBackStackEntry) { snapshotNavBackStack(navController) })
+            cx.aswin.boxlore.feature.player.v2.RetainedPlayerPresentation(windowLayout.usesTabletLayout) {
+            TabletAppShell(
+                navigation = tabletNavigation,
+                navigationVisible = showBottomNav,
+                playerAllowed = shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching),
+                hasEpisode = currentEpisode != null,
+                activeTab = activeTab,
+                onNavigateTab = { navController.navigateBottomNavTab(it, activeTab) },
+                content = TabletShellContent(
+                    keyboardActions = PlaybackKeyboardActions(playbackRepository::togglePlayPause, playbackRepository::skipBackward, playbackRepository::skipForward),
+                    details = { navigationContent(tabletNavigation.detail, true) },
+                    player = { contextPane ->
+                        TabletAppPlayer(
+                            cx.aswin.boxlore.feature.player.v2.FullPlayerDependencies(playbackRepository, downloadRepository, userPrefs),
+                            tabletNavigation,
+                            contextPane,
+                            playerSheetActions(navController, playbackRepository, {}, navigate = { tabletNavigation.navigate(navController, it) { launchSingleTop = true } }),
+                            TabletPlayerOptions(navigationStyle, miniPlayerSeekButtonsEnabled, expandPlayerTrigger, windowLayout.usesTabletLayout),
+                        )
+                    },
+                    primary = {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val density = LocalDensity.current
                 val adaptivePlayer = rememberAdaptivePlayerChrome(
-                    enabled = canUseAdaptivePlayer(
+                    enabled = !windowLayout.usesTabletLayout &&
+                        canUseAdaptivePlayer(
                         style = navigationStyle,
                         navigationVisible = showBottomNav,
                         hasEpisode = currentEpisode != null,
@@ -630,7 +742,7 @@ fun BoxLoreAppRoot(
                     null
                 }
                 val navigationBackground = navigationColors?.background ?: MaterialTheme.colorScheme.surface
-                val showNavigationBlur = FloatingNavigationBlur.shows(navigationStyle, showBottomNav, navigationBlurLevel)
+                val showNavigationBlur = !windowLayout.usesTabletLayout && FloatingNavigationBlur.shows(navigationStyle, showBottomNav, navigationBlurLevel)
                 val navigationBlur = remember { HazeState() }
                 Scaffold(
                     containerColor = navigationBackground,
@@ -646,7 +758,7 @@ fun BoxLoreAppRoot(
                             .then(if (showNavigationBlur) Modifier.hazeSource(navigationBlur) else Modifier),
                     ) {
                         PredictiveBackWrapper(
-                            enabled = canGoBack,
+                            enabled = canGoBack && !tabletNavigation.detailActive,
                             backgroundColor = navigationBackground,
                             onBack = {
                                 when (
@@ -664,80 +776,7 @@ fun BoxLoreAppRoot(
                             },
                         ) {
                             CompositionLocalProvider(LocalAdaptivePlayerCompactProgress provides adaptivePlayer.progress) {
-                                BoxLoreNavHost(
-                                    navController = navController,
-                                    application = application,
-                                    session =
-                                    NavHostSession(
-                                        onboardingCompleted = onboardingCompleted,
-                                        onOnboardingCompleted = { onboardingCompleted = true },
-                                        onInitialHomeContentReady = {
-                                            isInitialHomeContentReady = true
-                                            startupWorkGate.markReady()
-                                        },
-                                        onboardingViewModel = onboardingViewModel,
-                                        hasDeepLink = hasDeepLink,
-                                        openedToLandingOnLaunch = openedToLandingOnLaunch,
-                                        currentEpisode = currentEpisode,
-                                        miniPlayerPadding = miniPlayerPadding,
-                                        showFeatureDialog = showFeatureDialog,
-                                        hasSeenMarkPlayedTip = hasSeenMarkPlayedTip,
-                                        permissionLauncher = permissionLauncher,
-                                        appInstanceId = appInstanceId,
-                                    ),
-                                    opmlCallbacks =
-                                    NavOpmlCallbacks(
-                                        importState = opmlImportState,
-                                        onImportStateChange = { opmlImportState = it },
-                                        triggerKey = importTriggerKey,
-                                        onTriggerKeyChange = { importTriggerKey = it },
-                                        onSourceChange = { opmlImportSource = it },
-                                        performJsonImport = ::performJsonImport,
-                                    ),
-                                    actions =
-                                    NavHostActions(
-                                        onLoreQueueConflictEpisode = { loreQueueConflictEpisode = it },
-                                        queueLoreEpisode = queueLoreEpisode,
-                                        onShowFeedbackSheet = { navController.navigate("feedback") },
-                                        onSubmitFeedback = onSubmitFeedback,
-                                        onSupportPageVisibilityChanged = { isSupportPageActive = it },
-                                        onAccountPageVisibilityChanged = { isAccountPageActive = it },
-                                    ),
-                                    settingsState =
-                                    NavSettingsState(
-                                        currentRegion = currentRegion,
-                                        contentLanguages = contentLanguages,
-                                        themeConfig = themeConfig,
-                                        useDynamicColor = useDynamicColor,
-                                        themeBrand = themeBrand,
-                                        surfaceStyle = surfaceStyle,
-                                        artworkColorsEnabled = artworkColorsEnabled,
-                                        navigationBlurLevel = navigationBlurLevel,
-                                        heroCardStyle = heroCardStyle,
-                                        heroCoverShade = heroCoverShade,
-                                        savedCustomTheme = savedCustomTheme,
-                                        fontRoundness = fontRoundnessKey,
-                                        navigationStyle = navigationStyleKey,
-                                        openAppTo = openAppToKey,
-                                        skipBehavior = skipBehavior,
-                                        skipBeginningMs = skipBeginningMs,
-                                        skipEndingMs = skipEndingMs,
-                                        seekBackwardMs = seekBackwardMs,
-                                        seekForwardMs = seekForwardMs,
-                                        miniPlayerSeekButtonsEnabled = miniPlayerSeekButtonsEnabled,
-                                        fullPlayerStyle = fullPlayerStyle,
-                                        hideCompletedInHome = hideCompletedInHome,
-                                        hideCompletedInSubs = hideCompletedInSubs,
-                                        hideCompletedInShowDetails = hideCompletedInShowDetails,
-                                        restartForgottenEpisodes = restartForgottenEpisodes,
-                                        sameShowQueueOnly = sameShowQueueOnly,
-                                        homeShortcutsInLibrary = homeShortcutsInLibrary,
-                                        widgetAppearance = widgetAppearance,
-                                        exploreDefaultTab = exploreDefaultTab,
-                                        subscriptionsDefaultTab = subscriptionsDefaultTab,
-                                        subscriptionsTabStyle = subscriptionsTabStyle,
-                                    ),
-                                )
+                                navigationContent(navController, false)
                             }
                         }
                     }
@@ -763,7 +802,7 @@ fun BoxLoreAppRoot(
                     )
                 }
 
-                if (showBottomNav) {
+                if (showBottomNav && !windowLayout.usesTabletLayout) {
                     val backStack = remember(navBackStackEntry) { snapshotNavBackStack(navController) }
                     val activeTab =
                         resolveBottomNavTab(
@@ -776,6 +815,7 @@ fun BoxLoreAppRoot(
                     BoxLoreNavigationBar(
                         currentRoute = activeTab,
                         onNavigate = { route ->
+                            tabletNavigation.revealPrimary()
                             navController.navigateBottomNavTab(route, activeTab)
                         },
                         style = navigationStyle,
@@ -795,46 +835,18 @@ fun BoxLoreAppRoot(
                     }
                 }
 
-                val isPlayerActive = currentEpisode != null
-                val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-                RepairProgressPopup(
-                    visible = legacyRssRepairInProgress,
-                    modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = statusBarHeight + 8.dp, start = 16.dp, end = 16.dp)
-                        .zIndex(11f),
-                )
-                SleepTimerPopup(
-                    visible =
-                    showLateNightNudge &&
-                        isPlayerActive &&
+                AppPlaybackNotices(
+                    repairVisible = legacyRssRepairInProgress,
+                    nudgeVisible = showLateNightNudge &&
+                        currentEpisode != null &&
                         !isModeSwitching &&
                         !isSupportActive &&
                         !isAccountActive &&
                         !legacyRssRepairInProgress,
-                    modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = statusBarHeight + 8.dp, start = 16.dp, end = 16.dp)
-                        .zIndex(10f),
-                    onSelectDuration = { minutes ->
-                        AnalyticsHelper.trackLateNightSafeguardDecision("timer_set", minutes)
-                        playbackRepository.setSleepTimer(minutes, dismissNudge = false)
-                    },
-                    onDismiss = { reason ->
-                        when (reason) {
-                            SleepTimerPopupDismissReason.Manual ->
-                                AnalyticsHelper.trackLateNightSafeguardDecision("dismiss")
-                            SleepTimerPopupDismissReason.Timeout ->
-                                AnalyticsHelper.trackLateNightSafeguardDecision("ignore")
-                            SleepTimerPopupDismissReason.Confirmation -> Unit
-                        }
-                        playbackRepository.dismissLateNightNudge()
-                    },
+                    playbackRepository = playbackRepository,
                 )
 
-                if (shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching)) {
+                if (!windowLayout.usesTabletLayout && !tabletNavigation.hasDetail && shouldShowPlayerChrome(isAccountActive, isFromOnboardingRoute, isSupportActive, isModeSwitching)) {
                     PlayerSheetScaffold(
                         playbackRepository = playbackRepository,
                         downloadRepository = downloadRepository,
@@ -861,48 +873,14 @@ fun BoxLoreAppRoot(
                             },
                         ),
                         actions =
-                        PlayerSheetActions(
-                            onSheetInteractionChanged = adaptivePlayer.onSheetInteractionChanged,
-                            onEpisodeInfoClick = { episode ->
-                                if (episode.id.startsWith("briefing_")) {
-                                    val region = episode.id.removePrefix("briefing_").substringBefore("_")
-                                    navController.navigate("briefing?region=$region") {
-                                        launchSingleTop = true
-                                    }
-                                } else {
-                                    val podcast = playbackRepository.playerState.value.currentPodcast
-                                    val resolvedPodcastId = episode.podcastId ?: podcast?.id ?: "unknown"
-                                    val resolvedPodcastTitle = episode.podcastTitle ?: podcast?.title ?: "Podcast"
-                                    val resolvedImageUrl = episode.imageUrl ?: episode.podcastImageUrl ?: podcast?.imageUrl
-
-                                    fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                                    navController.navigate(
-                                        "episode/${encode(episode.id)}/${encode(episode.title)}/" +
-                                            "${encode(episode.description.take(500))}/" +
-                                            "${encode(resolvedImageUrl)}/" +
-                                            "${encode(episode.audioUrl)}/" +
-                                            "${episode.duration}/${encode(resolvedPodcastId)}/" +
-                                            "${encode(resolvedPodcastTitle)}" +
-                                            "?entryPoint=player_ui",
-                                    ) { launchSingleTop = true }
-                                }
-                            },
-                            onPodcastInfoClick = { podcast ->
-                                if (podcast.id.startsWith("briefing_")) {
-                                    val region = podcast.id.removePrefix("briefing_")
-                                    navController.navigate("briefing?region=$region") {
-                                        launchSingleTop = true
-                                    }
-                                } else {
-                                    navController.navigate(
-                                        "podcast/${android.net.Uri.encode(podcast.id)}?entryPoint=player_ui",
-                                    ) { launchSingleTop = true }
-                                }
-                            },
-                        ),
+                        playerSheetActions(navController, playbackRepository, adaptivePlayer.onSheetInteractionChanged),
                         modifier = Modifier.align(Alignment.TopStart),
                     )
                 }
+            }
+                    },
+                ),
+            )
             }
 
             OpmlImportDialog(

@@ -42,7 +42,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -54,7 +53,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.AdaptiveOverflowRow
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.components.DiscoveryExpressiveTheme
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 
 // Synced with GenreSelector.kt / onboarding search icons.
 internal data class ExploreGenreItem(val label: String, val value: String, val icon: ImageVector)
@@ -99,6 +102,8 @@ private fun ExploreGenreSelectorContent(
     onCategorySelected: (String) -> Unit,
 ) {
     var showSheet by remember { mutableStateOf(false) }
+    var overflowGenres by remember { mutableStateOf<List<ExploreGenreItem>>(emptyList()) }
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
 
     val displayGenres = remember(selectedCategory) {
         val topGenres = EXPLORE_GENRES.take(5)
@@ -120,40 +125,62 @@ private fun ExploreGenreSelectorContent(
         listState.animateScrollToItem(0)
     }
 
-    LazyRow(
-        modifier = Modifier.fillMaxWidth(),
-        state = listState,
-        contentPadding = PaddingValues(horizontal = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            ExploreGenreFilterChip(
-                label = "All",
-                selected = selectedCategory == "All",
-                onClick = { onCategorySelected("All") },
-                icon = Icons.Rounded.Apps,
-            )
-        }
+    if (tablet) {
+        AdaptiveOverflowRow(
+            itemCount = EXPLORE_GENRES.size + 1,
+            selectedIndex = EXPLORE_GENRES.indexOfFirst { it.value == selectedCategory }.takeIf { it >= 0 }?.plus(1),
+            onOverflow = { indices ->
+                overflowGenres = indices.map { EXPLORE_GENRES[it - 1] }
+                showSheet = true
+            },
+            modifier = Modifier.padding(horizontal = 6.dp),
+            item = { index ->
+                if (index == 0) {
+                    ExploreGenreFilterChip("All", selectedCategory == "All", { onCategorySelected("All") }, Icons.Rounded.Apps)
+                } else {
+                    val genre = EXPLORE_GENRES[index - 1]
+                    ExploreGenreFilterChip(genre.label, selectedCategory == genre.value, { onCategorySelected(genre.value) }, genre.icon)
+                }
+            },
+            onWidthChanged = { showSheet = false },
+            more = { onClick -> ExploreMoreGenresChip(onClick) },
+        )
+    } else {
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item {
+                ExploreGenreFilterChip(
+                    label = "All",
+                    selected = selectedCategory == "All",
+                    onClick = { onCategorySelected("All") },
+                    icon = Icons.Rounded.Apps,
+                )
+            }
 
-        items(displayGenres, key = { it.value }) { genre ->
-            ExploreGenreFilterChip(
-                label = genre.label,
-                selected = selectedCategory == genre.value,
-                onClick = { onCategorySelected(genre.value) },
-                icon = genre.icon,
-            )
-        }
+            items(displayGenres, key = { it.value }) { genre ->
+                ExploreGenreFilterChip(
+                    label = genre.label,
+                    selected = selectedCategory == genre.value,
+                    onClick = { onCategorySelected(genre.value) },
+                    icon = genre.icon,
+                )
+            }
 
-        item {
-            AssistChip(
-                label = { Text("More") },
-                onClick = { showSheet = true },
-                trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
-                modifier = Modifier.heightIn(min = 48.dp),
-                shape = CircleShape,
-                border = null,
-                colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            )
+            item {
+                AssistChip(
+                    label = { Text("More") },
+                    onClick = { showSheet = true },
+                    trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    shape = CircleShape,
+                    border = null,
+                    colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                )
+            }
         }
     }
 
@@ -163,12 +190,25 @@ private fun ExploreGenreSelectorContent(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
-            ExploreGenreSheetContent(selectedCategory) { category ->
+            ExploreGenreSheetContent(selectedCategory, if (tablet) overflowGenres else EXPLORE_GENRES, !tablet) { category ->
                 onCategorySelected(category)
                 showSheet = false
             }
         }
     }
+}
+
+@Composable
+private fun ExploreMoreGenresChip(onClick: () -> Unit) {
+    AssistChip(
+        label = { Text("More") },
+        onClick = onClick,
+        trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
+        modifier = Modifier.heightIn(min = 48.dp),
+        shape = CircleShape,
+        border = null,
+        colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    )
 }
 
 /** Mirrors HomeGenreFilterChip tokens; no feature-to-feature dependency. */
@@ -195,10 +235,10 @@ private fun ExploreGenreFilterChip(label: String, selected: Boolean, onClick: ()
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ExploreGenreSheetContent(selectedCategory: String, onCategorySelected: (String) -> Unit) {
+private fun ExploreGenreSheetContent(selectedCategory: String, genres: List<ExploreGenreItem>, includeAll: Boolean, onCategorySelected: (String) -> Unit) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().tabletSheetScroll()
             .padding(horizontal = 24.dp)
             .padding(bottom = 48.dp),
     ) {
@@ -214,16 +254,18 @@ private fun ExploreGenreSheetContent(selectedCategory: String, onCategorySelecte
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            ExploreGenreFilterChip(
+            if (includeAll) {
+                ExploreGenreFilterChip(
                 label = "All",
                 selected = selectedCategory == "All",
                 onClick = {
                     onCategorySelected("All")
                 },
                 icon = Icons.Rounded.Apps,
-            )
+                )
+            }
 
-            EXPLORE_GENRES.forEach { genre ->
+            genres.forEach { genre ->
                 ExploreGenreFilterChip(
                     label = genre.label,
                     selected = selectedCategory == genre.value,

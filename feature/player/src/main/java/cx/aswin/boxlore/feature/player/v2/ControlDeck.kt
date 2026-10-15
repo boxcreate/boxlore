@@ -38,7 +38,6 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
@@ -57,6 +56,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.AutoTranscriptState
 import cx.aswin.boxlore.core.model.SleepTimerConstants
@@ -83,7 +84,8 @@ fun PrimaryControls(
     actions: PrimaryControlActions,
     seekDurations: cx.aswin.boxlore.feature.player.SeekControlDurations =
         cx.aswin.boxlore.feature.player.SeekControlDurations(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    controlHeight: androidx.compose.ui.unit.Dp = 104.dp,
 ) {
     val interactionSources = remember { List(3) { MutableInteractionSource() } }
     val replayPressed by interactionSources[0].collectIsPressedAsState()
@@ -124,6 +126,61 @@ fun PrimaryControls(
         softGroupSpring,
         label = "forwardWidth"
     )
+    val (replayShape, forwardShape) = transportShapes()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(controlHeight),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TransportButton(
+            icon = seekTransportIcon(seekDurations.backwardSeconds, forward = false),
+            colorScheme = colorScheme,
+            shape = replayShape,
+            interactionSource = interactionSources[0],
+            onClick = {
+                latchedIndex = 0
+                interactionToken++
+                actions.onReplay()
+            },
+            modifier = Modifier
+                .weight(replayWeight)
+                .height((controlHeight - 16.dp).coerceAtLeast(48.dp))
+        )
+        MorphingPlayButton(
+            isPlaying = isPlaying,
+            isLoading = isLoading,
+            colorScheme = colorScheme,
+            interactionSource = interactionSources[1],
+            onClick = {
+                latchedIndex = 1
+                interactionToken++
+                actions.onPlayPause()
+            },
+            modifier = Modifier
+                .weight(playWeight)
+                .height(controlHeight)
+        )
+        TransportButton(
+            icon = seekTransportIcon(seekDurations.forwardSeconds, forward = true),
+            colorScheme = colorScheme,
+            shape = forwardShape,
+            interactionSource = interactionSources[2],
+            onClick = {
+                latchedIndex = 2
+                interactionToken++
+                actions.onForward()
+            },
+            modifier = Modifier
+                .weight(forwardWeight)
+                .height((controlHeight - 16.dp).coerceAtLeast(48.dp))
+        )
+    }
+}
+
+private fun transportShapes(): Pair<AbsoluteSmoothCornerShape, AbsoluteSmoothCornerShape> {
     val replayShape = AbsoluteSmoothCornerShape(
         cornerRadiusTL = 34.dp,
         smoothnessAsPercentTL = 60,
@@ -144,75 +201,7 @@ fun PrimaryControls(
         cornerRadiusBR = 34.dp,
         smoothnessAsPercentBR = 60
     )
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(104.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TransportButton(
-            icon = TransportIcon(
-                seconds = seekDurations.backwardSeconds,
-                forward = false,
-                contentDescription =
-                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                    seekDurations.backwardSeconds,
-                    forward = false,
-                ),
-                size = 40.dp
-            ),
-            colorScheme = colorScheme,
-            shape = replayShape,
-            interactionSource = interactionSources[0],
-            onClick = {
-                latchedIndex = 0
-                interactionToken++
-                actions.onReplay()
-            },
-            modifier = Modifier
-                .weight(replayWeight)
-                .height(88.dp)
-        )
-        MorphingPlayButton(
-            isPlaying = isPlaying,
-            isLoading = isLoading,
-            colorScheme = colorScheme,
-            interactionSource = interactionSources[1],
-            onClick = {
-                latchedIndex = 1
-                interactionToken++
-                actions.onPlayPause()
-            },
-            modifier = Modifier
-                .weight(playWeight)
-                .height(104.dp)
-        )
-        TransportButton(
-            icon = TransportIcon(
-                seconds = seekDurations.forwardSeconds,
-                forward = true,
-                contentDescription =
-                cx.aswin.boxlore.feature.player.seekDurationContentDescription(
-                    seekDurations.forwardSeconds,
-                    forward = true,
-                ),
-                size = 40.dp
-            ),
-            colorScheme = colorScheme,
-            shape = forwardShape,
-            interactionSource = interactionSources[2],
-            onClick = {
-                latchedIndex = 2
-                interactionToken++
-                actions.onForward()
-            },
-            modifier = Modifier
-                .weight(forwardWeight)
-                .height(88.dp)
-        )
-    }
+    return replayShape to forwardShape
 }
 
 private data class TransportIcon(
@@ -220,6 +209,14 @@ private data class TransportIcon(
     val forward: Boolean,
     val contentDescription: String,
     val size: androidx.compose.ui.unit.Dp
+)
+
+@Composable
+private fun seekTransportIcon(seconds: Int, forward: Boolean) = TransportIcon(
+    seconds,
+    forward,
+    cx.aswin.boxlore.feature.player.seekDurationContentDescription(seconds, forward),
+    40.dp,
 )
 
 @Composable
@@ -550,7 +547,7 @@ fun SpeedSheet(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth().tabletSheetScroll()
                 .padding(horizontal = 24.dp)
                 .navigationBarsPadding()
                 .padding(bottom = 24.dp)
@@ -605,7 +602,7 @@ fun SleepSheet(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth().tabletSheetScroll()
                 .padding(horizontal = 24.dp)
                 .navigationBarsPadding()
                 .padding(bottom = 24.dp)

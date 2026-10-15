@@ -21,6 +21,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneBounds
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
 
@@ -46,7 +49,17 @@ internal object HomeHeroStyle {
 
 /** Shared by loaded heroes and their opaque loading cover, including enlarged text. */
 @Composable
-internal fun homeHeroHeight() = 416.dp + 200.dp * (LocalDensity.current.fontScale - 1f).coerceAtLeast(0f)
+internal fun homeHeroHeight(): androidx.compose.ui.unit.Dp {
+    val scale = LocalDensity.current.fontScale
+    val natural = 416.dp + 200.dp * (scale - 1f).coerceAtLeast(0f)
+    val window = LocalBoxloreWindowLayout.current
+    val pane = LocalBoxlorePaneBounds.current
+    return if (window.tabletopFold != null && pane != null && scale <= 1.1f) {
+        minOf(natural, (pane.height.dp - 80.dp - boxloreContentBottomPadding(0.dp)).coerceAtLeast(240.dp))
+    } else {
+        natural
+    }
+}
 
 internal data class HeroProgressState(val value: Float, val playing: Boolean)
 
@@ -69,6 +82,22 @@ internal fun HeroProgress(progress: Float, color: Color, track: Color, modifier:
         waveSpeed = if (playing) 24.dp else 0.dp,
         modifier = modifier.fillMaxWidth().height(12.dp).semantics { contentDescription = description },
     )
+}
+
+/**
+ * Below this height (the hero above a tabletop fold) a separate context block leaves no room for
+ * Play: Duotone moves its context into the copy, as Cover does, and Halo shows as Cover. Phone
+ * heroes are taller.
+ */
+internal val ShortHeroHeight = 320.dp
+
+/**
+ * The hero style Home shows for the saved [style]. Marquee's still cover and the sheet that docks
+ * under the top bar are built for one phone-width column, so tablets show Cover instead.
+ */
+internal fun homeHeroStyle(style: String, tablet: Boolean): String {
+    val saved = cx.aswin.boxlore.core.prefs.HeroCardStyle.sanitize(style)
+    return if (tablet && saved == cx.aswin.boxlore.core.prefs.HeroCardStyle.MARQUEE) cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER else saved
 }
 
 @Composable

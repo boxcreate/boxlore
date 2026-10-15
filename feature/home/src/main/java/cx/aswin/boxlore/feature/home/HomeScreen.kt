@@ -38,6 +38,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -54,6 +55,7 @@ import cx.aswin.boxlore.feature.home.components.MarqueeDetentConnection
 import cx.aswin.boxlore.feature.home.components.MarqueeSheetOverlap
 import cx.aswin.boxlore.feature.home.components.MarqueeTopTone
 import cx.aswin.boxlore.feature.home.components.TopControlBar
+import cx.aswin.boxlore.feature.home.components.homeHeroStyle
 import cx.aswin.boxlore.feature.home.components.marqueeBarOverArtwork
 import cx.aswin.boxlore.feature.home.components.marqueeDetent
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
@@ -358,7 +360,7 @@ fun HomeRoute(
 
     androidx.compose.runtime.CompositionLocalProvider(
         LocalLastSeenEpisodes provides lastSeenEpisodes,
-        LocalHeroCardStyle provides heroCardStyle,
+        LocalHeroCardStyle provides homeHeroStyle(heroCardStyle, LocalBoxloreWindowLayout.current.usesTabletLayout),
         LocalHeroCoverShade provides heroCoverShade,
     ) {
         HomeScreen(

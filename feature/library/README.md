@@ -72,7 +72,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:catalog`, `:core:downloads`, `:core:playback`, `:core:designsystem`, `:core:analytics`, and `:core:ranking`.
-- Libraries: Compose, Navigation, Activity Compose, lifecycle ViewModel/runtime, Coil, Material adaptive, calvin reorderable, Turbine / JUnit for JVM tests.
+- Libraries: Compose, Navigation, Activity Compose, lifecycle ViewModel/runtime, Coil, calvin reorderable, Turbine / JUnit for JVM tests. The unused adaptive navigation-suite dependency is removed; app-shell window information comes through `:core:designsystem`.
 - Reverse-edge rule: feature modules must not depend on other feature modules or create local repository graphs.
 
 ## Threading / lifecycle
@@ -91,6 +91,10 @@ src/main/java/cx/aswin/boxlore/feature/library/
 Artwork-only subscription headers try usable fallback candidates even when the primary show URL is blank; liked episodes use their associated show artwork after episode artwork fails.
 
 ## Testing notes
+
+- The tablet Library hub uses two bounded columns when space allows. Latest/download episode lists reserve a separate Play All action row on tablets, preventing overlap with individual playback controls; compact overlays retain their original geometry. Tablet list bottom padding accounts for that reserved row. Context menus, selection, sorting, playback queues and folder callbacks retain their existing owners.
+
+- Tablet Shows grids pack by content-pane width. Poster/folder surfaces use shared maxima; hub cards, downloaded/liked episode lists and subscription episode lists stay bounded. Reordering, folder slots, playback queues and ordering remain unchanged.
 
 - `LatestPlaybackQueueLogicTest` checks visible suffix order, publication-date chronology, Smart/filter order, completed-row handling, Play All, missing/duplicate rows, mixed-show metadata, and opaque RSS episode IDs.
 
@@ -121,3 +125,9 @@ Artwork-only subscription headers try usable fallback candidates even when the p
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:downloads` README](../../core/downloads/README.md)
 - [`:app` README](../../app/README.md)
+
+Tablet subscription/folder menus use the shared dialog adapter. Secondary click reuses the existing guarded long-press callbacks, including reorder/drag restrictions; nested targets retain one menu owner. Phone card/menu calls retain their native paths.
+
+Local-only LibraryTabletAuditCaptureTest renders Liked, empty Liked, Downloads and a downloaded show in both tablet orientations and themes using mocked flows. It performs no downloads or playback and writes no phone baselines.
+
+Liked empty-state actions and downloaded-show headers share the same bounded tablet column as their loaded lists. Offline capture fixtures provide the same Material content-color host as the application.

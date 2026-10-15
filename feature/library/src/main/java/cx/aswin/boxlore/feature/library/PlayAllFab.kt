@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.adaptivePlayerOverlayOffset
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -35,7 +40,12 @@ fun BoxScope.PlayAllFab(
     modifier: Modifier = Modifier,
     bottomPaddingOverride: androidx.compose.ui.unit.Dp? = null,
 ) {
-    val targetPadding = bottomPaddingOverride ?: if (isPlayerActive) 154.dp else 88.dp
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val targetPadding = if (tablet) {
+        boxloreContentBottomPadding(0.dp) + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    } else {
+        bottomPaddingOverride ?: if (isPlayerActive) 154.dp else 88.dp
+    }
     val bottomPadding by animateDpAsState(
         targetValue = targetPadding,
         animationSpec = spring(
@@ -48,7 +58,7 @@ fun BoxScope.PlayAllFab(
     Surface(
         modifier = modifier
             .align(Alignment.BottomEnd)
-            .adaptivePlayerOverlayOffset(isMiniPlayerVisible = isPlayerActive)
+            .then(if (tablet) Modifier else Modifier.adaptivePlayerOverlayOffset(isMiniPlayerVisible = isPlayerActive))
             .padding(bottom = bottomPadding, end = 16.dp)
             .expressiveClickable(
                 feedback = ExpressivePressFeedback.Control,

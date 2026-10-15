@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -58,7 +61,7 @@ internal fun DuotoneHeroCard(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = look.duotone.shadow, contentColor = shade.content),
-        modifier = modifier.fillMaxSize().testTag("home_hero_duotone"),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize().testTag("home_hero_duotone"),
     ) {
         Box(Modifier.fillMaxSize()) {
             OptimizedImage(
@@ -70,19 +73,23 @@ internal fun DuotoneHeroCard(
                 colorFilter = filter,
                 modifier = Modifier.fillMaxSize(),
             )
-            Column(Modifier.fillMaxSize().padding(20.dp)) {
-                HeroCardContext(item, shade.content, wide = LocalDensity.current.fontScale > 1.3f, Modifier.fillMaxWidth())
-                Spacer(Modifier.weight(1f))
-                CoverCopy(item, shade, progressState, showContext = false)
-                Spacer(Modifier.height(16.dp))
-                HeroActions(
-                    pause = pause,
-                    resume = item.type == HeroType.RESUME || current,
-                    colors = HeroActionColors(play = shade.content, onPlay = shade.deep, details = shade.container, onDetails = shade.content),
-                    item = item,
-                    onPlayClick = onClick,
-                    onDetailsClick = onArrowClick,
-                )
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                // A short card (above a tabletop fold) puts the context in the copy, as Cover does, so Play keeps its height.
+                val short = maxHeight < ShortHeroHeight
+                Column(Modifier.fillMaxSize().padding(20.dp)) {
+                    if (!short) HeroCardContext(item, shade.content, wide = LocalDensity.current.fontScale > 1.3f, Modifier.fillMaxWidth())
+                    Spacer(Modifier.weight(1f))
+                    CoverCopy(item, shade, progressState, showContext = short)
+                    Spacer(Modifier.height(16.dp))
+                    HeroActions(
+                        pause = pause,
+                        resume = item.type == HeroType.RESUME || current,
+                        colors = HeroActionColors(play = shade.content, onPlay = shade.deep, details = shade.container, onDetails = shade.content),
+                        item = item,
+                        onPlayClick = onClick,
+                        onDetailsClick = onArrowClick,
+                    )
+                }
             }
         }
     }

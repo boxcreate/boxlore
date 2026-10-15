@@ -273,8 +273,12 @@ fun SettingsScreen(
     )
 
     val actions = SettingsPagesActions(
-        // Appearance's pages and the custom theme editor return to their parent page.
-        onNavigate = { destination = it },
+        // Appearance's pages and the custom theme editor return to their parent page; a category picked in the
+        // tablet split drops any earlier one-off Back target.
+        onNavigate = {
+            previousDestination = null
+            destination = it
+        },
         onReturnToHub = returnToHub,
         onNavigateToAccountFromSync = {
             previousDestination = ProfileSettingsDestination.SyncAndBackups
@@ -290,14 +294,20 @@ fun SettingsScreen(
         ),
     )
 
-    SettingsAnimatedPages(
-        destination = destination,
-        config = config,
-        repositories = repositories,
-        contentBundle = contentBundle,
-        uiData = uiData,
-        actions = actions,
-    )
+    AdaptiveSettingsLayout(destination, config, actions.onNavigate) { displayedDestination ->
+        // The split already shows the category list; root Back exits instead of showing it again. Nested pages still return to their parent.
+        BackHandler(enabled = LocalSettingsSplitPane.current && previousDestination == null && destination.parent == null && destination != ProfileSettingsDestination.Hub) {
+            config.onBack()
+        }
+        SettingsAnimatedPages(
+            destination = displayedDestination,
+            config = config,
+            repositories = repositories,
+            contentBundle = contentBundle,
+            uiData = uiData,
+            actions = actions,
+        )
+    }
 
     SettingsDialogs(
         rssState = rssState,

@@ -204,6 +204,7 @@ data class NavHostActions(
 )
 
 /** Internal wiring bag shared by NavGraphBuilder destination helpers. */
+@Suppress("LongParameterList")
 internal class NavGraphWiring(
     val navController: NavHostController,
     val application: BoxLoreApplication,
@@ -215,7 +216,11 @@ internal class NavGraphWiring(
     val context: android.content.Context,
     val isOnline: Boolean,
     val isSyncingSmartDownloads: androidx.compose.runtime.MutableState<Boolean>,
+    val tabletNavigation: TabletDetailNavigation? = null,
 ) {
+    fun navigate(route: String, options: androidx.navigation.NavOptionsBuilder.() -> Unit = {}) {
+        tabletNavigation?.navigate(navController, route, options) ?: navController.navigate(route, options)
+    }
     val container get() = application.container
     val database get() = container.database
     val podcastRepository get() = container.podcastRepository
@@ -406,26 +411,28 @@ internal fun navigateHomePodcast(
     entryPointStr: String,
     genreStr: String?,
     depthVal: Int?,
+    navigate: (String) -> Unit = { navController.navigate(it) },
 ) {
-    navController.navigate(podcastDetailRoute(podcast.id, entryPointStr, genreStr, depthVal))
+    navigate(podcastDetailRoute(podcast.id, entryPointStr, genreStr, depthVal))
 }
 
 internal fun navigateHomeHeroArrow(
     navController: NavHostController,
     heroItem: cx.aswin.boxlore.feature.home.SmartHeroItem,
     carouselPos: Int,
+    navigate: (String) -> Unit = { navController.navigate(it) },
 ) {
     if (heroItem.type == cx.aswin.boxlore.feature.home.HeroType.SPOTLIGHT) {
-        navController.navigate(podcastDetailRoute(android.net.Uri.encode(heroItem.podcast.id), "home_hero_spotlight"))
+        navigate(podcastDetailRoute(android.net.Uri.encode(heroItem.podcast.id), "home_hero_spotlight"))
         return
     }
     val ep = heroItem.podcast.latestEpisode
     if (ep == null) {
-        navController.navigate("podcast/${android.net.Uri.encode(heroItem.podcast.id)}")
+        navigate("podcast/${android.net.Uri.encode(heroItem.podcast.id)}")
         return
     }
     val entryPointStr = "home_hero_${heroItem.type.name.lowercase()}"
-    navController.navigate(
+    navigate(
         episodeFullPathRoute(
             episodeId = ep.id,
             title = ep.title,
@@ -445,9 +452,10 @@ internal fun navigateHomeEpisode(
     episode: Episode,
     podcast: cx.aswin.boxlore.core.model.Podcast,
     entryPointStr: String?,
+    navigate: (String) -> Unit = { navController.navigate(it) },
 ) {
     val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
-    navController.navigate(
+    navigate(
         episodeFullPathRoute(
             episodeId = encodeNavArg(episode.id),
             title = episode.title,
@@ -481,6 +489,7 @@ internal fun navigatePodcastInfoEpisode(
     index: Int?,
     podcastId: String,
     podcastTitle: String,
+    navigate: (String) -> Unit = { navController.navigate(it) },
 ) {
     var route = episodeFullPathRoute(
         episodeId = episode.id,
@@ -494,7 +503,7 @@ internal fun navigatePodcastInfoEpisode(
         querySuffix = "?entryPoint=$entryPointStr",
     )
     if (index != null) route += "&carouselPosition=$index"
-    navController.navigate(route)
+    navigate(route)
 }
 
 internal fun navigateRelatedEpisode(
@@ -502,10 +511,11 @@ internal fun navigateRelatedEpisode(
     ep: Episode,
     fallbackPodcastId: String,
     fallbackPodcastTitle: String,
+    navigate: (String) -> Unit = { navController.navigate(it) },
 ) {
     val targetPodcastId = ep.podcastId?.takeIf { it.isNotEmpty() } ?: fallbackPodcastId
     val targetPodcastTitle = ep.podcastTitle?.takeIf { it.isNotEmpty() } ?: fallbackPodcastTitle
-    navController.navigate(
+    navigate(
         episodeFullPathRoute(
             episodeId = ep.id,
             title = ep.title,

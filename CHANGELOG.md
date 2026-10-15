@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Home hero card style (`HeroCardStyle`, Standard/Classic, `ClassicHeroCards`) and navigation blur level (`NavigationBlurLevel`, `FloatingNavigationBlur` on Haze 1.6.9) preferences. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `HomeRevealStage` staged cold-start reveal and a carousel-matched hero skeleton. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `PodcastInfoLoadRecovery` and `BriefingLoadingContent`. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Add adaptive tablet/foldable window, card and pane specifications, side navigation and retained detail/player hosts. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Add a tablet-only alpha startup screen with persistent acknowledgment before Welcome. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add hermetic JVM coverage for setup actions, button semantics, narrow and enlarged-text layouts, first-line dismissal alignment and RTL geometry. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -59,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `HomeYourShowsRanker` ranks Your shows within a budget; Because you like seed card redesign; the brief card hides only when finished or dismissed. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Player colours use a tonal scheme seeded from the cover; split-pill mini player; `PlayerSheetRevealLogic` fade-through. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Lore cards show full text with `LoreDeckMotion`; `m3Shimmer` is a draw-only `Modifier.Node`. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Adapt Home modules, discovery rows, Settings, reading surfaces, dialogs and keyboard/mouse input to available tablet panes. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -86,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Repair legacy numeric Brief artwork references in listening history, queue and downloads on open and restored writes, preserving all non-artwork state. ([#1113](https://github.com/boxcreate/boxlore/pull/1113)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Podcast Info no longer spins forever when show details fail. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - User-facing strings use boxlore, all lowercase. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Keep tablet playback controls clear of system navigation, preserve ranked result ordering and improve artwork-themed dark-mode foregrounds. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -234,6 +238,14 @@ readme-copy:end pr=1116 -->
 - Show pages no longer load forever when show details can’t be reached.
 - The boxlore brief card stays on Home until you finish or hide it.
 readme-copy:end pr=1117 -->
+
+<!-- readme-copy:start pr=1118
+### Improvements
+- Tablets and foldables now have layouts that fit their space, with side navigation, split Settings and more room for browsing and playback.
+- Tablet layouts are in alpha. A one-time notice before Welcome shows how to send feedback from the Home top bar.
+### Fixes
+- Improve tablet card sizing, spacing and dark-mode readability, and keep player controls above system navigation.
+readme-copy:end pr=1118 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added

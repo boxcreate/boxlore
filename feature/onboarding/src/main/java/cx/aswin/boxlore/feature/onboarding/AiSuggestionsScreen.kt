@@ -72,6 +72,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RegionSegmentedSelector
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
@@ -130,7 +132,7 @@ internal fun AiSuggestionsScreen(uiState: OnboardingUiState, callbacks: Suggesti
         else -> SuggestionsFooterState.Finish(OnboardingSuggestionsPresentation.addCount(uiState))
     }
     Scaffold(
-        modifier = Modifier.fillMaxSize().testTag("suggestions_screen"),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxSize().testTag("suggestions_screen"),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { SuggestionsTopBar(callbacks.onBack) },

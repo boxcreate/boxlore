@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 
@@ -67,7 +69,7 @@ fun NotesPreviewCard(
     )
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(),
         shape = cardShape,
         color = colorScheme.surfaceContainerHigh
     ) {

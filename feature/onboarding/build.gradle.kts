@@ -70,6 +70,7 @@ dependencies {
     // Show deck clips only; listening playback stays with :core:playback.
     implementation(libs.androidx.media3.exoplayer)
 
+    testImplementation(projects.core.testing)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.ui.test.junit4)

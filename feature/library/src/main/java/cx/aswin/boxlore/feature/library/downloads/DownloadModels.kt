@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -98,7 +100,7 @@ internal fun PodcastListShowCard(
     val totalSizeBytes = group.totalSizeBytes
     val latestDownloadedAt = group.latestDownloadedAt
     Row(
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode)
             .fillMaxWidth()
             .expressiveClickable(
                 onClick = {
