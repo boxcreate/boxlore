@@ -16,11 +16,15 @@ internal object PlaybackArtworkMetadata {
     }
 
     /**
-     * Keeps [original], the cover's real address, ahead of any sources already in [existing], for
-     * items whose artwork the player swaps for an Android Auto / media controls link.
+     * Adds [original], the cover's real address, to the sources in [existing] for items whose artwork
+     * the player swaps for an Android Auto / media controls link: ahead of them when it is the
+     * episode's own cover, after them when it is only the show's ([episodeCover] false), so an item
+     * that already carries its episode cover keeps saving that one.
      */
-    fun withOriginal(existing: Bundle?, original: String?): Bundle = Bundle(existing ?: Bundle()).apply {
-        val sources = (listOfNotNull(persistableArtworkUrl(original)) + getStringArrayList(SOURCES).orEmpty()).distinct()
+    fun withOriginal(existing: Bundle?, original: String?, episodeCover: Boolean = true): Bundle = Bundle(existing ?: Bundle()).apply {
+        val current = getStringArrayList(SOURCES).orEmpty()
+        val added = listOfNotNull(persistableArtworkUrl(original))
+        val sources = (if (episodeCover) added + current else current + added).distinct()
         if (sources.isNotEmpty()) putStringArrayList(SOURCES, ArrayList(sources))
     }
 

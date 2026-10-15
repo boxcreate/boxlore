@@ -54,7 +54,8 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                     ?: download?.episodeTitle?.takeIf(String::isNotBlank)
                     ?: item.mediaMetadata.title?.toString()?.takeIf(String::isNotBlank)
 
-            // Saved rows can hold a player-only link from an older build; skip it for a real cover.
+            // Saved rows and the incoming item can hold a player-only link; skip it so a real cover,
+            // or the catalogue lookup below, is used instead.
             val localArtworkUri =
                 persistableArtworkUrl(historyItem?.episodeImageUrl)
                     ?: persistableArtworkUrl(historyItem?.podcastImageUrl)
@@ -62,7 +63,12 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                     ?: persistableArtworkUrl(queueItem?.podcastImageUrl)
                     ?: persistableArtworkUrl(download?.episodeImageUrl)
                     ?: persistableArtworkUrl(download?.podcastImageUrl)
-                    ?: item.mediaMetadata.artworkUri?.toString()?.takeIf(String::isNotBlank)
+                    ?: PlaybackArtworkMetadata.savedArtworkUrl(item.mediaMetadata)
+            val showCovers = setOfNotNull(
+                persistableArtworkUrl(historyItem?.podcastImageUrl),
+                persistableArtworkUrl(queueItem?.podcastImageUrl),
+                persistableArtworkUrl(download?.podcastImageUrl),
+            )
 
             val fallbackEpisode =
                 if (AutoMediaResolutionPolicy.needsPlaybackMetadataFallback(localTitle, localPodcastName, localArtworkUri)) {
@@ -83,6 +89,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                 )
 
             android.util.Log.d("BoxCastPlayer", "resolveMediaItem: resolved: '${metadata.artworkUri}', pod: '${metadata.podcastName}'")
+            val fallbackShowCover = fallbackEpisode?.takeIf { it.imageUrl == null }?.podcastImageUrl
             return buildResolvedMediaItem(
                 item = item,
                 episodeId = episodeId,
@@ -90,6 +97,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                 source = source,
                 metadata = metadata,
                 downloadCompleted = downloadCompleted,
+                episodeCover = metadata.artworkUri !in showCovers && metadata.artworkUri != fallbackShowCover,
             )
         }
 
@@ -151,6 +159,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         source: AutoMediaSource,
         metadata: AutoPlaybackMetadata,
         downloadCompleted: Boolean,
+        episodeCover: Boolean,
     ): MediaItem {
         val resolvedArtworkUri =
             metadata.artworkUri?.let { uriStr ->
@@ -180,7 +189,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                         CastMediaMetadata.extrasWithRemoteUri(
                             existing =
                             AutoBrowseContract.mergeExtras(
-                                PlaybackArtworkMetadata.withOriginal(item.mediaMetadata.extras, metadata.artworkUri),
+                                PlaybackArtworkMetadata.withOriginal(item.mediaMetadata.extras, metadata.artworkUri, episodeCover),
                                 AutoBrowseContract.itemExtras(
                                     source =
                                     item.mediaMetadata.extras
@@ -240,7 +249,11 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                     .setArtworkUri(resolvedArtworkUri)
                     .setExtras(
                         CastMediaMetadata.extrasWithRemoteUri(
-                            existing = PlaybackArtworkMetadata.withOriginal(item.mediaMetadata.extras, episode.imageUrl ?: episode.podcastImageUrl),
+                            existing = PlaybackArtworkMetadata.withOriginal(
+                                item.mediaMetadata.extras,
+                                episode.imageUrl ?: episode.podcastImageUrl,
+                                episodeCover = episode.imageUrl != null,
+                            ),
                             remoteUri = episode.audioUrl,
                         ),
                     ).build(),

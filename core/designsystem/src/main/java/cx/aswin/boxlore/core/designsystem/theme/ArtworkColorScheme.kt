@@ -14,9 +14,20 @@ import com.materialkolor.hct.Hct
 fun artworkColorScheme(palette: ArtworkPalette, isDark: Boolean, surfaceStyle: String = SurfaceStyles.STANDARD): ColorScheme =
     generatePersonalColorScheme(CustomThemeSeeds(Color(palette.seed)), isDark, surfaceStyle)
 
-/** The full player's colours: the brand scheme generator seeded from the cover's seed. */
-fun artworkPlayerColorScheme(palette: ArtworkPalette, isDark: Boolean, surfaceStyle: String = SurfaceStyles.STANDARD): ColorScheme =
-    generateBrandColorScheme(Color(palette.seed), isDark, surfaceStyle)
+/**
+ * The full player's colours: the brand scheme generator seeded from the cover's seed. Bright covers
+ * in light mode can leave its Play icon faint on the button, so that one colour switches to black
+ * or white, whichever reads; every other colour stays as generated.
+ */
+fun artworkPlayerColorScheme(palette: ArtworkPalette, isDark: Boolean, surfaceStyle: String = SurfaceStyles.STANDARD): ColorScheme {
+    val scheme = generateBrandColorScheme(Color(palette.seed), isDark, surfaceStyle)
+    if (artworkContrast(scheme.onPrimary, scheme.primary) >= ReadableContrast) return scheme
+    val onPrimary = if (artworkContrast(Color.Black, scheme.primary) >= artworkContrast(Color.White, scheme.primary)) Color.Black else Color.White
+    return scheme.copy(onPrimary = onPrimary)
+}
+
+/** WCAG AA for text; either black or white always reaches it against any colour. */
+private const val ReadableContrast = 4.5f
 
 /** The mini player's colours: [bar] behind the title, [play] for its Play end, [progress] for the sweep. */
 data class ArtworkMiniPlayerColors(

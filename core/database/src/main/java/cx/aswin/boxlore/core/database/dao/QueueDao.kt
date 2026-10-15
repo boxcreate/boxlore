@@ -129,10 +129,9 @@ interface QueueDao {
 
     /**
      * Swaps a player-only artwork link (`content://<app>.collage/...`) saved by older builds for the
-     * episode's own cover, else the show's, else the row's own show cover, else nothing. Order,
-     * positions and queue metadata are untouched, and the queue is not pushed for it: other devices
-     * drop the dead link on download and fill the cover from their own catalogue. Returns the rows
-     * changed.
+     * episode's own cover, else the show's, else the row's own show cover, else nothing. Order and
+     * positions are untouched. Returns the rows changed; [repairPlaybackArtworkLinksForSync] also
+     * marks the queue for the next push.
      */
     @Query(
         """
@@ -155,6 +154,18 @@ interface QueueDao {
         """,
     )
     suspend fun repairPlaybackArtworkLinks(): Int
+
+    /**
+     * Repairs player-only artwork links ([repairPlaybackArtworkLinks]) and, when any row changed,
+     * marks the queue dirty in the same transaction so the cloud copy drops the dead links too. The
+     * queue keeps its sequence: only artwork changed, not the order.
+     */
+    @Transaction
+    suspend fun repairPlaybackArtworkLinksForSync(): Int {
+        val changed = repairPlaybackArtworkLinks()
+        if (changed > 0) markQueueDirty()
+        return changed
+    }
 
     companion object {
         private const val MAX_RECENT_REMOVED_EPISODES = 50

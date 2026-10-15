@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
+import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -187,6 +188,22 @@ class QueueDaoInMemoryTest {
         assertEquals(true, stored.isDirty)
         assertEquals(0L, stored.syncedAt)
         assertEquals(6L, stored.queueSequence)
+    }
+
+    // Regression: the repaired queue stayed clean, so the cloud copy kept the dead artwork links.
+    @Test
+    fun `a queue repair marks a synced queue for the next push without changing its sequence`() = runTest {
+        dao.upsertQueueMetadata(QueueMetadataEntity(id = 1, queueSequence = 5L, isDirty = false, syncedAt = 100L))
+        dao.insertQueueItem(item("a", 1).copy(imageUrl = "content://cx.aswin.boxlore.collage/art/abc", podcastImageUrl = "https://art/show.jpg"))
+
+        assertEquals(1, dao.repairPlaybackArtworkLinksForSync())
+        val marked = dao.getQueueMetadata()!!
+        assertEquals(true, marked.isDirty)
+        assertEquals(5L, marked.queueSequence)
+
+        dao.upsertQueueMetadata(marked.copy(isDirty = false))
+        assertEquals(0, dao.repairPlaybackArtworkLinksForSync())
+        assertEquals(false, dao.getQueueMetadata()!!.isDirty)
     }
 
     // Regression: queue rows built from the player could keep its Android Auto artwork link.
