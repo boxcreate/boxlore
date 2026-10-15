@@ -24,6 +24,7 @@ import cx.aswin.boxlore.core.playback.setSleepTimer
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.feature.player.FullscreenTranscriptScreen
+import cx.aswin.boxlore.feature.player.fitVisibleHeight
 import cx.aswin.boxlore.feature.player.v2.logic.ResponsiveHeroLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -36,7 +37,7 @@ internal fun FullPlayerFullscreenOverlays(
     actions: FullPlayerActions,
     ui: FullPlayerUiState
 ) {
-    FullPlayerTranscriptOverlay(dependencies.playbackRepository, model, ui)
+    FullPlayerTranscriptOverlay(dependencies.playbackRepository, model, ui, display.visibleHeight)
     VideoFullscreenOverlay(
         content = VideoFullscreenContent(
             visible = display.isFullscreenVideo,
@@ -63,7 +64,8 @@ internal fun FullPlayerFullscreenOverlays(
 internal fun FullPlayerTranscriptOverlay(
     playbackRepository: PlaybackRepository,
     model: FullPlayerOverlayModel,
-    ui: FullPlayerUiState
+    ui: FullPlayerUiState,
+    visibleHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified,
 ) {
     AnimatedVisibility(
         visible = ui.showFullscreenTranscript,
@@ -87,6 +89,7 @@ internal fun FullPlayerTranscriptOverlay(
             },
             onPlayPause = { togglePlayback(model.state, playbackRepository) },
             onClose = { ui.showFullscreenTranscript = false },
+            modifier = Modifier.fitVisibleHeight(visibleHeight),
             transcriptUrl = model.episode.transcriptUrl
         )
     }
