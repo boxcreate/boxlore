@@ -1,6 +1,6 @@
 <div align="center" id="top">
 
-<img src="docs/images/brand/hero.svg?v=6b48e89c" width="100%" alt="boxlore. Curious. Calm. Yours. A podcast app for Android that goes looking with you."/>
+<img src="docs/images/brand/hero.svg?v=77f1828f" width="100%" alt="boxlore. Curious. Calm. Yours. A podcast app for Android that goes looking with you."/>
 
 <br/><br/>
 
@@ -51,7 +51,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 <a id="whats-new"></a>
 
-<img src="docs/images/brand/whats-new.svg?v=24a41e18" width="100%" alt="What’s new: release notes, and what’s coming next"/>
+<img src="docs/images/brand/whats-new.svg?v=26a4fc25" width="100%" alt="What’s new: release notes, and what’s coming next"/>
 
 <details>
 <summary align="right"><b>Read the release notes</b></summary>
@@ -162,7 +162,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 <a id="curious"></a>
 
-<img src="docs/images/brand/curious.svg?v=8da28a18" width="100%" alt="Curious. It wants to find you something good."/>
+<img src="docs/images/brand/curious.svg?v=ca62f51f" width="100%" alt="Curious. It wants to find you something good."/>
 
 - **Search by idea.** Describe a topic and get episodes about it, not just shows with that word in the name.
 - **Lore.** Swipe through questions that lead to episodes you’d never have searched for.
@@ -179,7 +179,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 <a id="calm"></a>
 
-<img src="docs/images/brand/calm.svg?v=52526ecd" width="100%" alt="Calm. Then it gets out of the way."/>
+<img src="docs/images/brand/calm.svg?v=fbc180ac" width="100%" alt="Calm. Then it gets out of the way."/>
 
 - **No app ads, no paywalls.** Every listening feature is free.
 - **Pages that follow the show.** Show and episode pages take on the colours of the show’s artwork.
@@ -196,7 +196,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 <a id="yours"></a>
 
-<img src="docs/images/brand/yours.svg?v=3b0c9c81" width="100%" alt="Yours. Whatever you want it to be. The same Home screen in three different looks."/>
+<img src="docs/images/brand/yours.svg?v=15181c79" width="100%" alt="Yours. Whatever you want it to be. The same Home screen in three different looks."/>
 
 - **Classic, Pure, or Material 3?** Start from one of three styles, or build your own theme from any colour you like.
 - **Floating navigation, or a classic bar?** And Crisp, Soft or Round lettering.
