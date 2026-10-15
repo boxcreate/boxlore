@@ -5,7 +5,7 @@
 ## Our Core Commitments
 
 1. **No App Ads, Forever:** We do not have banner ads, sponsor tracking pixels, or cross-site advertising SDKs. boxlore will never show ads in the app. Podcasts may still carry ads placed by their creators.
-2. **Anonymous Usage & Zero Profile Linking:** Accounts in boxlore are completely optional and used purely for cloud backup and library sync across your devices. Your email is logged solely by Firebase (Google) for secure auth verification and is never stored on our application servers. Most importantly, **your account email is never connected, linked, or cross-referenced with your app usage or telemetry event profile**. Your telemetry activity remains strictly anonymous.
+2. **Accounts Stay Separate From Usage Data:** Accounts in boxlore are completely optional and used purely for cloud backup and library sync across your devices. Your email is logged solely by Firebase (Google) for secure auth verification and is never stored on our application servers. Most importantly, **your account email is never connected, linked, or cross-referenced with your app usage or telemetry event profile**. Usage events carry a random analytics ID, not your name or email.
 3. **Discovery Without Ad Profiling:** We never sell your data, build advertising dossiers, or track you across the web. To help you discover new shows, the app sends bounded listening seeds (recent shows you played, liked, or completed) to our servers to run semantic vector search against our catalog. The server returns candidate shows statelessly—it does not build a persistent behavioral profile to monetize your attention.
 
 ### How Discovery & Recommendations Work (The Hybrid Architecture)
@@ -58,13 +58,18 @@ Here is the data collected by our application and API services, and exactly how 
 * **What is sent:** Technical stack traces, error codes, and crash contexts.
 * **Why:** If playback fails when reconnecting to Android Auto in your vehicle, or if a malformed podcast feed causes a crash, we need the stack trace so we can fix it.
 
+### 7. New-Episode Alerts
+* **What is sent:** When you turn on new-episode alerts for a show, the app adds that show (its title, artwork link and, for shows added by RSS link, its feed URL) to a shared list our episode checker watches, and subscribes your phone to that show's notification topic through Firebase Cloud Messaging.
+* **Why:** So boxlore can tell you about new episodes even when the app is closed.
+* **Good to know:** The shared list isn't tied to your account, but backups of it are published in this repository. Keep alerts off for private or paid feeds whose links you don't want public.
+
 ---
 
 ## What Stays Strictly Local
 
 * **Your Library Database & Sync Isolation:** Your downloaded audio files, custom tags, and complete library records live on your phone. If you choose to enable cloud sync, your backup data is stored solely for device synchronization and is never tied to or cross-referenced with telemetry events. (Individual actions like liking an episode or playing a show emit anonymous telemetry events as described above, but they are never connected to your personal identity or account email).
 * **Your Local Learning Brain:** The local ranking weights, skip counters, and playback habit adjustments that tune the order of your feeds live in your phone's local SQLite database.
-* **Your Backups:** When you export a full JSON backup of your library, it is generated locally and saved to your phone storage. We never hold a copy of your backup on our servers unless you explicitly share it.
+* **Your Backups:** A full JSON backup you export in Settings is created on your phone and saved to your phone storage; we don't receive a copy. If you turn on cloud sync, your library is stored on our servers so it can sync across your devices, as described above.
 
 ---
 
