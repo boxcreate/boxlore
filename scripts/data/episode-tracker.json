@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-10-15T06:59:43.655Z",
+  "lastRun": "2026-10-15T12:36:00.805Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "f02e8956-cfc6-11f0-83c5-9f12527bae80",
-      "lastEpisodeTitle": "Rewind: Ronan Farrow on Sam Altman’s ‘unconstrained’ relationship with the truth",
-      "lastEpisodeId": "61107324187",
-      "lastCheckedAt": 1791800202584
+      "lastRssKey": "f0dfcfea-cfc6-11f0-83c5-df5cfc8cd54e",
+      "lastEpisodeTitle": "Benn Jordan thinks the surveillance problem is much bigger than Flock",
+      "lastEpisodeId": "61769011773",
+      "lastCheckedAt": 1792067761561
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7k",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "12ab88d2-f5ea-4b53-a9c0-b83cf25c1d2d",
-      "lastEpisodeTitle": "2am ET, October 15 | The latest headlines from NPR",
-      "lastEpisodeId": "61745129365",
-      "lastCheckedAt": 1792047589676
+      "lastRssKey": "58310ac3-cb78-43e2-9c75-5b810965adf2",
+      "lastEpisodeTitle": "8am ET, October 15 | The latest headlines from NPR",
+      "lastEpisodeId": "61772764727",
+      "lastCheckedAt": 1792067767018
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75794512",
@@ -151,10 +151,10 @@
       "lastCheckedAt": 1791834988544
     },
     "271849": {
+      "lastRssKey": "tag:soundcloud,2010:tracks/2417137758",
+      "lastEpisodeTitle": "Living God’s Will",
       "lastEpisodeId": "61499480529",
-      "lastEpisodeTitle": "Gospel Success",
-      "lastRssKey": "tag:soundcloud,2010:tracks/2413189215",
-      "lastCheckedAt": 1792047604733
+      "lastCheckedAt": 1792067806132
     },
     "300687": {
       "lastRssKey": "019dbc27-9359-4d77-b7f1-da6d9c3fead1",
@@ -167,10 +167,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "1647F54A-EF07-45ED-94AB-3B6258D858E4",
-      "lastEpisodeTitle": "Some Wearables Can Track Blood Pressure. Do They Work?",
+      "lastRssKey": "241E84A2-1056-44FA-B8D7-476F054C7C02",
+      "lastEpisodeTitle": "Can Tesla’s New Roadster Live Up to Nearly a Decade of Hype?",
       "lastEpisodeId": "61712355733",
-      "lastCheckedAt": 1791976615287
+      "lastCheckedAt": 1792067806778
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -179,10 +179,10 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "65E4004A-4C41-4342-A1CD-8253802E1757",
-      "lastEpisodeTitle": "Stocks Drop After Hot Inflation Reading",
-      "lastEpisodeId": "61690938190",
-      "lastCheckedAt": 1792019264331
+      "lastRssKey": "EB7215D3-E815-432F-B4CD-A285055CD671",
+      "lastEpisodeTitle": "Stocks Slide Amid AI Rout",
+      "lastEpisodeId": "61768759364",
+      "lastCheckedAt": 1792067807554
     },
     "331078": {
       "lastRssKey": "13444b66-b823-11f1-957c-df1d5bd68530",
@@ -197,10 +197,10 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "fcbaa556-c85e-11f1-bef1-ef297b11e797",
-      "lastEpisodeTitle": "2AM ET 10/15/2026 Newscast",
-      "lastEpisodeId": "61558991056",
-      "lastCheckedAt": 1792047606733
+      "lastRssKey": "4830fd6e-c891-11f1-aae4-87d22ad48636",
+      "lastEpisodeTitle": "8AM ET 10/15/2026 Newscast",
+      "lastEpisodeId": "61772708611",
+      "lastCheckedAt": 1792067809147
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -251,10 +251,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4Y19K55YZTBD8RQ2SC65ZY0",
-      "lastEpisodeTitle": "Energyflation? More like everything-flation",
+      "lastRssKey": "01M4ZMD8F4VSF7WM4096NT2WVB",
+      "lastEpisodeTitle": "Where grocery prices are headed",
       "lastEpisodeId": "61738733529",
-      "lastCheckedAt": 1792019275979
+      "lastCheckedAt": 1792067814402
     },
     "432535": {
       "lastRssKey": "7519f2d2-1e3b-405d-b08e-1c3da35a65e7",
@@ -263,10 +263,10 @@
       "lastCheckedAt": 1791834997310
     },
     "437685": {
-      "lastRssKey": "6e263964-bc91-11f1-84e4-d3ad76f929a9",
-      "lastEpisodeTitle": "The 2026 Ig Nobel Prizes",
-      "lastEpisodeId": "61717181052",
-      "lastCheckedAt": 1791976625568
+      "lastRssKey": "6e4563a2-bc91-11f1-84e4-573121c13a34",
+      "lastEpisodeTitle": "The Lost Masterpieces of World War II",
+      "lastEpisodeId": "61766818945",
+      "lastCheckedAt": 1792067816642
     },
     "438184": {
       "lastRssKey": "57ea7220-c62b-11f1-86fa-2b79f7db4dc0",
@@ -363,10 +363,10 @@
       "lastCheckedAt": 1792047629199
     },
     "500708": {
-      "lastRssKey": "desiringgod.org-resource-72324dc4",
-      "lastEpisodeTitle": "Gratitude Unseats Lust",
-      "lastEpisodeId": "61719287832",
-      "lastCheckedAt": 1791976646259
+      "lastRssKey": "desiringgod.org-resource-7c1fe988",
+      "lastEpisodeTitle": "Beauty That Breaks Lust",
+      "lastEpisodeId": "61769120042",
+      "lastCheckedAt": 1792067838427
     },
     "503644": {
       "lastRssKey": "397c7a8f-5540-4d6c-b099-f51b68415fee",
@@ -434,10 +434,10 @@
       "lastCheckedAt": 1791957125782
     },
     "573431": {
-      "lastRssKey": "gid://art19-episode-locator/V0/IzQE_dZDuxX1lNlGS1CXpL4coq2IOn4AhQZbZZ8FNos",
-      "lastEpisodeTitle": "Buffalo Wild Wings vs Wingstop | Chicken Fight | 2",
+      "lastRssKey": "gid://art19-episode-locator/V0/PSO1_oB67j5apJaLnsr2e4YWSkDGB-zvDAljIOqgaWs",
+      "lastEpisodeTitle": "Buffalo Wild Wings vs Wingstop | Spice Off | 3",
       "lastEpisodeId": "60943135901",
-      "lastCheckedAt": 1791976655339
+      "lastCheckedAt": 1792067845983
     },
     "577105": {
       "lastRssKey": "prx_7057_141e0c43-f935-41de-be94-708448052c4d",
@@ -476,10 +476,10 @@
       "lastCheckedAt": 1791835015235
     },
     "724143": {
-      "lastRssKey": "622fac96-c81a-11f1-bd7f-ef43e04bc92d",
-      "lastEpisodeTitle": "Flávio e Lula em empate técnico na Quaest, Flávio agora diz que vai a debate e PT aciona TSE contra Meta",
-      "lastEpisodeId": "61698697211",
-      "lastCheckedAt": 1792019315427
+      "lastRssKey": "6d48a5c2-c880-11f1-b627-f3107bdb8b62",
+      "lastEpisodeTitle": "Fim da escala 6x1 aprovado; Senado vota PEC da Segurança e projeto do MEI; tragédia em escola no Paquistão",
+      "lastEpisodeId": "61771351537",
+      "lastCheckedAt": 1792067849398
     },
     "739525": {
       "lastEpisodeId": "61460420611",
@@ -494,10 +494,10 @@
       "lastCheckedAt": 1791670487211
     },
     "743229": {
-      "lastEpisodeId": "61718190245",
-      "lastEpisodeTitle": "The U.S. Tried to Choke Russia’s Energy Market. Then It Made a Diesel Deal.",
-      "lastRssKey": "75240ddf-73ba-457d-9e3c-77bc90779f4f",
-      "lastCheckedAt": 1791976662712
+      "lastEpisodeId": "61767941927",
+      "lastEpisodeTitle": "The Republican Strategy to Salvage the Midterms",
+      "lastRssKey": "db93ab61-641a-4cb8-9067-6b5498c8b8d5",
+      "lastCheckedAt": 1792067852585
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -601,10 +601,10 @@
       "lastCheckedAt": 1791658076662
     },
     "906591": {
-      "lastRssKey": "d06fc0a4-c6d2-11f1-9d63-c382994242d9",
-      "lastEpisodeTitle": "Trump is Raiding His Political Enemies Now",
-      "lastEpisodeId": "61337866148",
-      "lastCheckedAt": 1791882042440
+      "lastRssKey": "37ac382a-c871-11f1-964b-b757f2fed14f",
+      "lastEpisodeTitle": "Meet Trump's New Propaganda Chief",
+      "lastEpisodeId": "61765398784",
+      "lastCheckedAt": 1792067858534
     },
     "923571": {
       "lastEpisodeId": "61712686852",
@@ -619,10 +619,10 @@
       "lastCheckedAt": 1792047664307
     },
     "938111": {
-      "lastRssKey": "desiringgod.org-resource-8b9381ff",
-      "lastEpisodeTitle": "Do Good People Get Hurt?",
-      "lastEpisodeId": "61618201922",
-      "lastCheckedAt": 1791835026431
+      "lastRssKey": "desiringgod.org-resource-77f6df3e",
+      "lastEpisodeTitle": "Trapped in a Meaningless Life",
+      "lastEpisodeId": "61771011158",
+      "lastCheckedAt": 1792067867983
     },
     "946758": {
       "lastRssKey": "111aec82-77b5-11f0-8752-63aad7cdd9ac",
@@ -688,10 +688,10 @@
       "lastCheckedAt": 1791993368395
     },
     "1047718": {
-      "lastRssKey": "6acf28b88f08f3bf7741b81a",
-      "lastEpisodeTitle": "Martínez mouths off as Manchester United miss the mark in Madrid – Football Weekly podcast",
+      "lastRssKey": "6ad076688f080d5da2f47a80",
+      "lastEpisodeTitle": "PSG pummel Manchester City while Villa and Liverpool hit six: Football Weekly Extra",
       "lastEpisodeId": "61722037430",
-      "lastCheckedAt": 1791993368866
+      "lastCheckedAt": 1792067879531
     },
     "1047865": {
       "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-an-ummah-that-feels-broken",
@@ -723,10 +723,10 @@
       "lastCheckedAt": 1791910489692
     },
     "1116485": {
-      "lastRssKey": "6acfd85ceb440a417ac1950b",
-      "lastEpisodeTitle": "LASK 3-6 Liverpool | Andoni Iraola Champions League Post-Match Press Conference",
+      "lastRssKey": "6ad0b83a752fe22cdf0f24cb",
+      "lastEpisodeTitle": "Brentford v Liverpool | Andoni Iraola Premier League Pre-Match Press Conference",
       "lastEpisodeId": "61724731821",
-      "lastCheckedAt": 1792008093618
+      "lastCheckedAt": 1792067885415
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -759,10 +759,10 @@
       "lastCheckedAt": 1791835041701
     },
     "1208307": {
-      "lastRssKey": "6acdeaae65f99a36eb537be6",
-      "lastEpisodeTitle": "Mailbag: Is Russell F1’s most underwhelming pre-season favourite?",
+      "lastRssKey": "6ad080b7937a3c900ff14441",
+      "lastEpisodeTitle": "The inside story of Rwanda's new F1 circuit design",
       "lastEpisodeId": "61669001851",
-      "lastCheckedAt": 1791910494227
+      "lastCheckedAt": 1792067889178
     },
     "1258562": {
       "lastRssKey": "6ac22edf52f9e4485fc03f23",
@@ -799,10 +799,10 @@
       "lastCheckedAt": 1791580232522
     },
     "1365758": {
-      "lastRssKey": "e2100bd6-c5ef-11f1-9b46-1fe04649ad67",
-      "lastEpisodeTitle": "How Food Choices Shape Memory, Cognition & Cravings | Dr. Scott Kanoski",
+      "lastRssKey": "7f829250-c850-11f1-b9bb-1feaa173d4c1",
+      "lastEpisodeTitle": "Essentials: Neuralink & Technologies to Enhance Human Brains | Dr. Matt MacDougall",
       "lastEpisodeId": "61612585046",
-      "lastCheckedAt": 1791800304349
+      "lastCheckedAt": 1792067892060
     },
     "1365765": {
       "lastRssKey": "db4aff8e-c7d1-11f1-be51-23df9a3eeb1f",
@@ -811,10 +811,10 @@
       "lastCheckedAt": 1792019363878
     },
     "1366771": {
-      "lastRssKey": "6ad032a894a3daa98eb40df8",
-      "lastEpisodeTitle": "Morning briefing Thursday 15th October",
+      "lastRssKey": "6ad0b37b253c13a89823145a",
+      "lastEpisodeTitle": "Afternoon Briefing Thursday 15th October",
       "lastEpisodeId": "61703934412",
-      "lastCheckedAt": 1792047701950
+      "lastCheckedAt": 1792067893235
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -853,10 +853,10 @@
       "lastCheckedAt": 1791927966718
     },
     "2136580": {
-      "lastRssKey": "8d4bb6b2-3738-4193-ba19-7efbb7d6837f",
-      "lastEpisodeTitle": "Episode 395: JACOB FOWLER STELLAR SHUTOUT FOR THE CANADIENS VS RED WINGS!",
-      "lastEpisodeId": "61713022658",
-      "lastCheckedAt": 1792008105701
+      "lastRssKey": "a97838bb-2b0d-4dc8-8e84-717992a2c7d8",
+      "lastEpisodeTitle": "Episode 397: DOES JAKUB DOBES DESERVE HEAT AFTER HABS LOSS TO CAPITALS?",
+      "lastEpisodeId": "61771501836",
+      "lastCheckedAt": 1792067895631
     },
     "2136949": {
       "lastRssKey": "6ac553a0eea51f2aa345497e",
@@ -906,10 +906,10 @@
       "lastCheckedAt": 1789135539229
     },
     "3237767": {
-      "lastRssKey": "2ddaf6f9-d0d1-4ab0-9047-255ab50a4fef",
-      "lastEpisodeTitle": "NFL Week 5 Recap: Seahawks Can't Get It Done Against Hot 49ers",
-      "lastEpisodeId": "61623257360",
-      "lastCheckedAt": 1791835050689
+      "lastRssKey": "99f09c2f-5d94-4ba5-9164-4e1f85d3cc5d",
+      "lastEpisodeTitle": "Our NFL Rookie of the Year Front Runners",
+      "lastEpisodeId": "61767779659",
+      "lastCheckedAt": 1792067900237
     },
     "3353685": {
       "lastRssKey": "ddc89870-c835-11f1-9e11-e70ece1e4e2b",
@@ -1037,9 +1037,9 @@
       "lastCheckedAt": 1791976718703
     },
     "4898105": {
-      "lastRssKey": "5a2d9246-c780-11f1-b7d6-f7884908af29",
-      "lastEpisodeTitle": "The Social Reckoning Bombs in the Box Office",
-      "lastCheckedAt": 1791976719431
+      "lastRssKey": "9d0b5c08-c84b-11f1-8a83-5fefe8f783fe",
+      "lastEpisodeTitle": "How GTA 6 Could be the Most Expensive Video Game of All Time",
+      "lastCheckedAt": 1792067909367
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1100,10 +1100,10 @@
       "lastCheckedAt": 1791538127260
     },
     "5731394": {
-      "lastRssKey": "e93144e2-c762-11f1-98e2-f33ffab7f3ca",
-      "lastEpisodeTitle": "Sci Fi Section Ep 12: Chapter 25-31",
+      "lastRssKey": "e7b65b70-c81b-11f1-9d93-9fff89848b81",
+      "lastEpisodeTitle": "The Frozen Frenzy Woke Up Brady Tkachuk w/ Ryan Reaves",
       "lastEpisodeId": "60007884583",
-      "lastCheckedAt": 1791976725772
+      "lastCheckedAt": 1792067914932
     },
     "5815838": {
       "lastRssKey": "112d81fa-1611-490d-966d-38af8e113ad1",
@@ -1130,10 +1130,10 @@
       "lastCheckedAt": 1792019393160
     },
     "5972153": {
-      "lastRssKey": "24b41f18-c7a8-11f1-a220-3fca11f27d17",
-      "lastEpisodeTitle": "Self-replicating AI warning, Katie Zacharia and F1's Africa return",
+      "lastRssKey": "21fde32e-c85e-11f1-9696-8bf1dada389d",
+      "lastEpisodeTitle": "Ukraine's Starlink problem, US inflation and Ohio voters",
       "lastEpisodeId": "61719670490",
-      "lastCheckedAt": 1791976729283
+      "lastCheckedAt": 1792067918693
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1147,10 +1147,10 @@
       "lastCheckedAt": 1791560043506
     },
     "6148209": {
-      "lastRssKey": "https://api.spreaker.com/episode/75750497",
-      "lastEpisodeTitle": "Stephanie Ike - God Who am I",
-      "lastEpisodeId": "61670417315",
-      "lastCheckedAt": 1791910527676
+      "lastRssKey": "https://api.spreaker.com/episode/75803022",
+      "lastEpisodeTitle": "Stephanie Ike - While I'm Waiting",
+      "lastEpisodeId": "61765362417",
+      "lastCheckedAt": 1792067920194
     },
     "6154309": {
       "lastRssKey": "2b7cdefb-9a79-4001-9420-ab0667c687b8",
@@ -1330,10 +1330,10 @@
       "lastCheckedAt": 1791538154003
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779933",
-      "lastEpisodeTitle": "Bold Venture - Havens Venezuelan Isle",
+      "lastRssKey": "https://api.spreaker.com/episode/59779936",
+      "lastEpisodeTitle": "Radio City Playhouse - Mother",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1791976745824
+      "lastCheckedAt": 1792067931553
     },
     "6912659": {
       "lastRssKey": "561d1781-bda9-4d36-9565-21d87a7de5ac",
@@ -1378,10 +1378,10 @@
       "lastCheckedAt": 1791759953923
     },
     "7023146": {
-      "lastRssKey": "5ef04688-834e-11f0-ac1d-db40d3393c9b",
-      "lastEpisodeTitle": "SERIAL KILLER: \"The Vampire of Dusseldorf\" Peter Kurten  Pt. 1",
+      "lastRssKey": "5f4dd65e-834e-11f0-ac1d-2bca0ca52f77",
+      "lastEpisodeTitle": "SERIAL KILLER: \"The Vampire of Dusseldorf\" Peter Kurten  Pt. 2",
       "lastEpisodeId": "61432000869",
-      "lastCheckedAt": 1791800350468
+      "lastCheckedAt": 1792067934677
     },
     "7045713": {
       "lastRssKey": "sonsofpatriarchy.podbean.com/8c867280-f689-387b-acd9-e385184f81ee",
@@ -1390,10 +1390,10 @@
       "lastCheckedAt": 1786559335991
     },
     "7064213": {
-      "lastRssKey": "b5f2a7a1-69d0-46dc-9ccf-eddad7d54fee",
-      "lastEpisodeTitle": "207. Dr. Jason Wersland: The Science of Recovery—Pain, HRV, Sleep & Your Nervous System",
-      "lastEpisodeId": "61334999780",
-      "lastCheckedAt": 1791910542959
+      "lastRssKey": "3d4d5d16-9b46-4d16-9b24-35f35dd5c9fb",
+      "lastEpisodeTitle": "208. Dr. Thais Aliabadi: PCOS & Endometriosis—The Symptoms Women Should Never Ignore",
+      "lastEpisodeId": "61770181980",
+      "lastCheckedAt": 1792067936484
     },
     "7098500": {
       "lastRssKey": "66bb84b96ceb55ab6dbacb631fecaac54ddbcff7",
@@ -1539,16 +1539,16 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
-      "lastRssKey": "35b6eea5-03eb-4e90-b5f2-f693ca77a4af",
-      "lastEpisodeTitle": "Wednesday, October 14, 2026 - 5 Minute AI News",
+      "lastRssKey": "e0f979ed-f633-4b9a-87c3-eef97e4d4821",
+      "lastEpisodeTitle": "Thursday, October 15, 2026 - 5 Minute AI News",
       "lastEpisodeId": "61670582677",
-      "lastCheckedAt": 1791993444291
+      "lastCheckedAt": 1792067944699
     },
     "7551349": {
-      "lastRssKey": "17448f4e-0e2a-4a64-80e4-b4dc0155cd7c",
-      "lastEpisodeTitle": "Announcing: Blood Trails, Season Three",
+      "lastRssKey": "3bffeee6-6692-4c96-99fd-b4e2013b84fb",
+      "lastEpisodeTitle": "S3E1: The Disappearance of Noel Dalluge",
       "lastEpisodeId": "61431506083",
-      "lastCheckedAt": 1791453968898
+      "lastCheckedAt": 1792067945347
     },
     "7584644": {
       "lastRssKey": "6acab221253c13a89887f325",
@@ -1557,10 +1557,10 @@
       "lastCheckedAt": 1791882122893
     },
     "7587315": {
-      "lastRssKey": "a8f5691c-c32a-11f1-a1ce-b34ac98e0c38",
-      "lastEpisodeTitle": "Something Weird Is Going On With Placebos",
-      "lastEpisodeId": "61594251366",
-      "lastCheckedAt": 1791759964761
+      "lastEpisodeId": "61767846647",
+      "lastEpisodeTitle": "The Right Way To Open A Shaken Soda Can",
+      "lastRssKey": "644fa36a-c7c9-11f1-acb1-57e962f997d6",
+      "lastCheckedAt": 1792067945868
     },
     "7591415": {
       "lastRssKey": "d9ff3796795e8a97176bce34ab72e4a310aee358",
@@ -1616,10 +1616,10 @@
       "lastCheckedAt": 1791856469898
     },
     "7722206": {
-      "lastEpisodeId": "61705682664",
-      "lastEpisodeTitle": "The Strangest Facts About Earth You Were Never Taught",
-      "lastRssKey": "f1faeaa8-875e-453f-9c19-7ab3842d9e1c",
-      "lastCheckedAt": 1791993448374
+      "lastEpisodeId": "61764042839",
+      "lastEpisodeTitle": "Operation Highjump: What Was the U.S. Navy Really Doing in Antarctica?",
+      "lastRssKey": "75a21964-96de-48ae-bcbf-1b9a705b61cf",
+      "lastCheckedAt": 1792067950685
     },
     "7756959": {
       "lastRssKey": "1207fece-c835-11f1-b8cc-cbcda2b3e862",
@@ -1652,10 +1652,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/4f9342ce-e97a-583f-9279-0810be5ecbce",
-      "lastEpisodeTitle": "The narcissist praises you for complying ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/8ca96374-8866-53f7-96cd-3589202c3d27",
+      "lastEpisodeTitle": "BEWARE This Is How The Narcissist SUCKS YOU IN I Dr. Ramani ~ Dr. Ramani",
       "lastEpisodeId": "61761430954",
-      "lastCheckedAt": 1792047773082
+      "lastCheckedAt": 1792067953180
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
