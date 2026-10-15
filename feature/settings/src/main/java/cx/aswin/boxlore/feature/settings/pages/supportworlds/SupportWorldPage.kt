@@ -19,20 +19,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bolt
@@ -74,8 +72,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 
@@ -109,30 +105,24 @@ internal fun SupportWorldPage(
             containerColor = Color.Transparent,
             modifier = if (noticeVisible) Modifier.clearAndSetSemantics { } else Modifier,
         ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .navigationBarsPadding(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Column(
-                    modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
+            SupportWorldBody(
+                modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding),
+                stage = { stageModifier ->
                     SupportWorldStage(
                         skin = skin,
                         selected = selected,
                         accent = accent,
                         reducedMotion = reducedMotion,
                         signalLost = noticeVisible,
+                        modifier = stageModifier,
                     )
-                    SupportWorldTierInfo(skin, selected, accent)
-                    Spacer(Modifier.height(16.dp))
+                },
+                info = { compact -> SupportWorldTierInfo(skin, selected, accent, compact) },
+                picker = { compact ->
                     SupportWorldPicker(
                         skin = skin,
                         selected = selected,
+                        compact = compact,
                         onSelect = { index ->
                             if (index != selected) {
                                 selected = index
@@ -140,7 +130,8 @@ internal fun SupportWorldPage(
                             }
                         },
                     )
-                    Spacer(Modifier.height(16.dp))
+                },
+                cta = {
                     SupportWorldCta(
                         skin = skin,
                         selected = selected,
@@ -150,11 +141,9 @@ internal fun SupportWorldPage(
                             noticeVisible = true
                         },
                     )
-                    Spacer(Modifier.height(16.dp))
-                    SupportWorldMissionCard(skin, accent, totalListeningHours)
-                    Spacer(Modifier.height(20.dp))
-                }
-            }
+                },
+                mission = { SupportWorldMissionCard(skin, accent, totalListeningHours) },
+            )
         }
         SupportPaymentNotice(
             visible = noticeVisible,
@@ -264,7 +253,7 @@ private fun SupportWorldTopBar(
 }
 
 @Composable
-private fun SupportWorldTierInfo(skin: SupportWorldSkin, selected: Int, accent: Color) {
+private fun SupportWorldTierInfo(skin: SupportWorldSkin, selected: Int, accent: Color, compact: Boolean) {
     val offer = SUPPORT_OFFERS[selected]
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).semantics(mergeDescendants = true) { },
@@ -291,8 +280,8 @@ private fun SupportWorldTierInfo(skin: SupportWorldSkin, selected: Int, accent: 
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontFamily = skin.name?.family,
                 fontWeight = skin.name?.weight ?: GoogleSansWeight.bold,
-                fontSize = 28.sp,
-                lineHeight = 32.sp,
+                fontSize = if (compact) 24.sp else 28.sp,
+                lineHeight = if (compact) 28.sp else 32.sp,
             ),
             color = skin.palette.content,
             textAlign = TextAlign.Center,
@@ -324,7 +313,7 @@ private fun SupportWorldTierInfo(skin: SupportWorldSkin, selected: Int, accent: 
 }
 
 @Composable
-private fun SupportWorldPicker(skin: SupportWorldSkin, selected: Int, onSelect: (Int) -> Unit) {
+private fun SupportWorldPicker(skin: SupportWorldSkin, selected: Int, compact: Boolean, onSelect: (Int) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -339,7 +328,7 @@ private fun SupportWorldPicker(skin: SupportWorldSkin, selected: Int, onSelect: 
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .heightIn(min = 92.dp)
+                    .heightIn(min = if (compact) 76.dp else 92.dp)
                     .then(
                         if (isSelected) {
                             Modifier.shadow(14.dp, shape, ambientColor = tileTone.color, spotColor = tileTone.color)
@@ -369,7 +358,7 @@ private fun SupportWorldPicker(skin: SupportWorldSkin, selected: Int, onSelect: 
                     painter = painterResource(skin.tierArt[index]),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(46.dp)
+                        .size(if (compact) 36.dp else 46.dp)
                         .graphicsLayer { alpha = if (isSelected) 1f else 0.72f },
                 )
                 Text(

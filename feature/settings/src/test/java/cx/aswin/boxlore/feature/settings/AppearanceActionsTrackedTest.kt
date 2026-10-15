@@ -149,7 +149,10 @@ class AppearanceActionsTrackedTest {
         try {
             var state = AppearanceUiState("system", false, "violet", "standard", heroCardStyle = HeroCardStyle.COVER, heroCoverShade = HeroCoverShade.THEME)
             val actions = AppearanceActions(
-                {}, {}, {}, {},
+                {},
+                {},
+                {},
+                {},
                 onSetHeroCardStyle = { state = state.copy(heroCardStyle = it) },
                 onSetHeroCoverShade = { state = state.copy(heroCoverShade = it) },
             ).trackedForAnalytics { state }

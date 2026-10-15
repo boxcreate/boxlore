@@ -41,6 +41,7 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
   - Payments are off (`SUPPORT_PAYMENTS_LIVE`). Every pay tap, including the control's, opens `SupportPaymentNotice`. It closes from its button, an outside tap or Back, and states that nothing was charged.
   - `SupportPageSession` reports one view per visit with the world, assignment, entry point, local hour and weekday. It also reports tier picks, pay taps (`amount_usd`, `payments_live=false`) and one `support_page_left` with dwell, tiers viewed and pay intent. Rotation, resizing and folding restore the session rather than counting a second view.
   - `SupportEntryImpression` reports `support_entry_viewed` (`surface=settings_top_bar` on the phone hub, `settings_category_list` on the tablet list) once each time Settings shows the Support entry. A configuration restore never repeats it. This is the top of the funnel: Settings opened → Support entry seen → Support page viewed → pay tapped.
+  - World pages never scroll (`SupportWorldBody`). Portrait and tall windows stack the stage over the controls: the stage takes the leftover height, scaling down from its 330dp design when short, and the mission card drops out before the stage would fall below 220dp. Landscape windows shorter than 560dp put the stage beside compact controls. The payments-off notice drops its artwork below a 520dp window height.
   - Debug builds (`FLAG_DEBUGGABLE`) add a top-bar world switcher whose choice lasts for the process.
   - `SupportPageEnvironment` holds the flag reader, analytics sink, clock and configuration-change check, so tests can replace them.
   - World copy lives in Kotlin like the original Support page. Move the winning world's strings into resources when it graduates.
@@ -116,7 +117,8 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     supportworlds/
       SupportWorld.kt                            # variants, assignment, offers, tier tones
       SupportWorldSkins.kt                       # five skins + mission copy
-      SupportWorldPage.kt                        # shared world layout
+      SupportWorldPage.kt                        # shared world page
+      SupportWorldLayout.kt                      # no-scroll stacked / side-by-side arrangement
       SupportWorldStage.kt                       # codename, platform, object, particles
       SupportPaymentNotice.kt                    # payments-off notice (worlds + control)
       SupportControlNotice.kt                    # control notice copy, session local, tier tracking
@@ -162,6 +164,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
   - `SupportWorldsModelTest` covers flag mapping and fallback, debug override precedence, offer parity with today's page, skin completeness, payments-off copy in every arm, codename fit and mission copy.
   - `SupportPageSessionTest` covers one view and one exit per visit, ignoring events outside a visit, saved-state restore without a second view, and the production event properties.
   - `SupportPageHostTest` (Robolectric) keeps the selected tier and an open notice through compact↔tablet transitions on both sides of the 600dp width, 480dp height and 840dp split gates. It also covers Back and outside-tap dismissal, a configuration restore without a second view, the control fallback and its notice, a single exit event, and the debug world switch.
+  - `SupportWorldLayoutTest` covers the arrangement thresholds (560dp side-by-side gate, mission card cut-off, larger text) and renders every world in a 392×800 portrait and an 800×392 landscape window with no scrollable node, and with the pay button and all five tiers on screen.
   - `SupportEntryImpressionTest` covers one impression per view, none for a configuration restore, a new one after returning, and the real Settings hub's top-bar surface.
   - Not covered by JVM tests: rendering quality on real devices and fold postures. Those need a phone, tablet or foldable check.
 - Unit tests live under `feature/settings/src/test`.

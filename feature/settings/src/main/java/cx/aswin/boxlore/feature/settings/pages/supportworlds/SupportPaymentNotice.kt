@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -77,6 +78,9 @@ internal data class SupportNoticeContent(
 
 private val NoticeShape = RoundedCornerShape(28.dp)
 
+/** Shorter windows (landscape phones) drop the notice art so the card always fits without scrolling. */
+private val NoticeArtMinWindowHeight = 520.dp
+
 /**
  * Shown after a pay tap while payments are off. It closes from its button, a tap outside the card
  * or Back (handled by the host), and keeps the page's selection untouched.
@@ -95,7 +99,7 @@ internal fun SupportPaymentNotice(
         exit = fadeOut(tween(180)),
         modifier = modifier.fillMaxSize(),
     ) {
-        Box(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -105,6 +109,7 @@ internal fun SupportPaymentNotice(
             NoticeCard(
                 content = content,
                 reducedMotion = reducedMotion,
+                showArt = maxHeight >= NoticeArtMinWindowHeight,
                 onDismiss = onDismiss,
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -127,6 +132,7 @@ internal fun SupportPaymentNotice(
 private fun NoticeCard(
     content: SupportNoticeContent,
     reducedMotion: Boolean,
+    showArt: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -153,30 +159,10 @@ private fun NoticeCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
-        Box(Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.BottomCenter) {
-            Image(
-                painter = painterResource(content.art),
-                contentDescription = null,
-                colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.65f) }),
-                modifier = Modifier
-                    .size(136.dp)
-                    .graphicsLayer {
-                        rotationZ = -10f
-                        translationY = 6.dp.toPx()
-                    },
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(x = 58.dp, y = 30.dp)
-                    .graphicsLayer { translationY = -10.dp.toPx() * bob }
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(content.badgeContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(content.badge, contentDescription = null, tint = content.badgeContent, modifier = Modifier.size(18.dp))
-            }
+        if (showArt) {
+            NoticeArt(content, bob)
+        } else {
+            Spacer(Modifier.height(22.dp))
         }
         Spacer(Modifier.height(14.dp))
         Text(
@@ -224,6 +210,35 @@ private fun NoticeCard(
                 text = content.dismiss,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold, fontSize = 16.sp),
             )
+        }
+    }
+}
+
+@Composable
+private fun NoticeArt(content: SupportNoticeContent, bob: Float) {
+    Box(Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.BottomCenter) {
+        Image(
+            painter = painterResource(content.art),
+            contentDescription = null,
+            colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0.65f) }),
+            modifier = Modifier
+                .size(136.dp)
+                .graphicsLayer {
+                    rotationZ = -10f
+                    translationY = 6.dp.toPx()
+                },
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(x = 58.dp, y = 30.dp)
+                .graphicsLayer { translationY = -10.dp.toPx() * bob }
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(content.badgeContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(content.badge, contentDescription = null, tint = content.badgeContent, modifier = Modifier.size(18.dp))
         }
     }
 }
