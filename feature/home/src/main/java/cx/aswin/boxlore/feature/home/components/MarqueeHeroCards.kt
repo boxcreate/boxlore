@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -19,7 +20,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,6 +38,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -43,6 +47,9 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
 import cx.aswin.boxlore.core.designsystem.theme.cachedArtworkPalette
@@ -55,6 +62,7 @@ import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
 import cx.aswin.boxlore.feature.home.logic.HomePlaybackStateLogic
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** How much room Marquee's hero leaves at its top for Home's floating top bar; 0 anywhere else. */
@@ -113,7 +121,9 @@ internal data class MarqueeNext(val index: Int, val imageUrl: String?, val label
 /**
  * The Marquee hero: one card at a time across the whole width, from the top of the screen (under the
  * floating top bar) down to where Your shows' rounded sheet begins. Swiping moves between cards, as
- * do the up-next covers beside Play; collections pick their episode from a strip of covers.
+ * do the up-next covers beside Play; collections pick their episode from a strip of covers. The hero
+ * also moves on by itself ([marqueeDwellMillis]), holding while a finger is on it, counting again from
+ * when it lifts, and resting while it is mostly scrolled away or Home is off screen.
  */
 @Composable
 @Suppress("LongParameterList")
@@ -133,7 +143,30 @@ internal fun MarqueeHero(
     val currentOnPageShown by rememberUpdatedState(onPageShown)
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.collect { currentOnPageShown(it) } }
     val scroll = LocalHeroScrollOffset.current
-    Box(modifier.fillMaxWidth().height(marqueeHeroHeight()).clipToBounds().testTag("home_hero_marquee_hero")) {
+    val heroHeight = marqueeHeroHeight()
+    var touches by remember { mutableIntStateOf(0) }
+    var holding by remember { mutableStateOf(false) }
+    val dragged by pager.interactionSource.collectIsDraggedAsState()
+    val halfHeight = with(LocalDensity.current) { heroHeight.toPx() } / 2f
+    val onScreen by remember(scroll, halfHeight) { derivedStateOf { scroll() < halfHeight } }
+    val settled = pager.settledPage.coerceIn(0, items.lastIndex)
+    val rotate = marqueeShouldRotate(items.size, LocalMarqueeAutoAdvance.current && rememberMotionAllowed(), holding || dragged, onScreen)
+    val dwell = marqueeDwellMillis(items[settled])
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(rotate, touches, settled, dwell, lifecycle) {
+        if (!rotate) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            delay(dwell)
+            pager.animateScrollToPage((settled + 1) % items.size)
+        }
+    }
+    Box(
+        modifier.fillMaxWidth().height(heroHeight).clipToBounds().testTag("home_hero_marquee_hero")
+            .marqueeTouches(onPress = {
+                holding = true
+                touches++
+            }, onRelease = { holding = false }),
+    ) {
         // Everything but the sheet's edge stays still as Home scrolls, so the body slides over it.
         Box(Modifier.fillMaxSize().marqueePinned(scroll)) {
         HorizontalPager(pager, Modifier.fillMaxSize()) { page ->

@@ -94,7 +94,8 @@ internal fun MarqueeCollectionCard(
     val index = selected.coerceIn(0, display.lastIndex)
     val podcast = display[index]
     val resume = mode == HeroGridMode.Resume
-    MarqueeAutoAdvance(running = active && !holding && display.size > 1, touches = touches) { selected = (selected + 1) % display.size }
+    val allowed = LocalMarqueeAutoAdvance.current && rememberMotionAllowed()
+    MarqueeAutoAdvance(running = allowed && active && !holding && display.size > 1, touches = touches) { selected = (selected + 1) % display.size }
     val look = rememberMarqueeLook(podcast.imageUrl)
     val shade = look.shade
     val item = SmartHeroItem(
@@ -182,11 +183,11 @@ private fun MarqueeAutoAdvance(running: Boolean, touches: Int, advance: () -> Un
     LaunchedEffect(running, touches, lifecycle) {
         if (!running) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            var wait = if (touches > 0) MarqueeResumeMillis else MarqueeAdvanceMillis
+            var wait = if (touches > 0) MarqueeResumeMillis else MarqueeStripStepMillis
             while (isActive) {
                 delay(wait)
                 currentAdvance()
-                wait = MarqueeAdvanceMillis
+                wait = MarqueeStripStepMillis
             }
         }
     }
@@ -258,7 +259,6 @@ private fun MarqueeBlock(podcast: Podcast, size: Dp, isSelected: Boolean, resume
     }
 }
 
-private const val MarqueeAdvanceMillis = 3_500L
 private const val MarqueeResumeMillis = 8_000L
 private val MarqueeBlockGap = 10.dp
 private val MarqueeBlockShape = RoundedCornerShape(16.dp)

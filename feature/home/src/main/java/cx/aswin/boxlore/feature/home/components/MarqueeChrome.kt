@@ -1,7 +1,11 @@
 package cx.aswin.boxlore.feature.home.components
 
+import android.provider.Settings
+import android.view.accessibility.AccessibilityManager
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -15,6 +19,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -30,7 +35,10 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -38,7 +46,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.R
+import cx.aswin.boxlore.feature.home.SmartHeroItem
 
 /**
  * How far Home has scrolled Marquee's hero up off the screen, in pixels (Int.MAX_VALUE once it has
@@ -139,6 +149,58 @@ internal fun MarqueePageDots(count: Int, current: Int, modifier: Modifier = Modi
         }
     }
 }
+
+/** Marquee moves on its own (the hero between cards, the collection strip between episodes); tests turn it off. */
+val LocalMarqueeAutoAdvance = staticCompositionLocalOf { true }
+
+/**
+ * Whether this phone suits content that moves on its own: not with TalkBack exploring by touch, and
+ * not with animations turned off in system settings.
+ */
+@Composable
+internal fun rememberMotionAllowed(): Boolean {
+    val context = LocalContext.current
+    return remember(context) {
+        val accessibility = context.getSystemService(AccessibilityManager::class.java)
+        val animations = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
+        accessibility?.isTouchExplorationEnabled != true && animations > 0f
+    }
+}
+
+/**
+ * Whether the hero should move to its next card: there is one, motion suits the phone, nobody is
+ * touching or dragging it, and most of it is still on screen.
+ */
+internal fun marqueeShouldRotate(count: Int, allowed: Boolean, touched: Boolean, onScreen: Boolean): Boolean =
+    count > 1 && allowed && !touched && onScreen
+
+/** How long the hero stays on a card: 6 seconds, or long enough for a collection's strip to show every episode. */
+internal fun marqueeDwellMillis(item: SmartHeroItem): Long = when (item.type) {
+    HeroType.RESUME_GRID, HeroType.NEW_EPISODES_GRID -> (MarqueeStripStepMillis * item.gridItems.take(4).size).coerceAtLeast(MarqueeCardMillis)
+    else -> MarqueeCardMillis
+}
+
+/**
+ * Reports a finger anywhere on the hero ([onPress]) and its lifting ([onRelease]), watching on the way
+ * down without taking the touch, so swipes, scrolls and taps still reach what is under the finger.
+ */
+internal fun Modifier.marqueeTouches(onPress: () -> Unit, onRelease: () -> Unit): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        onPress()
+        try {
+            do {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+            } while (event.changes.any { it.pressed })
+        } finally {
+            onRelease()
+        }
+    }
+}
+
+/** The collection strip moves to its next episode this often. */
+internal const val MarqueeStripStepMillis = 3_500L
+private const val MarqueeCardMillis = 6_000L
 
 /** Room under Play for the page dots: 14dp above them, the dots, 12dp below. */
 internal val MarqueeDotsReserve = 32.dp

@@ -52,7 +52,8 @@ class MarqueeHeroCardsTest {
         .copy(latestEpisode = episode(id), episodeStatus = EpisodeStatus.IN_PROGRESS, resumeProgress = 0.4f)
     private fun resumeItem() = SmartHeroItem(HeroType.RESUME, show("a"), "Resume", description = "Episode a")
 
-    private fun render(playingEpisode: String? = null, topInset: Dp = 0.dp, scroll: Int = 0, tone: MarqueeTopTone? = null) {
+    // Moving on by itself never lets the clock idle, so only the tests about it turn it on.
+    private fun render(playingEpisode: String? = null, topInset: Dp = 0.dp, scroll: Int = 0, tone: MarqueeTopTone? = null, autoAdvance: Boolean = false) {
         composeRule.setContent {
             BoxLoreTheme(dynamicColor = false) {
                 CompositionLocalProvider(
@@ -61,6 +62,7 @@ class MarqueeHeroCardsTest {
                     LocalHeroTopInset provides topInset,
                     LocalHeroScrollOffset provides { scroll },
                     LocalMarqueeTopTone provides tone,
+                    LocalMarqueeAutoAdvance provides autoAdvance,
                 ) {
                     HeroCarousel(
                         heroItems = StableHeroList(items.value),
@@ -144,6 +146,31 @@ class MarqueeHeroCardsTest {
         assertEquals(0f, marqueeBarOverArtwork(heroBottom = null, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
     }
 
+    @Test fun `the hero moves to its next card on its own`() {
+        items.value = listOf(resumeItem(), SmartHeroItem(HeroType.SPOTLIGHT, show("b"), "#1 in US"), SmartHeroItem(HeroType.JUMP_BACK_IN, show("c"), "NEW EPISODE", description = "Episode c"))
+        composeRule.mainClock.autoAdvance = false
+        render(autoAdvance = true)
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.onNodeWithContentDescription("1 of 3").assertExists()
+        composeRule.mainClock.advanceTimeBy(5_000L)
+        composeRule.onNodeWithContentDescription("1 of 3").assertExists()
+        // Six seconds on a card, then the page turns.
+        composeRule.mainClock.advanceTimeBy(2_500L)
+        composeRule.onNodeWithContentDescription("2 of 3").assertExists()
+    }
+
+    @Test fun `the hero rests while touched, scrolled away or when motion does not suit the phone, and waits out a collection`() {
+        assertTrue(marqueeShouldRotate(count = 3, allowed = true, touched = false, onScreen = true))
+        assertEquals(false, marqueeShouldRotate(count = 1, allowed = true, touched = false, onScreen = true))
+        assertEquals(false, marqueeShouldRotate(count = 3, allowed = true, touched = true, onScreen = true))
+        assertEquals(false, marqueeShouldRotate(count = 3, allowed = true, touched = false, onScreen = false))
+        assertEquals(false, marqueeShouldRotate(count = 3, allowed = false, touched = false, onScreen = true))
+        assertEquals(6_000L, marqueeDwellMillis(resumeItem()))
+        val four = listOf("a", "b", "c", "d").map(::show)
+        assertEquals(14_000L, marqueeDwellMillis(SmartHeroItem(HeroType.RESUME_GRID, four.first(), "", gridItems = four)))
+        assertEquals(7_000L, marqueeDwellMillis(SmartHeroItem(HeroType.NEW_EPISODES_GRID, four.first(), "", gridItems = four.take(2))))
+    }
+
     @Test fun `up-next covers move the hero to their card`() {
         val spotlight = SmartHeroItem(HeroType.SPOTLIGHT, show("b"), "#1 in US")
         val fresh = SmartHeroItem(HeroType.JUMP_BACK_IN, show("c"), "NEW EPISODE", description = "Episode c")
@@ -165,7 +192,7 @@ class MarqueeHeroCardsTest {
         items.value = listOf(SmartHeroItem(HeroType.RESUME_GRID, shows.first(), "", gridItems = shows))
         // The strip keeps advancing, so the clock only moves when the test moves it.
         composeRule.mainClock.autoAdvance = false
-        render()
+        render(autoAdvance = true)
         composeRule.mainClock.advanceTimeByFrame()
         composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
         composeRule.mainClock.advanceTimeBy(3_600L)
