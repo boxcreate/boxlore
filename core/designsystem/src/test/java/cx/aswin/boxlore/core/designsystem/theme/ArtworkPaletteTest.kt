@@ -11,51 +11,38 @@ class ArtworkPaletteTest {
     private fun swatch(argb: Long, population: Int) = ArtworkColorCandidate(Color(argb).toArgb(), population)
 
     @Test
-    fun `art without meaningful colour has no palette, so pages keep the listener's theme`() {
+    fun `monochrome and empty art fall back while meaningful color beats small details`() {
+        assertNull(selectArtworkSeed(emptyList()))
+        assertNull(selectArtworkSeed(listOf(ArtworkColorCandidate(Color.White.toArgb(), 90), ArtworkColorCandidate(Color.Black.toArgb(), 10))))
+        val dominant = Color(0xFF2855BB).toArgb()
+        assertEquals(dominant, selectArtworkSeed(listOf(ArtworkColorCandidate(dominant, 80), ArtworkColorCandidate(Color.Red.toArgb(), 1), ArtworkColorCandidate(Color.White.toArgb(), 19))))
+    }
+
+    @Test
+    fun `art without meaningful colour has no palette, so screens keep the listener's theme`() {
         assertNull(extractArtworkPalette(emptyList(), average))
         assertNull(extractArtworkPalette(listOf(swatch(0xFFFFFFFF, 90), swatch(0xFF000000, 10)), average))
-        // A speck under 1.5% of the cover is detail, not the cover's colour.
-        assertNull(extractArtworkPalette(listOf(swatch(0xFFF4F1EA, 89), swatch(0xFF111111, 10), swatch(0xFFE53935, 1)), average))
-        assertNull(extractArtworkPalette(listOf(swatch(0xFFE53935, 0), swatch(0xFF111111, 10)), average))
+        // Under 1% of the cover is a detail, not the cover's colour.
+        assertNull(extractArtworkPalette(listOf(swatch(0xFFF4F1EA, 1000), swatch(0xFFE53935, 5)), average))
     }
 
     @Test
-    fun `a mostly neutral cover keeps a neutral ground and still takes its colour as the accent`() {
-        val cream = swatch(0xFFF3EEDC, 85)
-        val teal = swatch(0xFF008577, 15)
-        val palette = extractArtworkPalette(listOf(cream, teal), average)!!
-        assertEquals(cream.argb, palette.ground)
-        assertEquals(teal.argb, palette.accent)
-        assertEquals(average, palette.average)
-    }
-
-    @Test
-    fun `a family's whole area counts, so a textured field beats one flat swatch`() {
-        val tealField = listOf(0xFF0E7C7B, 0xFF138A85, 0xFF0B6E6C, 0xFF16928C, 0xFF0F8380, 0xFF127674).map { swatch(it, 8) }
-        val pink = swatch(0xFFE91E63, 30)
-        val palette = extractArtworkPalette(tealField + pink + swatch(0xFFFFFFFF, 22), average)!!
-        assertEquals(tealField.maxBy { it.population }.argb, palette.ground)
-    }
-
-    @Test
-    fun `colour that covers at least a fifth of the cover becomes the ground`() {
-        val red = swatch(0xFFC62828, 30)
-        val palette = extractArtworkPalette(listOf(red, swatch(0xFF000000, 40), swatch(0xFFFFFFFF, 30)), average)!!
-        assertEquals(red.argb, palette.ground)
-        assertEquals(red.argb, palette.accent)
-    }
-
-    @Test
-    fun `a vivid colour wins the accent once it covers enough of the cover`() {
+    fun `coverage and colourfulness both count toward the seed`() {
         val dullBlue = swatch(0xFF4A5A78, 70)
         val orange = swatch(0xFFFF6D00, 15)
-        val vivid = extractArtworkPalette(listOf(dullBlue, orange, swatch(0xFF101010, 15)), average)!!
-        assertEquals(dullBlue.argb, vivid.ground)
-        assertEquals(orange.argb, vivid.accent)
-        // Under 4% it only counts when nothing else qualifies.
-        val speck = extractArtworkPalette(listOf(dullBlue, swatch(0xFFFF6D00, 3), swatch(0xFF101010, 27)), average)!!
-        assertEquals(dullBlue.argb, speck.accent)
-        val onlySpeck = extractArtworkPalette(listOf(swatch(0xFFFF6D00, 3), swatch(0xFF101010, 97)), average)!!
-        assertEquals(Color(0xFFFF6D00).toArgb(), onlySpeck.accent)
+        // 70% of the cover outweighs a vivid colour on 15% of it.
+        assertEquals(dullBlue.argb, selectArtworkSeed(listOf(dullBlue, orange, swatch(0xFF101010, 15))))
+        // With similar coverage the more colourful one wins.
+        val greyTeal = swatch(0xFF5F7D7A, 40)
+        val red = swatch(0xFFD32F2F, 35)
+        assertEquals(red.argb, selectArtworkSeed(listOf(greyTeal, red, swatch(0xFFFFFFFF, 25))))
+    }
+
+    @Test
+    fun `the palette carries the seed and the cover's mean colour`() {
+        val teal = swatch(0xFF008577, 15)
+        val palette = extractArtworkPalette(listOf(swatch(0xFFF3EEDC, 85), teal), average)!!
+        assertEquals(teal.argb, palette.seed)
+        assertEquals(average, palette.average)
     }
 }

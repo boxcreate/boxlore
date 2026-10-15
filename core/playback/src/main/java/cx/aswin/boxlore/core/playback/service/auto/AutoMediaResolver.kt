@@ -3,8 +3,10 @@ package cx.aswin.boxlore.core.playback.service.auto
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.playback.CastMediaEligibility
 import cx.aswin.boxlore.core.playback.CastMediaMetadata
+import cx.aswin.boxlore.core.playback.PlaybackArtworkMetadata
 import cx.aswin.boxlore.core.playback.PlaybackMediaIdPolicy
 
 /**
@@ -52,13 +54,14 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                     ?: download?.episodeTitle?.takeIf(String::isNotBlank)
                     ?: item.mediaMetadata.title?.toString()?.takeIf(String::isNotBlank)
 
+            // Saved rows can hold a player-only link from an older build; skip it for a real cover.
             val localArtworkUri =
-                historyItem?.episodeImageUrl?.takeIf(String::isNotBlank)
-                    ?: historyItem?.podcastImageUrl?.takeIf(String::isNotBlank)
-                    ?: queueItem?.imageUrl?.takeIf(String::isNotBlank)
-                    ?: queueItem?.podcastImageUrl?.takeIf(String::isNotBlank)
-                    ?: download?.episodeImageUrl?.takeIf(String::isNotBlank)
-                    ?: download?.podcastImageUrl?.takeIf(String::isNotBlank)
+                persistableArtworkUrl(historyItem?.episodeImageUrl)
+                    ?: persistableArtworkUrl(historyItem?.podcastImageUrl)
+                    ?: persistableArtworkUrl(queueItem?.imageUrl)
+                    ?: persistableArtworkUrl(queueItem?.podcastImageUrl)
+                    ?: persistableArtworkUrl(download?.episodeImageUrl)
+                    ?: persistableArtworkUrl(download?.podcastImageUrl)
                     ?: item.mediaMetadata.artworkUri?.toString()?.takeIf(String::isNotBlank)
 
             val fallbackEpisode =
@@ -177,7 +180,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                         CastMediaMetadata.extrasWithRemoteUri(
                             existing =
                             AutoBrowseContract.mergeExtras(
-                                item.mediaMetadata.extras,
+                                PlaybackArtworkMetadata.withOriginal(item.mediaMetadata.extras, metadata.artworkUri),
                                 AutoBrowseContract.itemExtras(
                                     source =
                                     item.mediaMetadata.extras
@@ -237,7 +240,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                     .setArtworkUri(resolvedArtworkUri)
                     .setExtras(
                         CastMediaMetadata.extrasWithRemoteUri(
-                            existing = item.mediaMetadata.extras,
+                            existing = PlaybackArtworkMetadata.withOriginal(item.mediaMetadata.extras, episode.imageUrl ?: episode.podcastImageUrl),
                             remoteUri = episode.audioUrl,
                         ),
                     ).build(),

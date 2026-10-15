@@ -432,12 +432,12 @@ internal fun LabelAction(
     modifier: Modifier = Modifier
 ) {
     val container by animateColorAsState(
-        targetValue = if (active) colorScheme.primary else colorScheme.secondaryContainer,
+        targetValue = if (active) colorScheme.primary else colorScheme.surfaceContainerHigh,
         animationSpec = tween(180),
         label = "labelActionContainer"
     )
     val content by animateColorAsState(
-        targetValue = if (active) colorScheme.onPrimary else colorScheme.onSecondaryContainer,
+        targetValue = if (active) colorScheme.onPrimary else colorScheme.onSurfaceVariant,
         animationSpec = tween(180),
         label = "labelActionContent"
     )
@@ -477,11 +477,11 @@ internal fun UtilityAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val targetContainer = if (state.active) colorScheme.primary else colorScheme.secondaryContainer
+    val targetContainer = if (state.active) colorScheme.primary else colorScheme.surfaceContainerHigh
     val targetContent = when {
         state.active -> colorScheme.onPrimary
-        state.subdued -> colorScheme.onSecondaryContainer.copy(alpha = 0.45f)
-        else -> colorScheme.onSecondaryContainer
+        state.subdued -> colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+        else -> colorScheme.onSurfaceVariant
     }
     val container by animateColorAsState(
         targetValue = targetContainer,

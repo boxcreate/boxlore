@@ -127,6 +127,31 @@ interface QueueDao {
         upsertQueueMetadata(updated)
     }
 
+    /**
+     * Swaps a player-only artwork link (`content://<app>.collage/...`) saved by older builds for the
+     * episode's own cover, else the show's, else nothing. Order, positions and queue metadata are
+     * untouched. Returns the rows changed.
+     */
+    @Query(
+        """
+        UPDATE queue_items SET
+            imageUrl = CASE WHEN imageUrl LIKE 'content://%.collage/%' THEN COALESCE(
+                (SELECT imageUrl FROM local_episodes WHERE local_episodes.episodeId = queue_items.episodeId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
+                (SELECT imageUrl FROM rss_episodes WHERE rss_episodes.episodeId = queue_items.episodeId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%'),
+                (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = queue_items.podcastId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%')
+            ) ELSE imageUrl END,
+            podcastImageUrl = CASE WHEN podcastImageUrl LIKE 'content://%.collage/%' THEN
+                (SELECT imageUrl FROM podcasts WHERE podcasts.podcastId = queue_items.podcastId
+                    AND imageUrl != '' AND imageUrl NOT LIKE 'content://%.collage/%')
+            ELSE podcastImageUrl END
+        WHERE imageUrl LIKE 'content://%.collage/%' OR podcastImageUrl LIKE 'content://%.collage/%'
+        """,
+    )
+    suspend fun repairPlaybackArtworkLinks(): Int
+
     companion object {
         private const val MAX_RECENT_REMOVED_EPISODES = 50
         private val gson = Gson()

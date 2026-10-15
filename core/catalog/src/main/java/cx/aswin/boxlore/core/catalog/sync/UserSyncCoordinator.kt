@@ -12,6 +12,7 @@ import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
+import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.network.BoxLoreApi
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import cx.aswin.boxlore.core.network.model.QueueItemSyncDto
@@ -331,8 +332,8 @@ open class UserSyncCoordinator(
             episodeId = h.episodeId,
             podcastId = h.podcastId,
             episodeTitle = h.episodeTitle.takeIf { it.isNotBlank() },
-            episodeImageUrl = h.episodeImageUrl?.takeIf { it.isNotBlank() },
-            podcastImageUrl = h.podcastImageUrl?.takeIf { it.isNotBlank() },
+            episodeImageUrl = persistableArtworkUrl(h.episodeImageUrl),
+            podcastImageUrl = persistableArtworkUrl(h.podcastImageUrl),
             podcastName = h.podcastName.takeIf { it.isNotBlank() },
             episodeAudioUrl = h.episodeAudioUrl?.takeIf { it.isNotBlank() },
             progressMs = h.progressMs,
@@ -358,8 +359,8 @@ open class UserSyncCoordinator(
                     podcastId = q.podcastId,
                     title = q.title.takeIf { it.isNotBlank() },
                     podcastTitle = q.podcastTitle.takeIf { it.isNotBlank() },
-                    imageUrl = q.imageUrl?.takeIf { it.isNotBlank() },
-                    podcastImageUrl = q.podcastImageUrl?.takeIf { it.isNotBlank() },
+                    imageUrl = persistableArtworkUrl(q.imageUrl),
+                    podcastImageUrl = persistableArtworkUrl(q.podcastImageUrl),
                     audioUrl = q.audioUrl.takeIf { it.isNotBlank() },
                     duration = q.duration,
                     pubDate = q.pubDate,

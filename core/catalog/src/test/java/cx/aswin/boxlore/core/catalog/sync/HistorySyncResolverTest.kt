@@ -472,6 +472,43 @@ class HistorySyncResolverTest {
         episodeDescription = episodeDescription,
     )
 
+    // Regression: a player-only artwork link synced from another device blanked Home.
+    @Test
+    fun resolveHistoryItem_playerOnlyArtworkLinks_neverWinFromEitherSide() = runTest {
+        val dead = "content://cx.aswin.boxlore.collage/local/38e72bd3"
+        resolver.resolveHistoryItem(
+            ListeningHistorySyncDto(
+                episodeId = "ep-new",
+                podcastId = "pod-1",
+                episodeTitle = "New on this device",
+                episodeImageUrl = dead,
+                podcastImageUrl = dead,
+                lastPlayedAt = 1000L,
+                updatedAt = 1000L,
+            ),
+            syncedAt = 2000L,
+        )
+        val inserted = listeningHistoryDao.getHistoryItem("ep-new")!!
+        assertEquals(null, inserted.episodeImageUrl)
+        assertEquals(null, inserted.podcastImageUrl)
+
+        listeningHistoryDao.upsert(createHistory(episodeId = "ep-old", lastPlayedAt = 1000L, episodeImageUrl = dead, podcastImageUrl = dead))
+        resolver.resolveHistoryItem(
+            ListeningHistorySyncDto(
+                episodeId = "ep-old",
+                podcastId = "pod-1",
+                episodeImageUrl = "https://art/episode.jpg",
+                podcastImageUrl = "https://art/show.jpg",
+                lastPlayedAt = 3000L,
+                updatedAt = 3000L,
+            ),
+            syncedAt = 4000L,
+        )
+        val merged = listeningHistoryDao.getHistoryItem("ep-old")!!
+        assertEquals("https://art/episode.jpg", merged.episodeImageUrl)
+        assertEquals("https://art/show.jpg", merged.podcastImageUrl)
+    }
+
     private class FakeActivePlaybackSyncPort(
         var activeEpisodeId: String? = null,
     ) : ActivePlaybackSyncPort {

@@ -400,6 +400,7 @@ private fun PlayerSheetSurface(
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     BoxWithConstraints(modifier = modifier.fillMaxSize(), contentAlignment = AbsoluteAlignment.TopLeft) {
         val containerWidth = maxWidth
+        val visibleHeight = maxHeight
         val bounds = calculateAdaptivePlayerBounds(
             AdaptivePlayerBoundsInput(
                 containerWidth = containerWidth,
@@ -477,7 +478,8 @@ private fun PlayerSheetSurface(
                         callbacks.onExpand()
                     },
             ) {
-                PlayerSheetLayers(adaptedGeometry, content, resources, callbacks, containerWidth, layout.containerHeight)
+                // The container runs past the screen's foot for the sheet's drag; full-screen overlays fit what is visible.
+                PlayerSheetLayers(adaptedGeometry, content, resources, callbacks, PlayerSheetSize(containerWidth, layout.containerHeight, visibleHeight))
             }
         }
     }
@@ -521,8 +523,7 @@ private fun PlayerSheetLayers(
     content: PlayerSheetContentState,
     resources: PlayerSheetResources,
     callbacks: PlayerSheetCallbacks,
-    containerWidth: Dp,
-    containerHeight: Dp,
+    size: PlayerSheetSize,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         MiniPlayerLayer(
@@ -538,11 +539,16 @@ private fun PlayerSheetLayers(
             content = content,
             resources = resources,
             callbacks = callbacks,
-            containerWidth = containerWidth,
-            containerHeight = containerHeight,
+            size = size,
         )
     }
 }
+
+/**
+ * The full player's size: its container ([width] × [height], which runs past the screen's foot so the
+ * sheet can be dragged) and the [visibleHeight] of the screen, which full-screen overlays fit inside.
+ */
+internal data class PlayerSheetSize(val width: Dp, val height: Dp, val visibleHeight: Dp)
 
 @Composable
 private fun MiniPlayerLayer(
@@ -651,8 +657,7 @@ private fun FullPlayerLayer(
     content: PlayerSheetContentState,
     resources: PlayerSheetResources,
     callbacks: PlayerSheetCallbacks,
-    containerWidth: Dp,
-    containerHeight: Dp,
+    size: PlayerSheetSize,
 ) {
     if (!visible) return
     resources.stateHolder.SaveableStateProvider("fullPlayer") {
@@ -661,7 +666,7 @@ private fun FullPlayerLayer(
             Modifier
                 // Reveal a stable final-size layout from the top of the growing surface.
                 .wrapContentSize(Alignment.TopCenter, unbounded = true)
-                .requiredSize(containerWidth, containerHeight)
+                .requiredSize(size.width, size.height)
                 .graphicsLayer {
                     alpha = geometry.fullAlpha
                     translationY = geometry.fullTranslationY
@@ -684,6 +689,7 @@ private fun FullPlayerLayer(
                     sheetNestedScrollConnection = resources.flows.nestedScrollConnection,
                     isExpanded = geometry.expansionFraction >= 0.5f,
                     showSwipeMinimizeTip = !content.hasSeenSwipeMinimizeTip,
+                    visibleHeight = size.visibleHeight,
                 ),
                 actions =
                 FullPlayerActions(

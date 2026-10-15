@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
+import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.network.model.QueueItemSyncDto
 import cx.aswin.boxlore.core.network.model.QueueSyncDto
 
@@ -176,8 +177,8 @@ class QueueSyncResolver(
                 title = remoteTitle,
                 podcastId = dto.podcastId,
                 podcastTitle = dto.podcastTitle ?: "",
-                imageUrl = dto.imageUrl,
-                podcastImageUrl = dto.podcastImageUrl,
+                imageUrl = persistableArtworkUrl(dto.imageUrl),
+                podcastImageUrl = persistableArtworkUrl(dto.podcastImageUrl),
                 audioUrl = dto.audioUrl ?: "",
                 duration = dto.duration ?: 0,
                 pubDate = dto.pubDate ?: 0L,
@@ -241,8 +242,8 @@ class QueueSyncResolver(
                 title = history.episodeTitle,
                 podcastId = dto.podcastId.ifEmpty { history.podcastId },
                 podcastTitle = history.podcastName,
-                imageUrl = history.episodeImageUrl,
-                podcastImageUrl = history.podcastImageUrl,
+                imageUrl = persistableArtworkUrl(history.episodeImageUrl),
+                podcastImageUrl = persistableArtworkUrl(history.podcastImageUrl),
                 audioUrl = history.episodeAudioUrl ?: "",
                 duration = (history.durationMs / 1000L).toInt(),
                 pubDate = 0L,

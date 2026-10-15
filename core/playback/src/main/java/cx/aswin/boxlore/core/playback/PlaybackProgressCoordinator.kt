@@ -106,7 +106,7 @@ internal class PlaybackProgressCoordinator(
             allowZeroPosition = allowZeroPosition || zeroStartRequested,
             activePlaybackEnded = activePlaybackEnded,
             episodeTitle = CastMediaMetadata.queueTitle(currentItem.mediaMetadata.title),
-            episodeImageUrl = currentItem.mediaMetadata.artworkUri?.toString(),
+            episodeImageUrl = PlaybackArtworkMetadata.savedArtworkUrl(currentItem.mediaMetadata),
             episodeAudioUrl = currentItem.localConfiguration?.uri?.toString(),
             podcastName =
             CastMediaMetadata.queueTitle(currentItem.mediaMetadata.albumTitle)

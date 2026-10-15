@@ -84,12 +84,17 @@ data class FullPlayerDependencies(
     val userPrefs: cx.aswin.boxlore.core.prefs.UserPreferencesRepository,
 )
 
+/**
+ * How the full player is shown. [visibleHeight] is the part of its container on screen; the container
+ * itself runs past the screen's foot, so full-screen overlays such as the transcript fit this height.
+ */
 data class FullPlayerDisplay(
     val colorScheme: ColorScheme,
     val isFullscreenVideo: Boolean,
     val sheetNestedScrollConnection: NestedScrollConnection,
     val isExpanded: Boolean,
     val showSwipeMinimizeTip: Boolean = false,
+    val visibleHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified,
     val isContextPane: Boolean = false,
 )
 

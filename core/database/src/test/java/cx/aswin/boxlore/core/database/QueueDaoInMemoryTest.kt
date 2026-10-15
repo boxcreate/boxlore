@@ -188,4 +188,22 @@ class QueueDaoInMemoryTest {
         assertEquals(0L, stored.syncedAt)
         assertEquals(6L, stored.queueSequence)
     }
+
+    // Regression: queue rows built from the player could keep its Android Auto artwork link.
+    @Test
+    fun `player-only artwork links in the queue are swapped for real covers without reordering`() = runTest {
+        val dead = "content://cx.aswin.boxlore.collage/art/abc"
+        database.podcastDao().upsert(PodcastEntity(podcastId = "pod-1", title = "Podcast", author = "Host", imageUrl = "https://art/show.jpg", description = null))
+        dao.insertQueueItem(item("a", 1).copy(imageUrl = dead, podcastImageUrl = dead))
+        dao.insertQueueItem(item("b", 2).copy(imageUrl = "https://art/b.jpg"))
+
+        assertEquals(1, dao.repairPlaybackArtworkLinks())
+
+        val items = dao.getAllQueueItemsSync()
+        assertEquals(listOf("a", "b"), items.map { it.episodeId })
+        assertEquals("https://art/show.jpg", items[0].imageUrl)
+        assertEquals("https://art/show.jpg", items[0].podcastImageUrl)
+        assertEquals("https://art/b.jpg", items[1].imageUrl)
+        assertEquals(0, dao.repairPlaybackArtworkLinks())
+    }
 }

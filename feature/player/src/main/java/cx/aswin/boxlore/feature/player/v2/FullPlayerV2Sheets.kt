@@ -25,6 +25,7 @@ import cx.aswin.boxlore.core.playback.setSleepTimer
 import cx.aswin.boxlore.core.playback.skipBackward
 import cx.aswin.boxlore.core.playback.skipForward
 import cx.aswin.boxlore.feature.player.FullscreenTranscriptScreen
+import cx.aswin.boxlore.feature.player.fitVisibleHeight
 import cx.aswin.boxlore.feature.player.v2.logic.ResponsiveHeroLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -37,7 +38,7 @@ internal fun FullPlayerFullscreenOverlays(
     actions: FullPlayerActions,
     ui: FullPlayerUiState
 ) {
-    FullPlayerTranscriptOverlay(dependencies.playbackRepository, model, ui)
+    FullPlayerTranscriptOverlay(dependencies.playbackRepository, model, ui, display.visibleHeight)
     VideoFullscreenOverlay(
         content = VideoFullscreenContent(
             visible = display.isFullscreenVideo,
@@ -64,7 +65,8 @@ internal fun FullPlayerFullscreenOverlays(
 internal fun FullPlayerTranscriptOverlay(
     playbackRepository: PlaybackRepository,
     model: FullPlayerOverlayModel,
-    ui: FullPlayerUiState
+    ui: FullPlayerUiState,
+    visibleHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified,
 ) {
     val fullscreenRequest = LocalPlayerFullscreenRequest.current
     AnimatedVisibility(
@@ -92,7 +94,8 @@ internal fun FullPlayerTranscriptOverlay(
                 ui.showFullscreenTranscript = false
                 fullscreenRequest?.invoke(PlayerFullscreenOverlay.Transcript, false)
             },
-            modifier = Modifier.boxloreFoldSafeViewport(),
+            // The sheet can be taller than the screen; keep the controls in view, then away from a fold.
+            modifier = Modifier.fitVisibleHeight(visibleHeight).boxloreFoldSafeViewport(),
             transcriptUrl = model.episode.transcriptUrl
         )
     }
