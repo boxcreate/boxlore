@@ -154,6 +154,8 @@ Episode push artwork keeps its six-second total deadline and uses 700ms per rout
 
 ## Testing notes
 
+- `ShellPhoneGoldenTest` captures supplied Home loaded/loading and Library states, plus the mini player over Home with Floating navigation. The local matrix covers 360×800, 412×915 and 800×360dp in both themes; use `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`. These captures do not start the production application. See [screenshot instructions](../docs/screenshots/README.md).
+
 - Full-player style persistence and presentation regressions live in `:core:prefs`, `:feature:settings` and `:feature:player`; app assembly validates the shared wiring.
 
 - Native announcements have no WebView, JavaScript bridge, render handshake or alternate fallback layout. Closing, scrolling and actions work immediately; image failure removes only the image. Compact surfaces use surfaceContainer and a subtle backdrop. Announcements and the updater set system-bar icon contrast on their own Dialog window without changing the underlying Activity; `NativeDialogSystemBarsTest` covers light/dark and dimmed surfaces.

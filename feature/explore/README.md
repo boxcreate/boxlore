@@ -73,6 +73,8 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## Testing notes
 
+- `ExplorePhoneGoldenTest` captures Explore and Lore at both portrait phone sizes and short landscape in light/dark. Supplied data and mocked screen dependencies keep the local-only captures offline. Enable with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; [capture instructions](../../docs/screenshots/README.md) describe immutable baselines and exact pixel comparison.
+
 - Unit tests live under `feature/explore/src/test`.
 - `LoreCardTextTest` uses production Google Sans font measurement with real long card text at narrow portrait widths and 130% system text (including the larger play control's footer budget), checks space-first fitting, and preserves the typography floor for impossible content. It uses JVM native text layout, without screenshots or device automation.
 - `LoreMotionTest` covers bounded control feedback and interrupted press release, both swipe directions, cancellation, frozen palettes, promotion without rollback, interrupted colour transitions, synchronous pointer movement, exactly-once actions, obsolete-motion cancellation, and Floating-only card clearance.

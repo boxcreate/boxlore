@@ -36,6 +36,15 @@ dependencies {
     api(libs.kotlinx.coroutines.test)
     api(libs.turbine)
     api(libs.okhttp.mockwebserver)
+    api(libs.junit)
+    api(libs.robolectric)
+    api(platform(libs.androidx.compose.bom))
+    api(libs.androidx.ui.test.junit4)
+    api(libs.androidx.activity.compose)
+    api(libs.roborazzi)
+    api(libs.roborazzi.compose)
+    api(libs.coil.compose)
+    api("org.mockito:mockito-core:5.14.2")
 
     implementation(libs.androidx.core.ktx)
 

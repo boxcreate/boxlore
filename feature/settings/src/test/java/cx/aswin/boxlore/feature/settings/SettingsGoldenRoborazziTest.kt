@@ -25,9 +25,9 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Roborazzi golden coverage for Settings composables. Goldens are committed under
- * `screenshots/baselines/` (see feature/home roborazzi config); a fixed light color
+ * `screenshots/baselines/` (see feature/settings roborazzi config); a fixed light color
  * scheme keeps captures deterministic across machines. Record with
- * `./gradlew :feature:home:recordRoborazziDebug`, verify with `verifyRoborazziDebug`.
+ * `./gradlew :feature:settings:recordRoborazziDebug`, verify with `verifyRoborazziDebug`.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

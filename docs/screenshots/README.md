@@ -1,49 +1,36 @@
 # Screenshot baselines
 
-This document describes the committed Roborazzi goldens for local visual checks. Roborazzi is **not** part of merge CI.
+Robolectric and Roborazzi provide local visual checks. No screenshot job is added to CI.
 
-## Current coverage
+## Phone matrix
 
-`:feature:home` hosts JVM Roborazzi golden tests in `SettingsGoldenRoborazziTest`, and their committed baselines live under `screenshots/baselines/`:
+The local `*PhoneGoldenTest` suites cover eleven screen/state entries: Home loaded/loading, Explore, Lore, Library, podcast info, episode info, Standard full player, mini player over Home, Echo's opening question and Settings. Every entry runs at 360×800, 412×915 and 800×360dp, in light and dark: 66 PNGs under `screenshots/baselines/phone/`.
 
-```text
-screenshots/baselines/add_rss_feed_dialog.png
-screenshots/baselines/reset_analytics_dialog.png
-screenshots/baselines/downloads_settings_page.png
-```
+The shared `PhoneGoldenRule` pins SDK 33/native graphics, mdpi, US English, window dimensions, orientation, night mode and the capture clock. Fixtures disable dynamic color and use fixed in-memory artwork through Coil; no image request leaves the process. This avoids the intentionally random decorative shapes in missing-art fallbacks. No backend or media service is started. ViewModel-bound screens receive mocked flows without constructing an Application-backed ViewModel. These are composable regression captures, not verification of live services, navigation gestures or a physical device.
 
-## Layout
-
-```text
-screenshots/baselines/     # committed PNG goldens (Roborazzi output dir)
-docs/screenshots/          # this reference document
-```
-
-The output directory and file naming are configured in `feature/home/build.gradle.kts` (`roborazzi { outputDir = screenshots/baselines }`) and `gradle.properties` (`roborazzi.record.filePathStrategy=relativePathFromRoborazziContextOutputDirectory`), so the short names passed to `captureRoboImage()` resolve directly under `screenshots/baselines/`.
-
-## Capture
-
-Regenerate the goldens from the repository root and commit any intended changes:
+Ordinary test/CI tasks exclude these classes. Use JDK 17 and the normal Gradle home, from the repository root:
 
 ```bash
-./gradlew :feature:home:recordRoborazziDebug
+GRADLE_USER_HOME="$HOME/.gradle" ./gradlew :app:testDebugUnitTest :feature:explore:testDebugUnitTest :feature:info:testDebugUnitTest :feature:player:testDebugUnitTest :feature:onboarding:testDebugUnitTest :feature:settings:testDebugUnitTest -PphoneGoldens=verify --tests '*PhoneGoldenTest'
 ```
 
-Goldens are captured with a fixed `lightColorScheme()` so they stay deterministic across machines. Prefer tagged-node assertions for dialogs because Compose `AlertDialog` can produce multiple roots.
+For the initial capture only, replace `verify` with `record`. Recording refuses to overwrite an existing phone baseline. Never update a phone baseline to accommodate a layout change.
 
-## Compare (local only)
+Roborazzi renders actuals into `build/reports/phone-goldens/actual/`. Verification then compares dimensions and every ARGB pixel, with zero tolerance; it never writes the baseline. A mismatch fails with the actual render's path. Keep the same JDK, operating system, pinned SDK and dependency graph when comparing; a renderer change is a separate investigation, not permission to refresh the baseline.
+
+## Existing Settings captures
+
+`SettingsGoldenRoborazziTest` lives in `:feature:settings`. Its three older, fixed-light captures are `add_rss_feed_dialog.png`, `reset_analytics_dialog.png` and `downloads_settings_page.png` directly under `screenshots/baselines/`.
 
 ```bash
-./gradlew :feature:home:verifyRoborazziDebug
+./gradlew :feature:settings:recordRoborazziDebug
+./gradlew :feature:settings:verifyRoborazziDebug
 ```
 
-Verify re-renders each screen and compares it against the committed baseline; mismatches write `*_compare.png` under `feature/home/build/outputs/roborazzi/` and fail the task. This is optional and is not run in `unit-tests.yml`.
-
-## Gradle
-
-Roborazzi is applied through the `roborazzi` plugin alias in `feature/home/build.gradle.kts`. It is available for local use only.
+These component captures use the existing Roborazzi comparison policy. They are separate from the immutable, exact-pixel phone matrix. Prefer tagged nodes for dialogs because an AlertDialog can produce multiple roots.
 
 ## See also
 
-- [`docs/TESTING.md`](../TESTING.md)
-- [`feature/home/README.md`](../../feature/home/README.md)
+- [Testing](../TESTING.md)
+- [Shared test support](../../core/testing/README.md)
+- [Settings](../../feature/settings/README.md)

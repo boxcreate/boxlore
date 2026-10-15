@@ -102,7 +102,7 @@ Run `node --test .github/scripts/test_announcement_admin.cjs` and the Python sui
 | :--- | :--- | :--- |
 | JVM | Every public behavior-owning type has a suite (happy/empty/error/branches) or an irreducible exclusion | `testDebugUnitTest` |
 | ViewModels | Behaviors via hermetic `logic/` + Settings Turbine; AndroidViewModels allowlisted when logic suites exist | unit job |
-| Screenshots | Home settings goldens (local record/verify) | Manual / local only |
+| Screenshots | Immutable phone screen matrix and Settings dialogs (local record/verify) | Manual / local only |
 | Maestro | YAML present and well-formed | nightly validate |
 | Kover merged | **≥ 80%** end state (ratchet **40 → 45 → 55 → 70 → 80**) | `:koverVerifyMerged` |
 | Kover per-module | **≥ 70%** on logic-heavy modules (ratchet as suites land) | module verify |
@@ -213,6 +213,14 @@ Application-backed Home/Info suites are **not** pursued; hermetic `logic/` + ass
 See [`maestro/README.md`](../maestro/README.md).
 
 ## Screenshots
+
+The phone regression matrix is a local tool excluded from ordinary unit-test and CI runs. It captures Home (loaded/loading), Explore, Lore, Library, podcast/episode info, Standard full player, mini player over Home, Echo and Settings at 360×800, 412×915 and 800×360dp in light/dark (66 PNGs). Run with JDK 17 and the normal Gradle home:
+
+```bash
+GRADLE_USER_HOME="$HOME/.gradle" ./gradlew :app:testDebugUnitTest :feature:explore:testDebugUnitTest :feature:info:testDebugUnitTest :feature:player:testDebugUnitTest :feature:onboarding:testDebugUnitTest :feature:settings:testDebugUnitTest -PphoneGoldens=verify --tests '*PhoneGoldenTest'
+```
+
+The first baseline capture uses `-PphoneGoldens=record` with the same command. Recording refuses to overwrite any existing phone golden. Never refresh phone goldens to accept an adaptive-layout change. Verification compares exact dimensions and ARGB pixels without tolerance; current renders are written to `build/reports/phone-goldens/actual/`. All phases must pass this check. See [capture details](screenshots/README.md) for fixtures, limitations and the separate Settings dialog commands.
 
 | Target | Status |
 | :--- | :--- |

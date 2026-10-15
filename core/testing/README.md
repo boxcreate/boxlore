@@ -8,6 +8,7 @@ Owns shared JVM test fixtures, dispatcher helpers, and architecture guards used 
 
 - `MainDispatcherExtension` installs a test main dispatcher for a test scope.
 - `TestFixtures` provides minimal podcast and episode builders.
+- `PhoneGoldenRule` and `PhoneGoldenConfiguration` provide the local, six-configuration phone capture matrix. Roborazzi writes actual renders; verification compares dimensions and every ARGB pixel. Recording refuses to overwrite an existing phone baseline.
 - `fakes.FakeLocalEpisodeCatalogPort` pages/sorts/searches in memory and returns null from `findByCatalogKey` when guid and enclosure are both blank.
 - `fakes.FakeDeviceIdentityPort` provides a deterministic or mutable device ID fake for sync tests.
 - Test dependencies such as JUnit Jupiter, coroutines-test, Turbine, and MockWebServer are exposed for modules that declare `testImplementation(projects.core.testing)`.
@@ -29,14 +30,14 @@ src/test/java/cx/aswin/boxlore/core/testing/architecture/
 ## Dependencies
 
 - Project dependencies: `:core:model`.
-- Libraries exposed for tests: JUnit Jupiter, coroutines-test, Turbine, and MockWebServer.
+- Libraries exposed for tests: JUnit Jupiter/Vintage-compatible JUnit 4, coroutines-test, Turbine, MockWebServer, Mockito, Robolectric, Compose UI testing and Roborazzi. These dependencies remain outside production configurations.
 - Test-only libraries: Konsist.
 - Reverse-edge rule: production modules may use this only from test configurations.
 
 ## Threading / lifecycle
 
 - `MainDispatcherExtension` swaps `Dispatchers.Main` for the duration of each test and restores it afterward.
-- No Android application or activity lifecycle objects are owned here.
+- The screenshot rule owns a test Activity for one test only; it never starts the production Application or constructs its dependency graph.
 
 ## Persistence & identity
 

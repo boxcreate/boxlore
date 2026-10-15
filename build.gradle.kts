@@ -43,6 +43,19 @@ subprojects {
         apply(plugin = "org.jlleitschuh.gradle.ktlint")
         configureKtlint()
     }
+    tasks.withType<Test>().configureEach {
+        val phoneGoldens = providers.gradleProperty("phoneGoldens")
+        if (phoneGoldens.isPresent) {
+            require(phoneGoldens.get() in setOf("record", "verify")) {
+                "Use -PphoneGoldens=record or -PphoneGoldens=verify"
+            }
+            systemProperty("boxlore.phoneGoldens", phoneGoldens.get())
+            systemProperty("boxlore.projectRoot", rootProject.projectDir.absolutePath)
+            outputs.upToDateWhen { false }
+        } else {
+            exclude("**/*PhoneGoldenTest*")
+        }
+    }
 }
 
 dependencies {

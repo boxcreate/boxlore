@@ -82,6 +82,8 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 ## Testing notes
 
+- `InfoPhoneGoldenTest` captures the actual podcast and episode screens at both portrait phone sizes and short landscape in light/dark. Mocked ViewModel flows avoid constructing Application-backed ViewModels or making network requests. These local-only captures use `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; see [capture instructions](../../docs/screenshots/README.md).
+
 - `EpisodeExpandableTitleTest` covers baseline continuity with a larger touch target, different font padding, enlarged text and a wrapping expanded tail. `PodcastEpisodeSearchLogicTest` covers list continuity, empty/loading/recovery states, repository result order and stale-response rejection after clearing, replacing a query or changing shows. The shared `AdaptivePlayerOverlayOffsetTest` covers compact/expanded docking, reverse motion, Classic navigation and absent-player behavior used by the selection toolbar.
 
 - Unit tests live under `feature/info/src/test`.

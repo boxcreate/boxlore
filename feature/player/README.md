@@ -85,6 +85,8 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 
 ## Testing notes
 
+- `PlayerPhoneGoldenTest` captures the Standard full player at both portrait phone sizes and short landscape in light/dark. Fixed player/download/preference flows start no media service. Captures are local only, enabled with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; see [capture instructions](../../docs/screenshots/README.md).
+
 - `MinimalPlayerLogicTest` covers style fallback/video handling, bounded remaining time and one queue opening per upward gesture. `MinimalPlayerContentTest` exercises the real controls, accessibility seeking/queue access, title expansion, adaptive short/long text, title-only full hyphenation, centered metadata, scoped crisp typography, oversized sheet/window bounds, large-text RTL, buffering, short landscape windows and swipe-to-queue with local callbacks; it sends no media or network requests. `MinimalPlayerControlsTest` checks distinct active silhouettes, separate main/auxiliary control accents in both themes, rapid taps and a press interrupted by buffering. `MinimalControlAccentTest` checks related hues, tone separation and foreground contrast across artwork seeds in both modes. Optional local render exports use `BOXLORE_UI_TEST_ARTIFACTS`.
 
 - Unit tests live under `feature/player/src/test`.
