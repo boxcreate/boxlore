@@ -36,8 +36,12 @@ internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceAct
     val style = HeroCardStyle.sanitize(state.heroCardStyle)
     val shade = HeroCoverShade.sanitize(state.heroCoverShade)
     SettingsScaffold(title = "Home", onBack = onBack) {
+        if (heroPreview != null) {
+            SettingsTileSection(title = stringResource(R.string.hero_card_preview_title)) {
+                AppearanceHeroPreviewStage(style, shade, heroPreview, height = 260.dp)
+            }
+        }
         SettingsTileSection(title = stringResource(R.string.hero_card_style_title), footer = stringResource(R.string.hero_card_style_footer)) {
-            if (heroPreview != null) AppearanceHeroPreviewStage(style, shade, heroPreview, height = 260.dp)
             SettingsPictureGrid(HeroStyleOptions, columns = 2) { option, modifier ->
                 SettingsPictureTile(
                     label = stringResource(option.label),

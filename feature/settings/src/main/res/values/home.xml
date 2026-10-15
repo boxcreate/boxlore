@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Appearance > Home: the hero card style picker. Block is the solid colour card; Cover fills the card with the artwork. -->
+    <!-- Header above the non-interactive preview of the picked hero card style. -->
+    <string name="hero_card_preview_title">Hero card preview</string>
     <string name="hero_card_style_title">Hero cards</string>
     <string name="hero_card_style_footer">The big cards at the top of Home.</string>
     <string name="hero_card_style_block">Block</string>

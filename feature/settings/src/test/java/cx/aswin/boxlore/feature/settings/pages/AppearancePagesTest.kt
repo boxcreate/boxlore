@@ -95,6 +95,7 @@ class AppearancePagesTest {
                 AppearanceHomePage(state.value, actions, heroPreview = fakePreview, onBack = {})
             }
         }
+        compose.onNodeWithText("Hero card preview").assertExists()
         compose.onNodeWithText("Block").assertIsSelected()
         compose.onNodeWithText("Shade behind text").assertDoesNotExist()
         compose.onNodeWithContentDescription("Preview of Block hero cards").performTouchInput { click(center) }
