@@ -153,8 +153,7 @@ private fun MarqueeCarousel(
     maxScrolledIndex: androidx.compose.runtime.MutableIntState,
     modifier: Modifier,
 ) {
-    Column(modifier.fillMaxWidth()) {
-        MarqueeHero(
+    MarqueeHero(
             heroItems = heroItems,
             playing = playing,
             playAction = { item, position -> heroPlayAction(item, position, playing, onPlayClick, onTogglePlayback) },
@@ -164,9 +163,8 @@ private fun MarqueeCarousel(
             onDetailsClick = onDetailsClick,
             onArrowClick = onArrowClick,
             onPageShown = { page -> if (page > maxScrolledIndex.intValue) maxScrolledIndex.intValue = page },
+            modifier = modifier,
         )
-        Spacer(Modifier.height(HeroIndicatorStrip))
-    }
 }
 
 private fun collectionPlaybackAction(

@@ -45,9 +45,14 @@ import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
 import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
 import cx.aswin.boxlore.feature.home.components.LocalHeroCoverShade
+import cx.aswin.boxlore.feature.home.components.LocalHeroScrollOffset
 import cx.aswin.boxlore.feature.home.components.LocalHeroTopInset
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
+import cx.aswin.boxlore.feature.home.components.LocalMarqueeTopTone
+import cx.aswin.boxlore.feature.home.components.MarqueeSheetOverlap
+import cx.aswin.boxlore.feature.home.components.MarqueeTopTone
 import cx.aswin.boxlore.feature.home.components.TopControlBar
+import cx.aswin.boxlore.feature.home.components.marqueeBarOverArtwork
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -532,13 +537,15 @@ private fun HomeScreenBottomSheets(
     }
 }
 
-/** Home's top bar, with its analytics; over Marquee's hero it starts clear ([overArtwork]). */
+/** Home's top bar, with its analytics; over Marquee's cover it starts clear ([overArtwork]). */
 @Composable
+@Suppress("LongParameterList")
 private fun HomeTopBar(
     scrollFractionProvider: () -> Float,
     showTopBarShortcuts: Boolean,
     callbacks: HomeScreenCallbacks,
-    overArtwork: Boolean = false,
+    overArtwork: (() -> Float)? = null,
+    artworkTone: MarqueeTopTone? = null,
     modifier: Modifier = Modifier,
 ) {
     TopControlBar(
@@ -546,6 +553,7 @@ private fun HomeTopBar(
         modifier = modifier,
         showUtilityIcons = showTopBarShortcuts,
         overArtwork = overArtwork,
+        artworkContent = artworkTone?.content ?: androidx.compose.ui.graphics.Color.Unspecified,
         onFeedbackClick = {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper
                 .trackTopControlbarInteraction("feedback_clicked", "home")
@@ -571,6 +579,9 @@ private fun HomeTopBar(
 
 /** The expanded bar below the status bar: 16dp above and below its 33dp shortcuts. */
 private val HomeTopBarEstimate = 65.dp
+
+/** The bar fills over this distance as the body's edge rises to it. */
+private val MarqueeBarEdge = 24.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -613,12 +624,30 @@ fun HomeScreen(
             var topBarHeight by remember { androidx.compose.runtime.mutableIntStateOf(0) }
             val estimate = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + HomeTopBarEstimate
             val topInset = if (topBarHeight > 0) with(LocalDensity.current) { topBarHeight.toDp() } else estimate
-            CompositionLocalProvider(LocalHeroTopInset provides topInset) { feed() }
+            val topTone = remember { MarqueeTopTone() }
+            val edgePx = with(LocalDensity.current) { MarqueeBarEdge.toPx() }
+            val overlapPx = with(LocalDensity.current) { MarqueeSheetOverlap.toPx() }
+            // The hero keeps its cover still while it scrolls away; the bar fills as the body's edge reaches it.
+            val heroScroll: () -> Int = remember(gridState) {
+                { if (gridState.firstVisibleItemIndex == 0) gridState.firstVisibleItemScrollOffset else Int.MAX_VALUE }
+            }
+            val overArtwork: () -> Float = remember(gridState, edgePx, overlapPx) {
+                {
+                    val hero = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "hero" }
+                    marqueeBarOverArtwork(hero?.let { it.offset.y + it.size.height }, overlapPx, topBarHeight, edgePx)
+                }
+            }
+            CompositionLocalProvider(
+                LocalHeroTopInset provides topInset,
+                LocalHeroScrollOffset provides heroScroll,
+                LocalMarqueeTopTone provides topTone,
+            ) { feed() }
             HomeTopBar(
                 scrollFractionProvider = { scrollFraction },
                 showTopBarShortcuts = showTopBarShortcuts,
                 callbacks = callbacks,
-                overArtwork = true,
+                overArtwork = overArtwork,
+                artworkTone = topTone,
                 // Keep the expanded height: the bar shrinks as Home scrolls, the hero must not.
                 modifier = Modifier.onSizeChanged { if (scrollFraction == 0f) topBarHeight = it.height },
             )

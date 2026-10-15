@@ -212,7 +212,7 @@ private fun TideHeroSkeletonCard(tones: HeroSkeletonTones) {
 @Composable
 private fun MarqueeHeroSkeletonCard(tones: HeroSkeletonTones) {
     Box(Modifier.fillMaxSize().background(tones.surface).m3Shimmer(tones.base, tones.highlight).testTag(skeletonTag(HeroCardStyle.MARQUEE))) {
-        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp + MarqueeSheetOverlap)) {
+        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = MarqueeCopyBottom)) {
             SkeletonLine(0.5f, 12.dp, tones.onArtwork, tones.onArtworkHighlight)
             Spacer(Modifier.height(12.dp))
             FullArtworkSkeletonCopy(tones.onArtwork, tones.onArtworkHighlight)

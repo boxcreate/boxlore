@@ -226,8 +226,9 @@ private fun LazyStaggeredGridScope.smartHeroItem(
             HomeLoadingReveal(
                 ready = derivedState.heroLoaded,
                 placeholder = {
+                    // Marquee's hero meets Your shows' sheet directly, so its skeleton keeps no strip below.
                     cx.aswin.boxlore.feature.home.components.HeroSkeleton(
-                        Modifier.padding(bottom = cx.aswin.boxlore.feature.home.components.HeroIndicatorStrip),
+                        Modifier.padding(bottom = if (marqueeTopInset != null) 0.dp else cx.aswin.boxlore.feature.home.components.HeroIndicatorStrip),
                     )
                 },
             ) {

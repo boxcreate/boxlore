@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -32,8 +34,10 @@ private const val TAG = "StylizedLogo"
  * Collapsing M3-aligned Top Bar with stylized variable logo and profile.
  *
  * @param scrollFraction 0f = fully expanded (roomier), 1f = fully collapsed
- * @param overArtwork the bar sits over Marquee's hero: clear at the top of Home, with light status
- * icons and wordmark over the artwork's shade, and solid again once Home scrolls past halfway.
+ * @param overArtwork how much of the bar sits over Marquee's cover (1) rather than Home's body (0). Over
+ * the cover the bar is clear (the cover shows a frosted band behind it) and its wordmark and status
+ * icons take [artworkContent]; as the body's edge slides up under it, the bar fills with the body's
+ * own colour. Null for every other hero style.
  */
 @Composable
 @Suppress("LongParameterList")
@@ -45,7 +49,8 @@ fun TopControlBar(
     onFeedbackLongClick: () -> Unit = {},
     onAvatarClick: () -> Unit = {},
     onAvatarLongClick: () -> Unit = {},
-    overArtwork: Boolean = false,
+    overArtwork: (() -> Float)? = null,
+    artworkContent: Color = Color.Unspecified,
 ) {
     // Expanded state: roomier padding, surface color
     // Collapsed state: compact padding, surfaceContainerLow color
@@ -56,7 +61,8 @@ fun TopControlBar(
     val collapsedColor = MaterialTheme.colorScheme.surfaceContainerLow
 
     // Over artwork, only crossing halfway changes anything, so scrolling does not recompose the bar.
-    val overHero by remember(overArtwork) { derivedStateOf { overArtwork && scrollFractionProvider() < 0.5f } }
+    val overHero by remember(overArtwork) { derivedStateOf { overArtwork != null && overArtwork() > 0.5f } }
+    val onArtwork = artworkContent.takeOrElse { OnArtworkWordmark }
 
     // Update system status bar icon color to match background (evaluated once per theme change, not on scroll)
     val view = LocalView.current
@@ -71,9 +77,11 @@ fun TopControlBar(
                 luminance > 0.5f
             }
         val themeLightStatusBar by rememberUpdatedState(isLightStatusBar)
-        LaunchedEffect(isLightStatusBar, overHero) {
+        LaunchedEffect(isLightStatusBar, overHero, onArtwork) {
             val window = (view.context as Activity).window
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = isLightStatusBar && !overHero
+            // Over a cover, dark words mean a light cover, so the status icons go dark too.
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
+                if (overHero) onArtwork.luminance() < 0.5f else isLightStatusBar
         }
         // Leaving Home over the artwork must not keep light icons on the next screen.
         DisposableEffect(view) {
@@ -92,7 +100,12 @@ fun TopControlBar(
                 remember(expandedColor, collapsedColor, overArtwork) {
                     Modifier.drawBehind {
                         val fraction = scrollFractionProvider().coerceIn(0f, 1f)
-                        val color = if (overArtwork) collapsedColor.copy(alpha = fraction) else lerp(expandedColor, collapsedColor, fraction)
+                        val color = if (overArtwork != null) {
+                            // Clear over the cover; the body's colour as its edge arrives, never a darker fill.
+                            expandedColor.copy(alpha = 1f - overArtwork().coerceIn(0f, 1f))
+                        } else {
+                            lerp(expandedColor, collapsedColor, fraction)
+                        }
                         drawRect(color)
                     }
                 },
@@ -123,7 +136,7 @@ fun TopControlBar(
         // 1. Left Section (Logo)
         if (overHero) {
             cx.aswin.boxlore.core.designsystem.components
-                .BoxLoreLogo(textColor = OnArtworkWordmark)
+                .BoxLoreLogo(textColor = onArtwork)
         } else {
             cx.aswin.boxlore.core.designsystem.components
                 .BoxLoreLogo()
@@ -141,5 +154,5 @@ fun TopControlBar(
     }
 }
 
-/** The wordmark over Marquee's artwork, which always sits under a deep shade at the top. */
+/** The wordmark over Marquee's cover when the hero gives no colour of its own. */
 private val OnArtworkWordmark = Color(0xFFF4F1FA)
