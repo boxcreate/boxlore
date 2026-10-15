@@ -4,12 +4,12 @@
 
 <br/><br/>
 
-# Beautiful. Smart. Yours.
+# Curious. Calm. Yours.
 
 <p align="center">
-<b>Fast, ad-free podcasting crafted for Android.</b><br/>
-Explore shows through semantic topic search, enjoy intelligent discovery tuned to your taste,<br/>
-and listen without paywalls, subscriptions, or ads.
+<b>Find podcasts you’d never think to search for.</b><br/>
+boxlore is a podcast app for Android that goes looking with you, then stays quiet while you listen.<br/>
+Free, with no app ads and no paywalls.
 </p>
 
 <br/>
@@ -29,22 +29,22 @@ and listen without paywalls, subscriptions, or ads.
 </p>
 
 <p>
-<a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;label=GitHub%20release&amp;color=6750A4" alt="GitHub latest release"/></a>
-<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20Store%20version&amp;color=6750A4&amp;style=flat-square" alt="Google Play Store version"/></a>
-<img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=6750A4" alt="Total GitHub downloads"/>
-<a href="docs/PRIVACY.md"><img src="https://img.shields.io/github/last-commit/boxcreate/boxlore?path=docs%2FPRIVACY.md&amp;label=privacy%20updated&amp;style=flat-square&amp;color=6750A4" alt="Privacy Policy Last Updated"/></a>
-<a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Strict-4F378B?style=flat-square&logo=lock&logoColor=EADDFF" alt="PolyForm Strict License"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest"><img src="https://img.shields.io/github/v/release/boxcreate/boxlore?style=flat-square&amp;label=GitHub%20release&amp;color=5145D8" alt="GitHub latest release"/></a>
+<a href="https://play.google.com/store/apps/details?id=cx.aswin.boxlore"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.rajkumaar.co.in%2Fversion%3Fid%3Dcx.aswin.boxlore&amp;label=Play%20Store%20version&amp;color=5145D8&amp;style=flat-square" alt="Google Play Store version"/></a>
+<img src="https://img.shields.io/github/downloads/boxcreate/boxlore/total?style=flat-square&logo=github&logoColor=white&color=5145D8" alt="Total GitHub downloads"/>
+<a href="docs/PRIVACY.md"><img src="https://img.shields.io/github/last-commit/boxcreate/boxlore?path=docs%2FPRIVACY.md&amp;label=privacy%20updated&amp;style=flat-square&amp;color=5145D8" alt="Privacy Policy Last Updated"/></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-PolyForm%20Strict-161A20?style=flat-square" alt="PolyForm Strict License"/></a>
 </p>
 
 <br/>
 
 **[About](#about)** ·
-**[The soul of boxlore](docs/SOUL.md)** ·
-**[What we track](docs/PRIVACY.md)** ·
 **[Features](#features)** ·
-**[Release notes](#release-notes)** ·
 **[Screenshots](#screenshots)** ·
-**[Install](#install)**
+**[Release notes](#release-notes)** ·
+**[Install](#install)** ·
+**[The soul of boxlore](docs/SOUL.md)** ·
+**[What we track](docs/PRIVACY.md)**
 
 <br/><br/>
 
@@ -58,43 +58,54 @@ and listen without paywalls, subscriptions, or ads.
 
 <a id="about"></a>
 
-**boxlore** is crafted to make podcast listening better. Built for listeners who care about quality software, it combines thoughtful audio and video controls with intelligent discovery—completely free of ads, subscriptions, and paywalls.
+**boxlore** finds podcasts by idea, not just by name. Describe a topic, follow a question, or let it suggest what to play next. When you press play, it steps back: the show leads, and nothing interrupts.
 
-<br/>
-
-<div align="center">
+How it looks is your call, and none of it sits behind a paywall.
 
 <table width="100%">
   <tr>
-    <td width="33%" align="center" valign="top">
-      <br/>
-      <p>🎨</p>
-      <b>Beautiful</b><br/>
-      <sub>Fluid Material 3 interface with dynamic theming, video playback, chapters, and clean controls.</sub>
-      <br/><br/>
+    <td width="33%" valign="top">
+      <h3>Curious</h3>
+      <p><i>It wants to find you something good.</i></p>
+      <ul>
+        <li>Describe a topic and get episodes about it, not just shows with that word in the name.</li>
+        <li>Swipe through Lore: questions that lead to episodes.</li>
+        <li>Answer a few questions when you start, and get shows picked for you.</li>
+        <li>Play the boxlore brief, an optional daily news episode with sources.</li>
+      </ul>
     </td>
-    <td width="33%" align="center" valign="top">
-      <br/>
-      <p>🧠</p>
-      <b>Smart</b><br/>
-      <sub>Natural-language semantic search by topic, paired with hybrid vector recommendations.</sub>
-      <br/><br/>
+    <td width="33%" valign="top">
+      <h3>Calm</h3>
+      <p><i>Then it gets out of the way.</i></p>
+      <ul>
+        <li>No app ads and no paywalls. Every listening feature is free.</li>
+        <li>Show and episode pages take on the colours of the show’s artwork.</li>
+        <li>Sleep timer, chapters, transcripts, and intro and outro skipping.</li>
+        <li>Smart Downloads get episodes ready before you go offline.</li>
+      </ul>
     </td>
-    <td width="33%" align="center" valign="top">
-      <br/>
-      <p>🔒</p>
-      <b>Yours</b><br/>
-      <sub>Deep customization, full library ownership, and offline downloads. Zero ads, zero subscriptions, and no paywalls.</sub>
-      <br/><br/>
+    <td width="33%" valign="top">
+      <h3>Yours</h3>
+      <p><i>Change how it looks, not how well it works.</i></p>
+      <ul>
+        <li>Floating navigation, or classic? Rounder type, or crisper?</li>
+        <li>Seek buttons on the mini player? How far should they skip?</li>
+        <li>Skip the intro? The outro?</li>
+        <li>Tagged <i>Tech</i>, but it’s really <i>Philosophy</i>? Then it’s <i>Philosophy</i>.</li>
+      </ul>
     </td>
   </tr>
 </table>
 
-<br/>
+**How recommendations work:** boxlore matches episodes on its servers using what you’ve listened to recently, then your phone fine-tunes the order for your playback habits. [What we track and why](docs/PRIVACY.md) has the details.
 
-| 📜 **[The soul of boxlore](docs/SOUL.md)** | 🔒 **[What we track and why](docs/PRIVACY.md)** |
+**Open podcasts only:** boxlore plays public podcasts from the [Podcast Index](https://podcastindex.org/) and any RSS feed you add, including private feeds you pay for. Platform exclusives aren’t open, so they aren’t here.
+
+<div align="center">
+
+| **[The soul of boxlore](docs/SOUL.md)** | **[What we track and why](docs/PRIVACY.md)** |
 | :---: | :---: |
-| *Why this app is free, ad-free, and crafted with care.* | *How hybrid discovery works & full data transparency.* |
+| *Why boxlore is free, with no app ads or paywalls.* | *What boxlore collects, and how recommendations use it.* |
 
 </div>
 
@@ -104,16 +115,55 @@ and listen without paywalls, subscriptions, or ads.
 
 | Feature | What it does |
 | :--- | :--- |
-| **Find podcasts** | Search by show name, even with a misspelling, or describe a topic to find podcasts and individual episodes about it. |
-| **Recommendations** | Hybrid discovery: Server-side semantic vector search using your recent listening seeds, with on-device tuning for your playback habits. |
-| **Automatic queue** | When the list of episodes waiting to play runs low, Smart Queue can add more from the current show, unfinished listening, subscriptions, and recommendations. |
-| **Audio and video player** | Play audio and video episodes with speed controls, a sleep timer, chapters, transcripts, intro skipping, and a queue you can reorder. |
+| **Search by idea** | Search by show name, even with a misspelling, or describe a topic to find podcasts and individual episodes about it. |
+| **Recommendations** | Episodes are matched on boxlore’s servers from your recent listening, then re-ranked on your phone for your playback habits. |
+| **Lore and the brief** | Swipe Lore’s question cards to find episodes you wouldn’t have searched for, or play the boxlore brief, an optional daily news episode with sources and chapters. |
+| **Automatic queue** | When the list of episodes waiting to play runs low, Smart Queue can add more from the current show, unfinished listening, subscriptions, and recommendations. You can keep it to the current show. |
+| **Audio and video player** | Play audio and video episodes with speed controls, a sleep timer, chapters, transcripts, intro and outro skipping, and a queue you can reorder. |
 | **Downloads and library** | Keep subscriptions, new episodes, downloads, likes, and listening history together. Smart Downloads can prepare episodes for offline listening. |
+| **Folders and tags** | Group shows into folders, and give any show you follow your own tag and icon. |
+| **Themes and layout** | Pick from sixteen themes or make your own, use wallpaper colours or Pure, and choose floating or classic navigation, type roundness, player layout, and seek buttons. |
 | **Alerts and widgets** | Choose which shows can send new-episode alerts. Home-screen widgets show playback controls, subscriptions, or new episodes. |
 | **TV and car playback** | Send playback to supported TVs and speakers with Google Cast, or listen through Android Auto. |
-| **More ways to discover** | Browse short question cards that lead to related episodes, or play an optional daily news briefing with sources and chapters. |
-| **Import and backup** | Import a subscription file (OPML) from another podcast app, then export your subscriptions or a full library backup whenever needed. |
+| **Import and backup** | Import a subscription file (OPML) from another podcast app, add any RSS feed by link, and export your subscriptions or a full library backup whenever you need. |
 | **No app ads** | boxlore has no banner ads and does not charge to unlock features. Podcasts may still contain ads placed by their publishers. |
+
+## Screenshots
+
+<a id="screenshots"></a>
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/images/homescreen.png" width="240" alt="boxlore Home with listening suggestions and Your Shows"/><br/>
+      <b>Home</b><br/><sub>Pick up where you left off, or find something new</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/images/semantic_search.png" width="240" alt="boxlore search showing topic-based podcast results"/><br/>
+      <b>Search</b><br/><sub>Search by name or by idea</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/images/player.png" width="240" alt="boxlore full podcast player with playback and queue controls"/><br/>
+      <b>Player</b><br/><sub>Chapters, transcripts, queue, and sleep timer</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/images/recommendation_engine.png" width="240" alt="boxlore personalized podcast recommendations"/><br/>
+      <b>For you</b><br/><sub>Picks based on what you listen to</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/images/library.png" width="240" alt="boxlore Library with subscriptions, likes, downloads, and history"/><br/>
+      <b>Library</b><br/><sub>Subscriptions, downloads, likes, and history</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/images/daily_brief.png" width="240" alt="the boxlore brief with stories and region controls"/><br/>
+      <b>The boxlore brief</b><br/><sub>Optional daily news, with sources</sub>
+    </td>
+  </tr>
+</table>
+</div>
 
 <!-- upcoming-changes:start -->
 
@@ -215,49 +265,12 @@ and listen without paywalls, subscriptions, or ads.
 
 <!-- upcoming-changes:end -->
 
-## Screenshots
-
-<a id="screenshots"></a>
-
-<div align="center">
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <img src="docs/images/homescreen.png" width="240" alt="boxlore Home with listening suggestions and Your Shows"/><br/>
-      <b>Home</b><br/><sub>Continue listening and see suggestions</sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="docs/images/semantic_search.png" width="240" alt="boxlore search showing topic-based podcast results"/><br/>
-      <b>Search</b><br/><sub>Find a name or explore a topic</sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="docs/images/player.png" width="240" alt="boxlore full podcast player with playback and queue controls"/><br/>
-      <b>Player</b><br/><sub>Controls, chapters, transcripts, and queue</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="33%">
-      <img src="docs/images/recommendation_engine.png" width="240" alt="boxlore personalized podcast recommendations"/><br/>
-      <b>Recommendations</b><br/><sub>Suggestions based on what you listen to</sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="docs/images/library.png" width="240" alt="boxlore Library with subscriptions, likes, downloads, and history"/><br/>
-      <b>Library</b><br/><sub>Subscriptions, downloads, likes, and history</sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="docs/images/daily_brief.png" width="240" alt="boxlore daily news briefing with stories and region controls"/><br/>
-      <b>Daily briefing</b><br/><sub>Optional news audio with sources</sub>
-    </td>
-  </tr>
-</table>
-</div>
-
 ## Install
 
 <a id="install"></a>
 
 - **[Google Play](https://play.google.com/store/apps/details?id=cx.aswin.boxlore)** is the recommended install.
-- **[GitHub Releases](https://github.com/boxcreate/boxlore/releases/latest)** provides the latest APK for sideloading.
+- **[GitHub Releases](https://github.com/boxcreate/boxlore/releases/latest)** has the latest APK for sideloading.
 - **[Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/boxcreate/boxlore)** adds boxlore with automatic update tracking.
 
 Android may ask you to allow installation from your browser or file manager when sideloading.
@@ -267,6 +280,8 @@ Android may ask you to allow installation from your browser or file manager when
 [Report a bug](https://github.com/boxcreate/boxlore/issues) ·
 [Share an idea](https://github.com/boxcreate/boxlore/discussions) ·
 [View the roadmap](https://github.com/orgs/boxcreate/projects/2)
+
+Ideas from listeners shape the roadmap. If something breaks or feels missing, tell us.
 
 boxlore is source-available under the [PolyForm Strict License 1.0.0](LICENSE). Noncommercial use is allowed; redistribution and derivative works are restricted by the license.
 

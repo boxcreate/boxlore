@@ -12,21 +12,29 @@ Built on decentralized RSS and preserved by independent communities like the [Po
 
 We built **boxlore** to be an app worthy of that openness.
 
-We believe a podcast player should be a quiet, thoughtful companion—not an attention merchant.
+We believe a podcast app should be a curious, thoughtful companion: eager to find you something good, quiet while you listen, and never an attention merchant.
 
-- **No ads, no subscriptions, no paywalls.** You will never be asked to pay for playback speed, a sleep timer, queue management, or anything that belongs to the core listening experience. We fund boxlore out of our own day-job savings. If server costs ever outgrow what we can personally sustain, the most you will ever see is an optional tip button—never an ad, and never a feature held hostage.
-- **Personalized for discovery, not addiction.** We use server-side semantic matching to understand topics and connect you with shows that genuinely match your curiosity. But our algorithms serve your interests, not advertisers. We don't sell your data, build ad profiles, or manipulate what you see to keep you hooked to a screen.
+- **No app ads, no subscriptions, no paywalls.** You will never be asked to pay for playback speed, a sleep timer, queue management, or anything that belongs to the core listening experience. We fund boxlore out of our own day-job savings. If server costs ever outgrow what we can personally sustain, the most you will ever see is an optional tip button—never an ad, and never a feature held hostage. Podcasts may still carry ads from their creators; that is their show, and their call.
+- **Personalized for discovery, not addiction.** We use server-side semantic matching to understand topics and connect you with shows that genuinely match your curiosity, then your phone fine-tunes the order. But our algorithms serve your interests, not advertisers. We don't sell your data, build ad profiles, or manipulate what you see to keep you hooked to a screen.
 - **Rooted in an open ecosystem.** We believe in open RSS, independent directories, and the fundamental right to [keep Android open](https://keepandroidopen.org/).
+
+### Curious, then quiet
+
+boxlore loves the moment a passing question turns into an episode you can't stop thinking about. It will happily go looking with you: through topics, through Lore's questions, through shows you would never have searched for.
+
+Then you press play, and it goes quiet. The show leads, the colours follow its artwork, and nothing interrupts.
+
+And it is yours. Change how it looks, retag a show, turn off what you don't need. It works just as well either way, because it is your app, not ours.
 
 ### On Our License
 
 It might feel counterintuitive for us to champion open source while releasing boxlore under the [PolyForm Strict License](https://polyformproject.org/licenses/strict/1.0.0). 
 
-We keep the entire codebase source-available because we believe in absolute transparency: you should be able to inspect every line of code, verify that our privacy promises are real, learn from how it's built, and run it for your own personal use. 
+We keep the entire codebase source-available because we believe in absolute transparency: you should be able to inspect every line of code, see exactly how it handles your data, learn from how it's built, and run it for your own personal use.
 
 Our only restriction is **redistribution**.
 
-The Android ecosystem is flooded with bad actors who scrape open repositories, stuff clean software with predatory ads and spyware, and re-upload them to app stores to profit off other people's labor. We fund boxlore out of our own pockets to keep it quiet, private, and ad-free. Restricting redistribution protects that mission—it guarantees that no one can take our work, strip out its soul, and turn it into the very kind of cash-grab obstacle course we built boxlore to fight against.
+The Android ecosystem is flooded with bad actors who scrape open repositories, stuff clean software with predatory ads and spyware, and re-upload them to app stores to profit off other people's labor. We fund boxlore out of our own pockets to keep it quiet, honest, and free of app ads. Restricting redistribution protects that mission—it guarantees that no one can take our work, strip out its soul, and turn it into the very kind of cash-grab obstacle course we built boxlore to fight against.
 
 ---
 
