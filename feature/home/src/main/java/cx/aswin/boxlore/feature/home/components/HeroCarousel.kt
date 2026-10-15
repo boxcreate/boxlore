@@ -33,7 +33,7 @@ fun HeroCarousel(
     modifier: Modifier = Modifier,
 ) {
     if (heroItems.list.isEmpty()) return
-    val classic = LocalClassicHeroCards.current
+    val cover = LocalCoverHeroCards.current
     val playing = HeroPlayingState(currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying)
 
     val carouselState = rememberCarouselState { heroItems.list.size }
@@ -70,7 +70,7 @@ fun HeroCarousel(
         }
 
         when {
-            classic -> ClassicHeroItem(item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
+            cover -> CoverHeroItem(item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
             item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID -> {
                 HeroGridCard(
                     items = item.gridItems,
@@ -171,10 +171,13 @@ private fun collectionPlaybackAction(
 
 internal data class HeroPlayingState(val podcastId: String?, val episodeId: String?, val isPlaying: Boolean)
 
-/** The Classic option's cards, on the same carousel, playback and details callbacks. */
+/**
+ * The Cover option's cards, on the same carousel, playback and details callbacks. As on the solid
+ * cards, a collection tile opens its episode and the Play button on its cover plays it.
+ */
 @Composable
 @Suppress("LongParameterList")
-private fun androidx.compose.material3.carousel.CarouselItemScope.ClassicHeroItem(
+private fun androidx.compose.material3.carousel.CarouselItemScope.CoverHeroItem(
     item: SmartHeroItem,
     position: Int,
     onCollectionPlayback: (Podcast) -> Unit,
@@ -184,22 +187,23 @@ private fun androidx.compose.material3.carousel.CarouselItemScope.ClassicHeroIte
     onTogglePlayback: (android.os.Bundle?) -> Unit,
     playing: HeroPlayingState,
 ) {
-    val shape = androidx.compose.material3.MaterialTheme.shapes.extraLarge
+    val shape = HomeHeroStyle.CardShape
     when (item.type) {
         cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID, cx.aswin.boxlore.feature.home.HeroType.NEW_EPISODES_GRID -> {
             val resume = item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID
-            ClassicHeroGridCard(
+            CoverHeroGridCard(
                 items = item.gridItems,
                 title = stringResource(if (resume) R.string.home_hero_resume_collection else R.string.home_hero_new_collection),
                 mode = if (resume) HeroGridMode.Resume else HeroGridMode.NewEpisodes,
-                onCellClick = if (resume) onCollectionPlayback else onDetailsClick,
+                onCellClick = onDetailsClick,
+                onPlaybackClick = onCollectionPlayback,
                 currentPlayingPodcastId = playing.podcastId,
                 currentPlayingEpisodeId = playing.episodeId,
                 isPlaying = playing.isPlaying,
                 modifier = Modifier.maskClip(shape),
             )
         }
-        else -> ClassicHeroCard(
+        else -> CoverHeroCard(
             item = item,
             onClick = {
                 val bundle = android.os.Bundle().apply {

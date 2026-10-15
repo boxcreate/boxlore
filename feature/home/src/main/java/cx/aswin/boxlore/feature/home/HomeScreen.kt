@@ -38,7 +38,8 @@ import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
-import cx.aswin.boxlore.feature.home.components.LocalClassicHeroCards
+import cx.aswin.boxlore.feature.home.components.LocalCoverHeroCards
+import cx.aswin.boxlore.feature.home.components.LocalHeroCoverShade
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.home.components.TopControlBar
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
@@ -228,6 +229,7 @@ fun HomeRoute(
     val uiState by viewModel.uiState.collectAsState()
     val homeShortcutsInLibrary by userPreferencesRepository.homeShortcutsInLibraryStream.collectAsState(initial = false)
     val heroCardStyle by userPreferencesRepository.heroCardStyleStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroCardStyle })
+    val heroCoverShade by userPreferencesRepository.heroCoverShadeStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroCoverShade })
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(viewModel) {
         viewModel.pinFeedback.collect { message ->
@@ -342,7 +344,8 @@ fun HomeRoute(
 
     androidx.compose.runtime.CompositionLocalProvider(
         LocalLastSeenEpisodes provides lastSeenEpisodes,
-        LocalClassicHeroCards provides (heroCardStyle == HeroCardStyle.CLASSIC),
+        LocalCoverHeroCards provides (heroCardStyle == HeroCardStyle.COVER),
+        LocalHeroCoverShade provides heroCoverShade,
     ) {
         HomeScreen(
             uiState = uiState,

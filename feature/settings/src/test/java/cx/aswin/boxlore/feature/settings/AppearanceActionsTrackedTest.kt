@@ -124,4 +124,17 @@ class AppearanceActionsTrackedTest {
         assertEquals(false, enabled)
         assertEquals(selection, saved)
     }
+
+    @Test
+    fun `tracked actions forward the hero card style and the Cover shade separately`() {
+        var style: String? = null
+        var shade: String? = null
+        val actions = AppearanceActions({}, {}, {}, {}, onSetHeroCardStyle = { style = it }, onSetHeroCoverShade = { shade = it }).trackedForAnalytics()
+        actions.onSetHeroCardStyle(cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER)
+        assertEquals(cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER, style)
+        assertEquals(null, shade)
+        actions.onSetHeroCoverShade(cx.aswin.boxlore.core.prefs.HeroCoverShade.THEME)
+        assertEquals(cx.aswin.boxlore.core.prefs.HeroCoverShade.THEME, shade)
+        assertEquals(cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER, style)
+    }
 }

@@ -177,6 +177,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             artworkColorsEnabled = settingsState.artworkColorsEnabled,
             navigationBlurLevel = settingsState.navigationBlurLevel,
             heroCardStyle = settingsState.heroCardStyle,
+            heroCoverShade = settingsState.heroCoverShade,
             savedCustomTheme = settingsState.savedCustomTheme,
         ),
         actions = AppearanceActions(
@@ -197,6 +198,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             onSetArtworkColorsEnabled = { enabled -> scope.launch { userPrefs.setArtworkColorsEnabled(enabled) } },
             onSetNavigationBlurLevel = { level -> scope.launch { userPrefs.setNavigationBlurLevel(level) } },
             onSetHeroCardStyle = { style -> scope.launch { userPrefs.setHeroCardStyle(style) } },
+            onSetHeroCoverShade = { shade -> scope.launch { userPrefs.setHeroCoverShade(shade) } },
             onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
             onSetNavigationStyle = { style -> scope.launch { userPrefs.setNavigationStyle(style) } },
             onSetOpenAppTo = { openAppTo -> scope.launch { userPrefs.setOpenAppTo(openAppTo) } },

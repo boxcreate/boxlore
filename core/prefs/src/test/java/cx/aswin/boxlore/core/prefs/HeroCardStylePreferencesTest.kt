@@ -34,16 +34,42 @@ class HeroCardStylePreferencesTest {
     }
 
     @Test
-    fun heroCardStyleDefaultsToStandardAndPersistsClassic() = runTest {
+    fun heroCardStyleDefaultsToBlockAndPersistsCover() = runTest {
         val repository = UserPreferencesRepository(context)
-        assertEquals(HeroCardStyle.STANDARD, repository.heroCardStyleStream.first())
-        assertEquals(HeroCardStyle.STANDARD, repository.cachedHeroCardStyle)
+        assertEquals(HeroCardStyle.BLOCK, repository.heroCardStyleStream.first())
+        assertEquals(HeroCardStyle.BLOCK, repository.cachedHeroCardStyle)
 
-        repository.setHeroCardStyle(HeroCardStyle.CLASSIC)
-        assertEquals(HeroCardStyle.CLASSIC, repository.heroCardStyleStream.first())
-        assertEquals(HeroCardStyle.CLASSIC, UserPreferencesRepository(context).cachedHeroCardStyle)
+        repository.setHeroCardStyle(HeroCardStyle.COVER)
+        assertEquals(HeroCardStyle.COVER, repository.heroCardStyleStream.first())
+        assertEquals(HeroCardStyle.COVER, UserPreferencesRepository(context).cachedHeroCardStyle)
 
         repository.setHeroCardStyle("unknown")
-        assertEquals(HeroCardStyle.STANDARD, repository.heroCardStyleStream.first())
+        assertEquals(HeroCardStyle.BLOCK, repository.heroCardStyleStream.first())
+    }
+
+    @Test
+    fun savedClassicAndStandardChoicesBecomeCoverAndBlock() = runTest {
+        context.userPreferencesDataStore.edit { it[Keys.HERO_CARD_STYLE] = "classic" }
+        assertEquals(HeroCardStyle.COVER, UserPreferencesRepository(context).heroCardStyleStream.first())
+
+        context.userPreferencesDataStore.edit { it[Keys.HERO_CARD_STYLE] = "standard" }
+        assertEquals(HeroCardStyle.BLOCK, UserPreferencesRepository(context).heroCardStyleStream.first())
+    }
+
+    @Test
+    fun coverShadeDefaultsToArtworkPersistsAndRejectsUnknownValues() = runTest {
+        val repository = UserPreferencesRepository(context)
+        assertEquals(HeroCoverShade.ARTWORK, repository.heroCoverShadeStream.first())
+        assertEquals(HeroCoverShade.ARTWORK, repository.cachedHeroCoverShade)
+
+        repository.setHeroCoverShade(HeroCoverShade.THEME)
+        assertEquals(HeroCoverShade.THEME, repository.heroCoverShadeStream.first())
+        assertEquals(HeroCoverShade.THEME, UserPreferencesRepository(context).cachedHeroCoverShade)
+
+        repository.setHeroCoverShade(" DARK ")
+        assertEquals(HeroCoverShade.DARK, repository.heroCoverShadeStream.first())
+
+        repository.setHeroCoverShade("sepia")
+        assertEquals(HeroCoverShade.ARTWORK, repository.heroCoverShadeStream.first())
     }
 }

@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Appearance > Layout picker for the Home hero cards. Classic restores the earlier cards with the cover behind the text. -->
+    <!-- Appearance > Layout picker for the Home hero cards. Block is the solid colour card; Cover fills the card with the artwork. -->
     <string name="hero_card_style_title">Home hero cards</string>
-    <string name="hero_card_style_standard">Standard</string>
-    <string name="hero_card_style_classic">Classic</string>
+    <string name="hero_card_style_block">Block</string>
+    <string name="hero_card_style_cover">Cover</string>
+    <!-- Shown under the picker only when Cover is chosen: the colour the artwork fades into behind the card's text. -->
+    <string name="hero_cover_shade_title">Shade behind text</string>
+    <string name="hero_cover_shade_dark">Dark</string>
+    <!-- Each card takes a deep shade of its own cover's colour. -->
+    <string name="hero_cover_shade_artwork">Artwork</string>
+    <!-- A deep shade of the app's accent colour. Matches "App theme" in the Widgets picker. -->
+    <string name="hero_cover_shade_theme">App theme</string>
 </resources>

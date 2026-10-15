@@ -41,6 +41,7 @@ import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.core.prefs.NavigationBlurLevel
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
@@ -70,7 +71,8 @@ data class AppearanceUiState(
     val miniPlayerSeekButtonsEnabled: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
     val navigationBlurLevel: String = NavigationBlurLevel.DEFAULT,
-    val heroCardStyle: String = HeroCardStyle.STANDARD,
+    val heroCardStyle: String = HeroCardStyle.BLOCK,
+    val heroCoverShade: String = HeroCoverShade.DEFAULT,
     val savedCustomTheme: ThemeSelection? = null,
     val fullPlayerStyle: String = FullPlayerStyle.STANDARD,
 )
@@ -94,6 +96,7 @@ data class AppearanceActions(
     val onSetArtworkColorsEnabled: (Boolean) -> Unit = {},
     val onSetNavigationBlurLevel: (String) -> Unit = {},
     val onSetHeroCardStyle: (String) -> Unit = {},
+    val onSetHeroCoverShade: (String) -> Unit = {},
     val onApplyTheme: (ThemeSelection, ThemeSelection?) -> Unit = { _, _ -> },
     val onSaveCustomTheme: (ThemeSelection) -> Unit = { onApplyTheme(it, it) },
     val onSetFullPlayerStyle: (String) -> Unit = {},
@@ -170,12 +173,25 @@ private fun AppearanceLayoutSection(state: AppearanceUiState, actions: Appearanc
                 DefaultTabPicker(
                     stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_title),
                     listOf(
-                        HeroCardStyle.STANDARD to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_standard),
-                        HeroCardStyle.CLASSIC to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_classic),
+                        HeroCardStyle.BLOCK to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_block),
+                        HeroCardStyle.COVER to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_cover),
                     ),
                     HeroCardStyle.sanitize(state.heroCardStyle),
                     actions.onSetHeroCardStyle,
                 )
+                // Only Cover cards have a shade behind the words, so the choice shows only with them.
+                if (HeroCardStyle.sanitize(state.heroCardStyle) == HeroCardStyle.COVER) {
+                    DefaultTabPicker(
+                        stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_cover_shade_title),
+                        listOf(
+                            HeroCoverShade.DARK to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_cover_shade_dark),
+                            HeroCoverShade.ARTWORK to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_cover_shade_artwork),
+                            HeroCoverShade.THEME to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_cover_shade_theme),
+                        ),
+                        HeroCoverShade.sanitize(state.heroCoverShade),
+                        actions.onSetHeroCoverShade,
+                    )
+                }
                 DefaultTabPicker("Subscriptions tab position", listOf(SubscriptionsTabStyle.TOP to "Top", SubscriptionsTabStyle.FLOATING to "Floating"), SubscriptionsTabStyle.sanitize(state.currentSubscriptionsTabStyle), actions.onSetSubscriptionsTabStyle)
             }
         }

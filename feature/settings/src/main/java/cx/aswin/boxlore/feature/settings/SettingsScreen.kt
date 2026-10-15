@@ -661,6 +661,10 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
         AnalyticsHelper.trackSettingsInteraction("hero_card_style_changed", it)
         onSetHeroCardStyle(it)
     },
+    onSetHeroCoverShade = {
+        AnalyticsHelper.trackSettingsInteraction("hero_cover_shade_changed", it)
+        onSetHeroCoverShade(it)
+    },
     onApplyTheme = { selection, custom ->
         AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)
         onApplyTheme(selection, custom)

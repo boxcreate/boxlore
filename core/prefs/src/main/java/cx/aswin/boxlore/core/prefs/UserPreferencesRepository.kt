@@ -110,13 +110,21 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun setNavigationBlurLevel(level: String) = appearance.navigationBlur.setLevel(level)
 
-    /** Home hero card presentation ([HeroCardStyle]); standard by default. */
+    /** Home hero card presentation ([HeroCardStyle]); Block by default. */
     val cachedHeroCardStyle: String
         get() = appearance.heroCard.cachedStyle
 
     val heroCardStyleStream: Flow<String> = appearance.heroCard.style
 
     suspend fun setHeroCardStyle(style: String) = appearance.heroCard.setStyle(style)
+
+    /** The shade behind the words on Cover hero cards ([HeroCoverShade]); artwork by default. */
+    val cachedHeroCoverShade: String
+        get() = appearance.heroCard.cachedCoverShade
+
+    val heroCoverShadeStream: Flow<String> = appearance.heroCard.coverShade
+
+    suspend fun setHeroCoverShade(shade: String) = appearance.heroCard.setCoverShade(shade)
 
     val customThemeStream: Flow<ThemeSelection?> = appearance.customThemeStream
 

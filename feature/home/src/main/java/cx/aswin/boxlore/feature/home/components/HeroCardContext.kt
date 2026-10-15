@@ -99,7 +99,7 @@ private fun EpisodeContext(item: SmartHeroItem, foreground: Color, wide: Boolean
 }
 
 @Composable
-private fun episodeContextLabel(item: SmartHeroItem) = when {
+internal fun episodeContextLabel(item: SmartHeroItem) = when {
         item.type == HeroType.RESUME -> stringResource(R.string.home_hero_resume)
         item.label == "FRESH DROP" -> stringResource(R.string.home_hero_fresh_drop)
         item.label == "NEW EPISODE" -> stringResource(R.string.home_hero_new_episode)
@@ -261,4 +261,4 @@ private fun TrendingWords(genre: String, foreground: Color, modifier: Modifier) 
 }
 
 @Composable
-private fun heroDurationText(minutes: Int) = if (minutes >= 60) stringResource(R.string.home_hero_hours_minutes, minutes / 60, minutes % 60) else stringResource(R.string.home_hero_minutes, minutes)
+internal fun heroDurationText(minutes: Int) = if (minutes >= 60) stringResource(R.string.home_hero_hours_minutes, minutes / 60, minutes % 60) else stringResource(R.string.home_hero_minutes, minutes)
