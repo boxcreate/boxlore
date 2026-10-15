@@ -20,14 +20,14 @@ import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.InterceptPlatformTextInput
 import androidx.compose.ui.platform.PlatformTextInputInterceptor
 
 internal data class PlaybackKeyboardActions(val toggle: () -> Unit, val backward: () -> Unit, val forward: () -> Unit)
 
-/** Keeps text editing native, and intercepts transport keys before a focused button handles Space. */
+/** Transport keys apply only after focused controls and text editing decline them; arrows seek only while the shell itself holds focus. */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun TabletPlaybackKeyboard(enabled: Boolean, actions: PlaybackKeyboardActions, content: @Composable (Modifier) -> Unit) {
@@ -45,9 +45,12 @@ internal fun TabletPlaybackKeyboard(enabled: Boolean, actions: PlaybackKeyboardA
     val currentActions by rememberUpdatedState(actions)
     val focusRequester = remember { FocusRequester() }
     val state = remember { PlaybackKeyboardState() }
-    val modifier = Modifier.onPreviewKeyEvent { event ->
+    val modifier = Modifier.onKeyEvent { event ->
         playbackKeyEvent(event, enabled && editingSessions == 0, currentActions, state)
-    }.onFocusChanged { if (!it.hasFocus) state.spaceHeld = false }.focusRequester(focusRequester).focusable(enabled)
+    }.onFocusChanged {
+        state.shellFocused = it.isFocused
+        if (!it.hasFocus) state.spaceHeld = false
+    }.focusRequester(focusRequester).focusable(enabled)
     LaunchedEffect(enabled) {
         state.spaceHeld = false
         if (enabled && editingSessions == 0) focusRequester.requestFocus()
@@ -56,7 +59,7 @@ internal fun TabletPlaybackKeyboard(enabled: Boolean, actions: PlaybackKeyboardA
     InterceptPlatformTextInput(interceptor) { content(modifier) }
 }
 
-private class PlaybackKeyboardState(var spaceHeld: Boolean = false)
+private class PlaybackKeyboardState(var spaceHeld: Boolean = false, var shellFocused: Boolean = false)
 
 private fun playbackKeyEvent(event: KeyEvent, enabled: Boolean, actions: PlaybackKeyboardActions, state: PlaybackKeyboardState): Boolean {
     val modified = event.isCtrlPressed || event.isAltPressed || event.isMetaPressed
@@ -70,7 +73,9 @@ private fun playbackKeyEvent(event: KeyEvent, enabled: Boolean, actions: Playbac
             state.spaceHeld = event.type == KeyEventType.KeyDown
             true
         }
+        // A focused descendant keeps arrows for focus movement, tabs and sliders.
         Key.DirectionLeft, Key.DirectionRight -> {
+            if (!state.shellFocused) return false
             if (event.type == KeyEventType.KeyDown) seekWithKeyboard(event.key, actions)
             true
         }

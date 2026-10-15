@@ -8,12 +8,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,6 +51,7 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -65,26 +69,31 @@ class TabletInputTest {
     @get:Rule val fixture = PhoneGoldenRule(PhoneGoldenConfiguration(1_280, 800, false))
 
     @Test
-    fun `transport keys override button Space but leave text editing and modifiers native`() {
+    fun `transport keys wait for focused controls and leave text editing and modifiers native`() {
         var toggles = 0
         var backward = 0
         var forward = 0
         var clicks = 0
         val enabled = mutableStateOf(true)
         var text by mutableStateOf("")
+        var position by mutableFloatStateOf(0.5f)
         fixture.setContent {
             inputMode = LocalInputModeManager.current
             BoxLoreTheme {
                 TabletPlaybackKeyboard(enabled.value, PlaybackKeyboardActions({ toggles++ }, { backward++ }, { forward++ })) { modifier ->
                     Column(modifier.testTag("keyboard")) {
-                        Button({ clicks++ }, Modifier.testTag("button")) { Text("Action") }
+                        Row {
+                            Button({ clicks++ }, Modifier.testTag("button")) { Text("Action") }
+                            Button({}, Modifier.testTag("next")) { Text("Next") }
+                        }
+                        Slider(position, { position = it }, Modifier.testTag("slider"))
                         BasicTextField(text, { text = it }, Modifier.testTag("editor"))
                     }
                 }
             }
         }
         fixture.compose.runOnIdle { inputMode.requestInputMode(InputMode.Keyboard) }
-        fixture.compose.onNodeWithTag("button").requestFocus()
+        fixture.compose.onNodeWithTag("keyboard").assertIsFocused()
         fixture.compose.onNodeWithTag("keyboard").performKeyInput {
             keyDown(Key.Spacebar)
             keyUp(Key.Spacebar)
@@ -97,7 +106,6 @@ class TabletInputTest {
         assertEquals(1, toggles)
         assertEquals(1, backward)
         assertEquals(1, forward)
-        assertEquals(0, clicks)
         fixture.compose.onNodeWithTag("keyboard").performKeyInput {
             keyDown(Key.Spacebar)
             keyDown(Key.CtrlLeft)
@@ -106,6 +114,22 @@ class TabletInputTest {
             pressKey(Key.Spacebar)
         }
         assertEquals("A modified key-up must not latch the next Space press", 3, toggles)
+
+        fixture.compose.onNodeWithTag("button").requestFocus()
+        fixture.compose.onNodeWithTag("button").performKeyInput { pressKey(Key.Spacebar) }
+        advance()
+        assertEquals("A focused control keeps Space activation", 1, clicks)
+        fixture.compose.onNodeWithTag("button").performKeyInput { pressKey(Key.DirectionRight) }
+        advance()
+        fixture.compose.onNodeWithTag("next").assertIsFocused()
+        fixture.compose.onNodeWithTag("slider").requestFocus()
+        fixture.compose.onNodeWithTag("slider").performKeyInput { pressKey(Key.DirectionRight) }
+        advance()
+        assertTrue("A focused slider keeps its arrow keys: $position", position > 0.5f)
+        assertEquals(3, toggles)
+        assertEquals(1, backward)
+        assertEquals(1, forward)
+
         fixture.compose.onNodeWithTag("editor").performClick()
         advance()
         fixture.compose.runOnIdle { enabled.value = false }

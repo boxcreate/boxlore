@@ -235,7 +235,7 @@ Ordinary browsing of the update page is not persisted as a startup destination. 
 
 An initial update-check state must perform a lookup even when timestamps survived a process restart. Once a result exists, normal interval and retry limits apply; timestamps alone cannot leave the page indefinitely checking.
 
-Tablet transport keys use the existing playback repository actions and saved seek increments. The stable text-input interceptor leaves Space/arrows with focused editors and survives resizing. JVM regressions cover keyboard/mouse ownership, centered modal phone parity and dynamic reduced motion.
+Tablet transport keys use the existing playback repository actions and saved seek increments. The stable text-input interceptor leaves Space/arrows with focused editors and survives resizing. Shortcuts apply only after focused content declines a key: a focused control keeps Space activation, and arrows move focus or adjust sliders unless the shell itself holds focus. JVM regressions cover keyboard/mouse ownership, centered modal phone parity and dynamic reduced motion.
 
 The Activity owns the single adaptive window/posture collector above the app and cross-device sign-in dialog. Its UI snapshot also feeds the separate survey Compose portal, so portals do not create another window collector. Custom update/announcement dialogs and the import overlay use bounded, fold-safe tablet regions while keeping their existing content and dismissal actions.
 
