@@ -128,6 +128,21 @@ class MarqueeHeroCardsTest {
         render(topInset = 80.dp, tone = tone)
         composeRule.onNodeWithTag("home_hero_marquee_frost", useUnmergedTree = true).assertExists()
         assertEquals(MarqueeLightContent, tone.content)
+        assertNotNull("the settled card leaves its cover for the docked backdrop", tone.backdrop)
+        composeRule.onNodeWithTag("home_hero_sheet_handle", useUnmergedTree = true).assertExists()
+    }
+
+    @Test fun `the docked edge keeps the cover's frost behind the bar with the sheet's handle below it`() {
+        composeRule.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                MarqueeDock(MarqueeBackdrop("", emptyList(), null, MarqueeLightContent, 0.12f, 500.dp), barHeight = 80.dp)
+            }
+        }
+        val dock = composeRule.onNodeWithTag("home_hero_marquee_dock").fetchSemanticsNode().boundsInRoot
+        assertEquals("the bar's room and the sheet's edge", 104f, dock.height, 1f)
+        composeRule.onNodeWithTag("home_hero_marquee_frost", useUnmergedTree = true).assertExists()
+        val handle = composeRule.onNodeWithTag("home_hero_sheet_handle", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue("the handle sits on the sheet's edge, below the bar (${handle.top})", handle.top >= 80f)
     }
 
     @Test fun `without a top inset there is no frosted band`() {
@@ -135,16 +150,16 @@ class MarqueeHeroCardsTest {
         composeRule.onNodeWithTag("home_hero_marquee_frost", useUnmergedTree = true).assertDoesNotExist()
     }
 
-    @Test fun `light covers get dark top bar words, and the bar fills as the body's edge reaches it`() {
+    @Test fun `light covers get dark top bar words, and the body docks once its edge reaches the bar`() {
         assertEquals(MarqueeDarkContent, marqueeTopContent(Color(0xFFF2EEE6).toArgb()))
         assertEquals(MarqueeLightContent, marqueeTopContent(Color(0xFF20304A).toArgb()))
         assertEquals(MarqueeLightContent, marqueeTopContent(null))
         assertTrue(marqueeVeilAlpha(toneKnown = false) > marqueeVeilAlpha(toneKnown = true))
-        // A 100px bar; the body's edge starts 24px above the hero's foot and fills the bar over 24px.
-        assertEquals(1f, marqueeBarOverArtwork(heroBottom = 400, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
-        assertEquals(0.5f, marqueeBarOverArtwork(heroBottom = 136, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
-        assertEquals(0f, marqueeBarOverArtwork(heroBottom = 110, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
-        assertEquals(0f, marqueeBarOverArtwork(heroBottom = null, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
+        // A 100px bar; the body's edge starts 24px above the hero's foot and docks when it reaches the bar.
+        assertEquals(false, marqueeSheetDocked(heroBottom = 400, sheetOverlap = 24f, barHeight = 100))
+        assertEquals(false, marqueeSheetDocked(heroBottom = 125, sheetOverlap = 24f, barHeight = 100))
+        assertEquals(true, marqueeSheetDocked(heroBottom = 124, sheetOverlap = 24f, barHeight = 100))
+        assertEquals(true, marqueeSheetDocked(heroBottom = null, sheetOverlap = 24f, barHeight = 100))
     }
 
     @Test fun `the Settings preview shows Marquee as a slice of Home`() {

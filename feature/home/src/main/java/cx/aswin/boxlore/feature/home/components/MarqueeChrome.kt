@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -56,11 +59,26 @@ import cx.aswin.boxlore.feature.home.SmartHeroItem
  */
 val LocalHeroScrollOffset = compositionLocalOf<() -> Int> { { 0 } }
 
-/** The colour Home's floating top bar gives its wordmark and status icons over the current Marquee cover. */
+/**
+ * What Home's floating top bar sits on in Marquee: the colour for its wordmark and status icons over
+ * the current cover, and that cover's [backdrop], which stays behind the bar once Home's body docks
+ * under it. The backdrop is null while no Marquee hero is showing.
+ */
 @Stable
 class MarqueeTopTone {
     var content by mutableStateOf(MarqueeLightContent)
+    internal var backdrop by mutableStateOf<MarqueeBackdrop?>(null)
 }
+
+/** The settled card's cover as the frosted band behind the top bar draws it ([MarqueeFrost]). */
+internal data class MarqueeBackdrop(
+    val url: String?,
+    val fallbackUrls: List<String?>,
+    val filter: ColorFilter?,
+    val content: Color,
+    val veilAlpha: Float,
+    val cardHeight: Dp,
+)
 
 /** Provided by Home when Marquee's hero sits under the top bar; the settled card reports its cover's tone. */
 val LocalMarqueeTopTone = staticCompositionLocalOf<MarqueeTopTone?> { null }
@@ -76,14 +94,11 @@ internal fun marqueeTopContent(average: Int?): Color =
     if (average != null && Color(average).luminance() > MarqueeLightCover) MarqueeDarkContent else MarqueeLightContent
 
 /**
- * How much of Home's top bar ([barHeight] px) still sits over Marquee's cover: 1 until the body's rounded
- * edge ([sheetOverlap] px above the hero's foot at [heroBottom]) comes within [edgePx] of the bar, then
- * down to 0 as the edge passes under it, and 0 once the hero has scrolled away (null).
+ * Whether Home's body has docked under the top bar ([barHeight] px): its rounded edge ([sheetOverlap] px
+ * above the hero's foot at [heroBottom]) has reached the bar, or the hero has scrolled away (null).
  */
-internal fun marqueeBarOverArtwork(heroBottom: Int?, sheetOverlap: Float, barHeight: Int, edgePx: Float): Float {
-    if (heroBottom == null || edgePx <= 0f) return 0f
-    return ((heroBottom - sheetOverlap - barHeight) / edgePx).coerceIn(0f, 1f)
-}
+internal fun marqueeSheetDocked(heroBottom: Int?, sheetOverlap: Float, barHeight: Int): Boolean =
+    heroBottom == null || heroBottom - sheetOverlap <= barHeight
 
 /** How strongly the frosted band leans toward the words' opposite: a touch when the cover's tone is known. */
 internal fun marqueeVeilAlpha(toneKnown: Boolean): Float = if (toneKnown) 0.12f else 0.28f
@@ -99,22 +114,33 @@ internal fun Modifier.marqueePinned(scroll: () -> Int): Modifier = graphicsLayer
 /**
  * A frosted band behind Home's floating top bar: a blurred copy of the cover's top, framed exactly like
  * the still cover beneath it ([cardHeight] tall), with a light veil toward the opposite of [content],
- * fading out just below the bar. Blur needs Android 12; older phones keep the veil.
+ * fading out just below the bar. With [fade] off it runs solid to the sheet's edge below the bar, as
+ * the docked backdrop does. Blur needs Android 12; older phones keep the veil.
  */
 @Composable
 @Suppress("LongParameterList")
-internal fun MarqueeFrost(url: String?, fallbackUrls: List<String?>, filter: ColorFilter?, content: Color, veilAlpha: Float, cardHeight: Dp) {
+internal fun MarqueeFrost(
+    url: String?,
+    fallbackUrls: List<String?>,
+    filter: ColorFilter?,
+    content: Color,
+    veilAlpha: Float,
+    cardHeight: Dp,
+    fade: Boolean = true,
+) {
     val topInset = LocalHeroTopInset.current
     if (topInset <= 0.dp) return
     val veil = if (content.luminance() > 0.5f) Color.Black else Color.White
     Box(
-        Modifier.fillMaxWidth().height(topInset + MarqueeFrostFade).clipToBounds()
+        Modifier.fillMaxWidth().height(topInset + if (fade) MarqueeFrostFade else MarqueeSheetOverlap).clipToBounds()
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
                 drawRect(veil.copy(alpha = veilAlpha))
-                val solid = (topInset.toPx() / size.height).coerceIn(0f, 1f)
-                drawRect(Brush.verticalGradient(0f to Color.Black, solid to Color.Black, 1f to Color.Transparent), blendMode = BlendMode.DstIn)
+                if (fade) {
+                    val solid = (topInset.toPx() / size.height).coerceIn(0f, 1f)
+                    drawRect(Brush.verticalGradient(0f to Color.Black, solid to Color.Black, 1f to Color.Transparent), blendMode = BlendMode.DstIn)
+                }
             }
             .testTag("home_hero_marquee_frost"),
     ) {
@@ -127,6 +153,37 @@ internal fun MarqueeFrost(url: String?, fallbackUrls: List<String?>, filter: Col
             colorFilter = filter,
             modifier = Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true).height(cardHeight).blur(MarqueeFrostBlur),
         )
+    }
+}
+
+/** The top of Home's body over Marquee's hero: the sheet's rounded edge with a handle line in its middle. */
+@Composable
+internal fun MarqueeSheetEdge(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().height(MarqueeSheetOverlap).background(MaterialTheme.colorScheme.surface, MarqueeSheetShape)) {
+        MarqueeSheetHandle(Modifier.align(Alignment.TopCenter).padding(top = 10.dp))
+    }
+}
+
+/** A short line marking the sheet's edge, in a quiet tone of the page's text. */
+@Composable
+internal fun MarqueeSheetHandle(modifier: Modifier = Modifier) {
+    Box(
+        modifier.size(width = 32.dp, height = 4.dp).clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)).testTag("home_hero_sheet_handle"),
+    )
+}
+
+/**
+ * Once Home's body has docked under the top bar, the body's edge stays there: the cover's frosted top
+ * fills the bar's room ([barHeight]) and the corners of the sheet's edge, and Home scrolls on beneath.
+ */
+@Composable
+internal fun MarqueeDock(backdrop: MarqueeBackdrop, barHeight: Dp, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().height(barHeight + MarqueeSheetOverlap).testTag("home_hero_marquee_dock")) {
+        CompositionLocalProvider(LocalHeroTopInset provides barHeight) {
+            MarqueeFrost(backdrop.url, backdrop.fallbackUrls, backdrop.filter, backdrop.content, backdrop.veilAlpha, backdrop.cardHeight, fade = false)
+        }
+        MarqueeSheetEdge(Modifier.align(Alignment.BottomCenter))
     }
 }
 

@@ -93,8 +93,10 @@ internal fun MarqueePreviewScreen(collection: Boolean, podcasts: List<Podcast>, 
         }
         Column(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().height(MarqueePreviewBody).clip(MarqueeSheetShape)
-                .background(MaterialTheme.colorScheme.surface).padding(start = 16.dp, end = 16.dp, top = 14.dp),
+                .background(MaterialTheme.colorScheme.surface).padding(start = 16.dp, end = 16.dp, top = 10.dp),
         ) {
+            MarqueeSheetHandle(Modifier.align(Alignment.CenterHorizontally))
+            Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(R.string.home_your_shows_heading),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),

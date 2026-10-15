@@ -219,7 +219,7 @@ private fun MarqueeHeroSkeletonCard(tones: HeroSkeletonTones) {
             Spacer(Modifier.height(16.dp))
             SkeletonActions(tones.onArtwork, tones.onArtworkHighlight, Modifier.width(MarqueeActionsWidth))
         }
-        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(MarqueeSheetOverlap).background(MaterialTheme.colorScheme.surface, MarqueeSheetShape))
+        MarqueeSheetEdge(Modifier.align(Alignment.BottomCenter))
     }
 }
 
