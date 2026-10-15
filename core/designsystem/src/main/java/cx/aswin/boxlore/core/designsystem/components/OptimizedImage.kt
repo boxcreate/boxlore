@@ -19,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -159,8 +159,20 @@ private data class ArtworkLayoutSizing(val width: Int, val modifier: Modifier, v
 @Composable
 private fun artworkLayoutSizing(proxyWidth: Int, modifier: Modifier, adaptToLayout: Boolean): ArtworkLayoutSizing {
     val tablet = adaptToLayout && LocalBoxloreWindowLayout.current.usesTabletLayout
-    var measuredPixels by remember(tablet) { mutableIntStateOf(0) }
+    // Kept across phone/tablet changes so returning to a tablet layout never waits for another resize.
+    var measuredPixels by remember { mutableIntStateOf(0) }
+    var hasRoom by remember { mutableStateOf(false) }
     val width = if (tablet) layoutImageTargetPixels(proxyWidth, measuredPixels) else imageTargetPixels(proxyWidth)
-    val sizedModifier = if (tablet) modifier.onSizeChanged { measuredPixels = maxOf(measuredPixels, it.width, it.height) } else modifier
-    return ArtworkLayoutSizing(width, sizedModifier, !tablet || measuredPixels > 1)
+    val sizedModifier = if (tablet) {
+        modifier.layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            measuredPixels = maxOf(measuredPixels, placeable.width, placeable.height)
+            // A hidden 1px pane waits; artwork sized by its own content loads at the requested size.
+            if (constraints.maxWidth > 1 && constraints.maxHeight > 1) hasRoom = true
+            layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+        }
+    } else {
+        modifier
+    }
+    return ArtworkLayoutSizing(width, sizedModifier, !tablet || measuredPixels > 1 || hasRoom)
 }
