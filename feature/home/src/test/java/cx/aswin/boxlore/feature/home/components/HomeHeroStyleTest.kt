@@ -31,6 +31,19 @@ class HomeHeroStyleTest {
         assertTrue(1.0 - (1.0 - kotlin.math.PI / 4) * 24 * 24 / (188 * 188) > 0.99)
     }
 
+    @Test fun `tablets show Cover for Marquee and keep every other style`() {
+        assertEquals(cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER, homeHeroStyle(cx.aswin.boxlore.core.prefs.HeroCardStyle.MARQUEE, tablet = true))
+        assertEquals(cx.aswin.boxlore.core.prefs.HeroCardStyle.MARQUEE, homeHeroStyle(cx.aswin.boxlore.core.prefs.HeroCardStyle.MARQUEE, tablet = false))
+        listOf(
+            cx.aswin.boxlore.core.prefs.HeroCardStyle.BLOCK,
+            cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER,
+            cx.aswin.boxlore.core.prefs.HeroCardStyle.TIDE,
+            cx.aswin.boxlore.core.prefs.HeroCardStyle.DUOTONE,
+            cx.aswin.boxlore.core.prefs.HeroCardStyle.HALO,
+        ).forEach { style -> assertEquals(style, homeHeroStyle(style, tablet = true), style) }
+        assertEquals(cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER, homeHeroStyle("unknown", tablet = true))
+    }
+
     @Test fun `light and dark canvas use paired theme roles`() {
         val light = lightColorScheme()
         val dark = darkColorScheme()

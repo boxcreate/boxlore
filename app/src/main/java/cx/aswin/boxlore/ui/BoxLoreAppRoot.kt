@@ -398,6 +398,7 @@ fun BoxLoreAppRoot(
     val artworkColorsEnabled by userPrefs.artworkColorsEnabledStream.collectAsState(initial = remember { userPrefs.cachedArtworkColorsEnabled })
     val navigationBlurLevel by userPrefs.navigationBlurLevelStream.collectAsState(initial = remember { userPrefs.cachedNavigationBlurLevel })
     val heroCardStyle by userPrefs.heroCardStyleStream.collectAsState(initial = remember { userPrefs.cachedHeroCardStyle })
+    val heroCoverShade by userPrefs.heroCoverShadeStream.collectAsState(initial = remember { userPrefs.cachedHeroCoverShade })
     val savedCustomTheme by userPrefs.customThemeStream.collectAsState(initial = remember { userPrefs.cachedCustomTheme })
     val surfaceStyle by userPrefs.surfaceStyleStream.collectAsState(
         initial = remember { userPrefs.cachedSurfaceStyle },
@@ -673,6 +674,7 @@ fun BoxLoreAppRoot(
                     artworkColorsEnabled = artworkColorsEnabled,
                     navigationBlurLevel = navigationBlurLevel,
                     heroCardStyle = heroCardStyle,
+                    heroCoverShade = heroCoverShade,
                     savedCustomTheme = savedCustomTheme,
                     fontRoundness = fontRoundnessKey,
                     navigationStyle = navigationStyleKey,

@@ -35,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -78,12 +80,17 @@ fun HeroGridCard(
     modifier: Modifier = Modifier,
     onPlaybackClick: (Podcast) -> Unit = onCellClick,
     carouselItemDrawInfo: CarouselItemDrawInfo? = null,
+    containerColor: Color = Color.Unspecified,
+    contentColor: Color = Color.Unspecified,
+    artworkColorFilter: (@Composable (Podcast) -> ColorFilter?)? = null,
 ) {
     val displayItems = items.take(4)
-    val foreground = heroContentColor()
+    // Block cards use the theme's hero roles; Duotone passes its own tones and a filter for each cover.
+    val foreground = contentColor.takeOrElse { heroContentColor() }
+    val container = containerColor.takeOrElse { heroContainerColor() }
     Card(
         shape = HomeHeroStyle.CardShape,
-        colors = CardDefaults.cardColors(containerColor = heroContainerColor(), contentColor = foreground),
+        colors = CardDefaults.cardColors(containerColor = container, contentColor = foreground),
         modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize(),
     ) {
         Box(Modifier.fillMaxSize()) {
@@ -128,6 +135,8 @@ fun HeroGridCard(
                             tag = "home_hero_collection_$index",
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             enabled = contentVisible,
+                            foreground = foreground,
+                            artworkColorFilter = artworkColorFilter?.invoke(podcast),
                         )
                     }
                 }
@@ -207,8 +216,9 @@ private fun HeroCollectionRow(
     tag: String,
     modifier: Modifier,
     enabled: Boolean,
+    foreground: Color,
+    artworkColorFilter: ColorFilter?,
 ) {
-    val foreground = heroContentColor()
     val currentPodcast by rememberUpdatedState(podcast)
     val currentOnClick by rememberUpdatedState(onClick)
     val currentPlaybackClick by rememberUpdatedState(onPlaybackClick)
@@ -242,6 +252,7 @@ private fun HeroCollectionRow(
                     proxyWidth = 400,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    colorFilter = artworkColorFilter,
                     modifier = Modifier.fillMaxSize().clip(HomeHeroStyle.CollectionArtworkShape),
                 )
                 if (podcast.latestEpisode != null) {

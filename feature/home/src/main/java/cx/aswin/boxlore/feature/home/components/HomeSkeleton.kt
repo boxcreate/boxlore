@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Constraints
@@ -45,6 +44,7 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import kotlin.math.roundToInt
 
 /**
@@ -77,28 +77,34 @@ fun HomeSkeleton(modifier: Modifier = Modifier) {
 
 /**
  * Mirrors the real hero carousel: one large card and the narrow peek beside it, at the carousel's
- * own widths (see [heroSkeletonGeometry]). The large card is a solid surface
- * carrying the card's own structure, so content settles in place instead of replacing a flat block.
+ * own widths (see [heroSkeletonGeometry]). The large card follows the chosen hero style
+ * ([HeroSkeletonCard]), so content settles in place instead of replacing a different shape.
  * Plain layouts only: nothing here subcomposes on a cold start.
  */
 @Composable
 fun HeroSkeleton(modifier: Modifier = Modifier) {
-    val surface = MaterialTheme.colorScheme.surfaceContainer
+    val style = HeroCardStyle.sanitize(LocalHeroCardStyle.current)
     if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+        // Tablets show a row of hero cards; Home already swaps Marquee for Cover there (see homeHeroStyle).
         androidx.compose.foundation.lazy.LazyRow(
             modifier = modifier.fillMaxWidth().height(homeHeroHeight()).testTag("home_hero_skeleton"),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(count = 6, key = { "hero_skeleton_$it" }) {
-                Box(Modifier.width(320.dp).fillMaxHeight(), propagateMinConstraints = true) { HeroSkeletonCard(surface) }
+                Box(Modifier.width(320.dp).fillMaxHeight(), propagateMinConstraints = true) { HeroSkeletonCard(style) }
             }
         }
         return
     }
+    if (style == HeroCardStyle.MARQUEE) {
+        // One card across the whole width, as tall as Marquee's hero.
+        Box(modifier.fillMaxWidth().height(marqueeHeroHeight()).testTag("home_hero_skeleton")) { HeroSkeletonCard(style) }
+        return
+    }
     Layout(
         content = {
-            HeroSkeletonCard(surface)
-            Box(Modifier.clip(HomeHeroStyle.CardShape).background(surface))
+            HeroSkeletonCard(style)
+            HeroSkeletonPeek(style)
         },
         modifier = modifier.fillMaxWidth().height(homeHeroHeight()).testTag("home_hero_skeleton"),
     ) { measurables, constraints ->
@@ -131,44 +137,6 @@ private val HeroSkeletonGap = 16.dp
 private val HeroSkeletonPreferredCard = 320.dp
 private val HeroSkeletonMinPeek = 40.dp
 private val HeroSkeletonMaxPeek = 56.dp
-
-@Composable
-private fun HeroSkeletonCard(surface: Color) {
-    val base = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-    val highlight = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-    val line = RoundedCornerShape(6.dp)
-    Column(Modifier.clip(HomeHeroStyle.CardShape).background(surface)) {
-        // Header: context lines beside the square artwork, which sits flush in the top end corner.
-        Row(Modifier.fillMaxWidth().aspectRatio(1f / 0.65f)) {
-            Column(
-                Modifier.weight(1f).padding(start = 16.dp, end = 12.dp, top = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Box(Modifier.fillMaxWidth(0.85f).height(12.dp).m3Shimmer(base, highlight, line))
-                Box(Modifier.fillMaxWidth(0.55f).height(12.dp).m3Shimmer(base, highlight, line))
-            }
-            Box(Modifier.fillMaxHeight().aspectRatio(1f).m3Shimmer(base, highlight, HomeHeroStyle.AttachedArtworkShape))
-        }
-        Column(
-            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterVertically),
-        ) {
-            Box(Modifier.fillMaxWidth(0.92f).height(22.dp).m3Shimmer(base, highlight, line))
-            Box(Modifier.fillMaxWidth(0.66f).height(22.dp).m3Shimmer(base, highlight, line))
-            Box(Modifier.padding(top = 3.dp).fillMaxWidth(0.42f).height(14.dp).m3Shimmer(base, highlight, line))
-        }
-        Row(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
-        ) {
-            Box(Modifier.weight(1f).height(48.dp).m3Shimmer(base, highlight, HeroSkeletonPlayShape))
-            Box(Modifier.width(64.dp).height(48.dp).m3Shimmer(base, highlight, HeroSkeletonDetailsShape))
-        }
-    }
-}
-
-private val HeroSkeletonPlayShape = RoundedCornerShape(topStart = 26.dp, bottomStart = 26.dp, topEnd = 8.dp, bottomEnd = 8.dp)
-private val HeroSkeletonDetailsShape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp, topEnd = 26.dp, bottomEnd = 26.dp)
 
 @Composable
 fun RisingSkeleton() {

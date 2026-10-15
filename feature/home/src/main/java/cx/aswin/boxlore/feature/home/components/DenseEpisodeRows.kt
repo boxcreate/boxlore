@@ -19,9 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,18 +28,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -75,10 +77,10 @@ internal fun DenseEpisodeRow(
             .testTag("home_filtered_episode_${episode.id}"),
     ) {
         Row(
-            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DenseEpisodeArtwork(episode = episode, podcast = podcast, rowState = rowState)
+            DenseEpisodeArtwork(episode = episode, podcast = podcast, rowState = rowState, onPlay = actions.onPlay)
             Spacer(modifier = Modifier.width(12.dp))
             DenseEpisodeDetails(
                 episode = episode,
@@ -86,8 +88,6 @@ internal fun DenseEpisodeRow(
                 rowState = rowState,
                 isEligibleForNewTag = isEligibleForNewTag,
             )
-            Spacer(modifier = Modifier.width(4.dp))
-            DenseEpisodePlayButton(episodeId = episode.id, playing = rowState.isCurrentPlaying, onPlay = actions.onPlay)
         }
     }
 }
@@ -136,12 +136,18 @@ private val RowTitleLineHeight = 19.sp
 private const val ROW_TITLE_LINES = 2
 private val RowMetaGap = 4.dp
 
+/**
+ * The episode's cover is its Play / Pause button (48dp): tapping it plays or pauses this episode,
+ * while the rest of the row opens the episode.
+ */
 @Composable
 private fun DenseEpisodeArtwork(
     episode: Episode,
     podcast: Podcast,
     rowState: DenseEpisodeRowState,
+    onPlay: () -> Unit,
 ) {
+    val playLabel = stringResource(if (rowState.isCurrentPlaying) R.string.home_hero_pause else R.string.home_hero_play)
     Box(Modifier.size(RowArtworkSize).clip(RowArtworkShape).testTag("home_mix_artwork_${episode.id}")) {
         OptimizedImage(
             url = episode.imageUrl,
@@ -165,21 +171,25 @@ private fun DenseEpisodeArtwork(
                 )
             }
         }
-    }
-}
-
-/** A separate 48dp target, filled while this episode plays so the row's state reads at a glance. */
-@Composable
-private fun DenseEpisodePlayButton(episodeId: String, playing: Boolean, onPlay: () -> Unit) {
-    FilledTonalIconButton(
-        onClick = onPlay,
-        colors = if (playing) IconButtonDefaults.filledIconButtonColors() else IconButtonDefaults.filledTonalIconButtonColors(),
-        modifier = Modifier.testTag("home_mix_play_$episodeId"),
-    ) {
-        Icon(
-            if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-            stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play),
-        )
+        Box(
+            Modifier.matchParentSize().testTag("home_mix_play_${episode.id}")
+                .semantics {
+                    contentDescription = playLabel
+                    role = Role.Button
+                }
+                .expressiveClickable(shape = RowArtworkShape, feedback = ExpressivePressFeedback.Control, onClick = onPlay),
+            contentAlignment = Alignment.Center,
+        ) {
+            // A small local scrim on the cover keeps the mark readable on any artwork.
+            Box(Modifier.size(28.dp).background(Color.Black.copy(alpha = 0.55f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(
+                    if (rowState.isCurrentPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
     }
 }
 
@@ -283,7 +293,7 @@ private fun DenseNewEpisodeBadge() {
 @Composable
 private fun DenseMetaText(
     text: String,
-    color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     bold: Boolean = false,
 ) {
     if (text.isEmpty()) return

@@ -16,7 +16,11 @@ import cx.aswin.boxlore.feature.settings.feedback.FeedbackScreen
 import cx.aswin.boxlore.feature.settings.pages.AboutSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AccountSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AppInfo
+import cx.aswin.boxlore.feature.settings.pages.AppearanceHomePage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceNavigationPage
+import cx.aswin.boxlore.feature.settings.pages.AppearancePlayerPage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceTextPage
 import cx.aswin.boxlore.feature.settings.pages.CustomThemeEditor
 import cx.aswin.boxlore.feature.settings.pages.DownloadsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.LibraryBackupActions
@@ -68,7 +72,7 @@ class TabletSettingsCaptureTest(private val scene: String, configuration: PhoneG
     companion object {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}-{1}")
-        fun configurations(): List<Array<Any>> = listOf("sync", "library", "appearance", "custom-theme", "playback", "downloads", "privacy", "about", "account", "support", "automatic", "automatic-enabled", "smart", "smart-enabled", "feedback").flatMap { scene ->
+        fun configurations(): List<Array<Any>> = listOf("sync", "library", "appearance", "appearance-home", "custom-theme", "playback", "downloads", "privacy", "about", "account", "support", "automatic", "automatic-enabled", "smart", "smart-enabled", "feedback").flatMap { scene ->
             listOf(1280 to 800, 840 to 1280).flatMap { (width, height) ->
                 listOf(false, true).map { dark -> arrayOf<Any>(scene, PhoneGoldenConfiguration(width, height, dark)) }
             }
@@ -80,6 +84,7 @@ private fun captureDestination(scene: String): ProfileSettingsDestination = when
     "sync" -> ProfileSettingsDestination.SyncAndBackups
     "library" -> ProfileSettingsDestination.Library
     "appearance" -> ProfileSettingsDestination.Appearance
+    "appearance-home" -> ProfileSettingsDestination.AppearanceHome
     "custom-theme" -> ProfileSettingsDestination.CustomTheme
     "playback" -> ProfileSettingsDestination.Playback
     "downloads" -> ProfileSettingsDestination.Downloads
@@ -98,6 +103,11 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination) {
         ProfileSettingsDestination.SyncAndBackups -> SyncAndBackupsPage(null, CloudSyncUiStatus.Idle, LibraryBackupActions({}, {}, {}, {}), {}, {})
         ProfileSettingsDestination.Library -> LibrarySettingsPage(LibraryDiscoveryPreferences("us", listOf("en"), {}, {}), {}, {})
         ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Theme -> AppearanceSettingsPage(appearance.state, appearance.actions, {}, {})
+        ProfileSettingsDestination.AppearanceHome,
+        ProfileSettingsDestination.AppearancePlayer,
+        ProfileSettingsDestination.AppearanceNavigation,
+        ProfileSettingsDestination.AppearanceText,
+        -> CaptureAppearanceSubpage(destination, appearance)
         ProfileSettingsDestination.CustomTheme -> CustomThemeEditor(appearance.state, {}, {})
         ProfileSettingsDestination.Playback -> PlaybackSettingsPage(playback.state, playback.actions, {})
         ProfileSettingsDestination.Downloads -> DownloadsSettingsPage({}, {}, {})
@@ -106,6 +116,16 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination) {
         ProfileSettingsDestination.Account -> AccountSettingsPage(authRepository = null, onBack = {})
         ProfileSettingsDestination.Support -> SupportDevelopmentPage({}, 42L)
         ProfileSettingsDestination.Hub -> error("Capture requires a category")
+    }
+}
+
+@Composable
+private fun CaptureAppearanceSubpage(destination: ProfileSettingsDestination, appearance: AppearanceSettings) {
+    when (destination) {
+        ProfileSettingsDestination.AppearanceHome -> AppearanceHomePage(appearance.state, appearance.actions, null, {})
+        ProfileSettingsDestination.AppearancePlayer -> AppearancePlayerPage(appearance.state, appearance.actions, {})
+        ProfileSettingsDestination.AppearanceNavigation -> AppearanceNavigationPage(appearance.state, appearance.actions, {})
+        else -> AppearanceTextPage(appearance.state, appearance.actions, {})
     }
 }
 

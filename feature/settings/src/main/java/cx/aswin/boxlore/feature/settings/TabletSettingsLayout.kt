@@ -61,7 +61,8 @@ internal fun AdaptiveSettingsLayout(
             Box(Modifier.testTag("settings_detail_pane").then(if (split) Modifier.clipToBounds() else Modifier)) {
                 CompositionLocalProvider(
                     LocalSettingsSplitPane provides split,
-                    LocalSettingsPaneBackVisible provides (!split || destination in listOf(ProfileSettingsDestination.Account, ProfileSettingsDestination.CustomTheme, ProfileSettingsDestination.Theme)),
+                    // Pages below a category (Appearance's pages, the theme editor, Account) keep their Back arrow in the split.
+                    LocalSettingsPaneBackVisible provides (!split || destination == ProfileSettingsDestination.Account || destination.parent != null),
                 ) { content(displayed) }
             }
         }) { measurables, constraints ->
@@ -90,14 +91,18 @@ private val settingsCategories = listOf(
     SettingsCategory(ProfileSettingsDestination.Support, "Support boxlore", Icons.Rounded.Favorite),
 )
 
+/** The category the split highlights for [destination]: its top-level parent, and Cloud Sync for Account. */
+internal fun settingsCategoryOf(destination: ProfileSettingsDestination): ProfileSettingsDestination =
+    if (destination == ProfileSettingsDestination.Account) {
+        ProfileSettingsDestination.SyncAndBackups
+    } else {
+        generateSequence(destination) { it.parent }.last()
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TabletSettingsCategories(destination: ProfileSettingsDestination, config: SettingsScreenConfig, onNavigate: (ProfileSettingsDestination) -> Unit) {
-    val selected = when (destination) {
-        ProfileSettingsDestination.Account -> ProfileSettingsDestination.SyncAndBackups
-        ProfileSettingsDestination.Theme, ProfileSettingsDestination.CustomTheme -> ProfileSettingsDestination.Appearance
-        else -> destination
-    }
+    val selected = settingsCategoryOf(destination)
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {

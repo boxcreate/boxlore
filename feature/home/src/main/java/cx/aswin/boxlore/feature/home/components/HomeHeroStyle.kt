@@ -84,6 +84,22 @@ internal fun HeroProgress(progress: Float, color: Color, track: Color, modifier:
     )
 }
 
+/**
+ * Below this height (the hero above a tabletop fold) a separate context block leaves no room for
+ * Play: Duotone moves its context into the copy, as Cover does, and Halo shows as Cover. Phone
+ * heroes are taller.
+ */
+internal val ShortHeroHeight = 320.dp
+
+/**
+ * The hero style Home shows for the saved [style]. Marquee's still cover and the sheet that docks
+ * under the top bar are built for one phone-width column, so tablets show Cover instead.
+ */
+internal fun homeHeroStyle(style: String, tablet: Boolean): String {
+    val saved = cx.aswin.boxlore.core.prefs.HeroCardStyle.sanitize(style)
+    return if (tablet && saved == cx.aswin.boxlore.core.prefs.HeroCardStyle.MARQUEE) cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER else saved
+}
+
 @Composable
 internal fun heroContainerColor() = HomeHeroStyle.container(MaterialTheme.colorScheme)
 

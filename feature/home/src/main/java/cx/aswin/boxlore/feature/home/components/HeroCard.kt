@@ -98,8 +98,12 @@ fun HeroCard(
                 HeroActions(
                     pause = pause,
                     resume = item.type == HeroType.RESUME || current,
-                    foreground = foreground,
-                    container = container,
+                    colors = HeroActionColors(
+                        play = foreground,
+                        onPlay = container,
+                        details = HomeHeroStyle.secondaryContainer(MaterialTheme.colorScheme),
+                        onDetails = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
                     item = item,
                     onPlayClick = onClick,
                     onDetailsClick = onArrowClick,
@@ -178,9 +182,12 @@ private fun HeroLead(item: SmartHeroItem, foreground: Color, modifier: Modifier)
 
 @Composable
 private fun HeroArtwork(item: SmartHeroItem, modifier: Modifier) {
-    val sources = if (item.type == HeroType.SPOTLIGHT) item.podcast.artworkUrls() else item.podcast.latestEpisode?.artworkUrls(item.podcast) ?: item.podcast.artworkUrls()
-    HeroArtworkMerge(heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT), modifier.testTag("home_hero_artwork"), sources)
+    HeroArtworkMerge(heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT), modifier.testTag("home_hero_artwork"), heroArtworkSources(item))
 }
+
+/** Spotlight tries the show's art first; every other solo hero tries its episode's art, then the show's. */
+internal fun heroArtworkSources(item: SmartHeroItem): List<String?> =
+    if (item.type == HeroType.SPOTLIGHT) item.podcast.artworkUrls() else item.podcast.latestEpisode?.artworkUrls(item.podcast) ?: item.podcast.artworkUrls()
 
 @Composable
 private fun HeroCopy(item: SmartHeroItem, foreground: Color, titleStyle: TextStyle, progressState: HeroProgressState?, modifier: Modifier) {
@@ -213,15 +220,15 @@ private fun HeroCopy(item: SmartHeroItem, foreground: Color, titleStyle: TextSty
 }
 
 @Composable
-private fun heroTitleStyle() = MaterialTheme.typography.headlineSmall.copy(fontSize = 26.sp, lineHeight = 29.sp, fontWeight = GoogleSansWeight.bold)
+internal fun heroTitleStyle() = MaterialTheme.typography.headlineSmall.copy(fontSize = 26.sp, lineHeight = 29.sp, fontWeight = GoogleSansWeight.bold)
 
-private fun heroTitle(item: SmartHeroItem) = (if (item.type == HeroType.SPOTLIGHT) item.podcast.title else item.description ?: item.podcast.latestEpisode?.title ?: item.podcast.title).replace("+", " ")
+internal fun heroTitle(item: SmartHeroItem) = (if (item.type == HeroType.SPOTLIGHT) item.podcast.title else item.description ?: item.podcast.latestEpisode?.title ?: item.podcast.title).replace("+", " ")
 
-private fun heroSupportingName(item: SmartHeroItem) =
+internal fun heroSupportingName(item: SmartHeroItem) =
     (if (item.type == HeroType.SPOTLIGHT) item.podcast.artist else item.podcast.title).replace("+", " ")
 
 @Composable
-private fun heroActionLabel(item: SmartHeroItem, pause: Boolean, resume: Boolean) = stringResource(
+internal fun heroActionLabel(item: SmartHeroItem, pause: Boolean, resume: Boolean) = stringResource(
     when {
         item.podcast.latestEpisode == null -> R.string.home_hero_show_details
         pause -> R.string.home_hero_pause
@@ -231,12 +238,15 @@ private fun heroActionLabel(item: SmartHeroItem, pause: Boolean, resume: Boolean
     },
 )
 
+/** Play is [play] with [onPlay] on it; the details arrow is [details] with [onDetails] on it. */
+internal data class HeroActionColors(val play: Color, val onPlay: Color, val details: Color, val onDetails: Color)
+
+/** The connected Play / details pair shared by the Block and Cover cards. */
 @Composable
-private fun HeroActions(
+internal fun HeroActions(
     pause: Boolean,
     resume: Boolean,
-    foreground: Color,
-    container: Color,
+    colors: HeroActionColors,
     item: SmartHeroItem,
     onPlayClick: () -> Unit,
     onDetailsClick: () -> Unit,
@@ -255,8 +265,8 @@ private fun HeroActions(
     val actionHeight = (with(LocalDensity.current) { labelHeight.toDp() } + 20.dp).coerceAtLeast(48.dp)
     Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
         Surface(
-            color = foreground,
-            contentColor = container,
+            color = colors.play,
+            contentColor = colors.onPlay,
             shape = playShape,
             modifier = Modifier.weight(1f).height(actionHeight).testTag("home_hero_play")
                 .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = playShape, onClick = if (hasEpisode) onPlayClick else onDetailsClick),
@@ -289,8 +299,8 @@ private fun HeroActions(
         }
         if (hasEpisode) {
             Surface(
-            color = HomeHeroStyle.secondaryContainer(MaterialTheme.colorScheme),
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            color = colors.details,
+            contentColor = colors.onDetails,
             shape = detailsShape,
             modifier = Modifier.size(actionHeight).testTag("home_hero_details")
                 .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = detailsShape, onClick = onDetailsClick),

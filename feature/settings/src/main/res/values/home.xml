@@ -1,7 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Appearance > Layout picker for the Home hero cards. Classic restores the earlier cards with the cover behind the text. -->
-    <string name="hero_card_style_title">Home hero cards</string>
-    <string name="hero_card_style_standard">Standard</string>
-    <string name="hero_card_style_classic">Classic</string>
+    <!-- Appearance > Home: the hero card style picker. Block is the solid colour card; Cover fills the card with the artwork. -->
+    <!-- Header above the non-interactive preview of the picked hero card style. -->
+    <string name="hero_card_preview_title">Hero card preview</string>
+    <string name="hero_card_style_title">Hero cards</string>
+    <string name="hero_card_style_footer">The big cards at the top of Home.</string>
+    <string name="hero_card_style_block">Block</string>
+    <string name="hero_card_style_block_description">Big type on a solid color block, with the artwork beside it.</string>
+    <string name="hero_card_style_cover">Cover</string>
+    <string name="hero_card_style_cover_description">Full artwork, with the words on a shade behind them.</string>
+    <string name="hero_card_style_tide">Tide</string>
+    <string name="hero_card_style_tide_description">The whole cover above a wavy panel, with a round play button.</string>
+    <string name="hero_card_style_duotone">Duotone</string>
+    <string name="hero_card_style_duotone_description">Artwork in two tones, so the words always stand out.</string>
+    <string name="hero_card_style_halo">Halo</string>
+    <string name="hero_card_style_halo_description">Shaped artwork with your progress in a ring around it.</string>
+    <!-- Shown under the picker when Duotone is chosen: the two tones the artwork is redrawn in. Same choice as Cover's shade. -->
+    <string name="hero_duotone_colors_title">Duotone colors</string>
+    <string name="hero_duotone_colors_footer">Dark redraws covers in black and white. Artwork uses each cover\'s own color. App theme uses your accent color.</string>
+    <string name="hero_card_style_marquee">Marquee</string>
+    <string name="hero_card_style_marquee_description">A full-width cover under the top bar, with the next cards beside Play.</string>
+    <!-- Marquee's tile on tablets, where Home shows Cover cards instead. -->
+    <string name="hero_card_style_marquee_description_tablet">A full-width cover on phones. Tablets show Cover cards instead.</string>
+    <!-- Shown under the picker when Marquee is chosen: covers in full colour or redrawn in two tones. Same choice as Cover's shade. -->
+    <string name="hero_marquee_colors_title">Cover colors</string>
+    <string name="hero_marquee_colors_footer">Full color shows covers as they are. Artwork redraws them in two tones of their own color. App theme uses your accent color.</string>
+    <!-- Marquee's name for the Dark choice: the cover keeps all its colours. -->
+    <string name="hero_marquee_colors_full">Full color</string>
+    <!-- Shown under the picker when Tide or Halo is chosen: the colour of the card around the artwork. Same choice as Cover's shade. -->
+    <string name="hero_card_colors_title">Card color</string>
+    <string name="hero_card_colors_footer">Dark keeps cards near black. Artwork takes each cover\'s own color. App theme uses your accent color.</string>
+    <!-- Shown under the picker only when Cover is chosen: the colour the artwork fades into behind the card's text. -->
+    <string name="hero_cover_shade_title">Shade behind text</string>
+    <string name="hero_cover_shade_footer">Artwork takes a deep shade of each cover\'s own color. App theme uses your accent color.</string>
+    <string name="hero_cover_shade_dark">Dark</string>
+    <!-- Each card takes a deep shade of its own cover's colour. -->
+    <string name="hero_cover_shade_artwork">Artwork</string>
+    <!-- A deep shade of the app's accent colour. Matches "App theme" in the Widgets picker. -->
+    <string name="hero_cover_shade_theme">App theme</string>
 </resources>

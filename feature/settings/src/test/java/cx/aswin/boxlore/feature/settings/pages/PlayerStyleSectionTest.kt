@@ -7,8 +7,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsOff
-import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -60,15 +60,15 @@ class PlayerStyleSectionTest {
     @Test
     fun `selection changes only the player style and credit opens the design source`() {
         render()
-        compose.onNodeWithText("Standard").assertIsOn()
-        compose.onNodeWithText("bunpod").assertIsOff().performTouchInput { click(center) }
+        compose.onNodeWithText("Standard").assertIsSelected()
+        compose.onNodeWithText("bunpod").assertIsNotSelected().performTouchInput { click(center) }
         compose.mainClock.advanceTimeBy(64)
         assertEquals("Selection callback", listOf(FullPlayerStyle.BUNPOD), choices)
         assertEquals("Selected model", FullPlayerStyle.BUNPOD, selected.value)
-        compose.onNodeWithText("bunpod").assertIsOn()
+        compose.onNodeWithText("bunpod").assertIsSelected()
         compose.onNodeWithText("Standard").performClick()
         compose.mainClock.advanceTimeBy(64)
-        compose.onNodeWithText("Standard").assertIsOn()
+        compose.onNodeWithText("Standard").assertIsSelected()
         compose.onNodeWithText("Design inspired by BunPod", substring = true).performClick()
         assertEquals(listOf(FullPlayerStyle.BUNPOD, FullPlayerStyle.STANDARD), choices)
         assertEquals(listOf("https://github.com/kamranbekirovyz/bunpod"), links)
@@ -81,7 +81,7 @@ class PlayerStyleSectionTest {
         compose.onNodeWithText("bunpod").assertIsDisplayed().performTouchInput { click(center) }
         compose.mainClock.advanceTimeBy(64)
         assertEquals("Selection callback", listOf(FullPlayerStyle.BUNPOD), choices)
-        compose.onNodeWithText("bunpod").assertIsOn()
+        compose.onNodeWithText("bunpod").assertIsSelected()
         compose.onNodeWithText("Design inspired by BunPod", substring = true).assertIsDisplayed().performClick()
         assertEquals(1, links.size)
     }

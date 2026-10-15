@@ -36,6 +36,7 @@ import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -54,6 +55,25 @@ class TabletSettingsLayoutTest {
     private var backs = 0
     private lateinit var view: View
     private var surface = 0
+    private var backVisible = false
+
+    // Regression: Appearance's own pages lost their Back arrow and category highlight in the tablet split.
+    @Test fun `appearance pages keep their back arrow and highlight Appearance in the split`() {
+        selected.value = ProfileSettingsDestination.AppearanceHome
+        render()
+        fixture.compose.onNodeWithText("Appearance").assertIsSelected()
+        assertTrue(backVisible)
+        fixture.compose.runOnIdle { selected.value = ProfileSettingsDestination.Downloads }
+        settle()
+        assertFalse(backVisible)
+    }
+
+    @Test fun `split categories follow each page's parent`() {
+        assertEquals(ProfileSettingsDestination.Appearance, settingsCategoryOf(ProfileSettingsDestination.AppearanceText))
+        assertEquals(ProfileSettingsDestination.Appearance, settingsCategoryOf(ProfileSettingsDestination.CustomTheme))
+        assertEquals(ProfileSettingsDestination.SyncAndBackups, settingsCategoryOf(ProfileSettingsDestination.Account))
+        assertEquals(ProfileSettingsDestination.Downloads, settingsCategoryOf(ProfileSettingsDestination.Downloads))
+    }
 
     @Test fun `tablet categories and detail share even a player narrowed window and retain an editor draft through resize`() {
         render()
@@ -127,6 +147,7 @@ class TabletSettingsLayoutTest {
                 CompositionLocalProvider(LocalBoxloreWindowLayout provides BoxloreWindowLayout(1280f, 1280f)) {
                     Box(Modifier.requiredSize(paneWidth.value.dp, 800.dp)) {
                         AdaptiveSettingsLayout(selected.value, SettingsScreenConfig(onBack = { backs++ }, onResetAnalytics = {}, isOnboarding = onboarding), { selected.value = it }) {
+                            backVisible = LocalSettingsPaneBackVisible.current
                             var draft by remember { mutableStateOf("draft") }
                             TextField(draft, { draft = it }, Modifier.fillMaxSize())
                         }

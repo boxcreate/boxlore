@@ -1,46 +1,38 @@
 package cx.aswin.boxlore.feature.settings.pages
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Replay
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.TextFields
+import androidx.compose.material.icons.rounded.ViewDay
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
-import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.core.prefs.NavigationBlurLevel
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
@@ -50,8 +42,9 @@ import cx.aswin.boxlore.core.prefs.WidgetAppearance
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
+import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
+import cx.aswin.boxlore.feature.settings.components.SettingsPicture
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
-import cx.aswin.boxlore.feature.settings.components.SettingsSwitchRow
 
 /** Current values shown on [AppearanceSettingsPage]. Also used by [cx.aswin.boxlore.feature.settings.SettingsScreen]. */
 data class AppearanceUiState(
@@ -70,7 +63,8 @@ data class AppearanceUiState(
     val miniPlayerSeekButtonsEnabled: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
     val navigationBlurLevel: String = NavigationBlurLevel.DEFAULT,
-    val heroCardStyle: String = HeroCardStyle.STANDARD,
+    val heroCardStyle: String = HeroCardStyle.DEFAULT,
+    val heroCoverShade: String = HeroCoverShade.DEFAULT,
     val savedCustomTheme: ThemeSelection? = null,
     val fullPlayerStyle: String = FullPlayerStyle.STANDARD,
 )
@@ -94,125 +88,143 @@ data class AppearanceActions(
     val onSetArtworkColorsEnabled: (Boolean) -> Unit = {},
     val onSetNavigationBlurLevel: (String) -> Unit = {},
     val onSetHeroCardStyle: (String) -> Unit = {},
+    val onSetHeroCoverShade: (String) -> Unit = {},
     val onApplyTheme: (ThemeSelection, ThemeSelection?) -> Unit = { _, _ -> },
     val onSaveCustomTheme: (ThemeSelection) -> Unit = { onApplyTheme(it, it) },
     val onSetFullPlayerStyle: (String) -> Unit = {},
 )
 
+/**
+ * Draws Home's hero cards for a [style] and Cover [coverShade] (the single-episode card, or the Jump
+ * back in card when [collection] is true), fitted into the modifier's bounds. The app supplies it
+ * from the Home feature, so Appearance shows the real cards without depending on Home; without it
+ * the pages show the choices without previews.
+ */
+typealias AppearanceHeroPreview = @Composable (style: String, coverShade: String, collection: Boolean, modifier: Modifier) -> Unit
+
+/** Where each Appearance row leads, so the page needs no navigation types of its own. */
+internal enum class AppearanceSection { Theme, Home, Player, Navigation, Text }
+
+/**
+ * The Appearance overview: Display mode (the setting people change most, also on Theme & colors),
+ * then one row per page, each showing what is picked now. Hero card previews live on the Home page.
+ */
 @Composable
 internal fun AppearanceSettingsPage(
     state: AppearanceUiState,
     actions: AppearanceActions,
     onBack: () -> Unit,
-    onEditCustomTheme: () -> Unit,
+    onOpenSection: (AppearanceSection) -> Unit,
 ) {
-    SettingsScaffold(
-        title = "Appearance",
-        onBack = onBack,
+    val summary = appearanceSummary(state)
+    SettingsScaffold(title = "Appearance", onBack = onBack) {
+        SettingsGroup(title = "Display mode") {
+            SettingsContent { DisplayModeSelector(state, actions) }
+        }
+        SettingsGroup {
+            SettingsNavigationRow(title = "Theme & colors", supportingText = summary.theme, icon = Icons.Rounded.Palette, onClick = { onOpenSection(AppearanceSection.Theme) })
+            SettingsDivider()
+            SettingsNavigationRow(title = "Home", supportingText = summary.home, icon = Icons.Rounded.Home, onClick = { onOpenSection(AppearanceSection.Home) })
+            SettingsDivider()
+            SettingsNavigationRow(title = "Player", supportingText = summary.player, icon = Icons.Rounded.PlayCircle, onClick = { onOpenSection(AppearanceSection.Player) })
+            SettingsDivider()
+            SettingsNavigationRow(title = "Navigation", supportingText = summary.navigation, icon = Icons.Rounded.ViewDay, onClick = { onOpenSection(AppearanceSection.Navigation) })
+            SettingsDivider()
+            SettingsNavigationRow(title = "Text", supportingText = summary.text, icon = Icons.Rounded.TextFields, onClick = { onOpenSection(AppearanceSection.Text) })
+        }
+    }
+}
+
+/** What each Appearance row shows under its title. */
+internal data class AppearanceSummary(val theme: String, val home: String, val player: String, val navigation: String, val text: String)
+
+internal fun appearanceSummary(state: AppearanceUiState): AppearanceSummary {
+    val look = themeLookOptions().firstOrNull { it.key == state.selectedLookKey() }?.name ?: "Custom"
+    val player = if (FullPlayerStyle.sanitize(state.fullPlayerStyle) == FullPlayerStyle.BUNPOD) "bunpod" else "Standard"
+    val start = when (state.currentOpenAppTo) {
+        OpenAppTo.SUBSCRIPTIONS -> "Subscriptions"
+        OpenAppTo.DOWNLOADS -> "Downloads"
+        else -> "Home"
+    }
+    val letters = FontRoundness.entries.firstOrNull { it.key == FontRoundness.sanitizeKey(state.currentFontRoundness) }?.label ?: "Round"
+    return AppearanceSummary(
+        theme = if (state.artworkColorsEnabled) "$look · artwork colors on" else look,
+        home = homeSummary(state),
+        player = if (state.miniPlayerSeekButtonsEnabled) "$player · seek buttons on" else player,
+        navigation = "${NavigationStyle.fromKey(state.currentNavigationStyle).label} bar · starts on $start",
+        text = "$letters letters",
+    )
+}
+
+/** The hero card style's name as Settings shows it. */
+private fun heroStyleName(style: String): String = when (style) {
+    HeroCardStyle.COVER -> "Cover"
+    HeroCardStyle.TIDE -> "Tide"
+    HeroCardStyle.DUOTONE -> "Duotone"
+    HeroCardStyle.HALO -> "Halo"
+    HeroCardStyle.MARQUEE -> "Marquee"
+    else -> "Block"
+}
+
+/** The hero card style, with the colours the artwork styles take. */
+private fun homeSummary(state: AppearanceUiState): String {
+    val style = HeroCardStyle.sanitize(state.heroCardStyle)
+    if (style == HeroCardStyle.BLOCK) return "Block hero cards"
+    return heroStyleName(style) + " hero cards, " + heroColorsSummary(style, HeroCoverShade.sanitize(state.heroCoverShade))
+}
+
+/** What the colour choice does in each style: Cover's shade, Duotone's and Marquee's tones, Tide's and Halo's card. */
+private fun heroColorsSummary(style: String, colors: String): String {
+    val (dark, theme, artwork) = when (style) {
+        HeroCardStyle.COVER -> Triple("dark shade", "app theme shade", "artwork shade")
+        HeroCardStyle.DUOTONE -> Triple("black and white", "app theme tones", "artwork tones")
+        HeroCardStyle.MARQUEE -> Triple("full color", "app theme tones", "artwork tones")
+        else -> Triple("dark cards", "app theme color", "artwork color")
+    }
+    return when (colors) {
+        HeroCoverShade.DARK -> dark
+        HeroCoverShade.THEME -> theme
+        else -> artwork
+    }
+}
+
+/**
+ * Home's single-episode and Jump back in cards side by side on a solid stage. The preview is a
+ * picture: its cards take no taps, and it reads as one description.
+ */
+@Composable
+internal fun AppearanceHeroPreviewStage(style: String, coverShade: String, heroPreview: AppearanceHeroPreview, height: Dp) {
+    val description = "Preview of ${heroStyleName(HeroCardStyle.sanitize(style))} hero cards"
+    Surface(
+        modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = description },
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
-        AppearanceThemeSection(state, actions, onEditCustomTheme)
-        LetteringSection(state.currentFontRoundness, actions.onSetFontRoundness)
-        AppearanceLayoutSection(state, actions)
-        PlayerStyleSection(state.fullPlayerStyle, actions.onSetFullPlayerStyle)
-        AppearanceStartSection(state, actions)
-
-        WidgetsSection(
-            currentWidgetAppearance = state.currentWidgetAppearance,
-            onSetWidgetAppearance = actions.onSetWidgetAppearance,
-        )
-    }
-}
-
-@Composable
-internal fun PlayerStyleSection(selected: String, onSelect: (String) -> Unit) {
-    val uriHandler = LocalUriHandler.current
-    SettingsGroup(title = stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_title)) {
-        SettingsContent {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ConnectedOptionSelector(
-                    options = listOf(
-                        FullPlayerStyle.STANDARD to stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_standard),
-                        FullPlayerStyle.BUNPOD to stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_bunpod),
-                    ),
-                    selected = FullPlayerStyle.sanitize(selected),
-                    onSelect = onSelect,
-                )
-                Text(
-                    stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_description),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                androidx.compose.material3.TextButton(
-                    onClick = { uriHandler.openUri("https://github.com/kamranbekirovyz/bunpod") },
-                ) {
-                    Text(stringResource(cx.aswin.boxlore.feature.settings.R.string.player_style_credit))
-                }
+        SettingsPicture {
+            Row(Modifier.fillMaxWidth().height(height).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                heroPreview(style, coverShade, false, Modifier.weight(1f).fillMaxHeight())
+                heroPreview(style, coverShade, true, Modifier.weight(1f).fillMaxHeight())
             }
         }
     }
 }
 
 @Composable
-private fun AppearanceLayoutSection(state: AppearanceUiState, actions: AppearanceActions) {
-    SettingsGroup(title = "Layout") {
-        SettingsContent {
-            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                DefaultTabPicker("Navigation bar", NavigationStyle.entries.map { it.key to it.label }, NavigationStyle.fromKey(state.currentNavigationStyle).key, actions.onSetNavigationStyle)
-                // The page blurs under the floating bar only, so the strength picker shows only with it.
-                if (NavigationStyle.fromKey(state.currentNavigationStyle) == NavigationStyle.Floating) {
-                    DefaultTabPicker(
-                        "Blur behind the bar",
-                        listOf(NavigationBlurLevel.OFF to "Off", NavigationBlurLevel.SOFT to "Soft", NavigationBlurLevel.MEDIUM to "Medium", NavigationBlurLevel.STRONG to "Strong"),
-                        NavigationBlurLevel.sanitize(state.navigationBlurLevel),
-                        actions.onSetNavigationBlurLevel,
-                    )
-                }
-                DefaultTabPicker(
-                    stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_title),
-                    listOf(
-                        HeroCardStyle.STANDARD to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_standard),
-                        HeroCardStyle.CLASSIC to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_classic),
-                    ),
-                    HeroCardStyle.sanitize(state.heroCardStyle),
-                    actions.onSetHeroCardStyle,
-                )
-                DefaultTabPicker("Subscriptions tab position", listOf(SubscriptionsTabStyle.TOP to "Top", SubscriptionsTabStyle.FLOATING to "Floating"), SubscriptionsTabStyle.sanitize(state.currentSubscriptionsTabStyle), actions.onSetSubscriptionsTabStyle)
-            }
-        }
-        SettingsDivider()
-        SettingsSwitchRow(
-            title = "Move Home shortcuts to Library",
-            supportingText = "Show Settings and Feedback in Library instead of Home",
-            checked = state.homeShortcutsInLibrary,
-            onCheckedChange = actions.onSetHomeShortcutsInLibrary,
-            icon = Icons.Rounded.Home
-        )
-        SettingsDivider()
-        SettingsSwitchRow(
-            title = "Miniplayer seek buttons",
-            supportingText = "Show back and forward controls beside play and pause",
-            checked = state.miniPlayerSeekButtonsEnabled,
-            onCheckedChange = actions.onSetMiniPlayerSeekButtonsEnabled,
-            icon = Icons.Rounded.Replay
-        )
-    }
+internal fun DisplayModeSelector(state: AppearanceUiState, actions: AppearanceActions) {
+    ConnectedOptionSelector(
+        listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
+        appearanceDisplayMode(state),
+        onSelect = { mode ->
+            val unlocked = automaticSurfaceStyle(state.currentSurfaceStyle)
+            if (unlocked != state.currentSurfaceStyle) actions.onApplyTheme(state.themeSelection().copy(surfaceStyle = unlocked), null)
+            actions.onSetThemeConfig(mode)
+        },
+    )
 }
 
+/** A labelled row of connected choices, for short lists that need no pictures. */
 @Composable
-private fun AppearanceStartSection(state: AppearanceUiState, actions: AppearanceActions) {
-    SettingsGroup(title = "Start page & tabs", footer = "Start page applies when you relaunch boxlore. Links can open a different page or tab.") {
-        SettingsContent {
-            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                DefaultTabPicker("Start page", listOf(OpenAppTo.HOME to "Home", OpenAppTo.SUBSCRIPTIONS to "Subscriptions", OpenAppTo.DOWNLOADS to "Downloads"), state.currentOpenAppTo, actions.onSetOpenAppTo)
-                DefaultTabPicker("Explore opens to", listOf(ExploreDefaultTab.FOR_YOU to "For You", ExploreDefaultTab.TOP to "Top"), ExploreDefaultTab.sanitize(state.currentExploreDefaultTab), actions.onSetExploreDefaultTab)
-                DefaultTabPicker("Subscriptions opens to", listOf(SubscriptionsDefaultTab.SHOWS to "Shows", SubscriptionsDefaultTab.NEW_EPISODES to "New episodes"), SubscriptionsDefaultTab.sanitize(state.currentSubscriptionsDefaultTab), actions.onSetSubscriptionsDefaultTab)
-            }
-        }
-    }
-}
-
-@Composable
-private fun DefaultTabPicker(
+internal fun AppearanceChoicePicker(
     label: String,
     options: List<Pair<String, String>>,
     selected: String,
@@ -235,192 +247,8 @@ private fun DefaultTabPicker(
     }
 }
 
+/** Fills a tile's picture when no hero preview is available. */
 @Composable
-private fun LetteringSection(
-    currentFontRoundness: String,
-    onSetFontRoundness: (String) -> Unit,
-) {
-    var previewExpanded by remember { mutableStateOf(false) }
-    val selectedKey = FontRoundness.sanitizeKey(currentFontRoundness)
-    val axis = remember(selectedKey) { FontRoundness.axisValue(selectedKey) }
-    val context = LocalContext.current
-    val titleFamily = remember(context, axis) { buildGoogleSansFamily(context, axis, weight = 600) }
-    val bodyFamily = remember(context, axis) { buildGoogleSansFamily(context, axis, weight = 400) }
-    val captionFamily = remember(context, axis) { buildGoogleSansFamily(context, axis, weight = 500) }
-    val headerFamily = remember(context, axis) { buildSectionHeaderFontFamily(context, axis) }
-
-    SettingsGroup(
-        title = "Text",
-        footer = "Choose how rounded letters look across the app.",
-    ) {
-        SettingsContent {
-            ConnectedOptionSelector(
-                options = FontRoundness.entries.map { it.key to it.label },
-                selected = selectedKey,
-                onSelect = onSetFontRoundness,
-            )
-            LetteringTips(
-                modifier = Modifier.padding(top = 10.dp),
-            )
-            LetteringPreviewToggle(
-                expanded = previewExpanded,
-                onToggle = { previewExpanded = !previewExpanded },
-            )
-            AnimatedVisibility(visible = previewExpanded) {
-                LetteringPreviewSamples(
-                    titleFamily = titleFamily,
-                    bodyFamily = bodyFamily,
-                    captionFamily = captionFamily,
-                    headerFamily = headerFamily,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LetteringTips(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = "Most visible in large titles; smaller text changes less.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Some skins (like Xiaomi HyperOS) may use the system font instead.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun LetteringPreviewToggle(
-    expanded: Boolean,
-    onToggle: () -> Unit,
-) {
-    Row(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp)
-            .clickable(role = Role.Button, onClick = onToggle)
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = if (expanded) "Hide preview" else "Show preview",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Icon(
-            imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
-    }
-}
-
-@Composable
-private fun LetteringPreviewSamples(
-    titleFamily: FontFamily,
-    bodyFamily: FontFamily,
-    captionFamily: FontFamily,
-    headerFamily: FontFamily,
-) {
-    Column(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        LetteringPreviewLine(
-            label = "Section",
-            sample = "Your morning stack",
-            fontFamily = headerFamily,
-            fontWeight = FontWeight.Normal,
-            fontSizeSp = 22f,
-            lineHeightSp = 26f,
-        )
-        LetteringPreviewLine(
-            label = "Title",
-            sample = "The Daily Briefing",
-            fontFamily = titleFamily,
-            fontWeight = FontWeight.Normal,
-            fontSizeSp = 18f,
-            lineHeightSp = 22f,
-        )
-        LetteringPreviewLine(
-            label = "Body",
-            sample = "A short episode about curiosity, craft, and listening habits.",
-            fontFamily = bodyFamily,
-            fontWeight = FontWeight.Normal,
-            fontSizeSp = 15f,
-            lineHeightSp = 22f,
-        )
-        LetteringPreviewLine(
-            label = "Caption",
-            sample = "Updated just now · 24 min",
-            fontFamily = captionFamily,
-            fontWeight = FontWeight.Normal,
-            fontSizeSp = 12f,
-            lineHeightSp = 16f,
-        )
-    }
-}
-
-@Composable
-private fun LetteringPreviewLine(
-    label: String,
-    sample: String,
-    fontFamily: FontFamily,
-    fontWeight: FontWeight,
-    fontSizeSp: Float,
-    lineHeightSp: Float,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = sample,
-            fontFamily = fontFamily,
-            fontWeight = fontWeight,
-            fontSize = fontSizeSp.sp,
-            lineHeight = lineHeightSp.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
-@Composable
-private fun WidgetsSection(
-    currentWidgetAppearance: String,
-    onSetWidgetAppearance: (String) -> Unit,
-) {
-    SettingsGroup(
-        title = "Widgets",
-        footer =
-        "App theme matches your chosen colors and mode. System follows your phone’s mode and wallpaper colors.",
-    ) {
-        SettingsContent {
-            ConnectedOptionSelector(
-                options =
-                listOf(
-                    WidgetAppearance.APP to "App theme",
-                    WidgetAppearance.SYSTEM to "System",
-                ),
-                selected = WidgetAppearance.sanitize(currentWidgetAppearance),
-                onSelect = onSetWidgetAppearance,
-            )
-        }
-    }
+internal fun AppearancePicturePlaceholder(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().height(150.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest))
 }

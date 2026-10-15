@@ -4,7 +4,10 @@ import android.content.pm.PackageManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,6 +16,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -24,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -32,15 +38,26 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
-import cx.aswin.boxlore.feature.home.components.LocalClassicHeroCards
+import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
+import cx.aswin.boxlore.feature.home.components.LocalHeroCoverShade
+import cx.aswin.boxlore.feature.home.components.LocalHeroScrollOffset
+import cx.aswin.boxlore.feature.home.components.LocalHeroTopInset
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
+import cx.aswin.boxlore.feature.home.components.LocalMarqueeTopTone
+import cx.aswin.boxlore.feature.home.components.MarqueeDetentConnection
+import cx.aswin.boxlore.feature.home.components.MarqueeSheetOverlap
+import cx.aswin.boxlore.feature.home.components.MarqueeTopTone
 import cx.aswin.boxlore.feature.home.components.TopControlBar
+import cx.aswin.boxlore.feature.home.components.homeHeroStyle
+import cx.aswin.boxlore.feature.home.components.marqueeBarOverArtwork
+import cx.aswin.boxlore.feature.home.components.marqueeDetent
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -228,6 +245,7 @@ fun HomeRoute(
     val uiState by viewModel.uiState.collectAsState()
     val homeShortcutsInLibrary by userPreferencesRepository.homeShortcutsInLibraryStream.collectAsState(initial = false)
     val heroCardStyle by userPreferencesRepository.heroCardStyleStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroCardStyle })
+    val heroCoverShade by userPreferencesRepository.heroCoverShadeStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroCoverShade })
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(viewModel) {
         viewModel.pinFeedback.collect { message ->
@@ -342,7 +360,8 @@ fun HomeRoute(
 
     androidx.compose.runtime.CompositionLocalProvider(
         LocalLastSeenEpisodes provides lastSeenEpisodes,
-        LocalClassicHeroCards provides (heroCardStyle == HeroCardStyle.CLASSIC),
+        LocalHeroCardStyle provides homeHeroStyle(heroCardStyle, LocalBoxloreWindowLayout.current.usesTabletLayout),
+        LocalHeroCoverShade provides heroCoverShade,
     ) {
         HomeScreen(
             uiState = uiState,
@@ -523,6 +542,52 @@ private fun HomeScreenBottomSheets(
     }
 }
 
+/** Home's top bar, with its analytics; over Marquee's cover it starts clear ([overArtwork]). */
+@Composable
+@Suppress("LongParameterList")
+private fun HomeTopBar(
+    scrollFractionProvider: () -> Float,
+    showTopBarShortcuts: Boolean,
+    callbacks: HomeScreenCallbacks,
+    overArtwork: (() -> Float)? = null,
+    artworkTone: MarqueeTopTone? = null,
+    modifier: Modifier = Modifier,
+) {
+    TopControlBar(
+        scrollFractionProvider = scrollFractionProvider,
+        modifier = modifier,
+        showUtilityIcons = showTopBarShortcuts,
+        overArtwork = overArtwork,
+        artworkContent = artworkTone?.content ?: androidx.compose.ui.graphics.Color.Unspecified,
+        onFeedbackClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("feedback_clicked", "home")
+            callbacks.feed.onFeedbackClick()
+        },
+        onFeedbackLongClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("feedback_long_clicked", "home")
+            callbacks.onForceSurveyNps()
+        },
+        onAvatarClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("settings_clicked", "home")
+            callbacks.onNavigateToSettings?.invoke()
+        },
+        onAvatarLongClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("avatar_long_clicked", "home")
+            callbacks.onNavigateToDebug()
+        },
+    )
+}
+
+/** The expanded bar below the status bar: 16dp above and below its 33dp shortcuts. */
+private val HomeTopBarEstimate = 65.dp
+
+/** The bar fills over this distance as the body's edge passes under it. */
+private val MarqueeBarEdge = 24.dp
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -542,45 +607,65 @@ fun HomeScreen(
     val scrollFraction by remember(gridState, collapseThresholdPx) {
         derivedStateOf { homeScrollFraction(gridState, collapseThresholdPx) }
     }
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            TopControlBar(
-                scrollFractionProvider = { scrollFraction },
-                showUtilityIcons = showTopBarShortcuts,
-                onFeedbackClick = {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackTopControlbarInteraction("feedback_clicked", "home")
-                    callbacks.feed.onFeedbackClick()
-                },
-                onFeedbackLongClick = {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackTopControlbarInteraction("feedback_long_clicked", "home")
-                    callbacks.onForceSurveyNps()
-                },
-                onAvatarClick = {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackTopControlbarInteraction("settings_clicked", "home")
-                    callbacks.onNavigateToSettings?.invoke()
-                },
-                onAvatarLongClick = {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackTopControlbarInteraction("avatar_long_clicked", "home")
-                    callbacks.onNavigateToDebug()
-                },
+    val feed: @Composable () -> Unit = {
+        Box(modifier = Modifier.fillMaxSize()) {
+            HomeScreenFeedContent(
+                uiState = uiState,
+                gridState = gridState,
+                playback = playback,
+                callbacks = callbacks.feed,
+                onChangePodcastClick = { showChangePodcastSheet = true },
             )
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                HomeScreenFeedContent(
-                    uiState = uiState,
-                    gridState = gridState,
-                    playback = playback,
-                    callbacks = callbacks.feed,
-                    onChangePodcastClick = { showChangePodcastSheet = true },
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+    }
+    Box(modifier = modifier.fillMaxSize()) {
+        if (HeroCardStyle.sanitize(LocalHeroCardStyle.current) == HeroCardStyle.MARQUEE) {
+            // Marquee's hero runs under the top bar, so the feed starts at the top of the screen and the
+            // bar floats over it; the hero leaves room for the bar's height (LocalHeroTopInset).
+            var topBarHeight by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+            val estimate = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + HomeTopBarEstimate
+            val topInset = if (topBarHeight > 0) with(LocalDensity.current) { topBarHeight.toDp() } else estimate
+            val topTone = remember { MarqueeTopTone() }
+            val overlapPx = with(LocalDensity.current) { MarqueeSheetOverlap.toPx() }
+            val edgePx = with(LocalDensity.current) { MarqueeBarEdge.toPx() }
+            // The hero keeps its cover still while it scrolls away.
+            val heroScroll: () -> Int = remember(gridState) {
+                { if (gridState.firstVisibleItemIndex == 0) gridState.firstVisibleItemScrollOffset else Int.MAX_VALUE }
+            }
+            val heroItem = { gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "hero" } }
+            // The page stops where the body's edge meets the bar; the next swipe carries it under.
+            val detent = remember(gridState, overlapPx) {
+                MarqueeDetentConnection(
+                    detent = { heroItem()?.let { marqueeDetent(it.size.height, overlapPx, topBarHeight) } },
+                    scrolled = { if (heroItem() == null) null else heroScroll() },
                 )
-                SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                )
+            }
+            // The bar stays clear over the cover, and fills with the body's colour as the body passes under it.
+            val overArtwork: () -> Float = remember(gridState, overlapPx, edgePx) {
+                { marqueeBarOverArtwork(heroItem()?.let { it.offset.y + it.size.height }, overlapPx, topBarHeight, edgePx) }
+            }
+            CompositionLocalProvider(
+                LocalHeroTopInset provides topInset,
+                LocalHeroScrollOffset provides heroScroll,
+                LocalMarqueeTopTone provides topTone,
+            ) { Box(Modifier.fillMaxSize().nestedScroll(detent)) { feed() } }
+            HomeTopBar(
+                scrollFractionProvider = { scrollFraction },
+                showTopBarShortcuts = showTopBarShortcuts,
+                callbacks = callbacks,
+                overArtwork = overArtwork,
+                artworkTone = topTone,
+                // Keep the expanded height: the bar shrinks as Home scrolls, the hero must not.
+                modifier = Modifier.onSizeChanged { if (scrollFraction == 0f) topBarHeight = it.height },
+            )
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                HomeTopBar({ scrollFraction }, showTopBarShortcuts, callbacks)
+                feed()
             }
         }
     }

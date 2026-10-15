@@ -39,7 +39,14 @@ import cx.aswin.boxlore.feature.settings.pages.AboutSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AccountSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AppInfo
 import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
+import cx.aswin.boxlore.feature.settings.pages.AppearanceHeroPreview
+import cx.aswin.boxlore.feature.settings.pages.AppearanceHomePage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceNavigationPage
+import cx.aswin.boxlore.feature.settings.pages.AppearancePlayerPage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceSection
 import cx.aswin.boxlore.feature.settings.pages.AppearanceSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceTextPage
+import cx.aswin.boxlore.feature.settings.pages.AppearanceThemePage
 import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
 import cx.aswin.boxlore.feature.settings.pages.CustomThemeEditor
 import cx.aswin.boxlore.feature.settings.pages.DownloadsSettingsPage
@@ -54,7 +61,6 @@ import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
 import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
-import cx.aswin.boxlore.feature.settings.pages.ThemeSettingsPage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -119,6 +125,8 @@ data class AppearanceSettings(
             currentFontRoundness = "round",
         ),
     val actions: AppearanceActions = AppearanceActions({}, {}, {}, {}, {}),
+    /** Home's hero cards for the Appearance previews; null shows the choices without previews. */
+    val heroPreview: AppearanceHeroPreview? = null,
 )
 
 /** Playback sub-page state paired with its actions, so [SettingsScreen] can pass both as one. */
@@ -237,7 +245,7 @@ fun SettingsScreen(
     val returnToHub = {
         val prev = previousDestination
         previousDestination = null
-        when (val action = resolveSettingsBackAction(config.isOnboarding, prev, initialPage)) {
+        when (val action = resolveSettingsBackAction(config.isOnboarding, prev, initialPage, destination)) {
             is SettingsBackAction.NavigateBack -> config.onBack()
             is SettingsBackAction.NavigateTo -> destination = action.destination
         }
@@ -265,8 +273,10 @@ fun SettingsScreen(
     )
 
     val actions = SettingsPagesActions(
+        // Appearance's pages and the custom theme editor return to their parent page; a category picked in the
+        // tablet split drops any earlier one-off Back target.
         onNavigate = {
-            previousDestination = if (it == ProfileSettingsDestination.Theme || it == ProfileSettingsDestination.CustomTheme) ProfileSettingsDestination.Appearance else null
+            previousDestination = null
             destination = it
         },
         onReturnToHub = returnToHub,
@@ -285,8 +295,8 @@ fun SettingsScreen(
     )
 
     AdaptiveSettingsLayout(destination, config, actions.onNavigate) { displayedDestination ->
-        // The split already shows the category list; root Back exits instead of showing it again.
-        BackHandler(enabled = LocalSettingsSplitPane.current && previousDestination == null && destination != ProfileSettingsDestination.Hub) {
+        // The split already shows the category list; root Back exits instead of showing it again. Nested pages still return to their parent.
+        BackHandler(enabled = LocalSettingsSplitPane.current && previousDestination == null && destination.parent == null && destination != ProfileSettingsDestination.Hub) {
             config.onBack()
         }
         SettingsAnimatedPages(
@@ -416,21 +426,13 @@ private fun SettingsDestinationContent(
                 onBack = actions.onReturnToHub,
             )
 
-        ProfileSettingsDestination.Appearance ->
-            AppearanceSettingsPage(
-                state = contentBundle.appearanceSettings.state,
-                actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
-                onBack = actions.onReturnToHub,
-                onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) },
-            )
-
-        ProfileSettingsDestination.Theme ->
-            ThemeSettingsPage(
-                state = contentBundle.appearanceSettings.state,
-                actions = contentBundle.appearanceSettings.actions.trackedForAnalytics(),
-                onBack = actions.onReturnToHub,
-                onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) },
-            )
+        ProfileSettingsDestination.Appearance,
+        ProfileSettingsDestination.Theme,
+        ProfileSettingsDestination.AppearanceHome,
+        ProfileSettingsDestination.AppearancePlayer,
+        ProfileSettingsDestination.AppearanceNavigation,
+        ProfileSettingsDestination.AppearanceText,
+        -> AppearanceDestinationContent(destination, contentBundle.appearanceSettings, actions)
 
         ProfileSettingsDestination.CustomTheme ->
             CustomThemeEditor(
@@ -667,6 +669,10 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
         AnalyticsHelper.trackSettingsInteraction("hero_card_style_changed", it)
         onSetHeroCardStyle(it)
     },
+    onSetHeroCoverShade = {
+        AnalyticsHelper.trackSettingsInteraction("hero_cover_shade_changed", it)
+        onSetHeroCoverShade(it)
+    },
     onApplyTheme = { selection, custom ->
         AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)
         onApplyTheme(selection, custom)
@@ -705,5 +711,41 @@ private fun rememberAppInfo(context: Context): AppInfo {
                 .ifBlank { "?" },
             sdkInt = android.os.Build.VERSION.SDK_INT,
         )
+    }
+}
+
+/** Appearance's overview and its pages, sharing one tracked set of appearance callbacks. */
+@Composable
+private fun AppearanceDestinationContent(
+    destination: ProfileSettingsDestination,
+    appearance: AppearanceSettings,
+    actions: SettingsPagesActions,
+) {
+    val state = appearance.state
+    val tracked = remember(appearance.actions) { appearance.actions.trackedForAnalytics() }
+    when (destination) {
+        ProfileSettingsDestination.Theme ->
+            AppearanceThemePage(state, tracked, onBack = actions.onReturnToHub, onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) })
+        ProfileSettingsDestination.AppearanceHome -> AppearanceHomePage(state, tracked, appearance.heroPreview, onBack = actions.onReturnToHub)
+        ProfileSettingsDestination.AppearancePlayer -> AppearancePlayerPage(state, tracked, onBack = actions.onReturnToHub)
+        ProfileSettingsDestination.AppearanceNavigation -> AppearanceNavigationPage(state, tracked, onBack = actions.onReturnToHub)
+        ProfileSettingsDestination.AppearanceText -> AppearanceTextPage(state, tracked, onBack = actions.onReturnToHub)
+        else ->
+            AppearanceSettingsPage(
+                state = state,
+                actions = tracked,
+                onBack = actions.onReturnToHub,
+                onOpenSection = { section ->
+                    actions.onNavigate(
+                        when (section) {
+                            AppearanceSection.Theme -> ProfileSettingsDestination.Theme
+                            AppearanceSection.Home -> ProfileSettingsDestination.AppearanceHome
+                            AppearanceSection.Player -> ProfileSettingsDestination.AppearancePlayer
+                            AppearanceSection.Navigation -> ProfileSettingsDestination.AppearanceNavigation
+                            AppearanceSection.Text -> ProfileSettingsDestination.AppearanceText
+                        },
+                    )
+                },
+            )
     }
 }

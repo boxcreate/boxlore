@@ -309,10 +309,13 @@ class HomeConnectedRailTest {
         assertEquals(48f, bounds("home_mix_play_ep-0").width, 1f)
         composeRule.onNodeWithTag("home_show_selector_show-0").performClick()
         assertEquals(48f, bounds("home_mix_artwork_episode").width, 1f)
-        // Rows draw a 40dp button; Material's minimum touch target keeps the hit area 48dp.
+        // A row's cover is its Play button: the whole 48dp artwork is the playback target.
         val rowPlay = composeRule.onNodeWithTag("home_mix_play_episode", useUnmergedTree = true).fetchSemanticsNode().touchBoundsInRoot
         assertEquals(48f, rowPlay.width, 1f)
         assertEquals(48f, rowPlay.height, 1f)
+        val rowArt = composeRule.onNodeWithTag("home_mix_artwork_episode", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(rowArt.left, rowPlay.left, 1f)
+        assertEquals(rowArt.top, rowPlay.top, 1f)
     }
 
     @Test fun `tablet picker matches mix and selected content height while episodes retain bounded widths`() {
