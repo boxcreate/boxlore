@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog.crosspromo
 
 import cx.aswin.boxlore.core.model.EpisodeLinkKind
 import cx.aswin.boxlore.core.model.ShowNotes
+import java.util.Locale
 
 /** What an episode's show notes say about a promoted show. */
 internal object CrossPromotionDescription {
@@ -14,9 +15,13 @@ internal object CrossPromotionDescription {
     private const val ShowNoun = """(?:podcast|show|series|drama|docuseries|original)"""
     private const val Continuation = """(?=\s*(?:$|[.!?,;:)\]—–\-]|(?:wherever|where|on|for|every|each|daily|weekly|now|today|as|in|at|from|is|was|""" +
         """and|are|available|starting|out|anywhere|via|here|by|with|this|right|to|podcast)\b))"""
-    private val premium = Regex(
-        """\b(?:patreon|patrons?|premium|supporters?[- ]only|members?[- ]only|paid subscribers?|subscribers?[- ]only|unlock (?:the )?full|full episode (?:on|at))\b""",
-        ignoreCase,
+    private val premiumMarkers = listOf(
+        Regex("""\bpatr(?:eon|ons?)\b""", ignoreCase),
+        Regex("""\bpremium\b""", ignoreCase),
+        Regex("""\b(?:supporters?|members?|subscribers?)[- ]only\b""", ignoreCase),
+        Regex("""\bpaid subscribers?\b""", ignoreCase),
+        Regex("""\bunlock (?:the )?full\b""", ignoreCase),
+        Regex("""\bfull episode (?:on|at)\b""", ignoreCase),
     )
 
     private val promoLanguage = Regex("""\b(?:subscribe to|listen to|check out|follow|introducing|new podcast|new show|feed drop|trailer swap)\b""", ignoreCase)
@@ -31,13 +36,20 @@ internal object CrossPromotionDescription {
         Regex("""[!\n]|:\s*https?://|\s+https?://|\s+and\s+(?:follow|subscribe|listen|check)\b""", ignoreCase),
     )
 
-    private val friends = Regex(
-        """(?i:\b(?:from|by|of)\s+our\s+friends\s+(?:at|over\s+at|from)\s+)(?:(?i:the)\s+)?(?:(?i:podcast)\s+)?""" +
-            """(\p{Lu}[^.,!?\n:(]{1,60}?)(?:\s+(?i:podcast))?(?=[.,!?\n:(]|\s+(?i:who|where|and|in|on|about|for|called|with)\b)""",
-    )
+    private val friendsAt = Regex("""\b(?:from|by|of)\s+our\s+friends\s+(?:over\s+)?(?:at|from)\s+""", ignoreCase)
+    private val friendsNameLead = Regex("""^(?:the\s+)?(?:podcast\s+)?""", ignoreCase)
+    private val friendsNameEnds = setOf('.', ',', '!', '?', '\n', ':', '(')
+    private val friendsStopWords = setOf("who", "where", "and", "in", "on", "about", "for", "called", "with")
 
     /** The show named in "an episode from our friends at Modern CTO", the clearest way notes name another show. */
-    fun friendsName(text: String): String? = friends.find(text)?.groupValues?.get(1)?.let(CrossPromotionNames::clean)
+    fun friendsName(text: String): String? {
+        val phrase = friendsAt.find(text) ?: return null
+        val tail = text.substring(phrase.range.last + 1).replaceFirst(friendsNameLead, "")
+        val words = tail.takeWhile { it !in friendsNameEnds }.trim().split(Regex("\\s+"))
+        val nameWords = words.take(1) + words.drop(1).takeWhile { it.lowercase(Locale.ROOT) !in friendsStopWords }
+        val name = nameWords.dropLastWhile { it.equals("podcast", ignoreCase = true) }.joinToString(" ")
+        return name.takeIf { it.length in 2..61 && it.first().isUpperCase() }?.let(CrossPromotionNames::clean)
+    }
 
     /** Whether [text] invites listeners to [name] or describes [name] as a show. */
     fun supports(text: String, name: String): Boolean {
@@ -64,7 +76,7 @@ internal object CrossPromotionDescription {
     fun mentions(text: String, name: String): Boolean =
         CrossPromotionNames.pattern(name)?.let { Regex(it, ignoreCase).containsMatchIn(text) } == true
 
-    fun premium(text: String): Boolean = premium.containsMatchIn(text)
+    fun premium(text: String): Boolean = premiumMarkers.any { it.containsMatchIn(text) }
 
     /** A show name the notes invite listeners to, from a labelled podcast link or an invitation. */
     fun name(notes: ShowNotes, host: String): String? = notes.links.firstNotNullOfOrNull { link ->

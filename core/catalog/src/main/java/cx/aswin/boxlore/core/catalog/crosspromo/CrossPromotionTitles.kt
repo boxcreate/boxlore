@@ -33,10 +33,8 @@ internal object CrossPromotionTitles {
     private val leadingNumber = Regex("""^(?:(?:episode|ep\.?)\s*)?#?\d+\s*[.):|–—\-]+\s+""", ignoreCase)
 
     // "Special Bonus - Introducing: Civilian or Spy" wraps an introduction in the feed's own label.
-    private val leadingLabel = Regex(
-        """^[\[(]?(?:special\s+)?(?:bonus(?:\s+episode)?|special)[\])]?\s*[:|–—\-]+\s*(?=(?:introducing|announcing|presenting|listen now|new show|new podcast)\s*[:|–—\-])""",
-        ignoreCase,
-    )
+    private val leadingLabel = Regex("""^[\[(]?(?:special\s+)?(?:bonus(?:\s+episode)?|special)[\])]?\s*[:|–—\-]+\s*""", ignoreCase)
+    private val labelledIntroduction = Regex("""^(?:introducing|announcing|presenting|listen now|new show|new podcast)\s*[:|–—\-]""", ignoreCase)
 
     private fun prefixed(cues: String) = Regex("""^[\[(*]?(?:$cues)[\])*]?$Delimiter(.+)$""", ignoreCase)
     private fun suffixed(cues: String) =
@@ -64,11 +62,12 @@ internal object CrossPromotionTitles {
     private val newShowCalled = Regex("""\bnew\s+(?:podcast|show|series)\s+(?:called|titled|named)\s+(.+)$""", ignoreCase)
     private val mightLike = Regex("""^(?:i think\s+)?you(?:['’]ll| will| might| may)\s+(?:also\s+)?(?:like|love|enjoy)\s+(.+)$""", ignoreCase)
     private val comingSoon = prefixed("""coming soon""")
-    private val listenTo = Regex(
-        """^(?i:listen\s+to)\s+(?!(?i:this|that|these|those|my|me|us|you|your|it|what|why|how|when|if|before|after)\b)(\p{Lu}.+)$""",
-    )
+
+    // "Listen to Infamous: From Conned to Cupid", but not "Listen to This Before You Go".
+    private val listenTo = Regex("""^(?i:listen\s+to)\s+(\p{Lu}.+)$""")
+    private val listenToTopics = setOf("this", "that", "these", "those", "my", "me", "us", "you", "your", "it", "what", "why", "how", "when", "if", "before", "after")
     private val mix = Regex("""\b(?:dj|mix|freemix|remix|mixtape|live set|radio show)\b|\b\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}\b""", ignoreCase)
-    private val numbered = Regex("""\b(?:episode|ep\.?|nr\.?|no\.|vol\.?)\s*\d+|#\d+""", ignoreCase)
+    private val numbered = listOf(Regex("""\b(?:episode|ep|nr|no|vol)\.?\s*\d+""", ignoreCase), Regex("""#\d+"""))
     private val quotedIntroduction = Regex("""^(?:introducing|announcing|presenting|listen to|check out)\s+(["“‘'].+)$""", ignoreCase)
     private val newSeason = Regex("""^(?:(?:a|the)\s+)?(?:brand[- ])?new season of\s+(.+)$""", ignoreCase)
     private val networkPresents = Regex(
@@ -101,6 +100,8 @@ internal object CrossPromotionTitles {
         val indicator: CrossPromotionIndicator,
         val group: Int = 1,
         val explicit: Boolean = false,
+        /** Refuses a matched name the wording alone cannot tell apart from a topic. */
+        val accepts: (String) -> Boolean = { true },
     )
 
     private val rules = listOf(
@@ -122,21 +123,28 @@ internal object CrossPromotionTitles {
         Rule(weakSuffix, TitleCue.WEAK, CrossPromotionIndicator.TITLE_DELIMITER_PATTERN),
         Rule(fromFriends, TitleCue.EXCHANGE, CrossPromotionIndicator.TITLE_DELIMITER_PATTERN),
         Rule(seamless, TitleCue.SEAMLESS, CrossPromotionIndicator.TITLE_SEAMLESS_INTRODUCING),
-        Rule(listenTo, TitleCue.SEAMLESS, CrossPromotionIndicator.TITLE_SEAMLESS_INTRODUCING),
+        Rule(listenTo, TitleCue.SEAMLESS, CrossPromotionIndicator.TITLE_SEAMLESS_INTRODUCING, accepts = { it.takeWhile(Char::isLetter).lowercase() !in listenToTopics }),
     )
 
     /** The first rule whose wording matches [title] and leaves a usable show name. */
     fun candidate(title: String): TitleCandidate? {
-        val text = title.trim().replace(Regex("\\s+"), " ").replaceFirst(leadingNumber, "").replaceFirst(leadingLabel, "")
+        val text = stripLeadingLabel(title.trim().replace(Regex("\\s+"), " ").replaceFirst(leadingNumber, ""))
         return rules.firstNotNullOfOrNull { rule ->
             val anywhere = rule.regex == fromFriends || rule.regex == newShowCalled
             val match = (if (anywhere) rule.regex.find(text) else rule.regex.matchEntire(text)) ?: return@firstNotNullOfOrNull null
             val presenter = if (rule.regex == networkPresents) match.groupValues[1].trim() else null
             // "Deep Ghosh presents United We Rise Nr. 197" is a numbered mix series, not a show being introduced.
-            val numberedSeries = presenter != null && (numbered.containsMatchIn(text) || mix.containsMatchIn(text))
+            val numberedSeries = presenter != null && (numbered.any { it.containsMatchIn(text) } || mix.containsMatchIn(text))
             if (presenter != null && (numberedSeries || presenter.split(' ').size > 4)) return@firstNotNullOfOrNull null
+            if (!rule.accepts(match.groupValues[rule.group])) return@firstNotNullOfOrNull null
             CrossPromotionNames.clean(match.groupValues[rule.group])?.let { TitleCandidate(it, rule.cue, rule.indicator, presenter, rule.explicit) }
         }
+    }
+
+    private fun stripLeadingLabel(text: String): String {
+        val label = leadingLabel.find(text) ?: return text
+        val rest = text.substring(label.range.last + 1)
+        return if (labelledIntroduction.containsMatchIn(rest)) rest else text
     }
 
     /** Names a title could be carrying without any promotional wording: the whole title, quotes and parts. */
