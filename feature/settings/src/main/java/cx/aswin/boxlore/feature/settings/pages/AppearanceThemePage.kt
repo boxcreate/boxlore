@@ -21,13 +21,17 @@ import cx.aswin.boxlore.feature.settings.components.SettingsTileSection
 import cx.aswin.boxlore.feature.settings.components.ThemeLookPicture
 
 /**
- * Theme & colors: the four looks as picture tiles (each in light and dark), the custom theme
- * editor, artwork colors for episode and podcast pages, and the widgets, which follow these colors.
+ * Theme & colors: display mode, the four looks as picture tiles (each in light and dark), the
+ * custom theme editor, artwork colors for episode and podcast pages, and the widgets, which follow
+ * these colors.
  */
 @Composable
 internal fun AppearanceThemePage(state: AppearanceUiState, actions: AppearanceActions, onBack: () -> Unit, onEditCustomTheme: () -> Unit) {
     val selected = state.selectedLookKey()
     SettingsScaffold(title = "Theme & colors", onBack = onBack) {
+        SettingsGroup(title = "Display mode") {
+            SettingsContent { DisplayModeSelector(state, actions) }
+        }
         ThemeLookTiles(state, actions, onEditCustomTheme)
         SettingsGroup {
             SettingsNavigationRow(

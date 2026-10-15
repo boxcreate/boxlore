@@ -106,22 +106,18 @@ typealias AppearanceHeroPreview = @Composable (style: String, coverShade: String
 internal enum class AppearanceSection { Theme, Home, Player, Navigation, Text }
 
 /**
- * The Appearance overview: a preview of Home's hero cards in the chosen style, Display mode (the
- * setting people change most), then one row per page, each showing what is picked now.
+ * The Appearance overview: Display mode (the setting people change most, also on Theme & colors),
+ * then one row per page, each showing what is picked now. Hero card previews live on the Home page.
  */
 @Composable
 internal fun AppearanceSettingsPage(
     state: AppearanceUiState,
     actions: AppearanceActions,
-    heroPreview: AppearanceHeroPreview?,
     onBack: () -> Unit,
     onOpenSection: (AppearanceSection) -> Unit,
 ) {
     val summary = appearanceSummary(state)
     SettingsScaffold(title = "Appearance", onBack = onBack) {
-        if (heroPreview != null) {
-            AppearanceHeroPreviewStage(state.heroCardStyle, state.heroCoverShade, heroPreview, height = 236.dp)
-        }
         SettingsGroup(title = "Display mode") {
             SettingsContent { DisplayModeSelector(state, actions) }
         }

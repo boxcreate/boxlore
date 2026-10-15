@@ -61,9 +61,26 @@ class AppearancePagesTest {
         state.value = baseState.copy(heroCardStyle = HeroCardStyle.COVER, heroCoverShade = HeroCoverShade.THEME, currentOpenAppTo = OpenAppTo.DOWNLOADS)
         compose.setContent {
             BoxLoreTheme(dynamicColor = false) {
-                AppearanceSettingsPage(state.value, actions, heroPreview = fakePreview, onBack = {}, onOpenSection = { opened += it })
+                AppearanceSettingsPage(state.value, actions, onBack = {}, onOpenSection = { opened += it })
             }
         }
+        compose.onNodeWithText("Display mode").assertExists()
+        verifyRows(opened)
+    }
+
+    @Test
+    fun `theme and colors also offers display mode above the looks`() {
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                AppearanceThemePage(state.value, actions, onBack = {}, onEditCustomTheme = {})
+            }
+        }
+        compose.onNodeWithText("Display mode").assertExists()
+        compose.onNodeWithText("boxlore classic").assertIsSelected()
+    }
+
+    private fun verifyRows(opened: MutableList<AppearanceSection>) {
+        compose.onNodeWithContentDescription("Preview of Cover hero cards").assertDoesNotExist()
         compose.onNodeWithText("Cover hero cards, app theme shade").assertExists()
         compose.onNodeWithText("Floating bar · starts on Downloads").assertExists()
         compose.onNodeWithText("Home").performClick()

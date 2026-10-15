@@ -724,7 +724,6 @@ private fun AppearanceDestinationContent(
             AppearanceSettingsPage(
                 state = state,
                 actions = tracked,
-                heroPreview = appearance.heroPreview,
                 onBack = actions.onReturnToHub,
                 onOpenSection = { section ->
                     actions.onNavigate(
