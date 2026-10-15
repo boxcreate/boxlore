@@ -1,10 +1,14 @@
 package cx.aswin.boxlore.feature.home.components
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -21,8 +25,6 @@ import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
 import cx.aswin.boxlore.feature.home.StableHeroList
 import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.sin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -44,6 +46,7 @@ class HaloHeroCardsTest {
     private val plays = mutableListOf<String>()
     private val details = mutableListOf<String>()
     private var arrows = 0
+    private lateinit var view: View
 
     private fun episode(id: String) = TestFixtures.episode(id = id, title = "Episode $id", podcastId = "show-$id").copy(duration = 3600)
     private fun show(id: String) = TestFixtures.podcast(id = "show-$id", title = "Show $id", imageUrl = "")
@@ -52,6 +55,7 @@ class HaloHeroCardsTest {
 
     private fun render() {
         composeRule.setContent {
+            view = LocalView.current
             CompositionLocalProvider(LocalLayoutDirection provides direction.value) {
                 BoxLoreTheme(dynamicColor = false) {
                     CompositionLocalProvider(LocalHeroCardStyle provides HeroCardStyle.HALO, LocalHeroCoverShade provides shade.value) {
@@ -101,6 +105,20 @@ class HaloHeroCardsTest {
         assertEquals(listOf("show-b", "show-b", "show-b"), plays)
     }
 
+    @Test fun `a collection cover's play button is drawn whole over its ring`() {
+        val shows = listOf("a", "b", "c", "d").map(::show)
+        item.value = SmartHeroItem(HeroType.RESUME_GRID, shows.first(), "", gridItems = shows)
+        render()
+        val cover = composeRule.onNodeWithTag("home_hero_collection_1_play").fetchSemanticsNode().boundsInRoot
+        // The button sits in the cover's bottom end corner: 30dp across with a 3dp ring in the card's colour.
+        val corner = pixel(cover.right - 8f, cover.bottom - 8f)
+        val fill = pixel(cover.right - 23f, cover.bottom - 15f)
+        assertTrue(
+            "the corner of the button, outside the ring, matches its fill (${Integer.toHexString(corner)} vs ${Integer.toHexString(fill)})",
+            sameColor(corner, fill),
+        )
+    }
+
     @Test fun `right to left puts the cover in the top start corner`() {
         direction.value = LayoutDirection.Rtl
         render()
@@ -110,6 +128,8 @@ class HaloHeroCardsTest {
     }
 
     @Test fun `the ring ends in the card's upper half, leaves room for the context and runs edge to edge`() {
+        // However far the lobes have turned, the progress's rounded ends (2dp past their centre) stay off the card.
+        val turns = (0 until 8).map { it * HaloLobeTurn / 8 }
         for (width in 260..440 step 20) {
             for (height in listOf(416f, 476f, 616f)) {
                 val g = haloGeometry(width.toFloat(), height)
@@ -118,10 +138,13 @@ class HaloHeroCardsTest {
                 assertTrue("$label cover runs past the top and end", g.coverTop < 0f && g.coverStart + g.cover > width)
                 assertTrue("$label context ${g.contextWidth}", g.contextWidth >= 60f)
                 assertTrue("$label sweep ${g.arcSweep}", g.arcSweep < -120f && g.arcSweep > -200f)
-                val (startX, startY) = point(g, g.arcStart)
-                val (endX, endY) = point(g, g.arcStart + g.arcSweep)
-                assertTrue("$label progress starts just inside the top edge ($startX, $startY)", startY in 0f..12f && startX < g.centerX)
-                assertTrue("$label progress ends just inside the end edge ($endX, $endY)", endX in (width - 12f)..width.toFloat() && endY in 0f..height)
+                assertTrue("$label drawing starts before progress begins", g.arcStart > g.arcFrom)
+                turns.forEach { turn ->
+                    val start = haloRingPoint(g, g.arcStart, turn)
+                    val end = haloRingPoint(g, g.arcFrom + g.arcSweep, turn)
+                    assertTrue("$label turn $turn: progress starts beyond the top edge (${start.y})", start.y <= -2f + 0.01f && start.x < g.centerX)
+                    assertTrue("$label turn $turn: full progress ends beyond the end edge (${end.x})", end.x >= width + 2f - 0.01f)
+                }
             }
         }
     }
@@ -130,12 +153,29 @@ class HaloHeroCardsTest {
         val g = haloGeometry(360f, 616f, top = 120f)
         assertEquals(120f, g.coverTop, 0.01f)
         assertTrue(g.centerY + g.ringRadius <= 616f * 0.55f + 0.01f)
-        assertEquals(267f, g.arcStart, 0.01f)
+        assertEquals(270f, g.arcFrom, 0.01f)
+        assertEquals(270f, g.arcStart, 0.01f)
         assertTrue(abs(g.arcSweep) > 180f)
     }
 
-    private fun point(g: HaloGeometry, degrees: Float): Pair<Float, Float> {
-        val radians = Math.toRadians(degrees.toDouble())
-        return (g.centerX + g.ringRadius * cos(radians).toFloat()) to (g.centerY + g.ringRadius * sin(radians).toFloat())
+    @Test fun `the cookie turns one lobe every 2·4 seconds, like the compact player`() {
+        assertEquals(HaloLobeTurn / 2, advanceHaloRotation(0f, 1_200_000_000L), 0.0001f)
+        assertEquals(0f, advanceHaloRotation(0f, 2_400_000_000L), 0.0001f)
+        assertEquals(0f, advanceHaloRotation(Float.NaN, 0L), 0f)
+        // The ring is the cookie's edge pushed out: a lobe tip reaches the ring radius at the top, half a
+        // lobe's turn brings a valley there, and a whole lobe's turn looks the same as none.
+        val g = haloGeometry(320f, 416f)
+        assertEquals(g.centerY - g.ringRadius, haloRingPoint(g, 270f, 0f).y, 0.01f)
+        assertEquals(g.centerY - (g.ringRadius - g.lobe * 2), haloRingPoint(g, 270f, HaloLobeTurn / 2).y, 0.01f)
+        assertEquals(haloRingPoint(g, 250f, 0f).x, haloRingPoint(g, 250f, HaloLobeTurn).x, 0.01f)
     }
+
+    private fun pixel(x: Float, y: Float): Int = composeRule.runOnIdle {
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        view.draw(Canvas(bitmap))
+        bitmap.getPixel(x.toInt(), y.toInt()).also { bitmap.recycle() }
+    }
+
+    private fun sameColor(a: Int, b: Int): Boolean =
+        listOf(16, 8, 0).all { shift -> abs(((a shr shift) and 0xFF) - ((b shr shift) and 0xFF)) <= 8 }
 }

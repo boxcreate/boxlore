@@ -14,10 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -145,13 +142,11 @@ private fun DuotoneHeroSkeletonCard(tones: HeroSkeletonTones) {
  * lines in the room beside them, and the copy and Play / details pair at the bottom. A plain layout,
  * so nothing subcomposes on a cold start.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun HaloHeroSkeletonCard(tones: HeroSkeletonTones) {
-    val cookie = MaterialShapes.Cookie9Sided.toShape()
     Layout(
         content = {
-            Box(Modifier.m3Shimmer(tones.base, tones.highlight, cookie))
+            Box(Modifier.m3Shimmer(tones.base, tones.highlight, HaloCookie))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SkeletonLine(0.7f, 12.dp, tones.base, tones.highlight)
                 SkeletonLine(0.5f, 24.dp, tones.base, tones.highlight)
