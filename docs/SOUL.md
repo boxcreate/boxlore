@@ -2,7 +2,7 @@
 
 Technology was never supposed to be an obstacle course.
 
-The founding promise of personal computing—and of Android in particular—was simple: when you bought a device, you owned it. You had the quiet freedom to choose your tools, install your software, and explore without asking a gatekeeper for permission. 
+The founding promise of personal computing—and of Android in particular—was simple: when you bought a device, you owned it. You had the quiet freedom to choose your tools, install your software, and explore without asking a gatekeeper for permission.
 
 Over the past decade, that freedom has been steadily enclosed. Platforms born from open source now treat independent software with suspicion, turning personal computers into leased terminals. The apps followed suit. In the race to monetize every interaction, simple tools were hollowed out by extractive design: basic playback controls locked behind paywalls, clean interfaces cluttered with promotional noise, and surveillance algorithms quietly profiling every tap to maximize screen time.
 
@@ -26,9 +26,9 @@ Then you press play, and it goes quiet. The show leads, the colours follow its a
 
 And it is yours. Change how it looks, retag a show, turn off what you don't need. It works just as well either way, because it is your app, not ours.
 
-### On Our License
+### On our license
 
-It might feel counterintuitive for us to champion open source while releasing boxlore under the [PolyForm Strict License](https://polyformproject.org/licenses/strict/1.0.0). 
+It might feel counterintuitive for us to champion open source while releasing boxlore under the [PolyForm Strict License](https://polyformproject.org/licenses/strict/1.0.0).
 
 We keep the app's code source-available because we believe in transparency: you should be able to inspect the app you install, see how it handles your data, learn from how it's built, and run it for your own personal use. The servers behind search and recommendations are private; [What we track and why](PRIVACY.md) explains what they receive.
 
