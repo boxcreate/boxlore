@@ -15,7 +15,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.Surface
@@ -27,7 +27,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -65,11 +73,6 @@ fun BoxLoreNavigationRail(currentRoute: String, onNavigate: (String) -> Unit, mo
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 destinations.forEachIndexed { index, destination ->
                     val selected = isNavDestinationSelected(currentRoute, destination.route)
-                    val tint = if (abs(position.value - index) < 0.1f) {
-                        if (index == 3) loreNavigationContentColor(scheme, position.value) else accents.content
-                    } else {
-                        scheme.onSurfaceVariant
-                    }
                     Column(
                         Modifier.size(64.dp).selectable(selected, role = Role.Tab, onClick = { onNavigate(destination.route) }),
                         verticalArrangement = Arrangement.Center,
@@ -78,13 +81,32 @@ fun BoxLoreNavigationRail(currentRoute: String, onNavigate: (String) -> Unit, mo
                         val iconResource = if (selected) destination.selectedIconRes else destination.unselectedIconRes
                         val icon = iconResource?.let { ImageVector.vectorResource(it) }
                             ?: if (selected) destination.selectedIcon else destination.unselectedIcon
+                        val painter = rememberVectorPainter(icon)
                         Box(Modifier.size(width = 64.dp, height = 36.dp), contentAlignment = Alignment.Center) {
-                            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+                            // The tint follows the moving indicator in the draw phase, so the rail does not recompose per frame.
+                            Box(Modifier.size(24.dp).drawBehind { drawRailIcon(painter, railIconTint(index, position.value, scheme, accents)) })
                         }
                         Text(destination.label, color = if (selected) scheme.onSurface else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
         }
+    }
+}
+
+private fun railIconTint(index: Int, indicatorIndex: Float, scheme: ColorScheme, accents: NavigationAccentColors): Color =
+    if (abs(indicatorIndex - index) < 0.1f) {
+        if (index == 3) loreNavigationContentColor(scheme, indicatorIndex) else accents.content
+    } else {
+        scheme.onSurfaceVariant
+    }
+
+/** Matches Icon's centered fit, including Lore's wider artwork. */
+private fun DrawScope.drawRailIcon(painter: VectorPainter, tint: Color) {
+    val intrinsic = painter.intrinsicSize
+    val scale = minOf(size.width / intrinsic.width, size.height / intrinsic.height)
+    val fitted = Size(intrinsic.width * scale, intrinsic.height * scale)
+    translate((size.width - fitted.width) / 2f, (size.height - fitted.height) / 2f) {
+        with(painter) { draw(fitted, colorFilter = ColorFilter.tint(tint)) }
     }
 }

@@ -3,6 +3,7 @@ package cx.aswin.boxlore.ui
 import android.app.Application
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Recomposer
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
@@ -53,5 +54,28 @@ class TabletNavigationRailTest {
             fixture.compose.onAllNodesWithTag("navigation_rail_indicator", useUnmergedTree = true).assertCountEquals(1)
             assertEquals(route, routes.last())
         }
+    }
+
+    @Test
+    fun `a moving indicator redraws the rail without recomposing it every frame`() {
+        val selected = mutableStateOf("home")
+        fixture.prepare()
+        fixture.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                BoxLoreNavigationRail(selected.value, {}, Modifier.width(80.dp).height(600.dp))
+            }
+        }
+        fixture.compose.waitForIdle()
+        fixture.compose.mainClock.autoAdvance = false
+        fun applied() = Recomposer.runningRecomposers.value.sumOf { it.changeCount }
+        for (route in listOf("library", "learn", "home")) {
+            fixture.compose.runOnIdle { selected.value = route }
+            repeat(3) { fixture.compose.mainClock.advanceTimeByFrame() }
+            val settled = applied()
+            repeat(12) { fixture.compose.mainClock.advanceTimeByFrame() }
+            assertEquals("Indicator frames for $route must not recompose the rail", settled, applied())
+        }
+        fixture.compose.mainClock.autoAdvance = true
+        fixture.compose.onNodeWithText("Home").assertIsSelected()
     }
 }

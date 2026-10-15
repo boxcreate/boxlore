@@ -89,7 +89,7 @@ Bitmap callers can choose a shorter per-attempt timeout while retaining outer ca
 
 - TabletFeaturedRow packs a two-column feature beside later posters with caller-supplied spacing. Card-width callers may choose a narrower family maximum; tight slots retain their extent while centering the bounded surface. Actual shell mini-player visibility supplies tablet footer clearance. Brief artwork scaling is configurable while existing callers retain Fit.
 
-- `BoxLoreNavigationRail` reuses the phone destinations, selection-index/retargeting functions, accent colors and Lore aurora. One icon selection surface travels between all four actions; labels remain on a readable neutral surface. Shell-provided rail/player-pane flags keep feature overlays clear of the actual chrome. Pure placement tests cover taskbar and docked-player clearance for both saved navigation styles.
+- `BoxLoreNavigationRail` reuses the phone destinations, selection-index/retargeting functions, accent colors and Lore aurora. One icon selection surface travels between all four actions; labels remain on a readable neutral surface. Icon tints follow the moving indicator in the draw phase, so the rail does not recompose on every animation frame. Shell-provided rail/player-pane flags keep feature overlays clear of the actual chrome. Pure placement tests cover taskbar and docked-player clearance for both saved navigation styles.
 
 - `LocalBoxlorePaneBounds` carries the shell's window-relative content rectangle, alongside pane width. Fold-aware players intersect this rectangle with physical safe regions rather than treating a hinge's global bounds as local pane coordinates.
 
