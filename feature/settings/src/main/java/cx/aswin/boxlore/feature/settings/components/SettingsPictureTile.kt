@@ -5,6 +5,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -38,6 +39,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 private val TileShape = RoundedCornerShape(20.dp)
@@ -140,31 +142,46 @@ internal fun SettingsPicture(modifier: Modifier = Modifier, content: @Composable
 }
 
 /**
- * [items] as one horizontally scrolling row of [tileWidth] tiles that share the tallest one's
- * height, opening scrolled to [selectedIndex] so the current choice is in view.
+ * [items] as one horizontally scrolling row of tiles that share the tallest one's height, opening
+ * scrolled to [selectedIndex] so the current choice is in view. Tiles are sized to the row
+ * ([settingsPictureRowTileWidth]) so two show whole and the next is cut off at the edge, which tells
+ * the listener the row scrolls; [tileWidth] overrides that.
  */
 @Composable
 internal fun <T> SettingsPictureRow(
     items: List<T>,
     selectedIndex: Int,
     modifier: Modifier = Modifier,
-    tileWidth: Dp = 168.dp,
+    tileWidth: Dp = Dp.Unspecified,
     tile: @Composable (item: T, modifier: Modifier) -> Unit,
 ) {
-    val scroll = rememberScrollState()
-    val step = with(LocalDensity.current) { (tileWidth + TileGap).roundToPx() }
-    LaunchedEffect(Unit) {
-        if (selectedIndex > 0) scroll.scrollTo(selectedIndex * step)
-    }
-    Row(
-        modifier.fillMaxWidth().horizontalScroll(scroll).height(IntrinsicSize.Min).selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(TileGap),
-    ) {
-        items.forEach { item -> tile(item, Modifier.width(tileWidth).fillMaxHeight()) }
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val width = if (tileWidth.isSpecified) tileWidth else settingsPictureRowTileWidth(maxWidth)
+        val scroll = rememberScrollState()
+        val step = with(LocalDensity.current) { (width + TileGap).roundToPx() }
+        LaunchedEffect(Unit) {
+            if (selectedIndex > 0) scroll.scrollTo(selectedIndex * step)
+        }
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(scroll).height(IntrinsicSize.Min).selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(TileGap),
+        ) {
+            items.forEach { item -> tile(item, Modifier.width(width).fillMaxHeight()) }
+        }
     }
 }
 
+/**
+ * A tile width for a [rowWidth] row that shows two tiles whole and about a third of the next, so the
+ * cut-off tile reads as more to scroll; kept between 132dp (pictures stay legible) and 200dp.
+ */
+internal fun settingsPictureRowTileWidth(rowWidth: Dp): Dp =
+    ((rowWidth - TileGap * 2) / RowVisibleTiles).coerceIn(RowTileMin, RowTileMax)
+
 private val TileGap = 8.dp
+private const val RowVisibleTiles = 2.35f
+private val RowTileMin = 132.dp
+private val RowTileMax = 200.dp
 
 /** [items] as equal-width tiles in rows of [columns]; tiles in a row share the tallest one's height. */
 @Composable
