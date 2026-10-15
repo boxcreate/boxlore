@@ -48,6 +48,7 @@ internal fun OnboardingViewModel.launchSimilarShowsFetch(
                         },
                         country = locale.country,
                         languages = locale.languages,
+                        recommendationFormat = "discovery_v2",
                     )
 
                 val response =

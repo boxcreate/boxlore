@@ -2,7 +2,9 @@ package cx.aswin.boxlore.feature.player.v2
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -18,7 +20,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,7 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -69,6 +69,7 @@ import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.theme.ArtworkMiniPlayerColors
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.feature.player.v2.logic.ConfirmationVisibility
@@ -98,7 +99,7 @@ data class MiniPlayerContent(
 
 data class MiniPlayerColors(
     val colorScheme: ColorScheme,
-    val backgroundColor: Color,
+    val mini: ArtworkMiniPlayerColors,
 )
 
 data class MiniPlayerActions(
@@ -323,6 +324,7 @@ private fun MiniPlayerCard(
     val compactFraction = morph.compactFraction
     val haptics = LocalHapticFeedback.current
     val chrome = navigationChromeMetrics(LocalNavigationStyle.current)
+    val progress = animateFloatAsState(miniPlayerCompactProgress(content), tween(350, easing = LinearEasing), label = "miniProgress")
     Box(
         modifier =
         Modifier
@@ -338,7 +340,7 @@ private fun MiniPlayerCard(
                 )
                 clip = true
             }
-            .background(color = colors.backgroundColor.copy(alpha = 1f - morph.cookieFraction))
+            .miniPlayerSplitSurface(colors.mini, morph.cookieFraction, split = { miniSplitAmount(morph.compactFraction) }, progress = progress)
             .then(
                 if (morph.expansionFraction > 0.001f) {
                     Modifier.clearAndSetSemantics {}
@@ -365,7 +367,7 @@ private fun MiniPlayerCard(
                 dismissThreshold,
             ),
     ) {
-        MiniPlayerRow(content, colors.colorScheme, actions, morph)
+        MiniPlayerRow(content, colors, actions, morph, progress)
     }
 }
 
@@ -390,24 +392,35 @@ private fun Modifier.miniSwipeGesture(
 @Composable
 private fun MiniPlayerRow(
     content: MiniPlayerContent,
-    colorScheme: ColorScheme,
+    colors: MiniPlayerColors,
     actions: MiniPlayerActions,
     morph: MiniPlayerMorph,
+    progress: State<Float>,
 ) {
     val compactFraction = morph.compactFraction
     val metadataAlpha = (1f - compactFraction / 0.6f).coerceIn(0f, 1f)
     val controlsEnabled = compactFraction <= 0.001f && morph.expansionFraction <= 0.001f
+    // The bar's ring revolves with its own clock while playing; the compact cookie keeps the shared one.
+    val barRotation = rememberCompactPlayerRotation(content.episode.id, content.isPlaying && !content.isLoading && controlsEnabled)
+    val hidden = if (compactFraction > 0.001f || morph.expansionFraction > 0.001f) Modifier.clearAndSetSemantics {} else Modifier
     Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
+        MiniPlayerBarRing(
+            progress = progress,
+            colors = colors.mini,
+            rotation = barRotation,
+            alpha = { miniSplitAmount(morph.compactFraction) },
+            modifier = Modifier.align(Alignment.CenterStart).padding(start = 6.dp).size(52.dp),
+        )
         MiniPlayerArtwork(
             content = content,
-            colorScheme = colorScheme,
+            colorScheme = colors.colorScheme,
             compactFraction = compactFraction,
-            rotation = morph.rotation,
-            modifier = Modifier.align(Alignment.CenterStart).padding(start = lerp(8.dp, 6.dp, compactFraction)),
+            rotation = if (compactFraction > 0.001f) morph.rotation else barRotation,
+            modifier = Modifier.align(Alignment.CenterStart).padding(start = lerp(12.dp, 6.dp, compactFraction)),
         )
         MiniPlayerCompactStatus(
             content = content,
-            colorScheme = colorScheme,
+            colorScheme = colors.colorScheme,
             compactFraction = compactFraction,
             cookieFraction = morph.cookieFraction,
             rotation = morph.rotation,
@@ -417,33 +430,28 @@ private fun MiniPlayerRow(
             Row(
                 modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .padding(start = 68.dp, end = 10.dp, top = 4.dp, bottom = 4.dp)
+                    .fillMaxSize()
+                    .padding(start = 68.dp, end = MiniPlaySegmentWidth + MiniSegmentGap + 10.dp, top = 4.dp, bottom = 4.dp)
                     .graphicsLayer { alpha = metadataAlpha }
-                    .then(
-                        if (compactFraction > 0.001f || morph.expansionFraction > 0.001f) {
-                            Modifier.clearAndSetSemantics {}
-                        } else {
-                            Modifier
-                        },
-                    ),
+                    .then(hidden),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                MiniPlayerMetadata(
-                    content = content,
-                    colorScheme = colorScheme,
-                    motionEnabled = controlsEnabled,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                MiniTransportControls(
-                    content = content,
-                    enabled = controlsEnabled,
-                    colorScheme = colorScheme,
-                    actions = actions,
-                )
+                MiniPlayerMetadata(content = content, colors = colors.mini, modifier = Modifier.weight(1f))
+                if (content.showSeekButtons) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    MiniSeekButtons(content = content, colors = colors.mini, actions = actions, enabled = controlsEnabled)
+                }
             }
+            MiniPlaySegment(
+                isPlaying = content.isPlaying,
+                isLoading = content.isLoading,
+                colors = colors.mini,
+                enabled = controlsEnabled,
+                onPlayPause = actions.onPlayPause,
+                modifier = Modifier.align(Alignment.CenterEnd).width(MiniPlaySegmentWidth).fillMaxHeight()
+                    .graphicsLayer { alpha = metadataAlpha }
+                    .then(hidden),
+            )
         }
     }
 }
@@ -485,8 +493,7 @@ private fun MiniPlayerArtwork(
 @Composable
 private fun MiniPlayerMetadata(
     content: MiniPlayerContent,
-    colorScheme: ColorScheme,
-    motionEnabled: Boolean,
+    colors: ArtworkMiniPlayerColors,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -499,25 +506,18 @@ private fun MiniPlayerMetadata(
                 fontWeight = GoogleSansWeight.semiBold,
                 letterSpacing = (-0.15).sp,
             ),
-            color = colorScheme.onPrimaryContainer,
+            color = colors.onBar,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        MiniPlayerSubtitle(content, colorScheme, Modifier.fillMaxWidth())
-        Spacer(modifier = Modifier.height(4.dp))
-        MiniPlayerProgress(
-            content = content,
-            colorScheme = colorScheme,
-            motionEnabled = motionEnabled,
-            modifier = Modifier.fillMaxWidth().height(6.dp).clearAndSetSemantics {},
-        )
+        MiniPlayerSubtitle(content, colors, Modifier.fillMaxWidth())
     }
 }
 
 @Composable
 private fun MiniPlayerSubtitle(
     content: MiniPlayerContent,
-    colorScheme: ColorScheme,
+    colors: ArtworkMiniPlayerColors,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -529,25 +529,43 @@ private fun MiniPlayerSubtitle(
             Icon(
                 imageVector = Icons.Rounded.CastConnected,
                 contentDescription = null,
-                tint = colorScheme.primary,
+                tint = colors.play,
                 modifier = Modifier.size(12.dp),
             )
         }
-        Text(
-            text = if (content.isCasting) {
-                "Casting to ${content.castDeviceName ?: "Cast device"}"
-            } else {
-                content.podcastTitle.replace("+", " ")
-            },
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                letterSpacing = 0.sp,
-            ),
-            color = colorScheme.onPrimaryContainer.copy(alpha = 0.72f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        val style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp)
+        if (content.isCasting) {
+            Text(
+                text = "Casting to ${content.castDeviceName ?: "Cast device"}",
+                style = style,
+                color = colors.onBarVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        } else {
+            // A long show name truncates; the time left always shows in full after it.
+            val showName = content.podcastTitle.replace("+", " ").takeIf { it.isNotBlank() }
+            val timeLeft = miniPlayerTimeLeft(content.position, miniPlayerCompactDuration(content))
+            if (showName != null) {
+                Text(
+                    text = showName,
+                    style = style,
+                    color = colors.onBarVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+            }
+            if (timeLeft != null) {
+                Text(
+                    text = if (showName != null) "· $timeLeft" else timeLeft,
+                    style = style,
+                    color = colors.onBarVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+        }
     }
 }
 

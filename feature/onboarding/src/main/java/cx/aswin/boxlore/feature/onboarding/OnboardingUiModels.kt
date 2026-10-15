@@ -34,14 +34,9 @@ data class OnboardingUiState(
     val selectedPodcasts: Map<String, Podcast> = emptyMap(),
     // AI Onboarding fields
     val aiHistory: List<OnboardingHistoryEntry> = emptyList(),
-    val aiAssistantMessage: String = "Hi! I'm boxlore. To start, what kind of a listener are you?",
-    val aiOptions: List<String> =
-        listOf(
-            "Storyseeker | Serialized narratives, investigative series, and immersive audio dramas",
-            "Deep Diver | Detailed analysis, long-form research, and intellectual essays",
-            "Conversationalist | Candid guest interviews, unscripted discussions, and casual banter",
-            "Chill Listener | Soothing voices, mindfulness sessions, and relaxing background talk",
-        ),
+    val aiGuidedTurn: cx.aswin.boxlore.core.network.model.GuidedOnboardingTurn? = null,
+    val aiAssistantMessage: String = "Hi, I’m Echo. Where does your mind like to wander?",
+    val aiOptions: List<String> = EchoInitialTopic.entries.map { it.answer },
     val aiCurrentTurn: Int = 1,
     val aiCustomInputText: String = "",
     val aiSearchSuggestion: String? = null,
@@ -49,6 +44,13 @@ data class OnboardingUiState(
     val isAiLoading: Boolean = false,
     val isSynthesizing: Boolean = false,
     val aiCurriculumRows: List<OnboardingCurriculumRowDto> = emptyList(),
+    /**
+     * Shows picked during Echo's chat (a positive taste-test answer or a search side trip), as
+     * they stood when the feed was built; suggestions lists them first, selected.
+     */
+    val aiPicks: List<Podcast> = emptyList(),
+    /** Echo's show deck: requested after the second answer, shown before the next one goes out. */
+    val aiDeck: EchoDeck = EchoDeck(),
     val aiLoadingStage: AiLoadingStage = AiLoadingStage.IDLE,
     val onboardingError: String? = null,
     val reachedSuggestionsViaAiFlow: Boolean = false,

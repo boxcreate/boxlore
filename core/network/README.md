@@ -11,6 +11,9 @@ Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and respon
 - `NetworkModule` creates OkHttp, Retrofit, and related network clients, with automatic header redaction for `Authorization`, `X-App-Key`, and `X-Firebase-AppCheck`.
 - `StreamingJsonConverterFactory` streams response deserialization directly from OkHttp's `ResponseBody.byteStream()` via `Json.decodeFromStream` without monolithic string buffering.
 - DTOs under `cx.aswin.boxlore.core.network.model`, including recommendation, bootstrap, content catalog/v3, history, sync, user cloud sync (`UserSyncModels.kt` with `feedUrl` support on `UserSubscriptionSyncDto`), and request payload models. Onboarding curriculum / genre-synth / similar-shows requests accept optional `languages` (chip codes; proxy expands and defaults from country).
+- Next-turn onboarding requests may opt into `guided_v1`. `GuidedOnboardingTurn` adds separate response/question text, choices, action IDs and an explicit kind/intent alongside the legacy message/options/search fields. `OnboardingNextTurnRequest` also carries optional `features` (the app sends `finish_hint`), `country` and `languages`, all omitted when null; `GuidedOnboardingTurn.finish` (`hidden` / `available` / `prominent`) is decoded when the API sends it. Its absence remains compatible with older responses; synthesis requests do not implicitly opt in. Response interpretation belongs to onboarding rather than the HTTP layer.
+- `getOnboardingProbeDeck` (`POST onboarding/probe-deck`) returns `OnboardingProbeDeckResponse` (2-4 `OnboardingProbeCard`s or none; preview fields optional). `OnboardingNextTurnRequest.probeReactions` (`OnboardingProbeReaction`: id, title, `listen` / `like` / `dislike` / `unknown`) is omitted when null and is sent with next-turn, synthesize and probe-deck requests. `OnboardingProbeCard.toPodcast()` maps a card to the app's podcast model.
+- Onboarding synthesis, curriculum, genre and similar-show DTOs accept optional `recommendationFormat`. The updated flow explicitly sends `discovery_v2` to permit up to six recommendation rows; defaults omit the field, preserving older request behavior. Curriculum decoding preserves the API's row and show order and forwards opaque search queries unchanged. No response/storage migration is required.
 - App Check, app version, public-key, and device-header hooks used by application wiring.
 
 ## Internal structure
@@ -48,6 +51,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 - Unit tests live under `core/network/src/test`.
 - `BoxLoreApiContractTest` uses MockWebServer fixtures for endpoint contracts.
 - Prefer MockWebServer over live backend calls.
+- `OnboardingGuidedContractTest` checks legacy decoding, request-specific opt-in and structured recovery action decoding, including unknown additive fields, and the finish-hint opt-in (features, country, languages omitted by default; `finish` decoded), plus show deck cards with and without a preview and opt-in reactions.
 
 ```bash
 ./gradlew :core:network:testDebugUnitTest

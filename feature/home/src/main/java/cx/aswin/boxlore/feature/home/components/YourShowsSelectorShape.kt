@@ -17,25 +17,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.graphics.shapes.Morph
 
-/** Varied silhouettes remain attached to show identity across taps, pinning and recomposition. */
-internal enum class YourShowsSelectorSilhouette { COOKIE_FOUR, COOKIE_SIX, COOKIE_NINE, PUFFY }
-
-internal fun selectorSilhouette(identity: String): YourShowsSelectorSilhouette =
-    YourShowsSelectorSilhouette.entries[Math.floorMod(identity.hashCode(), YourShowsSelectorSilhouette.entries.size)]
-
+/** Every selector, Mix included, morphs from a rounded square into the same cookie when selected. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun rememberYourShowsSelectorShape(identity: String, selected: Boolean): Shape {
-    val silhouette = remember(identity) { selectorSilhouette(identity) }
-    val morph = remember(silhouette) {
-        val target = when (silhouette) {
-            YourShowsSelectorSilhouette.COOKIE_FOUR -> MaterialShapes.Cookie4Sided
-            YourShowsSelectorSilhouette.COOKIE_SIX -> MaterialShapes.Cookie6Sided
-            YourShowsSelectorSilhouette.COOKIE_NINE -> MaterialShapes.Cookie9Sided
-            YourShowsSelectorSilhouette.PUFFY -> MaterialShapes.Puffy
-        }
-        Morph(MaterialShapes.Square.normalized(), target.normalized())
-    }
+internal fun rememberYourShowsSelectorShape(selected: Boolean): Shape {
+    val morph = remember { Morph(MaterialShapes.Square.normalized(), MaterialShapes.Cookie9Sided.normalized()) }
     val progress by animateFloatAsState(if (selected) 1f else 0f, YourShowsMotion.spatial(), label = "show_selector_shape")
     return remember(morph, progress) { SelectorMorphShape(morph, progress) }
 }

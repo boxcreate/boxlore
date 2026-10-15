@@ -44,9 +44,17 @@ internal fun OnboardingViewModel.toggleAiOption(option: String) {
 }
 
 internal fun OnboardingViewModel.switchToLegacyOnboarding() {
+    cancelEchoRequests()
     didSwitchFromAi = true
     _uiState.update { it.copy(currentStep = OnboardingStep.GENRES, onboardingError = null) }
     currentStepStartMs = System.currentTimeMillis()
+}
+
+internal fun OnboardingViewModel.cancelEchoRequests() {
+    val pendingQuestion = echoRequests.cancel()
+    lastFailedAction = null
+    _uiState.update { EchoRequestPolicy.rollback(it, pendingQuestion) }
+    dropStaleShowDeck()
 }
 
 internal fun OnboardingViewModel.retryLastAction() {
@@ -59,14 +67,16 @@ internal fun OnboardingViewModel.retryLastAction() {
 
 internal fun OnboardingViewModel.sendAiTurnInput() {
     val currentState = _uiState.value
-    if (currentState.isAiLoading) return
-    val turnInput =
-        (
-            currentState.aiSelectedOptions.toList() +
-                if (currentState.aiCustomInputText.isNotBlank()) listOf(currentState.aiCustomInputText) else emptyList()
-            ).joinToString(". ")
+    if (currentState.isAiLoading || currentState.isSynthesizing || echoRequests.isRunning) return
+    val turnInput = GuidedOnboardingLogic.submittedAnswer(currentState)
 
     if (turnInput.isBlank()) return
+    if (EchoDeckLogic.shouldShow(currentState.aiDeck)) {
+        // The answer waits on screen while Echo asks about a few shows; it goes out after the last one.
+        _uiState.update { it.copy(aiDeck = EchoDeckLogic.open(it.aiDeck, EchoDeckNext.Send)) }
+        return
+    }
+    if (waitForShowDeck { sendAiTurnInput() }) return
 
     val turnTime = (System.currentTimeMillis() - turnStartMs) / 1000f
     AnalyticsHelper.trackOnboardingAiTurnSubmitted(
@@ -76,22 +86,15 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
         timeSpentSeconds = turnTime,
     )
 
-    // Push current turn state to back stack before updating
-    turnHistoryState.add(
-        OnboardingViewModel.TurnState(
-            assistantMessage = currentState.aiAssistantMessage,
-            options = currentState.aiOptions,
-            history = currentState.aiHistory,
-        ),
-    )
-
     val userEntry =
         OnboardingHistoryEntry(
             role = "user",
             parts = listOf(OnboardingPart(text = turnInput)),
         )
     val newHistory = currentState.aiHistory + userEntry
+    val reactions = EchoDeckLogic.requestReactions(currentState.aiDeck)
 
+    echoRequests.pendingQuestion = EchoQuestionSnapshot.from(currentState)
     _uiState.update {
         it.copy(
             aiHistory = newHistory,
@@ -104,7 +107,8 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
         )
     }
 
-    val finalAction: () -> Unit = {
+    val finalAction: () -> Unit = action@{
+        if (echoRequests.isRunning) return@action
         _uiState.update {
             it.copy(
                 isAiLoading = true,
@@ -112,7 +116,7 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                 onboardingError = null,
             )
         }
-        viewModelScope.launch {
+        echoRequests.turn = viewModelScope.launch {
             try {
                 val startTime = System.currentTimeMillis()
                 val testInput = turnInput.trim().lowercase()
@@ -122,13 +126,21 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                     delay(50000)
                 }
 
+                val locale = discoveryLocaleForRegion(currentState.currentRegion)
                 val response =
                     kotlinx.coroutines.withTimeout(45000) {
                         withContext(Dispatchers.IO) {
                             podcastRepository.api
                                 .getOnboardingNextTurn(
                                     publicKey = podcastRepository.publicKey,
-                                    request = OnboardingNextTurnRequest(history = newHistory),
+                                    request = OnboardingNextTurnRequest(
+                                        history = newHistory,
+                                        responseFormat = "guided_v1",
+                                        features = listOf(GuidedOnboardingLogic.FINISH_HINT_FEATURE, EchoDeckLogic.FEATURE),
+                                        country = locale.country,
+                                        languages = locale.languages,
+                                        probeReactions = reactions,
+                                    ),
                                 ).execute()
                         }
                     }
@@ -141,8 +153,10 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                     }
                 }
 
+                EchoRequestPolicy.ensureActive()
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
+                    val guided = body.guided?.also(GuidedOnboardingLogic::validate)
 
                     val durationSec = (System.currentTimeMillis() - startTime) / 1000f
                     val detectedIntent =
@@ -150,7 +164,7 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                             body.searchSuggestion != null -> "named_show"
                             body.assistantMessage.startsWith("I can only help you discover podcasts") -> "guardrail_refusal"
                             body.assistantMessage.startsWith("Got it — you've been clear") -> "repetition_finish"
-                            else -> null
+                            else -> guided?.intent
                         }
                     AnalyticsHelper.trackOnboardingAiResponseReceived(
                         turnNumber = currentState.aiCurrentTurn,
@@ -166,12 +180,25 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                             role = "model",
                             parts = listOf(OnboardingPart(text = body.assistantMessage)),
                         )
-                    if (body.options.isEmpty()) {
+                    // Back history represents accepted turns, never a failed or cancelled submission.
+                    turnHistoryState.add(
+                        OnboardingViewModel.TurnState(
+                            assistantMessage = currentState.aiAssistantMessage,
+                            options = currentState.aiOptions,
+                            history = currentState.aiHistory,
+                            guided = currentState.aiGuidedTurn,
+                            searchSuggestion = currentState.aiSearchSuggestion,
+                            turnNumber = currentState.aiCurrentTurn,
+                        ),
+                    )
+                    echoRequests.pendingQuestion = null
+                    if (GuidedOnboardingLogic.isReady(body)) {
                         _uiState.update { state ->
                             state.copy(
                                 aiHistory = state.aiHistory + assistantEntry,
                                 aiAssistantMessage = body.assistantMessage,
                                 aiOptions = emptyList(),
+                                aiGuidedTurn = guided,
                                 aiCurrentTurn = state.aiCurrentTurn + 1,
                                 isAiLoading = false,
                                 aiLoadingStage = AiLoadingStage.SYNTHESIZING_PREFERENCES,
@@ -184,7 +211,8 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                             state.copy(
                                 aiHistory = state.aiHistory + assistantEntry,
                                 aiAssistantMessage = body.assistantMessage,
-                                aiOptions = body.options,
+                                aiOptions = if (guided?.kind == "question") guided.choices else body.options,
+                                aiGuidedTurn = guided,
                                 aiSearchSuggestion = body.searchSuggestion,
                                 aiCurrentTurn = state.aiCurrentTurn + 1,
                                 isAiLoading = false,
@@ -198,6 +226,7 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                     throw Exception("Server returned error ${response.code()}")
                 }
             } catch (e: Exception) {
+                EchoRequestPolicy.ensureActive(e)
                 Log.e("OnboardingViewModel", "Error in sendAiTurnInput", e)
                 val userFriendlyMsg =
                     when (e) {
@@ -216,16 +245,20 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
     }
     lastFailedAction = finalAction
     finalAction()
+    requestShowDeckIfDue(newHistory)
 }
 
 internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = false) {
     val currentState = _uiState.value
-    if (currentState.isAiLoading && !force) return
-    val turnInput =
-        (
-            currentState.aiSelectedOptions.toList() +
-                if (currentState.aiCustomInputText.isNotBlank()) listOf(currentState.aiCustomInputText) else emptyList()
-            ).joinToString(". ")
+    val alreadyWorking = currentState.isAiLoading || currentState.isSynthesizing || echoRequests.isRunning
+    if (echoRequests.isSynthesizing || (alreadyWorking && !force)) return
+    if (EchoDeckLogic.shouldShow(currentState.aiDeck)) {
+        // A ready deck comes first; the build starts after its last card, reactions included.
+        _uiState.update { it.copy(aiDeck = EchoDeckLogic.open(it.aiDeck, if (force) EchoDeckNext.BuildForced else EchoDeckNext.Build)) }
+        return
+    }
+    if (waitForShowDeck { synthesizeAndBuildCurriculum(force) }) return
+    val turnInput = GuidedOnboardingLogic.submittedAnswer(currentState)
 
     if (!force) {
         val turnTime = (System.currentTimeMillis() - turnStartMs) / 1000f
@@ -255,8 +288,10 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
         )
     }
 
+    // Back from the loading suggestions restores this question, answer included.
+    echoRequests.buildQuestion = EchoQuestionSnapshot.from(currentState).takeIf { currentState.aiGuidedTurn?.kind != "ready" }
     _uiState.update {
-        it.copy(
+        OnboardingAiStart.buildingState(it).copy(
             aiHistory = newHistoryList,
             aiSelectedOptions = emptySet(),
             aiCustomInputText = "",
@@ -267,7 +302,8 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
         )
     }
 
-    val finalAction: () -> Unit = {
+    val finalAction: () -> Unit = action@{
+        if (echoRequests.isSynthesizing || (!force && echoRequests.isRunning)) return@action
         synthesisStartMs = System.currentTimeMillis()
         _uiState.update {
             it.copy(
@@ -277,7 +313,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                 onboardingError = null,
             )
         }
-        viewModelScope.launch {
+        echoRequests.synthesis = viewModelScope.launch {
             val locale = discoveryLocaleForRegion(currentState.currentRegion)
             try {
                 val startTime = System.currentTimeMillis()
@@ -326,7 +362,11 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                                 podcastRepository.api
                                     .onboardingSynthesize(
                                         publicKey = podcastRepository.publicKey,
-                                        request = OnboardingNextTurnRequest(history = newHistoryList),
+                                        request = OnboardingNextTurnRequest(
+                                            history = newHistoryList,
+                                            recommendationFormat = "discovery_v2",
+                                            probeReactions = EchoDeckLogic.requestReactions(currentState.aiDeck),
+                                        ),
                                     ).execute()
                             }
                         if (synthResponse.isSuccessful && synthResponse.body() != null) {
@@ -336,6 +376,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                         }
                     }
 
+                EchoRequestPolicy.ensureActive()
                 _uiState.update { it.copy(aiLoadingStage = AiLoadingStage.FETCHING_CATALOGS) }
 
                 // Call Curriculum with synthesized queries
@@ -351,6 +392,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                                             queries = queries,
                                             country = locale.country,
                                             languages = locale.languages,
+                                            recommendationFormat = "discovery_v2",
                                         ),
                                     ).execute()
                             }
@@ -363,6 +405,8 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                         }
                     }
 
+                EchoRequestPolicy.ensureActive()
+                check(EchoRequestPolicy.hasRecommendations(rows)) { "No onboarding recommendations returned" }
                 _uiState.update { it.copy(aiLoadingStage = AiLoadingStage.ASSEMBLING_FEED) }
 
                 if (hasSlow) {
@@ -373,9 +417,7 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                     }
                 }
 
-                val newPodcasts = rows.flatMap { it.podcasts }.map { it.toPodcast() }
-                val defaultSelectedIds = OnboardingCurriculumLogic.defaultSelectedPodcastIds(rows)
-                val defaultSelectedPodcasts = newPodcasts.filter { it.id in defaultSelectedIds }.associateBy { it.id }
+                EchoRequestPolicy.ensureActive()
 
                 val duration = (System.currentTimeMillis() - synthesisStartMs) / 1000f
                 val uniquePodcastsCount = rows.flatMap { it.podcasts }.distinctBy { it.id }.size
@@ -385,23 +427,21 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                     durationSeconds = duration,
                 )
 
+                // Nothing is pre-selected; the shows the listener picked during the chat lead, selected.
                 _uiState.update { state ->
-                    val newSelected = state.selectedPodcasts + defaultSelectedPodcasts
                     state.copy(
                         aiHistory = newHistoryList,
                         aiCurriculumRows = rows,
+                        aiPicks = state.selectedPodcasts.values.toList(),
                         aiCurrentTurn = 4,
                         isAiLoading = false,
                         isSynthesizing = false,
                         aiLoadingStage = AiLoadingStage.IDLE,
-                        selectedPodcasts = newSelected,
-                        // Merge, don't replace — keeps shows picked during a
-                        // search side-trip from the AI chat.
-                        subscribedPodcastIds = state.subscribedPodcastIds + defaultSelectedIds,
                         onboardingError = null,
                     )
                 }
             } catch (e: Exception) {
+                EchoRequestPolicy.ensureActive(e)
                 Log.e("OnboardingViewModel", "Error in synthesizeAndBuildCurriculum", e)
                 AnalyticsHelper.trackOnboardingAiSynthesisFailed(e.message ?: "Unknown error")
                 try {
@@ -432,24 +472,22 @@ internal fun OnboardingViewModel.synthesizeAndBuildCurriculum(force: Boolean = f
                             podcasts = dummyPodcastDtos,
                             episodes = emptyList(),
                         )
-                    val newPodcasts = listOf(fallbackRow).flatMap { it.podcasts }.map { it.toPodcast() }
-                    val defaultSelectedIds = OnboardingCurriculumLogic.defaultSelectedPodcastIds(listOf(fallbackRow))
-                    val defaultSelectedPodcasts = newPodcasts.filter { it.id in defaultSelectedIds }.associateBy { it.id }
+                    EchoRequestPolicy.ensureActive()
+                    check(EchoRequestPolicy.hasRecommendations(listOf(fallbackRow))) { "No fallback recommendations returned" }
                     _uiState.update { state ->
-                        val newSelected = state.selectedPodcasts + defaultSelectedPodcasts
                         state.copy(
                             aiHistory = newHistoryList,
                             aiCurriculumRows = listOf(fallbackRow),
+                            aiPicks = state.selectedPodcasts.values.toList(),
                             aiCurrentTurn = 4,
                             isAiLoading = false,
                             isSynthesizing = false,
                             aiLoadingStage = AiLoadingStage.IDLE,
-                            selectedPodcasts = newSelected,
-                            subscribedPodcastIds = state.subscribedPodcastIds + defaultSelectedIds,
                             onboardingError = null,
                         )
                     }
                 } catch (ex: Exception) {
+                    EchoRequestPolicy.ensureActive(ex)
                     Log.e("OnboardingViewModel", "Error in fallback synthesis", ex)
                     val userFriendlyMsg =
                         when (ex) {
@@ -483,8 +521,45 @@ internal fun OnboardingViewModel.navigateToSuggestions() {
     }
 }
 
+/**
+ * Echo's Back from suggestions. While loading or after a failed build, the build is cancelled
+ * and the question it was built from returns. With results, Echo shows them as ready.
+ */
+internal fun OnboardingViewModel.returnToEchoFromSuggestions() {
+    val state = _uiState.value
+    if (state.aiCurriculumRows.isEmpty()) {
+        val question = echoRequests.buildQuestion
+        cancelEchoRequests()
+        echoRequests.buildQuestion = null
+        _uiState.update { live ->
+            (question?.restoreOnto(live) ?: live).copy(currentStep = OnboardingStep.AI_ONBOARDING, onboardingError = null)
+        }
+    } else {
+        _uiState.update { it.copy(currentStep = OnboardingStep.AI_ONBOARDING) }
+    }
+    turnStartMs = System.currentTimeMillis()
+}
+
+/** Discards built suggestions and reopens the question they were built from. */
+internal fun OnboardingViewModel.changeAiAnswers() {
+    val question = echoRequests.buildQuestion
+    cancelEchoRequests()
+    echoRequests.buildQuestion = null
+    _uiState.update { live -> OnboardingAiStart.withoutResults(question?.restoreOnto(live) ?: live) }
+    if (question == null) {
+        // Echo itself finished the conversation: step back to the last question it asked.
+        navigateBackInAiOnboarding()
+    } else {
+        turnStartMs = System.currentTimeMillis()
+    }
+}
+
 internal fun OnboardingViewModel.navigateBackFromSuggestions() {
     val state = _uiState.value
+    if (state.reachedSuggestionsViaAiFlow) {
+        returnToEchoFromSuggestions()
+        return
+    }
     val nextStep =
         when {
             state.reachedSuggestionsViaAiFlow -> OnboardingStep.AI_ONBOARDING
@@ -509,6 +584,7 @@ internal fun OnboardingViewModel.navigateBackFromSuggestions() {
 }
 
 internal fun OnboardingViewModel.navigateBackInAiOnboarding() {
+    cancelEchoRequests()
     val currentState = _uiState.value
     if (currentState.aiCurrentTurn <= 1) {
         _uiState.update { it.copy(currentStep = OnboardingStep.WELCOME) }
@@ -519,8 +595,28 @@ internal fun OnboardingViewModel.navigateBackInAiOnboarding() {
                 it.copy(
                     aiAssistantMessage = previousState.assistantMessage,
                     aiOptions = previousState.options,
+                    aiGuidedTurn = previousState.guided,
                     aiHistory = previousState.history,
-                    aiCurrentTurn = currentState.aiCurrentTurn - 1,
+                    aiCurrentTurn = previousState.turnNumber,
+                    aiSelectedOptions = emptySet(),
+                    aiCustomInputText = "",
+                    aiSearchSuggestion = previousState.searchSuggestion,
+                    aiLoadingStage = AiLoadingStage.IDLE,
+                    isAiLoading = false,
+                    isSynthesizing = false,
+                    aiCurriculumRows = emptyList(),
+                )
+            }
+        } else {
+            val initial = OnboardingUiState()
+            _uiState.update {
+                it.copy(
+                    aiAssistantMessage = initial.aiAssistantMessage,
+                    aiOptions = initial.aiOptions,
+                    aiCurrentTurn = 1,
+                    aiHistory = emptyList(),
+                    aiGuidedTurn = null,
+                    aiLoadingStage = AiLoadingStage.IDLE,
                     aiSelectedOptions = emptySet(),
                     aiCustomInputText = "",
                     aiSearchSuggestion = null,
@@ -529,19 +625,8 @@ internal fun OnboardingViewModel.navigateBackInAiOnboarding() {
                     aiCurriculumRows = emptyList(),
                 )
             }
-        } else {
-            _uiState.update {
-                it.copy(
-                    aiCurrentTurn = 1,
-                    aiHistory = emptyList(),
-                    aiSelectedOptions = emptySet(),
-                    aiCustomInputText = "",
-                    isAiLoading = false,
-                    isSynthesizing = false,
-                    aiCurriculumRows = emptyList(),
-                )
-            }
         }
+        dropStaleShowDeck()
         turnStartMs = System.currentTimeMillis()
     }
 }

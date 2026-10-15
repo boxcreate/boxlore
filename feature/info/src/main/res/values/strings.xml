@@ -52,6 +52,8 @@
     <string name="episode_info_promo_possible">This episode may feature %1$s.</string>
     <string name="episode_info_more_like_this">Try these episodes</string>
     <string name="episode_info_more_from">More from %1$s</string>
+    <!-- Small label above the show name in the show row that heads the More from list. -->
+    <string name="episode_info_more_from_label">More from</string>
     <string name="episode_info_explore_podcast">Explore podcast</string>
     <string name="episode_info_no_more">No other episodes available</string>
     <string name="episode_info_people">People in this episode</string>
@@ -90,6 +92,8 @@
     <string name="genre_visibility_hint">Visible on this podcast page, Subscriptions filters, and folders.</string>
     <string name="genre_edit_placeholder">Click to set custom tag</string>
     <string name="episode_info_episode_from_show">%1$s, from %2$s</string>
+    <string name="podcast_info_load_error">Couldn’t load this podcast</string>
+    <string name="podcast_info_retry">Try again</string>
     <string name="podcast_info_subscribe">Subscribe</string>
     <string name="podcast_info_subscribed">Subscribed</string>
     <string name="podcast_info_unsubscribe">Unsubscribe</string>

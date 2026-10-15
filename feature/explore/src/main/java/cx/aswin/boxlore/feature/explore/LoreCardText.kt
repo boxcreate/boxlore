@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -100,6 +102,38 @@ internal fun LoreCardText(question: String, explanation: String?, modifier: Modi
                 Spacer(Modifier.height(spec.gap.dp))
                 Text(text = explanation, style = bodyStyle, color = Color.White.copy(alpha = 0.84f))
             }
+        }
+    }
+}
+
+/**
+ * The card's text with its action bar below. When the full text has room to spare, the bar is
+ * raised by [lift]; when the text needs that room, the bar stays at the bottom. Decided in one
+ * layout pass from the text's measured height, so the bar never alternates between positions.
+ */
+@Composable
+internal fun LoreCardTextWithFooter(
+    question: String,
+    explanation: String?,
+    footerHeight: Dp,
+    lift: Dp,
+    modifier: Modifier = Modifier,
+    footer: @Composable () -> Unit,
+) {
+    val headingStyle = MaterialTheme.typography.headlineMedium
+    val bodyStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 24.sp)
+    val density = LocalDensity.current
+    val measurer = rememberTextMeasurer()
+    BoxWithConstraints(modifier) {
+        val fullText = remember(question, explanation, headingStyle, bodyStyle, density, maxWidth, measurer) {
+            measureLoreCardText(measurer, question, explanation, headingStyle, bodyStyle, density, with(density) { maxWidth.roundToPx() }).first()
+        }
+        val roomWithLift = with(density) { (maxHeight - footerHeight - lift).roundToPx() }
+        val appliedLift = if (fullText.heightPx <= roomWithLift) lift else 0.dp
+        Column(Modifier.fillMaxSize()) {
+            LoreCardText(question = question, explanation = explanation, modifier = Modifier.fillMaxWidth().weight(1f))
+            footer()
+            Spacer(Modifier.height(appliedLift))
         }
     }
 }

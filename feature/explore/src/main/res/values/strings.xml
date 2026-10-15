@@ -37,4 +37,8 @@
     <string name="lore_loading_episode">Loading episode</string>
     <string name="lore_open_podcast">Open podcast: %1$s</string>
     <string name="lore_podcast_fallback">Podcast</string>
+    <!-- Visible Play button labels in the Lore card's action bar; the button is announced with its full description. -->
+    <string name="lore_button_play">Play</string>
+    <string name="lore_button_resume">Resume</string>
+    <string name="lore_button_pause">Pause</string>
 </resources>

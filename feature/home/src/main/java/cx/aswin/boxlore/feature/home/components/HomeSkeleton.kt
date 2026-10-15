@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -31,13 +32,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardSkeleton
 import cx.aswin.boxlore.core.designsystem.components.FeedPosterSpacing
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
+import kotlin.math.roundToInt
 
 /**
  * Skeletal Loader for Home Screen.
@@ -67,31 +72,89 @@ fun HomeSkeleton(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Mirrors the real hero carousel: one large card and the narrow peek beside it, at the carousel's
+ * own widths (see [heroSkeletonGeometry]). The large card is a solid surface
+ * carrying the card's own structure, so content settles in place instead of replacing a flat block.
+ * Plain layouts only: nothing here subcomposes on a cold start.
+ */
 @Composable
 fun HeroSkeleton(modifier: Modifier = Modifier) {
-    val baseColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 0.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .height(homeHeroHeight()),
-    ) {
-        items(2) {
-            Box(
-                modifier =
-                Modifier
-                    .width(320.dp)
-                    .fillMaxHeight()
-                    .clip(HomeHeroStyle.CardShape)
-                    .m3Shimmer(baseColor, highlightColor, shape = HomeHeroStyle.CardShape),
-            )
+    val surface = MaterialTheme.colorScheme.surfaceContainer
+    Layout(
+        content = {
+            HeroSkeletonCard(surface)
+            Box(Modifier.clip(HomeHeroStyle.CardShape).background(surface))
+        },
+        modifier = modifier.fillMaxWidth().height(homeHeroHeight()).testTag("home_hero_skeleton"),
+    ) { measurables, constraints ->
+        val geometry = heroSkeletonGeometry(constraints.maxWidth, density)
+        val height = constraints.maxHeight
+        val card = measurables[0].measure(Constraints.fixed(geometry.cardWidth, height))
+        val peek = measurables[1].measure(Constraints.fixed(geometry.peekWidth, height))
+        layout(constraints.maxWidth, height) {
+            card.placeRelative(0, 0)
+            peek.placeRelative(geometry.cardWidth + geometry.gap, 0)
         }
     }
 }
+
+internal data class HeroSkeletonGeometry(val cardWidth: Int, val peekWidth: Int, val gap: Int)
+
+/**
+ * The carousel aims for a 320dp card after a 16dp gap and keeps its peek between 40dp and 56dp, so
+ * narrow phones shrink the card and wide phones grow it.
+ */
+internal fun heroSkeletonGeometry(width: Int, density: Float): HeroSkeletonGeometry {
+    fun px(value: androidx.compose.ui.unit.Dp) = (value.value * density).roundToInt()
+    val gap = px(HeroSkeletonGap)
+    val peek = (width - gap - px(HeroSkeletonPreferredCard)).coerceIn(px(HeroSkeletonMinPeek), px(HeroSkeletonMaxPeek))
+    val card = (width - gap - peek).coerceAtLeast(0)
+    return HeroSkeletonGeometry(cardWidth = card, peekWidth = (width - card - gap).coerceAtLeast(0), gap = gap)
+}
+
+private val HeroSkeletonGap = 16.dp
+private val HeroSkeletonPreferredCard = 320.dp
+private val HeroSkeletonMinPeek = 40.dp
+private val HeroSkeletonMaxPeek = 56.dp
+
+@Composable
+private fun HeroSkeletonCard(surface: Color) {
+    val base = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val highlight = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+    val line = RoundedCornerShape(6.dp)
+    Column(Modifier.clip(HomeHeroStyle.CardShape).background(surface)) {
+        // Header: context lines beside the square artwork, which sits flush in the top end corner.
+        Row(Modifier.fillMaxWidth().aspectRatio(1f / 0.65f)) {
+            Column(
+                Modifier.weight(1f).padding(start = 16.dp, end = 12.dp, top = 22.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(Modifier.fillMaxWidth(0.85f).height(12.dp).m3Shimmer(base, highlight, line))
+                Box(Modifier.fillMaxWidth(0.55f).height(12.dp).m3Shimmer(base, highlight, line))
+            }
+            Box(Modifier.fillMaxHeight().aspectRatio(1f).m3Shimmer(base, highlight, HomeHeroStyle.AttachedArtworkShape))
+        }
+        Column(
+            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterVertically),
+        ) {
+            Box(Modifier.fillMaxWidth(0.92f).height(22.dp).m3Shimmer(base, highlight, line))
+            Box(Modifier.fillMaxWidth(0.66f).height(22.dp).m3Shimmer(base, highlight, line))
+            Box(Modifier.padding(top = 3.dp).fillMaxWidth(0.42f).height(14.dp).m3Shimmer(base, highlight, line))
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Box(Modifier.weight(1f).height(48.dp).m3Shimmer(base, highlight, HeroSkeletonPlayShape))
+            Box(Modifier.width(64.dp).height(48.dp).m3Shimmer(base, highlight, HeroSkeletonDetailsShape))
+        }
+    }
+}
+
+private val HeroSkeletonPlayShape = RoundedCornerShape(topStart = 26.dp, bottomStart = 26.dp, topEnd = 8.dp, bottomEnd = 8.dp)
+private val HeroSkeletonDetailsShape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp, topEnd = 26.dp, bottomEnd = 26.dp)
 
 @Composable
 fun RisingSkeleton() {
@@ -242,14 +305,13 @@ fun YourShowsSkeleton(
                             repeat((count - row * 5).coerceIn(0, 5)) { column ->
                                 Column(
                                     modifier = Modifier.width(if (rows == 1) YourShowsLayout.TileWidth else tileWidth)
-                                        .height(YourShowsLayout.TileHeight).padding(6.dp)
+                                        .height(if (rows == 1) YourShowsLayout.TileHeight else tileWidth).padding(YourShowsLayout.TilePadding)
                                         .testTag("home_show_skeleton_${row}_$column"),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center,
                                 ) {
                                     Box(
-                                        Modifier.widthIn(max = YourShowsLayout.CoverSize).fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(15.dp))
-                                        .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(15.dp))
+                                        Modifier.widthIn(max = YourShowsLayout.CoverSize).fillMaxWidth().aspectRatio(1f).m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(15.dp))
                                     )
                                 }
                             }
@@ -257,21 +319,26 @@ fun YourShowsSkeleton(
                     }
                 }
             }
-            Column(Modifier.padding(vertical = HomeMixLayout.VerticalPadding)) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp).height(HomeMixLayout.HeaderHeight), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            YourShowsDivider()
+            Column(Modifier.padding(top = HomeMixLayout.TopPadding, bottom = HomeMixLayout.BottomPadding)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = HomeMixLayout.ContentInset).height(HomeMixLayout.HeaderHeight), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     SkeletonBlock(width = 132.dp, height = 34.dp, baseColor = baseColor, highlightColor = highlightColor)
                     SkeletonBlock(width = 88.dp, height = HomeMixLayout.HeaderHeight, baseColor = baseColor, highlightColor = highlightColor)
                 }
                 Spacer(Modifier.height(HomeMixLayout.HeaderGap))
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val cardWidth = (maxWidth - 32.dp).coerceAtMost(HomeMixLayout.CardWidth)
-                    LazyRow(contentPadding = PaddingValues(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(3) {
+                    val cardWidth = HomeMixLayout.railCardWidth(maxWidth)
+                    // A plain row, clipped at the edge like the real rail, avoids a lazy layout on cold start.
+                    Row(
+                        Modifier.fillMaxWidth().clipToBounds().wrapContentWidth(Alignment.Start, unbounded = true)
+                            .padding(horizontal = HomeMixLayout.ContentInset),
+                        horizontalArrangement = Arrangement.spacedBy(HomeMixLayout.CardGap),
+                    ) {
+                        repeat(3) {
                             Box(
                                 Modifier.width(cardWidth).height(homeMixCardHeight())
-                                .testTag("home_mix_skeleton_$it")
-                                .clip(RoundedCornerShape(24.dp))
-                                .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(24.dp))
+                                    .testTag("home_mix_skeleton_$it")
+                                    .m3Shimmer(baseColor, highlightColor, shape = RoundedCornerShape(24.dp)),
                             )
                         }
                     }

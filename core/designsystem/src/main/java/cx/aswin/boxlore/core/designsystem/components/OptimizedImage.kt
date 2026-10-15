@@ -75,7 +75,7 @@ fun OptimizedImage(
             key(attempt) {
             ArtworkAttemptImage(attempt, width, contentScale, colorFilter) { error ->
                 if (error == null) {
-                    ArtworkLoadPolicy.Shared.recordSuccess(attempt.url, attempt.source)
+                    ArtworkLoadPolicy.Shared.recordSuccess(attempt.url, attempt.source, width)
                 } else {
                     if (error is java.util.concurrent.CancellationException) return@ArtworkAttemptImage
                     if (attempt.url != attempt.source && !attempt.recovery) trackProxyFallback(attempt.source, width)
@@ -108,7 +108,10 @@ private fun ArtworkAttemptImage(
     val state = painter.state
     LaunchedEffect(attempt, state) {
         when (state) {
-            is AsyncImagePainter.State.Success -> onResult(null)
+            is AsyncImagePainter.State.Success -> {
+                OnScreenArtwork.record(attempt.source, width, state.result.memoryCacheKey)
+                onResult(null)
+            }
             is AsyncImagePainter.State.Error -> onResult(state.result.throwable)
             else -> {
                 delay(8_000)

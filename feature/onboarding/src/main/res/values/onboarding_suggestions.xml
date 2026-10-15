@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared suggestions screen, reached from Echo, genres, search and library import. Nothing starts selected except shows the listener picked themselves. -->
+    <string name="suggestions_title">Shows for you</string>
+    <string name="suggestions_echo_found">Here’s what I found. Tap to add, hold for details.</string>
+    <string name="suggestions_echo_finding">Finding shows that fit what you told me.</string>
+    <!-- Search flow: the shows picked on the search screen are already in the library. -->
+    <plurals name="suggestions_search_seeds">
+        <item quantity="one">Your pick is in your library</item>
+        <item quantity="other">Your %d picks are in your library</item>
+    </plurals>
+    <!-- Library import flow. -->
+    <plurals name="suggestions_library_seeds">
+        <item quantity="one">%d imported show is in your library</item>
+        <item quantity="other">%d imported shows are in your library</item>
+    </plurals>
+    <string name="suggestions_more_like">Tap to add more, hold for details.</string>
+    <!-- Echo flow: shows picked during the chat (a positive taste-test answer or a search). -->
+    <string name="suggestions_picks_lane">Your picks</string>
+    <string name="suggestions_add_all">Add all</string>
+    <string name="suggestions_remove_all">Remove all</string>
+    <string name="suggestions_start_without">Start without adding</string>
+    <plurals name="suggestions_add_shows">
+        <item quantity="one">Add %d show</item>
+        <item quantity="other">Add %d shows</item>
+    </plurals>
+    <string name="suggestions_adding">Adding your shows…</string>
+    <!-- Shown in the main button while suggestions load, one at a time. -->
+    <string-array name="suggestions_finding_words">
+        <item>Finding shows…</item>
+        <item>Sorting them into lanes…</item>
+        <item>Picking the good ones…</item>
+    </string-array>
+    <string name="suggestions_loading_genres">Matching shows to your genres.</string>
+    <string name="suggestions_loading_search">Looking for more like your picks.</string>
+    <string name="suggestions_loading_library">Finding shows like the ones in your library.</string>
+    <string name="suggestions_error_title">Couldn’t load suggestions</string>
+    <string name="suggestions_error_body">Check your connection, then try again.</string>
+    <string name="suggestions_empty_title">No suggestions this time</string>
+    <string name="suggestions_empty_body">Try again, or start without them.</string>
+    <string name="suggestions_try_again">Try again</string>
+    <string name="suggestions_details">Show details</string>
+    <string name="suggestions_back">Back</string>
+    <!-- Brief note on the show deck when a positive answer picks the show. %s is the show title. -->
+    <string name="echo_deck_added">%s added to your picks</string>
+</resources>

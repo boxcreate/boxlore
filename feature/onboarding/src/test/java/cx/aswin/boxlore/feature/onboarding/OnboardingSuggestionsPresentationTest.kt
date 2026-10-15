@@ -73,89 +73,6 @@ class OnboardingSuggestionsPresentationTest {
     }
 
     @Test
-    fun `loadingCopy is structured for search OPML and default`() {
-        assertEquals(
-            OnboardingSuggestionsPresentation.LoadingCopy(
-                title = "Subscribed to 3 shows",
-                subtitle = "Looking for more you might like…",
-            ),
-            OnboardingSuggestionsPresentation.loadingCopy(
-                OnboardingUiState(reachedSuggestionsViaSearchFlow = true, suggestionSeedCount = 3),
-            ),
-        )
-        assertEquals(
-            OnboardingSuggestionsPresentation.LoadingCopy(
-                title = "Subscribed to 1 show",
-                subtitle = "Looking for more you might like…",
-            ),
-            OnboardingSuggestionsPresentation.loadingCopy(
-                OnboardingUiState(reachedSuggestionsViaSearchFlow = true, suggestionSeedCount = 1),
-            ),
-        )
-        assertEquals(
-            OnboardingSuggestionsPresentation.LoadingCopy(
-                title = "Import complete",
-                subtitle = "Finding shows inspired by your library…",
-            ),
-            OnboardingSuggestionsPresentation.loadingCopy(
-                OnboardingUiState(reachedSuggestionsViaOpmlFlow = true),
-            ),
-        )
-        assertEquals(
-            OnboardingSuggestionsPresentation.LoadingCopy(
-                title = "Designing your feed",
-                subtitle = "Matching shows to your taste…",
-            ),
-            OnboardingSuggestionsPresentation.loadingCopy(OnboardingUiState()),
-        )
-    }
-
-    @Test
-    fun `finishCtaLabel for seed flows avoids start without subscribing`() {
-        val seedOnly =
-            OnboardingUiState(
-                reachedSuggestionsViaSearchFlow = true,
-                suggestionSeedCount = 2,
-                subscribedPodcastIds = setOf("s1", "s2"),
-            )
-        assertEquals(
-            "Start without adding",
-            OnboardingSuggestionsPresentation.finishCtaLabel(seedOnly, selectedCount = 2),
-        )
-
-        val withExtras =
-            seedOnly.copy(
-                aiCurriculumRows =
-                listOf(
-                    OnboardingCurriculumRowDto(
-                        rowTitle = "Similar",
-                        podcasts =
-                        listOf(
-                            OnboardingCurriculumPodcastDto(id = 9, title = "Rec"),
-                        ),
-                    ),
-                ),
-                subscribedPodcastIds = setOf("s1", "s2", "9"),
-            )
-        assertEquals(
-            "Add 1 & start",
-            OnboardingSuggestionsPresentation.finishCtaLabel(withExtras, selectedCount = 3),
-        )
-
-        assertEquals(
-            "Subscribe & start · 4",
-            OnboardingSuggestionsPresentation.finishCtaLabel(
-                OnboardingUiState(subscribedPodcastIds = setOf("a", "b", "c", "d")),
-                selectedCount = 4,
-            ),
-        )
-        assertEquals(
-            "Start without subscribing",
-            OnboardingSuggestionsPresentation.finishCtaLabel(OnboardingUiState(), selectedCount = 0),
-        )
-    }
-
-    @Test
     fun `isError only when error set and content empty`() {
         assertTrue(
             OnboardingSuggestionsPresentation.isError(
@@ -223,27 +140,53 @@ class OnboardingSuggestionsPresentationTest {
         assertFalse(cleared.reachedSuggestionsViaSearchFlow)
         assertFalse(cleared.reachedSuggestionsViaOpmlFlow)
         assertFalse(cleared.reachedSuggestionsViaAiFlow)
-        assertEquals(
-            "Subscribe & start · 1",
-            OnboardingSuggestionsPresentation.finishCtaLabel(
-                cleared.copy(
-                    subscribedPodcastIds = setOf(pick.id),
-                    aiCurriculumRows =
-                    listOf(
-                        OnboardingCurriculumRowDto(
-                            rowTitle = "Later AI",
-                            podcasts = listOf(OnboardingCurriculumPodcastDto(id = 9, title = "X")),
-                        ),
-                    ),
-                    reachedSuggestionsViaAiFlow = true,
-                ),
-                selectedCount = 1,
-            ),
+    }
+
+    private fun show(id: String) = Podcast(id = id, title = "Show $id", artist = "Host", imageUrl = "")
+
+    private fun rows(vararg ids: Long) =
+        listOf(OnboardingCurriculumRowDto(rowTitle = "Cold cases", podcasts = ids.map { OnboardingCurriculumPodcastDto(id = it, title = "Show $it") }))
+
+    @Test
+    fun `each flow is told apart, and only search and import count suggestions alone`() {
+        assertEquals(SuggestionsOrigin.Echo, OnboardingSuggestionsPresentation.origin(OnboardingUiState(reachedSuggestionsViaAiFlow = true)))
+        assertEquals(SuggestionsOrigin.Search, OnboardingSuggestionsPresentation.origin(OnboardingUiState(reachedSuggestionsViaSearchFlow = true)))
+        assertEquals(SuggestionsOrigin.Library, OnboardingSuggestionsPresentation.origin(OnboardingUiState(reachedSuggestionsViaOpmlFlow = true)))
+        assertEquals(SuggestionsOrigin.Genres, OnboardingSuggestionsPresentation.origin(OnboardingUiState()))
+
+        // Search picks are in the library before suggestions load: "Add N" counts only new suggestions.
+        val search = OnboardingUiState(
+            reachedSuggestionsViaSearchFlow = true,
+            aiCurriculumRows = rows(9, 10),
+            selectedPodcasts = mapOf("s1" to show("s1"), "s2" to show("s2")),
+            subscribedPodcastIds = setOf("s1", "s2"),
         )
-        assertTrue(OnboardingSuggestionsPresentation.shouldClearSuggestionPayloadOnBack(OnboardingStep.SEARCH))
-        assertTrue(OnboardingSuggestionsPresentation.shouldClearSuggestionPayloadOnBack(OnboardingStep.WELCOME))
-        assertFalse(
-            OnboardingSuggestionsPresentation.shouldClearSuggestionPayloadOnBack(OnboardingStep.AI_ONBOARDING),
+        assertEquals(0, OnboardingSuggestionsPresentation.addCount(search))
+        assertEquals(1, OnboardingSuggestionsPresentation.addCount(search.copy(subscribedPodcastIds = setOf("s1", "s2", "9"))))
+        assertEquals(listOf("s1", "s2"), OnboardingSuggestionsPresentation.seedShows(search).map { it.id })
+
+        // Echo counts everything picked, taste-test and search picks included.
+        val echo = OnboardingUiState(reachedSuggestionsViaAiFlow = true, aiCurriculumRows = rows(9), subscribedPodcastIds = setOf("p1", "9"))
+        assertEquals(2, OnboardingSuggestionsPresentation.addCount(echo))
+    }
+
+    @Test
+    fun `Echo's own picks lead in their lane and leave the others, nothing else is selected`() {
+        val echo = OnboardingUiState(
+            reachedSuggestionsViaAiFlow = true,
+            aiCurriculumRows = rows(1, 2),
+            aiPicks = listOf(show("1"), show("7")),
         )
+        val lanes = OnboardingSuggestionsPresentation.lanes(echo, "Your picks")
+        assertEquals(OnboardingSuggestionsPresentation.PICKS_LANE_ID, lanes.first().id)
+        assertEquals(listOf("1", "7"), lanes.first().podcasts.map { it.id })
+        assertEquals(listOf("2"), lanes[1].podcasts.map { it.id })
+
+        // Other flows never get a picks lane.
+        val genres = echo.copy(reachedSuggestionsViaAiFlow = false)
+        assertTrue(OnboardingSuggestionsPresentation.lanes(genres, "Your picks").none { it.id == OnboardingSuggestionsPresentation.PICKS_LANE_ID })
+        // A lane emptied by the picks disappears.
+        val onlyPicked = echo.copy(aiCurriculumRows = rows(1))
+        assertEquals(1, OnboardingSuggestionsPresentation.lanes(onlyPicked, "Your picks").size)
     }
 }

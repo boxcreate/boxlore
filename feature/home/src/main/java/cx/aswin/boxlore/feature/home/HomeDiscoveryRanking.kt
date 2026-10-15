@@ -11,11 +11,14 @@ import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.home.logic.toRecommendationPodcast
 
+/**
+ * Discovery re-ranks when its candidates change or on a Your shows ranking pass, not when history
+ * changes: history changes on every playback tick, and re-ranking on each one made Home stutter.
+ */
 internal data class HomeDiscoveryRankingInput(
     val trending: List<Podcast>,
     val recommendations: List<Episode>,
-    val history: List<ListeningHistoryEntity>,
-    val subscribedIds: Set<String>,
+    val rankingPass: Long,
 )
 
 internal data class HomeDiscoveryRankingResult(
@@ -40,7 +43,11 @@ internal class HomeDiscoveryRankingCache {
     }
 }
 
-internal suspend fun HomeViewModel.rankDiscovery(input: HomeDiscoveryRankingInput): HomeDiscoveryRankingResult =
+internal suspend fun HomeViewModel.rankDiscovery(
+    input: HomeDiscoveryRankingInput,
+    history: List<ListeningHistoryEntity>,
+    subscribedIds: Set<String>,
+): HomeDiscoveryRankingResult =
     HomeDiscoveryRankingResult(
         trending = adaptiveScorer.rankPodcasts(
             inputs = input.trending.mapIndexed { index, podcast ->
@@ -48,10 +55,10 @@ internal suspend fun HomeViewModel.rankDiscovery(input: HomeDiscoveryRankingInpu
                     podcast = podcast,
                     priorScore = (input.trending.size - index).toDouble(),
                     source = CandidateSource.TRENDING,
-                    isNovel = podcast.id !in input.subscribedIds,
+                    isNovel = podcast.id !in subscribedIds,
                 )
             },
-            history = input.history,
+            history = history,
             objective = RankingObjective.DISCOVERY,
             surface = RankingSurface.HOME,
             diversityPolicy = DiversityPolicy(limit = input.trending.size, maxPerShow = 1, reserveNovelSlot = true),
@@ -64,10 +71,10 @@ internal suspend fun HomeViewModel.rankDiscovery(input: HomeDiscoveryRankingInpu
                     podcast = podcast,
                     priorScore = (input.recommendations.size - index).toDouble(),
                     source = CandidateSource.SERVER_RECOMMENDATION,
-                    isNovel = podcast.id !in input.subscribedIds,
+                    isNovel = podcast.id !in subscribedIds,
                 )
             },
-            history = input.history,
+            history = history,
             objective = RankingObjective.DISCOVERY,
             surface = RankingSurface.HOME,
             diversityPolicy = DiversityPolicy(limit = input.recommendations.size, maxPerShow = 2, reserveNovelSlot = true),

@@ -2,9 +2,7 @@ package cx.aswin.boxlore.feature.home.logic
 
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.EpisodeStatus
-import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
-import cx.aswin.boxlore.feature.home.SmartHeroItem
 
 internal object HomePlaybackStateLogic {
     fun progressRatio(
@@ -72,33 +70,20 @@ internal object HomePlaybackStateLogic {
             currentPlayingPodcastId = currentPlayingPodcastId,
         )
 
-    fun isBriefingDisplayedInResume(
-        heroList: List<SmartHeroItem>,
-        briefingPodcastId: String,
-    ): Boolean = heroList.any { item ->
-        when (item.type) {
-            HeroType.RESUME -> item.podcast.id == briefingPodcastId
-            HeroType.RESUME_GRID -> item.gridItems.any { it.id == briefingPodcastId }
-            else -> false
-        }
-    }
-
+    /**
+     * The Home brief card stays up until the listener finishes the edition or hides it. It also
+     * stays when the same brief appears in a resume hero card or grid.
+     */
     fun shouldShowBriefing(
         rawBriefing: Briefing?,
         completedEpisodeIds: Set<String>,
         briefingDismissedDate: String,
         briefingDismissedForever: Boolean,
-        heroList: List<SmartHeroItem>,
     ): Boolean {
         if (rawBriefing == null) return false
         val briefingEpisodeId = "briefing_${rawBriefing.region}_${rawBriefing.date}"
         val isCompleted = completedEpisodeIds.contains(briefingEpisodeId)
         val isDismissed = rawBriefing.date == briefingDismissedDate
-        val isDisplayedInResume =
-            isBriefingDisplayedInResume(
-                heroList = heroList,
-                briefingPodcastId = "briefing_${rawBriefing.region}",
-            )
-        return !isCompleted && !isDismissed && !briefingDismissedForever && !isDisplayedInResume
+        return !isCompleted && !isDismissed && !briefingDismissedForever
     }
 }

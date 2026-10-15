@@ -17,18 +17,87 @@ data class OnboardingHistoryEntry(
 @Serializable
 data class OnboardingNextTurnRequest(
     @SerialName("history") val history: List<OnboardingHistoryEntry>,
-    @SerialName("maxTurns") val maxTurns: Int? = null
+    @SerialName("maxTurns") val maxTurns: Int? = null,
+    @SerialName("responseFormat") val responseFormat: String? = null,
+    @SerialName("recommendationFormat") val recommendationFormat: String? = null,
+    /** Opt-ins such as `finish_hint` (adds [GuidedOnboardingTurn.finish]); omitted when null. */
+    @SerialName("features") val features: List<String>? = null,
+    @SerialName("country") val country: String? = null,
+    @SerialName("languages") val languages: List<String>? = null,
+    /** How the listener reacted to show deck cards; sent with next-turn, synthesize and probe-deck. */
+    @SerialName("probeReactions") val probeReactions: List<OnboardingProbeReaction>? = null,
 )
+
+/** `reaction` is `listen`, `like`, `dislike` or `unknown`; the API keeps up to 12. */
+@Serializable
+data class OnboardingProbeReaction(
+    @SerialName("id") val id: Long,
+    @SerialName("title") val title: String,
+    @SerialName("reaction") val reaction: String,
+)
+
+/** `POST onboarding/probe-deck`: 2-4 cards, or none (never an error for the listener). */
+@Serializable
+data class OnboardingProbeDeckResponse(@SerialName("cards") val cards: List<OnboardingProbeCard> = emptyList())
+
+/**
+ * A well-known show Echo asks about. [id] is the Podcast Index feed ID. The preview fields point
+ * at a real episode, starting about 40% in; they are all absent when no usable episode was found.
+ */
+@Serializable
+data class OnboardingProbeCard(
+    @SerialName("id") val id: Long,
+    @SerialName("title") val title: String,
+    @SerialName("author") val author: String? = null,
+    @SerialName("artwork") val artwork: String? = null,
+    @SerialName("role") val role: String? = null,
+    @SerialName("hook") val hook: String = "",
+    @SerialName("question") val question: String = "",
+    @SerialName("whyItFits") val whyItFits: String? = null,
+    @SerialName("previewUrl") val previewUrl: String? = null,
+    @SerialName("previewStartSeconds") val previewStartSeconds: Int? = null,
+    @SerialName("previewDurationSeconds") val previewDurationSeconds: Int? = null,
+    @SerialName("previewEpisodeTitle") val previewEpisodeTitle: String? = null,
+)
+
+fun OnboardingProbeCard.toPodcast(): Podcast =
+    Podcast(
+        id = id.toString(),
+        title = title,
+        artist = author ?: "Unknown",
+        imageUrl = (artwork ?: "").let { url -> if (url.startsWith("//")) "https:$url" else url },
+        genre = "Podcast",
+    )
 
 @Serializable
 data class OnboardingNextTurnResponse(
     @SerialName("assistantMessage") val assistantMessage: String,
     @SerialName("options") val options: List<String> = emptyList(),
-    @SerialName("searchSuggestion") val searchSuggestion: String? = null
+    @SerialName("searchSuggestion") val searchSuggestion: String? = null,
+    @SerialName("guided") val guided: GuidedOnboardingTurn? = null,
 )
 
 @Serializable
-data class OnboardingSynthesizeRequest(@SerialName("history") val history: List<OnboardingHistoryEntry>)
+data class GuidedOnboardingTurn(
+    val version: Int = 0,
+    val kind: String = "",
+    val response: String? = null,
+    val question: String? = null,
+    val choices: List<String> = emptyList(),
+    val actions: List<GuidedOnboardingAction> = emptyList(),
+    val intent: String = "",
+    /** `hidden`, `available` or `prominent`; sent only to apps that opt into `finish_hint`. */
+    val finish: String? = null,
+)
+
+@Serializable
+data class GuidedOnboardingAction(val id: String)
+
+@Serializable
+data class OnboardingSynthesizeRequest(
+    @SerialName("history") val history: List<OnboardingHistoryEntry>,
+    @SerialName("recommendationFormat") val recommendationFormat: String? = null,
+)
 
 @Serializable
 data class OnboardingQuery(
@@ -43,6 +112,7 @@ data class OnboardingCurriculumRequest(
     @SerialName("country") val country: String? = null,
     /** Chip codes; proxy expands (e.g. id→id+in) and defaults from country when omitted. */
     @SerialName("languages") val languages: List<String> = emptyList(),
+    @SerialName("recommendationFormat") val recommendationFormat: String? = null,
 )
 
 @Serializable
@@ -119,7 +189,8 @@ data class OnboardingGenreSynthRequest(
     @SerialName("length") val length: String,
     @SerialName("country") val country: String? = null,
     @SerialName("languages") val languages: List<String> = emptyList(),
-    @SerialName("skipGemini") val skipGemini: Boolean = false
+    @SerialName("skipGemini") val skipGemini: Boolean = false,
+    @SerialName("recommendationFormat") val recommendationFormat: String? = null,
 )
 
 @Serializable
@@ -130,4 +201,5 @@ data class OnboardingSimilarShowsRequest(
     @SerialName("shows") val shows: List<OnboardingSelectedShowDto>,
     @SerialName("country") val country: String? = null,
     @SerialName("languages") val languages: List<String> = emptyList(),
+    @SerialName("recommendationFormat") val recommendationFormat: String? = null,
 )

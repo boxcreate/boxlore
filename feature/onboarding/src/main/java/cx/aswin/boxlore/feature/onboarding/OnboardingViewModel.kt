@@ -36,6 +36,10 @@ class OnboardingViewModel(
 
     internal var searchJob: Job? = null
     internal var recommendationJob: Job? = null
+    internal val echoRequests = EchoRequestLifecycle()
+
+    /** The show deck's clips, buffered before the deck opens; freed when it is answered or dropped. */
+    internal val deckClips by lazy { EchoClipPool(application) }
 
     internal val turnHistoryState = mutableListOf<TurnState>()
     internal var lastFailedAction: (() -> Unit)? = null
@@ -44,6 +48,9 @@ class OnboardingViewModel(
         val assistantMessage: String,
         val options: List<String>,
         val history: List<OnboardingHistoryEntry>,
+        val guided: cx.aswin.boxlore.core.network.model.GuidedOnboardingTurn? = null,
+        val searchSuggestion: String? = null,
+        val turnNumber: Int = 1,
     )
 
     init {
@@ -152,12 +159,15 @@ class OnboardingViewModel(
     fun isOnboardingCompleted(): Boolean = boxcastPrefs.isOnboardingCompleted()
 
     fun startOnboarding(entryPoint: String = "welcome_screen") {
+        cancelEchoRequests()
+        echoRequests.cancelDeck()
+        deckClips.release()
         onboardingEntryPoint = entryPoint
         if (entryPoint == "home_import_banner") {
             AnalyticsHelper.trackOnboardingStarted("home_import_banner")
         }
         turnHistoryState.clear()
-        _uiState.value = OnboardingUiState().copy(currentStep = OnboardingStep.AI_ONBOARDING)
+        _uiState.value = OnboardingAiStart.freshState(_uiState.value)
         turnStartMs = System.currentTimeMillis()
         onboardingStartMs = System.currentTimeMillis()
         didSwitchFromAi = false
@@ -388,6 +398,15 @@ class OnboardingViewModel(
         }
     }
 
+    /** Adds or removes every show in a suggestions lane. */
+    fun setShowsSelected(podcasts: List<Podcast>, selected: Boolean) {
+        _uiState.update { state ->
+            val ids = podcasts.map { it.id }.toSet()
+            val newSelected = if (selected) state.selectedPodcasts + podcasts.associateBy { it.id } else state.selectedPodcasts.filterKeys { it !in ids }
+            state.copy(selectedPodcasts = newSelected, subscribedPodcastIds = newSelected.keys)
+        }
+    }
+
     fun toggleAllPodcastsInRow(rowTitle: String) {
         _uiState.update { state ->
             val row = state.aiCurriculumRows.find { it.rowTitle == rowTitle } ?: return@update state
@@ -409,6 +428,9 @@ class OnboardingViewModel(
     }
 
     override fun onCleared() {
+        echoRequests.cancel()
+        echoRequests.cancelDeck()
+        deckClips.release()
         trackOnboardingAbandonedIfNeeded()
         super.onCleared()
     }

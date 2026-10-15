@@ -7,7 +7,6 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumPodcastDto
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import cx.aswin.boxlore.core.network.model.OnboardingGenreSynthRequest
-import cx.aswin.boxlore.core.network.model.toPodcast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.update
@@ -82,6 +81,7 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                                 length = formattedLengths,
                                 country = locale.country,
                                 languages = locale.languages,
+                                recommendationFormat = "discovery_v2",
                             )
                         val response =
                             podcastRepository.api
@@ -134,10 +134,7 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                         rows
                     }
 
-                // 3. Process default selections
-                val newPodcasts = finalRows.flatMap { it.podcasts }.map { it.toPodcast() }
-                val defaultSelectedIds = OnboardingCurriculumLogic.defaultSelectedPodcastIds(finalRows)
-                val defaultSelectedPodcasts = newPodcasts.filter { it.id in defaultSelectedIds }.associateBy { it.id }
+                // 3. Nothing is pre-selected: the listener adds what they want.
 
                 val duration = (System.currentTimeMillis() - synthesisStartMs) / 1000f
                 val uniquePodcastsCount = finalRows.flatMap { it.podcasts }.distinctBy { it.id }.size
@@ -151,8 +148,6 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                     state.copy(
                         aiCurriculumRows = finalRows,
                         genreChartsPodcasts = charts,
-                        selectedPodcasts = state.selectedPodcasts + defaultSelectedPodcasts,
-                        subscribedPodcastIds = state.subscribedPodcastIds + defaultSelectedIds,
                         isLoadingPodcasts = false,
                         onboardingError = null,
                     )

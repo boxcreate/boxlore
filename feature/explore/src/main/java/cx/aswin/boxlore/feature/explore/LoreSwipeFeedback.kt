@@ -1,5 +1,8 @@
 package cx.aswin.boxlore.feature.explore
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -11,6 +14,8 @@ import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,10 +43,38 @@ internal fun loreSwipeFeedbackMotion(offsetX: Float, threshold: Float, direction
     )
 }
 
+internal const val LoreCueExitMillis = 140
+
+/**
+ * The cue while the card leaves: it keeps the size it had when released and fades out quickly,
+ * instead of following the card's whole fly-out. A button action releases at 0, so no cue shows.
+ */
+internal fun loreSwipeCueMotion(
+    offsetX: Float,
+    releaseOffsetX: Float,
+    exiting: Boolean,
+    exitFade: Float,
+    threshold: Float,
+    direction: SwipeDirection,
+): LoreSwipeFeedbackMotion {
+    if (!exiting) return loreSwipeFeedbackMotion(offsetX, threshold, direction)
+    val released = loreSwipeFeedbackMotion(releaseOffsetX, threshold, direction)
+    return released.copy(alpha = released.alpha * exitFade.coerceIn(0f, 1f))
+}
+
 @Composable
 internal fun BoxScope.LoreSwipeFeedback(swipeState: SwipeableCardState, thresholdPx: Float, accentColor: Color) {
+    val exitFade = remember(swipeState) { Animatable(1f) }
+    LaunchedEffect(swipeState, swipeState.phase) {
+        if (swipeState.phase == LoreSwipePhase.Exiting) {
+            exitFade.animateTo(0f, tween(LoreCueExitMillis, easing = FastOutLinearInEasing))
+        } else {
+            exitFade.snapTo(1f)
+        }
+    }
     LoreSwipeActionBadge(
         swipeState = swipeState,
+        exitFade = exitFade,
         thresholdPx = thresholdPx,
         direction = SwipeDirection.Left,
         accentColor = accentColor,
@@ -49,6 +82,7 @@ internal fun BoxScope.LoreSwipeFeedback(swipeState: SwipeableCardState, threshol
     )
     LoreSwipeActionBadge(
         swipeState = swipeState,
+        exitFade = exitFade,
         thresholdPx = thresholdPx,
         direction = SwipeDirection.Right,
         accentColor = accentColor,
@@ -59,6 +93,7 @@ internal fun BoxScope.LoreSwipeFeedback(swipeState: SwipeableCardState, threshol
 @Composable
 private fun LoreSwipeActionBadge(
     swipeState: SwipeableCardState,
+    exitFade: Animatable<Float, *>,
     thresholdPx: Float,
     direction: SwipeDirection,
     accentColor: Color,
@@ -69,7 +104,14 @@ private fun LoreSwipeActionBadge(
         modifier = modifier
             .size(72.dp)
             .graphicsLayer {
-                val motion = loreSwipeFeedbackMotion(swipeState.offset.value.x, thresholdPx, direction)
+                val motion = loreSwipeCueMotion(
+                    offsetX = swipeState.offset.value.x,
+                    releaseOffsetX = swipeState.releaseOffsetX,
+                    exiting = swipeState.phase == LoreSwipePhase.Exiting,
+                    exitFade = exitFade.value,
+                    threshold = thresholdPx,
+                    direction = direction,
+                )
                 alpha = motion.alpha
                 scaleX = motion.scale
                 scaleY = motion.scale

@@ -2,7 +2,12 @@ package cx.aswin.boxlore.feature.onboarding
 
 import android.app.Activity
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -45,15 +51,24 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -65,6 +80,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -105,13 +121,18 @@ internal fun WelcomeScreen(
             Column(Modifier.fillMaxWidth().padding(horizontal = 26.dp).padding(top = 24.dp)) {
                 WelcomeInvitation(clock, viewportWidth)
             }
-            Spacer(Modifier.weight(1f))
+            // Echo's peek borrows the free space above the button; where there is too little, it stays hidden.
+            val density = LocalDensity.current
+            var peekFits by remember { mutableStateOf(false) }
+            Spacer(Modifier.weight(1f).onSizeChanged { peekFits = with(density) { it.height.toDp() } + WelcomeActionsGap >= WelcomeEchoPeekVisible })
             WelcomeActions(
+                clock,
                 onHelpMeFind,
                 onSearch,
                 onImportClick,
                 onSkip,
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 24.dp).navigationBarsPadding().padding(bottom = 8.dp),
+                showEcho = peekFits,
+                Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = WelcomeActionsGap).navigationBarsPadding().padding(bottom = 8.dp),
             )
         }
     }
@@ -190,19 +211,32 @@ private fun WelcomeEntryText(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun WelcomeActions(
+    clock: WelcomeMotionClock,
     onHelpMeFind: () -> Unit,
     onSearch: () -> Unit,
     onImportClick: () -> Unit,
     onSkip: () -> Unit,
+    showEcho: Boolean,
     modifier: Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(
-            onClick = onHelpMeFind,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
-            shapes = ButtonDefaults.shapes(shape = RoundedCornerShape(30.dp), pressedShape = RoundedCornerShape(20.dp)),
-            contentPadding = PaddingValues(horizontal = 22.dp, vertical = 14.dp),
-        ) {
+        // Echo peeks over the top of the button it leads to; the button hides the rest of it. Its
+        // area reaches up into the free space above without adding height (so the page never
+        // scrolls for it), and clipping stops its body showing below the button before it rises.
+        Box(Modifier.fillMaxWidth()) {
+            val findPress = remember { MutableInteractionSource() }
+            if (showEcho) {
+                Box(Modifier.matchParentSize().reachUp(WelcomeEchoPeekVisible).clipToBounds()) {
+                    WelcomeEchoPeek(clock, findPress, Modifier.align(Alignment.TopEnd).padding(end = 8.dp))
+                }
+            }
+            Button(
+                onClick = onHelpMeFind,
+                interactionSource = findPress,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                shapes = ButtonDefaults.shapes(shape = RoundedCornerShape(30.dp), pressedShape = RoundedCornerShape(20.dp)),
+                contentPadding = PaddingValues(horizontal = 22.dp, vertical = 14.dp),
+            ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.AutoAwesome, null, Modifier.padding(end = 10.dp).size(20.dp))
                 Text(
@@ -213,6 +247,7 @@ private fun WelcomeActions(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, Modifier.padding(start = 12.dp).size(22.dp))
+            }
             }
         }
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
@@ -263,4 +298,86 @@ private fun WelcomeStatusBars(panelColor: Color, coverVisible: Boolean) {
     SideEffect {
         controller.isAppearanceLightStatusBars = if (coverVisible) panelColor.luminance() > 0.5f else defaultLightAppearance
     }
+}
+
+/**
+ * Echo's whole animation cell, sized so its head matches the button; the button's top edge sits at
+ * Echo's chin (60% down the cell), so only antenna, eyes and smile show.
+ */
+private val WelcomeEchoCellWidth = 138.dp
+private val WelcomeEchoPeekVisible = WelcomeEchoCellWidth / 1.5f * 0.6f
+
+/**
+ * Echo, drawn behind the "Find shows for me" button so the button's top edge hides its body. It is
+ * Echo's real resting animation (the same one the chat uses), looking straight out and blinking on
+ * its own. It rises into view on the shared Welcome clock as the invitation settles, with a small
+ * overshoot; with animations off it shows its still pose.
+ */
+@Composable
+private fun WelcomeEchoPeek(clock: WelcomeMotionClock, buttonPress: InteractionSource, modifier: Modifier) {
+    // Echo ducks a little while the button is held and pops back up when it is released.
+    val pressed by buttonPress.collectIsPressedAsState()
+    val duck = animateFloatAsState(if (pressed) 1f else 0f, spring(dampingRatio = 0.55f, stiffness = 650f), label = "Echo duck")
+    fun Density.lift(): Float {
+        // The clock keeps counting after the text reveal and never replays, so it alone decides
+        // the rise; the reveal flag flips at 1.3s, mid-rise.
+        val progress = if (clock.animationsDisabled.value) {
+            1f
+        } else {
+            ((clock.elapsedMillis.value - WelcomeEchoRiseDelayMillis) / WelcomeEchoRiseMillis.toFloat()).coerceIn(0f, 1f)
+        }
+        return (1f - welcomeEchoRise(progress)) * WelcomeEchoPeekVisible.toPx() + duck.value * WelcomeEchoDuck.toPx()
+    }
+    EchoOnboardingAvatar(
+        phase = EchoOnboardingPhase.Rest,
+        playbackKey = "welcome",
+        prefetch = false,
+        modifier = modifier
+            .width(WelcomeEchoCellWidth)
+            .graphicsLayer {
+                translationY = lift()
+                // Offscreen, so the contact shadow below darkens only Echo's own pixels.
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
+            .drawWithContent {
+                drawContent()
+                // A faint contact shadow where Echo meets the button's edge, which stays put while
+                // Echo moves: it reads as tucked behind the button rather than cut off.
+                val edge = WelcomeEchoPeekVisible.toPx() - lift()
+                val depth = WelcomeEchoContactShadow.toPx()
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0f to Color.Black.copy(alpha = 0f),
+                        1f to Color.Black.copy(alpha = 0.16f),
+                        startY = edge - depth,
+                        endY = edge,
+                    ),
+                    topLeft = Offset(0f, edge - depth),
+                    size = Size(size.width, depth),
+                    blendMode = BlendMode.SrcAtop,
+                )
+            },
+    )
+}
+
+/** Gap between the invitation's free space and the actions; Echo's peek may use it. */
+private val WelcomeActionsGap = 24.dp
+
+/** Draws [extra] above the element's top without taking any layout height. */
+private fun Modifier.reachUp(extra: Dp): Modifier = layout { measurable, constraints ->
+    val reach = extra.roundToPx()
+    val placeable = measurable.measure(constraints.copy(minHeight = constraints.minHeight + reach, maxHeight = constraints.maxHeight + reach))
+    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, -reach) }
+}
+
+private val WelcomeEchoDuck = 6.dp
+private val WelcomeEchoContactShadow = 4.dp
+
+private const val WelcomeEchoRiseDelayMillis = 700L
+private const val WelcomeEchoRiseMillis = 420L
+
+/** Ease-out with a small overshoot, so Echo pops up and settles. */
+internal fun welcomeEchoRise(progress: Float): Float {
+    val t = progress.coerceIn(0f, 1f) - 1f
+    return 1f + 2.2f * t * t * t + 1.2f * t * t
 }

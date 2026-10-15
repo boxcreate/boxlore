@@ -15,6 +15,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 
 internal val LocalShimmerPhase = staticCompositionLocalOf<State<Float>?> { null }
 
+internal const val ShimmerCycleMillis = 1600
+
 /** Loading blocks share a drawing-only clock; the window lifecycle pauses its frames. */
 @Composable
 fun ShimmerScope(active: Boolean, content: @Composable () -> Unit) {
@@ -39,7 +41,7 @@ internal fun rememberShimmerPhase(): State<Float> {
     return transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(animation = tween(1600, easing = LinearEasing)),
+        animationSpec = infiniteRepeatable(animation = tween(ShimmerCycleMillis, easing = LinearEasing)),
         label = "ShimmerProgress",
     )
 }

@@ -15,10 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathMeasure
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
@@ -40,25 +36,12 @@ internal fun MiniPlayerCompactStatus(
     Box(modifier = modifier.graphicsLayer { this.alpha = alpha }.clearAndSetSemantics {}) {
         // Keep the whole track visible, including before Media3 has a duration.
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val stroke = MiniPlayerCompactProgressStroke.toPx()
-            val track = compactPlayerPath(
-                size,
-                cookieFraction,
-                inset = stroke / 2f + 0.25.dp.toPx(),
+            drawPlayerProgressRing(
+                progress = miniPlayerCompactProgress(content),
+                cookieFraction = cookieFraction,
                 rotation = rotation?.value ?: 0f,
-            )
-            drawPath(
-                path = track,
-                color = colorScheme.surface,
-                style = Stroke(stroke),
-            )
-            val measure = PathMeasure().apply { setPath(track, true) }
-            val played = Path()
-            measure.getSegment(0f, measure.length * miniPlayerCompactProgress(content), played, startWithMoveTo = true)
-            drawPath(
-                path = played,
-                color = colorScheme.primary,
-                style = Stroke(stroke, cap = StrokeCap.Round),
+                track = colorScheme.surface,
+                played = colorScheme.primary,
             )
         }
         if (content.isLoading) {

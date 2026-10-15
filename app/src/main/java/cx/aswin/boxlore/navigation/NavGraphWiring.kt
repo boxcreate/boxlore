@@ -156,6 +156,8 @@ data class NavSettingsState(
     val subscriptionsTabStyle: String = cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle.TOP,
     val miniPlayerSeekButtonsEnabled: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
+    val navigationBlurLevel: String = cx.aswin.boxlore.core.prefs.NavigationBlurLevel.DEFAULT,
+    val heroCardStyle: String = cx.aswin.boxlore.core.prefs.HeroCardStyle.STANDARD,
     val savedCustomTheme: cx.aswin.boxlore.core.prefs.ThemeSelection? = null,
     val fullPlayerStyle: String = cx.aswin.boxlore.core.prefs.FullPlayerStyle.STANDARD,
 )

@@ -40,6 +40,8 @@ import cx.aswin.boxlore.core.designsystem.theme.buildGoogleSansFamily
 import cx.aswin.boxlore.core.designsystem.theme.buildSectionHeaderFontFamily
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.core.prefs.NavigationBlurLevel
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
 import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
@@ -67,6 +69,8 @@ data class AppearanceUiState(
     val currentSubscriptionsTabStyle: String = SubscriptionsTabStyle.TOP,
     val miniPlayerSeekButtonsEnabled: Boolean = false,
     val artworkColorsEnabled: Boolean = true,
+    val navigationBlurLevel: String = NavigationBlurLevel.DEFAULT,
+    val heroCardStyle: String = HeroCardStyle.STANDARD,
     val savedCustomTheme: ThemeSelection? = null,
     val fullPlayerStyle: String = FullPlayerStyle.STANDARD,
 )
@@ -88,6 +92,8 @@ data class AppearanceActions(
     val onSetMiniPlayerSeekButtonsEnabled: (Boolean) -> Unit = {},
     val onSetThemePreset: (String) -> Unit = {},
     val onSetArtworkColorsEnabled: (Boolean) -> Unit = {},
+    val onSetNavigationBlurLevel: (String) -> Unit = {},
+    val onSetHeroCardStyle: (String) -> Unit = {},
     val onApplyTheme: (ThemeSelection, ThemeSelection?) -> Unit = { _, _ -> },
     val onSaveCustomTheme: (ThemeSelection) -> Unit = { onApplyTheme(it, it) },
     val onSetFullPlayerStyle: (String) -> Unit = {},
@@ -152,6 +158,24 @@ private fun AppearanceLayoutSection(state: AppearanceUiState, actions: Appearanc
         SettingsContent {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 DefaultTabPicker("Navigation bar", NavigationStyle.entries.map { it.key to it.label }, NavigationStyle.fromKey(state.currentNavigationStyle).key, actions.onSetNavigationStyle)
+                // The page blurs under the floating bar only, so the strength picker shows only with it.
+                if (NavigationStyle.fromKey(state.currentNavigationStyle) == NavigationStyle.Floating) {
+                    DefaultTabPicker(
+                        "Blur behind the bar",
+                        listOf(NavigationBlurLevel.OFF to "Off", NavigationBlurLevel.SOFT to "Soft", NavigationBlurLevel.MEDIUM to "Medium", NavigationBlurLevel.STRONG to "Strong"),
+                        NavigationBlurLevel.sanitize(state.navigationBlurLevel),
+                        actions.onSetNavigationBlurLevel,
+                    )
+                }
+                DefaultTabPicker(
+                    stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_title),
+                    listOf(
+                        HeroCardStyle.STANDARD to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_standard),
+                        HeroCardStyle.CLASSIC to stringResource(cx.aswin.boxlore.feature.settings.R.string.hero_card_style_classic),
+                    ),
+                    HeroCardStyle.sanitize(state.heroCardStyle),
+                    actions.onSetHeroCardStyle,
+                )
                 DefaultTabPicker("Subscriptions tab position", listOf(SubscriptionsTabStyle.TOP to "Top", SubscriptionsTabStyle.FLOATING to "Floating"), SubscriptionsTabStyle.sanitize(state.currentSubscriptionsTabStyle), actions.onSetSubscriptionsTabStyle)
             }
         }

@@ -26,6 +26,8 @@ A Git push does not deploy this pipeline. Changes to `scripts/sync/` or `scripts
 | [`scripts/sync/lib/scalars.js`](sync/lib/scalars.js) | Scrub non-scalars before Qdrant/Turso writes |
 | [`scripts/package.json`](package.json) | Sync Node deps + `npm run test:sync` |
 
+The runner orchestrator lives outside this repository. It invokes the stages in order and, before stage 2's bulk path, produces `podcasts_export.csv` (columns must match `PODCAST_IMPORT_COLUMNS` in `sync/lib/config.js`) from a locally stored copy of the public Podcast Index weekly dump, which it refreshes separately. Stage scripts never download the dump themselves.
+
 ## Changing catalog sync
 
 - Extend hermetic tests under `sync/lib/*.test.js` and run `npm run test:sync` from `scripts/`.

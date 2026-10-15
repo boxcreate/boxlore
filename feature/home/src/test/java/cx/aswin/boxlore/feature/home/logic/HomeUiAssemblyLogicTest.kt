@@ -2,7 +2,9 @@ package cx.aswin.boxlore.feature.home.logic
 
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.playback.MixtapeEngine
+import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.core.testing.TestFixtures
+import cx.aswin.boxlore.feature.home.HeroType
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -20,6 +22,9 @@ class HomeUiAssemblyLogicTest {
             audioUrl = "https://audio/brief.mp3",
             coverUrl = "https://img/brief.jpg",
         )
+
+    // JUnit creates a fresh instance per test, so a resume list set by one test never leaks.
+    private var resumeSessions: List<PlaybackSession> = emptyList()
 
     private suspend fun assemble(
         trending: List<cx.aswin.boxlore.core.model.Podcast> = listOf(TestFixtures.podcast(id = "trend-1")),
@@ -41,7 +46,7 @@ class HomeUiAssemblyLogicTest {
     ): HomeUiAssemblyResult = HomeUiAssemblyLogic.assemble(
         trendingList = trending,
         rankedRecommendations = listOf(TestFixtures.episode(id = "rec-1")),
-        resumeList = emptyList(),
+        resumeList = resumeSessions,
         subs = subs,
         allHistory = emptyList(),
         resolvedSerial = emptyMap(),
@@ -95,26 +100,45 @@ class HomeUiAssemblyLogicTest {
     }
 
     @Test
-    fun `rebuilds mixtape when subscription signature changed`() = runTest {
+    fun `keeps mixtape across subscription writes and drops removed shows`() = runTest {
         val cache =
             HomeMixtapeCache(
-                podcasts = listOf(TestFixtures.podcast(id = "cached")),
-                unplayedCount = 7,
-                episodes = emptyList(),
-                subSignature = setOf("old-sub"),
+                podcasts = listOf(TestFixtures.podcast(id = "kept"), TestFixtures.podcast(id = "removed")),
+                unplayedCount = 2,
+                episodes = listOf(TestFixtures.episode(id = "kept-ep", podcastId = "kept"), TestFixtures.episode(id = "removed-ep", podcastId = "removed")),
+                subSignature = setOf("kept", "removed"),
             )
         var built = 0
 
         val result =
             assemble(
-                subs = listOf(TestFixtures.podcast(id = "new-sub")),
+                subs = listOf(TestFixtures.podcast(id = "kept"), TestFixtures.podcast(id = "new-sub")),
                 previousMixtape = cache,
                 onBuildMixtape = { built++ },
             )
 
+        assertEquals(0, built, "subscription writes wait for the settled ranking pass")
+        assertEquals(listOf("kept"), result.latestEpisodes.map { it.id })
+        assertEquals(listOf("kept-ep"), result.mixtapeCache?.episodes?.map { it.id })
+        assertEquals(1, result.unplayedEpisodeCount)
+        assertEquals(setOf("kept", "new-sub"), result.mixtapeCache?.subSignature)
+    }
+
+    @Test
+    fun `rebuilds mixtape when the restart setting changes`() = runTest {
+        val cache =
+            HomeMixtapeCache(
+                podcasts = listOf(TestFixtures.podcast(id = "cached")),
+                unplayedCount = 1,
+                episodes = emptyList(),
+                subSignature = setOf("sub-1"),
+                staleRestartEnabled = false,
+            )
+        var built = 0
+
+        assemble(subs = listOf(TestFixtures.podcast(id = "sub-1")), previousMixtape = cache, onBuildMixtape = { built++ })
+
         assertEquals(1, built)
-        assertEquals(listOf("mix-1"), result.latestEpisodes.map { it.id })
-        assertEquals(setOf("new-sub"), result.mixtapeCache?.subSignature)
     }
 
     @Test
@@ -177,5 +201,32 @@ class HomeUiAssemblyLogicTest {
         assertNull(completed.briefing)
 
         assertNull(assemble(rawBriefing = null).briefing)
+    }
+
+    @Test
+    fun `brief card stays when the same brief is in a resume card or grid`() = runTest {
+        fun session(id: String, podcastId: String = "pod-$id") = PlaybackSession(
+            podcastId = podcastId,
+            episodeId = "ep-$id",
+            positionMs = 60_000L,
+            durationMs = 600_000L,
+            timestamp = 1L,
+            episodeTitle = "Episode $id",
+            podcastTitle = "Show $id",
+            imageUrl = null,
+            podcastImageUrl = null,
+            audioUrl = "https://audio/$id.mp3",
+        )
+        val briefShow = "briefing_${briefing.region}"
+        val briefSession = session("brief", podcastId = briefShow)
+        resumeSessions = listOf(briefSession)
+        val inResumeCard = assemble(rawBriefing = briefing)
+        assertEquals(HeroType.RESUME, inResumeCard.heroItems.first { it.podcast.id == briefShow }.type)
+        assertEquals(briefing, inResumeCard.briefing)
+
+        resumeSessions = listOf(session("a"), briefSession, session("b"))
+        val inResumeGrid = assemble(rawBriefing = briefing)
+        assertTrue(inResumeGrid.heroItems.any { item -> item.type == HeroType.RESUME_GRID && item.gridItems.any { it.id == briefShow } })
+        assertEquals(briefing, inResumeGrid.briefing)
     }
 }

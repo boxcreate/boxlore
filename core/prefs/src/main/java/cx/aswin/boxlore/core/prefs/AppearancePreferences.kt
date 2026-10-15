@@ -46,6 +46,8 @@ internal class AppearancePreferences(
         get() = SubscriptionsTabStyle.sanitize(syncPrefs.getString(SubscriptionsTabStyle.PREF_KEY, null))
 
     val fullPlayer = FullPlayerPreferences(dataStore, syncPrefs)
+    val navigationBlur = NavigationBlurPreferences(dataStore, syncPrefs)
+    val heroCard = HeroCardStylePreferences(dataStore, syncPrefs)
 
     val cachedThemeBrand: String
         get() = syncPrefs.getString("theme_brand", null) ?: "violet"
@@ -350,6 +352,8 @@ internal class AppearancePreferences(
             preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] = preferences[Keys.SUBSCRIPTIONS_DEFAULT_TAB] ?: cachedSubscriptionsDefaultTab
             preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] = preferences[Keys.SUBSCRIPTIONS_TAB_STYLE] ?: cachedSubscriptionsTabStyle
             fullPlayer.hydrate(preferences)
+            navigationBlur.hydrate(preferences)
+            heroCard.hydrate(preferences)
             preferences[Keys.WIDGET_APPEARANCE] = preferences[Keys.WIDGET_APPEARANCE] ?: cachedWidgetAppearance
         }
     }

@@ -17,6 +17,7 @@ import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.feature.info.logic.EpisodeOfflineMergeLogic
+import cx.aswin.boxlore.feature.info.logic.sharedLookup
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -409,13 +410,17 @@ class EpisodeInfoViewModel(
     ) {
         if (podcastId.isEmpty() || podcastId == "unknown") return
 
+        // One /podcast request shared by the related-episodes and similar-episodes loaders.
+        val podcastDetails =
+            viewModelScope.sharedLookup { podcastRepository.getPodcastDetails(podcastId) }
+
         // 3. Fetch related episodes AND podcast genre INDEPENDENTLY (non-blocking)
         viewModelScope.launch {
             try {
                 android.util.Log.d("EpisodeInfo", "Fetching related episodes for podcastId: $podcastId")
 
                 // Fetch podcast to get genre
-                val podcast = podcastRepository.getPodcastDetails(podcastId)
+                val podcast = podcastDetails.await()
                 val genre = podcast?.genre ?: ""
 
                 // Use getEpisodesPaginated which is the correct method used elsewhere
@@ -452,7 +457,7 @@ class EpisodeInfoViewModel(
                 android.util.Log.d("EpisodeInfo", "Fetching similar episodes for episodeId: $episodeId, title: $episodeTitle")
 
                 // Fetch the podcast details to get categories and author
-                val podcast = podcastRepository.getPodcastDetails(podcastId)
+                val podcast = podcastDetails.await()
                 val categories = podcast?.genre ?: ""
                 val author = podcast?.artist ?: ""
 

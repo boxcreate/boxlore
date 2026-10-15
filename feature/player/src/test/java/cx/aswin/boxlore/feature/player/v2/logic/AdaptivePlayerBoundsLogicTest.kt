@@ -130,9 +130,10 @@ class AdaptivePlayerBoundsLogicTest {
     fun circleExpandsContinuouslyFromItsOwnVisualBounds() {
         val bounds = calculateAdaptivePlayerBounds(input.copy(compactFraction = 1f, expansionFraction = 0.5f))
 
-        assertEquals(206.dp, bounds.width)
+        // Width leads height (ease-out), so the circle opens into a sheet rather than a tall bar.
+        assertEquals(283.dp.value, bounds.width.value, 0.01f)
         assertEquals(426.dp, bounds.height)
-        assertEquals(146.dp, bounds.offsetX)
+        assertEquals(73.dp.value, bounds.offsetX.value, 0.01f)
         assertEquals(357f, bounds.offsetY)
     }
 
@@ -273,9 +274,11 @@ class AdaptivePlayerBoundsLogicTest {
     }
 
     @Test
-    fun compactCornerRadiusShrinksAsTheFullPlayerExpands() {
+    fun compactCornerRadiusHoldsThenShrinksAsTheFullPlayerExpands() {
         assertEquals(26.dp, calculateAdaptivePlayerCornerRadius(32.dp, 0f, 1f, false))
-        assertEquals(13.dp, calculateAdaptivePlayerCornerRadius(16.dp, 0.5f, 1f, false))
+        // The cookie's rounding holds through the first half of the expansion, then squares off.
+        assertEquals(26.dp, calculateAdaptivePlayerCornerRadius(16.dp, 0.5f, 1f, false))
+        assertEquals(13.dp, calculateAdaptivePlayerCornerRadius(16.dp, 0.75f, 1f, false))
         assertEquals(0.dp, calculateAdaptivePlayerCornerRadius(0.dp, 1f, 1f, false))
     }
 
@@ -284,8 +287,8 @@ class AdaptivePlayerBoundsLogicTest {
         val top = calculateAdaptivePlayerCornerRadius(13.dp, 0.5f, 0.5f, false)
         val bottom = calculateAdaptivePlayerCornerRadius(7.dp, 0.5f, 0.5f, false)
 
-        assertEquals(13.dp, top)
-        assertEquals(10.dp, bottom)
+        assertEquals(19.5.dp, top)
+        assertEquals(16.5.dp, bottom)
     }
 
     @Test

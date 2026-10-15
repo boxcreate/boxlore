@@ -47,10 +47,12 @@ internal fun ArtworkNavigationHostTheme(navController: NavHostController, conten
     val visibleEntries by navController.visibleEntries.collectAsState()
     val transitioning = visibleEntries.count { it.destination is ComposeNavigator.Destination } > 1
     val previewAppEntry = rememberAppThemePreviewEntry(navController, entry, transitioning)
-    val initial = if (enabled) palettes?.initialColorsFor(entry?.id) ?: base else base
+    val isDetail = isArtworkDetailRoute(entry?.destination?.route)
+    // Only detail pages inherit the departing colours. Going back to a regular page shows the
+    // app's own colours from the first frame, rather than the detail page's lingering on.
+    val initial = if (enabled && isDetail) palettes?.initialColorsFor(entry?.id) ?: base else base
     val handoffKey = entry?.id to palettes?.handoffKeyFor(entry?.id)
     val colors = rememberAnimatedArtworkColors(if (transitioning) initial else base, initialColors = initial, animationKey = handoffKey)
-    val isDetail = isArtworkDetailRoute(entry?.destination?.route)
     SideEffect {
         palettes?.previewAppTheme(previewAppEntry)
         // Detail pages publish their own clock, including the entire loading phase.
@@ -66,7 +68,8 @@ internal fun ArtworkNavigationHostTheme(navController: NavHostController, conten
     }
 }
 
-private fun artworkNavigationBackdrop(
+/** What shows behind the pages: regular destinations always show the app's own background, even mid-transition. */
+internal fun artworkNavigationBackdrop(
     palettes: cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationColors?,
     entryId: String?,
     transitioning: Boolean,
@@ -74,9 +77,9 @@ private fun artworkNavigationBackdrop(
     base: androidx.compose.ui.graphics.Color,
     initial: androidx.compose.ui.graphics.Color,
 ): androidx.compose.ui.graphics.Color = when {
+    !isDetail -> base
     transitioning -> palettes?.transitionColors?.background ?: initial
-    isDetail -> palettes?.colorsFor(entryId)?.background ?: initial
-    else -> base
+    else -> palettes?.colorsFor(entryId)?.background ?: initial
 }
 
 /** Native Back starts the previous page's lifecycle before changing the current entry. */

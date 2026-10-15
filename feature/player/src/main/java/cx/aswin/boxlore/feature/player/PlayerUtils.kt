@@ -1,41 +1,5 @@
 package cx.aswin.boxlore.feature.player
 
-import android.graphics.Bitmap
-import androidx.compose.ui.graphics.Color
-import androidx.palette.graphics.Palette
-import kotlin.math.max
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-/**
- * Extracts a seed color from a bitmap using Palette API.
- */
-suspend fun extractSeedColor(bitmap: Bitmap): Color = withContext(Dispatchers.Default) {
-    val scaledBitmap = if (bitmap.width > 100 || bitmap.height > 100) {
-        val scale = 100f / max(bitmap.width, bitmap.height)
-        val scaledWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
-        val scaledHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
-        Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
-    } else {
-        bitmap
-    }
-
-    val palette = Palette.Builder(scaledBitmap)
-        .maximumColorCount(16)
-        .generate()
-
-    val color = palette.vibrantSwatch?.rgb?.let { Color(it) }
-        ?: palette.mutedSwatch?.rgb?.let { Color(it) }
-        ?: palette.dominantSwatch?.rgb?.let { Color(it) }
-        ?: Color(0xFF6750A4) // Default purple
-
-    if (scaledBitmap != bitmap) {
-        scaledBitmap.recycle()
-    }
-
-    color
-}
-
 /**
  * Formats milliseconds to time string.
  * Shows HH:MM:SS if hours > 0, otherwise MM:SS.

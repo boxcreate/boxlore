@@ -24,6 +24,8 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
 - Briefing markets: `us`, `in`, `gb`, `global` (ISO `gb` for the UK; legacy API path `/uk` still aliases to `gb` on the Worker).
 - `BriefingPlaybackLogic` resolves whether a briefing interaction pauses, resumes, starts, or seeks; choosing another story seeks directly instead of pausing.
 - `BriefingStoriesPager` and `BriefingStoryComponents` provide extracted story-presentation pieces.
+- Story cards share one height: the pager measures every card at the page width and current text size and takes the tallest, capped at 70% of the screen height so a card stays a comfortable read. Stories longer than the cap scroll inside their text area, and the last line fades while more text is below; shorter stories keep related episodes and Play pinned to the bottom. Measured copies are never placed and are hidden from accessibility. Story text uses body-large type in the full on-surface colour.
+- While an edition loads, the page shows its own layout (`BriefingLoadingContent`): the bundled cover for the chosen edition at once, with shimmering placeholders for the date line, headline, Listen button and first story in their final places, so the edition settles in place rather than replacing a spinner. The status bar treats the loading cover like the edition's.
 
 ## Internal structure
 

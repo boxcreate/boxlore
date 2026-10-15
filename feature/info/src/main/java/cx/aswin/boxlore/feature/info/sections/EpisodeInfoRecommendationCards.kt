@@ -2,7 +2,6 @@ package cx.aswin.boxlore.feature.info.sections
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
@@ -21,7 +20,6 @@ internal fun EpisodeInfoMoreLikeThisCard(state: EpisodeInfoUiState.Success, onEp
             icon = Icons.Rounded.AutoAwesome,
             episodes = state.similarEpisodes,
             loading = state.similarEpisodesLoading,
-            accentColor = MaterialTheme.colorScheme.primary,
             fallbackImageUrl = null,
         ),
         onEpisodeClick = onEpisodeClick,

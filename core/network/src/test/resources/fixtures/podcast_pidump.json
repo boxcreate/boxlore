@@ -1,0 +1,25 @@
+{
+  "status": "true",
+  "source": "pidump",
+  "feed": {
+    "id": 920666,
+    "podcastGuid": "abcdef12-3456-7890-abcd-ef1234567890",
+    "title": "The Daily",
+    "url": "https://feeds.example.com/thedaily.xml",
+    "originalUrl": null,
+    "link": "https://www.example.com/the-daily",
+    "description": "This is what the news should sound like.",
+    "author": "The New York Times",
+    "ownerName": "The New York Times",
+    "image": "https://example.com/daily.jpg",
+    "artwork": "https://example.com/daily.jpg",
+    "lastUpdateTime": 1760137200,
+    "itunesId": 1200361736,
+    "type": "serial",
+    "language": null,
+    "explicit": false,
+    "dead": 0,
+    "episodeCount": 2500,
+    "categories": { "1": "News", "2": "Daily News" }
+  }
+}

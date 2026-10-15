@@ -194,6 +194,8 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    // Blur behind the floating navigation bar only (Settings > Appearance).
+    implementation(libs.haze)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.google.material)
 

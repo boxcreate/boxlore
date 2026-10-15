@@ -48,6 +48,30 @@ class HomeRefreshPresentationLogicTest {
     }
 
     @Test
+    fun `base Home updates keep the selected show's filtered list instead of writing the raw one`() {
+        val filtered = listOf(TestFixtures.episode(id = "unplayed"))
+        val previous = HomeUiState(
+            heroItems = emptyList(),
+            discoverPodcasts = emptyList(),
+            selectedPodcastId = "show",
+            selectedPodcastEpisodes = filtered,
+            isSelectedPodcastLoading = false,
+        )
+        // Every playback tick rebuilds base Home; it must never flip the list back to the raw one.
+        repeat(100) {
+            val tick = HomeUiState(
+                heroItems = emptyList(),
+                discoverPodcasts = emptyList(),
+                selectedPodcastId = "show",
+                selectedPodcastEpisodes = filtered + TestFixtures.episode(id = "completed"),
+                isSelectedPodcastLoading = true,
+            ).withSelectedShowFrom(previous)
+            assertEquals(filtered, tick.selectedPodcastEpisodes)
+            assertFalse(tick.isSelectedPodcastLoading)
+        }
+    }
+
+    @Test
     fun `usable cards remain visible during refresh but initial or empty states do not`() {
         assertTrue(showHomeDiscoveryContent(initialLoading = false, hasContent = true))
         assertFalse(showHomeDiscoveryContent(initialLoading = true, hasContent = true))

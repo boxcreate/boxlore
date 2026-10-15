@@ -45,6 +45,7 @@ internal fun OnboardingViewModel.navigateToSearch() {
  * query the AI detected (e.g. the user typed a specific show name).
  */
 internal fun OnboardingViewModel.switchToSearchFromAi(prefillQuery: String? = null) {
+    cancelEchoRequests()
     AnalyticsHelper.trackOnboardingAiSearchRedirect(
         turnNumber = _uiState.value.aiCurrentTurn,
         suggestedQuery = prefillQuery,

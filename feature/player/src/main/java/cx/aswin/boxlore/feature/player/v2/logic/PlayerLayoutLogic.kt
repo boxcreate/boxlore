@@ -55,6 +55,8 @@ internal data class PlayerSheetGeometryInput(
     val miniPlayerHeight: Dp = 64.dp,
     val collapsedTopCornerRadius: Dp = 32.dp,
     val collapsedBottomCornerRadius: Dp = 32.dp,
+    /** How far the mini player had shrunk into the compact cookie when the sheet opens. */
+    val compactness: Float = 0f,
 )
 
 internal fun calculatePlayerSheetGeometry(
@@ -65,13 +67,14 @@ internal fun calculatePlayerSheetGeometry(
     } else {
         (1f - input.sheetOffset / input.collapsedTargetY).coerceIn(0f, 1f)
     }
-    val reveal = calculatePlayerSheetReveal(expansionFraction)
+    val reveal = calculatePlayerSheetReveal(expansionFraction, input.compactness)
+    val cornerHold = playerCornerHold(expansionFraction)
     return PlayerSheetGeometryValues(
         expansionFraction = expansionFraction,
         miniPlayerHeight = input.miniPlayerHeight,
         sheetHeight = lerp(input.miniPlayerHeight, input.containerHeight, expansionFraction),
-        topCornerRadius = lerp(input.collapsedTopCornerRadius, 0.dp, expansionFraction),
-        bottomCornerRadius = lerp(input.collapsedBottomCornerRadius, 0.dp, expansionFraction),
+        topCornerRadius = input.collapsedTopCornerRadius * cornerHold,
+        bottomCornerRadius = input.collapsedBottomCornerRadius * cornerHold,
         horizontalPadding = lerp(input.collapsedHorizontalPadding, 0.dp, expansionFraction),
         sheetElevation = lerp(3.dp, 16.dp, expansionFraction),
         miniAlpha = reveal.miniAlpha,

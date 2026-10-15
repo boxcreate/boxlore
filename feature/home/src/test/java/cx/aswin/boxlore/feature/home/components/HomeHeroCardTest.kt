@@ -251,7 +251,7 @@ class HomeHeroCardTest {
         }
     }
 
-    @Test fun `hero captions and actions are larger and fresh drop listen follows a known duration`() {
+    @Test fun `hero captions and actions are larger and new episodes show listen after a known duration`() {
         render()
         assertEquals(16f, textLayout("home_hero_time_left").layoutInput.style.fontSize.value, 0.1f)
         assertEquals(15f, textLayout("home_hero_play_label").layoutInput.style.fontSize.value, 0.1f)
@@ -279,7 +279,13 @@ class HomeHeroCardTest {
         scenario.value = Scenario(type = HeroType.JUMP_BACK_IN, label = "FRESH DROP", duration = 0)
         composeRule.onNodeWithTag("home_hero_duration", useUnmergedTree = true).assertDoesNotExist()
         composeRule.onNodeWithTag("home_hero_listen", useUnmergedTree = true).assertDoesNotExist()
-        scenario.value = Scenario(type = HeroType.JUMP_BACK_IN, label = "NEW EPISODE")
+        // A second new episode (and a serial's next one) reads "Listen" too; a jump-back-in card does not.
+        for (label in listOf("NEW EPISODE", "NEXT")) {
+            scenario.value = Scenario(type = HeroType.JUMP_BACK_IN, label = label, duration = 2400)
+            composeRule.waitForIdle()
+            assertEquals("Listen", textLayout("home_hero_listen").layoutInput.text.text)
+        }
+        scenario.value = Scenario(type = HeroType.JUMP_BACK_IN, label = "JUMP BACK IN", duration = 2400)
         composeRule.onNodeWithTag("home_hero_listen", useUnmergedTree = true).assertDoesNotExist()
         scenario.value = Scenario(type = HeroType.SPOTLIGHT, label = "TRENDING IN TRUE CRIME", genre = "True Crime")
         composeRule.waitForIdle()

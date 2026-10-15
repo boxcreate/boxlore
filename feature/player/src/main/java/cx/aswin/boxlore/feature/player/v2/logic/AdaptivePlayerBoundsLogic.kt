@@ -49,10 +49,11 @@ internal fun calculateAdaptivePlayerBounds(input: AdaptivePlayerBoundsInput): Ad
     val normalY = input.collapsedTargetY.takeIf { it.isFinite() }?.coerceAtLeast(0f) ?: 0f
     val compactY = input.compactTargetY.takeIf { it.isFinite() }?.coerceAtLeast(0f) ?: normalY
     val collapsedY = lerp(normalY, compactY, descent)
+    val widen = playerSheetWiden(expansion)
     return AdaptivePlayerBounds(
-        width = lerp(lerp(normalWidth, circleSize, contraction), width, expansion),
+        width = lerp(lerp(normalWidth, circleSize, contraction), width, widen),
         height = lerp(collapsedHeight, input.containerHeight.coerceAtLeast(0.dp), expansion),
-        offsetX = lerp(lerp(gutter, circleX, contraction), 0.dp, expansion),
+        offsetX = lerp(lerp(gutter, circleX, contraction), 0.dp, widen),
         offsetY = lerp(collapsedY, 0f, expansion),
         collapsedHeight = collapsedHeight,
         compactFraction = contraction,
@@ -71,7 +72,7 @@ internal fun calculateAdaptivePlayerCornerRadius(
     isFullscreenVideo: Boolean,
 ): Dp {
     if (isFullscreenVideo) return 0.dp
-    return lerp(regularRadius, AppLoreNavigationActionSize / 2 * (1f - expansionFraction), compactFraction)
+    return lerp(regularRadius, AppLoreNavigationActionSize / 2 * playerCornerHold(expansionFraction), compactFraction)
 }
 
 internal fun isPlayerSheetInteractionActive(

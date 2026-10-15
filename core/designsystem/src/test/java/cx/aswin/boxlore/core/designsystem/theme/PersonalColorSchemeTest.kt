@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.designsystem.theme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance as relativeLuminance
-import androidx.compose.ui.graphics.toArgb
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -34,13 +33,6 @@ class PersonalColorSchemeTest {
         assertEquals("dynamic_oled_white", artworkSurfaceStyle("dynamic_oled_white"))
         assertEquals("standard", artworkSurfaceStyle("preset:paper"))
         assertEquals("standard", artworkSurfaceStyle("classic_dynamic"))
-    }
-
-    @Test fun `monochrome and empty art fall back while meaningful color beats small details`() {
-        assertNull(selectArtworkSeed(emptyList()))
-        assertNull(selectArtworkSeed(listOf(ArtworkColorCandidate(Color.White.toArgb(), 90), ArtworkColorCandidate(Color.Black.toArgb(), 10))))
-        val dominant = Color(0xFF2855BB).toArgb()
-        assertEquals(dominant, selectArtworkSeed(listOf(ArtworkColorCandidate(dominant, 80), ArtworkColorCandidate(Color.Red.toArgb(), 1), ArtworkColorCandidate(Color.White.toArgb(), 19))))
     }
 
     @Test fun `navbar shares the page palette without changing other entries or error semantics`() {

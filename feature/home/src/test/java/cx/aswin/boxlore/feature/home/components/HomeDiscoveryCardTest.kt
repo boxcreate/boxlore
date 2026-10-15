@@ -174,10 +174,9 @@ class HomeDiscoveryCardTest {
         assertEquals((156f + 78f) * density, card.height, 1f)
     }
 
-    @Test fun `seed retains original content and softly clipped body shapes with enlarged text and RTL`() {
+    @Test fun `seed cover breaks out of the card while text and swap stay clear with enlarged text and RTL`() {
         val title = "A show with a very long name that needs to be ellipsized across the available title space"
-        var upperDecorationColor = Color.Unspecified
-        var lowerDecorationColor = Color.Unspecified
+        var shapeColor = Color.Unspecified
         scenario.value = Scenario(width = 288.dp, title = title)
         composeRule.setContent {
             val value = scenario.value
@@ -188,9 +187,8 @@ class HomeDiscoveryCardTest {
                 LocalLayoutDirection provides value.direction,
             ) {
                 BoxLoreTheme(darkTheme = value.dark, dynamicColor = value.dynamic, surfaceStyle = value.surface) {
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    upperDecorationColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f).compositeOver(containerColor)
-                    lowerDecorationColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f).compositeOver(containerColor)
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    shapeColor = MaterialTheme.colorScheme.tertiary.copy(alpha = BecauseYouLikeSeedLayout.ShapeAlpha).compositeOver(containerColor)
                     BecauseYouLikeSection(
                         podcast = Podcast(id = "seed", title = value.title, artist = "", imageUrl = ""),
                         recommendations = StableEpisodeList(emptyList()),
@@ -206,6 +204,7 @@ class HomeDiscoveryCardTest {
                 }
             }
         }
+        val context = ApplicationProvider.getApplicationContext<Context>()
         val themes = listOf(Scenario(), Scenario(dark = true), Scenario(dark = true, surface = SurfaceStyles.AMOLED), Scenario(dynamic = true))
         val variants = themes
             .flatMap { theme -> listOf(288.dp, 328.dp).map { theme.copy(width = it, title = title) } }
@@ -214,38 +213,57 @@ class HomeDiscoveryCardTest {
         for (value in variants) {
             scenario.value = value
             composeRule.waitForIdle()
+            val ltr = value.direction == LayoutDirection.Ltr
             val card = composeRule.onNodeWithTag("seed").fetchSemanticsNode().boundsInRoot
             val text = composeRule.onNodeWithText(title, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-            val action = composeRule.onNodeWithContentDescription(ApplicationProvider.getApplicationContext<Context>().getString(R.string.home_change_recommendation_show))
+            val label = composeRule.onNodeWithText(context.getString(R.string.home_because_you_like), useUnmergedTree = true)
                 .fetchSemanticsNode().boundsInRoot
-            assertTrue(text.left >= card.left && text.right <= card.right && text.bottom <= card.bottom)
-            assertFalse(text.overlaps(action))
-            assertEquals("The original swap button stays 40dp wide", 40f * density, action.width, 1f)
-            assertEquals("The original swap button stays 40dp tall", 40f * density, action.height, 1f)
-            val labelText = ApplicationProvider.getApplicationContext<Context>().getString(R.string.home_because_you_like)
-            val label = composeRule.onNodeWithText(labelText, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            val swapNode = composeRule.onNodeWithContentDescription(context.getString(R.string.home_change_recommendation_show))
+                .fetchSemanticsNode()
+            val swap = swapNode.boundsInRoot
+            val coverLane = BecauseYouLikeSeedLayout.CoverVisibleWidth.value * density
+            val coverRadius = BecauseYouLikeSeedLayout.CoverSize.value * density / 2f
+            val coverCentreX = if (ltr) {
+                card.right + BecauseYouLikeSeedLayout.CoverOverflow.value * density - coverRadius
+            } else {
+                card.left - BecauseYouLikeSeedLayout.CoverOverflow.value * density + coverRadius
+            }
+
+            assertTrue("The card reserves its 112dp minimum height", card.height >= 112f * density)
             assertTrue(label.bottom <= text.top)
+            assertTrue(text.left >= card.left && text.right <= card.right && text.bottom <= card.bottom)
+            assertTrue("Text stays out of the cover lane", if (ltr) text.right <= card.right - coverLane else text.left >= card.left + coverLane)
+            assertFalse(text.overlaps(swap))
+            assertFalse(label.overlaps(swap))
+            assertTrue("Swap keeps a 48dp touch target", swapNode.touchBoundsInRoot.width >= 48f * density - 1f)
+            assertTrue(swap.left >= card.left && swap.right <= card.right && swap.bottom <= card.bottom)
+            val swapToCover = kotlin.math.hypot(swap.center.x - coverCentreX, swap.center.y - card.center.y)
+            assertEquals("Swap sits on the cover's edge", coverRadius, swapToCover, 4f * density)
             assertEquals(2, titleLayout().lineCount)
             assertTrue(titleLayout().isLineEllipsized(1))
-            assertTrue("The original seed reserves its 88dp minimum height", card.height >= 88f * density)
-            assertEquals("The original show title uses titleMedium", 16.sp, titleLayout().layoutInput.style.fontSize)
+            assertEquals(18.sp, titleLayout().layoutInput.style.fontSize)
+
             val pixels = composeRule.runOnIdle {
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
                 view.draw(Canvas(bitmap))
-                fun bodyX(offset: Float): Int = if (value.direction == LayoutDirection.Ltr) {
-                    (card.left + offset).toInt()
-                } else {
-                    (card.right - offset).toInt()
-                }
+                fun fromStart(offset: Float): Int = (if (ltr) card.left + offset else card.right - offset).toInt()
+                fun fromEnd(offset: Float): Int = (if (ltr) card.right - offset else card.left + offset).toInt()
+                val coverFromEnd = BecauseYouLikeSeedLayout.CoverSize.value / 2f - BecauseYouLikeSeedLayout.CoverOverflow.value
+                val cookieCentre = BecauseYouLikeSeedLayout.LowerCookieStart.value + BecauseYouLikeSeedLayout.LowerCookieSize.value / 2f
+                val cookieCentreFromBottom = BecauseYouLikeSeedLayout.LowerCookieFromBottom.value - BecauseYouLikeSeedLayout.LowerCookieSize.value / 2f
                 listOf(
-                    bitmap.getPixel(bodyX(3 * density), card.center.y.toInt()),
-                    bitmap.getPixel(bodyX(card.width - 38 * density), (card.top + 4 * density).toInt()),
-                    bitmap.getPixel(bodyX(maxOf(156 * density, card.width * 0.52f)), (card.bottom - 4 * density).toInt()),
+                    bitmap.getPixel(fromStart(6 * density), (card.top + 28 * density).toInt()),
+                    bitmap.getPixel(fromEnd(3 * density), card.center.y.toInt()),
+                    bitmap.getPixel(fromEnd(coverFromEnd * density), (card.top + 2 * density).toInt()),
+                    bitmap.getPixel(fromStart(cookieCentre * density), (card.bottom - cookieCentreFromBottom * density).toInt()),
                 ).also { bitmap.recycle() }
             }
-            assertEquals("Decorations leave the artwork and emoji lane clear", containerColor.toArgb(), pixels[0])
-            assertPixelColor(upperDecorationColor, pixels[1])
-            assertPixelColor(lowerDecorationColor, pixels[2])
+            assertEquals("The card body is the solid tertiary container", containerColor.toArgb(), pixels[0])
+            assertPixelColor(shapeColor, pixels[3])
+            assertTrue("The cover reaches the end edge", pixels[1] != containerColor.toArgb())
+            if (value.fontScale == 1f) {
+                assertTrue("The cover breaks out of the top edge", pixels[2] != containerColor.toArgb())
+            }
         }
     }
 
@@ -412,7 +430,7 @@ class HomeDiscoveryCardTest {
         for (shift in listOf(0, 8, 16, 24)) {
             val expectedChannel = (expectedArgb shr shift) and 255
             val actualChannel = (actual shr shift) and 255
-            assertTrue("Expected softly tinted color $expectedArgb but found $actual", kotlin.math.abs(expectedChannel - actualChannel) <= 1)
+            assertTrue("Expected faint shape colour $expectedArgb but found $actual", kotlin.math.abs(expectedChannel - actualChannel) <= 1)
         }
     }
 }

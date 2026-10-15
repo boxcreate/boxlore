@@ -27,7 +27,7 @@ internal fun LazyStaggeredGridScope.yourShowsItem(
             // the unknown-count two-row case, until local content can be revealed.
             val skeletonLayoutCount = remember { content.subscribedItems.list.size }
             HomeLoadingReveal(
-                ready = derivedState.viewportReady,
+                ready = derivedState.yourShowsReady,
                 modifier = Modifier.padding(bottom = 12.dp),
                 placeholder = { YourShowsSkeleton(subscribedCount = skeletonLayoutCount) },
             ) {

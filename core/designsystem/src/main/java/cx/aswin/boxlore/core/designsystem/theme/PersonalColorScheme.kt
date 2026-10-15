@@ -94,13 +94,3 @@ fun artworkSurfaceStyle(surfaceStyle: String): String = when (surfaceStyle) {
     SurfaceStyles.AMOLED, SurfaceStyles.PURE_WHITE, SurfaceStyles.DYNAMIC_OLED_WHITE -> surfaceStyle
     else -> SurfaceStyles.STANDARD
 }
-
-data class ArtworkColorCandidate(val argb: Int, val population: Int)
-
-/** Avoid white margins, black lettering and tiny bright details; monochrome art keeps the app palette. */
-fun selectArtworkSeed(candidates: List<ArtworkColorCandidate>): Int? {
-    val total = candidates.sumOf { it.population.coerceAtLeast(0) }.coerceAtLeast(1)
-    return candidates.filter { it.population.toDouble() / total >= 0.01 }.map { it to Hct.fromInt(it.argb) }
-        .filter { (_, hct) -> hct.chroma >= 8.0 && hct.tone in 12.0..92.0 }
-        .maxByOrNull { (candidate, hct) -> candidate.population.toDouble() / total * 70.0 + hct.chroma.coerceAtMost(64.0) * 0.3 }?.first?.argb
-}

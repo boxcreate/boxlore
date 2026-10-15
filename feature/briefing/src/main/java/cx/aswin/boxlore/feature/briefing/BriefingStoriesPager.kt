@@ -36,7 +36,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.model.Briefing
@@ -280,36 +283,51 @@ private fun BriefingStoriesPagerContent(
     }
 }
 
+private val PagerSidePadding = 24.dp
+
+/** Cards never grow past this share of the screen; longer stories scroll inside their card. */
+private const val STORY_CARD_MAX_SCREEN_FRACTION = 0.7f
+
+/**
+ * Sized to the tallest story at the current width and text size, up to a comfortable reading
+ * height (70% of the screen), so cards keep one height while swiping and only long stories scroll.
+ */
 @Composable
 private fun BriefingChapterPager(
     uiState: BriefingStoriesPagerUiState,
     actions: BriefingStoriesPagerActions,
 ) {
-    val longestStory = uiState.paragraphs.maxOfOrNull { it.length } ?: 0
-    val readingHeight = if (longestStory > 700) 460 else 340
-    val relatedHeight = if (uiState.chapters.any { !it.relatedEpisodes.isNullOrEmpty() }) 104 else 0
-    HorizontalPager(
-        state = actions.pagerState,
-        contentPadding = PaddingValues(horizontal = 24.dp),
-        pageSpacing = 16.dp,
-        key = { page -> stableChapterKey(uiState.chapters[page]) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(((readingHeight + relatedHeight) * LocalDensity.current.fontScale.coerceAtLeast(1f)).dp)
-    ) { page ->
-        BriefingStoryCard(
-            state =
-            BriefingStoryCardState(
-                briefing = uiState.briefing,
-                chapter = uiState.chapters[page],
-                paragraph = uiState.paragraphs.getOrNull(page) ?: "",
-                page = page,
-                pageCount = uiState.chapters.size,
-                isActive = uiState.activeChapterIndex == page && uiState.isPlaying,
-                accentColor = uiState.accentColor,
-            ),
-            actions = actions,
-        )
+    fun cardState(page: Int) = BriefingStoryCardState(
+        briefing = uiState.briefing,
+        chapter = uiState.chapters[page],
+        paragraph = uiState.paragraphs.getOrNull(page) ?: "",
+        page = page,
+        pageCount = uiState.chapters.size,
+        isActive = uiState.activeChapterIndex == page && uiState.isPlaying,
+        accentColor = uiState.accentColor,
+    )
+    val maxCardHeight = (LocalConfiguration.current.screenHeightDp * STORY_CARD_MAX_SCREEN_FRACTION).dp
+    SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
+        val pageWidth = (constraints.maxWidth - (PagerSidePadding * 2).roundToPx()).coerceAtLeast(0)
+        val tallest = subcompose("measure") {
+            uiState.chapters.indices.forEach { page ->
+                // Measured only, never placed; hidden from accessibility so stories are not announced twice.
+                Box(Modifier.clearAndSetSemantics {}) { BriefingStoryCard(cardState(page), actions, fillHeight = false) }
+            }
+        }.maxOfOrNull { it.measure(Constraints(minWidth = pageWidth, maxWidth = pageWidth)).height }
+            ?.let { tallestStory -> minOf(tallestStory, maxCardHeight.roundToPx()) } ?: 0
+        val pager = subcompose("pager") {
+            HorizontalPager(
+                state = actions.pagerState,
+                contentPadding = PaddingValues(horizontal = PagerSidePadding),
+                pageSpacing = 16.dp,
+                key = { page -> stableChapterKey(uiState.chapters[page]) },
+                modifier = Modifier.fillMaxWidth().height(tallest.toDp()),
+            ) { page ->
+                BriefingStoryCard(cardState(page), actions)
+            }
+        }.single().measure(constraints.copy(minHeight = 0))
+        layout(pager.width, pager.height) { pager.place(0, 0) }
     }
 }
 

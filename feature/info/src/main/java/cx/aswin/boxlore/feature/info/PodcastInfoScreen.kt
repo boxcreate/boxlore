@@ -81,6 +81,7 @@ import cx.aswin.boxlore.feature.info.components.MissingEpisodesChip
 import cx.aswin.boxlore.feature.info.components.MissingEpisodesConfirmDialog
 import cx.aswin.boxlore.feature.info.components.PodcastGenreEditSheet
 import cx.aswin.boxlore.feature.info.components.PodcastInfoJumpPillOverlay
+import cx.aswin.boxlore.feature.info.components.PodcastInfoLoadError
 import cx.aswin.boxlore.feature.info.components.PodcastInfoMarkDialogs
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlay
 import cx.aswin.boxlore.feature.info.components.PodcastInfoTopOverlayActions
@@ -366,12 +367,7 @@ fun PodcastInfoScreen(
             }
 
             is PodcastInfoUiState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("Failed to load podcast", color = MaterialTheme.colorScheme.error)
-                }
+                PodcastInfoLoadError(onRetry = viewModel::retryLoad)
             }
 
             is PodcastInfoUiState.Success -> {

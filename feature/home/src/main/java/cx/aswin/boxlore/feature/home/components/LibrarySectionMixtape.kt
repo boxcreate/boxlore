@@ -70,6 +70,7 @@ internal fun formatRelativeDate(timestampSeconds: Long): String {
     val now = System.currentTimeMillis() / 1000
     val diff = now - timestampSeconds
     return when {
+        diff < 60 -> "Just now"
         diff < 3600 -> "${diff / 60}m ago"
         diff < 86400 -> "${diff / 3600}h ago"
         diff < 604800 -> "${diff / 86400}d ago"
@@ -119,7 +120,7 @@ internal fun HomeMixModule(
         modifier
             .fillMaxWidth()
             .animateContentSize(YourShowsMotion.spatial())
-            .padding(vertical = HomeMixLayout.VerticalPadding),
+            .padding(top = HomeMixLayout.TopPadding, bottom = HomeMixLayout.BottomPadding),
     ) {
         if (mode == HomeMixMode.DAILY && visibleItemCount == 0) {
             HomeMixDropdownHeading(
@@ -127,13 +128,17 @@ internal fun HomeMixModule(
                 subtitle = stringResource(R.string.home_mix_caught_up_title),
                 enabled = canOfferOffline,
                 onModeSelected = onModeChanged,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = HomeMixLayout.ContentInset),
             )
         } else {
             HomeMixHeader(
                 mode = mode,
                 canOfferOffline = canOfferOffline,
-                offlineCount = completedDownloads.list.size,
+                subtitle = when (mode) {
+                    HomeMixMode.DAILY -> dailyMixSubtitle(remember(dailyPodcasts) { dailyMixSummary(dailyPodcasts) })
+                    HomeMixMode.OFFLINE ->
+                        pluralStringResource(R.plurals.home_mix_offline_subtitle, completedDownloads.list.size, completedDownloads.list.size)
+                },
                 playEnabled = visibleItemCount > 0,
                 onModeSelected = { selected ->
                     if (selected != selectedMode) {
@@ -141,7 +146,7 @@ internal fun HomeMixModule(
                     }
                 },
                 onPlay = { onPlayMix(mode) },
-                modifier = Modifier.padding(horizontal = 14.dp),
+                modifier = Modifier.padding(horizontal = HomeMixLayout.ContentInset),
             )
 
             Spacer(modifier = Modifier.height(HomeMixLayout.HeaderGap))
@@ -237,11 +242,11 @@ private fun DailyMixRail(
         return
     }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val cardWidth = (maxWidth - 32.dp).coerceAtMost(HomeMixLayout.CardWidth)
+    val cardWidth = HomeMixLayout.railCardWidth(maxWidth)
     LazyRow(
         state = scrollState,
-        contentPadding = PaddingValues(horizontal = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = HomeMixLayout.ContentInset),
+        horizontalArrangement = Arrangement.spacedBy(HomeMixLayout.CardGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         itemsIndexed(
@@ -292,11 +297,11 @@ private fun OfflineMixRail(
     onViewDownloads: () -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val cardWidth = (maxWidth - 32.dp).coerceAtMost(HomeMixLayout.CardWidth)
+    val cardWidth = HomeMixLayout.railCardWidth(maxWidth)
     LazyRow(
         state = scrollState,
-        contentPadding = PaddingValues(horizontal = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = HomeMixLayout.ContentInset),
+        horizontalArrangement = Arrangement.spacedBy(HomeMixLayout.CardGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         itemsIndexed(
@@ -324,54 +329,40 @@ private fun OfflineMixRail(
 private fun HomeMixHeader(
     mode: HomeMixMode,
     canOfferOffline: Boolean,
-    offlineCount: Int,
+    subtitle: String,
     playEnabled: Boolean,
     onModeSelected: (HomeMixMode) -> Unit,
     onPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+    YourShowsContentHeader(
+        modifier = modifier,
+        lead = {
             HomeMixDropdownHeading(
                 mode = mode,
-                subtitle =
-                when (mode) {
-                    HomeMixMode.DAILY -> stringResource(R.string.home_mix_daily_subtitle)
-                    HomeMixMode.OFFLINE ->
-                        pluralStringResource(
-                            R.plurals.home_mix_offline_subtitle,
-                            offlineCount,
-                            offlineCount,
-                        )
-                },
+                subtitle = subtitle,
                 enabled = canOfferOffline,
                 onModeSelected = onModeSelected,
-                modifier = Modifier.weight(1f),
             )
-
-            Button(
-                onClick = onPlay,
-                enabled = playEnabled,
-                shape = RoundedCornerShape(topStart = 17.dp, topEnd = 28.dp, bottomEnd = 28.dp, bottomStart = 17.dp),
-                modifier = Modifier.heightIn(min = HomeMixLayout.HeaderHeight),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = stringResource(R.string.home_mix_play),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = GoogleSansWeight.bold,
-                )
-            }
+        },
+    ) {
+        Button(
+            onClick = onPlay,
+            enabled = playEnabled,
+            shape = RoundedCornerShape(topStart = 17.dp, topEnd = 28.dp, bottomEnd = 28.dp, bottomStart = 17.dp),
+            modifier = Modifier.heightIn(min = HomeMixLayout.HeaderHeight),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.PlayArrow,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = stringResource(R.string.home_mix_play),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = GoogleSansWeight.bold,
+            )
         }
     }
 }
@@ -530,7 +521,7 @@ private fun HomeMixEmptyState() {
         modifier =
         Modifier
             .fillMaxSize()
-            .padding(horizontal = 22.dp),
+            .padding(horizontal = HomeMixLayout.ContentInset + 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -607,3 +598,16 @@ private fun ViewAllDownloadsCard(onClick: () -> Unit) {
 }
 
 private const val HOME_MIXTAPE_EPISODES_ENTRY_POINT = "home_mixtape_episodes"
+
+@Composable
+private fun dailyMixSubtitle(summary: DailyMixSummary): String {
+    if (summary.minutes <= 0) {
+        return pluralStringResource(R.plurals.home_mix_daily_count, summary.episodes, summary.episodes)
+    }
+    val time = if (summary.minutes >= 60) {
+        stringResource(R.string.home_hero_hours_minutes, summary.minutes / 60, summary.minutes % 60)
+    } else {
+        stringResource(R.string.home_hero_minutes, summary.minutes)
+    }
+    return pluralStringResource(R.plurals.home_mix_daily_summary, summary.episodes, summary.episodes, time)
+}

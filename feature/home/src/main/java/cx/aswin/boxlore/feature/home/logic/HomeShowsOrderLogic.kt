@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.feature.home.logic
 
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
+import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
 
 internal object HomeShowsOrderLogic {
     const val SCORE_MOVE_THRESHOLD = 0.05
@@ -109,12 +111,43 @@ internal object HomeShowsOrderLogic {
 internal object HomeShowsRefreshPolicy {
     const val MIN_SNAPSHOT_AGE_MS = 30L * 60L * 1_000L
 
+    /** Synced changes usually land in bursts; one pass runs after they settle. */
+    const val CATALOG_SETTLE_MS = 1_500L
+
+    /** A sync that keeps trickling still ranks at most this often. */
+    const val CATALOG_MIN_GAP_MS = 5_000L
+
+    /**
+     * Returning to Home re-ranks once when listening changed since the last ranking, or when the
+     * snapshot is old. Ranking never runs on playback progress, which made Home stutter.
+     */
     fun shouldRequestRefresh(
         hasStableOrder: Boolean,
         hasPendingRequest: Boolean,
         snapshotCreatedAtMs: Long,
         nowMs: Long,
+        listeningChanged: Boolean = false,
     ): Boolean = hasStableOrder &&
         !hasPendingRequest &&
-        nowMs - snapshotCreatedAtMs >= MIN_SNAPSHOT_AGE_MS
+        (listeningChanged || nowMs - snapshotCreatedAtMs >= MIN_SNAPSHOT_AGE_MS)
+}
+
+/** Which episodes were started or finished. Progress and play times are left out on purpose. */
+internal data class HomeListeningSignature(val entries: Int, val completed: Int, val identity: Int)
+
+/** What Your shows and Daily Mix rank from, minus playback progress. */
+internal object HomeYourShowsSignals {
+    /** Each show's newest and next serial episode: changes when a sync or serial resolution lands. */
+    fun catalog(subs: List<Podcast>, resolvedSerial: Map<String, Episode>): Map<String, String> =
+        subs.associate { it.id to "${it.latestEpisode?.id}|${resolvedSerial[it.id]?.id}" }
+
+    fun listening(history: List<HomeListeningHistoryItem>): HomeListeningSignature {
+        var completed = 0
+        var identity = 0
+        for (item in history) {
+            if (item.isCompleted) completed++
+            identity += item.episodeId.hashCode() * 2 + if (item.isCompleted) 1 else 0
+        }
+        return HomeListeningSignature(history.size, completed, identity)
+    }
 }
