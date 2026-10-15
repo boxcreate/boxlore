@@ -68,7 +68,6 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.androidx.palette.ktx)
     implementation(libs.smooth.corner.rect)
 
     testImplementation(projects.core.testing)

@@ -38,7 +38,7 @@ internal fun MixtapeSelectorCover(
     onClick: () -> Unit,
     modifier: Modifier = Modifier.width(YourShowsLayout.TileWidth).height(YourShowsLayout.TileHeight),
 ) {
-    val shape = rememberYourShowsSelectorShape("mix", isSelected)
+    val shape = rememberYourShowsSelectorShape(isSelected)
     val surface by animateColorAsState(
         if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
         YourShowsMotion.effects(),
@@ -58,7 +58,7 @@ internal fun MixtapeSelectorCover(
                 role = Role.Button
                 contentDescription = description
             }
-            .testTag("home_show_selector_mix").padding(6.dp),
+            .testTag("home_show_selector_mix").padding(YourShowsLayout.TilePadding),
         contentAlignment = Alignment.Center,
     ) {
         Box(

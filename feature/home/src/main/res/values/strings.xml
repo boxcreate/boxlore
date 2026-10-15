@@ -34,7 +34,15 @@
     <string name="home_mix_daily_title">Daily Mix</string>
     <string name="home_mix_offline_title">Offline Mix</string>
     <string name="home_mix_change_mode">Change mix</string>
-    <string name="home_mix_daily_subtitle">Picked for your next listen</string>
+    <!-- Daily Mix header line: episodes still to hear, then their total listening time, e.g. "6 episodes · 3h 40m". -->
+    <plurals name="home_mix_daily_summary">
+        <item quantity="one">%1$d episode · %2$s</item>
+        <item quantity="other">%1$d episodes · %2$s</item>
+    </plurals>
+    <plurals name="home_mix_daily_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
     <plurals name="home_mix_offline_subtitle">
         <item quantity="one">%1$d episode ready offline</item>
         <item quantity="other">%1$d episodes ready offline</item>
@@ -63,7 +71,6 @@
     <string name="home_your_shows_heading">Your shows</string>
     <string name="home_view_library">View library</string>
     <string name="home_shows_mix">Mix</string>
-    <string name="home_shows_latest_episodes">Latest episodes</string>
     <string name="home_shows_next_episodes">Next episodes</string>
     <string name="home_shows_clear_filter">Clear show filter</string>
     <string name="home_shows_open_show">Show info</string>

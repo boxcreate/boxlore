@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
@@ -18,7 +21,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.feature.info.logic.DefaultInfoBackdropStrength
 import cx.aswin.boxlore.feature.info.logic.artworkBackdropAlpha
+
+/** How strongly the blurred cover shows, provided by [ArtworkInfoTheme] from the cover's colours. */
+internal val LocalInfoBackdropStrength = staticCompositionLocalOf<State<Float>> { mutableFloatStateOf(DefaultInfoBackdropStrength) }
 
 /** The mask fades the already-blurred pixels to zero before the layer ends. */
 @Composable
@@ -30,10 +37,11 @@ internal fun InfoArtworkBackground(
     modifier: Modifier = Modifier,
     fallbackUrls: List<String?> = emptyList(),
 ) {
+    val strength = LocalInfoBackdropStrength.current
     Box(
         modifier = modifier.fillMaxWidth().height(height).graphicsLayer {
             translationY = -scrollOffset * 0.5f
-            alpha = 0.48f * (1f - scrollFraction.coerceIn(0f, 1f))
+            alpha = strength.value * (1f - scrollFraction.coerceIn(0f, 1f))
             compositingStrategy = CompositingStrategy.Offscreen
         }.drawWithCache {
             val fade = Brush.verticalGradient(

@@ -14,16 +14,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -33,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,8 +51,10 @@ internal fun MoreFromEpisodeSection(
     onShowClick: () -> Unit,
 ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        MoreFromHeader(showName, onShowClick)
+        // The show heads its own list: the first row of one connected group.
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            val joined = loading || episodes.isNotEmpty()
+            MoreFromShowRow(showName, fallbackImageUrl, joined, onShowClick)
             when {
                 loading -> repeat(5) { index -> MoreFromRowSkeleton(moreFromRowShape(index, 5)) }
                 episodes.isNotEmpty() -> episodes.forEachIndexed { index, episode ->
@@ -81,36 +79,51 @@ internal fun MoreFromEpisodeSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** Opens the show. Its top corners start the group; the bottom ones join the episode rows below. */
 @Composable
-private fun MoreFromHeader(showName: String, onShowClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            stringResource(R.string.episode_info_more_from, showName),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = GoogleSansWeight.bold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).semantics { heading() },
-        )
-        val shape = MaterialShapes.Cookie4Sided.toShape()
-        FilledTonalIconButton(
-            onClick = onShowClick,
-            modifier = Modifier.size(48.dp),
-            shapes = IconButtonDefaults.shapes(shape = shape, pressedShape = shape),
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ),
-        ) {
-            Icon(Icons.AutoMirrored.Rounded.ArrowForward, stringResource(R.string.episode_info_open_show, showName), Modifier.size(24.dp))
+private fun MoreFromShowRow(showName: String, imageUrl: String?, joined: Boolean, onShowClick: () -> Unit) {
+    val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = if (joined) 6.dp else 24.dp, bottomEnd = if (joined) 6.dp else 24.dp)
+    val heading = stringResource(R.string.episode_info_more_from, showName)
+    val openLabel = stringResource(R.string.episode_info_open_show, showName)
+    Surface(
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                heading()
+                contentDescription = heading
+                onClick(label = openLabel) {
+                    onShowClick()
+                    true
+                }
+            }
+            .expressiveClickable(shape = shape, onClick = onShowClick),
+    ) {
+        Row(Modifier.heightIn(min = 72.dp).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OptimizedImage(
+                url = imageUrl,
+                proxyWidth = 240,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)),
+            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.episode_info_more_from_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(showName, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
         }
     }
 }
 
+/** The show row above owns the group's top corners, so every episode row joins at the top. */
 private fun moreFromRowShape(index: Int, count: Int) = RoundedCornerShape(
-    topStart = if (index == 0) 24.dp else 6.dp,
-    topEnd = if (index == 0) 24.dp else 6.dp,
+    topStart = 6.dp,
+    topEnd = 6.dp,
     bottomStart = if (index == count - 1) 24.dp else 6.dp,
     bottomEnd = if (index == count - 1) 24.dp else 6.dp,
 )

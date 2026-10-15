@@ -178,7 +178,8 @@ fun BriefingScreen(
     val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val success = uiState as? BriefingUiState.Success
     var coverHeight by remember { mutableFloatStateOf(0f) }
-    val hasCover = success != null
+    // The loading page already shows the bundled cover, so the status bar treats it like the edition.
+    val hasCover = uiState !is BriefingUiState.Error
     val coverVisible by remember(hasCover, scroll) {
         derivedStateOf { hasCover && (coverHeight == 0f || scroll.value < coverHeight) }
     }
@@ -193,10 +194,7 @@ fun BriefingScreen(
             Box(Modifier.fillMaxSize()) {
                 AnimatedContent(uiState, contentKey = { it.presentationKey() }, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "briefingState") { displayedState ->
                     when (displayedState) {
-                        is BriefingUiState.Loading -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            BoxLoreLoader.Expressive(size = 48.dp)
-                            Text(stringResource(R.string.briefing_loading_edition, stringResource(briefingRegionLabel(displayedState.selectedRegion))), Modifier.padding(top = 16.dp), style = MaterialTheme.typography.bodyMedium)
-                        }
+                        is BriefingUiState.Loading -> BriefingLoadingContent(displayedState.selectedRegion, topPadding)
                         is BriefingUiState.Error -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(displayedState.message, style = MaterialTheme.typography.bodyLarge)
                             Button(onClick = { onRegionSelect(displayedState.selectedRegion) }, modifier = Modifier.padding(top = 16.dp)) { Text(stringResource(R.string.briefing_try_again)) }

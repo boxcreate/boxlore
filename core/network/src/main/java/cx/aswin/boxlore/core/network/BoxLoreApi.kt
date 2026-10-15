@@ -186,6 +186,13 @@ interface BoxLoreApi {
         @Body request: OnboardingNextTurnRequest
     ): retrofit2.Call<OnboardingNextTurnResponse>
 
+    /** Show deck cards, requested in the background after the second answer. */
+    @POST("onboarding/probe-deck")
+    fun getOnboardingProbeDeck(
+        @Header("X-App-Key") publicKey: String,
+        @Body request: OnboardingNextTurnRequest
+    ): retrofit2.Call<cx.aswin.boxlore.core.network.model.OnboardingProbeDeckResponse>
+
     @POST("onboarding/synthesize")
     fun onboardingSynthesize(
         @Header("X-App-Key") publicKey: String,

@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.home
 
-import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.testing.TestFixtures
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -11,8 +10,7 @@ class HomeDiscoveryRankingCacheTest {
     private val input = HomeDiscoveryRankingInput(
         trending = listOf(TestFixtures.podcast()),
         recommendations = listOf(TestFixtures.episode()),
-        history = emptyList(),
-        subscribedIds = emptySet(),
+        rankingPass = 1L,
     )
 
     @Test
@@ -28,9 +26,8 @@ class HomeDiscoveryRankingCacheTest {
         assertEquals(1, calls)
         cache.get(input.copy(trending = input.trending.reversed() + TestFixtures.podcast(id = "new")), rank)
         cache.get(input.copy(recommendations = listOf(TestFixtures.episode(id = "new-episode"))), rank)
-        cache.get(input.copy(subscribedIds = setOf("subscribed")), rank)
-        cache.get(input.copy(history = listOf(history())), rank)
-        assertEquals(5, calls)
+        cache.get(input.copy(rankingPass = 2L), rank)
+        assertEquals(4, calls)
     }
 
     @Test
@@ -81,18 +78,4 @@ class HomeDiscoveryRankingCacheTest {
         HomeDiscoveryRankingCache().get(input, rank)
         assertEquals(3, calls)
     }
-
-    private fun history() = ListeningHistoryEntity(
-        episodeId = "history-episode",
-        podcastId = "history-podcast",
-        episodeTitle = "History",
-        episodeImageUrl = null,
-        podcastImageUrl = null,
-        episodeAudioUrl = null,
-        podcastName = "History show",
-        progressMs = 60_000,
-        durationMs = 120_000,
-        isCompleted = false,
-        lastPlayedAt = 1,
-    )
 }

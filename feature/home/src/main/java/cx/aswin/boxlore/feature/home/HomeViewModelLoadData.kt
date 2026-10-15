@@ -13,8 +13,8 @@ import cx.aswin.boxlore.feature.home.logic.HomeUiAssemblyLogic
 import cx.aswin.boxlore.feature.home.logic.buildHomeEditorialRows
 import cx.aswin.boxlore.feature.home.logic.discoverPodcastsExcluding
 import cx.aswin.boxlore.feature.home.logic.editorialRowDefinitionsFor
-import cx.aswin.boxlore.feature.home.logic.homeMixtapeCacheOrNull
 import cx.aswin.boxlore.feature.home.logic.withCurrentCategoryDiscovery
+import cx.aswin.boxlore.feature.home.logic.withSelectedShowFrom
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -333,15 +333,21 @@ internal fun HomeViewModel.loadData() {
                         val rankingNowMs = System.currentTimeMillis()
                         val allHistory = wrapper.history
                         val scoringHistory = wrapper.scoringHistory
+                        val staleRestartEnabled = wrapper.staleRestartEnabled
+                        val subscribedIds = wrapper.subs.map(Podcast::id).toSet()
+                        val rankingPlan = yourShowsRanker.plan(
+                            subIds = subscribedIds,
+                            history = allHistory,
+                            staleRestartEnabled = staleRestartEnabled,
+                            requestedGeneration = wrapper.showsOrderRefreshGeneration,
+                        )
                         val ranked = rankingCache.get(
                             HomeDiscoveryRankingInput(
                                 trending = wrapper.trending,
                                 recommendations = wrapper.recommendations,
-                                history = scoringHistory,
-                                subscribedIds = wrapper.subs.map(Podcast::id).toSet(),
+                                rankingPass = rankingPlan.discoveryPass,
                             ),
-                            ::rankDiscovery,
-                        )
+                        ) { input -> rankDiscovery(input, scoringHistory, subscribedIds) }
                         val trendingList = ranked.trending
                         val rankedRecommendations = ranked.recommendations
                         val resumeList = wrapper.resume
@@ -393,12 +399,8 @@ internal fun HomeViewModel.loadData() {
                             userPrefs.markNpsSurveyPending(completedCount)
                         }
 
-                        val refreshShowsOrder =
-                            wrapper.showsOrderRefreshGeneration >
-                                appliedShowsOrderRefreshGeneration
-                        val previousShowsOrder = stablePodcastOrder
                         val podScoresMap =
-                            if (previousShowsOrder == null || stableMixtapePodcasts == null || refreshShowsOrder) {
+                            if (rankingPlan.needsScores) {
                                 adaptiveScorer.scorePodcasts(
                                     podcasts = wrapper.subs.map { it.toScorable() },
                                     history = scoringHistory,
@@ -410,16 +412,6 @@ internal fun HomeViewModel.loadData() {
                                 emptyMap()
                             }
 
-                        val previousMixtape =
-                            homeMixtapeCacheOrNull(
-                                podcasts = stableMixtapePodcasts,
-                                unplayedCount = stableMixtapeCount,
-                                episodes = stableCurrentUnplayedEpisodes,
-                                subSignature = stableMixtapeSubSignature,
-                                staleRestartEnabled = stableMixtapeStaleRestartEnabled,
-                            )
-
-                        val staleRestartEnabled = wrapper.staleRestartEnabled
                         val assembled =
                             HomeUiAssemblyLogic.assemble(
                                 trendingList = trendingList,
@@ -431,9 +423,9 @@ internal fun HomeViewModel.loadData() {
                                 completedEpisodeIds = completedEpisodeIds,
                                 region = region,
                                 editorialRows = wrapper.editorialRows,
-                                previousStableOrder = stablePodcastOrder,
+                                previousStableOrder = rankingPlan.previousOrder,
                                 podcastScores = podScoresMap,
-                                previousMixtape = previousMixtape,
+                                previousMixtape = rankingPlan.previousMixtape,
                                 buildMixtape = { scores, recommendations ->
                                     MixtapeEngine.build(
                                         subscriptions = subs,
@@ -458,23 +450,11 @@ internal fun HomeViewModel.loadData() {
                                 staleRestartEnabled = staleRestartEnabled,
                                 nowMs = rankingNowMs,
                                 pinnedPodcastIds = wrapper.pinnedPodcastIds,
-                                refreshShowsOrderFromScores = refreshShowsOrder,
+                                refreshShowsOrderFromScores = rankingPlan.refreshOrder,
                             )
 
-                        if (previousShowsOrder == null || refreshShowsOrder) {
-                            stablePodcastOrderCreatedAtMs = rankingNowMs
-                            appliedShowsOrderRefreshGeneration =
-                                wrapper.showsOrderRefreshGeneration
-                        }
-                        stablePodcastOrder = assembled.stablePodcastOrder
-                        assembled.mixtapeCache?.let { cache ->
-                            stableMixtapePodcasts = cache.podcasts
-                            stableMixtapeCount = cache.unplayedCount
-                            stableCurrentUnplayedEpisodes = cache.episodes
-                            stableMixtapeSubSignature = cache.subSignature
-                            stableMixtapeStaleRestartEnabled = cache.staleRestartEnabled
-                            currentUnplayedEpisodes = cache.episodes
-                        }
+                        yourShowsRanker.commit(rankingPlan, assembled.stablePodcastOrder, assembled.mixtapeCache, rankingNowMs)
+                        assembled.mixtapeCache?.let { currentUnplayedEpisodes = it.episodes }
 
                         if (assembled.shouldUpdateForYouCache) {
                             cachedRegion = region
@@ -501,10 +481,6 @@ internal fun HomeViewModel.loadData() {
                                 isLoading = assembled.isLoading,
                                 isFilterLoading = assembled.isFilterLoading,
                                 isError = false,
-                                selectedPodcastId = _selectedPodcastId.value,
-                                selectedPodcastEpisodes = _selectedPodcastEpisodes.value,
-                                isSelectedPodcastLoading = _isSelectedPodcastLoading.value,
-                                isSelectedRssRefreshing = _isSelectedRssRefreshing.value,
                                 episodePlaybackState = assembled.episodePlaybackState,
                                 softExpireProgressEpisodeIds = assembled.softExpireProgressEpisodeIds,
                                 showImportBanner = assembled.showImportBanner,
@@ -520,7 +496,7 @@ internal fun HomeViewModel.loadData() {
                                 isEditorialRowsLoading = wrapper.isEditorialRowsLoading,
                                 pinnedPodcastIds = wrapper.pinnedPodcastIds.toSet(),
                             )
-                        _uiState.update { previous -> nextState.withCurrentCategoryDiscovery(previous) }
+                        _uiState.update { previous -> nextState.withCurrentCategoryDiscovery(previous).withSelectedShowFrom(previous) }
                     }
                 }
             }

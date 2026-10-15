@@ -62,6 +62,7 @@ import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingCoverMetadata
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingEditorialTheme
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -278,7 +279,9 @@ private fun DailyBriefingStories(
                     String.format(Locale.ROOT, "%02d", index + 1),
                     modifier = Modifier.width((28 * LocalDensity.current.fontScale).dp),
                     color = MaterialTheme.colorScheme.primary,
-                    fontFamily = FontFamily.Serif,
+                    // The app's UI font, with equal-width digits so the numbers stay aligned.
+                    style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
+                    fontWeight = GoogleSansWeight.medium,
                     fontSize = 18.sp,
                     maxLines = 1,
                     softWrap = false
@@ -286,7 +289,8 @@ private fun DailyBriefingStories(
                 Text(
                     chapter.title,
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )

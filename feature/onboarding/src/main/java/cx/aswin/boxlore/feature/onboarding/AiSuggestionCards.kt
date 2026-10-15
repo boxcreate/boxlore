@@ -1,35 +1,29 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,14 +34,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,224 +58,74 @@ internal object SuggestedPodcastTestTags {
     const val GRID_CARD = "onboarding_suggestion_grid_card"
 }
 
+/** Width of a suggestion card; its artwork is square. */
+internal val SuggestionCardWidth = 140.dp
+private val SuggestionCardShape = RoundedCornerShape(22.dp)
+
+/** The whole card's press outline: round at the top like the artwork, tight at the bottom so text is never clipped. */
+private val SuggestionCardPressShape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomStart = 8.dp, bottomEnd = 8.dp)
+
 /**
- * Compact 2-col grid card: art-forward select, genre chip, info for description sheet.
+ * A show in a suggestions lane: square artwork, the name on two lines and the host on one. A tap
+ * adds or removes it; the badge on the artwork blooms from a plus into a filled, turned shape with
+ * a check, the same selection mark as Echo's answers, and the artwork gains a ring. Touch and hold
+ * opens the description sheet.
  */
 @Composable
-internal fun SuggestionSelectCard(
+internal fun SuggestionShowCard(
     podcast: Podcast,
-    isSubscribed: Boolean,
-    onToggleSubscription: (String) -> Unit,
+    selected: Boolean,
+    shapeIndex: Int,
+    onToggle: (String) -> Unit,
     onOpenDetails: (Podcast) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val borderColor by animateColorAsState(
-        targetValue =
-        if (isSubscribed) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
-        },
-        label = "suggestionCardBorder",
-    )
-    val containerColor by animateColorAsState(
-        targetValue =
-        if (isSubscribed) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerLow
-        },
-        label = "suggestionCardBg",
-    )
-
-    OutlinedCard(
-        shape = MaterialTheme.shapes.large,
-        border = BorderStroke(if (isSubscribed) 2.dp else 1.dp, borderColor),
-        modifier =
+    val colors = MaterialTheme.colorScheme
+    val ring by animateDpAsState(if (selected) 3.dp else 0.dp, label = "Suggestion ring")
+    Column(
         modifier
-            .fillMaxWidth()
+            .width(SuggestionCardWidth)
             .testTag(SuggestedPodcastTestTags.GRID_CARD)
             .semantics(mergeDescendants = true) {
-                selected = isSubscribed
                 role = Role.Checkbox
+                toggleableState = ToggleableState(selected)
             }
-            .expressiveClickable(shape = MaterialTheme.shapes.large) {
-                onToggleSubscription(podcast.id)
-            },
-        colors =
-        androidx.compose.material3.CardDefaults.outlinedCardColors(
-            containerColor = containerColor,
-        ),
+            .expressiveClickable(
+                shape = SuggestionCardPressShape,
+                onLongClickLabel = stringResource(R.string.suggestions_details),
+                onLongClick = { onOpenDetails(podcast) },
+            ) { onToggle(podcast.id) },
     ) {
-        Column {
-            SuggestionCardArtwork(
-                podcast = podcast,
-                isSubscribed = isSubscribed,
-                onOpenDetails = onOpenDetails,
-            )
-            SuggestionCardFooter(podcast = podcast, isSubscribed = isSubscribed)
-        }
-    }
-}
-
-@Composable
-private fun SuggestionCardArtwork(
-    podcast: Podcast,
-    isSubscribed: Boolean,
-    onOpenDetails: (Podcast) -> Unit,
-) {
-    // Match [FeedMediaCard]: round art bottom corners so the text band peeks through as a soft curve.
-    val artBottomShape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
-    Box(
-        modifier =
-        Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f),
-    ) {
-        Box(
-            modifier =
-            Modifier
-                .fillMaxSize()
-                .clip(artBottomShape),
-        ) {
+        Box(Modifier.size(SuggestionCardWidth)) {
             OptimizedImage(
                 url = podcast.imageUrl,
                 fallbackUrls = podcast.artworkUrls(),
-                proxyWidth = 400,
-                contentDescription = podcast.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
+                proxyWidth = 360,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize().clip(SuggestionCardShape),
             )
-            Box(
-                modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops =
-                            arrayOf(
-                                0f to Color.Transparent,
-                                0.55f to Color.Transparent,
-                                1f to Color.Black.copy(alpha = 0.45f),
-                            ),
-                        ),
-                    ),
-            )
-        }
-        SuggestionCardGenreChip(genre = podcast.genre.trim())
-        IconButton(
-            onClick = { onOpenDetails(podcast) },
-            modifier =
-            Modifier
-                .align(Alignment.TopEnd)
-                .size(48.dp),
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.45f),
-                modifier = Modifier.size(36.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Info,
-                    contentDescription = "About ${podcast.title}",
-                    tint = Color.White,
-                    modifier =
-                    Modifier
-                        .padding(6.dp)
-                        .size(16.dp),
-                )
+            if (ring > 0.dp) Box(Modifier.matchParentSize().border(ring, colors.primary, SuggestionCardShape))
+            Box(Modifier.align(Alignment.BottomEnd).padding(8.dp).testTag(SuggestedPodcastTestTags.TOGGLE)) {
+                EchoSelectionBadge(selected, if (selected) Icons.Rounded.Check else Icons.Rounded.Add, size = 36.dp, shapeIndex = shapeIndex)
             }
         }
-        SuggestionCardSelectBadge(isSubscribed = isSubscribed)
-    }
-}
-
-@Composable
-private fun BoxScope.SuggestionCardGenreChip(genre: String) {
-    if (genre.isEmpty() || genre.equals("Podcast", ignoreCase = true)) return
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.92f),
-        modifier =
-        Modifier
-            .padding(8.dp)
-            .align(Alignment.TopStart),
-    ) {
         Text(
-            text = genre,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-        )
-    }
-}
-
-@Composable
-private fun BoxScope.SuggestionCardSelectBadge(isSubscribed: Boolean) {
-    Surface(
-        shape = CircleShape,
-        color =
-        if (isSubscribed) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            Color.Black.copy(alpha = 0.4f)
-        },
-        modifier =
-        Modifier
-            .padding(10.dp)
-            .align(Alignment.BottomEnd)
-            .size(28.dp)
-            .testTag(SuggestedPodcastTestTags.TOGGLE),
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            if (isSubscribed) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = "Selected",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SuggestionCardFooter(
-    podcast: Podcast,
-    isSubscribed: Boolean,
-) {
-    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
-        Text(
-            text = podcast.title,
-            style =
-            MaterialTheme.typography.titleSmall.copy(
-                fontWeight = GoogleSansWeight.bold,
-                fontSize = 13.sp,
-                lineHeight = 16.sp,
-            ),
+            podcast.title,
+            Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = GoogleSansWeight.bold),
+            color = colors.onSurface,
+            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            color =
-            if (isSubscribed) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
         )
-        if (podcast.artist.isNotBlank() && podcast.artist != "Unknown") {
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = podcast.artist,
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            podcast.artist,
+            Modifier.padding(bottom = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

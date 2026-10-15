@@ -588,7 +588,7 @@ fun SmartDownloadsSettingsScreen(
 
                         // Full-width description text
                         Text(
-                            text = if (isIgnoringBatteryOptimizations) "Allowed to download in the background, bypassing aggressive device battery savings. This won't affect battery life as background sync runs efficiently only once every 24 hours." else "Boxlore will try to download automatically, but devices like Xiaomi, OnePlus, or Samsung may block downloads due to aggressive battery saving restrictions. Allowing this won't affect battery life, as background sync runs efficiently only once every 24 hours.",
+                            text = if (isIgnoringBatteryOptimizations) "Allowed to download in the background, bypassing aggressive device battery savings. This won't affect battery life as background sync runs efficiently only once every 24 hours." else "boxlore will try to download automatically, but devices like Xiaomi, OnePlus, or Samsung may block downloads due to aggressive battery saving restrictions. Allowing this won't affect battery life, as background sync runs efficiently only once every 24 hours.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth()

@@ -81,7 +81,7 @@ internal fun SelectorCover(
             podcast.isLatestEpisodeNew(lastSeenId)
         }
 
-    val coverShape = rememberYourShowsSelectorShape(podcast.id, isSelected)
+    val coverShape = rememberYourShowsSelectorShape(isSelected)
     val actionLabel = stringResource(if (pin.pinned) R.string.home_shows_unpin else R.string.home_shows_pin)
     var showPinMenu by remember { mutableStateOf(false) }
     Column(
@@ -100,7 +100,7 @@ internal fun SelectorCover(
                 contentDescription = podcast.title
             }
             .testTag("home_show_selector_${podcast.id}")
-            .padding(6.dp),
+            .padding(YourShowsLayout.TilePadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {

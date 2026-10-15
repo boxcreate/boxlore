@@ -1,15 +1,13 @@
 package cx.aswin.boxlore.feature.home.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,26 +20,38 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
 
+/**
+ * Cover tiles are square. Covers sit 10dp apart (gap plus both tiles' padding) and their outer
+ * edges line up with the 16dp content inset below.
+ */
 internal object YourShowsLayout {
-    val TileWidth = 68.dp
-    val CoverSize = 54.dp
-    val TileHeight = 68.dp
-    val Padding = 10.dp
-    val Gap = 4.dp
+    val CoverSize = 60.dp
+
+    /** Room around each cover for the selection outline and its badges. */
+    val TilePadding = 4.dp
+    val TileWidth = CoverSize + TilePadding * 2
+    val TileHeight = TileWidth
+    val Padding = 12.dp
+    val Gap = 2.dp
 }
 
 @Composable
@@ -65,7 +75,7 @@ internal fun YourShowsSelectors(
     ) {
         val tileWidth = ((maxWidth - YourShowsLayout.Padding * 2 - YourShowsLayout.Gap * 4) / 5)
             .coerceAtMost(YourShowsLayout.TileWidth)
-        val itemModifier = Modifier.width(tileWidth).height(tileHeight)
+        val itemModifier = Modifier.width(tileWidth).height(tileWidth)
         val items: List<Podcast?> = if (podcasts.size > 1) listOf(null) + podcasts else podcasts
         if (podcasts.size <= 4) {
             LazyRow(
@@ -176,6 +186,8 @@ private fun ShowSelectorItem(
     }
 }
 
+private val TitlePressInset = 6.dp
+
 @Composable
 internal fun SelectedShowHeader(
     podcast: Podcast,
@@ -183,27 +195,52 @@ internal fun SelectedShowHeader(
     onOpenShow: () -> Unit,
     onClear: () -> Unit,
 ) {
-    Row(modifier = Modifier.fillMaxWidth().testTag("home_selected_show_header"), verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
-            SelectedShowTitle(podcast.title, podcast.isRss || podcast.id.startsWith("rss:"), maxLines = 2)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = stringResource(if (podcast.preferredSort == "oldest") R.string.home_shows_next_episodes else R.string.home_shows_latest_episodes),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        IconButton(onClick = onOpenShow, modifier = Modifier.testTag("home_selected_show_info")) {
-            Box(
-                modifier = Modifier.size(34.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(14.dp)),
-                contentAlignment = Alignment.Center,
+    YourShowsContentHeader(
+        modifier = Modifier.testTag("home_selected_show_header"),
+        lead = {
+            val openLabel = stringResource(R.string.home_shows_open_show)
+            // The name and its sort line also open the show, like the arrow button.
+            Column(
+                // The press shape clips, so the text gets inner room and shifts back onto the 16dp grid.
+                modifier = Modifier
+                    .offset(x = -TitlePressInset)
+                    .expressiveClickable(shape = RoundedCornerShape(12.dp), onClick = onOpenShow)
+                    .semantics(mergeDescendants = true) {
+                        role = Role.Button
+                        onClick(label = openLabel) {
+                            onOpenShow()
+                            true
+                        }
+                    }
+                    .testTag("home_selected_show_title")
+                    .padding(horizontal = TitlePressInset, vertical = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Icon(Icons.Rounded.ChevronRight, stringResource(R.string.home_shows_open_show), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                SelectedShowTitle(podcast.title, podcast.isRss || podcast.id.startsWith("rss:"), maxLines = 2, style = YourShowsText.title())
+                // Newest first is the default and needs no label; serial shows say they continue in order.
+                if (podcast.preferredSort == "oldest") {
+                    Text(
+                        text = stringResource(R.string.home_shows_next_episodes),
+                        style = YourShowsText.subtitle(),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
+        },
+    ) {
+        FilledTonalIconButton(onClick = onOpenShow, modifier = Modifier.testTag("home_selected_show_info")) {
+            Icon(Icons.Rounded.ChevronRight, stringResource(R.string.home_shows_open_show))
         }
         if (canClear) {
-            IconButton(onClick = onClear, modifier = Modifier.testTag("home_selected_show_clear")) {
-                Icon(Icons.Rounded.Close, stringResource(R.string.home_shows_clear_filter), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            FilledTonalIconButton(
+                onClick = onClear,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                modifier = Modifier.testTag("home_selected_show_clear"),
+            ) {
+                Icon(Icons.Rounded.Close, stringResource(R.string.home_shows_clear_filter))
             }
         }
     }

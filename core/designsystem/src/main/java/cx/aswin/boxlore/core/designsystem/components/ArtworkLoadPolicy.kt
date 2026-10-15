@@ -13,7 +13,8 @@ class ArtworkLoadPolicy(
     private data class Failure(val until: Long, val transient: Boolean)
     private val failures = LinkedHashMap<String, Failure>()
     private val successes = LinkedHashMap<String, Long>()
-    private val preferredRoutes = LinkedHashMap<String, Pair<String, Long>>()
+    private data class Route(val url: String, val at: Long, val width: Int)
+    private val preferredRoutes = LinkedHashMap<String, Route>()
     private val revisions = MutableStateFlow(0L)
     val revision = revisions.asStateFlow()
 
@@ -31,27 +32,34 @@ class ArtworkLoadPolicy(
     @Synchronized
     fun recordFailure(url: String, transient: Boolean) {
         successes.remove(url)
-        preferredRoutes.entries.removeAll { it.value.first == url }
+        preferredRoutes.entries.removeAll { it.value.url == url }
         failures.remove(url)
         failures[url] = Failure(clock() + if (transient) TRANSIENT_COOLDOWN else PERMANENT_COOLDOWN, transient)
         trim(failures)
     }
 
+    /** [width] is the pixel size the route was requested at; the original image counts as full size. */
     @Synchronized
-    fun recordSuccess(url: String, source: String = url) {
+    fun recordSuccess(url: String, source: String = url, width: Int = Int.MAX_VALUE) {
         failures.remove(url)
         val wasSuccessful = succeeded(url) && preferredRoute(source) == url
         successes.remove(url)
         successes[url] = clock()
         trim(successes)
         preferredRoutes.remove(source)
-        preferredRoutes[source] = url to clock()
+        preferredRoutes[source] = Route(url, clock(), if (url == source) Int.MAX_VALUE else width)
         trim(preferredRoutes)
         if (!wasSuccessful) revisions.value += 1
     }
 
+    /**
+     * The route that last loaded [source], when it is at least [minWidth] pixels. A smaller route
+     * would be stretched, so a hero never takes a cover chip's thumbnail as its first choice.
+     */
     @Synchronized
-    fun preferredRoute(source: String): String? = preferredRoutes[source]?.takeIf { clock() - it.second < SUCCESS_LIFETIME }?.first
+    fun preferredRoute(source: String, minWidth: Int = 0): String? = preferredRoutes[source]
+        ?.takeIf { clock() - it.at < SUCCESS_LIFETIME && it.width >= minWidth }
+        ?.url
 
     @Synchronized
     fun networkRestored() {
@@ -86,9 +94,11 @@ class ArtworkAttempts(
     init {
         val seen = mutableSetOf<String>()
         sources.distinct().take(4).forEach { source ->
-            val routes = listOf(policy.preferredRoute(source) ?: optimize(source, width), source).distinct()
+            val routes = listOf(policy.preferredRoute(source, minWidth = width) ?: optimize(source, width), source).distinct()
             val preferred = routes.firstOrNull(policy::succeeded)
-            (listOfNotNull(preferred) + routes).distinct().forEach { route ->
+            // A smaller copy that loaded elsewhere is only a last resort before the fallback mark.
+            val smaller = policy.preferredRoute(source)
+            (listOfNotNull(preferred) + routes + listOfNotNull(smaller)).distinct().forEach { route ->
                 if (seen.add(route) && policy.available(route)) pending.add(ArtworkAttempt(source, route))
             }
         }

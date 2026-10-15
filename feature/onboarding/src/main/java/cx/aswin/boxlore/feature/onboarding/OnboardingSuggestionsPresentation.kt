@@ -1,9 +1,14 @@
 package cx.aswin.boxlore.feature.onboarding
 
+import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
+import cx.aswin.boxlore.core.network.model.toPodcast
+
+internal enum class SuggestionsOrigin { Echo, Genres, Search, Library }
 
 /**
- * Pure presentation helpers for the shared suggestions screen (genre / AI / search / OPML).
+ * Pure presentation helpers for the shared suggestions screen (genre / AI / search / OPML). The
+ * screen never pre-selects suggestions: the listener adds what they want.
  */
 internal object OnboardingSuggestionsPresentation {
     fun isLoading(uiState: OnboardingUiState): Boolean {
@@ -36,62 +41,65 @@ internal object OnboardingSuggestionsPresentation {
         }
     }
 
-    /** Finish-bar CTA on the shared suggestions screen. */
-    fun finishCtaLabel(
-        uiState: OnboardingUiState,
-        selectedCount: Int,
-    ): String {
-        val isSeedFlow =
-            uiState.reachedSuggestionsViaSearchFlow || uiState.reachedSuggestionsViaOpmlFlow
-        if (isSeedFlow) {
-            val recommendedIds =
-                uiState.aiCurriculumRows
-                    .flatMap { it.podcasts }
-                    .map { it.id.toString() }
-                    .toSet()
-            val selectedRecommendationsCount =
-                uiState.subscribedPodcastIds.count { it in recommendedIds }
-            return if (selectedRecommendationsCount > 0) {
-                "Add $selectedRecommendationsCount & start"
-            } else {
-                "Start without adding"
-            }
-        }
-        return if (selectedCount > 0) {
-            "Subscribe & start · $selectedCount"
-        } else {
-            "Start without subscribing"
-        }
+    /** Which flow reached the shared screen; each sets its own header and counting. */
+    fun origin(uiState: OnboardingUiState): SuggestionsOrigin = when {
+        uiState.reachedSuggestionsViaAiFlow -> SuggestionsOrigin.Echo
+        uiState.reachedSuggestionsViaSearchFlow -> SuggestionsOrigin.Search
+        uiState.reachedSuggestionsViaOpmlFlow -> SuggestionsOrigin.Library
+        else -> SuggestionsOrigin.Genres
     }
 
-    data class LoadingCopy(
-        val title: String,
-        val subtitle: String,
-    )
+    /** Every show the screen offers (lanes and charts). */
+    fun recommendationIds(uiState: OnboardingUiState): Set<String> =
+        (uiState.aiCurriculumRows.flatMap { it.podcasts }.map { it.id.toString() } + uiState.genreChartsPodcasts.map { it.id }).toSet()
 
-    fun loadingCopy(uiState: OnboardingUiState): LoadingCopy = when {
-        uiState.reachedSuggestionsViaOpmlFlow ->
-            LoadingCopy(
-                title = "Import complete",
-                subtitle = "Finding shows inspired by your library…",
-            )
-        uiState.reachedSuggestionsViaSearchFlow ->
-            LoadingCopy(
-                title =
-                if (uiState.suggestionSeedCount > 0) {
-                    "Subscribed to ${uiState.suggestionSeedCount} " +
-                        if (uiState.suggestionSeedCount == 1) "show" else "shows"
-                } else {
-                    "Shows subscribed"
-                },
-                subtitle = "Looking for more you might like…",
-            )
-        else ->
-            LoadingCopy(
-                title = "Designing your feed",
-                subtitle = "Matching shows to your taste…",
-            )
+    /**
+     * How many shows the finish button adds. Search picks and imported libraries are subscribed
+     * before suggestions load, so those flows count only the suggestions picked here; elsewhere
+     * every selected show counts (Echo's taste-test and search picks included).
+     */
+    fun addCount(uiState: OnboardingUiState): Int = when (origin(uiState)) {
+        SuggestionsOrigin.Search, SuggestionsOrigin.Library -> {
+            val offered = recommendationIds(uiState)
+            uiState.subscribedPodcastIds.count { it in offered }
+        }
+        else -> uiState.subscribedPodcastIds.size
     }
+
+    /** The search picks or imported shows already in the library, for the summary at the top. */
+    fun seedShows(uiState: OnboardingUiState): List<Podcast> {
+        val offered = recommendationIds(uiState)
+        return uiState.selectedPodcasts.values.filter { it.id !in offered }
+    }
+
+    /**
+     * Lanes in order. In Echo's flow the shows picked before the build (a positive taste-test
+     * answer, or a search mid-chat) lead in their own lane, selected, and leave the other lanes so
+     * nothing shows twice. Nothing else starts selected.
+     */
+    fun lanes(uiState: OnboardingUiState, picksTitle: String): List<OnboardingSuggestionsLane> {
+        val base = OnboardingSuggestionsLanes.deduplicateLanes(
+            OnboardingSuggestionsLanes.build(uiState.aiCurriculumRows, uiState.genreChartsPodcasts, uiState.selectedGenres),
+        ).map { lane -> lane.copy(podcasts = OnboardingSuggestionsLanes.deduplicatePodcasts(lane.podcasts)) }
+        val picks = OnboardingSuggestionsLanes.deduplicatePodcasts(uiState.aiPicks)
+        if (origin(uiState) != SuggestionsOrigin.Echo || picks.isEmpty()) return base
+        val pickIds = picks.map { it.id }.toSet()
+        val rest = base.map { lane -> lane.copy(podcasts = lane.podcasts.filter { it.id !in pickIds }) }.filter { it.isCharts || it.podcasts.isNotEmpty() }
+        return listOf(OnboardingSuggestionsLane(PICKS_LANE_ID, picksTitle, purpose = "", isCharts = false, podcasts = picks)) + rest
+    }
+
+    const val PICKS_LANE_ID = "picks"
+
+    /**
+     * The show to add when the listener taps one on the suggestions screen. Echo's chat picks are
+     * included, so a pick removed from Your picks can be added back.
+     */
+    fun findShow(uiState: OnboardingUiState, id: String): Podcast? =
+        uiState.searchResults.find { it.id == id }
+            ?: uiState.aiCurriculumRows.flatMap { it.podcasts }.map { it.toPodcast() }.find { it.id == id }
+            ?: uiState.genreChartsPodcasts.find { it.id == id }
+            ?: uiState.popularPodcasts.find { it.id == id }
+            ?: uiState.aiPicks.find { it.id == id }
 
     /** Whether back from suggestions should wipe curriculum/charts (search / OPML paths). */
     fun shouldClearSuggestionPayloadOnBack(nextStep: OnboardingStep): Boolean = nextStep == OnboardingStep.SEARCH || nextStep == OnboardingStep.WELCOME

@@ -74,7 +74,7 @@ internal fun MixtapeEpisodeCard(
             .testTag("home_mix_episode_${episode.id}"),
     ) {
         BoxWithConstraints {
-            val artworkSize = if (maxWidth < 280.dp) 76.dp else 86.dp
+            val artworkSize = if (maxWidth < 280.dp) 72.dp else 86.dp
             Row(
                 modifier = Modifier.fillMaxSize().padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -89,7 +89,7 @@ internal fun MixtapeEpisodeCard(
                         episode.title,
                         modifier = Modifier.testTag("home_mix_title_${episode.id}"),
                         style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp, lineHeight = 21.sp, fontWeight = GoogleSansWeight.semiBold),
-                        maxLines = 3,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
@@ -140,19 +140,25 @@ internal fun HomeMixArtwork(
                 )
             }
         }
+        // A full 48dp target in the corner, drawn as a smaller disc so the cover stays visible.
         Surface(
             onClick = onPlay,
             shape = CircleShape,
-            color = Color.Black.copy(alpha = 0.58f),
+            color = Color.Transparent,
             contentColor = Color.White,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp).size(48.dp).testTag("home_mix_play_${episode.id}"),
+            modifier = Modifier.align(Alignment.BottomEnd).size(48.dp).testTag("home_mix_play_${episode.id}"),
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(
-                    if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play),
-                    modifier = Modifier.size(24.dp),
-                )
+                Box(
+                    Modifier.size(if (size >= 80.dp) 40.dp else 34.dp).background(Color.Black.copy(alpha = 0.58f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play),
+                        modifier = Modifier.size(if (size >= 80.dp) 22.dp else 20.dp),
+                    )
+                }
             }
         }
     }

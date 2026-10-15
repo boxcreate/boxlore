@@ -31,27 +31,18 @@ import org.robolectric.annotation.GraphicsMode
 class YourShowsSelectorShapeTest {
     @get:Rule val composeRule = createComposeRule()
 
-    @Test fun `shape choice is stable for normal and RSS IDs with varied silhouettes`() {
-        val identities = listOf("show-0", "show-1", "show-2", "show-3", "rss:https://example.com/feed", "-123", "polygenelubricants")
-        val initial = identities.associateWith(::selectorSilhouette)
-        assertEquals(4, identities.take(4).map(::selectorSilhouette).toSet().size)
-        assertEquals(initial, identities.reversed().associateWith(::selectorSilhouette))
-    }
-
     @Test fun `morphing and reversed selection preserve centered unclipped outlines`() {
         val selected = mutableStateOf(false)
-        val identity = mutableStateOf("show-0")
         var displayed: Shape = RectangleShape
         composeRule.setContent {
-            val shape = rememberYourShowsSelectorShape(identity.value, selected.value)
+            val shape = rememberYourShowsSelectorShape(selected.value)
             displayed = shape
             Box(Modifier.size(54.dp).clip(shape).background(Color.Black))
         }
         composeRule.waitForIdle()
         composeRule.mainClock.autoAdvance = false
-        for (id in listOf("show-0", "show-1", "show-2", "show-3")) {
+        repeat(4) {
             composeRule.runOnUiThread {
-                identity.value = id
                 selected.value = true
                 Snapshot.sendApplyNotifications()
             }

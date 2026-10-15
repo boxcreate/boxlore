@@ -32,8 +32,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
@@ -99,7 +101,7 @@ fun YourShowsSection(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = 0.dp, bottom = 8.dp),
+                .padding(top = 0.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -127,15 +129,21 @@ fun YourShowsSection(
                         fontWeight = GoogleSansWeight.semiBold,
                     ),
                     letterSpacing = (-0.5).sp,
+                    // Explicit, so an artwork-coloured shell cannot leak its foreground into Home.
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
-            HomeChapterBrowseButton(
-                chapter = HomeDiscoveryChapter.LIBRARY,
-                description = stringResource(R.string.home_view_library),
-                onClick = onViewLibrary,
-                icon = Icons.Rounded.ChevronRight,
-            )
+            // The 48dp button is taller than the title, so it is centred on the title line without
+            // setting the row height; otherwise it adds empty space between the hero and this title.
+            Box(Modifier.centredWithoutHeight()) {
+                HomeChapterBrowseButton(
+                    chapter = HomeDiscoveryChapter.LIBRARY,
+                    description = stringResource(R.string.home_view_library),
+                    onClick = onViewLibrary,
+                    icon = Icons.Rounded.ChevronRight,
+                )
+            }
         }
 
         // One surface persists across Mix, show filtering, loading and caught-up states.
@@ -155,6 +163,7 @@ fun YourShowsSection(
                 onPodcastSelected = onPodcastSelected,
                 onTogglePin = onTogglePin,
             )
+            YourShowsDivider()
             AnimatedContent(
                 targetState = contentTarget,
                 transitionSpec = { yourShowsContentTransform(forward = targetState != null) },
@@ -207,7 +216,12 @@ fun YourShowsSection(
                             Modifier
                                 .fillMaxWidth()
                                 .animateContentSize(YourShowsMotion.spatial())
-                                .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                                .padding(
+                                    start = HomeMixLayout.ContentInset,
+                                    end = HomeMixLayout.ContentInset,
+                                    top = HomeMixLayout.TopPadding,
+                                    bottom = HomeMixLayout.BottomPadding,
+                                ),
                         ) {
                             SelectedShowHeader(
                                 podcast = selectedPodcast,
@@ -215,7 +229,7 @@ fun YourShowsSection(
                                 onOpenShow = { onPodcastClick(selectedPodcast) },
                                 onClear = { onPodcastSelected(null) },
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(HomeMixLayout.HeaderGap))
 
                             if ((frame.loading || frame.refreshing) &&
                                 frame.episodes.list.isEmpty()
@@ -253,7 +267,7 @@ fun YourShowsSection(
                                         .observeEpisodeListGestures(filteredScrollConnection)
                                         .nestedScroll(filteredScrollConnection)
                                         .verticalScroll(filteredScrollState),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp),
                                 ) {
                                     if (selectedPodcast.isRss && frame.refreshing) {
                                         Text(
@@ -261,7 +275,7 @@ fun YourShowsSection(
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
-                                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
                                     }
                                     val latestTwoIds =
                                         remember(frame.episodes) {
@@ -271,7 +285,10 @@ fun YourShowsSection(
                                                 .map { it.id }
                                                 .toSet()
                                         }
-                                    frame.episodes.list.take(8).forEach { episode ->
+                                    val visible = frame.episodes.list.take(8)
+                                    // The rows and the See all footer form one connected list.
+                                    val segments = visible.size + 1
+                                    visible.forEachIndexed { index, episode ->
                                         val state = episodePlaybackState.map[episode.id]
                                         DenseEpisodeRow(
                                             episode = episode,
@@ -287,7 +304,7 @@ fun YourShowsSection(
                                                     )
                                                 },
                                             ),
-                                            showPodcastTitle = false,
+                                            shape = yourShowsListShape(index, segments),
                                             playback =
                                             DenseEpisodeRowPlayback(
                                                 overrideStatus = state?.first,
@@ -298,42 +315,7 @@ fun YourShowsSection(
                                             isEligibleForNewTag = episode.id in latestTwoIds,
                                         )
                                     }
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        shape = RoundedCornerShape(20.dp),
-                                        modifier =
-                                        Modifier
-                                            .testTag("home_filtered_see_all")
-                                            .heightIn(min = 48.dp)
-                                            .fillMaxWidth()
-                                            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = RoundedCornerShape(20.dp)) { onPodcastClick(selectedPodcast) },
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxSize(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center,
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.home_shows_see_all_episodes),
-                                                style =
-                                                MaterialTheme.typography.labelMedium.copy(
-                                                    fontWeight = GoogleSansWeight.bold,
-                                                    letterSpacing = 0.1.sp,
-                                                ),
-                                                color = MaterialTheme.colorScheme.primary,
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Icon(
-                                                imageVector = Icons.Rounded.ChevronRight,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-                                    }
+                                    SeeAllEpisodesRow(shape = yourShowsListShape(segments - 1, segments)) { onPodcastClick(selectedPodcast) }
                                 }
                             }
                         }
@@ -342,4 +324,39 @@ fun YourShowsSection(
             }
         }
     }
+}
+
+/** The last segment of a selected show's list; opens the show page. */
+@Composable
+private fun SeeAllEpisodesRow(shape: androidx.compose.ui.graphics.Shape, onClick: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        shape = shape,
+        modifier =
+        Modifier
+            .testTag("home_filtered_see_all")
+            .heightIn(min = 52.dp)
+            .fillMaxWidth()
+            .expressiveClickable(feedback = ExpressivePressFeedback.Control, shape = shape, onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.home_shows_see_all_episodes),
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = GoogleSansWeight.bold),
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+/** Reports no height, so the row keeps its text height; the content is centred on the row and overflows evenly. */
+private fun Modifier.centredWithoutHeight(): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+    layout(placeable.width, 0) { placeable.place(0, -placeable.height / 2) }
 }

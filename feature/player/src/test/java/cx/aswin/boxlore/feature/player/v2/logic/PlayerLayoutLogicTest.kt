@@ -71,7 +71,7 @@ class PlayerLayoutLogicTest {
         assertEquals(1f, geometry.miniAlpha, 0.001f)
         assertEquals(0f, geometry.fullAlpha, 0.001f)
         assertEquals(24f, geometry.fullTranslationY, 0.001f)
-        assertEquals(0.975f, geometry.fullScale, 0.001f)
+        assertEquals(0.95f, geometry.fullScale, 0.001f)
     }
 
     @Test
@@ -92,10 +92,11 @@ class PlayerLayoutLogicTest {
             ),
         )
 
-        assertEquals(16.dp, floating.topCornerRadius)
-        assertEquals(16.dp, floating.bottomCornerRadius)
-        assertEquals(13.dp, classic.topCornerRadius)
-        assertEquals(7.dp, classic.bottomCornerRadius)
+        // Halfway open, both styles still keep their full collapsed rounding.
+        assertEquals(32.dp, floating.topCornerRadius)
+        assertEquals(32.dp, floating.bottomCornerRadius)
+        assertEquals(26.dp, classic.topCornerRadius)
+        assertEquals(14.dp, classic.bottomCornerRadius)
         assertEquals(floating.expansionFraction, classic.expansionFraction)
     }
 

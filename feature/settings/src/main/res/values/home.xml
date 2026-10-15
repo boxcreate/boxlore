@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Appearance > Layout picker for the Home hero cards. Classic restores the earlier cards with the cover behind the text. -->
+    <string name="hero_card_style_title">Home hero cards</string>
+    <string name="hero_card_style_standard">Standard</string>
+    <string name="hero_card_style_classic">Classic</string>
+</resources>

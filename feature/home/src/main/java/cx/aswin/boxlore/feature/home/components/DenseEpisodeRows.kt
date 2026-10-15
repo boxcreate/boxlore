@@ -4,27 +4,44 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -32,43 +49,46 @@ import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
 
+/**
+ * One segment of a selected show's connected episode list, styled like the Daily Mix cards and
+ * highlighted in the primary container while it plays. Every row is the same height: the title
+ * block always reserves two lines plus one metadata line, and shorter titles centre in it.
+ */
 @Composable
 internal fun DenseEpisodeRow(
     episode: Episode,
     podcast: Podcast,
     actions: DenseEpisodeRowActions,
     modifier: Modifier = Modifier,
-    showPodcastTitle: Boolean = true,
+    shape: Shape = RoundedCornerShape(20.dp),
     playback: DenseEpisodeRowPlayback = DenseEpisodeRowPlayback(),
     isEligibleForNewTag: Boolean = true,
 ) {
     val rowState = episodeRowState(episode, podcast, playback)
 
-    Row(
-        modifier =
-        modifier
+    Surface(
+        shape = shape,
+        color = if (rowState.isCurrentPlaying) MaterialTheme.colorScheme.primaryContainer else homeMixRestingCardColor(),
+        modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .expressiveClickable(onClick = actions.onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .expressiveClickable(shape = shape, onClick = actions.onClick)
+            .testTag("home_filtered_episode_${episode.id}"),
     ) {
-        DenseEpisodeArtwork(
-            episode = episode,
-            podcast = podcast,
-            rowState = rowState,
-            onPlay = actions.onPlay,
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        DenseEpisodeDetails(
-            episode = episode,
-            podcast = podcast,
-            rowState = rowState,
-            showPodcastTitle = showPodcastTitle,
-            isEligibleForNewTag = isEligibleForNewTag,
-        )
+        Row(
+            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DenseEpisodeArtwork(episode = episode, podcast = podcast, rowState = rowState)
+            Spacer(modifier = Modifier.width(12.dp))
+            DenseEpisodeDetails(
+                episode = episode,
+                podcast = podcast,
+                rowState = rowState,
+                isEligibleForNewTag = isEligibleForNewTag,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            DenseEpisodePlayButton(episodeId = episode.id, playing = rowState.isCurrentPlaying, onPlay = actions.onPlay)
+        }
     }
 }
 
@@ -109,22 +129,58 @@ private fun episodeRowState(
     )
 }
 
+private val RowArtworkSize = 48.dp
+private val RowArtworkShape = RoundedCornerShape(12.dp)
+private val RowTitleSize = 15.sp
+private val RowTitleLineHeight = 19.sp
+private const val ROW_TITLE_LINES = 2
+private val RowMetaGap = 4.dp
+
 @Composable
 private fun DenseEpisodeArtwork(
     episode: Episode,
     podcast: Podcast,
     rowState: DenseEpisodeRowState,
-    onPlay: () -> Unit,
 ) {
-    HomeMixArtwork(
-        episode = episode,
-        podcast = podcast,
-        status = rowState.status,
-        downloaded = false,
-        playing = rowState.isCurrentPlaying,
-        onPlay = onPlay,
-        size = 72.dp,
-    )
+    Box(Modifier.size(RowArtworkSize).clip(RowArtworkShape).testTag("home_mix_artwork_${episode.id}")) {
+        OptimizedImage(
+            url = episode.imageUrl,
+            fallbackUrls = listOf(episode.podcastImageUrl, podcast.imageUrl, podcast.fallbackImageUrl),
+            proxyWidth = 192,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        if (rowState.isCompleted) {
+            Box(
+                Modifier.align(Alignment.TopEnd).padding(3.dp).size(16.dp)
+                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Check,
+                    stringResource(R.string.home_mix_played),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(11.dp),
+                )
+            }
+        }
+    }
+}
+
+/** A separate 48dp target, filled while this episode plays so the row's state reads at a glance. */
+@Composable
+private fun DenseEpisodePlayButton(episodeId: String, playing: Boolean, onPlay: () -> Unit) {
+    FilledTonalIconButton(
+        onClick = onPlay,
+        colors = if (playing) IconButtonDefaults.filledIconButtonColors() else IconButtonDefaults.filledTonalIconButtonColors(),
+        modifier = Modifier.testTag("home_mix_play_$episodeId"),
+    ) {
+        Icon(
+            if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+            stringResource(if (playing) R.string.home_hero_pause else R.string.home_hero_play),
+        )
+    }
 }
 
 @Composable
@@ -132,74 +188,74 @@ private fun RowScope.DenseEpisodeDetails(
     episode: Episode,
     podcast: Podcast,
     rowState: DenseEpisodeRowState,
-    showPodcastTitle: Boolean,
     isEligibleForNewTag: Boolean,
 ) {
+    val metaStyle = MaterialTheme.typography.bodySmall
+    val metaLineHeight = metaStyle.lineHeight.takeIf { it.isSp } ?: 16.sp
+    val blockHeight = with(LocalDensity.current) { (RowTitleLineHeight * ROW_TITLE_LINES).toDp() + RowMetaGap + metaLineHeight.toDp() }
     Column(
-        modifier = Modifier.weight(1f),
-        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.weight(1f).height(blockHeight),
+        verticalArrangement = Arrangement.spacedBy(RowMetaGap, Alignment.CenterVertically),
     ) {
         Text(
             text = episode.title,
             style =
             MaterialTheme.typography.titleSmall.copy(
                 fontWeight = GoogleSansWeight.bold,
-                fontSize = 16.sp,
-                lineHeight = 20.sp,
+                fontSize = RowTitleSize,
+                lineHeight = RowTitleLineHeight,
             ),
-            maxLines = 2,
+            maxLines = ROW_TITLE_LINES,
             overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface,
         )
-        Spacer(modifier = Modifier.height(3.dp))
         DenseEpisodeMetadataRow(
             episode = episode,
             podcast = podcast,
             rowState = rowState,
-            showPodcastTitle = showPodcastTitle,
             isEligibleForNewTag = isEligibleForNewTag,
         )
-        if (rowState.isInProgress && rowState.progress > 0f) {
-            Spacer(Modifier.height(6.dp))
-            HomeMixEpisodeTime(episode, rowState.status, rowState.progress)
-        }
     }
 }
 
+/** One line: date, then the length, or the progress bar and time left while in progress. */
 @Composable
 private fun DenseEpisodeMetadataRow(
     episode: Episode,
     podcast: Podcast,
     rowState: DenseEpisodeRowState,
-    showPodcastTitle: Boolean,
     isEligibleForNewTag: Boolean,
 ) {
     val isNew = isEligibleForNewTag && isNewEpisode(episode, podcast, rowState.status)
-    FlowRow(
-        verticalArrangement = Arrangement.spacedBy(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    val inProgress = rowState.isInProgress && rowState.progress > 0f
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (showPodcastTitle) {
-            DensePodcastTitle(podcast.title)
-        }
         if (isNew) {
             DenseNewEpisodeBadge()
         }
-        DenseEpisodeDate(episode.publishedDate, showPodcastTitle || isNew)
-        if (!rowState.isInProgress || rowState.progress <= 0f) DenseEpisodeDuration(episode, rowState)
+        val date = formatRelativeDate(episode.publishedDate)
+        DenseMetaText(date)
+        if (inProgress) {
+            val progressLabel = stringResource(R.string.home_hero_listening_progress)
+            LinearProgressIndicator(
+                progress = { rowState.progress.coerceIn(0f, 1f) },
+                modifier = Modifier.weight(1f).height(4.dp).semantics { contentDescription = progressLabel },
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                drawStopIndicator = {},
+                gapSize = 2.dp,
+            )
+        }
+        denseDurationText(episode.duration, rowState.progress, inProgress)?.let { duration ->
+            DenseMetaText(
+                text = if (inProgress || date.isEmpty()) duration else "• $duration",
+                color = if (inProgress) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                bold = inProgress,
+            )
+        }
     }
-}
-
-@Composable
-private fun RowScope.DensePodcastTitle(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.weight(1f, fill = false),
-    )
 }
 
 @Composable
@@ -216,8 +272,8 @@ private fun DenseNewEpisodeBadge() {
             style =
             MaterialTheme.typography.labelSmall.copy(
                 fontWeight = GoogleSansWeight.bold,
-                fontSize = 8.sp,
-                letterSpacing = 0.5.sp,
+                fontSize = 10.sp,
+                letterSpacing = 0.4.sp,
             ),
             color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
@@ -225,36 +281,18 @@ private fun DenseNewEpisodeBadge() {
 }
 
 @Composable
-private fun DenseEpisodeDate(
-    publishedDate: Long,
-    includePrefix: Boolean,
+private fun DenseMetaText(
+    text: String,
+    color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    bold: Boolean = false,
 ) {
-    val dateText = formatRelativeDate(publishedDate)
-    if (dateText.isNotEmpty()) {
-        val prefix = if (includePrefix) "• " else ""
-        Text(
-            text = "$prefix$dateText",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-        )
-    }
-}
-
-@Composable
-private fun DenseEpisodeDuration(
-    episode: Episode,
-    rowState: DenseEpisodeRowState,
-) {
-    val displayText = denseDurationText(episode.duration, rowState.progress, rowState.isInProgress) ?: return
+    if (text.isEmpty()) return
     Text(
-        text = "• $displayText",
+        text = text,
         style = MaterialTheme.typography.bodySmall,
-        color =
-        if (rowState.isInProgress) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        },
-        fontWeight = if (rowState.isInProgress) GoogleSansWeight.bold else FontWeight.Normal,
+        color = color,
+        fontWeight = if (bold) GoogleSansWeight.bold else FontWeight.Normal,
+        maxLines = 1,
+        softWrap = false,
     )
 }

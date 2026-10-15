@@ -175,6 +175,8 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             miniPlayerSeekButtonsEnabled = settingsState.miniPlayerSeekButtonsEnabled,
             fullPlayerStyle = settingsState.fullPlayerStyle,
             artworkColorsEnabled = settingsState.artworkColorsEnabled,
+            navigationBlurLevel = settingsState.navigationBlurLevel,
+            heroCardStyle = settingsState.heroCardStyle,
             savedCustomTheme = settingsState.savedCustomTheme,
         ),
         actions = AppearanceActions(
@@ -193,6 +195,8 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
                 }
             },
             onSetArtworkColorsEnabled = { enabled -> scope.launch { userPrefs.setArtworkColorsEnabled(enabled) } },
+            onSetNavigationBlurLevel = { level -> scope.launch { userPrefs.setNavigationBlurLevel(level) } },
+            onSetHeroCardStyle = { style -> scope.launch { userPrefs.setHeroCardStyle(style) } },
             onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
             onSetNavigationStyle = { style -> scope.launch { userPrefs.setNavigationStyle(style) } },
             onSetOpenAppTo = { openAppTo -> scope.launch { userPrefs.setOpenAppTo(openAppTo) } },

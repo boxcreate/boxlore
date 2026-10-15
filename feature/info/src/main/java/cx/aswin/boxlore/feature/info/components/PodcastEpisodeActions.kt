@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TonalToggleButton
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -54,7 +55,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.contrastColor
 import cx.aswin.boxlore.feature.info.R
 
 internal data class PodcastEpisodeActionsState(
@@ -165,7 +165,8 @@ private fun PodcastEpisodePlayButton(state: PodcastEpisodeActionsState, onClick:
                 shape = RoundedCornerShape(topStart = 8.dp, topEnd = 24.dp, bottomEnd = 24.dp, bottomStart = 8.dp),
                 pressedShape = RoundedCornerShape(18.dp),
             ),
-            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = accentColor.contrastColor()),
+            // The page accent is the theme's primary, so its paired foreground is contrast-checked with it.
+            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = contentColorFor(accentColor)),
             contentPadding = PaddingValues(horizontal = 8.dp),
             modifier = Modifier.fillMaxWidth().height(48.dp).semantics { contentDescription = label },
         ) {

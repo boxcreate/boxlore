@@ -97,6 +97,35 @@ class ArtworkLoadPolicyTest {
     }
 
     @Test
+    fun `a cover chip thumbnail never becomes a larger card's first choice`() {
+        val policy = ArtworkLoadPolicy()
+        policy.recordSuccess("proxy:320:show", "show", width = 320)
+        assertEquals("proxy:1080:show", ArtworkAttempts(listOf("show"), 1080, policy, optimize).next()?.url)
+        assertEquals("proxy:320:show", ArtworkAttempts(listOf("show"), 320, policy, optimize).next()?.url)
+        assertEquals("proxy:320:show", ArtworkAttempts(listOf("show"), 200, policy, optimize).next()?.url)
+
+        // A larger copy still serves smaller tiles, and the original serves every size.
+        policy.recordSuccess("proxy:1080:show", "show", width = 1080)
+        assertEquals("proxy:1080:show", ArtworkAttempts(listOf("show"), 320, policy, optimize).next()?.url)
+        policy.recordSuccess("show", "show", width = 320)
+        assertEquals("show", ArtworkAttempts(listOf("show"), 1080, policy, optimize).next()?.url)
+    }
+
+    @Test
+    fun `a smaller copy is only tried after the larger card's own routes fail`() {
+        val policy = ArtworkLoadPolicy()
+        policy.recordSuccess("proxy:320:show", "show", width = 320)
+        val queue = ArtworkAttempts(listOf("show"), 1080, policy, optimize)
+        val requests = mutableListOf<String>()
+        while (true) {
+            val attempt = queue.next() ?: break
+            requests += attempt.url
+            queue.failed(attempt, IllegalArgumentException("not an image"))
+        }
+        assertEquals(listOf("proxy:1080:show", "show", "proxy:320:show"), requests)
+    }
+
+    @Test
     fun `successful detail size recovers a failed home size through the cached route`() {
         val policy = ArtworkLoadPolicy()
         policy.recordFailure("proxy:200:episode", true)

@@ -34,7 +34,7 @@ suspend fun loadArtworkBitmap(
             )
         }
         if (result is SuccessResult) {
-            ArtworkLoadPolicy.Shared.recordSuccess(attempt.url, attempt.source)
+            ArtworkLoadPolicy.Shared.recordSuccess(attempt.url, attempt.source, pixels)
             onSourceLoaded(attempt.source)
             return result.drawable.toBitmap(width = result.drawable.intrinsicWidth.coerceAtLeast(1), height = result.drawable.intrinsicHeight.coerceAtLeast(1))
         }

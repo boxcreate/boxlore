@@ -105,6 +105,8 @@ import cx.aswin.boxlore.ui.libraryimport.OpmlImportState
 import cx.aswin.boxlore.ui.libraryimport.performJsonLibraryImport
 import cx.aswin.boxlore.ui.logic.SubscriptionResumeRefreshLogic
 import cx.aswin.boxlore.ui.logic.canUseAdaptivePlayer
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -397,6 +399,8 @@ fun BoxLoreAppRoot(
         initial = remember { userPrefs.cachedThemeBrand },
     )
     val artworkColorsEnabled by userPrefs.artworkColorsEnabledStream.collectAsState(initial = remember { userPrefs.cachedArtworkColorsEnabled })
+    val navigationBlurLevel by userPrefs.navigationBlurLevelStream.collectAsState(initial = remember { userPrefs.cachedNavigationBlurLevel })
+    val heroCardStyle by userPrefs.heroCardStyleStream.collectAsState(initial = remember { userPrefs.cachedHeroCardStyle })
     val savedCustomTheme by userPrefs.customThemeStream.collectAsState(initial = remember { userPrefs.cachedCustomTheme })
     val surfaceStyle by userPrefs.surfaceStyleStream.collectAsState(
         initial = remember { userPrefs.cachedSurfaceStyle },
@@ -625,6 +629,8 @@ fun BoxLoreAppRoot(
                     null
                 }
                 val navigationBackground = navigationColors?.background ?: MaterialTheme.colorScheme.surface
+                val showNavigationBlur = FloatingNavigationBlur.shows(navigationStyle, showBottomNav, navigationBlurLevel)
+                val navigationBlur = remember { HazeState() }
                 Scaffold(
                     containerColor = navigationBackground,
                     contentColor = navigationColors?.onBackground ?: MaterialTheme.colorScheme.onSurface,
@@ -634,7 +640,9 @@ fun BoxLoreAppRoot(
                     // Consume Scaffold padding for lint; with zeroed insets this is a no-op.
                     Box(
                         modifier = Modifier.padding(innerPadding).fillMaxSize()
-                            .nestedScroll(adaptivePlayer.scrollConnection),
+                            .nestedScroll(adaptivePlayer.scrollConnection)
+                            // The page is what blurs behind the floating bar.
+                            .then(if (showNavigationBlur) Modifier.hazeSource(navigationBlur) else Modifier),
                     ) {
                         PredictiveBackWrapper(
                             enabled = canGoBack,
@@ -703,6 +711,8 @@ fun BoxLoreAppRoot(
                                         themeBrand = themeBrand,
                                         surfaceStyle = surfaceStyle,
                                         artworkColorsEnabled = artworkColorsEnabled,
+                                        navigationBlurLevel = navigationBlurLevel,
+                                        heroCardStyle = heroCardStyle,
                                         savedCustomTheme = savedCustomTheme,
                                         fontRoundness = fontRoundnessKey,
                                         navigationStyle = navigationStyleKey,
@@ -740,6 +750,16 @@ fun BoxLoreAppRoot(
                     with(density) {
                         appMiniPlayerTopOffset(navigationStyle, screenHeightDp, systemNavBarHeight).toPx()
                     }
+
+                if (showNavigationBlur) {
+                    FloatingNavigationBlurStrip(
+                        state = navigationBlur,
+                        level = navigationBlurLevel,
+                        bottomChrome = FloatingNavigationBlur.barChrome(navigationStyle, systemNavigationInset = systemNavBarHeight),
+                        pageColor = navigationBackground,
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
 
                 if (showBottomNav) {
                     val backStack = remember(navBackStackEntry) { snapshotNavBackStack(navController) }

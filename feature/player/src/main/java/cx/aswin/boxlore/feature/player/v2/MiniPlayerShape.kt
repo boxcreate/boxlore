@@ -20,7 +20,8 @@ private const val CookieLobes = 9
 private const val CookieDepth = 0.06f
 private const val ContourSteps = 144
 
-internal val MiniPlayerArtworkSize = 48.dp
+/** The bar's cover sits inside its 52dp progress ring, the same size as in the compact cookie. */
+internal val MiniPlayerArtworkSize = 40.dp
 internal val MiniPlayerCompactArtworkSize = 40.dp
 internal val MiniPlayerCompactProgressStroke = 3.5.dp
 

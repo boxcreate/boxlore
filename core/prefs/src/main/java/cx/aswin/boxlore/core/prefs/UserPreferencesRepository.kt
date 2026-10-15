@@ -102,6 +102,22 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun setArtworkColorsEnabled(enabled: Boolean) = appearance.setArtworkColorsEnabled(enabled)
 
+    /** How strongly the page blurs behind the floating navigation bar ([NavigationBlurLevel]); soft by default. */
+    val cachedNavigationBlurLevel: String
+        get() = appearance.navigationBlur.cachedLevel
+
+    val navigationBlurLevelStream: Flow<String> = appearance.navigationBlur.level
+
+    suspend fun setNavigationBlurLevel(level: String) = appearance.navigationBlur.setLevel(level)
+
+    /** Home hero card presentation ([HeroCardStyle]); standard by default. */
+    val cachedHeroCardStyle: String
+        get() = appearance.heroCard.cachedStyle
+
+    val heroCardStyleStream: Flow<String> = appearance.heroCard.style
+
+    suspend fun setHeroCardStyle(style: String) = appearance.heroCard.setStyle(style)
+
     val customThemeStream: Flow<ThemeSelection?> = appearance.customThemeStream
 
     suspend fun setThemeSelection(selection: ThemeSelection, customThemeToRemember: ThemeSelection? = null) = appearance.setThemeSelection(selection, customThemeToRemember)

@@ -95,26 +95,35 @@ internal fun PodcastFeed(
     layout: PodcastFeedLayout,
 ) {
     val context = LocalContext.current
-    val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState)
-    val visibleKeys by remember(layout.gridState) {
+    val revealStage = rememberHomeRevealStage(viewportReady = !loadingState.isLoading)
+    val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState, revealStage)
+    // Scrolling changes the visible keys often; only a change in the answer recomposes the feed.
+    val hasVisibleLoading by remember(
+        layout.gridState,
+        loadingState.isLoading,
+        loadingState.isFilterLoading,
+        loadingState.isEditorialRowsLoading,
+        recommendationState.isRecommendationsLoading,
+        loadingState.isSelectedPodcastLoading,
+    ) {
         derivedStateOf {
-            layout.gridState.layoutInfo.visibleItemsInfo.mapNotNull { it.key as? String }.toSet()
+            shouldAnimateHomeShimmer(
+                visibleKeys = layout.gridState.layoutInfo.visibleItemsInfo.mapNotNullTo(HashSet()) { it.key as? String },
+                initialLoading = loadingState.isLoading,
+                discoveryLoading = loadingState.isFilterLoading,
+                editorialLoading = loadingState.isEditorialRowsLoading,
+                recommendationsLoading = recommendationState.isRecommendationsLoading,
+                selectedShowLoading = loadingState.isSelectedPodcastLoading,
+            )
         }
     }
-    val hasVisibleLoading = shouldAnimateHomeShimmer(
-            visibleKeys = visibleKeys,
-            initialLoading = loadingState.isLoading,
-            discoveryLoading = loadingState.isFilterLoading,
-            editorialLoading = loadingState.isEditorialRowsLoading,
-            recommendationsLoading = recommendationState.isRecommendationsLoading,
-            selectedShowLoading = loadingState.isSelectedPodcastLoading,
-    )
     val shimmerActive by produceState(initialValue = hasVisibleLoading, hasVisibleLoading) {
         // Preserve the same sweep through the short loading-cover handoff.
         if (!hasVisibleLoading) delay(HomeLoadingHandoffMillis.toLong())
         value = hasVisibleLoading
     }
-    ShimmerScope(active = hasVisibleLoading || shimmerActive) {
+    val revealing = !loadingState.isLoading && revealStage < HomeRevealStage.COMPLETE
+    ShimmerScope(active = hasVisibleLoading || shimmerActive || revealing) {
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
             state = layout.gridState,
@@ -143,6 +152,7 @@ internal data class PodcastFeedDerivedState(
     val showDiscoverContent: Boolean,
     val discoverGenreChip: Boolean,
     val showDiscoverSkeleton: Boolean,
+    val yourShowsReady: Boolean = viewportReady,
 )
 
 @Composable
@@ -151,21 +161,26 @@ private fun rememberPodcastFeedDerivedState(
     feedState: PodcastFeedUiState,
     recommendationState: PodcastFeedRecommendationState,
     loadingState: PodcastFeedLoadingState,
+    revealStage: Int,
 ): PodcastFeedDerivedState {
     val viewportReady = !loadingState.isLoading
     val discoverItems =
         remember(content.gridItems.list, feedState.selectedCategory) {
             content.gridItems.list.distinctBy { it.id }.take(HomeFeedSpacing.ExploreGridCap)
         }
+    val discoveryRevealed = revealStage >= HomeRevealStage.DISCOVERY
     return PodcastFeedDerivedState(
         viewportReady = viewportReady,
-        heroLoaded = viewportReady && content.heroItems.list.isNotEmpty(),
+        heroLoaded = viewportReady && content.heroItems.list.isNotEmpty() && revealStage >= HomeRevealStage.HERO,
         hasBecauseYouLike = hasBecauseYouLike(feedState, recommendationState),
         hasRecommendations = recommendationState.isRecommendationsLoading || content.recommendations.list.isNotEmpty(),
         discoverItems = discoverItems,
-        showDiscoverContent = showHomeDiscoveryContent(loadingState.isLoading, discoverItems.isNotEmpty()),
+        showDiscoverContent = showHomeDiscoveryContent(loadingState.isLoading, discoverItems.isNotEmpty()) && discoveryRevealed,
         discoverGenreChip = false,
-        showDiscoverSkeleton = loadingState.isLoading || (loadingState.isFilterLoading && discoverItems.isEmpty()),
+        showDiscoverSkeleton = loadingState.isLoading ||
+            (loadingState.isFilterLoading && discoverItems.isEmpty()) ||
+            (discoverItems.isNotEmpty() && !discoveryRevealed),
+        yourShowsReady = viewportReady && revealStage >= HomeRevealStage.YOUR_SHOWS,
     )
 }
 
@@ -187,11 +202,14 @@ private fun LazyStaggeredGridScope.smartHeroItem(
     if (derivedState.viewportReady && content.heroItems.list.isEmpty()) return
     item(span = StaggeredGridItemSpan.FullLine, key = "hero", contentType = "hero") {
         PinnedGridItemContent {
+            // The carousel draws its position dots in the 12dp strip under the cards; the skeleton
+            // keeps the same strip, so the gap to Your shows never changes.
             HomeLoadingReveal(
                 ready = derivedState.heroLoaded,
-                modifier = Modifier.padding(bottom = 12.dp),
                 placeholder = {
-                    cx.aswin.boxlore.feature.home.components.HeroSkeleton()
+                    cx.aswin.boxlore.feature.home.components.HeroSkeleton(
+                        Modifier.padding(bottom = cx.aswin.boxlore.feature.home.components.HeroIndicatorStrip),
+                    )
                 },
             ) {
                 SmartHeroCarousel(content.heroItems, playback.player, callbacks)

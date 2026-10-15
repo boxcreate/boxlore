@@ -185,7 +185,7 @@ class LibraryBackupManager(
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
         sb.append("<opml version=\"2.0\">\n")
         sb.append("  <head>\n")
-        sb.append("    <title>Boxlore Subscriptions</title>\n")
+        sb.append("    <title>boxlore subscriptions</title>\n")
         sb.append("  </head>\n")
         sb.append("  <body>\n")
         sb.append("    <outline text=\"Subscriptions\" title=\"Subscriptions\">\n")

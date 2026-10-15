@@ -58,6 +58,29 @@ internal data class HomeUiAssemblyResult(
  * Ranking/mixtape builders are injected so this stays free of Android ViewModel deps.
  */
 internal object HomeUiAssemblyLogic {
+    /**
+     * The built Daily Mix is kept across playback ticks; null means rebuild. Only a changed restart
+     * setting forces a rebuild here. When subscriptions change, removed shows leave at once and new
+     * shows join on the next ranking pass, so an import or cloud sync never rebuilds per write.
+     */
+    fun reusableMixtape(
+        previous: HomeMixtapeCache?,
+        currentSubIds: Set<String>,
+        staleRestartEnabled: Boolean,
+    ): HomeMixtapeCache? {
+        if (previous == null || previous.staleRestartEnabled != staleRestartEnabled) return null
+        if (!HomeShowsOrderLogic.shouldInvalidateMixtapeCache(previous.subSignature, currentSubIds)) return previous
+        val removed = previous.subSignature - currentSubIds
+        if (removed.isEmpty()) return previous.copy(subSignature = currentSubIds)
+        val podcasts = previous.podcasts.filterNot { it.id in removed }
+        return previous.copy(
+            podcasts = podcasts,
+            episodes = previous.episodes.filterNot { it.podcastId in removed },
+            unplayedCount = podcasts.count { it.episodeStatus != EpisodeStatus.COMPLETED },
+            subSignature = currentSubIds,
+        )
+    }
+
     @Suppress("LongParameterList", "LongMethod")
     suspend fun assemble(
         trendingList: List<Podcast>,
@@ -103,18 +126,7 @@ internal object HomeUiAssemblyLogic {
         val sortedSubs = HomeShowsOrderLogic.orderedSubs(orderToUse, subs)
 
         val currentSubIds = subs.map { it.id }.toSet()
-        val mixtapeCache =
-            if (previousMixtape != null &&
-                previousMixtape.staleRestartEnabled == staleRestartEnabled &&
-                !HomeShowsOrderLogic.shouldInvalidateMixtapeCache(
-                    previousMixtape.subSignature,
-                    currentSubIds,
-                )
-            ) {
-                previousMixtape
-            } else {
-                null
-            }
+        val mixtapeCache = reusableMixtape(previousMixtape, currentSubIds, staleRestartEnabled)
 
         val mixtapePodcasts: List<Podcast>
         val mixtapeCount: Int
@@ -181,7 +193,6 @@ internal object HomeUiAssemblyLogic {
                 completedEpisodeIds = completedEpisodeIds,
                 briefingDismissedDate = briefingDismissedDate,
                 briefingDismissedForever = briefingDismissedForever,
-                heroList = heroList,
             )
 
         return HomeUiAssemblyResult(

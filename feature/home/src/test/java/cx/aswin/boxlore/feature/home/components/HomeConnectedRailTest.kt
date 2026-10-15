@@ -74,9 +74,14 @@ class HomeConnectedRailTest {
         val header = bounds("home_selected_show_header")
         val episodes = bounds("home_filtered_episodes")
         assertTrue(surface.contains(selectors.topLeft) && surface.contains(episodes.bottomRight))
-        assertEquals(selectors.bottom, header.top, 1f)
+        val divider = bounds("home_your_shows_divider")
+        assertEquals(selectors.bottom, divider.top, 1f)
+        assertEquals(divider.bottom + HomeMixLayout.TopPadding.value, header.top, 1f)
         composeRule.onNodeWithTag("home_selected_show_info").performClick()
         assertEquals(1, infoClicks)
+        composeRule.onNodeWithText("Latest episodes").assertDoesNotExist()
+        composeRule.onNodeWithTag("home_selected_show_title").performClick()
+        assertEquals("The show name also opens the show", 2, infoClicks)
         composeRule.onNodeWithTag("home_mix_play_episode", useUnmergedTree = true).performTouchInput { click() }
         assertEquals(1, plays)
         assertEquals(0, episodeClicks)
@@ -109,7 +114,7 @@ class HomeConnectedRailTest {
                 assertEquals(cover.width, cover.height, 1f)
                 assertEquals("Cover size matches Mix at count=$count RTL=$rtl", mix.width, cover.width, 1f)
                 assertEquals(mix.center.y, cover.center.y, 1f)
-                assertTrue(mix.width <= 54f)
+                assertTrue(mix.width <= YourShowsLayout.CoverSize.value)
             }
         }
     }
@@ -213,7 +218,7 @@ class HomeConnectedRailTest {
                 assertTrue(title.bottom <= time.top)
                 assertTrue(title.left >= card.left && title.right <= card.right)
                 assertTrue(bar.width > 10 && bar.center.y >= time.top && bar.center.y <= time.bottom)
-                assertTrue(textLayout("home_mix_title_ep-0").lineCount <= 3)
+                assertEquals("Long mix titles stop at two lines", 2, textLayout("home_mix_title_ep-0").lineCount)
                 assertEquals(1, textLayout("home_mix_time_label_ep-0").lineCount)
                 assertTrue("Time clipped at scale $scale RTL=$rtl: ${textLayout("home_mix_time_label_ep-0")}", !textLayout("home_mix_time_label_ep-0").hasVisualOverflow && !textLayout("home_mix_time_label_ep-0").isLineEllipsized(0))
             }
@@ -289,8 +294,11 @@ class HomeConnectedRailTest {
         assertEquals(mixArt.width, mixArt.height, 1f)
         assertEquals(48f, bounds("home_mix_play_ep-0").width, 1f)
         composeRule.onNodeWithTag("home_show_selector_show-0").performClick()
-        assertEquals(72f, bounds("home_mix_artwork_episode").width, 1f)
-        assertEquals(48f, bounds("home_mix_play_episode").width, 1f)
+        assertEquals(48f, bounds("home_mix_artwork_episode").width, 1f)
+        // Rows draw a 40dp button; Material's minimum touch target keeps the hit area 48dp.
+        val rowPlay = composeRule.onNodeWithTag("home_mix_play_episode", useUnmergedTree = true).fetchSemanticsNode().touchBoundsInRoot
+        assertEquals(48f, rowPlay.width, 1f)
+        assertEquals(48f, rowPlay.height, 1f)
     }
 
     private fun render() {

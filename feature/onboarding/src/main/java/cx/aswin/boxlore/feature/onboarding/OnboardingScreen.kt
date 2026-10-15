@@ -234,40 +234,49 @@ fun OnboardingScreen(
             OnboardingStep.AI_ONBOARDING -> {
                 AiOnboardingScreen(
                     uiState = uiState,
-                    onBack = {
-                        if (isOnboardingCompleted && uiState.aiCurrentTurn <= 1) {
-                            onBack()
-                        } else {
-                            viewModel.navigateBackInAiOnboarding()
-                        }
-                    },
-                    onOptionToggle = viewModel::toggleAiOption,
-                    onCustomInputChange = viewModel::updateAiCustomInput,
-                    onContinue = {
-                        if (uiState.aiOptions.isEmpty() || uiState.aiCurrentTurn >= 7) {
-                            viewModel.synthesizeAndBuildCurriculum()
-                        } else {
-                            viewModel.sendAiTurnInput()
-                        }
-                    },
-                    onRevealSuggestions = viewModel::navigateToSuggestions,
-                    onRetryCuration = viewModel::retryLastAction,
-                    onSwitchToManual = viewModel::switchToLegacyOnboarding,
-                    onBuildFeedNow = viewModel::synthesizeAndBuildCurriculum,
-                    onSearchInstead = viewModel::switchToSearchFromAi,
+                    callbacks = EchoCallbacks(
+                        onBack = {
+                            if (isOnboardingCompleted && uiState.aiCurrentTurn <= 1) {
+                                viewModel.cancelEchoRequests()
+                                onBack()
+                            } else {
+                                viewModel.navigateBackInAiOnboarding()
+                            }
+                        },
+                        onCancelRequest = viewModel::cancelEchoRequests,
+                        onOptionToggle = viewModel::toggleAiOption,
+                        onCustomInputChange = viewModel::updateAiCustomInput,
+                        onContinue = {
+                            if (GuidedOnboardingLogic.shouldBuildBeforeSending(uiState)) {
+                                viewModel.synthesizeAndBuildCurriculum()
+                            } else {
+                                viewModel.sendAiTurnInput()
+                            }
+                        },
+                        onRevealSuggestions = viewModel::navigateToSuggestions,
+                        onRetry = viewModel::retryLastAction,
+                        onPickTopics = viewModel::switchToLegacyOnboarding,
+                        onFindShows = viewModel::synthesizeAndBuildCurriculum,
+                        onChangeAnswers = viewModel::changeAiAnswers,
+                        onSearch = viewModel::switchToSearchFromAi,
+                        onDeckReaction = viewModel::reactToShow,
+                        onDeckBack = viewModel::stepBackInDeck,
+                    ),
+                    deckClips = viewModel.deckClips,
                 )
             }
             OnboardingStep.AI_SUGGESTIONS -> {
                 AiSuggestionsScreen(
                     uiState = uiState,
-                    onBack = viewModel::navigateBackFromSuggestions,
-                    onToggleSubscription = viewModel::togglePodcastSubscription,
-                    onToggleRowSubscriptions = viewModel::toggleAllPodcastsInRow,
-                    onRegionChange = viewModel::setRegion,
-                    onRetry = viewModel::retryLastAction,
-                    onFinish = {
-                        viewModel.finishAiOnboarding(onComplete)
-                    },
+                    callbacks = SuggestionsCallbacks(
+                        onBack = viewModel::navigateBackFromSuggestions,
+                        onToggle = viewModel::togglePodcastSubscription,
+                        onSetShowsSelected = viewModel::setShowsSelected,
+                        onRegionChange = viewModel::setRegion,
+                        onRetry = viewModel::retryLastAction,
+                        onFinish = { viewModel.finishAiOnboarding(onComplete) },
+                        onScrolled = viewModel::onPodcastScreenScrolled,
+                    ),
                 )
             }
         }

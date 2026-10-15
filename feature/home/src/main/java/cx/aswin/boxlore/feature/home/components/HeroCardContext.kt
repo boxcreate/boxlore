@@ -107,10 +107,13 @@ private fun episodeContextLabel(item: SmartHeroItem) = when {
         else -> item.label.lowercase(Locale.ROOT).replaceFirstChar { it.titlecase(Locale.ROOT) }
 }
 
+private val NewEpisodeLabels = setOf("FRESH DROP", "NEW EPISODE", "NEXT")
+
 @Composable
 private fun episodeDurationCaption(item: SmartHeroItem): String? = when {
     item.type == HeroType.RESUME -> stringResource(R.string.home_hero_time_left)
-    item.label == "FRESH DROP" -> stringResource(R.string.home_hero_listen)
+    // Every unplayed new episode reads "Listen" under its length, not only the freshest one.
+    item.label in NewEpisodeLabels -> stringResource(R.string.home_hero_listen)
     else -> null
 }
 

@@ -65,6 +65,22 @@ class HomeShimmerAnimationTest {
     }
 
     @Test
+    fun `a block outside any ShimmerScope still runs its own sweep`() {
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent {
+            view = LocalView.current
+            Box(
+                Modifier.size(120.dp, 40.dp).background(Color.White).testTag("shimmer")
+                    .m3Shimmer(Color.Black.copy(alpha = 0.05f), Color.Black.copy(alpha = 0.12f)),
+            )
+        }
+        composeRule.mainClock.advanceTimeByFrame()
+        val initial = centerPixel()
+        composeRule.mainClock.advanceTimeBy(400)
+        assertNotEquals("Without a shared clock the block must still animate", initial, centerPixel())
+    }
+
+    @Test
     fun `shared shimmer visibly moves while loading`() {
         composeRule.mainClock.autoAdvance = false
         composeRule.setContent {

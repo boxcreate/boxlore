@@ -19,6 +19,9 @@ internal data class ColorSchemeTransition(val from: ColorScheme, val to: ColorSc
     fun retarget(target: ColorScheme, fraction: Float): ColorSchemeTransition = ColorSchemeTransition(valueAt(fraction), target)
 }
 
+/** How long a palette change takes: the same 350ms as the page slide it accompanies, so colours land with the page. */
+const val ArtworkColorTransitionMillis = 350
+
 /** One clock for every role, retargeted from the visible palette rather than the original seed. */
 @Composable
 fun rememberAnimatedArtworkColors(target: ColorScheme, initialColors: ColorScheme = target, animationKey: Any? = null): ColorScheme {
@@ -32,7 +35,7 @@ fun rememberAnimatedArtworkColors(target: ColorScheme, initialColors: ColorSchem
             val next = transition.retarget(target, progress.value)
             progress.snapTo(0f)
             transition = next
-            progress.animateTo(1f, tween(750, easing = FastOutSlowInEasing))
+            progress.animateTo(1f, tween(ArtworkColorTransitionMillis, easing = FastOutSlowInEasing))
         }
     }
     return transition.valueAt(progress.value)

@@ -112,6 +112,26 @@ class BoxLoreApiContractTest {
     }
 
     @Test
+    fun `getPodcast decodes the Worker's dump fallback shape`() {
+        // Worker /podcast serves this when the Podcast Index API fails (X-Boxlore-Source: pidump):
+        // extra fields, a boolean `explicit`, null `language` and no funding/value/locked/medium.
+        enqueueFixture("fixtures/podcast_pidump.json")
+
+        val response = api.getPodcast(publicKey = APP_KEY, feedId = "920666").execute()
+
+        assertTrue(response.isSuccessful)
+        val feed = requireNotNull(response.body()?.feed)
+        assertEquals(920666L, feed.id)
+        assertEquals("The Daily", feed.title)
+        assertEquals("serial", feed.type)
+        assertEquals("https://feeds.example.com/thedaily.xml", feed.url)
+        assertEquals("https://example.com/daily.jpg", feed.artwork)
+        assertEquals(listOf("News", "Daily News"), feed.categories?.values?.toList())
+        assertEquals(null, feed.funding)
+        assertEquals(null, feed.locked)
+    }
+
+    @Test
     fun `getEpisode decodes nested episode fields`() {
         enqueueFixture("fixtures/episode.json")
 

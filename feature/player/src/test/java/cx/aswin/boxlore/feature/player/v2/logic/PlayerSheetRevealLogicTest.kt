@@ -7,54 +7,67 @@ import org.junit.jupiter.api.Test
 class PlayerSheetRevealLogicTest {
     @Test
     fun endpointsShowOnlyTheMatchingPlayer() {
-        val collapsed = calculatePlayerSheetReveal(0f)
-        val expanded = calculatePlayerSheetReveal(1f)
-
-        assertEquals(1f, collapsed.miniAlpha)
-        assertEquals(0f, collapsed.fullAlpha)
-        assertEquals(0.975f, collapsed.fullScale)
-        assertEquals(1f, collapsed.entranceRemaining)
-        assertEquals(0f, expanded.miniAlpha)
-        assertEquals(1f, expanded.fullAlpha)
-        assertEquals(1f, expanded.fullScale)
-        assertEquals(0f, expanded.entranceRemaining)
-    }
-
-    @Test
-    fun revealStartsAfterCookieClippingAndFinishesBeforeTheSheetSettles() {
-        assertEquals(calculatePlayerSheetReveal(0f), calculatePlayerSheetReveal(0.06f))
-        assertEquals(calculatePlayerSheetReveal(1f), calculatePlayerSheetReveal(0.44f))
-        assertEquals(0.5f, calculatePlayerSheetReveal(0.25f).fullAlpha, 0.0001f)
-    }
-
-    @Test
-    fun handoffHasNoEmptyFrameAndMovesContinuouslyInBothDirections() {
-        val forward = (0..1000).map { calculatePlayerSheetReveal(it / 1000f) }
-        val backward = (1000 downTo 0).map { calculatePlayerSheetReveal(it / 1000f) }
-
-        assertEquals(forward.reversed(), backward)
-        forward.forEach { reveal ->
-            assertEquals(1f, reveal.miniAlpha + reveal.fullAlpha, 0.0001f)
-            assertTrue(reveal.miniAlpha in 0f..1f)
-            assertTrue(reveal.fullAlpha in 0f..1f)
-            assertTrue(reveal.fullScale in 0.975f..1f)
-        }
-        forward.zipWithNext().forEach { (before, after) ->
-            assertTrue(after.fullAlpha >= before.fullAlpha)
-            assertTrue(after.fullAlpha - before.fullAlpha < 0.004f)
-            assertTrue(after.fullScale >= before.fullScale)
-            assertTrue(after.entranceRemaining <= before.entranceRemaining)
+        for (compact in listOf(0f, 1f)) {
+            val collapsed = calculatePlayerSheetReveal(0f, compact)
+            val expanded = calculatePlayerSheetReveal(1f, compact)
+            assertEquals(1f, collapsed.miniAlpha)
+            assertEquals(0f, collapsed.fullAlpha)
+            assertEquals(0.95f, collapsed.fullScale)
+            assertEquals(1f, collapsed.entranceRemaining)
+            assertEquals(0f, expanded.miniAlpha)
+            assertEquals(1f, expanded.fullAlpha)
+            assertEquals(1f, expanded.fullScale)
+            assertEquals(0f, expanded.entranceRemaining)
         }
     }
 
     @Test
-    fun revealEasesIntoAndOutOfItsHandoffRatherThanJumping() {
-        val startStep = calculatePlayerSheetReveal(0.061f).fullAlpha
-        val middleStep = calculatePlayerSheetReveal(0.251f).fullAlpha - calculatePlayerSheetReveal(0.25f).fullAlpha
-        val endStep = 1f - calculatePlayerSheetReveal(0.439f).fullAlpha
+    fun miniContentLeavesBeforeTheFullPlayerArrivesSoTheyNeverDoubleExpose() {
+        for (compact in listOf(0f, 0.5f, 1f)) {
+            assertEquals(0f, calculatePlayerSheetReveal(MiniContentExitEnd, compact).miniAlpha)
+            for (step in 0..1000) {
+                val reveal = calculatePlayerSheetReveal(step / 1000f, compact)
+                assertTrue(minOf(reveal.miniAlpha, reveal.fullAlpha) < 0.05f, "both visible at ${step / 1000f}")
+            }
+        }
+    }
 
-        assertTrue(startStep > 0f && startStep < middleStep / 100f)
-        assertTrue(endStep > 0f && endStep < middleStep / 100f)
+    @Test
+    fun fromTheCompactCookieTheFullPlayerWaitsForALargerContainer() {
+        assertEquals(0f, calculatePlayerSheetReveal(0.16f, 0f).fullAlpha)
+        assertEquals(1f, calculatePlayerSheetReveal(0.56f, 0f).fullAlpha)
+        assertEquals(0f, calculatePlayerSheetReveal(0.32f, 1f).fullAlpha)
+        assertEquals(1f, calculatePlayerSheetReveal(0.78f, 1f).fullAlpha)
+        assertTrue(calculatePlayerSheetReveal(0.4f, 1f).fullAlpha < calculatePlayerSheetReveal(0.4f, 0f).fullAlpha)
+    }
+
+    @Test
+    fun motionIsContinuousMonotonicAndReversible() {
+        for (compact in listOf(0f, 1f)) {
+            val forward = (0..1000).map { calculatePlayerSheetReveal(it / 1000f, compact) }
+            val backward = (1000 downTo 0).map { calculatePlayerSheetReveal(it / 1000f, compact) }
+            assertEquals(forward.reversed(), backward)
+            forward.zipWithNext().forEach { (before, after) ->
+                assertTrue(after.fullAlpha >= before.fullAlpha && after.fullAlpha - before.fullAlpha < 0.006f)
+                assertTrue(after.miniAlpha <= before.miniAlpha && before.miniAlpha - after.miniAlpha < 0.009f)
+                assertTrue(after.fullScale >= before.fullScale)
+                assertTrue(after.entranceRemaining <= before.entranceRemaining)
+            }
+        }
+    }
+
+    @Test
+    fun cornersHoldThroughTheFirstHalfThenSquareOffAndWidthLeadsHeight() {
+        assertEquals(1f, playerCornerHold(0f))
+        assertEquals(1f, playerCornerHold(0.5f))
+        assertEquals(0.5f, playerCornerHold(0.75f), 0.0001f)
+        assertEquals(0f, playerCornerHold(1f))
+        for (step in 1 until 100) {
+            val expansion = step / 100f
+            assertTrue(playerSheetWiden(expansion) > expansion)
+        }
+        assertEquals(0f, playerSheetWiden(0f))
+        assertEquals(1f, playerSheetWiden(1f))
     }
 
     @Test
@@ -65,5 +78,8 @@ class PlayerSheetRevealLogicTest {
         assertEquals(collapsed, calculatePlayerSheetReveal(Float.POSITIVE_INFINITY))
         assertEquals(collapsed, calculatePlayerSheetReveal(Float.NEGATIVE_INFINITY))
         assertEquals(calculatePlayerSheetReveal(1f), calculatePlayerSheetReveal(2f))
+        assertEquals(calculatePlayerSheetReveal(0.3f, 0f), calculatePlayerSheetReveal(0.3f, Float.NaN))
+        assertEquals(1f, playerCornerHold(Float.NaN))
+        assertEquals(0f, playerSheetWiden(Float.NaN))
     }
 }

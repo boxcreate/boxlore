@@ -144,10 +144,10 @@ class ArtworkNavigationHostThemeTest {
         assertEquals(parent.primary, palettes.colorsFor(parentId)?.primary)
     }
 
-    @Test fun `ordinary page loaders inherit source colors without recoloring page content or navbar`() {
+    @Test fun `ordinary pages, their loaders included, use the saved colors from the first frame`() {
         render()
         navigate("settings")
-        assertEquals(parent.primary, firstSettingsPrimary)
+        assertEquals(base.primary, firstSettingsPrimary)
         assertSame(base, settingsColors)
         assertSame(base, palettes.colorsFor(navController.currentBackStackEntry?.id))
         composeRule.mainClock.advanceTimeBy(1600)
@@ -157,7 +157,7 @@ class ArtworkNavigationHostThemeTest {
         assertEquals(base.primary, palettes.colorsFor(navController.currentBackStackEntry?.id)?.primary)
     }
 
-    @Test fun `back to home restores one saved palette while only the loader inherits the departing accent`() {
+    @Test fun `back to home restores the saved palette at once, with no departing accent left on its loaders`() {
         render(startDestination = "home")
         navigate("episode/parent")
         composeRule.mainClock.advanceTimeBy(1000)
@@ -171,7 +171,8 @@ class ArtworkNavigationHostThemeTest {
         composeRule.waitForIdle()
         assertSame(base, firstHomeColors)
         assertSame(base, palettes.colorsFor(navController.currentBackStackEntry?.id))
-        assertEquals(parent.primary, firstHomeLoaderPrimary)
+        assertEquals(base.primary, firstHomeLoaderPrimary)
+        // The departing palette is still known for detail-to-detail handoffs; regular pages just ignore it.
         assertEquals(parent.background, palettes.transitionColors?.background)
     }
 

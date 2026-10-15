@@ -5,7 +5,10 @@ import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeSelectedPodcastLogic
+import cx.aswin.boxlore.feature.home.logic.HomeYourShowsSignals
+import cx.aswin.boxlore.feature.home.logic.settledCatalogChanges
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -145,5 +148,18 @@ internal fun HomeViewModel.observeDirectFeedRefresh() {
                 _rssRefreshVersion.value += 1L
             }
         }
+    }
+}
+
+/**
+ * Re-ranks Your shows and rebuilds Daily Mix once synced data settles: new episodes, resolved
+ * serial episodes, or subscriptions arriving from an import or cloud sync. Playback progress never
+ * changes the catalog signature, so it never triggers a pass.
+ */
+internal fun HomeViewModel.observeYourShowsCatalog() {
+    viewModelScope.launch(Dispatchers.Default) {
+        combine(subscriptionRepository.subscribedPodcasts, _resolvedSerialEpisodes, HomeYourShowsSignals::catalog)
+            .settledCatalogChanges()
+            .collect { showsOrderRefreshGeneration.update { it + 1L } }
     }
 }

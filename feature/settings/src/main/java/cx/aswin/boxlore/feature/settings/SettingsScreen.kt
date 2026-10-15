@@ -653,6 +653,14 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
         AnalyticsHelper.trackSettingsInteraction("artwork_colors_toggled", enabled.toString())
         onSetArtworkColorsEnabled(enabled)
     },
+    onSetNavigationBlurLevel = {
+        AnalyticsHelper.trackSettingsInteraction("navigation_blur_changed", it)
+        onSetNavigationBlurLevel(it)
+    },
+    onSetHeroCardStyle = {
+        AnalyticsHelper.trackSettingsInteraction("hero_card_style_changed", it)
+        onSetHeroCardStyle(it)
+    },
     onApplyTheme = { selection, custom ->
         AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)
         onApplyTheme(selection, custom)

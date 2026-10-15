@@ -161,7 +161,7 @@ internal object AutoCollageLayouts {
                 folderId.contains("genres") -> "GENRES"
                 folderId.contains("discover") -> "DISCOVER"
                 folderId.contains("library") -> "LIBRARY"
-                else -> "BOXLORE"
+                else -> "boxlore"
             }
         val textPaint =
             Paint().apply {

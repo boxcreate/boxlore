@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.feature.briefing
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,7 +26,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,39 +57,64 @@ internal data class BriefingStoryCardState(
     val accentColor: Color,
 )
 
+/** Below this window height a pager card scrolls as one piece instead of pinning its actions. */
+internal const val STORY_CARD_PINNED_MIN_WINDOW_DP = 480
+
+/**
+ * Whether a pager card scrolls as one piece. Only short windows (a phone on its side, a split
+ * screen) do, because pinned actions there would leave no room for the heading and story.
+ */
+internal fun storyCardScrollsAsOne(windowHeightDp: Int): Boolean = windowHeightDp < STORY_CARD_PINNED_MIN_WINDOW_DP
+
+/**
+ * One story. In the pager ([fillHeight]) the card takes the pager's height and pins related
+ * episodes and Play to the bottom; a story taller than that scrolls inside its text area. In a
+ * short window ([scrollAsOne]) the whole card scrolls instead, so the heading, story and actions
+ * all stay reachable. Without [fillHeight] the card wraps its full content so the pager can
+ * measure it.
+ */
 @Composable
 internal fun BriefingStoryCard(
     state: BriefingStoryCardState,
     actions: BriefingStoriesPagerActions,
+    fillHeight: Boolean = true,
+    scrollAsOne: Boolean = false,
 ) {
+    val height = if (fillHeight) Modifier.fillMaxHeight() else Modifier
+    val scrollCard = fillHeight && scrollAsOne
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
+        modifier = Modifier.fillMaxWidth().then(height),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxWidth().then(height)
+                .then(if (scrollCard) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(18.dp),
-            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                StoryCardHeader(state)
-                Spacer(modifier = Modifier.height(12.dp))
-                StoryHeadline(state)
-                Spacer(modifier = Modifier.height(8.dp))
-                StoryParagraph(
-                    paragraph = state.paragraph,
-                    modifier = Modifier.weight(1f),
-                )
+            if (fillHeight && !scrollCard) {
+                Column(Modifier.weight(1f)) {
+                    StoryCardTop(state)
+                    StoryParagraph(paragraph = state.paragraph, scrollable = true, modifier = Modifier.weight(1f, fill = false))
+                }
+            } else {
+                StoryCardTop(state)
+                StoryParagraph(paragraph = state.paragraph, scrollable = false)
             }
+            Spacer(modifier = Modifier.height(16.dp))
             RelatedEpisodesSection(state, actions.onEpisodeClick)
             Spacer(modifier = Modifier.height(12.dp))
             StoryPlayButton(state, actions)
         }
     }
+}
+
+@Composable
+private fun StoryCardTop(state: BriefingStoryCardState) {
+    StoryCardHeader(state)
+    Spacer(modifier = Modifier.height(12.dp))
+    StoryHeadline(state)
+    Spacer(modifier = Modifier.height(10.dp))
 }
 
 @Composable
@@ -128,27 +158,30 @@ private fun StoryHeadline(state: BriefingStoryCardState) {
 }
 
 @Composable
-private fun StoryParagraph(
-    paragraph: String,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(
-                text = paragraph.trim(),
-                style = MaterialTheme.typography.bodyMedium,
-                lineHeight = 22.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+private fun StoryParagraph(paragraph: String, scrollable: Boolean, modifier: Modifier = Modifier) {
+    val scrollState = rememberScrollState()
+    val behaviour = if (scrollable) Modifier.fadeWhileMoreBelow(scrollState).verticalScroll(scrollState) else Modifier
+    Text(
+        text = paragraph.trim(),
+        style = MaterialTheme.typography.bodyLarge,
+        lineHeight = 24.sp,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier.then(behaviour),
+    )
+}
+
+/** Fades the last line while more of the story is below, so a long story reads as scrollable. */
+private fun Modifier.fadeWhileMoreBelow(scrollState: ScrollState): Modifier =
+    graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen).drawWithContent {
+        drawContent()
+        if (scrollState.canScrollForward) {
+            val fade = 28.dp.toPx()
+            drawRect(
+                brush = Brush.verticalGradient(listOf(Color.Transparent, Color.Black), startY = size.height - fade, endY = size.height),
+                blendMode = BlendMode.DstOut,
             )
         }
     }
-}
 
 @Composable
 private fun StoryPlayButton(

@@ -35,6 +35,10 @@ class SwipeableCardState(
     private var disposed = false
     internal var phase by mutableStateOf(LoreSwipePhase.Idle)
         private set
+
+    /** Where the card was when it was released (0 for a button action), so cues can fade from there. */
+    internal var releaseOffsetX by mutableFloatStateOf(0f)
+        private set
     val offset: State<Offset> = derivedStateOf {
         Offset(if (phase == LoreSwipePhase.Dragging) dragX else animatedX.value, 0f)
     }
@@ -57,6 +61,9 @@ class SwipeableCardState(
     fun swipe(direction: SwipeDirection) {
         if (disposed || phase == LoreSwipePhase.Exiting) return
         val from = offset.value.x
+        // A button action starts the same exit as a swipe, so the page colour blends along with it.
+        if (phase == LoreSwipePhase.Idle) onDragStarted(this)
+        releaseOffsetX = from
         motion?.cancel()
         motion = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             animatedX.snapTo(from)

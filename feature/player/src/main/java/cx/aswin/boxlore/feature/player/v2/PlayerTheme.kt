@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.player.v2
 
-import android.graphics.drawable.BitmapDrawable
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -14,99 +13,70 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
-import coil.imageLoader
-import coil.request.CachePolicy
-import coil.request.ImageRequest
-import coil.request.SuccessResult
-import coil.size.Size
+import cx.aswin.boxlore.core.designsystem.theme.ArtworkMiniPlayerColors
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.designsystem.theme.LocalSurfaceStyle
-import cx.aswin.boxlore.core.designsystem.theme.generateBrandColorScheme
-import cx.aswin.boxlore.feature.player.extractSeedColor
+import cx.aswin.boxlore.core.designsystem.theme.artworkMiniPlayerColors
+import cx.aswin.boxlore.core.designsystem.theme.artworkPlayerColorScheme
+import cx.aswin.boxlore.core.designsystem.theme.artworkSurfaceStyle
+import cx.aswin.boxlore.core.designsystem.theme.cachedArtworkPalette
+import cx.aswin.boxlore.core.designsystem.theme.loadArtworkPalette
 
 /**
- * Extracts an artwork-seeded Material color scheme for the player.
- * Falls back to the ambient [MaterialTheme.colorScheme] until extraction completes.
+ * The player uses a Material 3 tonal scheme seeded from the cover's accent ([artworkPlayerColorScheme],
+ * with a lifted dark surface), read by the
+ * same shared extractor as podcast and episode pages. Pages wear the cover's two colours as a tinted
+ * ground; the player is denser, so it keeps Material's matched contrast pairs instead, and every
+ * control reads the same on any cover. A cover already read colours the player from the first frame,
+ * and switching light/dark only rebuilds the scheme. Falls back to the ambient
+ * [MaterialTheme.colorScheme] until the palette is ready or when the art has no meaningful colour.
  *
- * Uses Coil [coil.ImageLoader.execute] (not an undisplayed AsyncImagePainter) so palette
- * extraction still runs after process death when the memory cache is cold. Disk cache
- * is enabled so a kill-from-recents reopen can reseed from disk without waiting on
- * network — matching how Explore extracts card accents.
+ * The art loads through Coil with its disk cache, so after process death the player can recolour
+ * without waiting on the network.
  */
 @Composable
-fun rememberPlayerColorScheme(imageUrl: String?): ColorScheme {
+fun rememberPlayerColorScheme(imageUrl: String?): ColorScheme = rememberPlayerColors(imageUrl).scheme
+
+/** The full player's scheme and the mini player's colours, from one read of the cover. */
+data class PlayerColors(val scheme: ColorScheme, val mini: ArtworkMiniPlayerColors)
+
+/**
+ * [rememberPlayerColorScheme] plus the mini player's colours ([artworkMiniPlayerColors]): the bar
+ * follows the cover's main colour, since it sits right next to the cover, and Play the accent.
+ */
+@Composable
+fun rememberPlayerColors(imageUrl: String?): PlayerColors {
     val context = LocalContext.current
-    val surfaceStyle = LocalSurfaceStyle.current
+    val surfaceStyle = artworkSurfaceStyle(LocalSurfaceStyle.current)
     val effectiveDarkTheme = LocalEffectiveDarkTheme.current
     val ambientScheme = MaterialTheme.colorScheme
-
-    var extracted by remember(imageUrl, effectiveDarkTheme, surfaceStyle) {
-        mutableStateOf<ColorScheme?>(null)
+    val url = imageUrl?.trim().orEmpty()
+    var palette by remember(url) { mutableStateOf(url.takeIf(String::isNotEmpty)?.let(::cachedArtworkPalette)) }
+    LaunchedEffect(url) {
+        if (url.isNotEmpty() && palette == null) palette = runCatching { loadArtworkPalette(context, url) }.getOrNull()
     }
-
-    LaunchedEffect(imageUrl, effectiveDarkTheme, surfaceStyle) {
-        if (imageUrl.isNullOrBlank()) {
-            extracted = null
-            return@LaunchedEffect
-        }
-        extracted =
-            runCatching {
-                val request =
-                    ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .size(Size(100, 100))
-                        .allowHardware(false) // Required for Palette pixel reads
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .build()
-                val result =
-                    context.imageLoader.execute(request) as? SuccessResult
-                        ?: return@runCatching null
-                val bitmap =
-                    (result.drawable as? BitmapDrawable)?.bitmap
-                        ?: return@runCatching null
-                val seedColor = extractSeedColor(bitmap)
-                generateBrandColorScheme(seedColor, effectiveDarkTheme, surfaceStyle)
-            }.getOrNull()
+    return remember(palette, effectiveDarkTheme, surfaceStyle, ambientScheme) {
+        val scheme = palette?.let { artworkPlayerColorScheme(it, effectiveDarkTheme, surfaceStyle) } ?: ambientScheme
+        PlayerColors(scheme, palette?.let { artworkMiniPlayerColors(it, effectiveDarkTheme) } ?: ArtworkMiniPlayerColors.fromScheme(scheme))
     }
-
-    return extracted ?: ambientScheme
 }
 
 /**
- * Immersive full-player background: a vertical artwork-tinted gradient with a soft
- * radial glow behind the hero area. Respects AMOLED/surface styles because the
- * scheme itself is produced by [generateBrandColorScheme].
+ * Full-player background: the scheme's flat surface, so the controls sit on one known tone and keep
+ * Material's contrast pairs, with only a faint primary glow behind the artwork.
  */
 fun Modifier.playerCanvas(scheme: ColorScheme): Modifier = drawBehind {
-    val top = scheme.primaryContainer.copy(alpha = 0.65f).compositeOver(scheme.surface)
-    val mid = scheme.primaryContainer.copy(alpha = 0.35f).compositeOver(scheme.surface)
-    val bottom = scheme.primaryContainer.copy(alpha = 0.12f).compositeOver(scheme.surface)
-
-    drawRect(
-        brush = Brush.verticalGradient(
-            0f to top,
-            0.55f to mid,
-            1f to bottom
-        )
-    )
-
-    // Soft glow behind the hero (upper third of the canvas)
+    drawRect(scheme.surface)
+    val glowCentre = Offset(size.width / 2f, size.height * 0.28f)
+    val glowRadius = size.width * 0.85f
     drawCircle(
         brush = Brush.radialGradient(
-            colors = listOf(
-                scheme.primary.copy(alpha = 0.20f),
-                Color.Transparent
-            ),
-            center = Offset(size.width / 2f, size.height * 0.28f),
-            radius = size.width * 0.85f
+            colors = listOf(scheme.primary.copy(alpha = 0.10f), Color.Transparent),
+            center = glowCentre,
+            radius = glowRadius,
         ),
-        center = Offset(size.width / 2f, size.height * 0.28f),
-        radius = size.width * 0.85f
+        center = glowCentre,
+        radius = glowRadius,
     )
 }
-
-/** Solid artwork-tinted surface shared by both mini-player presentations. */
-fun miniSheetColor(scheme: ColorScheme): Color = scheme.primaryContainer

@@ -87,6 +87,9 @@ class PodcastInfoViewModel(
             ) ?: MutableStateFlow(emptyList())
 
     private var currentPodcastId: String = ""
+
+    /** Id passed to the latest [loadPodcast] call, for [retryLoad]. */
+    private var requestedPodcastId: String? = null
     private val _currentPodcastIdFlow = MutableStateFlow("")
     private var currentOffset: Int = 0
     private var searchJob: Job? = null
@@ -555,11 +558,20 @@ class PodcastInfoViewModel(
         }
     }
 
+    /** Reloads after the error state (no local row and show details failed). */
+    fun retryLoad() {
+        val podcastId = requestedPodcastId ?: return
+        if (_uiState.value !is PodcastInfoUiState.Error) return
+        currentPodcastId = ""
+        loadPodcast(podcastId)
+    }
+
     fun loadPodcast(podcastId: String) {
         if (currentPodcastId == podcastId && (_uiState.value is PodcastInfoUiState.Success || _uiState.value is PodcastInfoUiState.Error)) {
             return
         }
 
+        requestedPodcastId = podcastId
         currentPodcastId = podcastId
         _currentPodcastIdFlow.value = podcastId
         currentOffset = 0
@@ -745,6 +757,31 @@ class PodcastInfoViewModel(
                             effectivePodcastId,
                         )
                         _uiState.value = PodcastInfoUiState.Error
+                    } else {
+                        // Details failed but the local row is showing: keep it and apply the
+                        // episode page that loaded alongside, instead of spinning forever.
+                        val latest = _uiState.value as? PodcastInfoUiState.Success
+                        if (latest != null && latest.podcast.id == currentPodcast.id) {
+                            val recovered =
+                                cx.aswin.boxlore.feature.info.logic.PodcastInfoLoadRecovery.withoutPodcastDetails(
+                                    state = latest,
+                                    pageEpisodes = page.episodes,
+                                    pageHasMore = page.hasMore,
+                                    sort = initialSort,
+                                )
+                            if (page.episodes.isNotEmpty()) currentOffset = page.sourceCount
+                            _uiState.value =
+                                if (page.episodes.isNotEmpty()) {
+                                    supplementSupport.remountWithSupplements(
+                                        state = recovered,
+                                        piEpisodes = page.episodes,
+                                        hasMoreEpisodes = page.hasMore,
+                                        isLoadingMore = false,
+                                    )
+                                } else {
+                                    recovered
+                                }
+                        }
                     }
                 }
             } catch (e: CancellationException) {

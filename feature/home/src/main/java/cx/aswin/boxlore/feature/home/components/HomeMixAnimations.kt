@@ -9,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 
@@ -28,8 +27,8 @@ internal fun AnimatedHomeMixTitle(mode: HomeMixMode) {
                     HomeMixMode.OFFLINE -> R.string.home_mix_offline_title
                 },
             ),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = GoogleSansWeight.bold,
+            style = YourShowsText.title(),
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
@@ -48,7 +47,7 @@ internal fun AnimatedHomeMixSubtitle(subtitle: String) {
     ) { activeSubtitle ->
         Text(
             text = activeSubtitle,
-            style = MaterialTheme.typography.bodySmall,
+            style = YourShowsText.subtitle(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

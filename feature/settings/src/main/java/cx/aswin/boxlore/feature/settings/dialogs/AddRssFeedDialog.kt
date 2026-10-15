@@ -173,7 +173,7 @@ internal fun RssMatchConfirmationDialog(
                 )
                 Text(
                     text =
-                    "Use the RSS source to keep one library entry. Boxlore will carry " +
+                    "Use the RSS source to keep one library entry. boxlore will carry " +
                         "over matched progress, likes, completed episodes, downloads, and queue items.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

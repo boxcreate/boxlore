@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,7 +20,13 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.home.R
 
 @Composable
-internal fun SelectedShowTitle(title: String, isRss: Boolean, modifier: Modifier = Modifier, maxLines: Int = 1) {
+internal fun SelectedShowTitle(
+    title: String,
+    isRss: Boolean,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 1,
+    style: TextStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = GoogleSansWeight.bold, letterSpacing = (-0.4).sp, fontSize = 17.sp),
+) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -27,11 +34,7 @@ internal fun SelectedShowTitle(title: String, isRss: Boolean, modifier: Modifier
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = GoogleSansWeight.bold,
-                letterSpacing = (-0.4).sp,
-                fontSize = 17.sp,
-            ),
+            style = style,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
@@ -42,7 +45,7 @@ internal fun SelectedShowTitle(title: String, isRss: Boolean, modifier: Modifier
                 imageVector = Icons.Rounded.RssFeed,
                 contentDescription = stringResource(R.string.home_rss_feed_source),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(16.dp),
             )
         }
     }

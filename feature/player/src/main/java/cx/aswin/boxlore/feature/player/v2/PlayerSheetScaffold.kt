@@ -168,7 +168,8 @@ fun PlayerSheetScaffold(
                 podcastImageUrl = podcast?.imageUrl,
             )
         }
-    val colorScheme = rememberPlayerColorScheme(artworkUrl)
+    val playerColors = rememberPlayerColors(artworkUrl)
+    val colorScheme = playerColors.scheme
 
     // Thresholds/specs factory is deprecated in favor of AnchoredDraggableDefaults.flingBehavior;
     // keep it here so mini-player settle velocity/feel stays identical.
@@ -215,6 +216,7 @@ fun PlayerSheetScaffold(
             episode = episode,
             podcast = podcast,
             colorScheme = colorScheme,
+            miniColors = playerColors.mini,
             isFullscreenVideo = isFullscreenVideo,
             hasSeenSwipeDismissTip = hasSeenSwipeDismissTip,
             hasSeenSwipeMinimizeTip = hasSeenSwipeMinimizeTip,
@@ -283,6 +285,7 @@ private data class PlayerSheetContentState(
     val episode: cx.aswin.boxlore.core.model.Episode,
     val podcast: cx.aswin.boxlore.core.model.Podcast?,
     val colorScheme: ColorScheme,
+    val miniColors: cx.aswin.boxlore.core.designsystem.theme.ArtworkMiniPlayerColors,
     val isFullscreenVideo: Boolean,
     val hasSeenSwipeDismissTip: Boolean,
     val hasSeenSwipeMinimizeTip: Boolean,
@@ -337,6 +340,7 @@ private fun rememberPlayerSheetGeometry(
                 collapsedTopCornerRadius = navigationChromeMetrics(layout.navigationStyle).miniPlayerTopCornerRadius,
                 collapsedBottomCornerRadius = navigationChromeMetrics(layout.navigationStyle).miniPlayerBottomCornerRadius,
                 fullEntranceOffsetPx = fullEntranceOffsetPx,
+                compactness = if (layout.navigationStyle == NavigationStyle.Floating) layout.compactProgress?.value ?: 0f else 0f,
             ),
         )
     return PlayerSheetGeometry(
@@ -439,7 +443,9 @@ private fun PlayerSheetSurface(
                         shadowElevation = geometry.sheetElevation.toPx() * (1f - bounds.cookieFraction)
                         clip = true
                     }
-                    .background(color = miniSheetColor(content.colorScheme).copy(alpha = 1f - bounds.cookieFraction))
+                    // The collapsed mini player paints its own split surface (with a see-through gap), so this
+                    // backing stays clear at rest and fills in the moment the sheet starts opening.
+                    .background(color = content.miniColors.bar.copy(alpha = (1f - bounds.cookieFraction) * miniPlayerBackingFill(adaptedGeometry.expansionFraction)))
                     .anchoredDraggable(
                         state = sheetState,
                         interactionSource = resources.sheetInteractionSource,
@@ -557,7 +563,7 @@ private fun MiniPlayerLayer(
             colors =
             MiniPlayerColors(
                 colorScheme = content.colorScheme,
-                backgroundColor = miniSheetColor(content.colorScheme),
+                mini = content.miniColors,
             ),
             actions = miniPlayerActions(content, resources),
             morph = MiniPlayerMorph(
@@ -930,3 +936,7 @@ private fun resolvePlayerSheetSettleTarget(
     val midpoint = (collapsed + expanded) * 0.5f
     return if (offset >= midpoint) PlayerSheetValue.Collapsed else PlayerSheetValue.Expanded
 }
+
+/** The sheet's backing is clear behind the resting mini player and fully filled within 2% of opening. */
+internal fun miniPlayerBackingFill(expansionFraction: Float): Float =
+    if (expansionFraction.isFinite()) (expansionFraction / 0.02f).coerceIn(0f, 1f) else 0f
