@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -49,11 +50,12 @@ import cx.aswin.boxlore.feature.home.components.LocalHeroScrollOffset
 import cx.aswin.boxlore.feature.home.components.LocalHeroTopInset
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.home.components.LocalMarqueeTopTone
-import cx.aswin.boxlore.feature.home.components.MarqueeDock
+import cx.aswin.boxlore.feature.home.components.MarqueeDetentConnection
 import cx.aswin.boxlore.feature.home.components.MarqueeSheetOverlap
 import cx.aswin.boxlore.feature.home.components.MarqueeTopTone
 import cx.aswin.boxlore.feature.home.components.TopControlBar
-import cx.aswin.boxlore.feature.home.components.marqueeSheetDocked
+import cx.aswin.boxlore.feature.home.components.marqueeBarOverArtwork
+import cx.aswin.boxlore.feature.home.components.marqueeDetent
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -581,6 +583,9 @@ private fun HomeTopBar(
 /** The expanded bar below the status bar: 16dp above and below its 33dp shortcuts. */
 private val HomeTopBarEstimate = 65.dp
 
+/** The bar fills over this distance as the body's edge passes under it. */
+private val MarqueeBarEdge = 24.dp
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -624,28 +629,28 @@ fun HomeScreen(
             val topInset = if (topBarHeight > 0) with(LocalDensity.current) { topBarHeight.toDp() } else estimate
             val topTone = remember { MarqueeTopTone() }
             val overlapPx = with(LocalDensity.current) { MarqueeSheetOverlap.toPx() }
-            // The hero keeps its cover still while it scrolls away, and the body docks under the bar.
+            val edgePx = with(LocalDensity.current) { MarqueeBarEdge.toPx() }
+            // The hero keeps its cover still while it scrolls away.
             val heroScroll: () -> Int = remember(gridState) {
                 { if (gridState.firstVisibleItemIndex == 0) gridState.firstVisibleItemScrollOffset else Int.MAX_VALUE }
             }
-            val docked by remember(gridState, overlapPx) {
-                derivedStateOf {
-                    topTone.backdrop != null && marqueeSheetDocked(
-                        gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "hero" }?.let { it.offset.y + it.size.height },
-                        overlapPx,
-                        topBarHeight,
-                    )
-                }
+            val heroItem = { gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "hero" } }
+            // The page stops where the body's edge meets the bar; the next swipe carries it under.
+            val detent = remember(gridState, overlapPx) {
+                MarqueeDetentConnection(
+                    detent = { heroItem()?.let { marqueeDetent(it.size.height, overlapPx, topBarHeight) } },
+                    scrolled = { if (heroItem() == null) null else heroScroll() },
+                )
             }
-            // While a Marquee hero shows, the bar always sits on its cover: the hero's, then the docked backdrop.
-            val overArtwork: () -> Float = remember(topTone) { { if (topTone.backdrop != null) 1f else 0f } }
+            // The bar stays clear over the cover, and fills with the body's colour as the body passes under it.
+            val overArtwork: () -> Float = remember(gridState, overlapPx, edgePx) {
+                { marqueeBarOverArtwork(heroItem()?.let { it.offset.y + it.size.height }, overlapPx, topBarHeight, edgePx) }
+            }
             CompositionLocalProvider(
                 LocalHeroTopInset provides topInset,
                 LocalHeroScrollOffset provides heroScroll,
                 LocalMarqueeTopTone provides topTone,
-            ) { feed() }
-            val backdrop = topTone.backdrop
-            if (docked && backdrop != null) MarqueeDock(backdrop, topInset)
+            ) { Box(Modifier.fillMaxSize().nestedScroll(detent)) { feed() } }
             HomeTopBar(
                 scrollFractionProvider = { scrollFraction },
                 showTopBarShortcuts = showTopBarShortcuts,

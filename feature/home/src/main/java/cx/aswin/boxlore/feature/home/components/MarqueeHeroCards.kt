@@ -18,7 +18,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
@@ -154,9 +153,6 @@ internal fun MarqueeHero(
     val rotate = marqueeShouldRotate(items.size, LocalMarqueeAutoAdvance.current && rememberMotionAllowed(), holding || dragged, onScreen)
     val dwell = marqueeDwellMillis(items[settled])
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    // Once the hero leaves Home, nothing stays behind the top bar.
-    val topTone = LocalMarqueeTopTone.current
-    DisposableEffect(topTone) { onDispose { topTone?.backdrop = null } }
     LaunchedEffect(rotate, touches, settled, dwell, lifecycle) {
         if (!rotate) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -272,7 +268,7 @@ internal fun MarqueeHeroCard(
             modifier = Modifier.fillMaxSize().testTag("home_hero_artwork"),
         )
         MarqueeFrost(imageUrl, heroArtworkSources(item), look.filter, look.topContent, look.veilAlpha, maxHeight)
-        if (active) MarqueeReportTop(MarqueeBackdrop(imageUrl, heroArtworkSources(item), look.filter, look.topContent, look.veilAlpha, maxHeight))
+        if (active) MarqueeReportTone(look.topContent)
         Column(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
@@ -296,14 +292,11 @@ internal fun MarqueeHeroCard(
     }
 }
 
-/** Tells Home's top bar which words read over the settled card's cover, and what to keep behind it once docked. */
+/** Tells Home's top bar which words read over the settled card's cover. */
 @Composable
-internal fun MarqueeReportTop(backdrop: MarqueeBackdrop) {
+internal fun MarqueeReportTone(content: Color) {
     val tone = LocalMarqueeTopTone.current
-    LaunchedEffect(tone, backdrop) {
-        tone?.content = backdrop.content
-        tone?.backdrop = backdrop
-    }
+    LaunchedEffect(tone, content) { tone?.content = content }
 }
 
 /** As many up-next covers as fit beside Play (up to three), each overlapping the one before it. */

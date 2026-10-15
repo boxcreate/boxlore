@@ -125,7 +125,7 @@ internal fun MarqueeCollectionCard(
             )
         }
         MarqueeFrost(podcast.imageUrl, podcast.artworkUrls(), look.filter, look.topContent, look.veilAlpha, maxHeight)
-        if (active) MarqueeReportTop(MarqueeBackdrop(podcast.imageUrl, podcast.artworkUrls(), look.filter, look.topContent, look.veilAlpha, maxHeight))
+        if (active) MarqueeReportTone(look.topContent)
         MarqueeCollectionPosition(title, index, display.size, shade, Modifier.padding(start = 20.dp, top = LocalHeroTopInset.current + 12.dp))
         Column(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
