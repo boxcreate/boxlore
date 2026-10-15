@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.feature.home.components
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
@@ -144,6 +145,24 @@ class MarqueeHeroCardsTest {
         assertEquals(0.5f, marqueeBarOverArtwork(heroBottom = 136, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
         assertEquals(0f, marqueeBarOverArtwork(heroBottom = 110, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
         assertEquals(0f, marqueeBarOverArtwork(heroBottom = null, sheetOverlap = 24f, barHeight = 100, edgePx = 24f), 0.001f)
+    }
+
+    @Test fun `the Settings preview shows Marquee as a slice of Home`() {
+        val collection = mutableStateOf(false)
+        composeRule.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                HeroStylePreview(HeroCardStyle.MARQUEE, HeroCoverShade.ARTWORK, collection.value, sessions = emptyList(), modifier = Modifier.size(320.dp, 480.dp))
+            }
+        }
+        listOf(false, true).forEach { showCollection ->
+            collection.value = showCollection
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("home_hero_marquee_preview").assertExists()
+            composeRule.onNodeWithTag("home_hero_marquee_frost", useUnmergedTree = true).assertExists()
+            composeRule.onNodeWithTag("home_hero_page_dots", useUnmergedTree = true).assertExists()
+            composeRule.onNodeWithText("Your shows").assertExists()
+        }
+        composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
     }
 
     @Test fun `the hero moves to its next card on its own`() {

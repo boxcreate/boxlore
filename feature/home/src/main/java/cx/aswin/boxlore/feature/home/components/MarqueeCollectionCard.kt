@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -111,7 +112,7 @@ internal fun MarqueeCollectionCard(
         currentPlayingPodcastId = currentPlayingPodcastId,
         isPlaying = isPlaying,
     )
-    Box(modifier.fillMaxSize().background(shade.deep).testTag("home_hero_marquee_collection")) {
+    BoxWithConstraints(modifier.fillMaxSize().background(shade.deep).testTag("home_hero_marquee_collection")) {
         Crossfade(targetState = podcast, label = "marqueeCollectionCover") { shown ->
             OptimizedImage(
                 url = shown.imageUrl,
@@ -123,7 +124,7 @@ internal fun MarqueeCollectionCard(
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        MarqueeFrost(podcast.imageUrl, podcast.artworkUrls(), look.filter, look.topContent, look.veilAlpha, marqueeHeroHeight())
+        MarqueeFrost(podcast.imageUrl, podcast.artworkUrls(), look.filter, look.topContent, look.veilAlpha, maxHeight)
         if (active) MarqueeReportTone(look.topContent)
         MarqueeCollectionPosition(title, index, display.size, shade, Modifier.padding(start = 20.dp, top = LocalHeroTopInset.current + 12.dp))
         Column(

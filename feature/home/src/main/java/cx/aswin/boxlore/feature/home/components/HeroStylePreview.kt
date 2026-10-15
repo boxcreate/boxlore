@@ -44,11 +44,11 @@ fun HeroStylePreview(
 ) {
     val packageName = LocalContext.current.packageName
     val podcasts = remember(sessions, collection, packageName) { heroPreviewPodcasts(sessions, collection, packageName) }
-    // Marquee's single card shows the next covers beside Play.
+    // Marquee's single card shows the next covers beside Play, and its slice of Home a few shows.
     val upNext = remember(sessions, packageName, style, collection) {
         if (HeroCardStyle.sanitize(style) == HeroCardStyle.MARQUEE && !collection) heroPreviewPodcasts(sessions, true, packageName).drop(1) else emptyList()
     }
-    val cardHeight = homeHeroHeight()
+    val cardHeight = if (HeroCardStyle.sanitize(style) == HeroCardStyle.MARQUEE) MarqueePreviewHeight else homeHeroHeight()
     BoxWithConstraints(modifier.clipToBounds(), contentAlignment = Alignment.Center) {
         val scale = minOf(maxWidth / PreviewCardWidth, maxHeight / cardHeight)
         Box(Modifier.size(PreviewCardWidth * scale, cardHeight * scale)) {
@@ -72,11 +72,7 @@ private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<P
                 DuotoneHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             HeroCardStyle.TIDE ->
                 TideHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
-            HeroCardStyle.MARQUEE -> MarqueeCollectionCard(
-                podcasts, title, HeroGridMode.Resume, active = false, onCellClick = {}, onPlaybackClick = {},
-                currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false,
-                modifier = Modifier.clip(HomeHeroStyle.CardShape),
-            )
+            HeroCardStyle.MARQUEE -> MarqueePreviewScreen(collection = true, podcasts = podcasts, upNext = emptyList())
             HeroCardStyle.HALO ->
                 HaloHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             else -> HeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {})
@@ -91,12 +87,7 @@ private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<P
                 DuotoneHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             HeroCardStyle.TIDE ->
                 TideHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
-            HeroCardStyle.MARQUEE -> MarqueeHeroCard(
-                item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false,
-                upNext = upNext.mapIndexed { index, podcast -> MarqueeNext(index + 1, podcast.imageUrl, podcast.title) },
-                onUpNext = {},
-                modifier = Modifier.clip(HomeHeroStyle.CardShape),
-            )
+            HeroCardStyle.MARQUEE -> MarqueePreviewScreen(collection = false, podcasts = podcasts, upNext = upNext)
             HeroCardStyle.HALO ->
                 HaloHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             else -> HeroCard(item, onClick = {}, onArrowClick = {}, onToggleSubscription = {})

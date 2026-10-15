@@ -257,7 +257,7 @@ internal fun MarqueeHeroCard(
     val imageUrl = heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT)
     val look = rememberMarqueeLook(imageUrl)
     val shade = look.shade
-    Box(modifier.fillMaxSize().background(shade.deep).testTag("home_hero_marquee").expressiveClickable(onClick = onArrowClick)) {
+    BoxWithConstraints(modifier.fillMaxSize().background(shade.deep).testTag("home_hero_marquee").expressiveClickable(onClick = onArrowClick)) {
         OptimizedImage(
             url = imageUrl,
             fallbackUrls = heroArtworkSources(item),
@@ -267,7 +267,7 @@ internal fun MarqueeHeroCard(
             colorFilter = look.filter,
             modifier = Modifier.fillMaxSize().testTag("home_hero_artwork"),
         )
-        MarqueeFrost(imageUrl, heroArtworkSources(item), look.filter, look.topContent, look.veilAlpha, marqueeHeroHeight())
+        MarqueeFrost(imageUrl, heroArtworkSources(item), look.filter, look.topContent, look.veilAlpha, maxHeight)
         if (active) MarqueeReportTone(look.topContent)
         Column(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
