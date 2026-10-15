@@ -99,12 +99,19 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 - Repositories, ports, playback, downloads, prefs, and ranking dependencies are application-scoped instances supplied by app wiring.
 - Home surfaces emit glossary analytics through `:core:analytics` (no PostHog direct in the feature).
 - Daypart, region, or content-language changes cancel the previous editorial-row load before painting the new
-  greeting’s results. Editorial rows load independently from personalized recommendations.
+  greeting’s results. Editorial rows and Picked for you load in their own collectors (`HomeViewModelSections.kt`), apart from the trending pipeline.
 - UI state is exposed through flows and collected by Compose on the main thread.
 - Network and database operations run through injected suspend APIs.
 
 ## Persistence & identity
 
+- **Switchable sections** (`DiscoverySections` in `:core:prefs`; Settings → Library → LeaveMeAlone, also linked from Appearance → Home). Hero, Your shows and Explore shows always stay. Each switchable section loads through `collectDiscoverySection`, keyed on region, languages and daypart where it used them before, so an off section clears with no request and a switch refetches only its own section:
+  - **The Brief**: the card's Always hide is the same switch and sends `recommendation_section_toggled` (source `brief_card`) when it turns the Brief off. `briefingRegionsWhileOn` feeds `collectHomeBriefings` a null region while off, which clears it without fetching; repeated regions still pass through for daypart and midnight refreshes.
+  - **Picked for you**: `loadRecommendations` (`HomeViewModelSections.kt`) waits for trending, then calls `getHomeRecommendations`. Off clears it and marks it loaded, so no skeleton shows and Daily Mix fills only from your shows.
+  - **Because you like**: the overridden-show / region collector clears it while off; `fetchBecauseYouLikeRecommendations` now suspends, so switching off cancels a request in flight.
+  - **Time-of-day picks**: `loadEditorialRows` clears the curated rows while off, and `HomeScreen` hides the greeting until the switches are read. The greeting's browse link opens Explore on Top when Picked for you is off.
+  - Cache restore skips cached recommendations and Because you like for sections that are off. The trending pipeline no longer restarts on language changes, since only these sections used languages.
+  - `HomeDiscoverySectionsFeedTest` keeps off sections hidden and Explore shows visible while the window crosses 600dp width and 480dp height in both directions, toggles them live on phone and tablet layouts, and checks the greeting link. `HomeViewModelBriefingTest` covers the off Brief, switching it back on and daypart repeats.
 - This module owns no storage files or stable preference keys; Home pins are stored as `home_pinned_podcast_ids` in `:core:prefs`. Toggles go through `UserPreferencesRepository.toggleHomePinnedPodcastId` (one DataStore write).
 - RSS IDs, ranking database rows, download cache entries, and playback media IDs are owned by core modules.
 - Stable Compose test tags include `home_settings_button`.

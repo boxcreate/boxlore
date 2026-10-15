@@ -93,7 +93,19 @@ data class BootstrapRequest(
     val contractVersion: Int? = null,
     val intentIds: List<String> = emptyList(),
     val languages: List<String> = emptyList(),
-)
+    /**
+     * Parts of the reply the app uses, from the INCLUDE_ names. Null asks for every part, which is
+     * what older app versions send.
+     */
+    val include: List<String>? = null,
+) {
+    companion object {
+        const val INCLUDE_BRIEFING = "briefing"
+        const val INCLUDE_TRENDING = "trending"
+        const val INCLUDE_CURATED_VIBES = "curatedVibes"
+        const val INCLUDE_RECOMMENDATIONS = "recommendations"
+    }
+}
 
 @Serializable
 data class BootstrapResponse(

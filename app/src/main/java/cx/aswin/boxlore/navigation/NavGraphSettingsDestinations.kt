@@ -120,6 +120,10 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 onSetContentLanguages = { languages ->
                     scope.launch { w.userPrefs.setContentLanguages(languages) }
                 },
+                discoverySections = settingsState.discoverySections,
+                onSetDiscoverySection = { section, on ->
+                    scope.launch { w.userPrefs.setDiscoverySection(section, on) }
+                },
             ),
             appearanceSettings = buildAppearanceSettings(w),
             playbackSettings = buildPlaybackSettings(w),
@@ -182,6 +186,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             heroCardStyle = settingsState.heroCardStyle,
             heroCoverShade = settingsState.heroCoverShade,
             savedCustomTheme = settingsState.savedCustomTheme,
+            discoverySections = settingsState.discoverySections,
         ),
         actions = AppearanceActions(
             onSetThemeConfig = { config -> scope.launch { userPrefs.setThemeConfig(config) } },

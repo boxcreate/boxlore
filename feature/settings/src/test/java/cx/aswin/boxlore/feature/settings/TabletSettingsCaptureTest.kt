@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.prefs.AutoDownloadBackgroundSettings
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
+import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
 import cx.aswin.boxlore.core.testing.PhoneGoldenRule
@@ -29,6 +30,7 @@ import cx.aswin.boxlore.feature.settings.pages.LibrarySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.PlaybackSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsActions
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
+import cx.aswin.boxlore.feature.settings.pages.RecommendationsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
 import kotlinx.coroutines.flow.flowOf
@@ -102,6 +104,7 @@ private fun CaptureSettingsPage(destination: ProfileSettingsDestination) {
     when (destination) {
         ProfileSettingsDestination.SyncAndBackups -> SyncAndBackupsPage(null, CloudSyncUiStatus.Idle, LibraryBackupActions({}, {}, {}, {}), {}, {})
         ProfileSettingsDestination.Library -> LibrarySettingsPage(LibraryDiscoveryPreferences("us", listOf("en"), {}, {}), {}, {})
+        ProfileSettingsDestination.Recommendations -> RecommendationsSettingsPage(DiscoverySections(), { _, _ -> }, {})
         ProfileSettingsDestination.Appearance, ProfileSettingsDestination.Theme -> AppearanceSettingsPage(appearance.state, appearance.actions, {}, {})
         ProfileSettingsDestination.AppearanceHome,
         ProfileSettingsDestination.AppearancePlayer,

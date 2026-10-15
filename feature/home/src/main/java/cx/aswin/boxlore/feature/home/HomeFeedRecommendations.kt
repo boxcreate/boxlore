@@ -114,6 +114,7 @@ internal fun LazyStaggeredGridScope.discoveryGreetingItem(
     feedState: PodcastFeedUiState,
     callbacks: HomeFeedCallbacks,
 ) {
+    if (!feedState.showDiscoveryGreeting) return
     item(
         span = StaggeredGridItemSpan.FullLine,
         key = "discovery_greeting",
@@ -122,7 +123,8 @@ internal fun LazyStaggeredGridScope.discoveryGreetingItem(
         DiscoveryGreetingHeader(
             greeting = feedState.discoveryGreeting,
             onSeeAllClick = {
-                callbacks.onNavigateToExplore?.invoke(null, "home_discovery_greeting", "foryou")
+                // Without For you, Explore opens on its charts.
+                callbacks.onNavigateToExplore?.invoke(null, "home_discovery_greeting", "foryou".takeIf { feedState.exploreHasForYou })
             },
             modifier = Modifier.padding(top = HomeFeedSpacing.SectionGap - HomeFeedSpacing.GridGap),
         )

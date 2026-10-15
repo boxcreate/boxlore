@@ -7,6 +7,7 @@ internal enum class ProfileSettingsDestination(
     Account("Account"),
     SyncAndBackups("Cloud Sync & Backups"),
     Library("Library"),
+    Recommendations("LeaveMeAlone"),
     Appearance("Appearance"),
     Theme("Theme & colors"),
     CustomTheme("Custom theme"),
@@ -21,11 +22,15 @@ internal enum class ProfileSettingsDestination(
     Support("Support boxlore"),
     ;
 
-    /** The page Back returns to: Appearance's pages return to Appearance, the custom theme editor to Theme & colors. */
+    /**
+     * The page Back returns to: Appearance's pages return to Appearance, the custom theme editor to
+     * Theme & colors and Recommendations to Library (unless Appearance > Home opened it).
+     */
     val parent: ProfileSettingsDestination?
         get() = when (this) {
             Theme, AppearanceHome, AppearancePlayer, AppearanceNavigation, AppearanceText -> Appearance
             CustomTheme -> Theme
+            Recommendations -> Library
             else -> null
         }
 }

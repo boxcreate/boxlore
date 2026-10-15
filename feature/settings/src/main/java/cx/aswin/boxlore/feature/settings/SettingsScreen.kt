@@ -33,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.prefs.DiscoverySection
+import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.feature.settings.dialogs.AddRssFeedDialog
@@ -61,6 +63,7 @@ import cx.aswin.boxlore.feature.settings.pages.PlaybackSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.PlaybackUiState
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsActions
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
+import cx.aswin.boxlore.feature.settings.pages.RecommendationsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
 import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
@@ -85,12 +88,14 @@ data class LibraryBackupWriters(
     val onImportOpml: (Uri) -> Unit = {},
 )
 
-/** Content-region + language prefs, surfaced from the Library settings sub-page. */
+/** Content-region + language prefs and the Recommendations switches, surfaced from the Library settings sub-pages. */
 data class RegionSettings(
     val currentRegion: String = "us",
     val contentLanguages: List<String> = listOf("en"),
     val onSetRegion: (String) -> Unit = {},
     val onSetContentLanguages: (List<String>) -> Unit = {},
+    val discoverySections: DiscoverySections = DiscoverySections(),
+    val onSetDiscoverySection: (DiscoverySection, Boolean) -> Unit = { _, _ -> },
 )
 
 /** RSS + ranking ports needed by [SettingsViewModel] (keeps [SettingsScreen] ≤7 params). */
@@ -287,6 +292,10 @@ fun SettingsScreen(
             previousDestination = ProfileSettingsDestination.SyncAndBackups
             destination = ProfileSettingsDestination.Account
         },
+        onOpenRecommendationsFromHome = {
+            previousDestination = ProfileSettingsDestination.AppearanceHome
+            destination = ProfileSettingsDestination.Recommendations
+        },
         onDeletionExpandedChange = { isDeletionExpanded = it },
         onShowResetDialog = { showResetDialog = true },
         backupActions = trackedLibraryBackupActions(
@@ -350,6 +359,8 @@ internal data class SettingsPagesActions(
     val onNavigate: (ProfileSettingsDestination) -> Unit,
     val onReturnToHub: () -> Unit,
     val onNavigateToAccountFromSync: () -> Unit,
+    /** Opens Library > Recommendations from Appearance > Home, so Back returns there. */
+    val onOpenRecommendationsFromHome: () -> Unit,
     val onDeletionExpandedChange: (Boolean) -> Unit,
     val onShowResetDialog: () -> Unit,
     val backupActions: LibraryBackupActions,
@@ -426,6 +437,14 @@ private fun SettingsDestinationContent(
             LibrarySettingsPage(
                 discoveryPreferences = createLibraryDiscoveryPreferences(contentBundle.regionSettings),
                 onAddRssClick = { contentBundle.settingsViewModel.openAddRssDialog() },
+                onBack = actions.onReturnToHub,
+                onOpenRecommendations = { actions.onNavigate(ProfileSettingsDestination.Recommendations) },
+            )
+
+        ProfileSettingsDestination.Recommendations ->
+            RecommendationsSettingsPage(
+                sections = contentBundle.regionSettings.discoverySections,
+                onSet = trackedDiscoverySectionSetter(contentBundle.regionSettings.discoverySections, contentBundle.regionSettings.onSetDiscoverySection),
                 onBack = actions.onReturnToHub,
             )
 
@@ -505,6 +524,15 @@ private fun createLibraryDiscoveryPreferences(
             regionSettings.onSetContentLanguages(it)
         },
     )
+
+/** Records each LeaveMeAlone switch (`recommendation_section_toggled`) before saving it. */
+internal fun trackedDiscoverySectionSetter(
+    sections: DiscoverySections,
+    onSet: (DiscoverySection, Boolean) -> Unit,
+): (DiscoverySection, Boolean) -> Unit = { section, on ->
+    AnalyticsHelper.trackRecommendationSectionToggled(section, on, source = "settings", sectionsOff = sections.with(section, on).offCount)
+    onSet(section, on)
+}
 
 private fun createPrivacySettingsActions(
     uiData: SettingsPagesUiData,
@@ -739,7 +767,8 @@ private fun AppearanceDestinationContent(
     when (destination) {
         ProfileSettingsDestination.Theme ->
             AppearanceThemePage(state, tracked, onBack = actions.onReturnToHub, onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) })
-        ProfileSettingsDestination.AppearanceHome -> AppearanceHomePage(state, tracked, appearance.heroPreview, onBack = actions.onReturnToHub)
+        ProfileSettingsDestination.AppearanceHome ->
+            AppearanceHomePage(state, tracked, appearance.heroPreview, onBack = actions.onReturnToHub, onOpenRecommendations = actions.onOpenRecommendationsFromHome)
         ProfileSettingsDestination.AppearancePlayer -> AppearancePlayerPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceNavigation -> AppearanceNavigationPage(state, tracked, onBack = actions.onReturnToHub)
         ProfileSettingsDestination.AppearanceText -> AppearanceTextPage(state, tracked, onBack = actions.onReturnToHub)

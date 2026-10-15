@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
@@ -50,6 +51,8 @@ sealed interface ExploreUiState {
         val isLoadingMore: Boolean = false,
         val hasMore: Boolean = true,
         val selectedTab: Int = 1, // 0 for Trending, 1 for For You (default)
+        /** False while Picked for you is off: Explore then has only the Top tab. */
+        val hasForYou: Boolean = true,
         val isRecommendationsLoading: Boolean = false,
         val isRecommendationsFallback: Boolean = true,
         val searchTab: SearchTab = SearchTab.SHOWS,
@@ -85,6 +88,7 @@ private data class ExploreRecsSlice(
     val recommendations: List<Episode>,
     val isRecommendationsLoading: Boolean,
     val isRecommendationsFallback: Boolean,
+    val hasForYou: Boolean = true,
 )
 
 private data class ExploreSearchSlice(
@@ -107,11 +111,14 @@ class ExploreViewModel(
     initialTab: String? = null,
 ) : androidx.lifecycle.AndroidViewModel(application) {
 
+    private val _hasForYou = MutableStateFlow(userPrefs.cachedPickedForYou)
+
     private val initialSelectedTab =
         ExploreDefaultTab.resolveIndex(
             navTab = initialTab,
             hasCategory = initialCategory != null,
             preferred = userPrefs.cachedExploreDefaultTab,
+            forYouAvailable = _hasForYou.value,
         )
 
     private val _uiState = MutableStateFlow<ExploreUiState>(
@@ -253,6 +260,11 @@ class ExploreViewModel(
                     )
                 }.combine(_isRecommendationsFallback) { slice, isFallback ->
                     slice.copy(isRecommendationsFallback = isFallback)
+                }.combine(_hasForYou) { slice, hasForYou ->
+                    slice.copy(
+                        hasForYou = hasForYou,
+                        selectedTab = if (hasForYou) slice.selectedTab else ExploreDefaultTab.INDEX_TOP,
+                    )
                 },
                 combine(
                     combine(
@@ -297,6 +309,7 @@ class ExploreViewModel(
                     isLoadingMore = loading.isLoadingMore,
                     hasMore = loading.hasMore,
                     selectedTab = recs.selectedTab,
+                    hasForYou = recs.hasForYou,
                     isRecommendationsLoading = recs.isRecommendationsLoading,
                     isRecommendationsFallback = recs.isRecommendationsFallback,
                     searchTab = search.searchTab,
@@ -325,9 +338,22 @@ class ExploreViewModel(
             }
         }
 
+        // Picked for you off removes the For you tab and its request; Explore keeps Top.
+        viewModelScope.launch {
+            userPrefs.discoverySectionsStream.map { it.pickedForYou }.distinctUntilChanged().collect { on ->
+                _hasForYou.value = on
+                if (!on) {
+                    _selectedTab.value = ExploreDefaultTab.INDEX_TOP
+                    _recommendations.value = emptyList()
+                    _isRecommendationsLoading.value = false
+                }
+            }
+        }
+
         // Hydrate For You from the shared Home/Explore BoxcastPrefs cache (same payload Home writes).
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
+                if (!userPrefs.discoverySectionsStream.first().pickedForYou) return@launch
                 val prefs = BoxcastPrefs(getApplication())
                 val cached = ExploreSharedRecommendationsLogic.decodeCachedRecommendationsJson(
                     prefs.getCachedRecommendationsJson(),
@@ -344,9 +370,10 @@ class ExploreViewModel(
         viewModelScope.launch {
             combine(
                 userPrefs.regionStream,
-                subscriptionRepository.subscribedPodcastIds
-            ) { _, _ -> }.collect {
-                fetchPersonalizedRecommendations()
+                subscriptionRepository.subscribedPodcastIds,
+                userPrefs.discoverySectionsStream.map { it.pickedForYou }.distinctUntilChanged(),
+            ) { _, _, on -> on }.collect { on ->
+                if (on) fetchPersonalizedRecommendations()
             }
         }
 
@@ -759,10 +786,12 @@ class ExploreViewModel(
     }
 
     fun onTabSelected(tabIndex: Int) {
+        if (tabIndex == ExploreDefaultTab.INDEX_FOR_YOU && !_hasForYou.value) return
         _selectedTab.value = tabIndex
     }
 
     fun fetchPersonalizedRecommendations() {
+        if (!_hasForYou.value) return
         viewModelScope.launch {
             _isRecommendationsLoading.value = true
             val prefs = BoxcastPrefs(getApplication())
@@ -794,9 +823,8 @@ class ExploreViewModel(
                     "Refreshing shared bootstrap recommendations; history=${history.size}, interests=$interests, region=$region, langs=$languages, subscribed=${subscribedIds.size}",
                 )
                 // Same catalog path as Home For You — includes popular-in-region when taste seeds are empty.
-                val bootstrapData = podcastRepository.getHomeBootstrapData(
+                val bootstrapData = podcastRepository.getHomeRecommendations(
                     country = region,
-                    vibeIds = emptyList(),
                     history = history,
                     interests = interests,
                     subscribedPodcastIds = subscribedIds,
@@ -804,18 +832,20 @@ class ExploreViewModel(
                     languages = languages,
                 )
                 val distinctRecs = ExploreSharedRecommendationsLogic.distinctRecommendations(
-                    bootstrapData.recommendations,
+                    bootstrapData.items,
                 )
                 android.util.Log.d(
                     "ExploreViewModel",
-                    "Shared recommendations size=${distinctRecs.size}, fallback=${bootstrapData.isRecommendationsFallback}",
+                    "Shared recommendations size=${distinctRecs.size}, fallback=${bootstrapData.isFallback}",
                 )
+                // Picked for you may have been switched off while this request ran.
+                if (!_hasForYou.value) return@launch
                 _recommendations.value = distinctRecs
-                _isRecommendationsFallback.value = bootstrapData.isRecommendationsFallback
+                _isRecommendationsFallback.value = bootstrapData.isFallback
                 try {
                     prefs.saveRecommendationsCache(
                         ExploreSharedRecommendationsLogic.encodeRecommendationsJson(distinctRecs),
-                        bootstrapData.isRecommendationsFallback,
+                        bootstrapData.isFallback,
                     )
                 } catch (ce: Exception) {
                     android.util.Log.e("ExploreViewModel", "Failed to write shared recommendations cache", ce)

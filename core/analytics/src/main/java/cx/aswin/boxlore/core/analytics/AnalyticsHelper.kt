@@ -682,6 +682,14 @@ object AnalyticsHelper : Analytics {
 
     fun syncHomeHeroStylePersonProperties(style: String?, shade: String?) = AppearanceAnalyticsTracks.syncHomeHeroStylePersonProperties(style, shade)
 
+    /** A LeaveMeAlone switch or the Brief card's Always hide; [source] is `settings` or `brief_card`. */
+    fun trackRecommendationSectionToggled(
+        section: cx.aswin.boxlore.core.prefs.DiscoverySection,
+        enabled: Boolean,
+        source: String,
+        sectionsOff: Int,
+    ) = RecommendationsAnalyticsTracks.trackSectionToggled(section, enabled, source, sectionsOff)
+
     fun trackSupportPageViewed() = LibraryAnalyticsTracks.trackSupportPageViewed()
 
     fun trackSupportTierToggled(

@@ -51,7 +51,10 @@ internal fun AppearanceNavigationPage(state: AppearanceUiState, actions: Appeara
             SettingsContent {
                 Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                     AppearanceChoicePicker("Start page", listOf(OpenAppTo.HOME to "Home", OpenAppTo.SUBSCRIPTIONS to "Subscriptions", OpenAppTo.DOWNLOADS to "Downloads"), state.currentOpenAppTo, actions.onSetOpenAppTo)
-                    AppearanceChoicePicker("Explore opens to", listOf(ExploreDefaultTab.FOR_YOU to "For You", ExploreDefaultTab.TOP to "Top"), ExploreDefaultTab.sanitize(state.currentExploreDefaultTab), actions.onSetExploreDefaultTab)
+                    // Without Picked for you, Explore has no For you tab and always opens to Top.
+                    if (state.discoverySections.pickedForYou) {
+                        AppearanceChoicePicker("Explore opens to", listOf(ExploreDefaultTab.FOR_YOU to "For You", ExploreDefaultTab.TOP to "Top"), ExploreDefaultTab.sanitize(state.currentExploreDefaultTab), actions.onSetExploreDefaultTab)
+                    }
                     AppearanceChoicePicker("Subscriptions opens to", listOf(SubscriptionsDefaultTab.SHOWS to "Shows", SubscriptionsDefaultTab.NEW_EPISODES to "New episodes"), SubscriptionsDefaultTab.sanitize(state.currentSubscriptionsDefaultTab), actions.onSetSubscriptionsDefaultTab)
                     AppearanceChoicePicker("Subscriptions tab position", listOf(SubscriptionsTabStyle.TOP to "Top", SubscriptionsTabStyle.FLOATING to "Floating"), SubscriptionsTabStyle.sanitize(state.currentSubscriptionsTabStyle), actions.onSetSubscriptionsTabStyle)
                 }

@@ -29,6 +29,7 @@ import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.components.ConnectedOptionSelector
 import cx.aswin.boxlore.core.designsystem.theme.FontRoundness
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
@@ -67,6 +68,8 @@ data class AppearanceUiState(
     val heroCoverShade: String = HeroCoverShade.DEFAULT,
     val savedCustomTheme: ThemeSelection? = null,
     val fullPlayerStyle: String = FullPlayerStyle.STANDARD,
+    /** Read-only here: Navigation hides Explore's opening tab without For you. Library > Recommendations sets it. */
+    val discoverySections: DiscoverySections = DiscoverySections(),
 )
 
 /** Callbacks for [AppearanceSettingsPage], grouped to keep the page's parameter count small. */

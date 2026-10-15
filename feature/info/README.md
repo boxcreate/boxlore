@@ -75,6 +75,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 ## Persistence & identity
 
+- **Try these episodes (More like this) switch** (`DiscoverySections.moreLikeThis`, Settings → Library → LeaveMeAlone): `EpisodeInfoViewModel.moreLikeThisOn` hides the section and its loading card while off or unread, and the similar-episodes request runs through `collectDiscoverySection`, so off makes no request, turning it off cancels one in flight, and turning it back on loads it for the open episode. A new episode cancels the previous loader.
 - This module owns no storage files or stable keys.
 - Pin reads and writes `home_pinned_podcast_ids` through `:core:prefs` (`toggleHomePinnedPodcastId`). At-capacity copy comes from `HomePinnedShows.capacityUserMessage()`. Notification permission prompt history is tracked via `has_requested_notification_permission` in `BoxcastPrefs`.
 - Podcast, episode, RSS, download, and listening-progress identities come from core modules.

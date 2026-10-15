@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.home
 
-import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.getRecentHistoryList
@@ -17,7 +16,7 @@ import java.time.ZonedDateTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -89,14 +88,23 @@ internal suspend fun HomeViewModel.resolveFavoritePodcast(
     ) ?: candidatePodcasts.firstOrNull()
 }
 
+/** Hides Because you like without a request while the listener keeps it off. */
+internal fun HomeViewModel.clearBecauseYouLike() {
+    _seemsToLikePodcast.value = null
+    _becauseYouLikeRecommendations.value = emptyList()
+    _becauseYouLikePodcasts.value = emptyList()
+    _isBecauseYouLikeLoading.value = false
+}
+
 // from private fun fetchBecauseYouLikeRecommendations
-internal fun HomeViewModel.fetchBecauseYouLikeRecommendations(
+/** Suspends until the section has loaded, so switching it off cancels a request in flight. */
+internal suspend fun HomeViewModel.fetchBecauseYouLikeRecommendations(
     podcast: Podcast,
     region: String,
     forceRefresh: Boolean = false,
     clock: Clock = Clock.systemDefaultZone(),
 ) {
-    viewModelScope.launch(Dispatchers.Default) {
+    withContext(Dispatchers.Default) {
         val currentSlotKey = BecauseYouLikeRotationLogic.currentSlotKey(clock)
 
         if (!forceRefresh &&
@@ -108,9 +116,9 @@ internal fun HomeViewModel.fetchBecauseYouLikeRecommendations(
                     "HomeViewModel",
                     "BYL cache hit in memory for ${podcast.id} in slot $currentSlotKey; skipping network fetch.",
                 )
-                return@launch
+                return@withContext
             }
-            if (restoreCachedBecauseYouLike(podcast.id, currentSlotKey)) return@launch
+            if (restoreCachedBecauseYouLike(podcast.id, currentSlotKey)) return@withContext
         }
 
         _isBecauseYouLikeLoading.value = true

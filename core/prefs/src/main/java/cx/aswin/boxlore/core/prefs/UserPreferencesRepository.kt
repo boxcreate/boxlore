@@ -55,6 +55,10 @@ class UserPreferencesRepository(context: Context,) {
     private val tips = TooltipPreferences(dataStore)
     private val reviews = ReviewPromptPreferences(dataStore)
     private val announcements = AnnouncementPreferences(dataStore)
+    private val discoverySections = DiscoverySectionPreferences(
+        dataStore,
+        context.getSharedPreferences(PrefsFileMigrator.Files.THEME_FAST_CACHE, Context.MODE_PRIVATE),
+    )
     val cachedThemeConfig: String
         get() = appearance.cachedThemeConfig
 
@@ -730,6 +734,15 @@ class UserPreferencesRepository(context: Context,) {
             preferences[Keys.HOME_SHORTCUTS_IN_LIBRARY] = enabled
         }
     }
+
+    /** Which optional discovery sections show and load; all on by default ([DiscoverySections]). */
+    val discoverySectionsStream: Flow<DiscoverySections> = discoverySections.sections
+
+    /** Picked for you before DataStore loads; Explore uses it to pick its first tab. */
+    val cachedPickedForYou: Boolean
+        get() = discoverySections.cachedPickedForYou
+
+    suspend fun setDiscoverySection(section: DiscoverySection, on: Boolean) = discoverySections.set(section, on)
 
     val widgetAppearanceStream: Flow<String> = appearance.widgetAppearanceStream
 

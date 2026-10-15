@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +44,7 @@ import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
 import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
@@ -244,6 +246,8 @@ fun HomeRoute(
 
     val uiState by viewModel.uiState.collectAsState()
     val homeShortcutsInLibrary by userPreferencesRepository.homeShortcutsInLibraryStream.collectAsState(initial = false)
+    // Null until read, so a switched-off greeting never flashes in.
+    val discoverySections by userPreferencesRepository.discoverySectionsStream.collectAsState(initial = null)
     val heroCardStyle by userPreferencesRepository.heroCardStyleStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroCardStyle })
     val heroCoverShade by userPreferencesRepository.heroCoverShadeStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroCoverShade })
     val snackbarHostState = remember { SnackbarHostState() }
@@ -362,6 +366,7 @@ fun HomeRoute(
         LocalLastSeenEpisodes provides lastSeenEpisodes,
         LocalHeroCardStyle provides homeHeroStyle(heroCardStyle, LocalBoxloreWindowLayout.current.usesTabletLayout),
         LocalHeroCoverShade provides heroCoverShade,
+        LocalHomeDiscoverySections provides discoverySections,
     ) {
         HomeScreen(
             uiState = uiState,
@@ -401,6 +406,9 @@ private fun homeScrollFraction(
     return (gridState.firstVisibleItemScrollOffset / collapseThresholdPx).coerceIn(0f, 1f)
 }
 
+/** The listener's Home section switches; null while they load, which hides the greeting. */
+internal val LocalHomeDiscoverySections = staticCompositionLocalOf<DiscoverySections?> { DiscoverySections() }
+
 @Composable
 private fun HomeScreenFeedContent(
     uiState: HomeUiState,
@@ -408,6 +416,7 @@ private fun HomeScreenFeedContent(
     playback: HomePlaybackUi,
     callbacks: HomeFeedCallbacks,
     onChangePodcastClick: () -> Unit,
+    discoverySections: DiscoverySections?,
 ) {
     if (uiState.isError) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -437,6 +446,8 @@ private fun HomeScreenFeedContent(
             seemsToLikePodcast = uiState.seemsToLikePodcast,
             showImportBanner = uiState.showImportBanner,
             pinnedPodcastIds = uiState.pinnedPodcastIds,
+            showDiscoveryGreeting = discoverySections?.curatedRows == true,
+            exploreHasForYou = discoverySections?.pickedForYou != false,
         ),
         recommendationState =
         PodcastFeedRecommendationState(
@@ -615,6 +626,7 @@ fun HomeScreen(
                 playback = playback,
                 callbacks = callbacks.feed,
                 onChangePodcastClick = { showChangePodcastSheet = true },
+                discoverySections = LocalHomeDiscoverySections.current,
             )
             SnackbarHost(
                 hostState = snackbarHostState,

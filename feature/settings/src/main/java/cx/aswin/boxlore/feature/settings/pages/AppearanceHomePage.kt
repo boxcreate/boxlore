@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.settings.pages
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -14,6 +15,7 @@ import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
+import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsPicture
 import cx.aswin.boxlore.feature.settings.components.SettingsPictureRow
 import cx.aswin.boxlore.feature.settings.components.SettingsPictureTile
@@ -46,7 +48,13 @@ private fun heroColorsCopy(style: String): Pair<Int, Int> = when (style) {
  * and the top bar shortcuts.
  */
 @Composable
-internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceActions, heroPreview: AppearanceHeroPreview?, onBack: () -> Unit) {
+internal fun AppearanceHomePage(
+    state: AppearanceUiState,
+    actions: AppearanceActions,
+    heroPreview: AppearanceHeroPreview?,
+    onBack: () -> Unit,
+    onOpenRecommendations: () -> Unit = {},
+) {
     val style = HeroCardStyle.sanitize(state.heroCardStyle)
     val shade = HeroCoverShade.sanitize(state.heroCoverShade)
     // Marquee is a phone layout; tablets show Cover cards, so the preview does too.
@@ -95,6 +103,15 @@ internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceAct
                     )
                 }
             }
+        }
+        // Home's switchable sections live on Library > Recommendations; this opens the same page.
+        SettingsGroup {
+            SettingsNavigationRow(
+                title = stringResource(R.string.recommendations_title),
+                supportingText = stringResource(R.string.recommendations_row_description),
+                icon = Icons.Rounded.AutoAwesome,
+                onClick = onOpenRecommendations,
+            )
         }
         SettingsGroup(title = "Top bar") {
             SettingsSwitchRow(

@@ -5,99 +5,41 @@ import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
-import cx.aswin.boxlore.core.playback.getHistoryForRecommendations
 import cx.aswin.boxlore.core.playback.resumeSessions
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
 import cx.aswin.boxlore.feature.home.logic.HomeUiAssemblyLogic
-import cx.aswin.boxlore.feature.home.logic.buildHomeEditorialRows
 import cx.aswin.boxlore.feature.home.logic.discoverPodcastsExcluding
-import cx.aswin.boxlore.feature.home.logic.editorialRowDefinitionsFor
 import cx.aswin.boxlore.feature.home.logic.withCurrentCategoryDiscovery
 import cx.aswin.boxlore.feature.home.logic.withSelectedShowFrom
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-
-internal fun HomeViewModel.fetchPersonalizedRecommendations(region: String) {
-    viewModelScope.launch(Dispatchers.Default) {
-        homeCacheRestoreGate.awaitRestore()
-        _isRecommendationsLoaded.value = false
-        try {
-            val interests = boxcastPrefs.getUserGenres().toList()
-            val history = playbackRepository.getHistoryForRecommendations(15)
-
-            val subscribedIds = subscriptionRepository.subscribedPodcastIds.first().toList()
-            val subscribedGenres =
-                subscriptionRepository.subscribedPodcasts
-                    .first()
-                    .mapNotNull { it.recommendationGenre }
-                    .distinct()
-
-            android.util.Log.d(
-                "HomeViewModel",
-                "Fetching recommendations with history size: ${history.size}, interests: $interests, region: $region, subscribedCount: ${subscribedIds.size}",
-            )
-            val recs =
-                podcastRepository.getPersonalizedRecommendations(
-                    history = history,
-                    interests = interests,
-                    country = region,
-                    subscribedPodcastIds = subscribedIds,
-                    subscribedGenres = subscribedGenres,
-                    languages = userPrefs.contentLanguagesStream.first(),
-                )
-            android.util.Log.d("HomeViewModel", "Fetched recommendations size: ${recs.size}")
-            val distinctRecs =
-                recs
-                    .distinctBy { it.id }
-                    .distinctBy { it.title.lowercase().trim() }
-            _recommendations.value = distinctRecs
-            try {
-                val json = Json { ignoreUnknownKeys = true }
-                val serialized = json.encodeToString(distinctRecs)
-                boxcastPrefs.setCachedRecommendationsJson(serialized)
-            } catch (ce: CancellationException) {
-                throw ce
-            } catch (ce: Exception) {
-                android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            android.util.Log.e("HomeViewModel", "Failed to fetch personalized recommendations", e)
-        } finally {
-            _isRecommendationsLoaded.value = true
-        }
-    }
-}
 
 // from private fun loadData
 @OptIn(FlowPreview::class)
 internal fun HomeViewModel.loadData() {
+    // Curated rows and Picked for you load on their own so their switches never refetch the rest.
+    loadEditorialRows()
+    loadRecommendations()
     viewModelScope.launch(Dispatchers.Default) {
         homeCacheRestoreGate.awaitRestore()
         // --- BASE DATA FLOW (Restarts when Region or dismissal changes) ---
         combine(
             userPrefs.regionStream,
-            userPrefs.contentLanguagesStream,
             clockContextFlow.map { clock -> clock.daypart }.distinctUntilChanged(),
-        ) { region, languages, daypart ->
-            Triple(region, languages, daypart)
+        ) { region, daypart ->
+            region to daypart
         }.distinctUntilChanged()
-            .collectLatest { (region, languages, daypart) ->
+            .collectLatest { (region, daypart) ->
                 val regionChanged = cachedRegion != region
                 if (regionChanged) {
                     cachedRegion = region
@@ -116,115 +58,23 @@ internal fun HomeViewModel.loadData() {
 
                 val trendingState = MutableStateFlow(cachedForYouTrending)
 
-                // Curated editorial rows are independent from recommendations so a slow
-                // personalization request never leaves the greeting section empty.
-                // Preserve matching rows during a background reload. Replace the
-                // result only after this request finishes, never at request start.
-                val activeProviderIds = editorialRowDefinitionsFor(daypart).map { it.providerId }.toSet()
-                _editorialRows.value = if (regionChanged) emptyList() else _editorialRows.value.filter { it.providerId in activeProviderIds }
-                _isEditorialRowsLoading.value = true
+                // 1. Fast Bootstrap Call (Briefing & Trending); Picked for you waits for it.
                 launch {
+                    _isTrendingLoaded.value = false
                     try {
-                        val definitions = editorialRowDefinitionsFor(daypart)
-                        val podcastsByProvider =
-                            podcastRepository.getCuratedVibes(
-                                vibeIds = definitions.map { it.providerId },
-                                country = region,
-                                languages = languages,
-                            )
-                        _editorialRows.value =
-                            buildHomeEditorialRows(
-                                daypart = daypart,
-                                podcastsByProvider = podcastsByProvider,
-                            )
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (error: Exception) {
-                        android.util.Log.w(
-                            "HomeViewModel",
-                            "Curated Home rows failed for region=$region and daypart=$daypart",
-                            error,
-                        )
-                    } finally {
-                        _isEditorialRowsLoading.value = false
-                    }
-                }
-
-                // 1. Fast Bootstrap Call (Briefing & Trending)
-                val fastJob =
-                    launch {
-                        _isTrendingLoaded.value = false
-                        try {
-                            val bootstrapData =
-                                podcastRepository.getHomeBootstrapDataFast(
-                                    country = region,
-                                )
-
-                            // Brief editions load independently of the discovery country.
-                            trendingState.value = bootstrapData.trending
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            android.util.Log.e("BoxCastTiming", "VM: Fast Bootstrap API load failed", e)
-                        } finally {
-                            _isTrendingLoaded.value = true
-                        }
-                    }
-
-                // 2. Background Personalized Recommendations Call
-                launch {
-                    fastJob.join()
-                    _isRecommendationsLoaded.value = false
-                    try {
-                        android.util.Log.d("BoxCastTiming", "VM: Background personalized Home screen load for region=$region")
-
-                        val interests = boxcastPrefs.getUserGenres().toList()
-
-                        val historyDeferred = async { playbackRepository.getHistoryForRecommendations(15) }
-                        val subscribedIdsDeferred = async { subscriptionRepository.subscribedPodcastIds.first().toList() }
-                        val subscribedPodcastsDeferred = async { subscriptionRepository.subscribedPodcasts.first() }
-
-                        val history = historyDeferred.await()
-                        val subscribedIds = subscribedIdsDeferred.await()
-                        val subscribedPodcasts = subscribedPodcastsDeferred.await()
-                        val subscribedGenres =
-                            subscribedPodcasts.mapNotNull { it.recommendationGenre }.distinct()
-
                         val bootstrapData =
-                            podcastRepository.getHomeBootstrapData(
+                            podcastRepository.getHomeBootstrapDataFast(
                                 country = region,
-                                vibeIds = emptyList(),
-                                history = history,
-                                interests = interests,
-                                subscribedPodcastIds = subscribedIds,
-                                subscribedGenres = subscribedGenres,
-                                languages = languages,
                             )
 
-                        val distinctRecs =
-                            bootstrapData.recommendations
-                                .distinctBy { it.id }
-                                .distinctBy { it.title.lowercase().trim() }
-                        _recommendations.value = distinctRecs
-                        _isRecommendationsFallback.value = bootstrapData.isRecommendationsFallback
-                        try {
-                            val json = Json { ignoreUnknownKeys = true }
-                            val serialized = json.encodeToString(distinctRecs)
-                            boxcastPrefs.saveRecommendationsCache(
-                                serialized,
-                                bootstrapData.isRecommendationsFallback,
-                            )
-                        } catch (ce: CancellationException) {
-                            throw ce
-                        } catch (ce: Exception) {
-                            android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
-                        }
+                        // Brief editions load independently of the discovery country.
+                        trendingState.value = bootstrapData.trending
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        android.util.Log.e("BoxCastTiming", "VM: Recommendations load failed", e)
+                        android.util.Log.e("BoxCastTiming", "VM: Fast Bootstrap API load failed", e)
                     } finally {
-                        _isRecommendationsLoaded.value = true
+                        _isTrendingLoaded.value = true
                     }
                 }
 

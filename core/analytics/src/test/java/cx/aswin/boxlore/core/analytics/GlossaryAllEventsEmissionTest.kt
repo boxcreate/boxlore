@@ -266,6 +266,14 @@ class GlossaryAllEventsEmissionTest {
                 "home_hero_style_selected" to {
                     AnalyticsHelper.trackHomeHeroStyleSelected("classic", "artwork", "tide", "artwork")
                 },
+                "recommendation_section_toggled" to {
+                    AnalyticsHelper.trackRecommendationSectionToggled(
+                        cx.aswin.boxlore.core.prefs.DiscoverySection.PICKED_FOR_YOU,
+                        enabled = false,
+                        source = "settings",
+                        sectionsOff = 1,
+                    )
+                },
                 "feature_announcement_action" to {
                     AnalyticsHelper.trackFeatureAnnouncementViewed("f1")
                 },

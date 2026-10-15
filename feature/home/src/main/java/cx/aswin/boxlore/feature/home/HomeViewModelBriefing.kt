@@ -23,7 +23,10 @@ internal fun HomeViewModel.loadDailyBriefing() {
     viewModelScope.launch {
         homeCacheRestoreGate.awaitRestore()
         collectHomeBriefings(
-            regions = briefingLoadRegions(userPrefs.briefingDefaultEdition, userPrefs.regionStream, clockContextFlow),
+            regions = briefingRegionsWhileOn(
+                briefingLoadRegions(userPrefs.briefingDefaultEdition, userPrefs.regionStream, clockContextFlow),
+                sectionOn { it.dailyBrief },
+            ),
             briefingState = _briefingState,
             chaptersState = _briefingChaptersState,
             fetchMetadata = podcastRepository::getBriefingMetadata,
@@ -37,19 +40,30 @@ internal fun HomeViewModel.loadDailyBriefing() {
     }
 }
 
-/** The production collector preserves a usable same-edition Brief during a failed refresh. */
+/**
+ * The Brief's edition region while the listener keeps it on, and null while it is off. Repeats
+ * of the same region pass through, since they are the daypart and midnight refreshes.
+ */
+internal fun briefingRegionsWhileOn(regions: Flow<String>, on: Flow<Boolean>): Flow<String?> =
+    combine(regions, on) { region, enabled -> region.takeIf { enabled } }
+
+/**
+ * The production collector preserves a usable same-edition Brief during a failed refresh. A null
+ * region means the Brief is off: it clears without a request.
+ */
 internal suspend fun collectHomeBriefings(
-    regions: Flow<String>,
+    regions: Flow<String?>,
     briefingState: MutableStateFlow<Briefing?>,
     chaptersState: MutableStateFlow<List<Chapter>>,
     fetchMetadata: suspend (String) -> Briefing?,
     fetchChapters: suspend (Briefing) -> List<Chapter>,
 ) {
     regions.collectLatest { region ->
-        if (briefingState.value?.region != region) {
+        if (region == null || briefingState.value?.region != region) {
             briefingState.value = null
             chaptersState.value = emptyList()
         }
+        if (region == null) return@collectLatest
         val briefing = fetchMetadata(region)
         currentCoroutineContext().ensureActive()
         if (briefing == null) return@collectLatest
