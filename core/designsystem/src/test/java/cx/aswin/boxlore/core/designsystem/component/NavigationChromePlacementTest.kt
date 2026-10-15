@@ -7,6 +7,15 @@ import org.junit.jupiter.api.Test
 
 class NavigationChromePlacementTest {
     @Test
+    fun `rail reserves the docked player and system taskbar without a phantom bottom navbar`() {
+        NavigationStyle.entries.forEach { style ->
+            val metrics = navigationChromeMetrics(style)
+            assertEquals(48.dp, appBottomChromeContentPadding(style, false, 48.dp, navigationRailVisible = true))
+            assertEquals(48.dp + metrics.miniPlayerHeight + metrics.miniPlayerNavigationGap, appBottomChromeContentPadding(style, true, 48.dp, navigationRailVisible = true))
+        }
+    }
+
+    @Test
     fun `classic player clears the 80dp app navbar and 48dp system buttons`() {
         assertEquals(208.dp, appBottomChromeContentPadding(NavigationStyle.Classic, true, 48.dp))
         assertEquals(636.dp, appMiniPlayerTopOffset(NavigationStyle.Classic, 844.dp, 48.dp))

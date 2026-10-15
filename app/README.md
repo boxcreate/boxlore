@@ -6,6 +6,9 @@ The application module owns the Android app shell: `BoxLoreApplication`, `MainAc
 
 ## Public API
 
+- `TabletAppShell` retains primary/detail navigation hosts while resizing their physical regions. Tablets use the existing four destinations in a Material rail; wide landscape windows show a 360–520dp context player/detail pane and close it when empty. Card grids use the supplied pane width. Details, Back, external routes, Brief redirects and palette ownership stay within their route owner. A hidden detail host drops to CREATED so it cannot intercept Back or continue active UI collection.
+- `TabletAppPlayer` reuses the existing docked mini/full scaffold in single-pane windows and the bounded full player in context. Full-screen playback has its own explicit action. The app's retained player UI scope keeps supporting tabs and expansion across reflow; playback repositories remain owned by `AppContainer`. On foldable windows, the mini bar docks inside the browsing region and expands into a full-window fold-safe player canvas. Tablet content clearance reserves the docked player/taskbar without a phantom bottom bar.
+
 - `BoxLoreAppRoot` computes one `BoxloreWindowLayout` and provides it through the design system. Stable Adaptive's window metrics and WindowInfoTracker-backed folding collector react to resizing, multi-window and posture changes; feature/data producers are not restarted. Native folding bounds convert from window pixels to dp once. Configuration dimensions remain available separately for existing phone geometry. Adaptive 1.1.0 preserves the current Compose graph: 1.2.0 requires Foundation 1.9.0 and 1.3.0 requires Compose 1.10.0. The Compose BOM is unchanged. Player detail-route helpers preserve existing encoding, metadata fallbacks and Brief routing while keeping the app root below the source-size limit.
 
 - Appearance wiring exposes the persisted full-player style and forwards selection to `:core:prefs`. The existing player overlay chooses the audio presentation without changing navigation, player ownership, playback or the miniplayer. Standard remains the default, and video retains its current presentation.
@@ -155,6 +158,8 @@ Routes include onboarding, home, learn, briefing, settings, debug, explore, libr
 Episode push artwork keeps its six-second total deadline and uses 700ms per route, allowing later episode/show candidates within that budget.
 
 ## Testing notes
+
+- `TabletAppShellTest` uses actual retained NavHosts with local destinations to cover nested Back, hidden-host lifecycle, primary/detail saved state, compact/portrait resize and external links. `TabletShellGeometryTest` covers pane closure, phone preservation, immersive bounds and tabletop docking. `TabletNavigationRailTest` checks all four existing actions share one selection indicator. Tablet variants of `ShellPhoneGoldenTest` render the actual shell/player with fixed mock flows; the phone branch remains the frozen fixture.
 
 - Local screenshot fixtures now provide the shared window model. The tablet before/after matrix is separate from the immutable phone baselines; see `docs/TESTING.md`. Product shell ownership remains in this module.
 

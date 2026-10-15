@@ -72,11 +72,13 @@ class FullPlayerUiStateSaverTest {
         val store = PlayerPresentationStore()
         val original = store.forEpisode("rss:episode/one")
         original.supportingTab = PlayerSupportingTab.Notes
+        store.expanded = true
         assertEquals(original, store.forEpisode("rss:episode/one"))
         val scope = SaverScope { true }
         val saved = with(PlayerPresentationStoreSaver) { scope.save(store) }
         val restored = requireNotNull(PlayerPresentationStoreSaver.restore(requireNotNull(saved)))
         assertEquals(PlayerSupportingTab.Notes, restored.forEpisode("rss:episode/one").supportingTab)
+        assertTrue(restored.expanded)
         assertEquals(PlayerSupportingTab.UpNext, restored.forEpisode("-42").supportingTab)
     }
 }

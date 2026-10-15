@@ -155,9 +155,11 @@ fun appBottomChromeContentPadding(
     style: NavigationStyle,
     isMiniPlayerVisible: Boolean,
     systemNavigationInset: androidx.compose.ui.unit.Dp = 0.dp,
+    navigationRailVisible: Boolean = false,
 ): androidx.compose.ui.unit.Dp {
     val metrics = navigationChromeMetrics(style)
-    return metrics.bottomNavigationClearance + systemNavigationInset.coerceAtLeast(0.dp) +
+    val navigationClearance = if (navigationRailVisible) 0.dp else metrics.bottomNavigationClearance
+    return navigationClearance + systemNavigationInset.coerceAtLeast(0.dp) +
         if (isMiniPlayerVisible) metrics.miniPlayerHeight + metrics.miniPlayerNavigationGap else 0.dp
 }
 
@@ -167,8 +169,9 @@ fun appBottomChromeContentPadding(
     systemNavigationInset: androidx.compose.ui.unit.Dp = 0.dp,
 ): androidx.compose.ui.unit.Dp = appBottomChromeContentPadding(
     style = LocalNavigationStyle.current,
-    isMiniPlayerVisible = isMiniPlayerVisible,
+    isMiniPlayerVisible = isMiniPlayerVisible && !cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePlayerPaneVisible.current,
     systemNavigationInset = systemNavigationInset,
+    navigationRailVisible = cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreNavigationRailVisible.current,
 )
 
 /** Explore For You / Top segmented control (padding + pill). */
@@ -186,7 +189,7 @@ data class NavDestination(
     @DrawableRes val unselectedIconRes: Int? = null,
 )
 
-private val primaryNavDestinations = listOf(
+internal val primaryNavDestinations = listOf(
     NavDestination(
         route = "home",
         label = "Home",
@@ -207,7 +210,7 @@ private val primaryNavDestinations = listOf(
     ),
 )
 
-private val loreNavDestination =
+internal val loreNavDestination =
     NavDestination(
         route = "learn",
         label = "Lore",

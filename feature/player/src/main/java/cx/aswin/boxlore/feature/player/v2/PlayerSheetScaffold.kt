@@ -104,6 +104,8 @@ data class PlayerSheetLayout(
     val compactProgress: State<Float>? = null,
     val compactTargetY: Float = collapsedTargetY,
     val miniPlayerSeekButtonsEnabled: Boolean = false,
+    val collapsedLeftInset: Dp = 0.dp,
+    val collapsedRightInset: Dp = 0.dp,
 )
 
 data class PlayerSheetActions(
@@ -170,6 +172,7 @@ fun PlayerSheetScaffold(
         }
     val playerColors = rememberPlayerColors(artworkUrl)
     val colorScheme = playerColors.scheme
+    val presentation = LocalPlayerPresentationStore.current
 
     // Thresholds/specs factory is deprecated in favor of AnchoredDraggableDefaults.flingBehavior;
     // keep it here so mini-player settle velocity/feel stays identical.
@@ -177,7 +180,7 @@ fun PlayerSheetScaffold(
     val sheetState =
         remember(density) {
             AnchoredDraggableState(
-                initialValue = PlayerSheetValue.Collapsed,
+                initialValue = if (presentation?.expanded == true) PlayerSheetValue.Expanded else PlayerSheetValue.Collapsed,
                 positionalThreshold = { distance: Float -> distance * 0.5f },
                 velocityThreshold = { with(density) { PlayerSheetDecisiveFlingDistance.toPx() } },
                 // Soft expressive settle — gesture gates below keep mini controls tappable
@@ -187,6 +190,11 @@ fun PlayerSheetScaffold(
             )
         }
     ConfigurePlayerSheetAnchors(sheetState, layout.collapsedTargetY)
+    LaunchedEffect(sheetState, presentation) {
+        if (presentation != null) {
+            snapshotFlow { sheetState.currentValue }.collect { presentation.expanded = it == PlayerSheetValue.Expanded }
+        }
+    }
     val geometry = rememberPlayerSheetGeometry(sheetState, layout)
     val sheetInteractionSource = remember { MutableInteractionSource() }
     val isDragging by sheetInteractionSource.collectIsDraggedAsState()
@@ -406,6 +414,8 @@ private fun PlayerSheetSurface(
                 isRtl = isRtl,
                 adaptiveEnabled = layout.navigationStyle == NavigationStyle.Floating,
                 isFullscreenVideo = content.isFullscreenVideo,
+                collapsedLeftInset = layout.collapsedLeftInset,
+                collapsedRightInset = layout.collapsedRightInset,
             ),
         )
         val surfaceExpansion = if (content.isFullscreenVideo) 1f else geometry.expansionFraction

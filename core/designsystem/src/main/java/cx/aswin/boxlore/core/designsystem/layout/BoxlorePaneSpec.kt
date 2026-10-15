@@ -20,6 +20,11 @@ val LocalBoxlorePaneWidth = staticCompositionLocalOf { 0f }
 /** Window-relative physical bounds, supplied by the shell for context and immersive players. */
 val LocalBoxlorePaneBounds = staticCompositionLocalOf<BoxloreLayoutBounds?> { null }
 
+/** Feature overlays reserve only chrome that is actually present in their shell. */
+val LocalBoxloreNavigationRailVisible = staticCompositionLocalOf { false }
+val LocalBoxlorePlayerPaneVisible = staticCompositionLocalOf { false }
+val LocalBoxloreDockedPlayerBounds = staticCompositionLocalOf<BoxloreLayoutBounds?> { null }
+
 fun boxlorePaneSpec(layout: BoxloreWindowLayout, contextOpen: Boolean): BoxlorePaneSpec {
     val fullWindow = BoxloreLayoutBounds(0f, 0f, layout.widthDp, layout.heightDp)
     if (!layout.usesTabletLayout) {

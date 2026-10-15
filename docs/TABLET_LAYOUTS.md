@@ -1,6 +1,6 @@
 # Tablet and foldable layout implementation
 
-Status: phases 1–3 are committed locally; phase 4 has passed its complete gate and visual review. The split shell and phase 6 work are not done yet.
+Status: phases 1–4 are committed locally. Phase 5 passed its complete gate and shell review. Phase 6 is in progress.
 
 ## Scope and preservation
 
@@ -11,10 +11,10 @@ Phone geometry takes priority. The frozen 66-image phone matrix includes 360×80
 | Window | Navigation | Poster packing | Card limits | Panes |
 | :--- | :--- | :--- | :--- | :--- |
 | Width <600dp or height <480dp | Existing phone chrome | Existing screen counts | Original caller constraints | Existing single viewport |
-| 600–839dp and height ≥480dp | Rail in phase 5 | About 3 columns at 600dp after rail | Shared tablet families below | Single content pane |
-| 840–1199dp portrait | Rail in phase 5 | About 4 columns at 840dp after rail | Same caps | Single content pane |
-| Width ≥840dp, landscape, height ≥480dp | Rail in phase 5 | Recomputed for primary pane | Same caps | Primary plus optional 360–520dp context, 16dp gap |
-| Width ≥1200dp | Rail in phase 5 | 5+ when the available pane allows | Same caps | Same split rule |
+| 600–839dp and height ≥480dp | Rail | About 3 columns at 600dp after rail | Shared tablet families below | Single content pane |
+| 840–1199dp portrait | Rail | About 4 columns at 840dp after rail | Same caps | Single content pane |
+| Width ≥840dp, landscape, height ≥480dp | Rail | Recomputed for primary pane | Same caps | Primary plus optional 360–520dp context, 16dp gap |
+| Width ≥1200dp | Rail | 5+ when the available pane allows | Same caps | Same split rule |
 | Separating/occluding hinge | Per contiguous region | Current pane width | Same caps | No pane crosses hinge; undersized context closes |
 
 | Family | Tablet packing minimum | Maximum surface width | Aspect / behavior |
@@ -170,11 +170,12 @@ The index includes named card containers, their loading forms, and named interna
 - Tablet before: `output/tablet-layouts/before/` (132 PNGs), also `build/reports/tablet-captures/before/`.
 - Card-sizing review pass: `output/tablet-layouts/phase3-card-sizing/` (132 images). These are work in progress; the player and rail/split shell are not applied yet. Final after captures are not done.
 - Player review pass: `output/tablet-layouts/phase4-player/` (12 images). Portrait controls remain visible at 600dp; tabletop art and transport stay on opposite sides of the synthetic hinge. Final shell captures are not done.
+- Split-shell review pass: `output/tablet-layouts/phase5-shell/` (48 images). This pass includes rail, primary/context player, portrait docking and tabletop shell placement. Phase 6 refinements are not applied.
 - Teal artwork is a fixed, in-memory test image; fixtures perform no network requests. Synthetic hinges do not prove device posture handling.
 
 ## Dependency change
 
-The unused adaptive navigation-suite was replaced by stable Adaptive `adaptive` / `adaptive-layout` 1.1.0 and an explicit Window 1.4.0 dependency at the shell. Newer stable Adaptive releases would raise resolved Compose dependencies. The release dependency snapshot confirms that UI/runtime 1.9.2, Foundation 1.8.1 and Material 3 1.5.0-alpha11 remain unchanged. Test-support adds no release dependencies.
+The unused adaptive navigation-suite was replaced by stable Adaptive `adaptive` 1.1.0 and an explicit Window 1.4.0 dependency at the shell. Newer stable Adaptive releases would raise resolved Compose dependencies. The release dependency snapshot confirms that UI/runtime 1.9.2, Foundation 1.8.1 and Material 3 1.5.0-alpha11 remain unchanged. The unused `adaptive-layout` artifact was removed after the shell implementation; it contributes no runtime layout code. Test-support adds no release dependencies.
 
 ## Verification ledger
 
@@ -190,13 +191,14 @@ bash scripts/ci/check-feature-no-posthog.sh
 - Phase 2: complete; all units, coverage, dependency guards, Android lint and 66 phone images passed. Two new-model ktlint tasks failed in the first full run, were fixed by hand, and `detekt ktlintCheck :core:designsystem:testDebugUnitTest --tests '*BoxloreWindowLayoutTest' installDebug --max-workers=2` passed (9 window cases). Installed on the connected phone; no interaction claim is made.
 - Phase 3: complete full gate passed, including merged coverage, dependency guards, Android lint and all 66 phone images. Focused loose/tight slot tests passed. The first pass caught an Echo capture-wrapper start-frame change and a loose-slot viewport issue; both were fixed with the phone baselines unchanged. Installed on the connected phone.
 - Phase 4: the full gate passed in 2m21s, including all 66 unchanged phone images, JVM player/posture/video/state tests, merged coverage, static checks and dependency guards. Visual review caught clipped portrait controls and a cramped tabletop empty message; both were fixed and reverified. `installDebug` was attempted after a successful debug build but the phone had disconnected (`No connected devices`), so phase 4 device installation and interaction checks are not done.
+- Phase 5: the frozen-source full gate passed in 2m34s, including all 66 unchanged phone images, retained pane/navigation/reflow tests, coverage, dependency guards and Android lint. Both feature-boundary scripts passed. Shell captures were reviewed separately.
 - Tablet before: `:app:testDebugUnitTest :feature:explore:testDebugUnitTest :feature:info:testDebugUnitTest :feature:player:testDebugUnitTest :feature:onboarding:testDebugUnitTest :feature:settings:testDebugUnitTest -PtabletCaptures=before --tests '*PhoneGoldenTest' --max-workers=2` passed, 132 images.
 - Remote CI, real folding hardware and finished tablet interaction validation: not done.
 
 ## Remaining work and proposals
 
-Rail/split context navigation, saved pane state, modal adaptation, keyboard/secondary-click behavior and final captures are not done yet. The player has bounded portrait/column layouts, fold-safe tabletop regions and saved Up next / Chapters / Transcript / Notes tabs. Existing playback and supporting-content actions are reused. No card internal redesign has been introduced. Potential future proposals: a wide editorial briefing composition, a richer expanded library hub, and a wider Lore reading format require separate product review; the current work retains their existing designs.
+Rail/split context navigation and saved pane state are implemented. Modal adaptation, keyboard/secondary-click behavior and final captures are not done yet. The player has bounded portrait/column layouts, fold-safe tabletop regions and saved Up next / Chapters / Transcript / Notes tabs. Existing playback and supporting-content actions are reused. No card internal redesign has been introduced. Potential future proposals: a wide editorial briefing composition, a richer expanded library hub, and a wider Lore reading format require separate product review; the current work retains their existing designs.
 
 ## Local state
 
-Branch `one/tablet-layouts` starts at `66efd4d3`. Phase 1 commit `0bb5744b`; phase 2 commit `8defb51d`; phase 3 commit `7f827380`. All work remains local. No push, PR, merge or deployment is part of this task.
+Branch `one/tablet-layouts` starts at `66efd4d3`. Phase 1 commit `0bb5744b`; phase 2 commit `8defb51d`; phase 3 commit `7f827380`; phase 4 commit `8d7eebee`. All work remains local. No push, PR, merge or deployment is part of this task.

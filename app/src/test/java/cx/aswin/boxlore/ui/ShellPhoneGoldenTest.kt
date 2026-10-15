@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.BoxLoreNavigationBar
 import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkMiniPlayerColors
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.testing.PhoneGoldenConfiguration
@@ -61,6 +62,7 @@ class ShellPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
 
     @Test fun miniPlayerOverHome() = render("mini-player-home", "home") {
         Home(loading = false)
+        if (LocalBoxloreWindowLayout.current.usesTabletLayout) return@render
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             MiniPlayerV2(
                 content = MiniPlayerContent(episode, podcasts.first().title, PhoneGoldenRule.ARTWORK_URL, false, false, 120_000L, 3_600_000L),
@@ -76,6 +78,10 @@ class ShellPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
         golden.setContent {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 Surface(Modifier.fillMaxSize()) {
+                    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+                        TabletShellCapture(route, episode, podcasts.first(), name == "mini-player-home", content)
+                        return@Surface
+                    }
                     Box(Modifier.fillMaxSize()) {
                         content()
                         Box(Modifier.align(Alignment.BottomCenter)) {
