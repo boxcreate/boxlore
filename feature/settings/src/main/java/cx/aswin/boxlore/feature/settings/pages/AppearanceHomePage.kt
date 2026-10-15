@@ -26,12 +26,20 @@ private val HeroStyleOptions = listOf(
     HeroStyleOption(HeroCardStyle.BLOCK, R.string.hero_card_style_block, R.string.hero_card_style_block_description),
     HeroStyleOption(HeroCardStyle.COVER, R.string.hero_card_style_cover, R.string.hero_card_style_cover_description),
     HeroStyleOption(HeroCardStyle.DUOTONE, R.string.hero_card_style_duotone, R.string.hero_card_style_duotone_description),
+    HeroStyleOption(HeroCardStyle.HALO, R.string.hero_card_style_halo, R.string.hero_card_style_halo_description),
 )
+
+/** The colour choice's name and footer for each style that colours its cards from the artwork. */
+private fun heroColorsCopy(style: String): Pair<Int, Int> = when (style) {
+    HeroCardStyle.DUOTONE -> R.string.hero_duotone_colors_title to R.string.hero_duotone_colors_footer
+    HeroCardStyle.HALO -> R.string.hero_halo_colors_title to R.string.hero_halo_colors_footer
+    else -> R.string.hero_cover_shade_title to R.string.hero_cover_shade_footer
+}
 
 /**
  * Home: a preview of the picked hero card style with its Jump back in card, every style as a
- * scrolling row of picture tiles drawn from the real cards, the colours Cover and Duotone take, and
- * the top bar shortcuts.
+ * scrolling row of picture tiles drawn from the real cards, the colours the artwork styles take,
+ * and the top bar shortcuts.
  */
 @Composable
 internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceActions, heroPreview: AppearanceHeroPreview?, onBack: () -> Unit) {
@@ -60,13 +68,13 @@ internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceAct
                 }
             }
         }
-        // Cover and Duotone draw the artwork across the card, so only they take these colours.
+        // Every style but Block colours its cards from the artwork, so only they take these colours.
         if (HeroCardStyle.usesArtworkColors(style)) {
-            val duotone = style == HeroCardStyle.DUOTONE
-            SettingsGroup(footer = stringResource(if (duotone) R.string.hero_duotone_colors_footer else R.string.hero_cover_shade_footer)) {
+            val (colorsTitle, colorsFooter) = heroColorsCopy(style)
+            SettingsGroup(footer = stringResource(colorsFooter)) {
                 SettingsContent {
                     AppearanceChoicePicker(
-                        label = stringResource(if (duotone) R.string.hero_duotone_colors_title else R.string.hero_cover_shade_title),
+                        label = stringResource(colorsTitle),
                         options = listOf(
                             HeroCoverShade.DARK to stringResource(R.string.hero_cover_shade_dark),
                             HeroCoverShade.ARTWORK to stringResource(R.string.hero_cover_shade_artwork),

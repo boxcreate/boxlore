@@ -61,23 +61,23 @@ class HeroSkeletonCardsTest {
         }
     }
 
-    @Test fun `full artwork skeletons put the play pair where the cards do`() {
+    @Test fun `artwork style skeletons put the play pair where the cards do`() {
         style.value = HeroCardStyle.COVER
         composeRule.setContent {
             BoxLoreTheme(dynamicColor = false) {
                 Column {
                     Box(Modifier.size(320.dp, homeHeroHeight()).testTag("card")) {
-                        if (style.value == HeroCardStyle.COVER) {
-                            CoverHeroCard(item, {}, {}, null, null, isPlaying = false)
-                        } else {
-                            DuotoneHeroCard(item, {}, {}, null, null, isPlaying = false)
+                        when (style.value) {
+                            HeroCardStyle.COVER -> CoverHeroCard(item, {}, {}, null, null, isPlaying = false)
+                            HeroCardStyle.HALO -> HaloHeroCard(item, {}, {}, null, null, isPlaying = false)
+                            else -> DuotoneHeroCard(item, {}, {}, null, null, isPlaying = false)
                         }
                     }
                     Box(Modifier.size(320.dp, homeHeroHeight()).testTag("skeleton")) { HeroSkeletonCard(style.value) }
                 }
             }
         }
-        listOf(HeroCardStyle.COVER, HeroCardStyle.DUOTONE).forEach { entry ->
+        listOf(HeroCardStyle.COVER, HeroCardStyle.DUOTONE, HeroCardStyle.HALO).forEach { entry ->
             style.value = entry
             composeRule.waitForIdle()
             val card = bounds("card")

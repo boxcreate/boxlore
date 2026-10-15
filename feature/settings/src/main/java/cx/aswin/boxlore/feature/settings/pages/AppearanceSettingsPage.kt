@@ -156,7 +156,7 @@ internal fun appearanceSummary(state: AppearanceUiState): AppearanceSummary {
     )
 }
 
-/** The hero card style, with the colours Cover and Duotone take. */
+/** The hero card style, with the colours the artwork styles take. */
 private fun homeSummary(state: AppearanceUiState): String {
     val colors = HeroCoverShade.sanitize(state.heroCoverShade)
     return when (HeroCardStyle.sanitize(state.heroCardStyle)) {
@@ -169,6 +169,11 @@ private fun homeSummary(state: AppearanceUiState): String {
             HeroCoverShade.DARK -> "black and white"
             HeroCoverShade.THEME -> "app theme tones"
             else -> "artwork tones"
+        }
+        HeroCardStyle.HALO -> "Halo hero cards, " + when (colors) {
+            HeroCoverShade.DARK -> "dark cards"
+            HeroCoverShade.THEME -> "app theme color"
+            else -> "artwork color"
         }
         else -> "Block hero cards"
     }
@@ -183,6 +188,7 @@ internal fun AppearanceHeroPreviewStage(style: String, coverShade: String, heroP
     val description = when (HeroCardStyle.sanitize(style)) {
         HeroCardStyle.COVER -> "Preview of Cover hero cards"
         HeroCardStyle.DUOTONE -> "Preview of Duotone hero cards"
+        HeroCardStyle.HALO -> "Preview of Halo hero cards"
         else -> "Preview of Block hero cards"
     }
     Surface(

@@ -243,26 +243,7 @@ internal fun CoverHeroGridCard(
         modifier = modifier.fillMaxSize(),
     ) {
         Column(Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 12.dp)) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).testTag("home_hero_collection_heading").semantics { heading() },
-                )
-                val countDescription = pluralStringResource(R.plurals.home_hero_episode_count, displayItems.size, displayItems.size)
-                Text(
-                    displayItems.size.toString(),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics { contentDescription = countDescription },
-                )
-            }
+            HeroCollectionHeading(title, displayItems.size, MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 coverGridRows(displayItems.size).forEachIndexed { rowIndex, row ->
@@ -293,6 +274,31 @@ internal fun CoverHeroGridCard(
                 }
             }
         }
+    }
+}
+
+/** A full-artwork collection's heading and episode count, in the card's content colour. */
+@Composable
+internal fun HeroCollectionHeading(title: String, count: Int, countColor: Color) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = GoogleSansWeight.bold),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).testTag("home_hero_collection_heading").semantics { heading() },
+        )
+        val countDescription = pluralStringResource(R.plurals.home_hero_episode_count, count, count)
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.labelLarge,
+            color = countColor,
+            modifier = Modifier.semantics { contentDescription = countDescription },
+        )
     }
 }
 

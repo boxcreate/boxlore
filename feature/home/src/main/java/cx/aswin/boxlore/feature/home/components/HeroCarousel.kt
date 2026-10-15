@@ -70,7 +70,7 @@ fun HeroCarousel(
 
         when {
             HeroCardStyle.usesArtworkColors(style) ->
-                FullArtworkHeroItem(style == HeroCardStyle.DUOTONE, item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
+                FullArtworkHeroItem(style, item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
             item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID -> {
                 HeroGridCard(
                     items = item.gridItems,
@@ -179,7 +179,7 @@ internal data class HeroPlayingState(val podcastId: String?, val episodeId: Stri
 @Composable
 @Suppress("LongParameterList")
 private fun androidx.compose.material3.carousel.CarouselItemScope.FullArtworkHeroItem(
-    duotone: Boolean,
+    style: String,
     item: SmartHeroItem,
     position: Int,
     onCollectionPlayback: (Podcast) -> Unit,
@@ -195,35 +195,10 @@ private fun androidx.compose.material3.carousel.CarouselItemScope.FullArtworkHer
             val resume = item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID
             val title = stringResource(if (resume) R.string.home_hero_resume_collection else R.string.home_hero_new_collection)
             val mode = if (resume) HeroGridMode.Resume else HeroGridMode.NewEpisodes
-            if (duotone) {
-                DuotoneHeroGridCard(
-                    items = item.gridItems,
-                    title = title,
-                    mode = mode,
-                    onCellClick = onDetailsClick,
-                    onPlaybackClick = onCollectionPlayback,
-                    currentPlayingPodcastId = playing.podcastId,
-                    currentPlayingEpisodeId = playing.episodeId,
-                    isPlaying = playing.isPlaying,
-                    modifier = Modifier.maskClip(shape),
-                    carouselItemDrawInfo = carouselItemDrawInfo,
-                )
-            } else {
-                CoverHeroGridCard(
-                    items = item.gridItems,
-                    title = title,
-                    mode = mode,
-                    onCellClick = onDetailsClick,
-                    onPlaybackClick = onCollectionPlayback,
-                    currentPlayingPodcastId = playing.podcastId,
-                    currentPlayingEpisodeId = playing.episodeId,
-                    isPlaying = playing.isPlaying,
-                    modifier = Modifier.maskClip(shape),
-                )
-            }
+            FullArtworkGridCard(style, item.gridItems, title, mode, onDetailsClick, onCollectionPlayback, playing, carouselItemDrawInfo, Modifier.maskClip(shape))
         }
         else -> FullArtworkHeroCard(
-            duotone = duotone,
+            style = style,
             item = item,
             onClick = {
                 val bundle = android.os.Bundle().apply {
@@ -265,11 +240,45 @@ private fun rememberHeroSwipeTelemetry(cardCount: Int): androidx.compose.runtime
     return maxScrolledIndex
 }
 
-/** Cover's or Duotone's single-episode card. */
+/** Cover's, Duotone's or Halo's Jump back in / New episodes card. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@Suppress("LongParameterList")
+private fun FullArtworkGridCard(
+    style: String,
+    items: List<Podcast>,
+    title: String,
+    mode: HeroGridMode,
+    onCellClick: (Podcast) -> Unit,
+    onPlaybackClick: (Podcast) -> Unit,
+    playing: HeroPlayingState,
+    drawInfo: androidx.compose.material3.carousel.CarouselItemDrawInfo,
+    modifier: Modifier,
+) {
+    when (style) {
+        HeroCardStyle.DUOTONE -> DuotoneHeroGridCard(
+            items = items,
+            title = title,
+            mode = mode,
+            onCellClick = onCellClick,
+            onPlaybackClick = onPlaybackClick,
+            currentPlayingPodcastId = playing.podcastId,
+            currentPlayingEpisodeId = playing.episodeId,
+            isPlaying = playing.isPlaying,
+            modifier = modifier,
+            carouselItemDrawInfo = drawInfo,
+        )
+        HeroCardStyle.HALO ->
+            HaloHeroGridCard(items, title, mode, onCellClick, onPlaybackClick, playing.podcastId, playing.episodeId, playing.isPlaying, modifier)
+        else -> CoverHeroGridCard(items, title, mode, onCellClick, onPlaybackClick, playing.podcastId, playing.episodeId, playing.isPlaying, modifier)
+    }
+}
+
+/** Cover's, Duotone's or Halo's single-episode card. */
 @Composable
 @Suppress("LongParameterList")
 private fun FullArtworkHeroCard(
-    duotone: Boolean,
+    style: String,
     item: SmartHeroItem,
     onClick: () -> Unit,
     onArrowClick: () -> Unit,
@@ -278,9 +287,9 @@ private fun FullArtworkHeroCard(
     isPlaying: Boolean,
     modifier: Modifier,
 ) {
-    if (duotone) {
-        DuotoneHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
-    } else {
-        CoverHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
+    when (style) {
+        HeroCardStyle.DUOTONE -> DuotoneHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
+        HeroCardStyle.HALO -> HaloHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
+        else -> CoverHeroCard(item, onClick, onArrowClick, currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying, modifier)
     }
 }

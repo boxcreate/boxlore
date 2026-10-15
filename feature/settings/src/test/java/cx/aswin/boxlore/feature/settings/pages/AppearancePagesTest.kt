@@ -112,13 +112,21 @@ class AppearancePagesTest {
         assertEquals(listOf(HeroCardStyle.COVER, HeroCardStyle.DUOTONE), styles)
         compose.onNodeWithText("Shade behind text").assertDoesNotExist()
         compose.onNodeWithText("Duotone colors").assertExists()
+
+        // Halo sits further along the row and calls the same choice its card color.
+        compose.onNodeWithText("Halo").performScrollTo().performClick()
+        assertEquals(listOf(HeroCardStyle.COVER, HeroCardStyle.DUOTONE, HeroCardStyle.HALO), styles)
+        compose.onNodeWithText("Duotone colors").assertDoesNotExist()
+        compose.onNodeWithText("Card color").assertExists()
         assertEquals("Buttons drawn inside previews never react", 0, previewButtonClicks)
     }
 
     @Test
-    fun `summary names the duotone colours`() {
+    fun `summary names the duotone and halo colours`() {
         assertEquals("Duotone hero cards, black and white", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.DUOTONE, heroCoverShade = HeroCoverShade.DARK)).home)
         assertEquals("Duotone hero cards, artwork tones", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.DUOTONE)).home)
+        assertEquals("Halo hero cards, artwork color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.HALO)).home)
+        assertEquals("Halo hero cards, dark cards", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.HALO, heroCoverShade = HeroCoverShade.DARK)).home)
     }
 
     @Test

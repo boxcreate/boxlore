@@ -14,13 +14,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
@@ -37,15 +43,16 @@ internal fun HeroSkeletonCard(style: String) {
     when (style) {
         HeroCardStyle.COVER -> CoverHeroSkeletonCard(tones)
         HeroCardStyle.DUOTONE -> DuotoneHeroSkeletonCard(tones)
+        HeroCardStyle.HALO -> HaloHeroSkeletonCard(tones)
         else -> BlockHeroSkeletonCard(tones)
     }
 }
 
-/** The next card's sliver: solid for Block, whose peek shows the card's colour; artwork otherwise. */
+/** The next card's sliver: artwork for Cover and Duotone, whose art fills the card; solid otherwise. */
 @Composable
 internal fun HeroSkeletonPeek(style: String) {
     val tones = heroSkeletonTones()
-    val artwork = HeroCardStyle.usesArtworkColors(style)
+    val artwork = style == HeroCardStyle.COVER || style == HeroCardStyle.DUOTONE
     Box(
         Modifier.clip(HomeHeroStyle.CardShape).background(tones.surface)
             .then(if (artwork) Modifier.m3Shimmer(tones.base, tones.highlight) else Modifier),
@@ -129,6 +136,46 @@ private fun DuotoneHeroSkeletonCard(tones: HeroSkeletonTones) {
             FullArtworkSkeletonCopy(tones.onArtwork, tones.onArtworkHighlight)
             Spacer(Modifier.height(16.dp))
             SkeletonActions(tones.onArtwork, tones.onArtworkHighlight)
+        }
+    }
+}
+
+/**
+ * Halo: the ring's track and a cookie where the cover goes, both placed by [haloGeometry], the context
+ * lines in the room beside them, and the copy and Play / details pair at the bottom. A plain layout,
+ * so nothing subcomposes on a cold start.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun HaloHeroSkeletonCard(tones: HeroSkeletonTones) {
+    val cookie = MaterialShapes.Cookie9Sided.toShape()
+    Layout(
+        content = {
+            Box(Modifier.m3Shimmer(tones.base, tones.highlight, cookie))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SkeletonLine(0.7f, 12.dp, tones.base, tones.highlight)
+                SkeletonLine(0.5f, 24.dp, tones.base, tones.highlight)
+            }
+            Column(Modifier.padding(20.dp)) {
+                Spacer(Modifier.weight(1f))
+                FullArtworkSkeletonCopy(tones.base, tones.highlight)
+                Spacer(Modifier.height(16.dp))
+                SkeletonActions(tones.base, tones.highlight)
+            }
+        },
+        modifier = Modifier.fillMaxSize().clip(HomeHeroStyle.CardShape).background(tones.surface)
+            .drawBehind { drawHaloRing(haloGeometry(size.width / density, size.height / density), tones.base) }
+            .testTag(skeletonTag(HeroCardStyle.HALO)),
+    ) { measurables, constraints ->
+        val geometry = haloGeometry(constraints.maxWidth / density, constraints.maxHeight / density)
+        val coverSize = geometry.cover.dp.roundToPx()
+        val cover = measurables[0].measure(Constraints.fixed(coverSize, coverSize))
+        val context = measurables[1].measure(Constraints(maxWidth = geometry.contextWidth.dp.roundToPx()))
+        val copy = measurables[2].measure(Constraints.fixed(constraints.maxWidth, constraints.maxHeight))
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            copy.placeRelative(0, 0)
+            context.placeRelative(20.dp.roundToPx(), 20.dp.roundToPx())
+            cover.placeRelative(geometry.coverStart.dp.roundToPx(), geometry.coverTop.dp.roundToPx())
         }
     }
 }
