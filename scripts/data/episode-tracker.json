@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-15T12:36:00.805Z",
+  "lastRun": "2026-10-15T17:37:05.671Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0dfcfea-cfc6-11f0-83c5-df5cfc8cd54e",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "58310ac3-cb78-43e2-9c75-5b810965adf2",
-      "lastEpisodeTitle": "8am ET, October 15 | The latest headlines from NPR",
+      "lastRssKey": "30f5d3ce-5c1a-4cb9-ae9e-a1d238b8e5fc",
+      "lastEpisodeTitle": "1pm ET, October 15 | The latest headlines from NPR",
       "lastEpisodeId": "61772764727",
-      "lastCheckedAt": 1792067767018
+      "lastCheckedAt": 1792085831355
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75794512",
@@ -145,10 +145,10 @@
       "lastCheckedAt": 1791976612989
     },
     "259125": {
-      "lastRssKey": "6accccc78f90a39dfc5c5691",
-      "lastEpisodeTitle": "Henderson’s stunning double + Palmer’s contract extension",
+      "lastRssKey": "6ad0e4c5e65da00825dcc146",
+      "lastEpisodeTitle": "Can Chelsea banish their Everton (A) hoodoo?",
       "lastEpisodeId": "61425566670",
-      "lastCheckedAt": 1791834988544
+      "lastCheckedAt": 1792085842663
     },
     "271849": {
       "lastRssKey": "tag:soundcloud,2010:tracks/2417137758",
@@ -179,16 +179,16 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "EB7215D3-E815-432F-B4CD-A285055CD671",
-      "lastEpisodeTitle": "Stocks Slide Amid AI Rout",
-      "lastEpisodeId": "61768759364",
-      "lastCheckedAt": 1792067807554
+      "lastRssKey": "5F9B03A8-5D73-4C4D-810C-684D35D44A47",
+      "lastEpisodeTitle": "Trump Cancels Plan to Livestream Execution of Fort Hood Shooter",
+      "lastEpisodeId": "61780184180",
+      "lastCheckedAt": 1792085845024
     },
     "331078": {
-      "lastRssKey": "13444b66-b823-11f1-957c-df1d5bd68530",
-      "lastEpisodeTitle": "OpenAI's Office Was Bugged",
-      "lastEpisodeId": "61634759824",
-      "lastCheckedAt": 1792008009716
+      "lastRssKey": "13887818-b823-11f1-957c-073ba46e3b04",
+      "lastEpisodeTitle": "Anthropic's Growth Is Slowing",
+      "lastEpisodeId": "61780869884",
+      "lastCheckedAt": 1792085846302
     },
     "353744": {
       "lastRssKey": "flightcast:01M4NT5N4PZP5NCJHH2GNWHCTN",
@@ -197,10 +197,10 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "4830fd6e-c891-11f1-aae4-87d22ad48636",
-      "lastEpisodeTitle": "8AM ET 10/15/2026 Newscast",
+      "lastRssKey": "3110448a-c8bb-11f1-bf49-1799be29cd49",
+      "lastEpisodeTitle": "1PM ET 10/15/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792067809147
+      "lastCheckedAt": 1792085846892
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -221,10 +221,10 @@
       "lastCheckedAt": 1791881995314
     },
     "399669": {
-      "lastRssKey": "f2268046-c7df-4d0b-9a1a-fd10aba32585",
-      "lastEpisodeTitle": "The Zodiac /// Part 4",
-      "lastEpisodeId": "61729629365",
-      "lastCheckedAt": 1791993299988
+      "lastRssKey": "fee9be6e-af67-43c1-b56c-f8a707f983a0",
+      "lastEpisodeTitle": "The Zodiac /// Part 5",
+      "lastEpisodeId": "61776427517",
+      "lastCheckedAt": 1792085849269
     },
     "415434": {
       "lastRssKey": "4a5106e0-6e7b-11f1-94bf-1fb71a6a68f7",
@@ -251,10 +251,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M4ZMD8F4VSF7WM4096NT2WVB",
-      "lastEpisodeTitle": "Where grocery prices are headed",
-      "lastEpisodeId": "61738733529",
-      "lastCheckedAt": 1792067814402
+      "lastRssKey": "01M5015MS7VDTTFSSEPQ37ZG1V",
+      "lastEpisodeTitle": "Tensions in the data center capital of the world",
+      "lastEpisodeId": "61781990730",
+      "lastCheckedAt": 1792085853629
     },
     "432535": {
       "lastRssKey": "7519f2d2-1e3b-405d-b08e-1c3da35a65e7",
@@ -345,10 +345,10 @@
       "lastCheckedAt": 1791993316277
     },
     "491579": {
-      "lastRssKey": "6acf8c1d6203da9f282dec79",
-      "lastEpisodeTitle": "Propaganda: Passing and Dribbling",
+      "lastRssKey": "6ad0d0b7eea51f2aa3de74e9",
+      "lastEpisodeTitle": "Computer Says Pay More | The Square Ball",
       "lastEpisodeId": "61679916642",
-      "lastCheckedAt": 1791993317370
+      "lastCheckedAt": 1792085866129
     },
     "497129": {
       "lastRssKey": "12381::3577747",
@@ -559,10 +559,10 @@
       "lastCheckedAt": 1791957137097
     },
     "827592": {
-      "lastEpisodeId": "61731857800",
-      "lastEpisodeTitle": "Short Stuff: Currency Symbols",
-      "lastRssKey": "65aec1de-d4db-465a-851d-b4e20124b771",
-      "lastCheckedAt": 1792008059995
+      "lastEpisodeId": "61775250609",
+      "lastEpisodeTitle": "The Disappearance of Dorothy Arnold",
+      "lastRssKey": "bdf36b41-bcb8-4ce8-9e94-b4e301268c65",
+      "lastCheckedAt": 1792085893641
     },
     "837535": {
       "lastRssKey": "eada12de-c7ed-11f1-bd3c-e76c9d911c23",
@@ -648,10 +648,10 @@
       "lastCheckedAt": 1791594418220
     },
     "980370": {
-      "lastRssKey": "6acf9867b3381b9dbb7c315a",
-      "lastEpisodeTitle": "AI brain fry is real. Here’s what’s causing it | Julie Bedard",
-      "lastEpisodeId": "61632132865",
-      "lastCheckedAt": 1791993362233
+      "lastRssKey": "6acfa619b3381b9dbb7c315c",
+      "lastEpisodeTitle": "How to stop homelessness before it starts | Jen Loving",
+      "lastEpisodeId": "61781993390",
+      "lastCheckedAt": 1792085908587
     },
     "998969": {
       "lastRssKey": "audioboom-01a13607-6145-7f47-83a9-d416842aae7f",
@@ -682,10 +682,10 @@
       "lastCheckedAt": 1791145313695
     },
     "1035900": {
-      "lastRssKey": "cb00d4fe-4433-4e96-997b-4b73d9f01cc8",
-      "lastEpisodeTitle": "GTA 6 im Leaks-Wahn: Zerstören diese Enthüllungen unsere Vorfreude? | Radio Buschfunk",
-      "lastEpisodeId": "61728980373",
-      "lastCheckedAt": 1791993368395
+      "lastRssKey": "329f652e-ef7a-40eb-b799-8814f81aa157",
+      "lastEpisodeTitle": "Enshrouded 1.0: So will ich ums Überleben kämpfen! | mit Kontreck & Entwickler Antony",
+      "lastEpisodeId": "61777438225",
+      "lastCheckedAt": 1792085915695
     },
     "1047718": {
       "lastRssKey": "6ad076688f080d5da2f47a80",
@@ -747,10 +747,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "c3693292-c84d-11f1-9ce4-db12d771ac15",
-      "lastEpisodeTitle": "Habs Make Mistakes & Dobes Doesn’t Help | The Sick Podcast with Tony Marinaro October 14 2026",
+      "lastRssKey": "c8451dee-c8b6-11f1-a61b-93a711182693",
+      "lastEpisodeTitle": "Dobes Doit Être Meilleur & Lane Remporte La Bataille | Le Sick Podcast Avec Tony Marinaro 15/10/26",
       "lastEpisodeId": "61681000050",
-      "lastCheckedAt": 1792047696482
+      "lastCheckedAt": 1792085925273
     },
     "1199730": {
       "lastRssKey": "2c3ffa25-fb78-4559-b68e-7f7580a4190d",
@@ -765,10 +765,10 @@
       "lastCheckedAt": 1792067889178
     },
     "1258562": {
-      "lastRssKey": "6ac22edf52f9e4485fc03f23",
-      "lastEpisodeTitle": "210. The Burning Car Murder | Mundill Mahil & Gagandip Singh",
-      "lastCheckedAt": 1791567006570,
-      "lastEpisodeId": "53310059829"
+      "lastRssKey": "6ad0ce1fb9a0305b85511b5c",
+      "lastEpisodeTitle": "211. The Trial of Ajmal Kasab | Ft. Ujjwal Nikam",
+      "lastEpisodeId": "53310059829",
+      "lastCheckedAt": 1792085926446
     },
     "1266933": {
       "lastRssKey": "4c5fea84-d345-4950-ad09-54ab043d0ef2",
@@ -811,10 +811,10 @@
       "lastCheckedAt": 1792019363878
     },
     "1366771": {
-      "lastRssKey": "6ad0b37b253c13a89823145a",
-      "lastEpisodeTitle": "Afternoon Briefing Thursday 15th October",
+      "lastRssKey": "6ad0fc5a3dc1c1be4af8e8c8",
+      "lastEpisodeTitle": "Evening Briefing Thursday 15th October",
       "lastEpisodeId": "61703934412",
-      "lastCheckedAt": 1792067893235
+      "lastCheckedAt": 1792085930176
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -1112,10 +1112,10 @@
       "lastCheckedAt": 1791939324143
     },
     "5848065": {
-      "lastRssKey": "6ac7bef9937a3c900ff1bcae",
-      "lastEpisodeTitle": "رویافروشی | صنعتی که از آرزوهای تو پول درمیاره",
+      "lastRssKey": "6ad0fc62253c13a8982a4e17",
+      "lastEpisodeTitle": "فرهاد زهی‌بخش | یائسگی و ناگفته‌های زندگی جنسی زنان",
       "lastEpisodeId": "60515874671",
-      "lastCheckedAt": 1791480732412
+      "lastCheckedAt": 1792085956738
     },
     "5930143": {
       "lastRssKey": "4e4b7f32-42a1-4dd8-84d0-d3bc0de89ef2",
@@ -1124,10 +1124,10 @@
       "lastCheckedAt": 1792047729388
     },
     "5945547": {
-      "lastRssKey": "0da47757-ee1f-4ddd-b540-2b2e4c9862e5",
-      "lastEpisodeTitle": "Episode 151 - Sitcoms, Suplexes & Saint-Tropez",
+      "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
+      "lastEpisodeTitle": "Episode 150 - Treasure, Tyrants & Tinseltown ft. Ami Goradia",
       "lastEpisodeId": "61746245186",
-      "lastCheckedAt": 1792019393160
+      "lastCheckedAt": 1792085957396
     },
     "5972153": {
       "lastRssKey": "21fde32e-c85e-11f1-9696-8bf1dada389d",
@@ -1171,10 +1171,10 @@
       "lastCheckedAt": 1792047732755
     },
     "6413946": {
-      "lastRssKey": "92e3855c-90e0-4901-b29c-6badfbc4c823",
-      "lastEpisodeTitle": "EP 843: Liberan a delincuente en Morelos por chantaje de su grupo, El Papa tiene cáncer de pulmón y Adán Augusto defiende a Andy",
-      "lastEpisodeId": "61679713972",
-      "lastCheckedAt": 1791993414612
+      "lastRssKey": "d8fb2609-0aab-4aaa-9936-e0eaa913e30d",
+      "lastEpisodeTitle": "EP 844: Dan a plataformas un mes para quitar contenidos violentos ¿Qué significa que Televisa compre AT&T? y Exoneran a director de migración por tragedia de Ciudad Juárez",
+      "lastEpisodeId": "61784480750",
+      "lastCheckedAt": 1792085960102
     },
     "6456494": {
       "lastRssKey": "6acef2bd94a3daa98e9257a3",
@@ -1195,9 +1195,10 @@
       "lastCheckedAt": 1791957193157
     },
     "6579505": {
-      "lastRssKey": "1ab30b32-c645-11f1-b6ed-9385b41a412b",
-      "lastEpisodeTitle": "Man City HUMILIATE Liverpool! Man United Draw With Spurs & Arsenal Fight Back! | Weekend Round Up",
-      "lastCheckedAt": 1791835066545
+      "lastRssKey": "d0f855ea-c89e-11f1-9093-db893a0ab20d",
+      "lastEpisodeTitle": "Man United LOSE AGAIN! Martinez SLAMS Club as Arsenal & Liverpool RUN RIOT in UCL! | Weekend Preview",
+      "lastEpisodeId": "61776870050",
+      "lastCheckedAt": 1792085961552
     },
     "6602135": {
       "lastRssKey": "f425d862-9ebf-4c24-8ed3-b94fa4558ea3",
@@ -1228,10 +1229,10 @@
       "lastCheckedAt": 1790864068120
     },
     "6655297": {
-      "lastRssKey": "indieventurepodcast.podbean.com/b685cee1-6305-3d57-a43b-566efee0c3e8",
-      "lastEpisodeTitle": "EXTRA: The Ed Thorn Within 3",
+      "lastRssKey": "indieventurepodcast.podbean.com/2fccebfe-3cdf-34a2-863f-8e896f906cd2",
+      "lastEpisodeTitle": "#67. What we've been playing (Well Dweller, Endacopia, Mythmatch)",
       "lastEpisodeId": "60509388415",
-      "lastCheckedAt": 1791480737075
+      "lastCheckedAt": 1792085962850
     },
     "6686930": {
       "lastRssKey": "661671f397ce6d00176628b4",
@@ -1300,10 +1301,10 @@
       "lastCheckedAt": 1792008156157
     },
     "6852067": {
-      "lastRssKey": "baa847a6-c6b8-11f1-a477-e3a46596779d",
-      "lastEpisodeTitle": "Lindsay Clancy: criminal o una paciente que el sistema dejó caer??",
+      "lastRssKey": "a5e974da-c8b5-11f1-bc7d-df778e1b539c",
+      "lastEpisodeTitle": "Substack: cómo un newsletter se volvió un negocio de $1,100 millones",
       "lastEpisodeId": "61447816610",
-      "lastCheckedAt": 1791882109728
+      "lastCheckedAt": 1792085967633
     },
     "6866470": {
       "lastRssKey": "https://api.spreaker.com/episode/75698542",
@@ -1318,10 +1319,10 @@
       "lastCheckedAt": 1791729740337
     },
     "6872190": {
-      "lastRssKey": "https://api.spreaker.com/episode/75789169",
-      "lastEpisodeTitle": "CUANDO TE IGNOREN o SE ALEJEN, REACCIONA ASÍ 7 LECCIONES ESTOICAS - ESTOICISMO para recuperar tu paz interior",
-      "lastEpisodeId": "61732364093",
-      "lastCheckedAt": 1792008158228
+      "lastRssKey": "https://api.spreaker.com/episode/75794310",
+      "lastEpisodeTitle": "7 HÁBITOS ESTOICOS PARA TENER LA SEMANA MÁS PRODUCTIVA DE TU VIDA - SABIDURÍA ESTOICA sin perder la calma ni el enfoque",
+      "lastEpisodeId": "61774936952",
+      "lastCheckedAt": 1792085969490
     },
     "6894068": {
       "lastRssKey": "8523d712-c285-11f1-92f0-dfc3eebf5d48",
@@ -1426,10 +1427,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a13be5-ea29-7c8e-bf8f-362c91f3f909",
-      "lastEpisodeTitle": "Elon Musk Accused of Sabotaging Ukraine",
+      "lastRssKey": "audioboom-01a14082-7711-74e7-9b89-980de751f406",
+      "lastEpisodeTitle": "Elon Musk Has Dumped $276 Million To Save Republicans",
       "lastEpisodeId": "61691973806",
-      "lastCheckedAt": 1792008166997
+      "lastCheckedAt": 1792085976600
     },
     "7239415": {
       "lastRssKey": "c49155a8-c845-11f1-9746-0779a43ac463",
@@ -1442,6 +1443,12 @@
       "lastEpisodeTitle": "Alex Fdz en Chilango: Miércoles 14 de octubre de 2026",
       "lastEpisodeId": "61360194267",
       "lastCheckedAt": 1792028535912
+    },
+    "7277494": {
+      "lastRssKey": "fd0ae3c1-3a1c-47dd-960b-85193bafaf4c",
+      "lastEpisodeTitle": "An Update on Spoiled Fruit - and What Comes Next",
+      "lastEpisodeId": "58859136947",
+      "lastCheckedAt": 1792085977842
     },
     "7283122": {
       "lastRssKey": "6144700e-c776-11f1-ae79-0356e98ec65b",
@@ -1610,10 +1617,10 @@
       "lastCheckedAt": 1791835092689
     },
     "7679624": {
-      "lastRssKey": "https://api.spreaker.com/episode/75331816",
-      "lastEpisodeTitle": "Unsolved Mysteries with Dennis Farina -",
-      "lastEpisodeId": "61641827676",
-      "lastCheckedAt": 1791856469898
+      "lastRssKey": "https://api.spreaker.com/episode/75311446",
+      "lastEpisodeTitle": "The Killer Who Thought He_d Never Be Found _ Glen McCurley _ World_s Most Evil Killers",
+      "lastEpisodeId": "61781364702",
+      "lastCheckedAt": 1792085986674
     },
     "7722206": {
       "lastEpisodeId": "61764042839",
@@ -1652,10 +1659,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/8ca96374-8866-53f7-96cd-3589202c3d27",
-      "lastEpisodeTitle": "BEWARE This Is How The Narcissist SUCKS YOU IN I Dr. Ramani ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/5fe65e84-4c75-5b25-bb98-76c93c83200c",
+      "lastEpisodeTitle": "Complex trauma and narcissistic relationships I Dr. Ingrids insights ~ Dr. Ramani",
       "lastEpisodeId": "61761430954",
-      "lastCheckedAt": 1792067953180
+      "lastCheckedAt": 1792085989597
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
