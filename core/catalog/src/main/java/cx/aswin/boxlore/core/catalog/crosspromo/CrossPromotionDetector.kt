@@ -5,125 +5,144 @@ import cx.aswin.boxlore.core.model.CrossPromotionConfidence
 import cx.aswin.boxlore.core.model.CrossPromotionIndicator
 import cx.aswin.boxlore.core.model.CrossPromotionResult
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.EpisodeLinkKind
 import cx.aswin.boxlore.core.model.ShowNotes
-import java.util.Locale
 
+/**
+ * Decides whether an episode promotes another show and names it. The title's wording says how
+ * likely that is ([TitleCue]); the episode's own artwork, a trailer's length and the show notes
+ * corroborate it. [CrossPromotionResolver] still has to find the named show before anything shows.
+ */
 class CrossPromotionDetector {
-    private val strict = listOf(
-        Regex("""^[\[(*]?(feed drop|trailer swap|promo drop|bonus drop|feed swap|feed share)[\])*]?\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE),
-        Regex("""^[\[(*]?(promo swap|guest feed|companion show|network premiere|cross.?promo|promo episode)[\])*]?\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE),
+    private val previewTitle = Regex(
+        """(?i)^\W*(?:(?:a|an|the)\s+)?(?:special\s+|sneak\s+|exclusive\s+)?(?:preview|trailer|introducing|feed drop|sneak peek|announcing|""" +
+            """coming soon|listen now|announcement|(?:(?:my|our)\s+)?(?:brand[- ])?new (?:show|podcast|series))\b|\b(?:preview|trailer|feed drop)\W*$""",
     )
-    private val introducing = Regex("""^[\[(*]?(introducing|listen now|listen to|special preview|sneak peek|we recommend)[\])*]?\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE)
-    private val weak = Regex("""^(?:discover|meet|check out|announcing|try|sample|preview|(?:brand )?(?:new|next) (?:season|sesson|seaton)|sesson)\s*[:–—|\-]+\s*(.+)$""", RegexOption.IGNORE_CASE)
-    private val presents = Regex("""^(?:.+\s)?(?:presents|presenting|presented by|from the creators of|from the makers of|from the team behind|brought to you by)(?:\s+[^:|]+)?\s*[:|]\s*(.+)$""", RegexOption.IGNORE_CASE)
-    private val seamless = Regex("""^introducing\s+(?!season\b)(.+)$""", RegexOption.IGNORE_CASE)
-    private val promoLanguage = Regex("""\b(?:subscribe to|listen to|check out|follow|introducing|new podcast|new show|feed drop|trailer swap)\b""", RegexOption.IGNORE_CASE)
-    private val recommendation = Regex("""\b(?:subscribe\s+to|listen\s+to|check\s+out|follow|introducing)\s+""", RegexOption.IGNORE_CASE)
-    private val showPrefix = Regex("""^(?:our new podcast|our podcast|the podcast|new podcast|our new show|our show|the show|new show)\s+""", RegexOption.IGNORE_CASE)
-    private val continuation = Regex("""^\s+(?:wherever|where you|on|for|every|daily|weekly|now|today|as)\b""", RegexOption.IGNORE_CASE)
-    private val quotedName = Regex("""^(?:(?:our|the|new|podcast|show|series)\s+)*["“‘']([^"”’']{3,120})["”’']""", RegexOption.IGNORE_CASE)
-    private val namedRecommendation = Regex("""\b(?:subscribe to|listen to|check out|follow)\s+""", RegexOption.IGNORE_CASE)
-    private val namedPrefix = Regex("""^(?:(?:our new podcast|our podcast|the podcast|our new show|our show)\s+)*""", RegexOption.IGNORE_CASE)
-    private val nameBoundaries = listOf(
-        Regex("""\s+(?:wherever|where you|on Apple|on Spotify|for more|for new)""", RegexOption.IGNORE_CASE),
-        Regex("""\s+every\s+(?:week|day|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b""", RegexOption.IGNORE_CASE),
-        Regex("""[!\n]"""),
-    )
-    private val seasonOnly = Regex("""(?i)^(?:(?:brand )?(?:new|next) )?(?:season|series|episode|part|s)\s*\d*$""")
+    private val newShowTitle = Regex("""(?i)^\W*(?:(?:my|our)\s+)?(?:brand[- ])?new (?:show|podcast|series)\W*$""")
+    private val lowercaseLead = Regex("""^(?:the|a|an|our|my|this|these|those|some|all)\s""")
+    private val ownSeriesTitle = Regex("""(?i)\bour (?:new )?(?:\d+-part )?(?:series|season|episode|mini-?series)\b|\bnew season (?:trailer|teaser|preview)\b""")
+    private val endsWithYear = Regex("""\b(?:19|20)\d{2}$""")
 
-    private data class TitleCandidate(val name: String, val indicator: CrossPromotionIndicator, val weak: Boolean = false)
-    private data class Evidence(val title: TitleCandidate?, val descriptionSupports: Boolean, val short: Boolean, val trailer: Boolean, val bonus: Boolean, val previewTitle: Boolean)
+    private data class Signals(
+        val text: String,
+        val promoText: String,
+        val short: Boolean,
+        val otherArtwork: Boolean,
+        val trailer: Boolean,
+        val bonus: Boolean,
+    )
 
     fun detect(episode: Episode, hostPodcastTitle: String, notes: ShowNotes = ShowNotesParser.parse(episode.description)): CrossPromotionResult {
-        val title = episode.title.trim()
-        strict.firstNotNullOfOrNull { it.matchEntire(title) }?.let {
-            return result(it.groupValues[2], hostPodcastTitle, CrossPromotionConfidence.HIGH, CrossPromotionIndicator.TITLE_DELIMITER_PATTERN)
-        }
-        val descriptionName = descriptionName(notes, hostPodcastTitle)
-        val candidate = titleCandidate(title)?.takeIf { isOtherShow(it.name, hostPodcastTitle) }
-        val name = candidate?.name ?: descriptionName ?: return none()
-        val evidence = Evidence(
-            candidate,
-            descriptionName?.let { sameShow(it, name) } == true || candidate?.let { descriptionPromotes(notes, it.name) } == true,
-            episode.duration in 30..300,
-            episode.episodeType.equals("trailer", true),
-            episode.episodeType.equals("bonus", true),
-            Regex("(?i)\\b(?:preview|trailer|introducing|feed drop)\\b").containsMatchIn(title),
+        val signals = Signals(
+            text = notes.plainText,
+            promoText = "${episode.title}\n${notes.plainText}",
+            short = episode.duration in 15..420,
+            otherArtwork = otherArtwork(episode.imageUrl, episode.podcastImageUrl),
+            trailer = episode.episodeType.equals("trailer", true),
+            bonus = episode.episodeType.equals("bonus", true),
         )
-        if (!supported(evidence)) return none()
-        val confidence = if (evidence.descriptionSupports && (evidence.trailer || candidate != null)) CrossPromotionConfidence.HIGH else CrossPromotionConfidence.MEDIUM
-        return CrossPromotionResult(true, confidence, name, indicators(evidence))
+        val candidate = CrossPromotionTitles.candidate(episode.title)
+        if (candidate?.cue == TitleCue.EXCHANGE) return exchanged(candidate, episode.title, signals, hostPodcastTitle)
+        if (ownSeriesTitle.containsMatchIn(episode.title) || CrossPromotionDescription.premium(episode.title)) return none()
+        if (candidate != null) return titled(candidate, signals, hostPodcastTitle)
+        return mentioned(episode.title, signals, hostPodcastTitle) ?: described(episode.title, notes, signals, hostPodcastTitle) ?: none()
     }
 
-    private fun descriptionName(notes: ShowNotes, host: String): String? = notes.links.firstNotNullOfOrNull { link ->
-        link.title?.takeIf { link.kind == EpisodeLinkKind.PODCAST && promoLanguage.containsMatchIn(link.context) && isOtherShow(it, host) }
-    } ?: notes.plainText.lines().firstNotNullOfOrNull { line ->
-        val name = descriptionLineName(line)
-        name?.let(::clean)?.takeIf { isOtherShow(it, host) }
-    }
-
-    private fun descriptionLineName(line: String): String? {
-        recommendation.findAll(line).firstNotNullOfOrNull { action ->
-            quotedName.find(line.substring(action.range.last + 1))?.groupValues?.get(1)
-        }?.let { return it }
-        return namedRecommendation.findAll(line).firstNotNullOfOrNull { action ->
-            val tail = line.substring(action.range.last + 1).replaceFirst(namedPrefix, "")
-            val end = nameBoundaries.mapNotNull { it.find(tail)?.range?.first }.minOrNull() ?: tail.length
-            tail.take(end).takeIf { it.length in 3..120 }
+    /** "Feed Drop: Serial" names another show outright; only the host's own name is refused. */
+    private fun exchanged(candidate: TitleCandidate, title: String, signals: Signals, host: String): CrossPromotionResult {
+        if (CrossPromotionNames.sameShow(candidate.name, host)) return none()
+        val supported = supportedName(candidate.name, signals) != null
+        // "Feed Drop: Why Only 10% of Companies Succeed" names an episode; the notes or the rest of the title name its show.
+        val named = if (supported) {
+            null
+        } else {
+            CrossPromotionDescription.friendsName(signals.text)?.takeIf { !CrossPromotionNames.sameShow(it, host) }
+                ?: CrossPromotionTitles.pieces(title).firstOrNull { !CrossPromotionNames.related(it, host) && CrossPromotionDescription.supports(signals.text, it) }
         }
+        return promoted(named ?: candidate.name, CrossPromotionConfidence.HIGH, candidate.indicator, supported || named != null, signals)
     }
 
-    private fun descriptionPromotes(notes: ShowNotes, name: String): Boolean {
-        val words = normalizedName(name).split(' ').filter(String::isNotBlank)
-        if (words.isEmpty()) return false
-        val pattern = words.joinToString("[^\\p{L}\\p{N}]+") { if (it == "and") "(?:and|&)" else Regex.escape(it) }
-        val wholeName = Regex("""^["“‘']?$pattern(?=$|[^\p{L}\p{N}])""", RegexOption.IGNORE_CASE)
-        return notes.plainText.lines().any { line ->
-            recommendation.findAll(line).any phrase@{ phrase ->
-                val original = line.substring(phrase.range.last + 1)
-                val tail = original.takeIf { wholeName.containsMatchIn(it) } ?: original.replaceFirst(showPrefix, "")
-                val match = wholeName.find(tail) ?: return@phrase false
-                val rest = tail.substring(match.range.last + 1).trimStart('"', '”', '’', '\'')
-                rest.isBlank() || rest.trimStart().firstOrNull() in listOf('.', '!', '?', ',', ';', ':') || continuation.containsMatchIn(rest)
-            }
-        }
+    /** A title that introduces [candidate], which the host also does for its own seasons and series. */
+    private fun titled(candidate: TitleCandidate, signals: Signals, host: String): CrossPromotionResult {
+        val name = candidate.name
+        if (CrossPromotionNames.related(name, host) || notAShow(candidate)) return none()
+        val supported = supportedName(name, signals) != null
+        if (!supported && hostsOwn(candidate, signals, host)) return none()
+        // "Ken Burns Presents Willa Cather’s America" and "Archive 81 Presents… The NoSleep Podcast" read alike, so presenters need evidence.
+        val evidence = candidate.explicit || signals.otherArtwork || signals.short || signals.trailer
+        if (!supported && (candidate.cue == TitleCue.WEAK || !evidence)) return none()
+        val confidence = if (supported) CrossPromotionConfidence.HIGH else CrossPromotionConfidence.MEDIUM
+        return promoted(name, confidence, candidate.indicator, supported, signals)
     }
 
-    private fun titleCandidate(title: String): TitleCandidate? {
-        introducing.matchEntire(title)?.let { return TitleCandidate(clean(it.groupValues[2]), CrossPromotionIndicator.TITLE_DELIMITER_PATTERN) }
-        weak.matchEntire(title)?.let { return TitleCandidate(clean(it.groupValues[1]), CrossPromotionIndicator.TITLE_DELIMITER_PATTERN, weak = true) }
-        presents.matchEntire(title)?.let { return TitleCandidate(clean(it.groupValues[1]), CrossPromotionIndicator.TITLE_PRESENTS_PATTERN) }
-        return seamless.matchEntire(title)?.let { TitleCandidate(clean(it.groupValues[1]), CrossPromotionIndicator.TITLE_SEAMLESS_INTRODUCING) }
+    /** "INTRODUCING the RAMPAGE ROOKIES!" introduces people and "Announcing ROOTCON 2023!" an event; shows are named in title case. */
+    private fun notAShow(candidate: TitleCandidate): Boolean =
+        candidate.cue == TitleCue.SEAMLESS && (lowercaseLead.containsMatchIn(candidate.name) || endsWithYear.containsMatchIn(candidate.name))
+
+    /** The host's own series ("Gangster Presents: The Story of Ronnie Biggs" in Gangster), season or premium preview. */
+    private fun hostsOwn(candidate: TitleCandidate, signals: Signals, host: String): Boolean =
+        candidate.presenter?.let { CrossPromotionNames.sameShow(it, host) } == true ||
+            CrossPromotionDescription.premium(signals.promoText) ||
+            hostOnly(signals.text, host, candidate.name)
+
+    /** A title that is, or contains, the name of a show its notes and artwork describe as another show. */
+    private fun mentioned(title: String, signals: Signals, host: String): CrossPromotionResult? {
+        if (!signals.otherArtwork && !signals.short && !signals.trailer) return null
+        if (CrossPromotionDescription.premium(signals.promoText)) return null
+        val name = CrossPromotionTitles.pieces(title).firstOrNull { piece ->
+            !CrossPromotionNames.related(piece, host) && CrossPromotionDescription.supports(signals.text, piece) && !hostOnly(signals.text, host, piece)
+        } ?: return null
+        return promoted(name, CrossPromotionConfidence.MEDIUM, CrossPromotionIndicator.DESCRIPTION_PROMO_LANGUAGE, supports = true, signals)
     }
 
-    private fun supported(evidence: Evidence): Boolean {
-        // Missing numbering and a Bonus tag are common metadata, not promotion evidence.
-        if (evidence.title?.weak == true) return evidence.descriptionSupports
-        val corroborated = evidence.trailer || evidence.short || evidence.descriptionSupports
-        return evidence.title != null && corroborated || evidence.descriptionSupports && (evidence.trailer || evidence.short && evidence.previewTitle)
+    /** A preview whose title does not name the show but whose notes do. */
+    private fun described(title: String, notes: ShowNotes, signals: Signals, host: String): CrossPromotionResult? {
+        val preview = previewTitle.containsMatchIn(title)
+        val corroborated = signals.trailer || preview && (signals.short || signals.otherArtwork || newShowTitle.containsMatchIn(title))
+        if (!corroborated || CrossPromotionDescription.premium(signals.promoText)) return null
+        val name = CrossPromotionDescription.friendsName(notes.plainText)?.takeIf { !CrossPromotionNames.sameShow(it, host) }
+            ?: CrossPromotionDescription.name(notes, host) ?: return null
+        if (CrossPromotionNames.related(name, host)) return null
+        val confidence = if (signals.trailer) CrossPromotionConfidence.HIGH else CrossPromotionConfidence.MEDIUM
+        return promoted(name, confidence, CrossPromotionIndicator.DESCRIPTION_PROMO_LANGUAGE, supports = true, signals)
     }
 
-    private fun indicators(evidence: Evidence): List<CrossPromotionIndicator> = buildList {
-        evidence.title?.let { add(it.indicator) }
-        if (evidence.descriptionSupports) add(CrossPromotionIndicator.DESCRIPTION_PROMO_LANGUAGE)
-        if (evidence.short) add(CrossPromotionIndicator.SHORT_DURATION)
-        if (evidence.trailer || evidence.bonus) add(CrossPromotionIndicator.TRAILER_OR_BONUS_TYPE)
+    /** The first form of [name] that the notes invite listeners to, if any. */
+    private fun supportedName(name: String, signals: Signals): String? =
+        CrossPromotionNames.variants(name).firstOrNull { CrossPromotionDescription.supports(signals.text, it) }
+
+    /** The notes call the episode part of the host show ("a preview of the new season of You Must Remember This") and never name [name]. */
+    private fun hostOnly(text: String, host: String, name: String): Boolean =
+        CrossPromotionDescription.ownShow(text, host) && !CrossPromotionDescription.mentions(text, name)
+
+    private fun promoted(
+        name: String,
+        confidence: CrossPromotionConfidence,
+        indicator: CrossPromotionIndicator,
+        supports: Boolean,
+        signals: Signals,
+    ): CrossPromotionResult = CrossPromotionResult(
+        isCrossPromotion = true,
+        confidence = confidence,
+        extractedShowName = name,
+        matchedIndicators = buildList {
+            add(indicator)
+            if (supports && indicator != CrossPromotionIndicator.DESCRIPTION_PROMO_LANGUAGE) add(CrossPromotionIndicator.DESCRIPTION_PROMO_LANGUAGE)
+            if (signals.short) add(CrossPromotionIndicator.SHORT_DURATION)
+            if (signals.trailer || signals.bonus) add(CrossPromotionIndicator.TRAILER_OR_BONUS_TYPE)
+            if (signals.otherArtwork) add(CrossPromotionIndicator.DISTINCT_ARTWORK)
+        },
+    )
+
+    private fun otherArtwork(episodeArt: String?, showArt: String?): Boolean {
+        val episode = episodeArt?.substringBefore('?')?.trim().orEmpty()
+        val show = showArt?.substringBefore('?')?.trim().orEmpty()
+        return episode.isNotEmpty() && show.isNotEmpty() && !episode.equals(show, ignoreCase = true)
     }
 
-    private fun result(name: String, host: String, confidence: CrossPromotionConfidence, indicator: CrossPromotionIndicator): CrossPromotionResult {
-        val cleanName = clean(name)
-        return if (isOtherShow(cleanName, host)) CrossPromotionResult(true, confidence, cleanName, listOf(indicator)) else none()
-    }
-
-    private fun isOtherShow(name: String, host: String): Boolean = name.length in 3..120 && !seasonOnly.matches(name) && !sameShow(name, host) && !Regex("(?i)^(?:us|me|our|the show|this show|our show|this podcast|our podcast)(?:\\s|$)").containsMatchIn(name) && !name.contains("://")
-    private fun clean(name: String): String = name.trim().trim('"', '\'', '“', '”', '‘', '’', '*').replace(Regex("\\s+"), " ")
     private fun none() = CrossPromotionResult(false, CrossPromotionConfidence.NONE, null, emptyList())
 
     companion object {
-        internal fun normalizedName(text: String): String = text.lowercase(Locale.ROOT)
-            .replace("&", " and ")
-            .replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim().removeSuffix(" podcast").trim()
-        internal fun sameShow(first: String, second: String): Boolean = normalizedName(first) == normalizedName(second)
+        internal fun normalizedName(text: String): String = CrossPromotionNames.normalized(text)
+        internal fun sameShow(first: String, second: String): Boolean = CrossPromotionNames.sameShow(first, second)
     }
 }

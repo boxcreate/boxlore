@@ -119,4 +119,25 @@ class CrossPromotionResolverTest {
         val resolver = CrossPromotionResolver({ listOf(show("correct", "Target Show")) }, { show("wrong", "Unrelated Show") })
         assertEquals("correct", resolver.resolve("Target Show", "host", links)?.id)
     }
+
+    @Test
+    fun `season subtitles hosts and long titles still find their show`() = runTest {
+        val resolver = CrossPromotionResolver({ emptyList() }, { null })
+        assertEquals("fiasco", resolver.bestMatch(listOf(show("fiasco", "Fiasco")), "Fiasco: Benghazi", "host")?.id)
+        assertEquals("uncharted", resolver.bestMatch(listOf(show("uncharted", "Uncharted with Hannah Fry")), "Uncharted", "host")?.id)
+        assertEquals("fake", resolver.bestMatch(listOf(show("fake", "Everything Is Fake (And Nobody Cares)")), "Everything Is Fake", "host")?.id)
+        assertEquals("bayou", resolver.bestMatch(listOf(show("bayou", "Betrayal on the Bayou")), "Smoke Screen: Betrayal on the Bayou", "host")?.id)
+        assertNull(resolver.bestMatch(listOf(show("fiasco", "Fiasco")), "Fiasco Benghazi", "host"))
+    }
+
+    @Test
+    fun `a subtitled name searches its shorter form when the full name finds nothing`() = runTest {
+        val queries = mutableListOf<String>()
+        val resolver = CrossPromotionResolver({ query ->
+            queries += query
+            if (query == "Closereads") listOf(show("closereads", "Closereads")) else emptyList()
+        }, { null })
+        assertEquals("closereads", resolver.resolve("Closereads: Donald Davidson on Self-Knowledge", "host")?.id)
+        assertEquals(listOf("Closereads: Donald Davidson on Self-Knowledge", "Closereads"), queries)
+    }
 }
