@@ -49,8 +49,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 <a id="whats-new"></a>
 
+<img src="docs/images/brand/whats-new.svg" width="100%" alt="What’s new: release notes, and what’s coming next"/>
+
 <details>
-<summary><img src="docs/images/brand/whats-new.svg" width="100%" alt="What’s new: release notes, and what’s coming next. Select to open."/></summary>
+<summary><b>Read the release notes</b></summary>
 
 <!-- upcoming-changes:start -->
 
