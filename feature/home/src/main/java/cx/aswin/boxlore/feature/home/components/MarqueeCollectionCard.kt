@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -67,9 +69,10 @@ import kotlinx.coroutines.isActive
 
 /**
  * Marquee's Jump back in and New episodes cards: the chosen episode's cover fills the card, with the
- * collection's name and position at the top and the episode's words, Play and details at the bottom.
+ * collection's name and position on a solid chip above the episode's words, Play and details at the
+ * bottom.
  * Below them a strip of covers picks the episode: while the card is on screen it advances on its own
- * every 3.5 seconds. Dragging the strip holds it, and after a tap or a drag it waits 8 seconds before
+ * every 5 seconds. Dragging the strip holds it, and after a tap or a drag it waits 8 seconds before
  * moving on again, so the listener's choice stays put while they look at it.
  */
 @Composable
@@ -126,11 +129,13 @@ internal fun MarqueeCollectionCard(
         }
         MarqueeFrost(podcast.imageUrl, podcast.artworkUrls(), look.filter, look.topContent, look.veilAlpha, maxHeight)
         if (active) MarqueeReportTone(look.topContent)
-        MarqueeCollectionPosition(title, index, display.size, shade, Modifier.padding(start = 20.dp, top = LocalHeroTopInset.current + 12.dp))
         Column(
             Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
+            // The collection's name and position sit in the words' own column, so nothing can overlap them.
+            MarqueeCollectionPosition(title, index, display.size, shade)
+            Spacer(Modifier.height(10.dp))
             CoverCopy(item, shade, progressState = null)
             Spacer(Modifier.height(14.dp))
             Box(Modifier.width(MarqueeActionsWidth)) {
@@ -155,26 +160,27 @@ internal fun MarqueeCollectionCard(
     }
 }
 
-/** "Jump back in · 2 of 4", in the collection's words at the top of the card. */
+/** "Jump back in · 2 of 4" on a solid chip in the card's colours, readable over any cover. */
 @Composable
-private fun MarqueeCollectionPosition(title: String, index: Int, count: Int, shade: ArtworkShade, modifier: Modifier) {
+private fun MarqueeCollectionPosition(title: String, index: Int, count: Int, shade: ArtworkShade) {
     val position = stringResource(R.string.home_hero_collection_position, index + 1, count)
     Text(
         buildAnnotatedString {
-            withStyle(SpanStyle(color = shade.content, fontWeight = GoogleSansWeight.semiBold)) { append(title) }
+            withStyle(SpanStyle(color = shade.content, fontWeight = GoogleSansWeight.bold)) { append(title) }
             append(" · ")
             append(position)
         },
-        style = MaterialTheme.typography.bodyLarge,
+        style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp, lineHeight = 18.sp),
         color = shade.softContent,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = modifier.testTag("home_hero_collection_position"),
+        modifier = Modifier.clip(CircleShape).background(shade.container).padding(horizontal = 12.dp, vertical = 6.dp)
+            .testTag("home_hero_collection_position"),
     )
 }
 
 /**
- * Calls [advance] every 3.5 seconds while [running] and Home is on screen. Once the listener has
+ * Calls [advance] every 5 seconds while [running] and Home is on screen. Once the listener has
  * touched the strip ([touches] above 0, and again each time it changes) it first waits 8 seconds.
  */
 @Composable

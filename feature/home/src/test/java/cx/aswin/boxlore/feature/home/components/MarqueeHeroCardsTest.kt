@@ -189,8 +189,8 @@ class MarqueeHeroCardsTest {
         assertEquals(false, marqueeShouldRotate(count = 3, allowed = false, touched = false, onScreen = true))
         assertEquals(6_000L, marqueeDwellMillis(resumeItem()))
         val four = listOf("a", "b", "c", "d").map(::show)
-        assertEquals(14_000L, marqueeDwellMillis(SmartHeroItem(HeroType.RESUME_GRID, four.first(), "", gridItems = four)))
-        assertEquals(7_000L, marqueeDwellMillis(SmartHeroItem(HeroType.NEW_EPISODES_GRID, four.first(), "", gridItems = four.take(2))))
+        assertEquals(20_000L, marqueeDwellMillis(SmartHeroItem(HeroType.RESUME_GRID, four.first(), "", gridItems = four)))
+        assertEquals(10_000L, marqueeDwellMillis(SmartHeroItem(HeroType.NEW_EPISODES_GRID, four.first(), "", gridItems = four.take(2))))
     }
 
     @Test fun `up-next covers move the hero to their card`() {
@@ -217,7 +217,7 @@ class MarqueeHeroCardsTest {
         render(autoAdvance = true)
         composeRule.mainClock.advanceTimeByFrame()
         composeRule.onNodeWithText("Jump back in · 1 of 4").assertExists()
-        composeRule.mainClock.advanceTimeBy(3_600L)
+        composeRule.mainClock.advanceTimeBy(5_100L)
         composeRule.onNodeWithText("Jump back in · 2 of 4").assertExists()
 
         // Choosing a cover holds it for 8 seconds. With the clock held, the test presses through semantics.

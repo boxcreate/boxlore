@@ -219,7 +219,7 @@ internal fun Modifier.marqueeTouches(onPress: () -> Unit, onRelease: () -> Unit)
 }
 
 /** The collection strip moves to its next episode this often. */
-internal const val MarqueeStripStepMillis = 3_500L
+internal const val MarqueeStripStepMillis = 5_000L
 private const val MarqueeCardMillis = 6_000L
 
 /** Room under Play for the page dots: 14dp above them, the dots, 12dp below. */
