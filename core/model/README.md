@@ -20,7 +20,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
   (Brief audio play synthesizes glossary `entry_point=briefing` for `playback_*`).
 - `AutoTranscriptState`.
 - `PodcastGenres` and `RankingAggregateTelemetry`.
-- Cross-promotion model types.
+- Cross-promotion model types: `CrossPromotionResult` / `ResolvedCrossPromotion`, `CrossPromotionConfidence` and `CrossPromotionIndicator`, whose `DISTINCT_ARTWORK` marks an episode whose own cover differs from its show's (evidence `:core:catalog`'s detector uses for trailers of another show). Indicators live only in UI state.
 - `ShowNotes`, `EpisodeLink`, and `EpisodeLinkKind` carry locally parsed plain text, publisher HTML, chapters, resource purpose, destination, and publisher labels without UI or parser-library dependencies.
 - `Podcast.isLatestEpisodeNew`: shared NEW badge. Room `rssHasNewEpisodes` is true for true-RSS freshness **and** for Podcast Index direct-feed tip promotions (`updateLatestEpisode(..., markAsNew = true)`). Opening the show clears the flag. Otherwise the 48h window / last-seen id rules apply.
 - `Podcast.effectiveGenre`: resolves user `customGenre` override when non-blank, falling back to default catalog `genre`. Companion `customGenreIcon` stores the icon identifier for custom tags.
