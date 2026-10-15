@@ -85,6 +85,8 @@ object AnalyticsGlossary {
             "support_page_viewed",
             "support_tier_toggled",
             "support_donate_clicked",
+            "support_page_left",
+            "support_entry_viewed",
         )
 
     /** Phase C (Auto + polish) — shipped PR9. */
@@ -112,6 +114,8 @@ object AnalyticsGlossary {
             "support_page_viewed",
             "support_tier_toggled",
             "support_donate_clicked",
+            "support_page_left",
+            "support_entry_viewed",
         )
 
     val ALL_ALLOWED_EVENTS: Set<String> = PHASE_A_UNION_B_UNION_C

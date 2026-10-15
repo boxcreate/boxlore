@@ -676,20 +676,43 @@ object AnalyticsHelper : Analytics {
 
     fun trackCustomThemeSaved(surfaceStyle: String) = LibraryAnalyticsTracks.trackCustomThemeSaved(surfaceStyle)
 
-    fun trackSupportPageViewed() = LibraryAnalyticsTracks.trackSupportPageViewed()
+    /** The `support-world` variant for this person, or null before flags load. Read once per visit. */
+    fun supportWorldVariant(): String? = SupportAnalyticsTracks.supportWorldVariant()
+
+    fun trackSupportEntryViewed(surface: String) = SupportAnalyticsTracks.trackSupportEntryViewed(surface)
+
+    fun trackSupportPageViewed(
+        world: SupportWorldContext? = null,
+        entryPoint: String? = null,
+        localHour: Int? = null,
+        weekday: Int? = null,
+    ) = SupportAnalyticsTracks.trackSupportPageViewed(world, entryPoint, localHour, weekday)
 
     fun trackSupportTierToggled(
         tierTitle: String,
         codename: String,
         amount: String,
         isLoreInspect: Boolean = false,
-    ) = LibraryAnalyticsTracks.trackSupportTierToggled(tierTitle, codename, amount, isLoreInspect)
+        world: SupportWorldContext? = null,
+        tierIndex: Int? = null,
+    ) = SupportAnalyticsTracks.trackSupportTierToggled(tierTitle, codename, amount, isLoreInspect, world, tierIndex)
 
     fun trackSupportDonateClicked(
         tierTitle: String,
         codename: String,
         amount: String,
-    ) = LibraryAnalyticsTracks.trackSupportDonateClicked(tierTitle, codename, amount)
+        world: SupportWorldContext? = null,
+        tierIndex: Int? = null,
+        amountUsd: Double? = null,
+        paymentsLive: Boolean? = null,
+    ) = SupportAnalyticsTracks.trackSupportDonateClicked(tierTitle, codename, amount, world, tierIndex, amountUsd, paymentsLive)
+
+    fun trackSupportPageLeft(
+        world: SupportWorldContext,
+        dwellMs: Long,
+        tiersViewed: Int,
+        payTapped: Boolean,
+    ) = SupportAnalyticsTracks.trackSupportPageLeft(world, dwellMs, tiersViewed, payTapped)
 
     fun trackMiniPlayerInteraction(
         action: String,

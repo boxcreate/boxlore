@@ -127,9 +127,13 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `auto_chapters_lifecycle` | Chapters request/complete/fail | stage:string | episode_id:string; error_message:string | none |
 | `auto_transcript_lifecycle` | Transcript request/complete/fail | stage:string | episode_id:string; error_message:string | none |
 | `proxy_fallback_triggered` | Image load fell back to proxy | — | reason:string | none |
-| `support_page_viewed` | Support boxlore development screen opened | — | — | none |
-| `support_tier_toggled` | Support tier artifact swiped or lore inspected | tier_title:string; codename:string; amount:string | is_lore_inspect:bool | none |
-| `support_donate_clicked` | User tapped donate CTA button for a support tier | tier_title:string; codename:string; amount:string | — | none |
+| `support_page_viewed` | Support boxlore development screen opened (one per visit; the `support-world` experiment exposure) | — | support_world:enum; assignment_source:enum; entry_point:string; local_hour:int; weekday:int | none |
+| `support_tier_toggled` | Support tier artifact swiped, picked or lore inspected | tier_title:string; codename:string; amount:string | is_lore_inspect:bool; support_world:enum; assignment_source:enum; tier_index:int | none |
+| `support_donate_clicked` | User tapped donate CTA button for a support tier | tier_title:string; codename:string; amount:string | support_world:enum; assignment_source:enum; tier_index:int; amount_usd:float; payments_live:bool | none |
+| `support_entry_viewed` | Support boxlore entry shown in Settings: phone top-bar button or tablet category list (once per hub or list view; not on rotation) | surface:enum | — | none |
+| `support_page_left` | Support boxlore page closed after a visit (never on rotation or resize) | support_world:enum; assignment_source:enum; dwell_ms:int; tiers_viewed:int; pay_tapped:bool | — | none |
+
+`surface` is `settings_top_bar` or `settings_category_list`. `support_world` is `control`, `neon`, `orbit`, `alchemy`, `abyss` or `sky`. `assignment_source` is `experiment` (counted), `fallback` (flag not loaded or unknown, shows control) or `debug_override` (debug builds only). Read results from `experiment` rows only.
 
 ## Person properties
 

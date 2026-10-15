@@ -28,6 +28,8 @@ import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsCategoryCard
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsScaffold
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportEntryImpression
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportEntrySurface
 
 @Composable
 internal fun SettingsHub(
@@ -35,6 +37,7 @@ internal fun SettingsHub(
     onNavigate: (ProfileSettingsDestination) -> Unit,
     onCheckForUpdates: (() -> Unit)? = null,
 ) {
+    SupportEntryImpression(SupportEntrySurface.SettingsTopBar)
     SettingsScaffold(
         title = "Settings",
         onBack = onBack,

@@ -34,6 +34,17 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 - **Blur behind the bar** (Appearance > Navigation, shown only with the Floating bar) picks Off / Soft / Medium / Strong, Soft by default. The page softens into a progressive blur as it scrolls under the floating bar and mini player; the bar itself stays solid. Changes are tracked as `navigation_blur_changed`.
 - **Hero cards** (Appearance > Home) picks Block (the solid colour card), Cover (the cover fills the card and fades into a shade behind the text; selected until a listener picks another style), Tide (the whole cover above a wavy panel with a round Play button), Duotone (the cover redrawn in two tones of one colour, with the words straight on it) Halo (a cookie-shaped cover in a progress ring on a card tinted from it) or Marquee (a full-width cover under the top bar, with the next cards beside Play) from a sideways-scrolling row of picture tiles drawn from the real cards, above a larger preview of the picked style with its Jump back in card. With Cover, **Shade behind text** picks Dark, Artwork (a deep shade of each cover's colour) or App theme (a deep shade of the accent colour); with Duotone the same choice is **Duotone colors** (Dark redraws covers in black and white), with Tide and Halo **Card color**, and with Marquee **Cover colors**, where Dark is named **Full color** because Marquee keeps covers as they are (`heroColorsCopy`). They are hidden for Block, and the overview names the choice (for example "Duotone hero cards, artwork tones"). On tablets Home shows Cover instead of Marquee, so Marquee's tile says so ("A full-width cover on phones. Tablets show Cover cards instead.") and the larger preview shows Cover; `TabletSettingsCaptureTest` includes the Home page. Ordering, playback and details actions are the same. Changes are tracked as `hero_card_style_changed` and `hero_cover_shade_changed`; `AppearanceActionsTrackedTest` checks both callbacks are forwarded; `AppearancePagesTest` covers the scrolling tiles, both colour pickers and the summaries; `SettingsPictureRowTest` checks the third tile is cut off on phone widths.
 
+- **Support worlds experiment.**
+  - `SupportPageHost` is the Support destination. Once per visit it reads the PostHog `support-world` flag through `AnalyticsHelper.supportWorldVariant()`.
+  - It shows the assigned world: `control` (today's power-cell `SupportDevelopmentPage`), `neon`, `orbit`, `alchemy`, `abyss` or `sky`. A missing or unknown flag shows the control and reports `assignment_source=fallback`, so it never counts as an exposure.
+  - The five worlds share `SupportWorldPage` and are skinned by `SupportWorldSkin`: palette, bundled display font, 3D tier art, codename and platform style, button verb and payments-off notice. They sell the same five store-agnostic `SUPPORT_OFFERS`. `productId` is reserved for Play Billing.
+  - Payments are off (`SUPPORT_PAYMENTS_LIVE`). Every pay tap, including the control's, opens `SupportPaymentNotice`. It closes from its button, an outside tap or Back, and states that nothing was charged.
+  - `SupportPageSession` reports one view per visit with the world, assignment, entry point, local hour and weekday. It also reports tier picks, pay taps (`amount_usd`, `payments_live=false`) and one `support_page_left` with dwell, tiers viewed and pay intent. Rotation, resizing and folding restore the session rather than counting a second view.
+  - `SupportEntryImpression` reports `support_entry_viewed` (`surface=settings_top_bar` on the phone hub, `settings_category_list` on the tablet list) once each time Settings shows the Support entry. A configuration restore never repeats it. This is the top of the funnel: Settings opened → Support entry seen → Support page viewed → pay tapped.
+  - Debug builds (`FLAG_DEBUGGABLE`) add a top-bar world switcher whose choice lasts for the process.
+  - `SupportPageEnvironment` holds the flag reader, analytics sink, clock and configuration-change check, so tests can replace them.
+  - World copy lives in Kotlin like the original Support page. Move the winning world's strings into resources when it graduates.
+
 - Dialogs: `AddRssFeedDialog`, `ResetAnalyticsDialog`, `LogsPreviewDialog`.
 
 - Automatic downloads uses the shared two-line settings header and solid grouped surfaces for Downloads, Storage, and While boxlore is closed. A connected 1/2/3/5 selector replaces scrolling quota chips; a short introduction explains per-show activation. **Backup background checks** is explicitly described as optional recovery when show notifications are off or do not arrive; notifications can already trigger downloads while closed. Its network/charging controls appear only when the off-by-default switch is enabled, retaining their preferences when hidden. Concise state-dependent copy explains foreground/push discovery or battery/data costs and Android delays; the header help dialog holds the full network, consent, discovery and retention explanation. Per-show auto-download never enables background checking.
@@ -99,8 +110,20 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     SettingsHub.kt
     SupportAtmosphere.kt
     SupportCtaSection.kt
-    SupportDevelopmentPage.kt
+    SupportDevelopmentPage.kt                    # control arm (today's power-cell page)
+    SupportPageHost.kt                           # flag read, world routing, visit analytics
     SupportTierModels.kt
+    supportworlds/
+      SupportWorld.kt                            # variants, assignment, offers, tier tones
+      SupportWorldSkins.kt                       # five skins + mission copy
+      SupportWorldPage.kt                        # shared world layout
+      SupportWorldStage.kt                       # codename, platform, object, particles
+      SupportPaymentNotice.kt                    # payments-off notice (worlds + control)
+      SupportControlNotice.kt                    # control notice copy, session local, tier tracking
+      SupportPageSession.kt                      # visit analytics + saver
+      SupportWorldMotion.kt                      # reduced motion, loops, dark bars
+      SupportWorldDebugMenu.kt                   # debug-only world switcher
+      SupportEntryImpression.kt                  # Settings Support-entry impression
     SyncAndBackupsPage.kt
 ```
 
@@ -108,6 +131,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 - Project dependencies: `:core:model`, `:core:domain`, `:core:catalog`, `:core:downloads`, `:core:network`, `:core:prefs`, `:core:designsystem`, `:core:analytics`, `:core:ranking`, and `:core:rss`.
 - Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Coil, Kotlin serialization, AndroidX Credentials, Google ID, Roborazzi.
+- Bundled Support world assets: 31 WebP drawables in `res/drawable-nodpi/support_*` (about 1 MB) and six display fonts in `res/font/support_*` (Bungee, Oxanium, Cinzel Decorative, Cinzel, Fredoka, Lilita One; about 320 KB). Each font's SIL Open Font License is in `licenses/`.
 - Reverse-edge rule: feature modules must not depend on other feature modules.
 
 ## Threading / lifecycle
@@ -121,6 +145,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 ## Persistence & identity
 
 - Settings read and write DataStore and `BoxcastPrefs` through `:core:prefs` APIs.
+- The Support world assignment comes from the PostHog flag `support-world` (variants `control`, `neon`, `orbit`, `alchemy`, `abyss`, `sky`). Nothing about it is persisted locally; the debug override lives only in memory.
 - Stable Compose test tags include `settings_add_rss_*`, `settings_downloads_smart`, `settings_downloads_auto`, `settings_reset_analytics_confirm`, and `settings_reset_analytics_cancel`.
 
 ## Testing notes
@@ -133,6 +158,12 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 - `PlayerStyleSectionTest` checks both selections, the exact design-credit link and large-text RTL accessibility. `AppearanceActionsTrackedTest` verifies that the player-style callback survives the analytics wrapper without toggling the miniplayer.
 
+- Support worlds:
+  - `SupportWorldsModelTest` covers flag mapping and fallback, debug override precedence, offer parity with today's page, skin completeness, payments-off copy in every arm, codename fit and mission copy.
+  - `SupportPageSessionTest` covers one view and one exit per visit, ignoring events outside a visit, saved-state restore without a second view, and the production event properties.
+  - `SupportPageHostTest` (Robolectric) keeps the selected tier and an open notice through compact↔tablet transitions on both sides of the 600dp width, 480dp height and 840dp split gates. It also covers Back and outside-tap dismissal, a configuration restore without a second view, the control fallback and its notice, a single exit event, and the debug world switch.
+  - `SupportEntryImpressionTest` covers one impression per view, none for a configuration restore, a new one after returning, and the real Settings hub's top-bar surface.
+  - Not covered by JVM tests: rendering quality on real devices and fold postures. Those need a phone, tablet or foldable check.
 - Unit tests live under `feature/settings/src/test`.
 - `AccountPagePresentationTest` covers the separate onboarding/settings layouts, existing sign-in methods, sync busy/retry states and callbacks, a full-width ready/success action at 200% text in RTL, and Echo press feedback. Optional local render exports use `BOXLORE_UI_TEST_ARTIFACTS`. `EchoAnimationTest` checks the bundled atlas against the manifest, each frame boundary, and coalesced outfit/sync transitions. App navigation tests cover hiding restored playback during Account and onboarding and restoring normal player presentation afterward.
 - `AutoDownloadSettingsActionsTest` exercises the same action callbacks and background presentation used by the screen: all four episode limits, invalid-limit rejection, help opening/dismissal, both background-control visibility states, and retaining all network/charging combinations when checks are disabled and re-enabled. No device or screenshot automation is required.

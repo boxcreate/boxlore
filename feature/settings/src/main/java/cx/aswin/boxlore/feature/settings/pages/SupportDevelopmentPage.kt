@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.settings.pages
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,13 +59,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,6 +76,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -87,16 +89,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.view.WindowCompat
-import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.feature.settings.R
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.LocalSupportPageSession
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SUPPORT_OFFERS
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportPaymentNotice
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.TrackSupportTierChanges
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.rememberSupportReducedMotion
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.supportControlNoticeContent
 import kotlin.math.absoluteValue
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 private val StalinistOneFontFamily = FontFamily(
@@ -107,7 +112,11 @@ private val StalinistOneFontFamily = FontFamily(
 internal fun SupportDevelopmentPage(
     onBack: () -> Unit,
     totalListeningHours: Long? = null,
+    topBarActions: @Composable RowScope.() -> Unit = {},
 ) {
+    val session = LocalSupportPageSession.current
+    var noticeVisible by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = noticeVisible) { noticeVisible = false }
     val view = LocalView.current
     DisposableEffect(Unit) {
         val window = (view.context as? Activity)?.window
@@ -123,24 +132,7 @@ internal fun SupportDevelopmentPage(
     val coroutineScope = rememberCoroutineScope()
     val activeTier = SUPPORT_TIER_CARDS[pagerState.currentPage]
 
-    LaunchedEffect(Unit) {
-        AnalyticsHelper.trackSupportPageViewed()
-    }
-
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }
-            .distinctUntilChanged()
-            .drop(1)
-            .collect { page ->
-                val tier = SUPPORT_TIER_CARDS[page]
-                AnalyticsHelper.trackSupportTierToggled(
-                    tierTitle = tier.title,
-                    codename = "${tier.codenameLine1} ${tier.codenameLine2}",
-                    amount = tier.cost,
-                    isLoreInspect = false,
-                )
-            }
-    }
+    TrackSupportTierChanges(pagerState, session)
 
     val activeAuraColor by animateColorAsState(
         targetValue = activeTier.auraColor,
@@ -185,9 +177,10 @@ internal fun SupportDevelopmentPage(
 
         Scaffold(
             topBar = {
-                SupportTopAppBar(onBack = onBack)
+                SupportTopAppBar(onBack = onBack, actions = topBarActions)
             },
             containerColor = Color.Transparent,
+            modifier = if (noticeVisible) Modifier.clearAndSetSemantics { } else Modifier,
         ) { innerPadding ->
             SupportPageContent(
                 pagerState = pagerState,
@@ -199,9 +192,25 @@ internal fun SupportDevelopmentPage(
                         pagerState.animateScrollToPage(page)
                     }
                 },
+                onDonate = { tier ->
+                    val index = SUPPORT_TIER_CARDS.indexOf(tier).coerceAtLeast(0)
+                    session?.payTapped(
+                        offer = SUPPORT_OFFERS[index],
+                        tierName = tier.title,
+                        codename = "${tier.codenameLine1} ${tier.codenameLine2}",
+                    )
+                    noticeVisible = true
+                },
                 modifier = Modifier.padding(innerPadding),
             )
         }
+
+        SupportPaymentNotice(
+            visible = noticeVisible,
+            content = supportControlNoticeContent(activeTier.iconRes, activeAuraColor, activeTier.cost),
+            reducedMotion = rememberSupportReducedMotion(),
+            onDismiss = { noticeVisible = false },
+        )
     }
 }
 
@@ -212,6 +221,7 @@ private fun SupportPageContent(
     activeAuraColor: Color,
     totalListeningHours: Long?,
     onSelectTier: (Int) -> Unit,
+    onDonate: (SupportTierCardData) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
@@ -242,13 +252,7 @@ private fun SupportPageContent(
         SupportCtaSection(
             tier = activeTier,
             activeColor = activeAuraColor,
-            onDonateClick = { tier ->
-                AnalyticsHelper.trackSupportDonateClicked(
-                    tierTitle = tier.title,
-                    codename = "${tier.codenameLine1} ${tier.codenameLine2}",
-                    amount = tier.cost,
-                )
-            },
+            onDonateClick = onDonate,
         )
 
         Spacer(modifier = if (tablet) Modifier.height(20.dp) else Modifier.weight(1f))
@@ -266,6 +270,7 @@ private fun SupportPageContent(
 @Composable
 private fun SupportTopAppBar(
     onBack: () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -288,9 +293,7 @@ private fun SupportTopAppBar(
                 )
             }
         },
-        actions = {
-            Spacer(modifier = Modifier.width(48.dp))
-        },
+        actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
         ),
@@ -304,6 +307,7 @@ private fun SupportArtifactStage(
     activeAuraColor: Color,
 ) {
     val haptic = LocalHapticFeedback.current
+    val session = LocalSupportPageSession.current
     var isStoryMode by remember(pagerState.currentPage) { mutableStateOf(false) }
     val storyProgress by animateFloatAsState(
         targetValue = if (isStoryMode) 1f else 0f,
@@ -325,10 +329,10 @@ private fun SupportArtifactStage(
                 val nextStoryMode = !isStoryMode
                 isStoryMode = nextStoryMode
                 val currentTier = tiers[pagerState.currentPage]
-                AnalyticsHelper.trackSupportTierToggled(
-                    tierTitle = currentTier.title,
+                session?.tierSelected(
+                    offer = SUPPORT_OFFERS[pagerState.currentPage],
+                    tierName = currentTier.title,
                     codename = "${currentTier.codenameLine1} ${currentTier.codenameLine2}",
-                    amount = currentTier.cost,
                     isLoreInspect = nextStoryMode,
                 )
             },

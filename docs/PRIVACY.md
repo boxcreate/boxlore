@@ -51,8 +51,9 @@ Here is the data collected by our application and API services, and exactly how 
 * **Why:** Public charts are heavily manipulated and do not give reliable play-level signals. We use these events to understand aggregate listening trends and power our community charts.
 
 ### 5. Device and Operating System Details
-* **What is sent:** App version, Android OS version, device manufacturer and model, local time zone hour, and an anonymous random analytics ID.
-* **Why:** Telemetry tracks basic device environment properties by default. This helps us spot platform-specific bugs (for example, if a background crash only happens on Samsung Android 14 devices).
+* **What is sent:** App version, Android OS version, device manufacturer and model, local time zone hour and day of the week, an anonymous random analytics ID, and approximate location (country, region, city and postcode area) that PostHog works out from your IP address. The IP address itself is discarded and not stored. Events recorded before 16 October 2026 still include it.
+* **Why:** Telemetry tracks basic device environment properties by default. This helps us spot platform-specific bugs (for example, if a background crash only happens on Samsung Android 14 devices). We use rough location to see which countries boxlore is used in, for example to check that support prices make sense in each country once payments are on.
+* **What is not sent:** boxlore never asks for or reads your phone's GPS location.
 
 ### 6. Crash and Error Logs
 * **What is sent:** Technical stack traces, error codes, and crash contexts.
@@ -62,6 +63,11 @@ Here is the data collected by our application and API services, and exactly how 
 * **What is sent:** When you turn on new-episode alerts for a show, the app adds that show (its title, artwork link and, for shows added by RSS link, its feed URL) to a shared list our episode checker watches, and subscribes your phone to that show's notification topic through Firebase Cloud Messaging.
 * **Why:** So boxlore can tell you about new episodes even when the app is closed.
 * **Good to know:** The shared list isn't tied to your account, but backups of it are published in this repository. Keep alerts off for private or paid feeds whose links you don't want public.
+
+### 8. Support Page Design Test
+* **What is sent:** Which of six Support boxlore designs you were shown (the original power-cell page or one of five new ones), which support levels you looked at, whether you tapped pay and at which price, and how long you stayed on the page.
+* **Why:** To see which design people respond to best. Each person keeps seeing the same design, so the comparison stays fair.
+* **Good to know:** This is part design survey, part our attempt to earn back what it costs to keep boxlore running. Rest assured, it's tied only to the anonymous analytics ID described above, never to your name, email or account. We just want a rough idea of which designs lead more people to support boxlore.
 
 ---
 
