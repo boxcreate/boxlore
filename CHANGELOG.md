@@ -68,6 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rebuild the custom theme editor with a persistent preview, accessible color controls, validated hex input and restored draft state. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Refine Classic, Pure and wallpaper-derived Material 3 color roles while preserving saved theme identities and custom seeds. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Replace the Home setup banner with a responsive Material 3 split layout, neutral raised action tiles, localized copy and an aligned dismissal control; preserve existing callbacks, eligibility, analytics and hero presentation. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `CrossPromotionDetector` is rebuilt on `CrossPromotionTitles`, `CrossPromotionNames` and `CrossPromotionDescription`; recall rose from about 0.2 to 0.83–0.91 at 0.92–0.98 precision on 817 hand-labelled catalog episodes (`CrossPromotionCorpusTest`). `CrossPromotionResolver` searches shorter name forms and matches colon, host and parenthetical titles. ([#1120](https://github.com/boxcreate/boxlore/pull/1120)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Info pages, the player and hero cards share one artwork colour picker (`selectArtworkSeed`, `artworkColorScheme`, `ArtworkShade`); the info and player phone goldens are re-recorded for it. ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Preserve WorkManager input-merger constructors in optimized releases so one-time download and notification-hydration work can start. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -93,6 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Player-only artwork links no longer reach synced history and queue, and `repairPlaybackArtworkLinks` repairs rows older builds saved. ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Fullscreen transcript controls fit the visible screen height (`fitVisibleHeight`). ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1097
 ### Improvements
@@ -246,6 +250,19 @@ readme-copy:end pr=1117 -->
 ### Fixes
 - Improve tablet card sizing, spacing and dark-mode readability, and keep player controls above system navigation.
 readme-copy:end pr=1118 -->
+
+<!-- readme-copy:start pr=1120
+### Improvements
+- Episode pages recognise far more trailers and promos for other shows, and link to the show being promoted.
+readme-copy:end pr=1120 -->
+
+<!-- readme-copy:start pr=1121
+### Improvements
+- A show's colours now match across its page, its episodes and the player.
+### Fixes
+- Jump back in shows real covers again after syncing.
+- Fullscreen transcripts keep their controls on screen.
+readme-copy:end pr=1121 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
