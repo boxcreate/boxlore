@@ -62,6 +62,7 @@ private fun ChaptersEmptyPlaceholder(
 }
 
 @Composable
+@Suppress("LongParameterList")
 fun ChaptersSheetContent(
     chapters: List<Chapter>,
     positionFlow: kotlinx.coroutines.flow.Flow<Long>,
@@ -69,7 +70,8 @@ fun ChaptersSheetContent(
     onSeek: (Long) -> Unit,
     onClose: () -> Unit,
     chaptersUrl: String? = null,
-    isChaptersLoading: Boolean = false
+    isChaptersLoading: Boolean = false,
+    showHeader: Boolean = true,
 ) {
     val positionMs by positionFlow.collectAsState(initial = 0L)
     Surface(
@@ -81,7 +83,7 @@ fun ChaptersSheetContent(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            ChaptersHeader(onClose = onClose, colorScheme = colorScheme)
+            if (showHeader) ChaptersHeader(onClose = onClose, colorScheme = colorScheme)
 
             if (isChaptersLoading) {
                 Box(

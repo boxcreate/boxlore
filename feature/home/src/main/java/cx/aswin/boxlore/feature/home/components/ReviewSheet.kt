@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.EngagementBottomSheetScaffold
+import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import kotlinx.coroutines.launch
 
@@ -87,11 +88,12 @@ fun ReviewPromptSheet(
     EngagementBottomSheetScaffold(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
+        centeredDismissAllowed = true,
         showCloseButton = false,
         properties = ModalBottomSheetProperties(),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().tabletSheetScroll(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Surface(

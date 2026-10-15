@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
@@ -329,8 +330,8 @@ private fun PromisePillRow(pills: List<String>) {
         pills.forEach { label ->
             Surface(
                 shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                contentColor = MaterialTheme.colorScheme.primary,
+                color = if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                contentColor = if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
             ) {
                 Text(
                     text = label,

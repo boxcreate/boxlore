@@ -27,6 +27,12 @@ class BoxcastPrefs(context: Context) {
         prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
     }
 
+    fun hasAcknowledgedTabletAlphaNotice(): Boolean = prefs.getBoolean(KEY_TABLET_ALPHA_NOTICE_ACKNOWLEDGED, false)
+
+    fun acknowledgeTabletAlphaNotice() {
+        prefs.edit().putBoolean(KEY_TABLET_ALPHA_NOTICE_ACKNOWLEDGED, true).apply()
+    }
+
     // ── User genres / interests ──────────────────────────────────────────────
 
     fun getUserGenres(): Set<String> = prefs.getStringSet(KEY_USER_GENRES, emptySet()) ?: emptySet()
@@ -159,6 +165,7 @@ class BoxcastPrefs(context: Context) {
         const val PREFS_NAME = PrefsFileMigrator.Files.PREFS
 
         const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+        const val KEY_TABLET_ALPHA_NOTICE_ACKNOWLEDGED = "tablet_ui_alpha_notice_acknowledged"
         const val KEY_USER_GENRES = "user_genres"
         const val KEY_CACHED_RECOMMENDATIONS = "cached_recommendations"
         const val KEY_IS_RECOMMENDATIONS_FALLBACK = "is_recommendations_fallback"

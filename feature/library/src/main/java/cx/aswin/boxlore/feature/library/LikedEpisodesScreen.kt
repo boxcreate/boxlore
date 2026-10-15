@@ -30,6 +30,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -79,6 +81,7 @@ fun LikedEpisodesScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
                         text = "Liked Episodes",
@@ -104,14 +107,17 @@ fun LikedEpisodesScreen(
                 is LibraryUiState.Success -> {
                     val liked = (uiState as LibraryUiState.Success).likedEpisodes
                     if (liked.isEmpty()) {
+                        Box(Modifier.boxloreCardWidth(BoxloreCardFamily.Utility)) {
                         ExpressiveSolarSystemEmptyState(
                             title = "No Liked Episodes",
                             description = "Heart episodes you love to save them here.",
                             actionText = "Find Podcasts",
                             onExploreClick = onExploreClick
                         )
+                        }
                     } else {
                         LazyColumn(
+                            modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode),
                             contentPadding = PaddingValues(bottom = 180.dp) // Nav bar padding
                         ) {
                             items(liked) { historyItem ->

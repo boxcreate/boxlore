@@ -51,10 +51,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreConfigurationWindowSize
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -89,6 +90,7 @@ data class FullPlayerDisplay(
     val sheetNestedScrollConnection: NestedScrollConnection,
     val isExpanded: Boolean,
     val showSwipeMinimizeTip: Boolean = false,
+    val isContextPane: Boolean = false,
 )
 
 data class FullPlayerActions(
@@ -97,6 +99,8 @@ data class FullPlayerActions(
     val onEpisodeInfoClick: (Episode) -> Unit,
     val onPodcastInfoClick: (Podcast) -> Unit,
     val onSwipeMinimizeTipDismissed: () -> Unit = {},
+    val onOpenImmersivePlayer: (() -> Unit)? = null,
+    val onDockPlayer: (() -> Unit)? = null,
 )
 
 @Stable
@@ -111,6 +115,35 @@ internal class FullPlayerUiState {
     var isSyncEnabled by mutableStateOf(true)
     var isAudioOnly by mutableStateOf(false)
     var showRemoveDownloadDialog by mutableStateOf(false)
+    var supportingTab by mutableStateOf(PlayerSupportingTab.UpNext)
+    var supportingContentUsesTablet by mutableStateOf(false)
+    var restoreSupportingContentOnCompact by mutableStateOf(false)
+
+    fun selectSupportingTab(tab: PlayerSupportingTab, restoreOnCompact: Boolean = true) {
+        supportingTab = tab
+        restoreSupportingContentOnCompact = restoreOnCompact
+    }
+
+    fun updateSupportingContent(tablet: Boolean) {
+        if (tablet) {
+            val openSurface = when {
+                showInlineTranscript -> PlayerSupportingTab.Transcript
+                showChaptersSheet -> PlayerSupportingTab.Chapters
+                showQueueSheet -> PlayerSupportingTab.UpNext
+                else -> null
+            }
+            openSurface?.let { selectSupportingTab(it) }
+            showInlineTranscript = false
+            showChaptersSheet = false
+            showQueueSheet = false
+        } else if (supportingContentUsesTablet) {
+            showInlineTranscript = restoreSupportingContentOnCompact && supportingTab == PlayerSupportingTab.Transcript
+            showChaptersSheet = restoreSupportingContentOnCompact && supportingTab == PlayerSupportingTab.Chapters
+            showQueueSheet = restoreSupportingContentOnCompact && supportingTab == PlayerSupportingTab.UpNext
+            restoreSupportingContentOnCompact = false
+        }
+        supportingContentUsesTablet = tablet
+    }
 }
 
 internal val FullPlayerUiStateSaver =
@@ -127,6 +160,11 @@ internal val FullPlayerUiStateSaver =
                 state.isSyncEnabled,
                 state.isAudioOnly,
                 state.showRemoveDownloadDialog,
+                state.supportingTab == PlayerSupportingTab.Chapters,
+                state.supportingTab == PlayerSupportingTab.Transcript,
+                state.supportingTab == PlayerSupportingTab.Notes,
+                state.supportingContentUsesTablet,
+                state.restoreSupportingContentOnCompact,
             )
         },
         restore = { values ->
@@ -141,6 +179,14 @@ internal val FullPlayerUiStateSaver =
                 isSyncEnabled = values.getOrElse(7) { true }
                 isAudioOnly = values.getOrElse(8) { false }
                 showRemoveDownloadDialog = values.getOrElse(9) { false }
+                supportingTab = when {
+                    values.getOrElse(10) { false } -> PlayerSupportingTab.Chapters
+                    values.getOrElse(11) { false } -> PlayerSupportingTab.Transcript
+                    values.getOrElse(12) { false } -> PlayerSupportingTab.Notes
+                    else -> PlayerSupportingTab.UpNext
+                }
+                supportingContentUsesTablet = values.getOrElse(13) { false }
+                restoreSupportingContentOnCompact = values.getOrElse(14) { false }
             }
         },
     )
@@ -161,7 +207,7 @@ fun FullPlayerV2(
         playbackRepository.playerState
             .map { it.copy(position = 0, bufferedPosition = 0) }
             .distinctUntilChanged()
-    }.collectAsStateWithLifecycle(initialValue = PlayerState())
+    }.collectAsStateWithLifecycle(initialValue = rememberInitialPlayerState(playbackRepository))
 
     val positionFlow =
         remember(playbackRepository) {
@@ -183,7 +229,12 @@ fun FullPlayerV2(
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-    val ui = rememberSaveable(episode.id, saver = FullPlayerUiStateSaver) { FullPlayerUiState() }
+    val localUi = rememberSaveable(episode.id, saver = FullPlayerUiStateSaver) { FullPlayerUiState() }
+    val ui = LocalPlayerPresentationStore.current?.uiFor(episode.id, localUi) ?: localUi
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val fullscreenRequest = LocalPlayerFullscreenRequest.current.takeIf { tablet }
+    val playerActions = fullscreenRequest?.let { request -> actions.copy(onFullscreenVideoChange = { request(PlayerFullscreenOverlay.Video, it) }) } ?: actions
+    SideEffect { ui.updateSupportingContent(tablet) }
 
     val queueSnackbarHostState = remember { SnackbarHostState() }
     val queueSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -197,7 +248,10 @@ fun FullPlayerV2(
     val isDownloading by remember(episode.id) { downloadRepository.isDownloading(episode.id) }
         .collectAsStateWithLifecycle(initialValue = false)
 
-    BackHandler(enabled = ui.showFullscreenTranscript) { ui.showFullscreenTranscript = false }
+    BackHandler(enabled = ui.showFullscreenTranscript) {
+        ui.showFullscreenTranscript = false
+        fullscreenRequest?.invoke(PlayerFullscreenOverlay.Transcript, false)
+    }
     BackHandler(enabled = ui.showInlineTranscript && !ui.showFullscreenTranscript) {
         ui.showInlineTranscript = false
     }
@@ -208,7 +262,7 @@ fun FullPlayerV2(
 
     val resolvedDark = LocalEffectiveDarkTheme.current
     SideEffect {
-        window?.let { win ->
+        window?.takeUnless { display.isContextPane }?.let { win ->
             val insetsController =
                 androidx.core.view.WindowCompat
                     .getInsetsController(win, win.decorView)
@@ -220,12 +274,27 @@ fun FullPlayerV2(
     val style by dependencies.userPrefs.fullPlayerStyleStream.collectAsStateWithLifecycle(
         initialValue = dependencies.userPrefs.cachedFullPlayerStyle,
     )
-    if (useMinimalPlayer(style, isVideoPodcast)) {
+    if (tablet) {
+        TabletFullPlayerBody(
+            model = FullPlayerBodyModel(state, episode, podcast, nextEpisode, isVideo, isVideoPodcast, FullPlayerDownloadState(isDownloaded, isDownloading)),
+            dependencies = dependencies,
+            display = display,
+            actions = playerActions,
+            flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
+            ui = ui,
+            resources = TabletPlayerResources(
+                FullPlayerBodyResources(scope, queueSnackbarHostState, statusBarPadding, navBarPadding, modifier),
+                PlayerQueueSheetResources(scope, queueSnackbarHostState, queueSheetState),
+                minimalPlayerActions(dependencies, state, ui, playerActions),
+                useMinimalPlayer(style, isVideoPodcast),
+            ),
+        )
+    } else if (useMinimalPlayer(style, isVideoPodcast)) {
         MinimalPlayerContent(
             state = state,
             display = display,
             flows = PlayerProgressFlows(positionFlow, bufferedPositionFlow),
-            actions = minimalPlayerActions(dependencies, state, ui, actions),
+            actions = minimalPlayerActions(dependencies, state, ui, playerActions),
             modifier = modifier,
         )
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -245,7 +314,7 @@ fun FullPlayerV2(
             ),
             dependencies = dependencies,
             display = display,
-            actions = actions,
+            actions = playerActions,
             flows = FullPlayerFlows(positionFlow, bufferedPositionFlow),
             ui = ui,
             resources =
@@ -282,7 +351,7 @@ fun FullPlayerV2(
             chaptersSheetState,
             context,
         ),
-        actions = actions,
+        actions = playerActions,
     )
 
     // ------------------------------------------------------------------
@@ -293,7 +362,7 @@ fun FullPlayerV2(
         dependencies = dependencies,
         model = FullPlayerOverlayModel(state, episode, colorScheme, positionFlow),
         display = display,
-        actions = actions,
+        actions = playerActions,
         ui = ui,
     )
 }
@@ -368,9 +437,9 @@ private fun FullPlayerBody(
             .fillMaxSize()
             .playerCanvas(display.colorScheme),
     ) {
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
-        val screenHeight = configuration.screenHeightDp.dp
+        val windowSize = boxloreConfigurationWindowSize()
+        val screenWidth = windowSize.width
+        val screenHeight = windowSize.height
         val finalMaxHeight = screenHeight - resources.statusBarPadding - resources.navBarPadding
 
         Column(
@@ -516,7 +585,7 @@ private fun FullPlayerScrollableContent(
     }
 }
 
-private data class FullPlayerHeroModel(
+internal data class FullPlayerHeroModel(
     val state: PlayerState,
     val episode: Episode,
     val podcast: Podcast,
@@ -541,7 +610,7 @@ internal data class FullPlayerControlModel(
 )
 
 @Composable
-private fun FullPlayerHeroSection(
+internal fun FullPlayerHeroSection(
     model: FullPlayerHeroModel,
     positionFlow: Flow<Long>,
     playbackRepository: PlaybackRepository,

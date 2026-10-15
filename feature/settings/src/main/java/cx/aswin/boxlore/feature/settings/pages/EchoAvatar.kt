@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.feature.settings.R
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -80,7 +81,7 @@ internal fun EchoAvatar(syncing: Boolean, modifier: Modifier = Modifier) {
         if (syncing) {
         Modifier
     } else {
-        Modifier.semantics { contentDescription = description }
+        Modifier.tabletInputFeedback(interactionSource).semantics { contentDescription = description }
         .clickable(interactionSource = interactionSource, indication = null, role = Role.Button, onClickLabel = stringResource(R.string.account_echo_change)) {
             outfit = EchoOutfits[(EchoOutfits.indexOf(outfit) + 1) % EchoOutfits.size]
         }

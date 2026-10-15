@@ -127,6 +127,7 @@ internal fun SurveySheet(
     EngagementBottomSheetScaffold(
         onDismissRequest = onClose,
         sheetState = sheetState,
+        centeredDismissAllowed = true,
         onCloseClick = dismissSheet,
     ) {
         CompositionLocalProvider(

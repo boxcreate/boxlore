@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
@@ -82,7 +84,7 @@ fun HeroGridCard(
     Card(
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = heroContainerColor(), contentColor = foreground),
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize(),
     ) {
         Box(Modifier.fillMaxSize()) {
             // Material's minSize includes an off-screen anchor; visible peeks start at 40dp.

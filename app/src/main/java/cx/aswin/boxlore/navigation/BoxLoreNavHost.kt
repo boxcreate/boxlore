@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,7 +10,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import cx.aswin.boxlore.BoxLoreApplication
+import cx.aswin.boxlore.core.designsystem.theme.ArtworkNavigationColors
+import cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors
 
 @Composable
 private fun rememberIsOnline(application: BoxLoreApplication): Boolean {
@@ -49,6 +53,7 @@ fun BoxLoreNavHost(
     opmlCallbacks: NavOpmlCallbacks,
     actions: NavHostActions,
     settingsState: NavSettingsState,
+    detailsOnly: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -56,7 +61,9 @@ fun BoxLoreNavHost(
     val isSyncingSmartDownloads = remember { mutableStateOf(false) }
 
     val isOfflineOnLaunch = remember { !isOnline }
-    val computedStartDestination =
+    val computedStartDestination = if (detailsOnly) {
+        TabletContextRoot
+    } else {
         remember {
             val openAppTo = application.container.userPreferencesRepository.cachedOpenAppTo
             val destination =
@@ -71,6 +78,7 @@ fun BoxLoreNavHost(
             }
             destination
         }
+    }
 
     val wiring =
         NavGraphWiring(
@@ -84,7 +92,31 @@ fun BoxLoreNavHost(
             context = context,
             isOnline = isOnline,
             isSyncingSmartDownloads = isSyncingSmartDownloads,
+            tabletNavigation = LocalTabletDetailNavigation.current,
         )
+
+    if (detailsOnly) {
+        val palettes = remember { ArtworkNavigationColors() }
+        CompositionLocalProvider(LocalArtworkNavigationColors provides palettes) {
+            ArtworkNavigationHostTheme(navController) { background ->
+                NavHost(
+                    navController,
+                    startDestination = TabletContextRoot,
+                    modifier = background,
+                    enterTransition = { navEnterTransition(initialState.destination.route, targetState.destination.route) },
+                    exitTransition = { navExitTransition(initialState.destination.route, targetState.destination.route) },
+                    popEnterTransition = { navPopEnterTransition(initialState.destination.route, targetState.destination.route) },
+                    popExitTransition = { navPopExitTransition(initialState.destination.route, targetState.destination.route) },
+                ) {
+                    composable(TabletContextRoot) {}
+                    addPodcastDestination(wiring)
+                    addEpisodeFullPathDestination(wiring)
+                    addEpisodeDeepLinkDestination(wiring)
+                }
+            }
+        }
+        return
+    }
 
     ArtworkNavigationHostTheme(navController) { navigationBackground ->
     NavHost(

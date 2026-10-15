@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.feature.home.components.HomeLoadingReveal
 import cx.aswin.boxlore.feature.home.components.YourShowsSection
 import cx.aswin.boxlore.feature.home.components.YourShowsSkeleton
@@ -22,28 +23,40 @@ internal fun LazyStaggeredGridScope.yourShowsItem(
 ) {
     if (!shouldShowYourShows(content, feedState, loadingState)) return
     item(span = StaggeredGridItemSpan.FullLine, key = "your_shows", contentType = "your_shows") {
-        PinnedGridItemContent {
-            // Freeze the placeholder geometry for this loading session, including
-            // the unknown-count two-row case, until local content can be revealed.
-            val skeletonLayoutCount = remember { content.subscribedItems.list.size }
-            HomeLoadingReveal(
-                ready = derivedState.yourShowsReady,
-                modifier = Modifier.padding(bottom = 12.dp),
-                placeholder = { YourShowsSkeleton(subscribedCount = skeletonLayoutCount) },
-            ) {
-                YourShowsFeedContent(
-                    content = content,
-                    feedState = feedState,
-                    loadingState = loadingState,
-                    playback = playback,
-                    callbacks = callbacks,
-                )
-            }
+        YourShowsFeedSection(content, feedState, loadingState, playback, callbacks, derivedState)
+    }
+}
+
+@Composable
+internal fun YourShowsFeedSection(
+    content: PodcastFeedContent,
+    feedState: PodcastFeedUiState,
+    loadingState: PodcastFeedLoadingState,
+    playback: PodcastFeedPlayback,
+    callbacks: HomeFeedCallbacks,
+    derivedState: PodcastFeedDerivedState,
+) {
+    PinnedGridItemContent {
+        // Freeze the placeholder geometry for this loading session, including
+        // the unknown-count two-row case, until local content can be revealed.
+        val skeletonLayoutCount = remember { content.subscribedItems.list.size }
+        HomeLoadingReveal(
+            ready = derivedState.yourShowsReady,
+            modifier = Modifier.padding(bottom = if (LocalBoxloreWindowLayout.current.usesTabletLayout) 0.dp else 12.dp),
+            placeholder = { YourShowsSkeleton(subscribedCount = skeletonLayoutCount) },
+        ) {
+            YourShowsFeedContent(
+                content = content,
+                feedState = feedState,
+                loadingState = loadingState,
+                playback = playback,
+                callbacks = callbacks,
+            )
         }
     }
 }
 
-private fun shouldShowYourShows(
+internal fun shouldShowYourShows(
     content: PodcastFeedContent,
     feedState: PodcastFeedUiState,
     loadingState: PodcastFeedLoadingState,
@@ -85,6 +98,7 @@ private fun YourShowsFeedContent(
                 onViewDownloads = { callbacks.onNavigateToDownloads?.invoke() },
                 pinnedPodcastIds = feedState.pinnedPodcastIds,
                 onTogglePin = callbacks.onToggleHomePin,
+                wideWithoutBrief = feedState.briefing == null,
             )
         feedState.showImportBanner -> HomeImportBannerContent(callbacks)
     }
@@ -112,6 +126,6 @@ private fun HomeImportBannerContent(callbacks: HomeFeedCallbacks) {
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackHomeImportBannerDismissed()
             callbacks.onDismissImportBanner()
         },
-        modifier = Modifier.padding(bottom = 8.dp),
+        modifier = Modifier.padding(bottom = if (LocalBoxloreWindowLayout.current.usesTabletLayout) 0.dp else 8.dp),
     )
 }

@@ -12,9 +12,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
 import androidx.compose.runtime.saveable.SaveableStateRegistry
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.graphics.drawable.toDrawable
+import androidx.lifecycle.lifecycleScope
 import com.posthog.PostHog
 import com.posthog.surveys.OnPostHogSurveyClosed
 import com.posthog.surveys.OnPostHogSurveyResponse
@@ -26,7 +28,9 @@ import cx.aswin.boxlore.surveys.internal.ui.SurveySheet
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -58,6 +62,7 @@ internal class BoxcastSurveyHost(
     private var onClosedCallback: OnPostHogSurveyClosed? = null
     private var shownReported = false
     private var awaitingForeground = false
+    private var startupPresentation: Job? = null
     private var saveableRegistry: SaveableStateRegistry? = null
     private var savedSurveyState: Map<String, List<Any?>>? = null
 
@@ -109,6 +114,8 @@ internal class BoxcastSurveyHost(
             return
         }
 
+        if (deferForTabletNotice(activity, survey)) return
+
         val presented =
             guard("presenting the survey") {
                 awaitingForeground = false
@@ -144,7 +151,10 @@ internal class BoxcastSurveyHost(
                                     userPrefs.cachedFontRoundness,
                                 ),
                             ) {
-                                CompositionLocalProvider(LocalSaveableStateRegistry provides registry) {
+                                CompositionLocalProvider(
+                                    LocalSaveableStateRegistry provides registry,
+                                    cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout provides ((activity as? cx.aswin.boxlore.MainActivity)?.windowLayoutState?.value ?: cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout.Unspecified),
+                                ) {
                                     SurveySheet(
                                         survey = survey,
                                         onSurveyShown = { reportShownOnce() },
@@ -215,7 +225,22 @@ internal class BoxcastSurveyHost(
         hostActivity = null
     }
 
+    private fun deferForTabletNotice(activity: Activity, survey: PostHogDisplaySurvey): Boolean {
+        startupPresentation?.cancel()
+        startupPresentation = null
+        if (activity !is cx.aswin.boxlore.MainActivity || !activity.tabletAlphaNoticePending) return false
+        awaitingForeground = true
+        startupPresentation = activity.lifecycleScope.launch {
+            awaitTabletNoticeDismissal { activity.tabletAlphaNoticePending }
+            startupPresentation = null
+            if (currentSurvey === survey && activityProvider.foregroundActivity === activity) present(activity)
+        }
+        return true
+    }
+
     private fun dismissInternal(notifyClosed: Boolean) {
+        startupPresentation?.cancel()
+        startupPresentation = null
         val activeDialog = dialog
         val activeView = composeView
         val survey = currentSurvey
@@ -269,4 +294,8 @@ internal class BoxcastSurveyHost(
     companion object {
         private const val TAG = "BoxcastSurveyHost"
     }
+}
+
+internal suspend fun awaitTabletNoticeDismissal(pending: () -> Boolean) {
+    snapshotFlow(pending).first { !it }
 }

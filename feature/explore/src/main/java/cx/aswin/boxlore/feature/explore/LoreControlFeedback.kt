@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 
 internal const val LoreControlPressedScale = 0.97f
 internal val LoreControlPressAnimation = tween<Float>(durationMillis = 120, easing = FastOutSlowInEasing)
@@ -34,5 +35,6 @@ internal fun Modifier.loreControlClickable(enabled: Boolean, shape: Shape, onCli
             clip = true
             this.shape = shape
         }
+        .tabletInputFeedback(interactionSource, shape, enabled)
         .clickable(interactionSource, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
 }

@@ -18,6 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Podcast
@@ -25,6 +28,7 @@ import cx.aswin.boxlore.feature.home.components.HeroCarousel
 import cx.aswin.boxlore.feature.home.components.HomeFeedSpacing
 import cx.aswin.boxlore.feature.home.components.HomeLoadingHandoffMillis
 import cx.aswin.boxlore.feature.home.components.HomeLoadingReveal
+import cx.aswin.boxlore.feature.home.components.HomeRecommendationLayout
 import cx.aswin.boxlore.feature.home.logic.shouldAnimateHomeShimmer
 import cx.aswin.boxlore.feature.home.logic.showHomeDiscoveryContent
 import kotlinx.coroutines.delay
@@ -95,6 +99,11 @@ internal fun PodcastFeed(
     layout: PodcastFeedLayout,
 ) {
     val context = LocalContext.current
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val posterColumns = boxlorePosterColumns(
+        LocalBoxloreWindowLayout.current,
+        boxloreContentWidthDp(),
+    )
     val revealStage = rememberHomeRevealStage(viewportReady = !loadingState.isLoading)
     val derivedState = rememberPodcastFeedDerivedState(content, feedState, recommendationState, loadingState, revealStage)
     // Scrolling changes the visible keys often; only a change in the answer recomposes the feed.
@@ -125,7 +134,7 @@ internal fun PodcastFeed(
     val revealing = !loadingState.isLoading && revealStage < HomeRevealStage.COMPLETE
     ShimmerScope(active = hasVisibleLoading || shimmerActive || revealing) {
         LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Fixed(2),
+            columns = StaggeredGridCells.Fixed(posterColumns),
             state = layout.gridState,
             modifier = layout.modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 160.dp),
@@ -133,12 +142,22 @@ internal fun PodcastFeed(
             verticalItemSpacing = HomeFeedSpacing.GridGap,
         ) {
             smartHeroItem(content, playback, callbacks, derivedState)
-            yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
-            dailyBriefingItem(feedState, playback, callbacks, context)
-            curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState)
+            if (tablet && feedState.briefing != null) {
+                item(span = StaggeredGridItemSpan.FullLine, key = "tablet_leading_sections", contentType = "tablet_leading_sections") {
+                    TabletHomeLeadingSections(
+                        showLibrary = shouldShowYourShows(content, feedState, loadingState),
+                        library = { YourShowsFeedSection(content, feedState, loadingState, playback, callbacks, derivedState) },
+                        briefing = { DailyBriefingFeedCard(feedState, playback, callbacks, context) },
+                    )
+                }
+            } else {
+                yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
+                dailyBriefingItem(feedState, playback, callbacks, context)
+            }
+            curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState, HomeRecommendationLayout(posterColumns, tablet))
             discoveryGreetingItem(feedState, callbacks)
             editorialFeedItems(content, feedState, loadingState, callbacks)
-            discoverFeedItems(feedState, derivedState, callbacks)
+            discoverFeedItems(feedState, derivedState, callbacks, posterColumns)
         }
     }
 }

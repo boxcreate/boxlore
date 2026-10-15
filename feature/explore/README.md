@@ -73,6 +73,16 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## Testing notes
 
+- `LoreTabletPaneSizeTest` covers pane sizing, missing-pane fallback, and width/height threshold transitions. Lore retains configuration-based phone geometry while tablet spacing follows the current shell-owned pane.
+
+- `ExploreGridResizeTest` scrolls the production search and topic grids before live compact/tablet width and height transitions, including changing tablet column counts, then verifies the same result remains visible and its original tap rank is retained. Every poster stays an independently keyed lazy item so the saved scroll anchor does not turn into a row index when resizing.
+
+- Tablet featured results occupy the left two poster columns, with the next ranked results alongside them. For You, Top charts and semantic episode search preserve their original list projections, keys, absolute click positions and lazy tail items. Loading uses the same leading row; compact layouts remain unchanged. Lore enforces its 520dp deck cap before fill constraints, with a 640dp tablet stage limit; history heading and rows share a reading frame.
+
+- Tablet discovery grids pack by the shared Poster minimum while existing cards/skeletons use family maxima. Legacy hero and topic cards retain their internal designs. Local phone/tablet captures share fixed fixtures through `PhoneGoldenRule`.
+
+- `ExplorePhoneGoldenTest` captures Explore and Lore at both portrait phone sizes and short landscape in light/dark. Supplied data and mocked screen dependencies keep the local-only captures offline. Enable with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; [capture instructions](../../docs/screenshots/README.md) describe immutable baselines and exact pixel comparison.
+
 - Unit tests live under `feature/explore/src/test`.
 - `LoreCardTextTest` uses production Google Sans font measurement with real long card text at narrow portrait widths and 130% system text (including the larger play control's footer budget), checks space-first fitting, and preserves the typography floor for impossible content. It uses JVM native text layout, without screenshots or device automation.
 - `LoreMotionTest` covers bounded control feedback and interrupted press release, both swipe directions, cancellation, frozen palettes, promotion without rollback, interrupted colour transitions, synchronous pointer movement, exactly-once actions, obsolete-motion cancellation, and Floating-only card clearance.
@@ -100,3 +110,11 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:app` README](../../app/README.md)
 - [`:core:prefs` README](../../core/prefs/README.md)
+
+Lore uses the shell model and supplied pane for compact spacing; tablet custom controls show hover/focus. The genre menu becomes a bounded expanded dialog with scrollable finite content. Phone geometry and Lore callbacks are preserved.
+
+Tablet featured discovery cards match the natural height of adjacent posters, including full-height artwork. Genre selection measures real chip widths at the bounded pane root, retains the selected genre inline, and puts only remaining genres in More. Widening reveals additional chips; an all-fit row omits More. The compact shortlist and full compact menu retain their existing behavior.
+
+ExploreTabletAuditCaptureTest adds optional offline portrait/landscape captures for show search, episode search, topic results and empty/loading topics. It uses fixed fixtures without catalog requests or phone-baseline writes.
+
+Tablet poster results keep individual lazy keys and indices across compact/tablet column changes; cards retain their fixed title slots and absolute callback/rank indices. The tablet leading featured row retains its existing geometry. Tablet search inputs fill their visible capsule so Clear follows its trailing edge.

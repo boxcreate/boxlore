@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -47,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -185,6 +189,7 @@ private fun HomeMixRail(
 ) {
     val dailyScrollState = rememberLazyListState()
     val offlineScrollState = rememberLazyListState()
+    val railLayout = LocalYourShowsRailLayout.current
     AnimatedContent(
         targetState = mode,
         transitionSpec = { yourShowsContentTransform(forward = targetState == HomeMixMode.OFFLINE) },
@@ -193,7 +198,7 @@ private fun HomeMixRail(
         modifier =
         Modifier
             .fillMaxWidth()
-            .height(homeMixCardHeight()),
+            .height(if (railLayout.stacked) railLayout.height else homeMixCardHeight()),
     ) { activeMode ->
         when (activeMode) {
             HomeMixMode.DAILY ->
@@ -242,13 +247,8 @@ private fun DailyMixRail(
         return
     }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val cardWidth = HomeMixLayout.railCardWidth(maxWidth)
-    LazyRow(
-        state = scrollState,
-        contentPadding = PaddingValues(horizontal = HomeMixLayout.ContentInset),
-        horizontalArrangement = Arrangement.spacedBy(HomeMixLayout.CardGap),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    val cardWidth = if (LocalYourShowsRailLayout.current.stacked) (maxWidth - HomeMixLayout.ContentInset * 2).coerceAtMost(720.dp) else HomeMixLayout.railCardWidth(maxWidth)
+    AdaptiveHomeMixRail(scrollState) {
         itemsIndexed(
             items = podcasts,
             key = { _, podcast -> podcast.latestEpisode?.id ?: podcast.id },
@@ -297,13 +297,8 @@ private fun OfflineMixRail(
     onViewDownloads: () -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val cardWidth = HomeMixLayout.railCardWidth(maxWidth)
-    LazyRow(
-        state = scrollState,
-        contentPadding = PaddingValues(horizontal = HomeMixLayout.ContentInset),
-        horizontalArrangement = Arrangement.spacedBy(HomeMixLayout.CardGap),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    val cardWidth = if (LocalYourShowsRailLayout.current.stacked) (maxWidth - HomeMixLayout.ContentInset * 2).coerceAtMost(720.dp) else HomeMixLayout.railCardWidth(maxWidth)
+    AdaptiveHomeMixRail(scrollState) {
         itemsIndexed(
             items = downloads,
             key = { _, item -> item.episode.id },
@@ -322,6 +317,28 @@ private fun OfflineMixRail(
             ViewAllDownloadsCard(onClick = onViewDownloads)
         }
     }
+    }
+}
+
+@Composable
+private fun AdaptiveHomeMixRail(state: LazyListState, content: LazyListScope.() -> Unit) {
+    if (LocalYourShowsRailLayout.current.stacked) {
+        LazyColumn(
+            state = state,
+            contentPadding = PaddingValues(horizontal = HomeMixLayout.ContentInset),
+            verticalArrangement = Arrangement.spacedBy(HomeMixLayout.CardGap),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize().testTag("home_mix_stacked_rail"),
+            content = content,
+        )
+    } else {
+        LazyRow(
+            state = state,
+            contentPadding = PaddingValues(horizontal = HomeMixLayout.ContentInset),
+            horizontalArrangement = Arrangement.spacedBy(HomeMixLayout.CardGap),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content,
+        )
     }
 }
 

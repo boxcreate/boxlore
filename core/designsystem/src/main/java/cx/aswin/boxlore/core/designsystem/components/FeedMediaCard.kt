@@ -22,6 +22,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 
 /**
  * Layout density for discovery poster cards.
@@ -53,8 +55,11 @@ fun FeedMediaCard(
     imageChrome: @Composable (BoxScope.() -> Unit)? = null,
     fallbackImageUrls: List<String?> = emptyList(),
 ) {
+    val boundedModifier = modifier.boxloreCardWidth(
+        if (presentation == FeedMediaCardPresentation.ExpressiveFeatured) BoxloreCardFamily.Hero else BoxloreCardFamily.Poster,
+    )
     if (presentation != FeedMediaCardPresentation.Default) {
-        ExpressiveFeedMediaCard(imageUrl, title, onClick, presentation, modifier, imageChrome, fallbackImageUrls)
+        ExpressiveFeedMediaCard(imageUrl, title, onClick, presentation, boundedModifier, imageChrome, fallbackImageUrls)
         return
     }
     val lines = titleMaxLines.coerceAtLeast(1)
@@ -65,7 +70,7 @@ fun FeedMediaCard(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier,
+        modifier = boundedModifier,
     ) {
         Column {
             Box(

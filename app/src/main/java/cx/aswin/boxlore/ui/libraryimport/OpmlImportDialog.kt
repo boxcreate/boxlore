@@ -47,6 +47,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.catalog.backup.JsonBackupPhase
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -200,6 +203,8 @@ private fun ImportDialogSurface(state: OpmlImportState, actions: OpmlImportDialo
         Modifier
             .fillMaxSize()
             .zIndex(200f)
+            .boxloreFoldSafeViewport()
+            .boxloreCardWidth(BoxloreCardFamily.Utility)
             .pointerInput(Unit) { /* Block touch-through to welcome / player. */ },
         color = backgroundColor,
     ) {

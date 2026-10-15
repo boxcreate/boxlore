@@ -30,6 +30,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -62,7 +64,7 @@ fun UpNextCard(
     )
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxWidth(),
         shape = cardShape,
         color = colorScheme.surfaceContainerHigh
     ) {

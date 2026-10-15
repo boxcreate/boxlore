@@ -59,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -174,6 +177,7 @@ fun LibraryContent(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             LargeTopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
                         text = "Library",
@@ -195,7 +199,7 @@ fun LibraryContent(
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = if (LocalBoxloreWindowLayout.current.usesTabletLayout) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer,
                 ),
             )
         },
@@ -222,6 +226,9 @@ fun LibraryContent(
                 }
             }
             is LibraryUiState.Success -> {
+                if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+                    TabletLibraryHub(uiState, onNavigateToSubscriptions, onNavigateToLiked, onNavigateToDownloads, onNavigateToHistory, Modifier.padding(innerPadding))
+                } else {
                 LazyColumn(
                     contentPadding = PaddingValues(
                         start = 16.dp,
@@ -311,6 +318,7 @@ fun LibraryContent(
                         )
                     }
                 }
+                }
             }
         }
     }
@@ -329,6 +337,7 @@ fun LibraryMenuCard(
         colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = Modifier
             .fillMaxWidth()
+            .boxloreCardWidth(BoxloreCardFamily.Utility)
             .height(120.dp)
             .expressiveClickable(onClick = onClick)
     ) {
@@ -509,7 +518,7 @@ fun LibraryPodcastCard(
         shape = MaterialTheme.shapes.large, // Matches ExploreScreen
         colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Poster)
             .fillMaxWidth()
             .expressiveClickable(onClick = onClick)
     ) {

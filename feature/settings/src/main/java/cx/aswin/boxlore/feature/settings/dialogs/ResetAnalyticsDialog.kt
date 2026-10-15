@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 
 object SettingsResetAnalyticsTestTags {
@@ -41,7 +42,7 @@ internal fun ResetAnalyticsDialog(
             Text("Start a new analytics ID?")
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.tabletSheetScroll(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "Future PostHog events will use a new anonymous ID. This does not delete events already sent under the current ID.",
                     style = MaterialTheme.typography.bodyMedium,

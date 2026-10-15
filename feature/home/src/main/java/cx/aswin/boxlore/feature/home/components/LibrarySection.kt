@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.home.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -39,11 +42,16 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.designsystem.theme.rememberSectionHeaderFontFamily
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.PlaybackEntryPoint
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.StableCompletedDownloadList
@@ -82,6 +90,7 @@ fun YourShowsSection(
     modifier: Modifier = Modifier,
     pinnedPodcastIds: Set<String> = emptySet(),
     onTogglePin: (String) -> Unit = {},
+    wideWithoutBrief: Boolean = false,
 ) {
     if (subscribedPodcasts.list.isEmpty()) return
     val contentTarget = selectedPodcastId ?: subscribedPodcasts.list.singleOrNull()?.id
@@ -95,7 +104,10 @@ fun YourShowsSection(
         HomeMixMode.OFFLINE -> HomeMixModeLogic.visibleOfflineItems(completedDownloads.list).isNotEmpty()
     }
 
-    Column(modifier = modifier) {
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
+    val sidebar = tablet && wideWithoutBrief && boxloreContentWidthDp() >= 672f
+    val moduleModifier = if (sidebar) modifier.wrapContentWidth().widthIn(max = 1_200.dp) else modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
+    Column(modifier = moduleModifier) {
         // --- Header ---
         Row(
             modifier =
@@ -147,14 +159,15 @@ fun YourShowsSection(
         }
 
         // One surface persists across Mix, show filtering, loading and caught-up states.
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(30.dp))
-                .background(homeMixModuleColor())
-                .homeMixBackdrop(enabled = showingMix && hasMixContent)
-                .testTag("home_your_shows_surface"),
-        ) {
+        YourShowsModuleFrame(
+            sidebar = sidebar,
+            selectorCount = subscribedPodcasts.list.size + if (subscribedPodcasts.list.size > 1) 1 else 0,
+            background = Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(homeMixModuleColor()).homeMixBackdrop(enabled = showingMix && hasMixContent),
+            selectors = {
+                if (sidebar && subscribedPodcasts.list.size == 1) {
+                    val onlyShow = subscribedPodcasts.list.single()
+                    TabletSingleShowSpotlight(onlyShow, LocalLastSeenEpisodes.current[onlyShow.id], CoverPin(onlyShow.id in pinnedPodcastIds) { onTogglePin(onlyShow.id) }, onPodcastClick)
+                } else {
             YourShowsSelectors(
                 podcasts = subscribedPodcasts.list,
                 selectedPodcastId = selectedPodcastId,
@@ -162,8 +175,11 @@ fun YourShowsSection(
                 pinnedPodcastIds = pinnedPodcastIds,
                 onPodcastSelected = onPodcastSelected,
                 onTogglePin = onTogglePin,
+                vertical = sidebar,
             )
-            YourShowsDivider()
+                }
+            },
+            content = {
             AnimatedContent(
                 targetState = contentTarget,
                 transitionSpec = { yourShowsContentTransform(forward = targetState != null) },
@@ -231,97 +247,141 @@ fun YourShowsSection(
                             )
                             Spacer(modifier = Modifier.height(HomeMixLayout.HeaderGap))
 
-                            if ((frame.loading || frame.refreshing) &&
-                                frame.episodes.list.isEmpty()
-                            ) {
-                                Box(
-                                    modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    BoxLoreLoader.Expressive(size = 48.dp)
-                                }
-                            } else if (frame.episodes.list.isEmpty()) {
-                                Box(
-                                    modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 24.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.home_shows_no_episodes),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            } else {
-                                Column(
-                                    modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .heightIn(max = 356.dp)
-                                        .testTag("home_filtered_episodes")
-                                        .observeEpisodeListGestures(filteredScrollConnection)
-                                        .nestedScroll(filteredScrollConnection)
-                                        .verticalScroll(filteredScrollState),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    if (selectedPodcast.isRss && frame.refreshing) {
-                                        Text(
-                                            text = stringResource(R.string.home_shows_refreshing_rss),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
-                                    }
-                                    val latestTwoIds =
-                                        remember(frame.episodes) {
-                                            frame.episodes.list
-                                                .sortedByDescending { it.publishedDate }
-                                                .take(2)
-                                                .map { it.id }
-                                                .toSet()
-                                        }
-                                    val visible = frame.episodes.list.take(8)
-                                    // The rows and the See all footer form one connected list.
-                                    val segments = visible.size + 1
-                                    visible.forEachIndexed { index, episode ->
-                                        val state = episodePlaybackState.map[episode.id]
-                                        DenseEpisodeRow(
-                                            episode = episode,
-                                            podcast = selectedPodcast,
-                                            actions =
-                                            DenseEpisodeRowActions(
-                                                onClick = { onEpisodeClick(episode, selectedPodcast, "home_filtered_latest_episodes") },
-                                                onPlay = {
-                                                    onPlayEpisode(
-                                                        episode,
-                                                        selectedPodcast,
-                                                        cx.aswin.boxlore.core.model.PlaybackEntryPoint.GENERIC,
-                                                    )
-                                                },
-                                            ),
-                                            shape = yourShowsListShape(index, segments),
-                                            playback =
-                                            DenseEpisodeRowPlayback(
-                                                overrideStatus = state?.first,
-                                                overrideProgress = state?.second,
-                                                currentPlayingEpisodeId = currentPlayingEpisodeId,
-                                                isPlaying = isPlaying,
-                                            ),
-                                            isEligibleForNewTag = episode.id in latestTwoIds,
-                                        )
-                                    }
-                                    SeeAllEpisodesRow(shape = yourShowsListShape(segments - 1, segments)) { onPodcastClick(selectedPodcast) }
-                                }
-                            }
+                            SelectedShowEpisodes(
+                                selectedPodcast = selectedPodcast,
+                                frame = frame,
+                                playback = SelectedShowPlayback(episodePlaybackState, currentPlayingEpisodeId, isPlaying),
+                                actions = SelectedShowActions(onPodcastClick, onEpisodeClick, onPlayEpisode),
+                                layout = SelectedShowLayout(tablet, sidebar),
+                                scrollState = filteredScrollState,
+                                scrollConnection = filteredScrollConnection,
+                            )
                         }
                     }
                 }
             }
+                    },
+        )
+    }
+}
+
+@androidx.compose.runtime.Stable
+private data class SelectedShowPlayback(
+    val episodeState: StablePlaybackStateMap,
+    val currentPlayingEpisodeId: String?,
+    val isPlaying: Boolean,
+)
+
+@androidx.compose.runtime.Stable
+private data class SelectedShowActions(
+    val onPodcastClick: (Podcast) -> Unit,
+    val onEpisodeClick: (Episode, Podcast, String) -> Unit,
+    val onPlayEpisode: (Episode, Podcast, PlaybackEntryPoint) -> Unit,
+)
+
+@androidx.compose.runtime.Immutable
+private data class SelectedShowLayout(val tablet: Boolean, val sidebar: Boolean)
+
+@Composable
+private fun SelectedShowEpisodes(
+    selectedPodcast: Podcast,
+    frame: SelectedShowPresentation,
+    playback: SelectedShowPlayback,
+    actions: SelectedShowActions,
+    layout: SelectedShowLayout,
+    scrollState: ScrollState,
+    scrollConnection: HomeEpisodeListScrollConnection,
+) {
+    if ((frame.loading || frame.refreshing) &&
+        frame.episodes.list.isEmpty()
+    ) {
+        Box(
+            modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            BoxLoreLoader.Expressive(size = 48.dp)
+        }
+    } else if (frame.episodes.list.isEmpty()) {
+        Box(
+            modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.home_shows_no_episodes),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    } else {
+        Column(
+            modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 356.dp)
+                .testTag("home_filtered_episodes")
+                .observeEpisodeListGestures(scrollConnection)
+                .nestedScroll(scrollConnection)
+                .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            if (selectedPodcast.isRss && frame.refreshing) {
+                Text(
+                    text = stringResource(R.string.home_shows_refreshing_rss),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
+            }
+            val latestTwoIds =
+                remember(frame.episodes) {
+                    frame.episodes.list
+                        .sortedByDescending { it.publishedDate }
+                        .take(2)
+                        .map { it.id }
+                        .toSet()
+                }
+            val visible = frame.episodes.list.take(8)
+            // The rows and the See all footer form one connected list.
+            val segments = visible.size + 1
+            YourShowsEpisodeRows(visible.size, allowGrid = layout.sidebar) { index, columns ->
+                val episode = visible[index]
+                val state = playback.episodeState.map[episode.id]
+                DenseEpisodeRow(
+                    episode = episode,
+                    podcast = selectedPodcast,
+                    actions =
+                    DenseEpisodeRowActions(
+                        onClick = { actions.onEpisodeClick(episode, selectedPodcast, "home_filtered_latest_episodes") },
+                        onPlay = {
+                            actions.onPlayEpisode(
+                                episode,
+                                selectedPodcast,
+                                PlaybackEntryPoint.GENERIC,
+                            )
+                        },
+                    ),
+                    shape = if (columns > 1) RoundedCornerShape(16.dp) else yourShowsListShape(index, segments),
+                    playback =
+                    DenseEpisodeRowPlayback(
+                        overrideStatus = state?.first,
+                        overrideProgress = state?.second,
+                        currentPlayingEpisodeId = playback.currentPlayingEpisodeId,
+                        isPlaying = playback.isPlaying,
+                    ),
+                    isEligibleForNewTag = episode.id in latestTwoIds,
+                )
+            }
+            if (!layout.tablet) SeeAllEpisodesRow(shape = yourShowsListShape(segments - 1, segments)) { actions.onPodcastClick(selectedPodcast) }
+        }
+        if (layout.tablet) {
+            Spacer(Modifier.height(2.dp))
+            SeeAllEpisodesRow(shape = yourShowsListShape(1, 2)) { actions.onPodcastClick(selectedPodcast) }
         }
     }
 }

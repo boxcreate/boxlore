@@ -37,6 +37,17 @@ class BoxcastPrefsTest {
     }
 
     @Test
+    fun tabletAlphaAcknowledgmentPersistsIndependentlyOfOnboarding() {
+        assertFalse(prefs.hasAcknowledgedTabletAlphaNotice())
+        prefs.acknowledgeTabletAlphaNotice()
+        val recreated = BoxcastPrefs(ApplicationProvider.getApplicationContext())
+        assertTrue(recreated.hasAcknowledgedTabletAlphaNotice())
+        assertFalse(recreated.isOnboardingCompleted())
+        recreated.setOnboardingCompleted()
+        assertTrue(recreated.hasAcknowledgedTabletAlphaNotice())
+    }
+
+    @Test
     fun userGenresDefaultEmptyAndRoundTrip() {
         assertTrue(prefs.getUserGenres().isEmpty())
         prefs.setUserGenres(setOf("news", "tech"))

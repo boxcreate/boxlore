@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.BriefingSource
@@ -69,6 +71,33 @@ class BriefingScreenTest {
         coverUrl = "",
         sources = listOf(BriefingSource("Original reporting", "https://example.invalid/story")),
     )
+
+    @Test
+    @Config(qualifiers = "w1280dp-h1400dp-mdpi")
+    fun `tablet edition page and loading cover share a bounded reading frame in both orientations`() {
+        val window = mutableStateOf(BoxloreWindowLayout(1280f, 800f))
+        val state = mutableStateOf<BriefingUiState>(sampleEdition())
+        compose.setContent {
+            CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) {
+                BoxLoreTheme(dynamicColor = false) {
+                    Box(Modifier.width(window.value.widthDp.dp).height(window.value.heightDp.dp)) {
+                        BriefingScreen(state.value, {}, {}, { _, _ -> }, {}, {}, {})
+                    }
+                }
+            }
+        }
+        for (layout in listOf(BoxloreWindowLayout(1280f, 800f), BoxloreWindowLayout(800f, 1280f))) {
+            compose.runOnIdle { window.value = layout }
+            for (content in listOf(sampleEdition(), BriefingUiState.Loading("global"))) {
+                compose.runOnIdle { state.value = content }
+                val frame = compose.onNodeWithTag("briefing_reading_frame").fetchSemanticsNode().boundsInRoot
+                val back = compose.onNodeWithTag("briefingBack").fetchSemanticsNode().boundsInRoot
+                assertEquals(720f, frame.width, 1f)
+                assertEquals(layout.widthDp / 2, frame.center.x, 1f)
+                assertTrue(back.left >= frame.left && back.right <= frame.right)
+            }
+        }
+    }
 
     private fun render(state: BriefingUiState, large: Boolean = false, dark: Boolean = large, phone: Boolean = false) {
         compose.setContent {

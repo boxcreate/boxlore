@@ -51,10 +51,14 @@ import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.library.DownloadsSortOrder
 import cx.aswin.boxlore.feature.library.ExpressiveSolarSystemEmptyState
+import cx.aswin.boxlore.feature.library.LibraryPlaybackLayout
 import cx.aswin.boxlore.feature.library.LibraryUiState
 import cx.aswin.boxlore.feature.library.LibraryViewModel
 import cx.aswin.boxlore.feature.library.PlayAllFab
@@ -200,6 +204,7 @@ fun DownloadedEpisodesScreen(
                     )
                 } else {
                     LargeTopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                         title = {
                             Column {
                                 Text(
@@ -274,7 +279,7 @@ fun DownloadedEpisodesScreen(
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        LibraryPlaybackLayout(modifier = Modifier.padding(innerPadding).boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(), content = {
             when (uiState) {
                 is LibraryUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -288,9 +293,9 @@ fun DownloadedEpisodesScreen(
                 }
                 is LibraryUiState.Success -> {
                     LazyColumn(
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = listBottomPadding, top = 8.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = if (LocalBoxloreWindowLayout.current.usesTabletLayout) 24.dp else listBottomPadding, top = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize()
                     ) {
                         // Smart Downloads Dashboard Card
                         item {
@@ -358,7 +363,7 @@ fun DownloadedEpisodesScreen(
                     }
                 }
             }
-
+        }, playbackAction = {
             // Play All FAB aligned to bottom right
             if (downloads.isNotEmpty() && !isSelectionMode) {
                 PlayAllFab(
@@ -413,6 +418,6 @@ fun DownloadedEpisodesScreen(
                     }
                 )
             }
-        }
+        })
     }
 }

@@ -41,7 +41,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -54,6 +53,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.components.AdaptiveOverflowRow
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.tabletSheetScroll
 import cx.aswin.boxlore.feature.home.R
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -64,6 +67,8 @@ fun GenreSelector(
     modifier: Modifier = Modifier,
 ) {
     var showSheet by remember { mutableStateOf(false) }
+    var overflowGenres by remember { mutableStateOf<List<GenreItem>>(emptyList()) }
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
 
     val displayGenres =
         remember(selectedCategory) {
@@ -86,38 +91,60 @@ fun GenreSelector(
         scrollState.animateScrollTo(0)
     }
 
-    Row(
-        modifier =
-        modifier
-            .fillMaxWidth()
-            .horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        HomeGenreFilterChip(
-            label = stringResource(R.string.home_genres_top),
-            selected = selectedCategory == null,
-            onClick = { onCategorySelected(null) },
-            icon = Icons.Rounded.Whatshot,
+    if (tablet) {
+        AdaptiveOverflowRow(
+            itemCount = GENRES.size + 1,
+            selectedIndex = GENRES.indexOfFirst { it.value == selectedCategory }.takeIf { it >= 0 }?.plus(1),
+            onOverflow = { indices ->
+                overflowGenres = indices.map { GENRES[it - 1] }
+                showSheet = true
+            },
+            modifier = modifier,
+            item = { index ->
+                if (index == 0) {
+                    HomeGenreFilterChip(stringResource(R.string.home_genres_top), selectedCategory == null, { onCategorySelected(null) }, Icons.Rounded.Whatshot)
+                } else {
+                    val genre = GENRES[index - 1]
+                    HomeGenreFilterChip(genre.label, selectedCategory == genre.value, { onCategorySelected(genre.value) }, genre.icon)
+                }
+            },
+            onWidthChanged = { showSheet = false },
+            more = { onClick -> HomeMoreGenresChip(onClick) },
         )
-
-        displayGenres.forEach { genre ->
+    } else {
+        Row(
+            modifier =
+            modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             HomeGenreFilterChip(
-                label = genre.label,
-                selected = selectedCategory == genre.value,
-                onClick = { onCategorySelected(genre.value) },
-                icon = genre.icon,
+                label = stringResource(R.string.home_genres_top),
+                selected = selectedCategory == null,
+                onClick = { onCategorySelected(null) },
+                icon = Icons.Rounded.Whatshot,
+            )
+
+            displayGenres.forEach { genre ->
+                HomeGenreFilterChip(
+                    label = genre.label,
+                    selected = selectedCategory == genre.value,
+                    onClick = { onCategorySelected(genre.value) },
+                    icon = genre.icon,
+                )
+            }
+
+            AssistChip(
+                onClick = { showSheet = true },
+                label = { Text(stringResource(R.string.home_genres_more)) },
+                trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
+                modifier = Modifier.heightIn(min = 48.dp),
+                shape = CircleShape,
+                border = null,
+                colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             )
         }
-
-        AssistChip(
-            onClick = { showSheet = true },
-            label = { Text(stringResource(R.string.home_genres_more)) },
-            trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
-            modifier = Modifier.heightIn(min = 48.dp),
-            shape = CircleShape,
-            border = null,
-            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        )
     }
 
     if (showSheet) {
@@ -126,7 +153,7 @@ fun GenreSelector(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
-            HomeGenreSheetContent(selectedCategory) { category ->
+            HomeGenreSheetContent(selectedCategory, if (tablet) overflowGenres else GENRES, !tablet) { category ->
                 onCategorySelected(category)
                 showSheet = false
             }
@@ -135,11 +162,24 @@ fun GenreSelector(
 }
 
 @Composable
-private fun HomeGenreSheetContent(selectedCategory: String?, onCategorySelected: (String?) -> Unit) {
+private fun HomeMoreGenresChip(onClick: () -> Unit) {
+    AssistChip(
+        onClick = onClick,
+        label = { Text(stringResource(R.string.home_genres_more)) },
+        trailingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null) },
+        modifier = Modifier.heightIn(min = 48.dp),
+        shape = CircleShape,
+        border = null,
+        colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    )
+}
+
+@Composable
+private fun HomeGenreSheetContent(selectedCategory: String?, genres: List<GenreItem>, includeTop: Boolean, onCategorySelected: (String?) -> Unit) {
     Column(
         modifier =
         Modifier
-            .fillMaxWidth()
+            .fillMaxWidth().tabletSheetScroll()
             .padding(horizontal = 24.dp)
             .padding(bottom = 48.dp),
     ) {
@@ -155,16 +195,18 @@ private fun HomeGenreSheetContent(selectedCategory: String?, onCategorySelected:
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            HomeGenreFilterChip(
+            if (includeTop) {
+                HomeGenreFilterChip(
                 label = stringResource(R.string.home_genres_top),
                 selected = selectedCategory == null,
                 onClick = {
                     onCategorySelected(null)
                 },
                 icon = Icons.Rounded.Whatshot,
-            )
+                )
+            }
 
-            GENRES.forEach { genre ->
+            genres.forEach { genre ->
                 HomeGenreFilterChip(
                     label = genre.label,
                     selected = selectedCategory == genre.value,

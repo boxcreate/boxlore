@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -38,7 +37,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.catalog.ChapterRepository
+import cx.aswin.boxlore.core.designsystem.components.BoxloreModalBottomSheet as ModalBottomSheet
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
@@ -144,6 +145,7 @@ internal fun MarqueeMetadataText(
     velocity: androidx.compose.ui.unit.Dp,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Text(
         text = text,
         style = style,
@@ -154,8 +156,9 @@ internal fun MarqueeMetadataText(
         modifier = Modifier
             .fillMaxWidth()
             .clipToBounds()
+            .tabletInputFeedback(interactionSource)
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             )
@@ -176,7 +179,9 @@ internal fun FullPlayerControls(
     dependencies: FullPlayerDependencies,
     flows: FullPlayerFlows,
     ui: FullPlayerUiState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    inlineSupportingContent: Boolean = false,
+    primaryControlHeight: Dp = 104.dp,
 ) {
     if (model.state.duration > 0) {
         PlayerSeekbar(
@@ -192,20 +197,22 @@ internal fun FullPlayerControls(
         )
     }
     Spacer(modifier = Modifier.height(if (model.isCompact) 14.dp else 18.dp))
-    FullPlayerPrimaryControls(model, dependencies.playbackRepository)
+    FullPlayerPrimaryControls(model, dependencies.playbackRepository, primaryControlHeight)
     Spacer(modifier = Modifier.height(if (model.isCompact) 14.dp else 18.dp))
-    FullPlayerSecondaryControls(model, dependencies, ui, scope)
+    FullPlayerSecondaryControls(model, dependencies, ui, scope, inlineSupportingContent)
 }
 
 @Composable
 internal fun FullPlayerPrimaryControls(
     model: FullPlayerControlModel,
-    playbackRepository: PlaybackRepository
+    playbackRepository: PlaybackRepository,
+    controlHeight: Dp = 104.dp,
 ) {
     PrimaryControls(
         isPlaying = model.state.isPlaying,
         isLoading = model.state.isLoading,
         colorScheme = model.colorScheme,
+        controlHeight = controlHeight,
         actions = PrimaryControlActions(
             onPlayPause = {
                 cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("play_pause")
@@ -232,7 +239,8 @@ internal fun FullPlayerSecondaryControls(
     model: FullPlayerControlModel,
     dependencies: FullPlayerDependencies,
     ui: FullPlayerUiState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    inlineSupportingContent: Boolean = false,
 ) {
     SecondaryRail(
         playback = SecondaryPlaybackState(
@@ -246,7 +254,7 @@ internal fun FullPlayerSecondaryControls(
                 ChapterRepository.hasChaptersInDescription(model.episode.description),
             hasTranscript = model.state.currentTranscript.isNotEmpty() ||
                 !model.episode.transcriptUrl.isNullOrEmpty(),
-            isTranscriptVisible = ui.showInlineTranscript,
+            isTranscriptVisible = if (inlineSupportingContent) ui.supportingTab == PlayerSupportingTab.Transcript else ui.showInlineTranscript,
             isChaptersLoading = model.state.isChaptersLoading,
             autoTranscriptState = model.state.autoTranscriptState,
             autoChaptersState = model.state.autoChaptersState
@@ -259,7 +267,7 @@ internal fun FullPlayerSecondaryControls(
         ),
         colorScheme = model.colorScheme,
         selectionActions = fullPlayerSelectionActions(dependencies.playbackRepository),
-        clickActions = fullPlayerClickActions(model, dependencies, ui, scope)
+        clickActions = fullPlayerClickActions(model, dependencies, ui, scope, inlineSupportingContent)
     )
 }
 
@@ -286,23 +294,19 @@ internal fun fullPlayerClickActions(
     model: FullPlayerControlModel,
     dependencies: FullPlayerDependencies,
     ui: FullPlayerUiState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    inlineSupportingContent: Boolean = false,
 ) = SecondaryClickActions(
     onQueueClick = {
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("queue")
-        ui.showQueueSheet = true
+        if (inlineSupportingContent) ui.selectSupportingTab(PlayerSupportingTab.UpNext) else ui.showQueueSheet = true
     },
     onChaptersClick = {
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("chapters_sheet")
-        ui.showChaptersSheet = true
+        if (inlineSupportingContent) ui.selectSupportingTab(PlayerSupportingTab.Chapters) else ui.showChaptersSheet = true
     },
     onTranscriptClick = {
-        if (model.state.currentTranscript.isNotEmpty()) {
-            cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction(
-                if (ui.showInlineTranscript) "transcript_hide" else "transcript_inline"
-            )
-            ui.showInlineTranscript = !ui.showInlineTranscript
-        }
+        togglePlayerTranscript(model.state, ui, inlineSupportingContent)
     },
     onLikeClick = {
         cx.aswin.boxlore.core.analytics.PlayerSessionAggregator.logAction("like")

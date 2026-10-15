@@ -68,6 +68,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 
@@ -93,6 +95,7 @@ fun FeedbackScreen(
         modifier = modifier.imePadding(),
         topBar = {
             TopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
                         text = "Share your thoughts",
@@ -132,6 +135,7 @@ fun FeedbackScreen(
                 bottomPadding = FEEDBACK_CONTENT_BOTTOM_PADDING,
                 modifier = Modifier
                     .fillMaxSize()
+                    .boxloreCardWidth(BoxloreCardFamily.Utility)
                     .padding(paddingValues)
                     .padding(horizontal = 24.dp),
             )
@@ -139,6 +143,7 @@ fun FeedbackScreen(
             FeedbackFormView(
                 modifier = Modifier
                     .fillMaxSize()
+                    .boxloreCardWidth(BoxloreCardFamily.Utility)
                     .padding(paddingValues)
                     .verticalScroll(rememberScrollState())
                     .padding(

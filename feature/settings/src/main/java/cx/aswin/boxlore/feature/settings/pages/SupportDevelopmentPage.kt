@@ -39,8 +39,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bolt
@@ -86,7 +88,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.feature.settings.R
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -208,9 +214,11 @@ private fun SupportPageContent(
     onSelectTier: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     Column(
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
             .fillMaxSize()
+            .then(if (tablet) Modifier.verticalScroll(rememberScrollState()) else Modifier)
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -221,7 +229,7 @@ private fun SupportPageContent(
             activeAuraColor = activeAuraColor,
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = if (tablet) Modifier.height(20.dp) else Modifier.weight(1f))
 
         SupportTierPicker(
             selectedIndex = pagerState.currentPage,
@@ -243,7 +251,7 @@ private fun SupportPageContent(
             },
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = if (tablet) Modifier.height(20.dp) else Modifier.weight(1f))
 
         SupportMissionCard(
             activeColor = activeAuraColor,
@@ -373,12 +381,14 @@ private fun StageDisplayBox(
         label = "platform_pulse",
     )
 
+    val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(190.dp)
+            .tabletInputFeedback(interactionSource)
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interactionSource,
                 indication = null,
                 onClick = onStageClick,
             ),

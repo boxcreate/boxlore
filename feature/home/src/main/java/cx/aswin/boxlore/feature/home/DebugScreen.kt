@@ -49,6 +49,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.isInNightWindow
@@ -338,7 +340,7 @@ internal fun HistoryDebugCard(
     onDelete: (String) -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = RoundedCornerShape(14.dp),
     ) {
@@ -370,7 +372,7 @@ internal fun HistoryDebugCard(
 @Composable
 internal fun PodcastDebugCard(item: PodcastEntity) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = RoundedCornerShape(14.dp),
     ) {

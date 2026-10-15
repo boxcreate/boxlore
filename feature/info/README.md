@@ -82,6 +82,10 @@ src/main/java/cx/aswin/boxlore/feature/info/
 
 ## Testing notes
 
+- Tablet detail content is centered in the shared Reading width (720dp); the app palette still paints the full viewport. Poster rails keep fixed card sizes and Podroll rail items use the shared RailItem cap. Phone modifiers return unchanged.
+
+- `InfoPhoneGoldenTest` captures the actual podcast and episode screens at both portrait phone sizes and short landscape in light/dark. Mocked ViewModel flows avoid constructing Application-backed ViewModels or making network requests. These local-only captures use `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; see [capture instructions](../../docs/screenshots/README.md).
+
 - `EpisodeExpandableTitleTest` covers baseline continuity with a larger touch target, different font padding, enlarged text and a wrapping expanded tail. `PodcastEpisodeSearchLogicTest` covers list continuity, empty/loading/recovery states, repository result order and stale-response rejection after clearing, replacing a query or changing shows. The shared `AdaptivePlayerOverlayOffsetTest` covers compact/expanded docking, reverse motion, Classic navigation and absent-player behavior used by the selection toolbar.
 
 - Unit tests live under `feature/info/src/test`.
@@ -114,3 +118,5 @@ src/main/java/cx/aswin/boxlore/feature/info/
 - [`:app` README](../../app/README.md)
 
 - Episode notes loading coalesces unchanged title/description/duration/type/chapter-source and host inputs; unrelated image metadata does not restart parsing or promotion resolution. A same-episode refresh retains its resolved promotion card until the new result arrives. Blank parsed notes omit About, and timestamp links seek to the matched chapter's precise millisecond start. More-from scroll analytics requires active scrolling with at least 60% of the section (or viewport, for taller sections) visible, excluding partial pass-throughs. `EpisodeDescriptionLogicTest` and `EpisodeInfoNotesLoaderTest` cover these regressions.
+
+Options, genre and show-playback sheets use the shared expanded dialog adapter. Finite tablet forms remain scrollable; the deliberately blurred artwork backdrop retains its existing 400px request. Toolbar warnings inherit the utility width cap.

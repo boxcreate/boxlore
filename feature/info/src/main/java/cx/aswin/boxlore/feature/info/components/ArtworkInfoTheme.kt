@@ -19,6 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkColorTransitionMillis
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkPalette
 import cx.aswin.boxlore.core.designsystem.theme.LocalArtworkColorsEnabled
@@ -82,7 +84,7 @@ internal fun ArtworkInfoTheme(imageUrls: List<String?>, isLoading: Boolean = fal
             Surface(modifier = Modifier.fillMaxSize(), color = colors.background, contentColor = colors.onBackground) {
                 // Surface propagates its minimum size. Keep that on one page container,
                 // rather than forcing sibling header overlays to fill the whole viewport.
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxSize()) {
                     content()
                 }
             }

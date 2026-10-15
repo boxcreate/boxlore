@@ -40,6 +40,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -77,10 +80,20 @@ fun HeroCard(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = container, contentColor = foreground),
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize(),
     ) {
         Column(Modifier.fillMaxSize()) {
-            HeroBody(item, foreground, progressState, Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp))
+            if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp)) {
+                if (LocalBoxloreWindowLayout.current.usesTabletLayout && maxHeight < 240.dp) {
+                    ShortTabletHeroBody(item, foreground)
+                } else {
+                    HeroBody(item, foreground, progressState, Modifier.fillMaxSize())
+                }
+                }
+            } else {
+                HeroBody(item, foreground, progressState, Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp))
+            }
             Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                 HeroActions(
                     pause = pause,
@@ -92,6 +105,18 @@ fun HeroCard(
                     onDetailsClick = onArrowClick,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ShortTabletHeroBody(item: SmartHeroItem, foreground: Color) {
+    Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        HeroArtwork(item, Modifier.size(80.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(heroTitle(item), color = foreground, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag("home_hero_title").semantics { heading() })
+            Text(heroSupportingName(item), color = foreground, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            HeroCardContext(item, foreground, wide = true, modifier = Modifier.fillMaxWidth())
         }
     }
 }

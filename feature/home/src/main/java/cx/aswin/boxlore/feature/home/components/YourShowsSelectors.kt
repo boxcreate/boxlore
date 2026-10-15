@@ -63,93 +63,99 @@ internal fun YourShowsSelectors(
     pinnedPodcastIds: Set<String>,
     onPodcastSelected: (String?) -> Unit,
     onTogglePin: (String) -> Unit,
+    vertical: Boolean = false,
 ) {
     val tileHeight = YourShowsLayout.TileHeight
     val interleaved = remember(podcasts) {
         if (podcasts.size > 9) podcasts.chunked(2).flatMap { it.reversed() } else podcasts
     }
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("home_show_selectors"),
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().testTag("home_show_selectors")) {
         val tileWidth = ((maxWidth - YourShowsLayout.Padding * 2 - YourShowsLayout.Gap * 4) / 5)
             .coerceAtMost(YourShowsLayout.TileWidth)
         val itemModifier = Modifier.width(tileWidth).height(tileWidth)
         val items: List<Podcast?> = if (podcasts.size > 1) listOf(null) + podcasts else podcasts
-        if (podcasts.size <= 4) {
-            LazyRow(
-                contentPadding = PaddingValues(YourShowsLayout.Padding),
-                horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),
-            ) {
-                items(items, key = { it?.id ?: "mixtape" }) { podcast ->
-                    ShowSelectorItem(
-                        podcast,
-                        podcasts.size,
-                        selectedPodcastId,
-                        lastSeenEpisodes,
-                        pinnedPodcastIds,
-                        onPodcastSelected,
-                        onTogglePin,
-                        Modifier.width(YourShowsLayout.TileWidth).height(tileHeight)
-                            .animateItem(fadeInSpec = null, fadeOutSpec = null),
-                    )
+        when {
+            vertical -> {
+                VerticalYourShowsSelectors(items) { podcast ->
+                    ShowSelectorItem(podcast, podcasts.size, selectedPodcastId, lastSeenEpisodes, pinnedPodcastIds, onPodcastSelected, onTogglePin, Modifier.size(YourShowsLayout.TileWidth))
                 }
             }
-        } else if (podcasts.size <= 9) {
-            Column(
-                modifier = Modifier.padding(YourShowsLayout.Padding),
-                verticalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),
-            ) {
-                items.chunked(5).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap)) {
-                        row.forEach { podcast ->
-                            ShowSelectorItem(
-                                podcast,
-                                podcasts.size,
-                                selectedPodcastId,
-                                lastSeenEpisodes,
-                                pinnedPodcastIds,
-                                onPodcastSelected,
-                                onTogglePin,
-                                itemModifier,
-                            )
+            podcasts.size <= 4 -> {
+                LazyRow(
+                    contentPadding = PaddingValues(YourShowsLayout.Padding),
+                    horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),
+                ) {
+                    items(items, key = { it?.id ?: "mixtape" }) { podcast ->
+                        ShowSelectorItem(
+                            podcast,
+                            podcasts.size,
+                            selectedPodcastId,
+                            lastSeenEpisodes,
+                            pinnedPodcastIds,
+                            onPodcastSelected,
+                            onTogglePin,
+                            Modifier.width(YourShowsLayout.TileWidth).height(tileHeight)
+                                .animateItem(fadeInSpec = null, fadeOutSpec = null),
+                        )
+                    }
+                }
+            }
+            podcasts.size <= 9 -> {
+                Column(
+                    modifier = Modifier.padding(YourShowsLayout.Padding),
+                    verticalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),
+                ) {
+                    items.chunked(5).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap)) {
+                            row.forEach { podcast ->
+                                ShowSelectorItem(
+                                    podcast,
+                                    podcasts.size,
+                                    selectedPodcastId,
+                                    lastSeenEpisodes,
+                                    pinnedPodcastIds,
+                                    onPodcastSelected,
+                                    onTogglePin,
+                                    itemModifier,
+                                )
+                            }
                         }
                     }
                 }
             }
-        } else {
-            LazyHorizontalGrid(
-                rows = GridCells.Fixed(2),
-                modifier = Modifier.height(tileHeight * 2 + YourShowsLayout.Padding * 2 + YourShowsLayout.Gap),
-                contentPadding = PaddingValues(YourShowsLayout.Padding),
-                horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),
-                verticalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),
-            ) {
-                item(key = "mixtape") {
-                    ShowSelectorItem(
-                        null,
-                        podcasts.size,
-                        selectedPodcastId,
-                        lastSeenEpisodes,
-                        pinnedPodcastIds,
-                        onPodcastSelected,
-                        onTogglePin,
-                        Modifier.width(YourShowsLayout.TileWidth).height(tileHeight)
-                    )
-                }
-                items(interleaved, key = { it.id }) { podcast ->
-                    ShowSelectorItem(
-                        podcast,
-                        podcasts.size,
-                        selectedPodcastId,
-                        lastSeenEpisodes,
-                        pinnedPodcastIds,
-                        onPodcastSelected,
-                        onTogglePin,
-                        Modifier.width(YourShowsLayout.TileWidth).height(tileHeight)
-                            .animateItem(fadeInSpec = null, fadeOutSpec = null)
-                    )
+            else -> {
+                LazyHorizontalGrid(
+                    rows = GridCells.Fixed(2),
+                    modifier = Modifier.height(tileHeight * 2 + YourShowsLayout.Padding * 2 + YourShowsLayout.Gap),
+                    contentPadding = PaddingValues(YourShowsLayout.Padding),
+                    horizontalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),
+                    verticalArrangement = Arrangement.spacedBy(YourShowsLayout.Gap),
+                ) {
+                    item(key = "mixtape") {
+                        ShowSelectorItem(
+                            null,
+                            podcasts.size,
+                            selectedPodcastId,
+                            lastSeenEpisodes,
+                            pinnedPodcastIds,
+                            onPodcastSelected,
+                            onTogglePin,
+                            Modifier.width(YourShowsLayout.TileWidth).height(tileHeight)
+                        )
+                    }
+                    items(interleaved, key = { it.id }) { podcast ->
+                        ShowSelectorItem(
+                            podcast,
+                            podcasts.size,
+                            selectedPodcastId,
+                            lastSeenEpisodes,
+                            pinnedPodcastIds,
+                            onPodcastSelected,
+                            onTogglePin,
+                            Modifier.width(YourShowsLayout.TileWidth).height(tileHeight)
+                                .animateItem(fadeInSpec = null, fadeOutSpec = null)
+                        )
+                    }
                 }
             }
         }

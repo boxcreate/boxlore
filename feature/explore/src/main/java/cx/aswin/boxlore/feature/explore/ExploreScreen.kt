@@ -71,6 +71,9 @@ import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
 import cx.aswin.boxlore.core.designsystem.components.regionDisplayLabel
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
@@ -356,11 +359,16 @@ fun ExploreContent(
                 LazyListKeyPolicy.deduplicateById(state.recommendations) { it.id }
             }
 
+            val tabletColumns = if (LocalBoxloreWindowLayout.current.usesTabletLayout) boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp(), gapDp = 12f) else 0
             val feed: @Composable (Int, LazyStaggeredGridState) -> Unit = { browseTab, pageGridState ->
                 ShimmerScope(active = if (state.currentVibe != null) state.isLoading else !isSearchModeActive && if (browseTab == 1) state.isRecommendationsLoading else state.isLoading) {
                     LazyVerticalStaggeredGrid(
                         state = pageGridState,
-                        columns = StaggeredGridCells.Adaptive(150.dp),
+                        columns = if (tabletColumns > 0) {
+                            StaggeredGridCells.Fixed(tabletColumns)
+                        } else {
+                            StaggeredGridCells.Adaptive(150.dp)
+                        },
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             end = 16.dp,
@@ -451,6 +459,9 @@ fun ExploreContent(
                                                         modifier = Modifier.padding(top = if (pods.isNotEmpty()) 8.dp else 0.dp),
                                                     )
                                                 }
+                                                if (tabletColumns >= 3) {
+                                                    tabletSemanticEpisodeItems(eps, tabletColumns, state.searchQuery, onEpisodeClick)
+                                                } else {
                                                 item(
                                                      key = LazyListKeyPolicy.safeKey(eps.firstOrNull()?.id, prefix = "semantic_episodes_hero"),
                                                      span = StaggeredGridItemSpan.FullLine,
@@ -510,6 +521,7 @@ fun ExploreContent(
                                                             onEpisodeClick(episode, parentPodcast)
                                                         }
                                                     )
+                                                }
                                                 }
                                             }
 
@@ -578,10 +590,7 @@ fun ExploreContent(
                                                 )
                                             }
                                         }
-                                        itemsIndexed(
-                                            gridItems,
-                                            key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }
-                                        ) { index, podcast ->
+                                        orderedExploreItems(gridItems, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, index ->
                                             val entryPointStr = "explore_search"
                                             ExploreBrowsePodcastCard(
                                                 podcast = podcast,
@@ -602,10 +611,7 @@ fun ExploreContent(
                                                     modifier = Modifier.padding(top = 8.dp),
                                                 )
                                             }
-                                            itemsIndexed(
-                                                alsoFound,
-                                                key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "also") }
-                                            ) { index, podcast ->
+                                            orderedExploreItems(alsoFound, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "also") }) { podcast, index ->
                                                 ExploreBrowsePodcastCard(
                                                     podcast = podcast,
                                                     featured = false,
@@ -669,17 +675,24 @@ fun ExploreContent(
                                 val showEmptyState = !state.isRecommendationsLoading && recs.isEmpty()
 
                                 if (showSkeletons) {
+                                    if (tabletColumns >= 3) {
+                                        tabletExploreSkeletonItems(tabletColumns)
+                                    } else {
                                     item(span = StaggeredGridItemSpan.FullLine) {
                                         ExploreBrowseCardSkeleton(featured = true)
                                     }
                                     items(4) {
                                         ExploreBrowseCardSkeleton(featured = false)
                                     }
+                                    }
                                 } else if (showEmptyState) {
                                     item(span = StaggeredGridItemSpan.FullLine) {
                                         ExploreRecommendationsEmptyState()
                                     }
                                 } else if (showContent) {
+                                    if (tabletColumns >= 3) {
+                                        tabletRecommendationItems(recs, tabletColumns, onEpisodeClick)
+                                    } else {
                                     item(
                                         key = LazyListKeyPolicy.safeKey(recs.firstOrNull()?.id, prefix = "rec_hero"),
                                         span = StaggeredGridItemSpan.FullLine,
@@ -742,6 +755,7 @@ fun ExploreContent(
                                             },
                                         )
                                     }
+                                    }
                                 }
                             } else {
                                 // Trending Tab Content
@@ -750,17 +764,24 @@ fun ExploreContent(
                                 val showEmptyState = !state.isLoading && displayList.isEmpty()
 
                                 if (showSkeletons) {
+                                    if (tabletColumns >= 3) {
+                                        tabletExploreSkeletonItems(tabletColumns)
+                                    } else {
                                     item(span = StaggeredGridItemSpan.FullLine) {
                                         ExploreBrowseCardSkeleton(featured = true)
                                     }
                                     items(4) {
                                         ExploreBrowseCardSkeleton(featured = false)
                                     }
+                                    }
                                 } else if (showEmptyState) {
                                     item(span = StaggeredGridItemSpan.FullLine) {
                                         ExploreEmptyState(searchMode = false)
                                     }
                                 } else if (showContent) {
+                                    if (tabletColumns >= 3) {
+                                        tabletTrendingItems(displayList[0], gridItems, tabletColumns, state.currentCategory, onPodcastClick)
+                                    } else {
                                     // Featured Hero Card (P1 only, when not searching and has content)
                                     item(
                                         key = LazyListKeyPolicy.safeKey(displayList.firstOrNull()?.id, prefix = "trending_hero"),
@@ -775,16 +796,14 @@ fun ExploreContent(
                                     }
 
                                     val showGenreChip = state.currentCategory == "All"
-                                    itemsIndexed(
-                                        gridItems,
-                                        key = { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }
-                                    ) { index, podcast ->
+                                    orderedExploreItems(gridItems, { index, podcast -> LazyListKeyPolicy.safeKey(podcast.id, index, prefix = "grid") }) { podcast, index ->
                                         ExploreBrowsePodcastCard(
                                             podcast = podcast,
                                             featured = false,
                                             showGenre = showGenreChip,
                                             onClick = { onPodcastClick(podcast.id, "explore_grid", state.currentCategory, index + 1) }
                                         )
+                                    }
                                     }
 
                                     // Loading indicator for pagination
@@ -837,7 +856,7 @@ fun ExploreContent(
                             onExpandedChange = { searchActive = it },
                             inputField = {
                                 SearchBarDefaults.InputField(
-                                    modifier = Modifier.focusRequester(searchFocusRequester),
+                                    modifier = Modifier.focusRequester(searchFocusRequester).then(if (LocalBoxloreWindowLayout.current.usesTabletLayout) Modifier.fillMaxWidth() else Modifier),
                                     query = state.searchQuery,
                                     onQueryChange = onSearchQueryChanged,
                                     onSearch = {

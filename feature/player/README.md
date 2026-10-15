@@ -58,6 +58,7 @@ src/main/java/cx/aswin/boxlore/feature/player/
     PlayerHero.kt
     PlayerSeekbar.kt
     PlayerSheetScaffold.kt
+    PlayerTranscriptAction.kt
     PlayerTheme.kt
     logic/
 ```
@@ -84,6 +85,19 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 - UI state should treat media IDs as opaque strings from playback APIs.
 
 ## Testing notes
+
+- `PlayerTranscriptActionTest` covers the shared transcript quick action: phone inline visibility, tablet supporting-tab toggles, empty-transcript no-op, and migration between presentations with the same UI state owner.
+
+- Tablet Standard player measures actual title/control height before allocating artwork, leaving complete utility controls above safe drawing insets. Context metadata wraps beside a smaller cover; stacked/tabletop controls and supporting tabs flow through a finite scroll layout. Up next continuation and empty recovery share the queue scroller, with banner-aware reorder indices. The shell promotes video/transcript overlays to the whole window and restores their originating context/dock/immersive owner. Transcript expansion keeps its tab/sync state; video exit restores the tablet orientation. Phone defaults and metadata geometry remain unchanged.
+
+- Tablet players reuse the existing transport and supporting-content callbacks within bounded, fold-safe regions. Up next, Chapters, Transcript and Notes share saved tabs; a horizontal half-open fold puts artwork/title above the hinge and transport/support below. Context-pane presentation exposes an owner-supplied full-screen action and does not change system-bar appearance. Standard phone and BunPod paths remain separate.
+- `RetainedPlayerPresentation(tabletLayout)` is an optional app-owned UI scope for moving the same episode between pane and docked presentations. Retention starts with the first tablet-layout composition and lasts for the saved scope. It then retains supporting tabs and transient controls, restores them after recreation, and resets them for a different opaque episode ID. Until a tablet layout appears, phones keep each player's local saved state exactly as before; the scope only remembers that state so the first tablet frame continues it. Without the scope, callers keep their local saved state.
+- The retained scope also remembers the settled expanded/collapsed presentation; a phone-only scope never reopens the sheet expanded. `PlayerSheetActions.onOpenRequest` lets the host open the player elsewhere instead of expanding the sheet (the app returns a docked tablet player to its pane). On tablet layouts, `FullPlayerV2` and the sheet start from the current playback state instead of an empty first frame; phones keep their original start. Optional physical left/right docking insets keep the mini bar within a fold-safe browsing pane while its existing reveal motion opens into the full window. Zero-inset phone geometry retains its original values.
+- `TabletPlayerContentTest` also checks that a phone session keeps local state and collapsed reentry until the first tablet frame, which continues the same state across the 600dp gate. `TabletPlayerLayoutLogicTest`, `TabletPlayerContentTest` and `FullPlayerUiStateSaverTest` cover physical hinge bounds, global pane coordinates, posture changes, chapter seeking, BunPod tabletop layout, immersive callbacks, and saved tabs. Compact transcript, Chapters and queue surfaces return after tablet round trips; actual tablet selections transfer back while the default Up next tab and Notes do not open unsolicited compact sheets. State recreation preserves this intent and legacy saved expansion flags. Live production-host coverage crosses the 599/600dp width and 479/480dp height gates and returns from tabletop with the same transcript owner.
+
+- Up next, Notes and queue contents use shared tablet family bounds (720dp), preserving their existing internal layouts and phone modifiers. The shared local golden fixtures can also capture the player at the tablet/foldable matrix using `-PtabletCaptures=before|after`. These synthetic JVM renders are distinct from live device checks.
+
+- `PlayerPhoneGoldenTest` captures the Standard full player at both portrait phone sizes and short landscape in light/dark. Fixed player/download/preference flows start no media service. Captures are local only, enabled with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; see [capture instructions](../../docs/screenshots/README.md).
 
 - `MinimalPlayerLogicTest` covers style fallback/video handling, bounded remaining time and one queue opening per upward gesture. `MinimalPlayerContentTest` exercises the real controls, accessibility seeking/queue access, title expansion, adaptive short/long text, title-only full hyphenation, centered metadata, scoped crisp typography, oversized sheet/window bounds, large-text RTL, buffering, short landscape windows and swipe-to-queue with local callbacks; it sends no media or network requests. `MinimalPlayerControlsTest` checks distinct active silhouettes, separate main/auxiliary control accents in both themes, rapid taps and a press interrupted by buffering. `MinimalControlAccentTest` checks related hues, tone separation and foreground contrast across artwork seeds in both modes. Optional local render exports use `BOXLORE_UI_TEST_ARTIFACTS`.
 
@@ -112,3 +126,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 - [`docs/TESTING.md`](../../docs/TESTING.md)
 - [`:core:playback` README](../../core/playback/README.md)
 - [`:app` README](../../app/README.md)
+
+Player phone geometry now reads the shell-provided legacy configuration dimensions, with preview/test fallbacks. Tablet secondary controls use the shared bounded modals and input feedback; the existing mini-player drag source remains separate from its expansion click source.
+
+The tabletop Standard player measures title/show metadata with artwork above the hinge, keeping transport and a visible supporting-tab row below it. Enlarged content retains its scroll fallback without crossing the physical hinge.

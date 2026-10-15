@@ -62,6 +62,7 @@ import cx.aswin.boxlore.core.designsystem.component.NavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.navigationChromeMetrics
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveMotion
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.core.playback.PlaybackArtworkResolver
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.pause
@@ -104,12 +105,16 @@ data class PlayerSheetLayout(
     val compactProgress: State<Float>? = null,
     val compactTargetY: Float = collapsedTargetY,
     val miniPlayerSeekButtonsEnabled: Boolean = false,
+    val collapsedLeftInset: Dp = 0.dp,
+    val collapsedRightInset: Dp = 0.dp,
 )
 
 data class PlayerSheetActions(
     val onEpisodeInfoClick: (cx.aswin.boxlore.core.model.Episode) -> Unit = {},
     val onPodcastInfoClick: (cx.aswin.boxlore.core.model.Podcast) -> Unit = {},
     val onSheetInteractionChanged: (Boolean) -> Unit = {},
+    /** Lets the host open the player elsewhere; returning true skips the sheet's own expansion. */
+    val onOpenRequest: (() -> Boolean)? = null,
 )
 
 /**
@@ -139,11 +144,7 @@ fun PlayerSheetScaffold(
                 .map { it.position }
                 .distinctUntilChanged()
         }
-    val state by stablePlayerState.collectAsStateWithLifecycle(
-        initialValue =
-        cx.aswin.boxlore.core.playback
-            .PlayerState(),
-    )
+    val state by stablePlayerState.collectAsStateWithLifecycle(initialValue = rememberInitialPlayerState(playbackRepository))
     val episode = state.currentEpisode
     val podcast = state.currentPodcast
 
@@ -170,6 +171,7 @@ fun PlayerSheetScaffold(
         }
     val playerColors = rememberPlayerColors(artworkUrl)
     val colorScheme = playerColors.scheme
+    val presentation = LocalPlayerPresentationStore.current
 
     // Thresholds/specs factory is deprecated in favor of AnchoredDraggableDefaults.flingBehavior;
     // keep it here so mini-player settle velocity/feel stays identical.
@@ -177,7 +179,7 @@ fun PlayerSheetScaffold(
     val sheetState =
         remember(density) {
             AnchoredDraggableState(
-                initialValue = PlayerSheetValue.Collapsed,
+                initialValue = if (presentation?.opensExpanded() == true) PlayerSheetValue.Expanded else PlayerSheetValue.Collapsed,
                 positionalThreshold = { distance: Float -> distance * 0.5f },
                 velocityThreshold = { with(density) { PlayerSheetDecisiveFlingDistance.toPx() } },
                 // Soft expressive settle — gesture gates below keep mini controls tappable
@@ -187,6 +189,11 @@ fun PlayerSheetScaffold(
             )
         }
     ConfigurePlayerSheetAnchors(sheetState, layout.collapsedTargetY)
+    LaunchedEffect(sheetState, presentation) {
+        if (presentation != null) {
+            snapshotFlow { sheetState.currentValue }.collect { presentation.expanded = it == PlayerSheetValue.Expanded }
+        }
+    }
     val geometry = rememberPlayerSheetGeometry(sheetState, layout)
     val sheetInteractionSource = remember { MutableInteractionSource() }
     val isDragging by sheetInteractionSource.collectIsDraggedAsState()
@@ -239,7 +246,7 @@ fun PlayerSheetScaffold(
         ),
         callbacks =
         PlayerSheetCallbacks(
-            onExpand = { requestSheetExpansion(sheetState, geometry.sheetOffset, scope) },
+            onExpand = { if (actions.onOpenRequest?.invoke() != true) requestSheetExpansion(sheetState, geometry.sheetOffset, scope) },
             onCollapse = {
                 requestSheetCollapse(sheetState, geometry.sheetOffset, layout.collapsedTargetY, scope)
             },
@@ -406,6 +413,8 @@ private fun PlayerSheetSurface(
                 isRtl = isRtl,
                 adaptiveEnabled = layout.navigationStyle == NavigationStyle.Floating,
                 isFullscreenVideo = content.isFullscreenVideo,
+                collapsedLeftInset = layout.collapsedLeftInset,
+                collapsedRightInset = layout.collapsedRightInset,
             ),
         )
         val surfaceExpansion = if (content.isFullscreenVideo) 1f else geometry.expansionFraction
@@ -420,6 +429,7 @@ private fun PlayerSheetSurface(
                 !sheetState.isAnimationRunning,
         )
         val adaptedGeometry = geometry.adaptToBounds(bounds, content.isFullscreenVideo, rotation)
+        val expansionInteractionSource = remember { MutableInteractionSource() }
         Box(
             modifier =
             Modifier
@@ -455,11 +465,11 @@ private fun PlayerSheetSurface(
                         // ate mini controls for ~1–2s. Touch-slop still allows swipe-up
                         // expand from the collapsed mini player.
                         startDragImmediately = false,
-                    ).clickable(
+                    ).tabletInputFeedback(expansionInteractionSource, enabled = geometry.expansionFraction < 0.5f && !content.isFullscreenVideo).clickable(
                         enabled =
                         geometry.expansionFraction < 0.5f &&
                             !content.isFullscreenVideo,
-                        interactionSource = remember { MutableInteractionSource() },
+                        interactionSource = expansionInteractionSource,
                         indication = null,
                         onClickLabel = "Open player",
                     ) {

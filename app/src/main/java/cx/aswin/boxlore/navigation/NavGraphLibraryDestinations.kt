@@ -69,12 +69,12 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             )
         cx.aswin.boxlore.feature.library.LibraryScreen(
             viewModel = viewModel,
-            onNavigateToLiked = { navController.navigate("library/liked") },
-            onNavigateToSubscriptions = { navController.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) },
-            onNavigateToDownloads = { navController.navigate(NavRoutes.LIBRARY_DOWNLOADS) },
-            onNavigateToHistory = { navController.navigate("library/history") },
-            onNavigateToSettings = { navController.navigate("settings?page=hub") },
-            onNavigateToDebug = { navController.navigate("debug") },
+            onNavigateToLiked = { w.navigate("library/liked") },
+            onNavigateToSubscriptions = { w.navigate(NavRoutes.LIBRARY_SUBSCRIPTIONS) },
+            onNavigateToDownloads = { w.navigate(NavRoutes.LIBRARY_DOWNLOADS) },
+            onNavigateToHistory = { w.navigate("library/history") },
+            onNavigateToSettings = { w.navigate("settings?page=hub") },
+            onNavigateToDebug = { w.navigate("debug") },
             onFeedbackClick = { w.actions.onShowFeedbackSheet() },
         )
     }
@@ -96,7 +96,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             onEpisodeClick = { item ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                 val desc = "Resuming from History"
-                navController.navigate(
+                w.navigate(
                     "episode/${item.episodeId}/${encode(item.episodeTitle)}/" +
                         "${encode(desc)}/" +
                         "${encode(item.episodeImageUrl ?: item.podcastImageUrl)}/" +
@@ -107,7 +107,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                 )
             },
             onExploreClick = {
-                navController.navigate("explore?entryPoint=library_history_empty_state") {
+                w.navigate("explore?entryPoint=library_history_empty_state") {
                     popUpTo("home")
                 }
             },
@@ -135,7 +135,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             onBack = { navController.popBackStack() },
             onEpisodeClick = { episode, podcast ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                navController.navigate(
+                w.navigate(
                     "episode/${episode.id}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +
                         "${encode(episode.imageUrl)}/" +
@@ -146,7 +146,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                 )
             },
             onExploreClick = {
-                navController.navigate("explore?entryPoint=library_history_empty_state") {
+                w.navigate("explore?entryPoint=library_history_empty_state") {
                     popUpTo("home")
                 }
             },
@@ -205,12 +205,12 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                 }
             },
             onPodcastClick = { podcastId ->
-                navController.navigate(
+                w.navigate(
                     "podcast/${android.net.Uri.encode(podcastId)}?entryPoint=library_subscriptions",
                 )
             },
             onExploreClick = {
-                navController.navigate("explore?entryPoint=library_subscriptions_empty_state") {
+                w.navigate("explore?entryPoint=library_subscriptions_empty_state") {
                     popUpTo("home")
                 }
             },
@@ -218,7 +218,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             onEpisodeClick = { episode, podcast, entryPointStr ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
                 val entryPointQuery = if (entryPointStr != null) "?entryPoint=$entryPointStr" else ""
-                navController.navigate(
+                w.navigate(
                     "episode/${encode(episode.id)}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +
                         "${encode(episode.imageUrl)}/" +
@@ -267,14 +267,14 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
                 android.util.Log.d("NavHost", "onPodcastShowClick: id=$podcastId title=$podcastTitle")
                 val encodedTitle = android.net.Uri.encode(podcastTitle.ifEmpty { "_" })
                 val encodedId = android.net.Uri.encode(podcastId.ifEmpty { "_" })
-                navController.navigate("library/downloads/show?podcastId=$encodedId&podcastTitle=$encodedTitle")
+                w.navigate("library/downloads/show?podcastId=$encodedId&podcastTitle=$encodedTitle")
             },
             onExploreClick = {
-                navController.navigate("explore?entryPoint=library_downloads_empty_state") {
+                w.navigate("explore?entryPoint=library_downloads_empty_state") {
                     popUpTo("home")
                 }
             },
-            onSettingsClick = { navController.navigate(NavRoutes.LIBRARY_DOWNLOADS_SETTINGS) },
+            onSettingsClick = { w.navigate(NavRoutes.LIBRARY_DOWNLOADS_SETTINGS) },
             isSyncing = isSyncingSmartDownloads,
             onSyncNow = {
                 scope.launch(Dispatchers.IO) {
@@ -329,7 +329,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLibraryDestinations(w: NavGr
             isPlayerActive = currentEpisode != null,
             onEpisodeClick = { episode, podcast ->
                 fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
-                navController.navigate(
+                w.navigate(
                     "episode/${episode.id}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +
                         "${encode(episode.imageUrl)}/" +

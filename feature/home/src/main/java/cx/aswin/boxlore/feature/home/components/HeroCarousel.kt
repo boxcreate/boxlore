@@ -6,12 +6,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.carousel.CarouselItemScope
+import androidx.compose.material3.carousel.CarouselState
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -41,7 +45,7 @@ fun HeroCarousel(
     val maxScrolledIndex = rememberHeroSwipeTelemetry(heroItems.list.size)
 
     Column(modifier.fillMaxWidth()) {
-    HorizontalMultiBrowseCarousel(
+    ResponsiveHeroCarousel(
         state = carouselState,
         preferredItemWidth = 320.dp,
         itemSpacing = 16.dp,
@@ -239,4 +243,21 @@ private fun rememberHeroSwipeTelemetry(cardCount: Int): androidx.compose.runtime
         }
     }
     return maxScrolledIndex
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ResponsiveHeroCarousel(
+    state: CarouselState,
+    preferredItemWidth: androidx.compose.ui.unit.Dp,
+    itemSpacing: androidx.compose.ui.unit.Dp,
+    contentPadding: PaddingValues,
+    modifier: Modifier,
+    content: @Composable CarouselItemScope.(Int) -> Unit,
+) {
+    if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+        HorizontalUncontainedCarousel(state = state, itemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = contentPadding, modifier = modifier, content = content)
+    } else {
+        HorizontalMultiBrowseCarousel(state = state, preferredItemWidth = preferredItemWidth, itemSpacing = itemSpacing, contentPadding = contentPadding, modifier = modifier, content = content)
+    }
 }

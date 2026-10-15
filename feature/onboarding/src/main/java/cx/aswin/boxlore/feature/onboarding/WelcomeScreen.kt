@@ -87,6 +87,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.designsystem.R as DesignR
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLogo
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.LocalEffectiveDarkTheme
 
@@ -108,9 +110,9 @@ internal fun WelcomeScreen(
     val coverVisible by remember(scroll, statusBarHeight) {
         derivedStateOf { scroll.value + statusBarHeight < coverPanelHeight }
     }
-    WelcomeStatusBars(panelColor, coverVisible)
+    WelcomeStatusBars(panelColor, coverVisible && !cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout)
 
-    BoxWithConstraints(Modifier.fillMaxSize().background(colors.surface)) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(colors.surface).boxloreCardWidth(BoxloreCardFamily.Utility)) {
         val viewportHeight = maxHeight
         val viewportWidth = maxWidth
         val coverSize = (viewportWidth * 0.315f).coerceIn(90.dp, 132.dp)

@@ -9,7 +9,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -50,8 +49,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import cx.aswin.boxlore.core.designsystem.theme.boxloreCombinedClickable as combinedClickable
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
@@ -358,6 +361,7 @@ private fun LatestEpisodePlayButton(onPlay: () -> Unit) {
         modifier =
         Modifier
             .size(44.dp)
+            .tabletInputFeedback(interactionSource, CircleShape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -434,6 +438,7 @@ internal fun SubscriptionGridCard(
         modifier =
         modifier
             .fillMaxWidth()
+            .boxloreCardWidth(BoxloreCardFamily.Poster)
             .aspectRatio(1f)
             .zIndex(if (isDragging) 1f else 0f)
             .graphicsLayer {

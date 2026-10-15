@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import kotlinx.coroutines.launch
@@ -79,6 +81,7 @@ fun SmartDownloadsSettingsScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
+                modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility),
                 title = {
                     Text(
                         text = "Smart Downloads",
@@ -105,6 +108,7 @@ fun SmartDownloadsSettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .boxloreCardWidth(BoxloreCardFamily.Utility)
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 180.dp),
