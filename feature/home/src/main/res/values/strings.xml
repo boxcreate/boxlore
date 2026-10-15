@@ -26,6 +26,10 @@
     <string name="home_hero_new">New</string>
     <string name="home_hero_resume_collection">Jump back in</string>
     <string name="home_hero_new_collection">New episodes</string>
+    <!-- Marquee: a small cover beside Play that moves the hero to that card. The argument is the episode or collection name. -->
+    <string name="home_hero_go_to">Go to %1$s</string>
+    <!-- Marquee collections: which episode of the collection is showing, e.g. "2 of 4". -->
+    <string name="home_hero_collection_position">%1$d of %2$d</string>
     <!-- A collection's size and its total listening time, e.g. "4 episodes · 1h 53m left". -->
     <string name="home_hero_collection_summary">%1$s · %2$s</string>
     <plurals name="home_hero_episode_count">

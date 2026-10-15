@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
@@ -16,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
@@ -123,16 +125,24 @@ internal fun PodcastFeed(
         value = hasVisibleLoading
     }
     val revealing = !loadingState.isLoading && revealStage < HomeRevealStage.COMPLETE
+    // Marquee's hero runs edge to edge under the floating top bar; other styles get no top inset.
+    val marqueeTopInset = if (cx.aswin.boxlore.core.prefs.HeroCardStyle.sanitize(cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle.current) ==
+        cx.aswin.boxlore.core.prefs.HeroCardStyle.MARQUEE
+    ) {
+        cx.aswin.boxlore.feature.home.components.LocalHeroTopInset.current
+    } else {
+        null
+    }
     ShimmerScope(active = hasVisibleLoading || shimmerActive || revealing) {
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
             state = layout.gridState,
             modifier = layout.modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 160.dp),
+            contentPadding = PaddingValues(start = GridSidePadding, end = GridSidePadding, bottom = 160.dp),
             horizontalArrangement = Arrangement.spacedBy(HomeFeedSpacing.GridGap),
             verticalItemSpacing = HomeFeedSpacing.GridGap,
         ) {
-            smartHeroItem(content, playback, callbacks, derivedState)
+            smartHeroItem(content, playback, callbacks, derivedState, marqueeTopInset)
             yourShowsItem(content, feedState, loadingState, playback, callbacks, derivedState)
             dailyBriefingItem(feedState, playback, callbacks, context)
             curatedForYouItems(content, feedState, recommendationState, playback, callbacks, derivedState)
@@ -198,10 +208,19 @@ private fun LazyStaggeredGridScope.smartHeroItem(
     playback: PodcastFeedPlayback,
     callbacks: HomeFeedCallbacks,
     derivedState: PodcastFeedDerivedState,
+    marqueeTopInset: androidx.compose.ui.unit.Dp?,
 ) {
-    if (derivedState.viewportReady && content.heroItems.list.isEmpty()) return
+    if (derivedState.viewportReady && content.heroItems.list.isEmpty()) {
+        // Without a hero, the rest of Home still starts below Marquee's floating top bar.
+        if (marqueeTopInset != null) {
+            item(span = StaggeredGridItemSpan.FullLine, key = "hero_top_inset", contentType = "spacer") {
+                androidx.compose.foundation.layout.Spacer(Modifier.height(marqueeTopInset))
+            }
+        }
+        return
+    }
     item(span = StaggeredGridItemSpan.FullLine, key = "hero", contentType = "hero") {
-        PinnedGridItemContent {
+        PinnedGridItemContent(if (marqueeTopInset != null) Modifier.bleed(GridSidePadding) else Modifier) {
             // The carousel draws its position dots in the 12dp strip under the cards; the skeleton
             // keeps the same strip, so the gap to Your shows never changes.
             HomeLoadingReveal(
@@ -219,13 +238,24 @@ private fun LazyStaggeredGridScope.smartHeroItem(
 }
 
 @Composable
-internal fun PinnedGridItemContent(content: @Composable () -> Unit) {
+internal fun PinnedGridItemContent(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val pinnable = androidx.compose.ui.layout.LocalPinnableContainer.current
     androidx.compose.runtime.DisposableEffect(pinnable) {
         val handle = pinnable?.pin()
         onDispose { handle?.release() }
     }
-    content()
+    androidx.compose.foundation.layout.Box(modifier) { content() }
+}
+
+/** The feed's side padding, which Marquee's hero runs past to reach both screen edges. */
+private val GridSidePadding = 16.dp
+
+/** Lays the content out [amount] wider on each side than the item, so it reaches past the grid's padding. */
+private fun Modifier.bleed(amount: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
+    val extra = amount.roundToPx() * 2
+    val width = constraints.maxWidth + extra
+    val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+    layout(constraints.maxWidth, placeable.height) { placeable.placeRelative(-extra / 2, 0) }
 }
 
 @Composable

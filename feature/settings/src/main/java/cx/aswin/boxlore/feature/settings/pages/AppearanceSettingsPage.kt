@@ -156,28 +156,35 @@ internal fun appearanceSummary(state: AppearanceUiState): AppearanceSummary {
     )
 }
 
-private fun heroStyleName(style: String?): String = if (HeroCardStyle.sanitize(style) == HeroCardStyle.TIDE) "Tide" else "Halo"
+/** The hero card style's name as Settings shows it. */
+private fun heroStyleName(style: String): String = when (style) {
+    HeroCardStyle.COVER -> "Cover"
+    HeroCardStyle.TIDE -> "Tide"
+    HeroCardStyle.DUOTONE -> "Duotone"
+    HeroCardStyle.HALO -> "Halo"
+    HeroCardStyle.MARQUEE -> "Marquee"
+    else -> "Block"
+}
 
 /** The hero card style, with the colours the artwork styles take. */
 private fun homeSummary(state: AppearanceUiState): String {
-    val colors = HeroCoverShade.sanitize(state.heroCoverShade)
-    return when (HeroCardStyle.sanitize(state.heroCardStyle)) {
-        HeroCardStyle.COVER -> "Cover hero cards, " + when (colors) {
-            HeroCoverShade.DARK -> "dark shade"
-            HeroCoverShade.THEME -> "app theme shade"
-            else -> "artwork shade"
-        }
-        HeroCardStyle.DUOTONE -> "Duotone hero cards, " + when (colors) {
-            HeroCoverShade.DARK -> "black and white"
-            HeroCoverShade.THEME -> "app theme tones"
-            else -> "artwork tones"
-        }
-        HeroCardStyle.HALO, HeroCardStyle.TIDE -> heroStyleName(state.heroCardStyle) + " hero cards, " + when (colors) {
-            HeroCoverShade.DARK -> "dark cards"
-            HeroCoverShade.THEME -> "app theme color"
-            else -> "artwork color"
-        }
-        else -> "Block hero cards"
+    val style = HeroCardStyle.sanitize(state.heroCardStyle)
+    if (style == HeroCardStyle.BLOCK) return "Block hero cards"
+    return heroStyleName(style) + " hero cards, " + heroColorsSummary(style, HeroCoverShade.sanitize(state.heroCoverShade))
+}
+
+/** What the colour choice does in each style: Cover's shade, Duotone's and Marquee's tones, Tide's and Halo's card. */
+private fun heroColorsSummary(style: String, colors: String): String {
+    val (dark, theme, artwork) = when (style) {
+        HeroCardStyle.COVER -> Triple("dark shade", "app theme shade", "artwork shade")
+        HeroCardStyle.DUOTONE -> Triple("black and white", "app theme tones", "artwork tones")
+        HeroCardStyle.MARQUEE -> Triple("full color", "app theme tones", "artwork tones")
+        else -> Triple("dark cards", "app theme color", "artwork color")
+    }
+    return when (colors) {
+        HeroCoverShade.DARK -> dark
+        HeroCoverShade.THEME -> theme
+        else -> artwork
     }
 }
 
@@ -187,13 +194,7 @@ private fun homeSummary(state: AppearanceUiState): String {
  */
 @Composable
 internal fun AppearanceHeroPreviewStage(style: String, coverShade: String, heroPreview: AppearanceHeroPreview, height: Dp) {
-    val description = when (HeroCardStyle.sanitize(style)) {
-        HeroCardStyle.COVER -> "Preview of Cover hero cards"
-        HeroCardStyle.DUOTONE -> "Preview of Duotone hero cards"
-        HeroCardStyle.HALO -> "Preview of Halo hero cards"
-        HeroCardStyle.TIDE -> "Preview of Tide hero cards"
-        else -> "Preview of Block hero cards"
-    }
+    val description = "Preview of ${heroStyleName(HeroCardStyle.sanitize(style))} hero cards"
     Surface(
         modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = description },
         shape = MaterialTheme.shapes.extraLarge,

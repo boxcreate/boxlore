@@ -123,6 +123,13 @@ class AppearancePagesTest {
         compose.onNodeWithText("Tide").performScrollTo().performClick()
         assertEquals(listOf(HeroCardStyle.COVER, HeroCardStyle.DUOTONE, HeroCardStyle.HALO, HeroCardStyle.TIDE), styles)
         compose.onNodeWithText("Card color").assertExists()
+
+        // Marquee is last and names the Dark choice for what it does: covers stay in full colour.
+        compose.onNodeWithText("Marquee").performScrollTo().performClick()
+        assertEquals(HeroCardStyle.MARQUEE, styles.last())
+        compose.onNodeWithText("Cover colors").assertExists()
+        compose.onNodeWithText("Full color").assertExists()
+        compose.onNodeWithText("Dark").assertDoesNotExist()
         assertEquals("Buttons drawn inside previews never react", 0, previewButtonClicks)
     }
 
@@ -133,6 +140,7 @@ class AppearancePagesTest {
         assertEquals("Halo hero cards, artwork color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.HALO)).home)
         assertEquals("Halo hero cards, dark cards", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.HALO, heroCoverShade = HeroCoverShade.DARK)).home)
         assertEquals("Tide hero cards, app theme color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.TIDE, heroCoverShade = HeroCoverShade.THEME)).home)
+        assertEquals("Marquee hero cards, full color", appearanceSummary(baseState.copy(heroCardStyle = HeroCardStyle.MARQUEE, heroCoverShade = HeroCoverShade.DARK)).home)
     }
 
     @Test

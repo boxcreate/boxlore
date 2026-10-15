@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -43,13 +44,17 @@ fun HeroStylePreview(
 ) {
     val packageName = LocalContext.current.packageName
     val podcasts = remember(sessions, collection, packageName) { heroPreviewPodcasts(sessions, collection, packageName) }
+    // Marquee's single card shows the next covers beside Play.
+    val upNext = remember(sessions, packageName, style, collection) {
+        if (HeroCardStyle.sanitize(style) == HeroCardStyle.MARQUEE && !collection) heroPreviewPodcasts(sessions, true, packageName).drop(1) else emptyList()
+    }
     val cardHeight = homeHeroHeight()
     BoxWithConstraints(modifier.clipToBounds(), contentAlignment = Alignment.Center) {
         val scale = minOf(maxWidth / PreviewCardWidth, maxHeight / cardHeight)
         Box(Modifier.size(PreviewCardWidth * scale, cardHeight * scale)) {
             Box(Modifier.requiredSize(PreviewCardWidth, cardHeight).graphicsLayer { scaleX = scale; scaleY = scale }) {
                 CompositionLocalProvider(LocalHeroCoverShade provides coverShade) {
-                    HeroPreviewCard(HeroCardStyle.sanitize(style), collection, podcasts)
+                    HeroPreviewCard(HeroCardStyle.sanitize(style), collection, podcasts, upNext)
                 }
             }
         }
@@ -57,7 +62,7 @@ fun HeroStylePreview(
 }
 
 @Composable
-private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<Podcast>) {
+private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<Podcast>, upNext: List<Podcast>) {
     if (collection) {
         val title = stringResource(R.string.home_hero_resume_collection)
         when (style) {
@@ -67,6 +72,11 @@ private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<P
                 DuotoneHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             HeroCardStyle.TIDE ->
                 TideHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
+            HeroCardStyle.MARQUEE -> MarqueeCollectionCard(
+                podcasts, title, HeroGridMode.Resume, active = false, onCellClick = {}, onPlaybackClick = {},
+                currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false,
+                modifier = Modifier.clip(HomeHeroStyle.CardShape),
+            )
             HeroCardStyle.HALO ->
                 HaloHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             else -> HeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {})
@@ -81,6 +91,12 @@ private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<P
                 DuotoneHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             HeroCardStyle.TIDE ->
                 TideHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
+            HeroCardStyle.MARQUEE -> MarqueeHeroCard(
+                item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false,
+                upNext = upNext.mapIndexed { index, podcast -> MarqueeNext(index + 1, podcast.imageUrl, podcast.title) },
+                onUpNext = {},
+                modifier = Modifier.clip(HomeHeroStyle.CardShape),
+            )
             HeroCardStyle.HALO ->
                 HaloHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
             else -> HeroCard(item, onClick = {}, onArrowClick = {}, onToggleSubscription = {})

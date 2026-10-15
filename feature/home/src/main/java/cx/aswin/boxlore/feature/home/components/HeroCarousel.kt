@@ -37,9 +37,12 @@ fun HeroCarousel(
     val style = HeroCardStyle.sanitize(LocalHeroCardStyle.current)
     val playing = HeroPlayingState(currentPlayingPodcastId, currentPlayingEpisodeId, isPlaying)
 
-    val carouselState = rememberCarouselState { heroItems.list.size }
-
     val maxScrolledIndex = rememberHeroSwipeTelemetry(heroItems.list.size)
+    if (style == HeroCardStyle.MARQUEE) {
+        MarqueeCarousel(heroItems, playing, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, maxScrolledIndex, modifier)
+        return
+    }
+    val carouselState = rememberCarouselState { heroItems.list.size }
 
     Column(modifier.fillMaxWidth()) {
     HorizontalMultiBrowseCarousel(
@@ -71,25 +74,13 @@ fun HeroCarousel(
         when {
             HeroCardStyle.usesArtworkColors(style) ->
                 FullArtworkHeroItem(style, item, i, onCollectionPlayback, onPlayClick, onDetailsClick, onArrowClick, onTogglePlayback, playing)
-            item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID -> {
+            item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID ||
+                item.type == cx.aswin.boxlore.feature.home.HeroType.NEW_EPISODES_GRID -> {
+                val resume = item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID
                 HeroGridCard(
                     items = item.gridItems,
-                    title = stringResource(R.string.home_hero_resume_collection),
-                    mode = HeroGridMode.Resume,
-                    onCellClick = onDetailsClick,
-                    currentPlayingPodcastId = currentPlayingPodcastId,
-                    currentPlayingEpisodeId = currentPlayingEpisodeId,
-                    isPlaying = isPlaying,
-                    modifier = Modifier.maskClip(HomeHeroStyle.CardShape),
-                    onPlaybackClick = onCollectionPlayback,
-                    carouselItemDrawInfo = carouselItemDrawInfo,
-                )
-            }
-            item.type == cx.aswin.boxlore.feature.home.HeroType.NEW_EPISODES_GRID -> {
-                HeroGridCard(
-                    items = item.gridItems,
-                    title = stringResource(R.string.home_hero_new_collection),
-                    mode = HeroGridMode.NewEpisodes,
+                    title = stringResource(if (resume) R.string.home_hero_resume_collection else R.string.home_hero_new_collection),
+                    mode = if (resume) HeroGridMode.Resume else HeroGridMode.NewEpisodes,
                     onCellClick = onDetailsClick,
                     currentPlayingPodcastId = currentPlayingPodcastId,
                     currentPlayingEpisodeId = currentPlayingEpisodeId,
@@ -102,26 +93,7 @@ fun HeroCarousel(
             else -> {
                 HeroCard(
                     item = item,
-                    onClick = {
-                        val bundle =
-                            android.os.Bundle().apply {
-                                putString("entry_point", "home_hero_${item.type.name.lowercase()}")
-                                putInt("ep_carousel_position", i)
-                                putString("ep_layout_type", "full_card")
-                            }
-                        if (HomePlaybackStateLogic.isHeroItemPlaying(
-                                itemEpisodeId = item.podcast.latestEpisode?.id,
-                                itemPodcastId = item.podcast.id,
-                                currentPlayingEpisodeId = currentPlayingEpisodeId,
-                                currentPlayingPodcastId = currentPlayingPodcastId,
-                                isPlaying = isPlaying,
-                            )
-                        ) {
-                            onTogglePlayback(bundle)
-                        } else {
-                            onPlayClick(item.podcast, bundle)
-                        }
-                    }, // Primary "Play" or "Pause" button action
+                    onClick = heroPlayAction(item, i, playing, onPlayClick, onTogglePlayback), // Primary "Play" or "Pause" button action
                     onArrowClick = { onArrowClick(item, i) },
                     onToggleSubscription = { onToggleSubscription(item.podcast.id) },
                     currentPlayingPodcastId = currentPlayingPodcastId,
@@ -143,6 +115,58 @@ private fun collectionPlaybackBundle(type: cx.aswin.boxlore.feature.home.HeroTyp
     putInt("ep_carousel_position", position)
     putString("ep_layout_type", "grid_card")
     putBoolean("ep_is_subscribed", true)
+}
+
+/** Plays the card's episode with the carousel's analytics, or pauses it when it is the one playing. */
+internal fun heroPlayAction(
+    item: SmartHeroItem,
+    position: Int,
+    playing: HeroPlayingState,
+    onPlayClick: (Podcast, android.os.Bundle?) -> Unit,
+    onTogglePlayback: (android.os.Bundle?) -> Unit,
+): () -> Unit = {
+    val bundle = android.os.Bundle().apply {
+        putString("entry_point", "home_hero_${item.type.name.lowercase()}")
+        putInt("ep_carousel_position", position)
+        putString("ep_layout_type", "full_card")
+    }
+    val current = HomePlaybackStateLogic.isHeroItemPlaying(
+        itemEpisodeId = item.podcast.latestEpisode?.id,
+        itemPodcastId = item.podcast.id,
+        currentPlayingEpisodeId = playing.episodeId,
+        currentPlayingPodcastId = playing.podcastId,
+        isPlaying = playing.isPlaying,
+    )
+    if (current) onTogglePlayback(bundle) else onPlayClick(item.podcast, bundle)
+}
+
+/** Marquee's full-width hero, with the carousel's playback, details and swipe telemetry. */
+@Composable
+@Suppress("LongParameterList")
+private fun MarqueeCarousel(
+    heroItems: StableHeroList,
+    playing: HeroPlayingState,
+    onPlayClick: (Podcast, android.os.Bundle?) -> Unit,
+    onDetailsClick: (Podcast) -> Unit,
+    onArrowClick: (SmartHeroItem, Int) -> Unit,
+    onTogglePlayback: (android.os.Bundle?) -> Unit,
+    maxScrolledIndex: androidx.compose.runtime.MutableIntState,
+    modifier: Modifier,
+) {
+    Column(modifier.fillMaxWidth()) {
+        MarqueeHero(
+            heroItems = heroItems,
+            playing = playing,
+            playAction = { item, position -> heroPlayAction(item, position, playing, onPlayClick, onTogglePlayback) },
+            collectionPlayback = { item, position ->
+                collectionPlaybackAction(item.type, position, onPlayClick, onTogglePlayback, playing.podcastId, playing.episodeId, playing.isPlaying)
+            },
+            onDetailsClick = onDetailsClick,
+            onArrowClick = onArrowClick,
+            onPageShown = { page -> if (page > maxScrolledIndex.intValue) maxScrolledIndex.intValue = page },
+        )
+        Spacer(Modifier.height(HeroIndicatorStrip))
+    }
 }
 
 private fun collectionPlaybackAction(
@@ -200,21 +224,7 @@ private fun androidx.compose.material3.carousel.CarouselItemScope.FullArtworkHer
         else -> FullArtworkHeroCard(
             style = style,
             item = item,
-            onClick = {
-                val bundle = android.os.Bundle().apply {
-                    putString("entry_point", "home_hero_${item.type.name.lowercase()}")
-                    putInt("ep_carousel_position", position)
-                    putString("ep_layout_type", "full_card")
-                }
-                val current = HomePlaybackStateLogic.isHeroItemPlaying(
-                    itemEpisodeId = item.podcast.latestEpisode?.id,
-                    itemPodcastId = item.podcast.id,
-                    currentPlayingEpisodeId = playing.episodeId,
-                    currentPlayingPodcastId = playing.podcastId,
-                    isPlaying = playing.isPlaying,
-                )
-                if (current) onTogglePlayback(bundle) else onPlayClick(item.podcast, bundle)
-            },
+            onClick = heroPlayAction(item, position, playing, onPlayClick, onTogglePlayback),
             onArrowClick = { onArrowClick(item, position) },
             currentPlayingPodcastId = playing.podcastId,
             currentPlayingEpisodeId = playing.episodeId,

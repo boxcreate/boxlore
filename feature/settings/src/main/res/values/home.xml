@@ -18,6 +18,13 @@
     <!-- Shown under the picker when Duotone is chosen: the two tones the artwork is redrawn in. Same choice as Cover's shade. -->
     <string name="hero_duotone_colors_title">Duotone colors</string>
     <string name="hero_duotone_colors_footer">Dark redraws covers in black and white. Artwork uses each cover\'s own color. App theme uses your accent color.</string>
+    <string name="hero_card_style_marquee">Marquee</string>
+    <string name="hero_card_style_marquee_description">A full-width cover under the top bar, with the next cards beside Play.</string>
+    <!-- Shown under the picker when Marquee is chosen: covers in full colour or redrawn in two tones. Same choice as Cover's shade. -->
+    <string name="hero_marquee_colors_title">Cover colors</string>
+    <string name="hero_marquee_colors_footer">Full color shows covers as they are. Artwork redraws them in two tones of their own color. App theme uses your accent color.</string>
+    <!-- Marquee's name for the Dark choice: the cover keeps all its colours. -->
+    <string name="hero_marquee_colors_full">Full color</string>
     <!-- Shown under the picker when Tide or Halo is chosen: the colour of the card around the artwork. Same choice as Cover's shade. -->
     <string name="hero_card_colors_title">Card color</string>
     <string name="hero_card_colors_footer">Dark keeps cards near black. Artwork takes each cover\'s own color. App theme uses your accent color.</string>

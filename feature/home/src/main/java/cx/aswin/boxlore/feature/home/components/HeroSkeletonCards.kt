@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +44,7 @@ internal fun HeroSkeletonCard(style: String) {
         HeroCardStyle.DUOTONE -> DuotoneHeroSkeletonCard(tones)
         HeroCardStyle.HALO -> HaloHeroSkeletonCard(tones)
         HeroCardStyle.TIDE -> TideHeroSkeletonCard(tones)
+        HeroCardStyle.MARQUEE -> MarqueeHeroSkeletonCard(tones)
         else -> BlockHeroSkeletonCard(tones)
     }
 }
@@ -200,6 +202,24 @@ private fun TideHeroSkeletonCard(tones: HeroSkeletonTones) {
                 }
             },
         )
+    }
+}
+
+/**
+ * Marquee: the cover's place shimmers across the whole hero, with the words, Play and details at the
+ * card's insets and Your shows' rounded sheet beginning over its foot.
+ */
+@Composable
+private fun MarqueeHeroSkeletonCard(tones: HeroSkeletonTones) {
+    Box(Modifier.fillMaxSize().background(tones.surface).m3Shimmer(tones.base, tones.highlight).testTag(skeletonTag(HeroCardStyle.MARQUEE))) {
+        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp + MarqueeSheetOverlap)) {
+            SkeletonLine(0.5f, 12.dp, tones.onArtwork, tones.onArtworkHighlight)
+            Spacer(Modifier.height(12.dp))
+            FullArtworkSkeletonCopy(tones.onArtwork, tones.onArtworkHighlight)
+            Spacer(Modifier.height(16.dp))
+            SkeletonActions(tones.onArtwork, tones.onArtworkHighlight, Modifier.width(MarqueeActionsWidth))
+        }
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(MarqueeSheetOverlap).background(MaterialTheme.colorScheme.surface, MarqueeSheetShape))
     }
 }
 

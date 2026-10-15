@@ -28,12 +28,14 @@ private val HeroStyleOptions = listOf(
     HeroStyleOption(HeroCardStyle.TIDE, R.string.hero_card_style_tide, R.string.hero_card_style_tide_description),
     HeroStyleOption(HeroCardStyle.DUOTONE, R.string.hero_card_style_duotone, R.string.hero_card_style_duotone_description),
     HeroStyleOption(HeroCardStyle.HALO, R.string.hero_card_style_halo, R.string.hero_card_style_halo_description),
+    HeroStyleOption(HeroCardStyle.MARQUEE, R.string.hero_card_style_marquee, R.string.hero_card_style_marquee_description),
 )
 
 /** The colour choice's name and footer for each style that colours its cards from the artwork. */
 private fun heroColorsCopy(style: String): Pair<Int, Int> = when (style) {
     HeroCardStyle.DUOTONE -> R.string.hero_duotone_colors_title to R.string.hero_duotone_colors_footer
     HeroCardStyle.HALO, HeroCardStyle.TIDE -> R.string.hero_card_colors_title to R.string.hero_card_colors_footer
+    HeroCardStyle.MARQUEE -> R.string.hero_marquee_colors_title to R.string.hero_marquee_colors_footer
     else -> R.string.hero_cover_shade_title to R.string.hero_cover_shade_footer
 }
 
@@ -77,7 +79,10 @@ internal fun AppearanceHomePage(state: AppearanceUiState, actions: AppearanceAct
                     AppearanceChoicePicker(
                         label = stringResource(colorsTitle),
                         options = listOf(
-                            HeroCoverShade.DARK to stringResource(R.string.hero_cover_shade_dark),
+                            // Marquee keeps covers in full colour for this choice, so it says so.
+                            HeroCoverShade.DARK to stringResource(
+                                if (style == HeroCardStyle.MARQUEE) R.string.hero_marquee_colors_full else R.string.hero_cover_shade_dark,
+                            ),
                             HeroCoverShade.ARTWORK to stringResource(R.string.hero_cover_shade_artwork),
                             HeroCoverShade.THEME to stringResource(R.string.hero_cover_shade_theme),
                         ),

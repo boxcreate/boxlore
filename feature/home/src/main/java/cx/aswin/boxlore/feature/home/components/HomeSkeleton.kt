@@ -80,6 +80,11 @@ fun HomeSkeleton(modifier: Modifier = Modifier) {
 @Composable
 fun HeroSkeleton(modifier: Modifier = Modifier) {
     val style = HeroCardStyle.sanitize(LocalHeroCardStyle.current)
+    if (style == HeroCardStyle.MARQUEE) {
+        // One card across the whole width, as tall as Marquee's hero.
+        Box(modifier.fillMaxWidth().height(marqueeHeroHeight()).testTag("home_hero_skeleton")) { HeroSkeletonCard(style) }
+        return
+    }
     Layout(
         content = {
             HeroSkeletonCard(style)

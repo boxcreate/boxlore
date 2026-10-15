@@ -56,6 +56,10 @@ class HeroCardStylePreferencesTest {
         assertEquals(HeroCardStyle.TIDE, repository.heroCardStyleStream.first())
         assertEquals(true, HeroCardStyle.usesArtworkColors(HeroCardStyle.TIDE))
 
+        repository.setHeroCardStyle(HeroCardStyle.MARQUEE)
+        assertEquals(HeroCardStyle.MARQUEE, UserPreferencesRepository(context).cachedHeroCardStyle)
+        assertEquals(true, HeroCardStyle.usesArtworkColors(HeroCardStyle.MARQUEE))
+
         repository.setHeroCardStyle("unknown")
         assertEquals(HeroCardStyle.BLOCK, repository.heroCardStyleStream.first())
     }

@@ -4,7 +4,10 @@ import android.content.pm.PackageManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,6 +16,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -24,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -36,9 +41,11 @@ import cx.aswin.boxlore.core.downloads.CompletedDownloadItem
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
 import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
 import cx.aswin.boxlore.feature.home.components.LocalHeroCoverShade
+import cx.aswin.boxlore.feature.home.components.LocalHeroTopInset
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
 import cx.aswin.boxlore.feature.home.components.TopControlBar
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
@@ -525,6 +532,46 @@ private fun HomeScreenBottomSheets(
     }
 }
 
+/** Home's top bar, with its analytics; over Marquee's hero it starts clear ([overArtwork]). */
+@Composable
+private fun HomeTopBar(
+    scrollFractionProvider: () -> Float,
+    showTopBarShortcuts: Boolean,
+    callbacks: HomeScreenCallbacks,
+    overArtwork: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    TopControlBar(
+        scrollFractionProvider = scrollFractionProvider,
+        modifier = modifier,
+        showUtilityIcons = showTopBarShortcuts,
+        overArtwork = overArtwork,
+        onFeedbackClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("feedback_clicked", "home")
+            callbacks.feed.onFeedbackClick()
+        },
+        onFeedbackLongClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("feedback_long_clicked", "home")
+            callbacks.onForceSurveyNps()
+        },
+        onAvatarClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("settings_clicked", "home")
+            callbacks.onNavigateToSettings?.invoke()
+        },
+        onAvatarLongClick = {
+            cx.aswin.boxlore.core.analytics.AnalyticsHelper
+                .trackTopControlbarInteraction("avatar_long_clicked", "home")
+            callbacks.onNavigateToDebug()
+        },
+    )
+}
+
+/** The expanded bar below the status bar: 16dp above and below its 33dp shortcuts. */
+private val HomeTopBarEstimate = 65.dp
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -544,45 +591,41 @@ fun HomeScreen(
     val scrollFraction by remember(gridState, collapseThresholdPx) {
         derivedStateOf { homeScrollFraction(gridState, collapseThresholdPx) }
     }
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            TopControlBar(
-                scrollFractionProvider = { scrollFraction },
-                showUtilityIcons = showTopBarShortcuts,
-                onFeedbackClick = {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackTopControlbarInteraction("feedback_clicked", "home")
-                    callbacks.feed.onFeedbackClick()
-                },
-                onFeedbackLongClick = {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackTopControlbarInteraction("feedback_long_clicked", "home")
-                    callbacks.onForceSurveyNps()
-                },
-                onAvatarClick = {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackTopControlbarInteraction("settings_clicked", "home")
-                    callbacks.onNavigateToSettings?.invoke()
-                },
-                onAvatarLongClick = {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackTopControlbarInteraction("avatar_long_clicked", "home")
-                    callbacks.onNavigateToDebug()
-                },
+    val feed: @Composable () -> Unit = {
+        Box(modifier = Modifier.fillMaxSize()) {
+            HomeScreenFeedContent(
+                uiState = uiState,
+                gridState = gridState,
+                playback = playback,
+                callbacks = callbacks.feed,
+                onChangePodcastClick = { showChangePodcastSheet = true },
             )
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                HomeScreenFeedContent(
-                    uiState = uiState,
-                    gridState = gridState,
-                    playback = playback,
-                    callbacks = callbacks.feed,
-                    onChangePodcastClick = { showChangePodcastSheet = true },
-                )
-                SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                )
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+    }
+    Box(modifier = modifier.fillMaxSize()) {
+        if (HeroCardStyle.sanitize(LocalHeroCardStyle.current) == HeroCardStyle.MARQUEE) {
+            // Marquee's hero runs under the top bar, so the feed starts at the top of the screen and the
+            // bar floats over it; the hero leaves room for the bar's height (LocalHeroTopInset).
+            var topBarHeight by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+            val estimate = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + HomeTopBarEstimate
+            val topInset = if (topBarHeight > 0) with(LocalDensity.current) { topBarHeight.toDp() } else estimate
+            CompositionLocalProvider(LocalHeroTopInset provides topInset) { feed() }
+            HomeTopBar(
+                scrollFractionProvider = { scrollFraction },
+                showTopBarShortcuts = showTopBarShortcuts,
+                callbacks = callbacks,
+                overArtwork = true,
+                // Keep the expanded height: the bar shrinks as Home scrolls, the hero must not.
+                modifier = Modifier.onSizeChanged { if (scrollFraction == 0f) topBarHeight = it.height },
+            )
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                HomeTopBar({ scrollFraction }, showTopBarShortcuts, callbacks)
+                feed()
             }
         }
     }
