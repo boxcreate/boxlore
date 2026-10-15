@@ -4,11 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,6 +38,9 @@ import cx.aswin.boxlore.core.model.Podcast
 internal data class YourShowsRailLayout(val stacked: Boolean = false, val height: androidx.compose.ui.unit.Dp = HomeMixLayout.RailHeight)
 internal val LocalYourShowsRailLayout = staticCompositionLocalOf { YourShowsRailLayout() }
 internal val LocalYourShowsPickerColumns = staticCompositionLocalOf { 0 }
+
+/** Larger libraries scroll inside this many sidebar rows, composing only visible covers like the phone grid. */
+internal const val YourShowsSidebarMaxRows = 4
 
 @Composable
 internal fun YourShowsModuleFrame(sidebar: Boolean, selectorCount: Int, background: Modifier, selectors: @Composable () -> Unit, content: @Composable () -> Unit) {
@@ -62,7 +70,7 @@ internal fun YourShowsModuleFrame(sidebar: Boolean, selectorCount: Int, backgrou
             .coerceAtLeast(with(density) { 168.dp.roundToPx() }).coerceAtMost(halfWidthPx)
             .let { if (sideBySide) it else with(density) { maxWidth.roundToPx() } }
         val columns = ((pickerWidthPx - paddingPx * 2 + tileGapPx) / (tilePx + tileGapPx)).coerceAtLeast(1)
-        val rows = (selectorCount + columns - 1) / columns
+        val rows = ((selectorCount + columns - 1) / columns).coerceAtMost(YourShowsSidebarMaxRows)
         val pickerHeightPx = if (selectorCount > 1) paddingPx * 2 + tilePx * rows + tileGapPx * (rows - 1) else 0
         val pickerHeight = with(density) { pickerHeightPx.toDp() }
         val railLayout = yourShowsRailLayout(sideBySide, selectorCount, pickerWidthPx, halfWidthPx, pickerHeight)
@@ -147,6 +155,21 @@ internal fun YourShowsEpisodeRows(count: Int, allowGrid: Boolean, content: @Comp
 @Composable
 internal fun VerticalYourShowsSelectors(items: List<Podcast?>, content: @Composable (Podcast?) -> Unit) {
         val columns = LocalYourShowsPickerColumns.current.coerceAtLeast(1)
+        if ((items.size + columns - 1) / columns > YourShowsSidebarMaxRows) {
+            val gap = 8.dp
+            LazyVerticalGrid(
+                columns = GridCells.FixedSize(YourShowsLayout.TileWidth),
+                modifier = Modifier.fillMaxWidth()
+                    .height(YourShowsLayout.Padding * 2 + YourShowsLayout.TileWidth * YourShowsSidebarMaxRows + gap * (YourShowsSidebarMaxRows - 1))
+                    .testTag("home_show_sidebar_grid"),
+                contentPadding = PaddingValues(YourShowsLayout.Padding),
+                verticalArrangement = Arrangement.spacedBy(gap),
+                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally),
+            ) {
+                items(items, key = { it?.id ?: "mixtape" }) { podcast -> content(podcast) }
+            }
+            return
+        }
         Column(Modifier.fillMaxWidth().padding(YourShowsLayout.Padding), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             items.chunked(columns).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

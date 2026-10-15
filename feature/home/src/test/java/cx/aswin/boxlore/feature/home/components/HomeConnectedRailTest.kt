@@ -16,15 +16,19 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
@@ -70,7 +74,7 @@ class HomeConnectedRailTest {
     private val episodeEvents = mutableListOf<Triple<String, String, String>>()
     private val playEvents = mutableListOf<Triple<String, String, PlaybackEntryPoint>>()
     private val episode = TestFixtures.episode(id = "episode", title = "An exceptionally long episode name with enough words to fill three lines and still need truncation", duration = 7500)
-    private val podcasts = List(14) { index ->
+    private val podcasts = List(200) { index ->
         TestFixtures.podcast(id = "show-$index", title = "Show $index with a longer name", imageUrl = "")
             .copy(latestEpisode = episode.copy(id = "ep-$index"), episodeStatus = EpisodeStatus.IN_PROGRESS, resumeProgress = 0.4f)
     }
@@ -363,6 +367,38 @@ class HomeConnectedRailTest {
         composeRule.onNodeWithTag("home_show_selector_show-13", useUnmergedTree = true).assertExists()
         val picker = composeRule.onNodeWithTag("home_show_selectors", useUnmergedTree = true).fetchSemanticsNode()
         assertTrue(!picker.config.contains(SemanticsProperties.VerticalScrollAxisRange))
+    }
+
+    @Test fun `large libraries keep a bounded lazy sidebar with every show reachable`() {
+        state.value = Scenario(count = 14, width = 1_200, tablet = true)
+        render()
+        val unchanged = bounds("home_shows_picker_pane")
+        composeRule.onNodeWithTag("home_show_sidebar_grid").assertDoesNotExist()
+        for (width in listOf(1_200, 656)) {
+            state.value = Scenario(count = 200, width = width, paneWidth = if (width == 656) 688 else null, tablet = true)
+            composeRule.waitForIdle()
+            val picker = bounds("home_shows_picker_pane")
+            assertEquals(320f, bounds("home_show_sidebar_grid").height, 1f)
+            assertTrue("The module stays bounded: ${picker.height}", picker.height <= 400f)
+            if (width == 1_200) {
+                assertEquals(picker.top, bounds("home_shows_content_pane").top, 1f)
+                assertEquals(picker.bottom, bounds("home_shows_content_pane").bottom, 1f)
+            }
+            val composed = composeRule.onAllNodes(
+                SemanticsMatcher("show selector") { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("home_show_selector_show-") == true },
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes().size
+            assertTrue("Only visible covers compose: $composed", composed < 60)
+            composeRule.onNodeWithTag("home_show_sidebar_grid").performScrollToNode(hasTestTag("home_show_selector_show-199"))
+            composeRule.onNodeWithTag("home_show_selector_show-199", useUnmergedTree = true).performClick()
+            composeRule.waitForIdle()
+            assertEquals("show-199", state.value.selected)
+            composeRule.onNodeWithTag("home_show_selector_show-199", useUnmergedTree = true).assertIsSelected()
+            state.value = state.value.copy(selected = null)
+        }
+        state.value = Scenario(count = 14, width = 1_200, tablet = true)
+        composeRule.waitForIdle()
+        assertEquals(unchanged, bounds("home_shows_picker_pane"))
     }
 
     @Test fun `fractional tablet density keeps every selector inside equal-height panes`() {
