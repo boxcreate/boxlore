@@ -78,10 +78,12 @@ class MainActivity : ComponentActivity() {
 
     private fun restoreTabletAlphaNotice(savedInstanceState: Bundle?) {
         val bounds = windowManager.currentWindowMetrics.bounds
+        val display = windowManager.maximumWindowMetrics.bounds
         val density = resources.displayMetrics.density
         tabletAlphaNoticePending = cx.aswin.boxlore.ui.shouldShowTabletAlphaNotice(
             cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout(bounds.width() / density, bounds.height() / density),
-            tabletAlphaPrefs.hasAcknowledgedTabletAlphaNotice(),
+            minOf(display.width(), display.height()) / density,
+            tabletAlphaPrefs::hasAcknowledgedTabletAlphaNotice,
             savedInstanceState?.takeIf { it.containsKey(KEY_TABLET_ALPHA_NOTICE_PENDING) }?.getBoolean(KEY_TABLET_ALPHA_NOTICE_PENDING),
         )
     }

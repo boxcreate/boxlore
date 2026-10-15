@@ -41,9 +41,17 @@ import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreFoldSafeViewport
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 
-/** A restored startup decision survives resize; acknowledging never completes onboarding. */
-internal fun shouldShowTabletAlphaNotice(window: BoxloreWindowLayout, acknowledged: Boolean, restoredPending: Boolean? = null): Boolean =
-    !acknowledged && (restoredPending ?: window.usesTabletLayout)
+/**
+ * A restored startup decision survives resize; acknowledging never completes onboarding.
+ * Phone displays stay below 600dp on their shortest side, so a phone never shows the notice or reads its
+ * acknowledgment, even in a landscape window that passes the tablet layout gate at a small display size.
+ */
+internal fun shouldShowTabletAlphaNotice(
+    window: BoxloreWindowLayout,
+    displayShortSideDp: Float,
+    acknowledged: () -> Boolean,
+    restoredPending: Boolean? = null,
+): Boolean = (restoredPending ?: (window.usesTabletLayout && displayShortSideDp >= 600f)) && !acknowledged()
 
 /** The app subtree, including Welcome and separate sign-in UI, is absent until acknowledgment. */
 @Composable
