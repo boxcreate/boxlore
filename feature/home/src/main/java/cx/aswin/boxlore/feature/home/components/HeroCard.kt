@@ -40,6 +40,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -77,7 +79,7 @@ fun HeroCard(
         onClick = onArrowClick,
         shape = HomeHeroStyle.CardShape,
         colors = CardDefaults.cardColors(containerColor = container, contentColor = foreground),
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize(),
     ) {
         Column(Modifier.fillMaxSize()) {
             HeroBody(item, foreground, progressState, Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp))

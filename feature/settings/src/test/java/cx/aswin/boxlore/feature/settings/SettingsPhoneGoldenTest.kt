@@ -20,7 +20,7 @@ class SettingsPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
 
     @Test fun settingsHub() {
         golden.prepare()
-        golden.compose.setContent {
+        golden.setContent {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 SettingsHub(onBack = {}, onNavigate = {}, onCheckForUpdates = {})
             }

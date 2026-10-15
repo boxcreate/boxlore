@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
@@ -42,6 +43,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -306,10 +308,12 @@ private fun BriefingChapterPager(
         isActive = uiState.activeChapterIndex == page && uiState.isPlaying,
         accentColor = uiState.accentColor,
     )
+    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     val maxCardHeight = (LocalConfiguration.current.screenHeightDp * STORY_CARD_MAX_SCREEN_FRACTION).dp
     val scrollStoryAsOne = storyCardScrollsAsOne(LocalConfiguration.current.screenHeightDp)
     SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
-        val pageWidth = (constraints.maxWidth - (PagerSidePadding * 2).roundToPx()).coerceAtLeast(0)
+        val availableWidth = (constraints.maxWidth - (PagerSidePadding * 2).roundToPx()).coerceAtLeast(0)
+        val pageWidth = if (tablet) availableWidth.coerceAtMost(720.dp.roundToPx()) else availableWidth
         val tallest = subcompose("measure") {
             uiState.chapters.indices.forEach { page ->
                 // Measured only, never placed; hidden from accessibility so stories are not announced twice.
@@ -320,6 +324,7 @@ private fun BriefingChapterPager(
         val pager = subcompose("pager") {
             HorizontalPager(
                 state = actions.pagerState,
+                pageSize = if (tablet) PageSize.Fixed(pageWidth.toDp()) else PageSize.Fill,
                 contentPadding = PaddingValues(horizontal = PagerSidePadding),
                 pageSpacing = 16.dp,
                 key = { page -> stableChapterKey(uiState.chapters[page]) },

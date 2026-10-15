@@ -46,6 +46,8 @@ import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.rememberNewEpisodeBadgeShimmerBrush
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
@@ -97,7 +99,7 @@ internal fun PinnedEnlargedFolderCard(
         color = MaterialTheme.colorScheme.surfaceContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
         shadowElevation = dragElevation,
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
             .then(dragModifier)
             .fillMaxWidth()
             .graphicsLayer {
@@ -329,7 +331,7 @@ private fun DirectClickableShowCover(
 ) {
     val shape = RoundedCornerShape(10.dp)
     Box(
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Poster)
             .aspectRatio(1f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -373,7 +375,7 @@ private fun FolderOverflowSlotCard(
 ) {
     val shape = RoundedCornerShape(10.dp)
     Box(
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Poster)
             .aspectRatio(1f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)

@@ -29,6 +29,8 @@ Provides UI and logic for viewing the user's listening history.
 
 ## Testing notes
 
+- The tablet history list is centered within the shared 720dp Reading width, bounding statistics, graphs and timeline rows together without changing their arrangement or queries.
+
 - Unit tests in `src/test`.
 
 ## CI relevance

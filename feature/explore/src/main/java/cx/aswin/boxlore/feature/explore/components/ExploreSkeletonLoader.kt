@@ -10,6 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 
 @Composable
@@ -57,7 +60,11 @@ fun ExploreSkeletonLoader() {
 
         // Grid Skeleton
         LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Adaptive(150.dp),
+            columns = if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+                StaggeredGridCells.Fixed(boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp()))
+            } else {
+                StaggeredGridCells.Adaptive(150.dp)
+            },
             verticalItemSpacing = 16.dp,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(16.dp),

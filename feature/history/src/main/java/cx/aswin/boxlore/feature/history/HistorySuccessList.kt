@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.component.LocalNavigationStyle
 import cx.aswin.boxlore.core.designsystem.component.appBottomChromeContentPadding
 import cx.aswin.boxlore.core.designsystem.component.navigationStyleUsesExternalSystemNavigationInset
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.ListeningHistoryItem
 import cx.aswin.boxlore.feature.history.HistorySuccessState
@@ -46,7 +48,7 @@ internal fun HistorySuccessList(
             }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(contentPadding),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxSize().padding(contentPadding),
         contentPadding =
         PaddingValues(
             start = 16.dp,

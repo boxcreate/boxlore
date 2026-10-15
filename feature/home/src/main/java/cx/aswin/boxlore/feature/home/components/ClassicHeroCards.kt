@@ -50,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.drawOutline
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -93,7 +95,7 @@ internal fun ClassicHeroCard(
         shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize(),
     ) {
         Box(Modifier.fillMaxSize()) {
             OptimizedImage(
@@ -235,7 +237,7 @@ internal fun ClassicHeroGridCard(
         shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxSize(),
     ) {
         Box(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize().classicGridBackground(mode, primary, shapes.first, shapes.second))

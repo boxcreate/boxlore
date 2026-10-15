@@ -34,6 +34,8 @@ import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardDensity
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.drawOutline
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -182,6 +184,7 @@ private fun BecauseYouLikeSeed(
         modifier =
         Modifier
             .fillMaxWidth()
+            .boxloreCardWidth(BoxloreCardFamily.Hero)
             .heightIn(min = BecauseYouLikeSeedLayout.MinHeight)
             .expressiveClickable(shape = shape, onClick = { onPodcastClick(podcast) }),
     ) {

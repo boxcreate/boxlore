@@ -39,6 +39,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 
 private val SETTINGS_CONTENT_BOTTOM_PADDING = 220.dp
 
@@ -54,7 +56,7 @@ internal fun SettingsScaffold(
 ) {
     SettingsScaffoldFrame(title, onBack, modifier, actions, onUnconsumedTap) {
         Column(
-            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().verticalScroll(scrollState)
+            modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).widthIn(max = 720.dp).fillMaxWidth().verticalScroll(scrollState)
                 .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = SETTINGS_CONTENT_BOTTOM_PADDING),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             content = content,
@@ -70,7 +72,7 @@ internal fun SettingsLazyScaffold(
 ) {
     SettingsScaffoldFrame(title, onBack, Modifier, {}, null) {
         LazyColumn(
-            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth(),
+            modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).widthIn(max = 720.dp).fillMaxWidth(),
             contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = SETTINGS_CONTENT_BOTTOM_PADDING),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             content = content,

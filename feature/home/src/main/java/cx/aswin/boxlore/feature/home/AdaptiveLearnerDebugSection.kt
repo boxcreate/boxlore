@@ -56,6 +56,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.ranking.FeatureSlot
 import cx.aswin.boxlore.core.ranking.LearnerFacetDebug
@@ -194,7 +196,7 @@ private fun LearnerHeader(
         }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
@@ -252,7 +254,7 @@ private fun LogToggleCard(
     onToggle: (Boolean) -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
@@ -402,7 +404,7 @@ private fun EventRow(
 ) {
     val accent = eventAccent(event)
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
@@ -649,7 +651,7 @@ private fun ObjectiveRow(
             else -> "adaptive"
         }
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
@@ -723,7 +725,7 @@ private fun SectionCard(
     content: @Composable () -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
@@ -746,7 +748,7 @@ private fun InfoCard(
     body: String,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {

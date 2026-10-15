@@ -19,7 +19,7 @@ class EchoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
 
     @Test fun openingQuestion() {
         golden.prepare()
-        golden.compose.setContent {
+        golden.setContent {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 EchoOnboardingScreen(
                     OnboardingUiState(currentStep = OnboardingStep.AI_ONBOARDING),

@@ -1,5 +1,7 @@
 # Screenshot baselines
 
+Tablet/foldable review captures use the same fixed data/artwork as the phone matrix with `-PtabletCaptures=before|after`. They live under `build/reports/tablet-captures/`; the preserved first before pass is also under local `output/tablet-layouts/before/`. They never replace phone goldens. Synthetic tabletop bounds are 410–431dp in the 673×841dp window.
+
 Robolectric and Roborazzi provide local visual checks. No screenshot job is added to CI.
 
 ## Phone matrix

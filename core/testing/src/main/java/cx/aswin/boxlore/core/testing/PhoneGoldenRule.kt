@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.core.view.WindowCompat
@@ -15,6 +17,13 @@ import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.RoborazziTaskType
 import com.github.takahirom.roborazzi.captureRoboImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreFold
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldOrientation
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreFoldState
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreLayoutBounds
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxlorePaneWidth
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import java.io.File
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -24,12 +33,19 @@ import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
 
 /** Fixed local capture inputs; changing these never replaces an existing phone baseline. */
-data class PhoneGoldenConfiguration(val width: Int, val height: Int, val dark: Boolean) {
-    override fun toString(): String = "${width}x$height-${if (dark) "dark" else "light"}"
+data class PhoneGoldenConfiguration(val width: Int, val height: Int, val dark: Boolean, val posture: String = "") {
+    override fun toString(): String = "${width}x$height-${if (dark) "dark" else "light"}${if (posture.isEmpty()) "" else "-$posture"}"
 
     companion object {
-        fun matrix(): List<Array<Any>> = listOf(360 to 800, 412 to 915, 800 to 360).flatMap { (width, height) ->
-            listOf(false, true).map { dark -> arrayOf(PhoneGoldenConfiguration(width, height, dark)) }
+        fun matrix(): List<Array<Any>> {
+            val sizes = if (System.getProperty("boxlore.tabletCaptures") != null) {
+                listOf(Triple(600, 960, ""), Triple(840, 1_280, ""), Triple(1_280, 800, ""), Triple(1_600, 1_000, ""), Triple(673, 841, "flat"), Triple(673, 841, "tabletop"))
+            } else {
+                listOf(Triple(360, 800, ""), Triple(412, 915, ""), Triple(800, 360, ""))
+            }
+            return sizes.flatMap { (width, height, posture) ->
+                listOf(false, true).map { dark -> arrayOf(PhoneGoldenConfiguration(width, height, dark, posture)) }
+            }
         }
     }
 }
@@ -76,13 +92,48 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
         Coil.setImageLoader(requireNotNull(fixtureImageLoader))
     }
 
+    fun setContent(content: @Composable () -> Unit) {
+        // Keep the frozen phone fixture's composition and animation start frame unchanged.
+        if (System.getProperty("boxlore.tabletCaptures") == null) {
+            compose.setContent(content)
+            return
+        }
+        val window = if (System.getProperty("boxlore.tabletCaptures") == "before") {
+            BoxloreWindowLayout.Unspecified
+        } else {
+            val folds = if (configuration.posture == "tabletop") {
+                listOf(
+                    BoxloreFold(
+                        BoxloreFoldState.HalfOpened,
+                        BoxloreFoldOrientation.Horizontal,
+                        BoxloreLayoutBounds(0f, 410f, configuration.width.toFloat(), 431f),
+                        true,
+                        true,
+                    ),
+                )
+            } else {
+                emptyList()
+            }
+            BoxloreWindowLayout(configuration.width.toFloat(), configuration.height.toFloat(), folds)
+        }
+        compose.setContent {
+            CompositionLocalProvider(
+                LocalBoxloreWindowLayout provides window,
+                LocalBoxlorePaneWidth provides configuration.width.toFloat(),
+                content = content,
+            )
+        }
+    }
+
     @OptIn(ExperimentalRoborazziApi::class)
     fun capture(screen: String) {
         compose.mainClock.advanceTimeBy(1_600)
         compose.waitForIdle()
         val root = File(requireNotNull(System.getProperty("boxlore.projectRoot")))
         val filename = "$screen-$configuration.png"
-        val actual = File(root, "build/reports/phone-goldens/actual/$filename")
+        val tabletMode = System.getProperty("boxlore.tabletCaptures")
+        val directory = if (tabletMode == null) "phone-goldens/actual" else "tablet-captures/$tabletMode"
+        val actual = File(root, "build/reports/$directory/$filename")
         requireNotNull(actual.parentFile).mkdirs()
         compose.onRoot().captureRoboImage(
             actual.absolutePath,
@@ -95,6 +146,7 @@ class PhoneGoldenRule(val configuration: PhoneGoldenConfiguration) : TestRule {
         } finally {
             render.recycle()
         }
+        if (tabletMode != null) return
         val baseline = File(root, "screenshots/baselines/phone/$filename")
         if (System.getProperty("boxlore.phoneGoldens") == "record") {
             check(!baseline.exists()) { "Phone goldens are immutable: $baseline" }

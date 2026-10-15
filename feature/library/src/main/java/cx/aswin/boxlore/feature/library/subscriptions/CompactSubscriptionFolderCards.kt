@@ -46,6 +46,8 @@ import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.rememberNewEpisodeBadgeShimmerBrush
 import cx.aswin.boxlore.core.designsystem.icon.GenreIcons
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.SubscriptionFolder
@@ -88,7 +90,7 @@ internal fun Compact1x1FolderCard(
     )
 
     Box(
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Poster)
             .then(dragModifier)
             .fillMaxWidth()
             .aspectRatio(1f)

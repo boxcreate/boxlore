@@ -73,6 +73,8 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## Testing notes
 
+- Tablet discovery grids pack by the shared Poster minimum while existing cards/skeletons use family maxima. Legacy hero and topic cards retain their internal designs. Local phone/tablet captures share fixed fixtures through `PhoneGoldenRule`.
+
 - `ExplorePhoneGoldenTest` captures Explore and Lore at both portrait phone sizes and short landscape in light/dark. Supplied data and mocked screen dependencies keep the local-only captures offline. Enable with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; [capture instructions](../../docs/screenshots/README.md) describe immutable baselines and exact pixel comparison.
 
 - Unit tests live under `feature/explore/src/test`.

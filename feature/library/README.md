@@ -92,6 +92,8 @@ Artwork-only subscription headers try usable fallback candidates even when the p
 
 ## Testing notes
 
+- Tablet Shows grids pack by content-pane width. Poster/folder surfaces use shared maxima; hub cards, downloaded/liked episode lists and subscription episode lists stay bounded. Reordering, folder slots, playback queues and ordering remain unchanged.
+
 - `LatestPlaybackQueueLogicTest` checks visible suffix order, publication-date chronology, Smart/filter order, completed-row handling, Play All, missing/duplicate rows, mixed-show metadata, and opaque RSS episode IDs.
 
 - Unit tests live under `feature/library/src/test`.

@@ -45,6 +45,8 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -105,7 +107,9 @@ fun FeedMediaCardSkeleton(
     placeholder: @Composable (Modifier) -> Unit,
 ) {
     Card(
-        modifier = modifier.clearAndSetSemantics { },
+        modifier = modifier.boxloreCardWidth(
+            if (presentation == FeedMediaCardPresentation.ExpressiveFeatured) BoxloreCardFamily.Hero else BoxloreCardFamily.Poster,
+        ).clearAndSetSemantics { },
         shape = expressiveCardShape(presentation),
         colors = expressiveCardColors(presentation),
     ) {

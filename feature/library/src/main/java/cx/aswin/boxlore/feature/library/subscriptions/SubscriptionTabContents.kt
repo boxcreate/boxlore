@@ -30,6 +30,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.FolderDisplaySize
@@ -308,7 +313,7 @@ private fun ShowsReorderableGrid(
     val folderActions = remember(actions) { actions.toFolderCardActions() }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
+        columns = GridCells.Fixed(boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp(), compactColumns = 3, gapDp = 12f)),
         state = gridState,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 180.dp, top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -395,7 +400,7 @@ private fun ShowsReorderableList(
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(bottom = 180.dp, top = 8.dp),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(),
     ) {
         item(key = ShowsGenreHeaderKey) {
             Box(
@@ -601,7 +606,7 @@ private fun LatestEpisodesList(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(bottom = 240.dp, top = 4.dp),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxSize(),
         ) {
             item {
                 SubscriptionGenreChips(

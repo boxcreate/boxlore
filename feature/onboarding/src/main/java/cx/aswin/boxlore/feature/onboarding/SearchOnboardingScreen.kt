@@ -26,6 +26,11 @@ import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.PillFilterChip
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -74,6 +79,7 @@ internal fun OnboardingSearchScreen(
         modifier =
         Modifier
             .fillMaxSize()
+            .boxloreCardWidth(BoxloreCardFamily.Utility)
             .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(WindowInsets.statusBars),
     ) {
@@ -209,7 +215,7 @@ internal fun OnboardingSearchScreen(
                             LazyListKeyPolicy.deduplicateById(popularPodcasts) { it.id }
                         }
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
+                            columns = GridCells.Fixed(boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp().coerceAtMost(720f))),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -455,6 +461,7 @@ private fun PopularPodcastGridItem(
         modifier =
         Modifier
             .fillMaxWidth()
+            .boxloreCardWidth(BoxloreCardFamily.Poster)
             .clip(MaterialTheme.shapes.large)
             .expressiveClickable(onClick = onClick),
     ) {

@@ -74,7 +74,7 @@ class InfoPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
 
     private fun render(name: String, content: @Composable () -> Unit) {
         golden.prepare()
-        golden.compose.setContent {
+        golden.setContent {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 Surface(Modifier.fillMaxSize(), content = content)
             }

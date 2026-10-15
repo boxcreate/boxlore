@@ -125,6 +125,8 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 ## Testing notes
 
+- Tablet settings use the shared Utility cap (720dp), including Smart Downloads, Feedback and Support outside the ordinary settings scaffold. Existing account/editor caps remain smaller or bound each editor column. Phone constraints are unchanged.
+
 - `SettingsPhoneGoldenTest` captures the Settings hub at both portrait phone sizes and short landscape in light/dark. Local captures use `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; recording never overwrites existing phone baselines. The older dialog/download Roborazzi tests also live in this module. See [capture instructions](../../docs/screenshots/README.md).
 
 - `PlayerStyleSectionTest` checks both selections, the exact design-credit link and large-text RTL accessibility. `AppearanceActionsTrackedTest` verifies that the player-style callback survives the analytics wrapper without toggling the miniplayer.

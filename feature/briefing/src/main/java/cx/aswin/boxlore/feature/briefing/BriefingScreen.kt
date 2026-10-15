@@ -98,6 +98,8 @@ import cx.aswin.boxlore.core.designsystem.briefing.BriefingPageStatusBars
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingRegionMenu
 import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.PlaybackRepository
@@ -442,7 +444,7 @@ private fun BriefingEditionContent(
             onPlayPauseClick = { onPlayPauseClick(state.briefing, it) },
             onShowSources = { actions.onSources() },
         )
-        Surface(Modifier.padding(horizontal = 20.dp).fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+        Surface(Modifier.padding(horizontal = 20.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (state.briefing.sources.isNotEmpty()) {
                     Surface(onClick = { actions.onSources() }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {

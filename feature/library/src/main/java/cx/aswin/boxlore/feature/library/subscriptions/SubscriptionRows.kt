@@ -50,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import cx.aswin.boxlore.core.designsystem.components.NewEpisodeBadge
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -434,6 +436,7 @@ internal fun SubscriptionGridCard(
         modifier =
         modifier
             .fillMaxWidth()
+            .boxloreCardWidth(BoxloreCardFamily.Poster)
             .aspectRatio(1f)
             .zIndex(if (isDragging) 1f else 0f)
             .graphicsLayer {

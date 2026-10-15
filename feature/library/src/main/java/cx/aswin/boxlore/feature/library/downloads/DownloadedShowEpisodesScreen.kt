@@ -78,6 +78,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.RemoveDownloadConfirmationDialog
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -265,6 +267,7 @@ fun DownloadedShowEpisodesScreen(
                     val firstItem = showEpisodes.first()
 
                     LazyColumn(
+                        modifier = Modifier.boxloreCardWidth(BoxloreCardFamily.Episode),
                         state = listState,
                         contentPadding = PaddingValues(bottom = if (isPlayerActive) 150.dp else 80.dp, top = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)

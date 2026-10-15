@@ -86,6 +86,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.view.WindowCompat
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.feature.settings.R
 import kotlin.math.absoluteValue
@@ -209,7 +211,7 @@ private fun SupportPageContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
             .fillMaxSize()
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 6.dp),

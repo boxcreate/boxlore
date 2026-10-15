@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Episode
@@ -83,7 +85,7 @@ fun QueueSheetContent(
     val lazyListState = rememberLazyListState()
     val dragStartIndex = remember { mutableIntStateOf(-1) }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Episode).fillMaxWidth()) {
         // Header: "Up Next" + Close button
         Row(
             modifier = Modifier

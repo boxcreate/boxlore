@@ -44,6 +44,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
@@ -335,6 +337,7 @@ private fun LoreStateCard(
             tonalElevation = 4.dp,
             modifier = Modifier
                 .fillMaxWidth()
+                .boxloreCardWidth(BoxloreCardFamily.Reading)
                 .widthIn(max = 460.dp)
         ) {
             Column(

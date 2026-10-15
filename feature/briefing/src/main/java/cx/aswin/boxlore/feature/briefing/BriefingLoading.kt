@@ -29,6 +29,8 @@ import cx.aswin.boxlore.core.designsystem.R
 import cx.aswin.boxlore.core.designsystem.briefing.BRIEFING_COVER_ASPECT_RATIO
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
 import cx.aswin.boxlore.core.designsystem.briefing.briefingRegionLabel
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
 import java.time.LocalDate
@@ -66,7 +68,7 @@ internal fun BriefingLoadingContent(region: String, topPadding: Dp) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.padding(horizontal = 24.dp).fillMaxWidth(),
+                modifier = Modifier.padding(horizontal = 24.dp).boxloreCardWidth(BoxloreCardFamily.Reading).fillMaxWidth(),
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     LoadingBlock(Modifier.width(72.dp).height(20.dp))

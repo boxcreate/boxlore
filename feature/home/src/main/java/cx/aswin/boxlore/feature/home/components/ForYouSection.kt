@@ -27,6 +27,7 @@ fun LazyStaggeredGridScope.forYouItems(
     onBrowseRecommendations: () -> Unit,
     showTasteHeader: Boolean = true,
     isFallback: Boolean = true,
+    columns: Int = 2,
 ) {
     val items = recommendations.list.take(HomeFeedSpacing.ForYouTotalCap)
 
@@ -37,7 +38,7 @@ fun LazyStaggeredGridScope.forYouItems(
     }
 
     if (items.isEmpty()) {
-        forYouSkeletonItems()
+        forYouSkeletonItems(columns)
         return
     }
 
@@ -79,11 +80,11 @@ fun LazyStaggeredGridScope.forYouItems(
     }
 
     val remaining = items.drop(1)
-    remaining.chunked(2).forEachIndexed { row, rowItems ->
+    remaining.chunked(columns).forEachIndexed { row, rowItems ->
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_$row", contentType = "for_you_body") {
-            EqualHeightPosterGrid {
+            EqualHeightPosterGrid(columns = columns) {
                 rowItems.forEachIndexed { index, ep ->
-                    val originalIndex = row * 2 + index + 1
+                    val originalIndex = row * columns + index + 1
                     val parentPodcast =
                         Podcast(
                             id = ep.podcastId ?: "",
@@ -135,14 +136,14 @@ internal fun HomePersonalRecommendationsHeader(
     )
 }
 
-private fun LazyStaggeredGridScope.forYouSkeletonItems() {
+private fun LazyStaggeredGridScope.forYouSkeletonItems(columns: Int) {
     item(span = StaggeredGridItemSpan.FullLine, key = "for_you_hero", contentType = "for_you_hero") {
         HomeMediaCardSkeleton(presentation = FeedMediaCardPresentation.ExpressiveFeatured)
     }
-    repeat((HomeFeedSpacing.ForYouBodyCount + 1) / 2) { row ->
+    repeat((HomeFeedSpacing.ForYouBodyCount + columns - 1) / columns) { row ->
         item(span = StaggeredGridItemSpan.FullLine, key = "for_you_body_$row", contentType = "for_you_body") {
-            EqualHeightPosterGrid {
-                repeat(2) { HomeMediaCardSkeleton() }
+            EqualHeightPosterGrid(columns = columns) {
+                repeat((HomeFeedSpacing.ForYouBodyCount - row * columns).coerceAtMost(columns)) { HomeMediaCardSkeleton() }
             }
         }
     }

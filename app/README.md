@@ -156,6 +156,8 @@ Episode push artwork keeps its six-second total deadline and uses 700ms per rout
 
 ## Testing notes
 
+- Local screenshot fixtures now provide the shared window model. The tablet before/after matrix is separate from the immutable phone baselines; see `docs/TESTING.md`. Product shell ownership remains in this module.
+
 - `BoxloreFoldAdapterTest` verifies density conversion and flat/tabletop feature metadata. `PlayerDetailNavigationTest` preserves opaque RSS IDs, negative show IDs, encoded titles, the description bound, attribution and Brief routes.
 
 - `ShellPhoneGoldenTest` captures supplied Home loaded/loading and Library states, plus the mini player over Home with Floating navigation. The local matrix covers 360×800, 412×915 and 800×360dp in both themes; use `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`. These captures do not start the production application. See [screenshot instructions](../docs/screenshots/README.md).

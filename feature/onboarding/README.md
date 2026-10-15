@@ -113,6 +113,8 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 
 ## Testing notes
 
+- Echo, suggestions, topic/activity/length pickers and search use a bounded tablet column. Search posters pack by the shared Poster spec; Echo keeps its existing height tiers and 420dp card cap. Local tablet captures include synthetic flat/tabletop windows.
+
 - `EchoPhoneGoldenTest` captures the opening Echo question at both portrait phone sizes and short landscape in light/dark using a manually advanced clock. It starts no request or clip preview. Captures are local only, enabled with `-PphoneGoldens=verify --tests '*PhoneGoldenTest'`; see [capture instructions](../../docs/screenshots/README.md).
 
 - Unit tests live under `feature/onboarding/src/test`.

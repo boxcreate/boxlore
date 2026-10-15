@@ -39,6 +39,7 @@ internal fun LazyStaggeredGridScope.curatedForYouItems(
     playback: PodcastFeedPlayback,
     callbacks: HomeFeedCallbacks,
     derivedState: PodcastFeedDerivedState,
+    posterColumns: Int = 2,
 ) {
     if (!derivedState.hasBecauseYouLike && !derivedState.hasRecommendations) return
     if (!derivedState.hasBecauseYouLike) {
@@ -57,6 +58,7 @@ internal fun LazyStaggeredGridScope.curatedForYouItems(
             },
             showTasteHeader = derivedState.hasBecauseYouLike,
             isFallback = recommendationState.isRecommendationsFallback,
+            columns = posterColumns,
         )
     }
 }
@@ -130,16 +132,17 @@ internal fun LazyStaggeredGridScope.discoverFeedItems(
     feedState: PodcastFeedUiState,
     derivedState: PodcastFeedDerivedState,
     callbacks: HomeFeedCallbacks,
+    columns: Int = 2,
 ) {
     discoverHeaderItem(feedState, callbacks)
     if (derivedState.showDiscoverContent) {
-        discoverPodcastItems(derivedState, feedState, callbacks)
+        discoverPodcastItems(derivedState, feedState, callbacks, columns)
         discoverViewMoreItem(feedState, callbacks)
     } else if (derivedState.showDiscoverSkeleton) {
-        repeat((HomeFeedSpacing.ExploreGridCap + 1) / 2) { row ->
+        repeat((HomeFeedSpacing.ExploreGridCap + columns - 1) / columns) { row ->
             item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid_$row", contentType = "discover_grid") {
-                EqualHeightPosterGrid {
-                    repeat(2) {
+                EqualHeightPosterGrid(columns = columns) {
+                    repeat((HomeFeedSpacing.ExploreGridCap - row * columns).coerceAtMost(columns)) {
                         HomeMediaCardSkeleton()
                     }
                 }
@@ -166,10 +169,11 @@ private fun LazyStaggeredGridScope.discoverPodcastItems(
     derivedState: PodcastFeedDerivedState,
     feedState: PodcastFeedUiState,
     callbacks: HomeFeedCallbacks,
+    columns: Int,
 ) {
-    derivedState.discoverItems.chunked(2).forEachIndexed { row, rowItems ->
+    derivedState.discoverItems.chunked(columns).forEachIndexed { row, rowItems ->
         item(span = StaggeredGridItemSpan.FullLine, key = "discover_grid_$row", contentType = "discover_grid") {
-            EqualHeightPosterGrid {
+            EqualHeightPosterGrid(columns = columns) {
                 rowItems.forEachIndexed { index, podcast ->
                     PodcastCard(
                         podcast = podcast,
@@ -182,7 +186,7 @@ private fun LazyStaggeredGridScope.discoverPodcastItems(
                                 podcast,
                                 "home_discover_grid",
                                 feedState.selectedCategory,
-                                row * 2 + index,
+                                row * columns + index,
                             )
                         },
                     )

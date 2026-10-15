@@ -71,6 +71,9 @@ import cx.aswin.boxlore.core.designsystem.components.CuratedEpisodeCard
 import cx.aswin.boxlore.core.designsystem.components.FeedMediaCardPresentation
 import cx.aswin.boxlore.core.designsystem.components.discoveryTabSwitcherHeight
 import cx.aswin.boxlore.core.designsystem.components.regionDisplayLabel
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.boxloreContentWidthDp
+import cx.aswin.boxlore.core.designsystem.layout.boxlorePosterColumns
 import cx.aswin.boxlore.core.designsystem.list.LazyListKeyPolicy
 import cx.aswin.boxlore.core.designsystem.list.ProgressiveSearchScrollLogic
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
@@ -360,7 +363,11 @@ fun ExploreContent(
                 ShimmerScope(active = if (state.currentVibe != null) state.isLoading else !isSearchModeActive && if (browseTab == 1) state.isRecommendationsLoading else state.isLoading) {
                     LazyVerticalStaggeredGrid(
                         state = pageGridState,
-                        columns = StaggeredGridCells.Adaptive(150.dp),
+                        columns = if (LocalBoxloreWindowLayout.current.usesTabletLayout) {
+                            StaggeredGridCells.Fixed(boxlorePosterColumns(LocalBoxloreWindowLayout.current, boxloreContentWidthDp(), gapDp = 12f))
+                        } else {
+                            StaggeredGridCells.Adaptive(150.dp)
+                        },
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             end = 16.dp,

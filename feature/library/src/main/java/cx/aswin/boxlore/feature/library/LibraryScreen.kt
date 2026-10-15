@@ -59,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.components.TopBarUtilityActions
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.ExpressiveShapes
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
@@ -329,6 +331,7 @@ fun LibraryMenuCard(
         colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = Modifier
             .fillMaxWidth()
+            .boxloreCardWidth(BoxloreCardFamily.Utility)
             .height(120.dp)
             .expressiveClickable(onClick = onClick)
     ) {
@@ -509,7 +512,7 @@ fun LibraryPodcastCard(
         shape = MaterialTheme.shapes.large, // Matches ExploreScreen
         colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Poster)
             .fillMaxWidth()
             .expressiveClickable(onClick = onClick)
     ) {

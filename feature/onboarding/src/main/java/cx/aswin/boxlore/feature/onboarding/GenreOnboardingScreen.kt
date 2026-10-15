@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -38,6 +40,7 @@ internal fun GenrePickerScreen(
         modifier =
         Modifier
             .fillMaxSize()
+            .boxloreCardWidth(BoxloreCardFamily.Utility)
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
@@ -230,6 +233,7 @@ internal fun SubGenrePickerScreen(
         modifier =
         Modifier
             .fillMaxSize()
+            .boxloreCardWidth(BoxloreCardFamily.Utility)
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
@@ -428,6 +432,7 @@ internal fun ActivityPickerScreen(
         modifier =
         Modifier
             .fillMaxSize()
+            .boxloreCardWidth(BoxloreCardFamily.Utility)
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
@@ -690,6 +695,7 @@ internal fun LengthPickerScreen(
         modifier =
         Modifier
             .fillMaxSize()
+            .boxloreCardWidth(BoxloreCardFamily.Utility)
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(

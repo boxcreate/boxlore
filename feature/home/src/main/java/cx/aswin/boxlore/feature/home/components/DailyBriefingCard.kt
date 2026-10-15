@@ -62,6 +62,8 @@ import cx.aswin.boxlore.core.designsystem.briefing.BriefingCover
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingCoverMetadata
 import cx.aswin.boxlore.core.designsystem.briefing.BriefingEditorialTheme
 import cx.aswin.boxlore.core.designsystem.components.BoxLoreLoader
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
@@ -103,7 +105,7 @@ fun DailyBriefingCard(
 
     val presentation = DailyBriefingPresentation(briefing, chapters, isPlaying, isBuffering, playbackStatus, playbackProgress, remainingMinutes)
     BriefingEditorialTheme {
-        Surface(onClick = { if (cardState == DailyBriefingCardState.NORMAL) onClick() }, shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 4.dp, modifier = modifier.fillMaxWidth()) {
+        Surface(onClick = { if (cardState == DailyBriefingCardState.NORMAL) onClick() }, shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 4.dp, modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Hero).fillMaxWidth()) {
             Box {
                 Column(Modifier.animateContentSize()) {
                     BriefingCover(

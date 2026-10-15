@@ -42,6 +42,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.ExpressivePressFeedback
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
@@ -64,7 +66,7 @@ fun HomeImportBanner(
     val headingTop = ((48.dp - firstLineHeight) / 2).coerceAtLeast(0.dp)
     val dismissTop = ((firstLineHeight - 48.dp) / 2).coerceAtLeast(0.dp)
     Column(
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("home_setup_banner"),
+        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility).fillMaxWidth().padding(vertical = 8.dp).testTag("home_setup_banner"),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

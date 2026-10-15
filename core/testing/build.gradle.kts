@@ -1,10 +1,13 @@
 plugins {
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.kotlinCompose)
 }
 
 android {
     namespace = "cx.aswin.boxlore.core.testing"
     compileSdk = 36
+
+    buildFeatures { compose = true }
 
     defaultConfig {
         minSdk = 31
@@ -30,6 +33,7 @@ android {
 }
 
 dependencies {
+    api(projects.core.designsystem)
     api(projects.core.model)
     api(projects.core.domain)
     api(libs.junit.jupiter)

@@ -45,11 +45,18 @@ subprojects {
     }
     tasks.withType<Test>().configureEach {
         val phoneGoldens = providers.gradleProperty("phoneGoldens")
+        val tabletCaptures = providers.gradleProperty("tabletCaptures")
+        require(!phoneGoldens.isPresent || !tabletCaptures.isPresent) { "Select phone verification or tablet captures, not both" }
         if (phoneGoldens.isPresent) {
             require(phoneGoldens.get() in setOf("record", "verify")) {
                 "Use -PphoneGoldens=record or -PphoneGoldens=verify"
             }
             systemProperty("boxlore.phoneGoldens", phoneGoldens.get())
+            systemProperty("boxlore.projectRoot", rootProject.projectDir.absolutePath)
+            outputs.upToDateWhen { false }
+        } else if (tabletCaptures.isPresent) {
+            require(tabletCaptures.get() in setOf("before", "after")) { "Use -PtabletCaptures=before or after" }
+            systemProperty("boxlore.tabletCaptures", tabletCaptures.get())
             systemProperty("boxlore.projectRoot", rootProject.projectDir.absolutePath)
             outputs.upToDateWhen { false }
         } else {

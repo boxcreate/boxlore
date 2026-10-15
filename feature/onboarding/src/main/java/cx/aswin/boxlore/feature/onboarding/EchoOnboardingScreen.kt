@@ -43,6 +43,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
+import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 
 /** Room kept for the footer (pill + main button) when picking the layout tier. */
 private val EchoFooterAllowance = 128.dp
@@ -119,7 +121,7 @@ internal fun EchoOnboardingScreen(uiState: OnboardingUiState, callbacks: EchoCal
     ) { padding ->
         // Tiers come from the whole content height (before the keyboard and the footer), so sizes
         // never change between turns; the open keyboard only folds Echo away.
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).boxloreCardWidth(BoxloreCardFamily.Utility)) {
             val metrics = EchoLayout.metrics(maxHeight - EchoFooterAllowance, LocalDensity.current.fontScale, keyboardOpen = imeVisible)
             ClearFocusWhenKeyboardCloses(imeVisible)
             Column(Modifier.fillMaxSize().imePadding()) {

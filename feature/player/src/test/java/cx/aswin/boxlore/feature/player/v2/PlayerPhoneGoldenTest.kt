@@ -43,7 +43,7 @@ class PlayerPhoneGoldenTest(configuration: PhoneGoldenConfiguration) {
         `when`(prefs.fullPlayerStyleStream).thenReturn(flowOf(FullPlayerStyle.STANDARD))
         `when`(prefs.cachedFullPlayerStyle).thenReturn(FullPlayerStyle.STANDARD)
         golden.prepare()
-        golden.compose.setContent {
+        golden.setContent {
             BoxLoreTheme(darkTheme = golden.configuration.dark, dynamicColor = false) {
                 FullPlayerV2(
                     FullPlayerDependencies(playback, downloads, prefs),

@@ -107,6 +107,8 @@ Main Kotlin files should remain below 1000 lines; extracted Home feed, ViewModel
 
 ## Testing notes
 
+- Tablet feed columns and nested recommendation rows pack by the shared Poster spec and content-pane width; source order, caps and analytics positions remain intact. Heroes, Your shows, setup and debug panels use family width bounds, and the tablet hero skeleton shows multiple fixed-size cards. Ranking inputs and ViewModel assembly are unchanged. `AdaptiveCardBoundsTest` checks tight-slot caps/centering and the landscape-phone path; `BoxloreCardSpecTest` in designsystem covers packing boundaries.
+
 - `HomeRevealStageTest` checks the cold-start reveal advances hero, Your shows and discovery on separate frames, shows ready content at once and restages after loading again. `HomeHeroSkeletonTest` checks the hero skeleton card and peek match the real carousel at phone widths in both directions.
 - `DailyBriefingCardTest` checks independent playback/detail/hide actions and inline story expansion, story expansion and light/dark, RTL and enlarged-text rendering. `HomeBriefingRefreshTest` checks edition independence, midnight/daypart refreshes and deduplication of unchanged markets.
 - Unit tests live under `feature/home/src/test`.
