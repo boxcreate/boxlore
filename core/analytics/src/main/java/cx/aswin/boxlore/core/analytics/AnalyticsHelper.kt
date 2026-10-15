@@ -218,6 +218,7 @@ object AnalyticsHelper : Analytics {
     fun resetIdentity() {
         AnalyticsEmit.event("identity_reset", mapOf("reason" to "user_reset"))
         PostHog.reset()
+        AppearanceAnalyticsTracks.resendHomeHeroStyleAfterIdentityReset()
     }
 
     fun getDistinctId(): String = PostHog.distinctId()
@@ -675,6 +676,11 @@ object AnalyticsHelper : Analytics {
     fun trackCustomThemeEditorOpened() = LibraryAnalyticsTracks.trackCustomThemeEditorOpened()
 
     fun trackCustomThemeSaved(surfaceStyle: String) = LibraryAnalyticsTracks.trackCustomThemeSaved(surfaceStyle)
+
+    fun trackHomeHeroStyleSelected(previousStyle: String?, previousShade: String?, style: String, shade: String,) =
+        AppearanceAnalyticsTracks.trackHomeHeroStyleSelected(previousStyle, previousShade, style, shade)
+
+    fun syncHomeHeroStylePersonProperties(style: String?, shade: String?) = AppearanceAnalyticsTracks.syncHomeHeroStylePersonProperties(style, shade)
 
     fun trackSupportPageViewed() = LibraryAnalyticsTracks.trackSupportPageViewed()
 

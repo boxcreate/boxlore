@@ -1,7 +1,11 @@
 package cx.aswin.boxlore.feature.settings
 
+import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.core.prefs.SubscriptionsTabStyle
 import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
+import cx.aswin.boxlore.feature.settings.pages.AppearanceUiState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -136,5 +140,35 @@ class AppearanceActionsTrackedTest {
         actions.onSetHeroCoverShade(cx.aswin.boxlore.core.prefs.HeroCoverShade.THEME)
         assertEquals(cx.aswin.boxlore.core.prefs.HeroCoverShade.THEME, shade)
         assertEquals(cx.aswin.boxlore.core.prefs.HeroCardStyle.COVER, style)
+    }
+
+    @Test
+    fun `hero picks report the full look from the state at the moment of the pick`() {
+        val events = mutableListOf<Pair<String, Map<String, Any>>>()
+        val restore = AnalyticsHelper.installRecordingSink(events)
+        try {
+            var state = AppearanceUiState("system", false, "violet", "standard", heroCardStyle = HeroCardStyle.COVER, heroCoverShade = HeroCoverShade.THEME)
+            val actions = AppearanceActions(
+                {}, {}, {}, {},
+                onSetHeroCardStyle = { state = state.copy(heroCardStyle = it) },
+                onSetHeroCoverShade = { state = state.copy(heroCoverShade = it) },
+            ).trackedForAnalytics { state }
+
+            actions.onSetHeroCardStyle(HeroCardStyle.DUOTONE)
+            actions.onSetHeroCoverShade(HeroCoverShade.DARK)
+            // Re-tapping the picked tile or colour keeps the look, so only settings_interaction records it.
+            actions.onSetHeroCardStyle(HeroCardStyle.DUOTONE)
+            actions.onSetHeroCoverShade(HeroCoverShade.DARK)
+
+            val picks = events.filter { it.first == "home_hero_style_selected" }.map { it.second }
+            assertEquals(listOf("duotone_theme", "duotone_dark"), picks.map { it["hero_style_combo"] })
+            assertEquals(listOf("style", "colors"), picks.map { it["changed"] })
+            assertEquals(listOf("cover_theme", "duotone_theme"), picks.map { it["previous_hero_style_combo"] })
+            assertEquals(4, events.count { it.first == "settings_interaction" })
+            assertEquals(HeroCardStyle.DUOTONE, state.heroCardStyle)
+            assertEquals(HeroCoverShade.DARK, state.heroCoverShade)
+        } finally {
+            restore()
+        }
     }
 }

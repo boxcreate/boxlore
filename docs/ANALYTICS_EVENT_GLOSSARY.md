@@ -29,6 +29,10 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 
 `home`, `explore`, `learn`, `library_hub`, `library_subscriptions`, `library_liked`, `library_downloads`, `library_history`, `podcast_detail`, `episode_detail`, `player_full`, `player_mini`, `queue_sheet`, `settings`, `onboarding`, `briefing`, `android_auto`, `system_notification`, `share_sheet`
 
+### Home hero look
+
+`hero_card_style` / `home_hero_card_style`: `block`, `cover`, `tide`, `duotone`, `halo`, `marquee` (the names in Settings; stored keys `standard` and `classic` are reported as `block` and `cover`). `hero_colors` / `home_hero_colors`: `dark`, `artwork`, `theme` (App theme, the accent color), or `none` for Block, which takes no artwork colors. Marquee's **Full color** is the stored Dark choice, so it reports `dark`. `changed`: `style` or `colors`. `home_hero_style_selected` is skipped when a pick leaves the look unchanged. Tablets show Marquee as Cover; the event still reports the picked style.
+
 ### content_type
 
 `podcast`, `episode`, `briefing`, `mixtape`, `announcement`, `unknown`
@@ -109,6 +113,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `settings_interaction` | Settings screen view or control | action:string | setting_key:string | none |
 | `custom_theme_editor_opened` | Custom theme editor becomes visible | entry_point:string | — | none |
 | `custom_theme_saved` | Custom theme preferences saved successfully | background_style:string | — | none |
+| `home_hero_style_selected` | Home hero card style or its colors picked in Settings › Appearance › Home | hero_card_style:string; hero_colors:string; hero_style_combo:string; changed:string | previous_hero_style_combo:string | none |
 | `feature_announcement_action` | In-app/feature announcement viewed/dismissed/acted | action:string | feature_id:string; category:string | none |
 | `offline_mode_entered` | App detected offline / offline UI | — | reason:string | none |
 | `player_chrome_interaction` | Mini/full player, control bar, or playback-route action | surface:string; action:string | screen:string; volume_control_available:bool | none |
@@ -143,6 +148,9 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | initial_podcasts_subscribed | onboarding complete | |
 | first_play_at | first playback_started | `$set_once` |
 | activated_at | onboarding complete + play ≤24h | `$set_once` |
+| home_hero_card_style | launch + hero style change | `block` / `cover` / `tide` / `duotone` / `halo` / `marquee`; set for the default too, once per process |
+| home_hero_colors | launch + hero colors change | `dark` / `artwork` / `theme`; `none` for Block |
+| home_hero_style_combo | launch + any hero look change | style and colors in one value (`cover_artwork`, `block`); resent after an identity reset |
 
 ## Logging policy
 
