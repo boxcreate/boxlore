@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -32,6 +33,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
+import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.core.prefs.HeroCoverShade
 import cx.aswin.boxlore.feature.settings.dialogs.AddRssFeedDialog
 import cx.aswin.boxlore.feature.settings.dialogs.ResetAnalyticsDialog
 import cx.aswin.boxlore.feature.settings.dialogs.RssMatchConfirmationDialog
@@ -601,8 +604,11 @@ private fun trackedLibraryBackupActions(
     },
 )
 
-/** Wraps the appearance callbacks with their analytics tracking, without changing behavior. */
-internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = AppearanceActions(
+/**
+ * Wraps the appearance callbacks with their analytics tracking, without changing behavior.
+ * [currentState] is read at each pick, so a hero card style or colour pick reports the full look it makes.
+ */
+internal fun AppearanceActions.trackedForAnalytics(currentState: () -> AppearanceUiState? = { null }): AppearanceActions = AppearanceActions(
     onSetThemeConfig = {
         AnalyticsHelper.trackSettingsInteraction("theme_mode_changed", it)
         onSetThemeConfig(it)
@@ -665,13 +671,19 @@ internal fun AppearanceActions.trackedForAnalytics(): AppearanceActions = Appear
         AnalyticsHelper.trackSettingsInteraction("navigation_blur_changed", it)
         onSetNavigationBlurLevel(it)
     },
-    onSetHeroCardStyle = {
-        AnalyticsHelper.trackSettingsInteraction("hero_card_style_changed", it)
-        onSetHeroCardStyle(it)
+    onSetHeroCardStyle = { style ->
+        AnalyticsHelper.trackSettingsInteraction("hero_card_style_changed", style)
+        val current = currentState()
+        val shade = current?.heroCoverShade ?: HeroCoverShade.DEFAULT
+        AnalyticsHelper.trackHomeHeroStyleSelected(current?.heroCardStyle, current?.heroCoverShade, style, shade)
+        onSetHeroCardStyle(style)
     },
-    onSetHeroCoverShade = {
-        AnalyticsHelper.trackSettingsInteraction("hero_cover_shade_changed", it)
-        onSetHeroCoverShade(it)
+    onSetHeroCoverShade = { shade ->
+        AnalyticsHelper.trackSettingsInteraction("hero_cover_shade_changed", shade)
+        val current = currentState()
+        val style = current?.heroCardStyle ?: HeroCardStyle.DEFAULT
+        AnalyticsHelper.trackHomeHeroStyleSelected(current?.heroCardStyle, current?.heroCoverShade, style, shade)
+        onSetHeroCoverShade(shade)
     },
     onApplyTheme = { selection, custom ->
         AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)
@@ -722,7 +734,8 @@ private fun AppearanceDestinationContent(
     actions: SettingsPagesActions,
 ) {
     val state = appearance.state
-    val tracked = remember(appearance.actions) { appearance.actions.trackedForAnalytics() }
+    val latestState by rememberUpdatedState(state)
+    val tracked = remember(appearance.actions) { appearance.actions.trackedForAnalytics { latestState } }
     when (destination) {
         ProfileSettingsDestination.Theme ->
             AppearanceThemePage(state, tracked, onBack = actions.onReturnToHub, onEditCustomTheme = { actions.onNavigate(ProfileSettingsDestination.CustomTheme) })

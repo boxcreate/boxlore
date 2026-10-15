@@ -263,6 +263,9 @@ class GlossaryAllEventsEmissionTest {
                 },
                 "custom_theme_editor_opened" to { AnalyticsHelper.trackCustomThemeEditorOpened() },
                 "custom_theme_saved" to { AnalyticsHelper.trackCustomThemeSaved("standard") },
+                "home_hero_style_selected" to {
+                    AnalyticsHelper.trackHomeHeroStyleSelected("classic", "artwork", "tide", "artwork")
+                },
                 "feature_announcement_action" to {
                     AnalyticsHelper.trackFeatureAnnouncementViewed("f1")
                 },

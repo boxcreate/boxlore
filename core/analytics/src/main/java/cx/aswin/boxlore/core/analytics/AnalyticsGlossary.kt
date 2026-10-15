@@ -76,6 +76,7 @@ object AnalyticsGlossary {
             "settings_interaction",
             "custom_theme_editor_opened",
             "custom_theme_saved",
+            "home_hero_style_selected",
             "feature_announcement_action",
             "offline_mode_entered",
             "player_chrome_interaction",
