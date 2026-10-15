@@ -45,6 +45,8 @@ import cx.aswin.boxlore.core.testing.TestFixtures
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -188,7 +190,7 @@ class TabletPlayerContentTest {
 
     @Test
     fun `live player restores its inline transcript across width and height gates`() {
-        val store = PlayerPresentationStore(episode.id, FullPlayerUiState().apply { showInlineTranscript = true })
+        val store = PlayerPresentationStore(episode.id, FullPlayerUiState().apply { showInlineTranscript = true }, tabletUsed = true)
         window.value = BoxloreWindowLayout(599f, 841f)
         render(transcript = true, presentationStore = store)
         fixture.compose.onNodeWithContentDescription("Open fullscreen transcript").assertExists()
@@ -209,8 +211,50 @@ class TabletPlayerContentTest {
         }
     }
 
+    @Test
+    fun `phone sessions keep local player state until a tablet layout first presents the player`() {
+        val shown = mutableStateOf(true)
+        lateinit var store: PlayerPresentationStore
+        window.value = BoxloreWindowLayout(599f, 841f)
+        render(transcript = true, retained = RetainedRender(shown) { store = it })
+        fun openTranscript() {
+            fixture.compose.runOnIdle { store.ui.showInlineTranscript = true }
+            advance()
+            fixture.compose.onNodeWithContentDescription("Open fullscreen transcript").assertExists()
+        }
+        fun reenter() {
+            fixture.compose.runOnIdle { shown.value = false }
+            advance()
+            fixture.compose.runOnIdle { shown.value = true }
+            advance()
+        }
+        openTranscript()
+        store.expanded = true
+        assertFalse(store.tabletUsed)
+        assertFalse("A phone-only player reopens collapsed, as before tablet layouts", store.opensExpanded())
+        reenter()
+        fixture.compose.onNodeWithContentDescription("Open fullscreen transcript").assertDoesNotExist()
+
+        openTranscript()
+        val phoneUi = store.ui
+        fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(600f, 841f) }
+        advance()
+        assertTrue(store.tabletUsed)
+        assertSame("The first tablet frame continues the phone state", phoneUi, store.ui)
+        fixture.compose.onNodeWithContentDescription("Open full-screen transcript").assertExists()
+        fixture.compose.runOnIdle { window.value = BoxloreWindowLayout(599f, 841f) }
+        advance()
+        fixture.compose.onNodeWithContentDescription("Open fullscreen transcript").assertExists()
+        assertTrue(store.opensExpanded())
+        reenter()
+        fixture.compose.onNodeWithContentDescription("Open fullscreen transcript").assertExists()
+        assertSame(phoneUi, store.ui)
+    }
+
+    private class RetainedRender(val shown: androidx.compose.runtime.State<Boolean>, val onStore: (PlayerPresentationStore) -> Unit)
+
     @Suppress("LongParameterList")
-    private fun render(style: String = FullPlayerStyle.STANDARD, contextPane: Boolean = false, onOpen: () -> Unit = {}, video: Boolean = false, emptyQueue: Boolean = false, dark: Boolean = false, transcript: Boolean = false, fullscreenRequest: ((PlayerFullscreenOverlay, Boolean) -> Unit)? = null, presentationStore: PlayerPresentationStore? = null) {
+    private fun render(style: String = FullPlayerStyle.STANDARD, contextPane: Boolean = false, onOpen: () -> Unit = {}, video: Boolean = false, emptyQueue: Boolean = false, dark: Boolean = false, transcript: Boolean = false, fullscreenRequest: ((PlayerFullscreenOverlay, Boolean) -> Unit)? = null, presentationStore: PlayerPresentationStore? = null, retained: RetainedRender? = null) {
         val downloads = mock(DownloadRepository::class.java)
         val prefs = mock(UserPreferencesRepository::class.java)
         `when`(playback.playerState).thenReturn(
@@ -242,12 +286,22 @@ class TabletPlayerContentTest {
                 BoxLoreTheme(darkTheme = dark, dynamicColor = false) {
                     foreground = MaterialTheme.colorScheme.onSurface.toArgb()
                     CompositionLocalProvider(LocalContentColor provides Color.Black) {
+                    val player: @androidx.compose.runtime.Composable () -> Unit = {
                     Box(if (contextPane) Modifier.width(473.dp).height(800.dp) else Modifier) {
                         FullPlayerV2(
                             FullPlayerDependencies(playback, downloads, prefs),
                             FullPlayerDisplay(MaterialTheme.colorScheme, false, object : NestedScrollConnection {}, true, isContextPane = contextPane),
                             FullPlayerActions({}, {}, {}, {}, onOpenImmersivePlayer = onOpen),
                         )
+                    }
+                    }
+                    if (retained == null) {
+                        player()
+                    } else {
+                        RetainedPlayerPresentation(window.value.usesTabletLayout) {
+                            retained.onStore(requireNotNull(LocalPlayerPresentationStore.current))
+                            if (retained.shown.value) player()
+                        }
                     }
                     }
                 }

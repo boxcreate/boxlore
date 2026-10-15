@@ -165,6 +165,7 @@ class FullPlayerUiStateSaverTest {
                 if (flagCount == 13) legacyFlags[11] = true
                 val restored = requireNotNull(PlayerPresentationStoreSaver.restore(listOf("rss:episode/one") + legacyFlags + expanded))
                 assertEquals(expanded, restored.expanded)
+                assertFalse(restored.tabletUsed)
                 assertTrue(restored.ui.showSleepSheet)
                 assertEquals(if (flagCount == 13) PlayerSupportingTab.Transcript else PlayerSupportingTab.UpNext, restored.ui.supportingTab)
                 restored.ui.updateSupportingContent(true)
@@ -180,12 +181,15 @@ class FullPlayerUiStateSaverTest {
         val original = store.forEpisode("rss:episode/one")
         original.supportingTab = PlayerSupportingTab.Notes
         store.expanded = true
+        store.tabletUsed = true
         assertEquals(original, store.forEpisode("rss:episode/one"))
         val scope = SaverScope { true }
         val saved = with(PlayerPresentationStoreSaver) { scope.save(store) }
         val restored = requireNotNull(PlayerPresentationStoreSaver.restore(requireNotNull(saved)))
         assertEquals(PlayerSupportingTab.Notes, restored.forEpisode("rss:episode/one").supportingTab)
         assertTrue(restored.expanded)
+        assertTrue(restored.tabletUsed)
+        assertTrue(restored.opensExpanded())
         assertEquals(PlayerSupportingTab.UpNext, restored.forEpisode("-42").supportingTab)
         assertFalse(restored.ui.supportingContentUsesTablet)
         assertFalse(restored.ui.restoreSupportingContentOnCompact)

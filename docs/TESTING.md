@@ -214,7 +214,7 @@ See [`maestro/README.md`](../maestro/README.md).
 
 ## Screenshots
 
-The phone regression matrix is a local tool excluded from ordinary unit-test and CI runs. It captures Home (loaded/loading), Explore, Lore, Library, podcast/episode info, Standard full player, mini player over Home, Echo and Settings at 360×800, 412×915 and 800×360dp in light/dark (66 PNGs). Run with JDK 17 and the normal Gradle home:
+The phone regression matrix is a local tool excluded from ordinary unit-test and CI runs. It captures Home (loaded/loading), Explore, Lore, Library, podcast/episode info, Standard full player, mini player over Home, Echo and Settings at 360×800, 412×915 and 800×360dp in light/dark (66 PNGs). The phone fixtures compose each screen, and for the shell captures a static navigation bar and `MiniPlayerV2`, directly. They do not run `BoxLoreAppRoot`, `TabletAppShell`, `RetainedPlayerPresentation` or `PlayerSheetScaffold`, so phone shell wiring, player-sheet expansion and retained player state are covered by JVM tests, not by these images. Run with JDK 17 and the normal Gradle home:
 
 ```bash
 GRADLE_USER_HOME="$HOME/.gradle" ./gradlew :app:testDebugUnitTest :feature:explore:testDebugUnitTest :feature:info:testDebugUnitTest :feature:player:testDebugUnitTest :feature:onboarding:testDebugUnitTest :feature:settings:testDebugUnitTest -PphoneGoldens=verify --tests '*PhoneGoldenTest'

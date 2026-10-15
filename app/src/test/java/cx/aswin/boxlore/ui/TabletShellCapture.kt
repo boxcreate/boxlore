@@ -29,7 +29,7 @@ import org.mockito.Mockito.`when`
 internal fun TabletShellCapture(route: String, episode: Episode, podcast: Podcast, playing: Boolean, content: @Composable () -> Unit) {
     val navigation = rememberTabletDetailNavigation(rememberNavController())
     val dependencies = remember { tabletCapturePlayer(episode, podcast) }
-    RetainedPlayerPresentation {
+    RetainedPlayerPresentation(cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout.current.usesTabletLayout) {
         TabletAppShell(
             navigation,
             true,

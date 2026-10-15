@@ -695,7 +695,7 @@ fun BoxLoreAppRoot(
             )
             }
             val activeTab = resolveBottomNavTab(currentRoute, remember(navBackStackEntry) { snapshotNavBackStack(navController) })
-            cx.aswin.boxlore.feature.player.v2.RetainedPlayerPresentation {
+            cx.aswin.boxlore.feature.player.v2.RetainedPlayerPresentation(windowLayout.usesTabletLayout) {
             TabletAppShell(
                 navigation = tabletNavigation,
                 navigationVisible = showBottomNav,

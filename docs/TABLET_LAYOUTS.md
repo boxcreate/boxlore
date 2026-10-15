@@ -4,7 +4,7 @@ Status: all six phases and the requested tablet visual refinements are implement
 
 ## Scope and preservation
 
-Phone geometry takes priority. The frozen 66-image phone matrix includes 360×800, 412×915 and 800×360dp, light/dark. Layout changes must pass exact dimension and ARGB equality; baselines are never refreshed. Ranking, playback, storage identities and route attribution retain their existing owners.
+Phone geometry takes priority. The frozen 66-image phone matrix includes 360×800, 412×915 and 800×360dp, light/dark. Layout changes must pass exact dimension and ARGB equality; baselines are never refreshed. The matrix is a local check that ordinary unit-test and CI runs exclude. The phone fixtures compose each screen, and for the shell captures a static navigation bar and `MiniPlayerV2`, directly. They do not run `BoxLoreAppRoot`, `TabletAppShell`, `RetainedPlayerPresentation` or `PlayerSheetScaffold`, so phone shell wiring, player-sheet expansion and retained player state are covered by JVM tests, not by these images. Ranking, playback, storage identities and route attribution retain their existing owners.
 
 ## Specs
 

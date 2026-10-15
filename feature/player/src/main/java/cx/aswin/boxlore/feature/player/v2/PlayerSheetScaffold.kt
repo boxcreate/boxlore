@@ -113,6 +113,8 @@ data class PlayerSheetActions(
     val onEpisodeInfoClick: (cx.aswin.boxlore.core.model.Episode) -> Unit = {},
     val onPodcastInfoClick: (cx.aswin.boxlore.core.model.Podcast) -> Unit = {},
     val onSheetInteractionChanged: (Boolean) -> Unit = {},
+    /** Lets the host open the player elsewhere; returning true skips the sheet's own expansion. */
+    val onOpenRequest: (() -> Boolean)? = null,
 )
 
 /**
@@ -142,11 +144,7 @@ fun PlayerSheetScaffold(
                 .map { it.position }
                 .distinctUntilChanged()
         }
-    val state by stablePlayerState.collectAsStateWithLifecycle(
-        initialValue =
-        cx.aswin.boxlore.core.playback
-            .PlayerState(),
-    )
+    val state by stablePlayerState.collectAsStateWithLifecycle(initialValue = rememberInitialPlayerState(playbackRepository))
     val episode = state.currentEpisode
     val podcast = state.currentPodcast
 
@@ -181,7 +179,7 @@ fun PlayerSheetScaffold(
     val sheetState =
         remember(density) {
             AnchoredDraggableState(
-                initialValue = if (presentation?.expanded == true) PlayerSheetValue.Expanded else PlayerSheetValue.Collapsed,
+                initialValue = if (presentation?.opensExpanded() == true) PlayerSheetValue.Expanded else PlayerSheetValue.Collapsed,
                 positionalThreshold = { distance: Float -> distance * 0.5f },
                 velocityThreshold = { with(density) { PlayerSheetDecisiveFlingDistance.toPx() } },
                 // Soft expressive settle — gesture gates below keep mini controls tappable
@@ -248,7 +246,7 @@ fun PlayerSheetScaffold(
         ),
         callbacks =
         PlayerSheetCallbacks(
-            onExpand = { requestSheetExpansion(sheetState, geometry.sheetOffset, scope) },
+            onExpand = { if (actions.onOpenRequest?.invoke() != true) requestSheetExpansion(sheetState, geometry.sheetOffset, scope) },
             onCollapse = {
                 requestSheetCollapse(sheetState, geometry.sheetOffset, layout.collapsedTargetY, scope)
             },

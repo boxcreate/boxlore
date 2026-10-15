@@ -207,7 +207,7 @@ fun FullPlayerV2(
         playbackRepository.playerState
             .map { it.copy(position = 0, bufferedPosition = 0) }
             .distinctUntilChanged()
-    }.collectAsStateWithLifecycle(initialValue = PlayerState())
+    }.collectAsStateWithLifecycle(initialValue = rememberInitialPlayerState(playbackRepository))
 
     val positionFlow =
         remember(playbackRepository) {
@@ -230,7 +230,7 @@ fun FullPlayerV2(
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     val localUi = rememberSaveable(episode.id, saver = FullPlayerUiStateSaver) { FullPlayerUiState() }
-    val ui = LocalPlayerPresentationStore.current?.forEpisode(episode.id) ?: localUi
+    val ui = LocalPlayerPresentationStore.current?.uiFor(episode.id, localUi) ?: localUi
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     val fullscreenRequest = LocalPlayerFullscreenRequest.current.takeIf { tablet }
     val playerActions = fullscreenRequest?.let { request -> actions.copy(onFullscreenVideoChange = { request(PlayerFullscreenOverlay.Video, it) }) } ?: actions
