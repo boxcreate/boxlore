@@ -1,7 +1,7 @@
 <resources>
     <string name="download_notification_channel_name">Downloads</string>
     <string name="download_notification_channel_description">Shows download progress for podcast episodes</string>
-    <string name="auto_app_name">BoxLore</string>
+    <string name="auto_app_name">boxlore</string>
     <string name="auto_home">Home</string>
     <string name="auto_home_subtitle">Continue listening and what’s next</string>
     <string name="auto_library">Library</string>

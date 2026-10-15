@@ -36,6 +36,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 
 - boxlore classic uses electric violet with quieter blue and teal supporting accents, cool neutral surfaces and complete fixed-color roles. Pure shares those authored accents while keeping exact white/black backgrounds, readable neutral foregrounds and distinct container levels; custom/artwork Pure palettes keep their own accents. Material 3 retains the wallpaper's supporting hues and neutral surfaces, with a modest HCT chroma lift for its primary and a tone-76 dark primary. This refinement runs only for wallpaper colors on the standard background, leaving custom HCT palettes and legacy seeds unchanged. App chrome, Appearance previews and widgets share the same resolver.
 - The top-bar wordmark uses the full-size plain B vector for readability at chrome sizes. LORE page/navigation marks and the boxlore brief serif masthead are tintable vectors from the new brand kit; UI typography remains Google Sans Flex. Share artwork follows the wordmark’s updated aspect ratio.
+- `briefing.briefingShowPodcast` is the Brief's show identity for playback: title `briefing_brand_name` ("The boxlore brief", the masthead wording), author `briefing_show_author` ("boxlore"), id `briefing_{region}` and the fixed player square. Home and the Brief screen both use it, so the player, notifications, history and Android Auto match the masthead.
 
 ## Internal structure
 
@@ -82,6 +83,7 @@ Bitmap callers can choose a shorter per-attempt timeout while retaining outer ca
 - Brief player artwork uses `:core:model`'s `BriefingArtwork` named-resource contract, shared with upgrade and restore compatibility repair. Weekday covers remain independent of fixed player artwork.
 
 - `BriefingArtworkTest` verifies all 28 weekday covers, edition-date rotation, aliases, invalid dates and the four independent player squares. Cover, square and localized edition-label selection share the model's alias contract; Brief labels, action descriptions and story/source counts use string and plural resources.
+- `BriefingShowTest` in `:feature:briefing` resolves `briefingShowPodcast` against real resources, because this module's JVM tests run without Robolectric.
 - `BriefingEditorialColorsTest` checks that editorial surfaces retain the listener’s accent roles and readable text contrast in both modes.
 `NavigationChromeMetrics` gives the Floating mini player a full capsule: 32dp corners at 64dp height. Classic retains 26dp top / 14dp bottom corners and 72dp height. Player surfaces use the same selected corner metrics; bottom-content clearances do not change.
 

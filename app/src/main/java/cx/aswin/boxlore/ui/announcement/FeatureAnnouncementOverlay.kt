@@ -119,7 +119,7 @@ fun FeatureAnnouncementOverlay(featureAnnouncementId: String, userPrefs: UserPre
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "BoxLore now plays on Android Auto. Listen hands-free while driving.",
+                    text = "boxlore now plays on Android Auto. Listen hands-free while driving.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

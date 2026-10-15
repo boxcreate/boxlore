@@ -1,5 +1,6 @@
 <resources>
     <string name="briefing_brand_name">The boxlore brief</string>
+    <string name="briefing_show_author">boxlore</string>
     <string name="briefing_show_all_stories">Show all %1$d stories</string>
     <string name="briefing_show_fewer_stories">Show fewer stories</string>
     <string name="briefing_all_stories_inline">All %1$d</string>

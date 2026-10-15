@@ -7,10 +7,10 @@ import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.designsystem.R
+import cx.aswin.boxlore.core.designsystem.briefing.briefingShowPodcast
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.Episode
-import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.getSession
 import cx.aswin.boxlore.core.playback.pause
@@ -85,7 +85,7 @@ class BriefingViewModel(
                             durationMs = playerState.duration,
                             timestamp = System.currentTimeMillis(),
                             episodeTitle = briefing.title,
-                            podcastTitle = "The Boxlore Brief",
+                            podcastTitle = application.getString(R.string.briefing_brand_name),
                             imageUrl = getBriefingCoverUrl(briefing.region),
                             podcastImageUrl = getBriefingCoverUrl(briefing.region),
                             audioUrl = briefing.audioUrl,
@@ -164,12 +164,7 @@ class BriefingViewModel(
 
     fun playBriefing(briefing: Briefing, initialPositionMs: Long? = null) {
         viewModelScope.launch {
-            val dummyPodcast = Podcast(
-                id = "briefing_${briefing.region}",
-                title = "The Boxlore Brief",
-                artist = "BoxCast AI",
-                imageUrl = getBriefingCoverUrl(briefing.region)
-            )
+            val dummyPodcast = briefingShowPodcast(getApplication<Application>(), briefing.region)
 
             val publishedDate = try {
                 java.time.LocalDate.parse(briefing.date)

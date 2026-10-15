@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.designsystem.briefing.briefingShowPodcast
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.PlaybackEntryPoint
@@ -76,10 +77,10 @@ private fun playDailyBriefingFromFeed(
 ) {
     val isCurrentPlaying = playback.isPlaying && playback.currentPlayingEpisodeId == briefingId
     trackDailyBriefingPlayPause(briefing, isCurrentPlaying)
-    val localCoverUrl = dailyBriefingLocalCoverUrl(context, briefing.region)
+    val show = briefingShowPodcast(context, briefing.region)
     callbacks.onPlayEpisode(
-        dailyBriefingEpisode(briefing, briefingId, localCoverUrl),
-        dailyBriefingPodcast(briefing, localCoverUrl),
+        dailyBriefingEpisode(briefing, briefingId, show),
+        show,
         // Glossary entry_point=briefing (via enum → sourceContext). Do not use GENERIC —
         // that normalizes to unknown and breaks Brief playback attribution.
         PlaybackEntryPoint.BRIEFING,
@@ -108,7 +109,7 @@ private fun trackDailyBriefingPlayPause(
 private fun dailyBriefingEpisode(
     briefing: Briefing,
     briefingId: String,
-    localCoverUrl: String,
+    show: Podcast,
 ): Episode {
     val versionParam = dailyBriefingVersionParam(briefing.audioUrl)
     return Episode(
@@ -116,11 +117,11 @@ private fun dailyBriefingEpisode(
         title = briefing.title,
         description = "Your daily AI-generated news briefing for ${briefing.region.uppercase()}.",
         audioUrl = briefing.audioUrl,
-        imageUrl = localCoverUrl,
-        podcastId = "briefing_${briefing.region}",
-        podcastTitle = "The Boxlore Brief",
-        podcastImageUrl = localCoverUrl,
-        podcastArtist = "BoxCast AI",
+        imageUrl = show.imageUrl,
+        podcastId = show.id,
+        podcastTitle = show.title,
+        podcastImageUrl = show.imageUrl,
+        podcastArtist = show.artist,
         duration = 180,
         publishedDate = dailyBriefingPublishedDate(briefing.date),
         transcriptUrl =
@@ -131,16 +132,6 @@ private fun dailyBriefingEpisode(
             ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam",
     )
 }
-
-private fun dailyBriefingPodcast(
-    briefing: Briefing,
-    localCoverUrl: String,
-): Podcast = Podcast(
-    id = "briefing_${briefing.region}",
-    title = "The Boxlore Brief",
-    artist = "BoxCast AI",
-    imageUrl = localCoverUrl,
-)
 
 private fun dailyBriefingPublishedDate(date: String): Long = try {
     LocalDate
@@ -155,8 +146,3 @@ private fun dailyBriefingVersionParam(audioUrl: String): String {
     val version = Uri.parse(audioUrl).getQueryParameter("v")
     return if (version != null) "&v=$version" else ""
 }
-
-private fun dailyBriefingLocalCoverUrl(
-    context: Context,
-    region: String,
-): String = cx.aswin.boxlore.core.designsystem.briefing.briefingPlayerArtworkUri(context.packageName, region)

@@ -22,6 +22,12 @@ class SyncAndBackupsPageTest {
     }
 
     @Test
+    fun fullLibraryExportSummary_namesOnlyWhatTheJsonExportWrites() {
+        // LibraryBackupExportTest pins the exported sections; Missing episodes? opt-ins are not written.
+        assertEquals("Subscriptions, folders, history, likes, and settings (JSON)", FULL_LIBRARY_EXPORT_SUMMARY)
+    }
+
+    @Test
     fun libraryBackupActions_triggersCallbacksCorrectly() {
         var exportJsonCalled = false
         var exportOpmlCalled = false
