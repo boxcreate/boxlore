@@ -131,6 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Player-only artwork links no longer reach synced history and queue, and `repairPlaybackArtworkLinks` repairs rows older builds saved. ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Fullscreen transcript controls fit the visible screen height (`fitVisibleHeight`). ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `/sync` lookups are sent in chunks of 20, so libraries with more than 40 shows get every update. ([#1130](https://github.com/boxcreate/boxlore/pull/1130)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+### Removed
+- Analytics events with no remaining caller (`library_history_tracking_notice`, `auto_chapters_lifecycle`, `auto_transcript_lifecycle`) and the unused `subscription_count_bucket` launch enrichment; the glossary's person properties now match what the app sets. ([#1131](https://github.com/boxcreate/boxlore/pull/1131)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1097
 ### Improvements
