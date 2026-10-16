@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings Appearance overview with Home, Player, Navigation and Text pages and picture tiles. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `EchoCharacter` in `:core:designsystem`: manifest sequences of stills and alpha-packed MP4 motion clips decoded with `MediaCodec`, LED eyes on the tracked screen behind a glass mask, eye idle scripts, theme-tinted accents and a stage shape; `LocalEchoMotion` holds Echo still in tests. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Library import screens in `:app` (`ImportPage`, `ImportFlowModel`): Echo on its stage, progress checklist, Start fresh, done and failure screens, with copy in `library_import.xml` and `ImportDialogAdaptiveTest` window-transition coverage. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `EchoPrismCard` and `EchoPrismLayout`: the show deck's Prism collector card, sized from measured text so the pitch is never cut, with a compact arrangement for short slots. ([#1127](https://github.com/boxcreate/boxlore/pull/1127)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `BlockHeroColors`: Block hero cards take the Dark / Artwork / App theme choice; `HeroCoverShade.forStyle` keeps Block in the app theme until a colour is picked. ([#1127](https://github.com/boxcreate/boxlore/pull/1127)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `HeroTideProgress`: Wavy or Circle ring around Tide's Play disc. ([#1127](https://github.com/boxcreate/boxlore/pull/1127)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `MarqueeBackdrop` and `MarqueeBarFrost`: Marquee's uncropped cover over a blurred wash, and a live Haze frost owned by the top bar. ([#1127](https://github.com/boxcreate/boxlore/pull/1127)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add hermetic JVM coverage for setup actions, button semantics, narrow and enlarged-text layouts, first-line dismissal alignment and RTL geometry. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Support worlds experiment: `SupportPageHost` reads the `support-world` flag once per visit and shows today's power-cell page (control) or one of five themed worlds (neon, orbit, alchemy, abyss, sky) each rendered by the same `SupportDevelopmentPage` through a `SupportPageStyle` (art, fonts, names and copy only), with bundled 3D art and display fonts. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -74,6 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On tablets the artwork hero cards use the Hero width bound and Marquee falls back to Cover (`homeHeroStyle`); below `ShortHeroHeight` (tabletop folds) Duotone moves its time into the copy and Halo shows as Cover. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Onboarding Welcome and the Echo conversation use the shared `EchoCharacter`; 8.7 MB of onboarding strips and the Settings Echo atlas are replaced by 1.5 MB of shared assets. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Account & sync page redesigned: sign-in method cards, check-email screens, one sync status panel, and animated sync tiles with a "No need to wait" note during onboarding; `AccountPageAdaptiveTest` covers window transitions. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Appearance › Home groups each hero style's options with its live preview (`AppearanceHeroLookCard`); `SettingsPictureRow` tiles are wider, snap on fling and never fit a whole number on screen. ([#1127](https://github.com/boxcreate/boxlore/pull/1127)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Splash holds at least 350 ms and fades out (`SplashHoldPolicy`); Welcome restores the earlier cover glide and drift (`WelcomeEntryTiming`); show deck artwork is prefetched when the deck arrives. ([#1127](https://github.com/boxcreate/boxlore/pull/1127)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -315,6 +321,14 @@ readme-copy:end pr=1123 -->
 ### Fixes
 - Restoring a damaged boxlore backup now says it couldn't be restored, instead of showing success.
 readme-copy:end pr=1124 -->
+
+<!-- readme-copy:start pr=1127
+### Improvements
+- Onboarding show cards are bigger and bolder, and always show their whole description.
+- Block hero cards can use artwork or dark colours, and Tide can use a smooth progress ring.
+- Each hero style's options now sit right beside its preview in Appearance.
+- Marquee shows the whole cover with a soft glow of its colours and a frosted top bar.
+readme-copy:end pr=1127 -->
 
 <!-- readme-copy:start pr=1128
 ### Fixes
