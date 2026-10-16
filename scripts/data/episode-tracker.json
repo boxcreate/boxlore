@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-16T20:32:38.176Z",
+  "lastRun": "2026-10-16T23:15:36.965Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0dfcfea-cfc6-11f0-83c5-df5cfc8cd54e",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "c6655b46-c069-4f5e-863e-a37d462990e0",
-      "lastEpisodeTitle": "4pm ET, October 16 | The latest headlines from NPR",
+      "lastRssKey": "1bd448e9-f51d-43c7-a9f0-5105a04eed61",
+      "lastEpisodeTitle": "7pm ET, October 16 | The latest headlines from NPR",
       "lastEpisodeId": "61772764727",
-      "lastCheckedAt": 1792182762729
+      "lastCheckedAt": 1792192542086
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75811774",
@@ -179,10 +179,10 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "4470DA45-F3A2-402C-B2BF-7E1AADD68814",
-      "lastEpisodeTitle": "Musk Funnels Millions Into Texas Senate Race",
+      "lastRssKey": "47E3B85E-005A-4B62-ACCC-1A8ECBBE49AB",
+      "lastEpisodeTitle": "AI Stocks Drag Down the Nasdaq",
       "lastEpisodeId": "61820659794",
-      "lastCheckedAt": 1792172209501
+      "lastCheckedAt": 1792192553967
     },
     "331078": {
       "lastRssKey": "13d617f8-b823-11f1-957c-17f52bfecc2a",
@@ -197,16 +197,16 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "80852340-c99d-11f1-ace1-87944bc03ee1",
-      "lastEpisodeTitle": "4PM ET 10/16/2026 Newscast",
+      "lastRssKey": "a62a44e0-c9b6-11f1-8cb9-638224907c9f",
+      "lastEpisodeTitle": "7PM ET 10/16/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792182774199
+      "lastCheckedAt": 1792192555015
     },
     "386911": {
-      "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
-      "lastEpisodeTitle": "NerdCast 1051 - Lanternas: No Dia Mais Claro, Na Noite Mais Densa, Para Quem Não Chora, A Diversão é a Recompensa!",
+      "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
+      "lastEpisodeTitle": "NerdCast 1052 - RPG Western 3: Por Uns Forasteiros a Mais",
       "lastEpisodeId": "61170825617",
-      "lastCheckedAt": 1791580170463
+      "lastCheckedAt": 1792192555944
     },
     "388141": {
       "lastRssKey": "6abc113629a486156a24a463",
@@ -251,10 +251,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M52GWBNBWST7RHHBY4YCBD74",
-      "lastEpisodeTitle": "Minnesota's data center debate",
+      "lastRssKey": "01M533QX3C7QHH6BTM00GQ5J8S",
+      "lastEpisodeTitle": "A view of AI, from Mumbai",
       "lastEpisodeId": "61797772896",
-      "lastCheckedAt": 1792172217679
+      "lastCheckedAt": 1792192560244
     },
     "432535": {
       "lastRssKey": "7519f2d2-1e3b-405d-b08e-1c3da35a65e7",
@@ -476,10 +476,10 @@
       "lastCheckedAt": 1791835015235
     },
     "724143": {
-      "lastRssKey": "df44e1de-c94a-11f1-b0e1-bf0770fd08f0",
-      "lastEpisodeTitle": "Lula defende redução da maioridade penal; PEC da Segurança travada; soldados dos EUA na América Latina",
-      "lastEpisodeId": "61771351537",
-      "lastCheckedAt": 1792157195031
+      "lastRssKey": "c17a5906-c9ac-11f1-8489-a3fbb61a43b0",
+      "lastEpisodeTitle": "Promulgação do fim da escala 6x1, as redes sociais na campanha eleitoral e recordes negativos de desmatamento",
+      "lastEpisodeId": "61850015662",
+      "lastCheckedAt": 1792192583711
     },
     "739525": {
       "lastEpisodeId": "61460420611",
@@ -642,10 +642,10 @@
       "lastCheckedAt": 1792047674180
     },
     "959112": {
-      "lastRssKey": "https://9to5google.com/?p=732965",
-      "lastEpisodeTitle": "The Definitive Pixel Tier List",
-      "lastEpisodeId": "61510613161",
-      "lastCheckedAt": 1791594418220
+      "lastRssKey": "https://9to5google.com/?p=733632",
+      "lastEpisodeTitle": "Pixelated 121: Is Googlebook the first real post-smartphone PC?",
+      "lastEpisodeId": "61847212877",
+      "lastCheckedAt": 1792192599527
     },
     "980370": {
       "lastRssKey": "6acfa672b3381b9dbb7c315d",
@@ -996,10 +996,10 @@
       "lastCheckedAt": 1786559328886
     },
     "4458818": {
-      "lastRssKey": "99df780b-0634-4026-b7bd-340ccc47ed77",
-      "lastEpisodeTitle": "Affaire Lionel Véronèse : le mari, la femme et l'électricien",
+      "lastRssKey": "fc33bf12-6e88-48d1-9e16-e805e8c43172",
+      "lastEpisodeTitle": "Edmond Safra : piège fatal à Monaco",
       "lastEpisodeId": "61419712254",
-      "lastCheckedAt": 1792107580704
+      "lastCheckedAt": 1792192630986
     },
     "4507961": {
       "lastRssKey": "bd46ab41-3728-46cd-bd9b-853c9b859e14",
@@ -1242,10 +1242,10 @@
       "lastCheckedAt": 1786559332068
     },
     "6698148": {
-      "lastRssKey": "96bb32ac-c89f-11f1-93e1-9b27e16a969d",
-      "lastEpisodeTitle": "“It’s Not Just A Game” - Celeb Traitors Reaction (Episode 5)",
+      "lastRssKey": "ccf23ecc-c969-11f1-a471-d7a7d200d10f",
+      "lastEpisodeTitle": "Can You Out Think The Show? - Celeb Traitors Reaction (Episode 6)",
       "lastEpisodeId": "61795605278",
-      "lastCheckedAt": 1792107602888
+      "lastCheckedAt": 1792192647123
     },
     "6725294": {
       "lastRssKey": "cmuz0s19703wo01w88i5hcf6r",
@@ -1344,10 +1344,10 @@
       "lastCheckedAt": 1792019408941
     },
     "6926108": {
-      "lastRssKey": "8f9bfeb6-c26e-11f1-bf39-63984e3888dc",
-      "lastEpisodeTitle": "Kommen die Girls noch? 😏",
+      "lastRssKey": "ea395cee-c30c-11f1-b29c-afa20acd3563",
+      "lastEpisodeTitle": "Die Chlamydien-Hexe 🧙‍♀️",
       "lastEpisodeId": "61515851381",
-      "lastCheckedAt": 1791594477463
+      "lastCheckedAt": 1792192654199
     },
     "6956562": {
       "lastEpisodeId": "61802651790",
@@ -1434,16 +1434,16 @@
       "lastCheckedAt": 1792182869864
     },
     "7239415": {
-      "lastRssKey": "99bcbc86-c8e6-11f1-be92-dbbd9c836b18",
-      "lastEpisodeTitle": "It doesn't get ANY easier... | ft. Adnan Virk",
+      "lastRssKey": "d93cd49e-c9af-11f1-9d9f-33e5f95ce94a",
+      "lastEpisodeTitle": "Trade rumours ESCALATING... - Report reveals WILD Habs link",
       "lastEpisodeId": "61797515877",
-      "lastCheckedAt": 1792107614552
+      "lastCheckedAt": 1792192660355
     },
     "7248222": {
-      "lastRssKey": "8a6541f8-c8e7-11f1-8dd1-4b0d4a8e6ef1",
-      "lastEpisodeTitle": "Alex Fdz en Chilango: Jueves 15 de octubre de 2026",
+      "lastRssKey": "a18394c0-c9a5-11f1-83ff-4b8efb15f280",
+      "lastEpisodeTitle": "Alex Fdz en Chilango: Viernes 16 de octubre de 2026",
       "lastEpisodeId": "61360194267",
-      "lastCheckedAt": 1792107618078
+      "lastCheckedAt": 1792192661076
     },
     "7277494": {
       "lastRssKey": "fd0ae3c1-3a1c-47dd-960b-85193bafaf4c",
@@ -1630,10 +1630,10 @@
       "lastCheckedAt": 1792139213992
     },
     "7756959": {
-      "lastRssKey": "584eccd4-c8f1-11f1-bf31-7f00c494542a",
-      "lastEpisodeTitle": "¿Cuánto sabes de cultura general? Sindicato de Inexpertos vs. Marina | VA VA VA",
+      "lastRssKey": "19d02b3a-c9ad-11f1-a421-cbad94354220",
+      "lastEpisodeTitle": "¿Qué museos vale la pena visitar en tu próximo viaje? | VA VA VA",
       "lastEpisodeId": "61647671833",
-      "lastCheckedAt": 1792107627690
+      "lastCheckedAt": 1792192670502
     },
     "7837137": {
       "lastRssKey": "https://api.spreaker.com/episode/71692643",
@@ -1660,10 +1660,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/766894aa-31e7-5060-8272-703808d3ce18",
-      "lastEpisodeTitle": "The RED FLAGS Youre Dating A NarcissistWatch Out For This Dr. Ramani ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/19fbd7f9-2d70-5910-affa-9c74640a6b6a",
+      "lastEpisodeTitle": "Is it ableist to talk about narcissistic ab ~ Dr. Ramani",
       "lastEpisodeId": "61761430954",
-      "lastCheckedAt": 1792182878282
+      "lastCheckedAt": 1792192671966
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
