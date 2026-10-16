@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -26,28 +25,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -88,8 +77,12 @@ internal fun marqueeBarOverArtwork(heroBottom: Int?, sheetOverlap: Float, barHei
     return ((heroBottom - sheetOverlap - barHeight + edgePx) / edgePx).coerceIn(0f, 1f)
 }
 
-/** How strongly the frosted band leans toward the words' opposite: a touch when the cover's tone is known. */
-internal fun marqueeVeilAlpha(toneKnown: Boolean): Float = if (toneKnown) 0.12f else 0.28f
+/** How strongly the frost under the top bar leans toward the words' opposite: stronger when the cover's tone is unknown. */
+internal fun marqueeVeilAlpha(toneKnown: Boolean): Float = if (toneKnown) 0.16f else 0.3f
+
+/** The words' scrim over Marquee's backdrop: a long, nearly solid fade of the card's deep shade. */
+internal const val MarqueeWordsScrim = 0.9f
+internal val MarqueeWordsFade = 190.dp
 
 /**
  * Keeps the hero's cover still while Home scrolls: the content moves down by as much as the hero has
@@ -97,40 +90,6 @@ internal fun marqueeVeilAlpha(toneKnown: Boolean): Float = if (toneKnown) 0.12f 
  */
 internal fun Modifier.marqueePinned(scroll: () -> Int): Modifier = graphicsLayer {
     translationY = scroll().toFloat().coerceIn(0f, size.height)
-}
-
-/**
- * A frosted band behind Home's floating top bar: a blurred copy of the cover's top, framed exactly like
- * the still cover beneath it ([cardHeight] tall), with a light veil toward the opposite of [content],
- * fading out just below the bar. Blur needs Android 12; older phones keep the veil.
- */
-@Composable
-@Suppress("LongParameterList")
-internal fun MarqueeFrost(url: String?, fallbackUrls: List<String?>, filter: ColorFilter?, content: Color, veilAlpha: Float, cardHeight: Dp) {
-    val topInset = LocalHeroTopInset.current
-    if (topInset <= 0.dp) return
-    val veil = if (content.luminance() > 0.5f) Color.Black else Color.White
-    Box(
-        Modifier.fillMaxWidth().height(topInset + MarqueeFrostFade).clipToBounds()
-            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-            .drawWithContent {
-                drawContent()
-                drawRect(veil.copy(alpha = veilAlpha))
-                val solid = (topInset.toPx() / size.height).coerceIn(0f, 1f)
-                drawRect(Brush.verticalGradient(0f to Color.Black, solid to Color.Black, 1f to Color.Transparent), blendMode = BlendMode.DstIn)
-            }
-            .testTag("home_hero_marquee_frost"),
-    ) {
-        OptimizedImage(
-            url = url,
-            fallbackUrls = fallbackUrls,
-            proxyWidth = 1080,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            colorFilter = filter,
-            modifier = Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true).height(cardHeight).blur(MarqueeFrostBlur),
-        )
-    }
 }
 
 /** The top of Home's body over Marquee's hero: the sheet's rounded edge with a handle line in its middle. */
@@ -226,6 +185,4 @@ private const val MarqueeCardMillis = 6_000L
 internal val MarqueeDotsReserve = 32.dp
 internal val MarqueeDotsBottom = 12.dp
 private val MarqueeDotSize = 6.dp
-private val MarqueeFrostFade = 28.dp
-private val MarqueeFrostBlur = 24.dp
 private const val MarqueeLightCover = 0.6f

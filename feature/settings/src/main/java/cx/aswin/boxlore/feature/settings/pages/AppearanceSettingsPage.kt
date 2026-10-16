@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -34,6 +35,7 @@ import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
+import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.core.prefs.NavigationBlurLevel
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import cx.aswin.boxlore.core.prefs.SubscriptionsDefaultTab
@@ -65,7 +67,8 @@ data class AppearanceUiState(
     val artworkColorsEnabled: Boolean = true,
     val navigationBlurLevel: String = NavigationBlurLevel.DEFAULT,
     val heroCardStyle: String = HeroCardStyle.DEFAULT,
-    val heroCoverShade: String = HeroCoverShade.DEFAULT,
+    val heroCoverShade: String = HeroCoverShade.UNSET,
+    val heroTideProgress: String = HeroTideProgress.DEFAULT,
     val savedCustomTheme: ThemeSelection? = null,
     val fullPlayerStyle: String = FullPlayerStyle.STANDARD,
     /** Read-only here: Navigation hides Explore's opening tab without For you. Library > Recommendations sets it. */
@@ -92,6 +95,7 @@ data class AppearanceActions(
     val onSetNavigationBlurLevel: (String) -> Unit = {},
     val onSetHeroCardStyle: (String) -> Unit = {},
     val onSetHeroCoverShade: (String) -> Unit = {},
+    val onSetHeroTideProgress: (String) -> Unit = {},
     val onApplyTheme: (ThemeSelection, ThemeSelection?) -> Unit = { _, _ -> },
     val onSaveCustomTheme: (ThemeSelection) -> Unit = { onApplyTheme(it, it) },
     val onSetFullPlayerStyle: (String) -> Unit = {},
@@ -169,14 +173,13 @@ private fun heroStyleName(style: String): String = when (style) {
     else -> "Block"
 }
 
-/** The hero card style, with the colours the artwork styles take. */
+/** The hero card style, with the colours it takes. */
 private fun homeSummary(state: AppearanceUiState): String {
     val style = HeroCardStyle.sanitize(state.heroCardStyle)
-    if (style == HeroCardStyle.BLOCK) return "Block hero cards"
-    return heroStyleName(style) + " hero cards, " + heroColorsSummary(style, HeroCoverShade.sanitize(state.heroCoverShade))
+    return heroStyleName(style) + " hero cards, " + heroColorsSummary(style, HeroCoverShade.forStyle(style, state.heroCoverShade))
 }
 
-/** What the colour choice does in each style: Cover's shade, Duotone's and Marquee's tones, Tide's and Halo's card. */
+/** What the colour choice does in each style: Cover's shade, Duotone's and Marquee's tones, Block's, Tide's and Halo's card. */
 private fun heroColorsSummary(style: String, colors: String): String {
     val (dark, theme, artwork) = when (style) {
         HeroCardStyle.COVER -> Triple("dark shade", "app theme shade", "artwork shade")
@@ -192,23 +195,46 @@ private fun heroColorsSummary(style: String, colors: String): String {
 }
 
 /**
- * Home's single-episode and Jump back in cards side by side on a solid stage. The preview is a
- * picture: its cards take no taps, and it reads as one description.
+ * The picked hero style's look: a live preview of its single and collection cards on top, and that
+ * style's own [options] (its colours, Tide's ring) right beneath, in one card, so each choice reads
+ * as part of the style and its effect shows at once. Without a preview it is just the options.
  */
 @Composable
-internal fun AppearanceHeroPreviewStage(style: String, coverShade: String, heroPreview: AppearanceHeroPreview, height: Dp) {
+internal fun AppearanceHeroLookCard(
+    style: String,
+    coverShade: String,
+    heroPreview: AppearanceHeroPreview?,
+    previewHeight: Dp,
+    options: @Composable ColumnScope.() -> Unit,
+) {
     val description = "Preview of ${heroStyleName(HeroCardStyle.sanitize(style))} hero cards"
-    Surface(
-        modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = description },
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-    ) {
-        SettingsPicture {
-            Row(Modifier.fillMaxWidth().height(height).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                heroPreview(style, coverShade, false, Modifier.weight(1f).fillMaxHeight())
-                heroPreview(style, coverShade, true, Modifier.weight(1f).fillMaxHeight())
+    Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column {
+            if (heroPreview != null) {
+                Box(Modifier.semantics(mergeDescendants = true) { contentDescription = description }) {
+                    SettingsPicture {
+                        Row(Modifier.fillMaxWidth().height(previewHeight).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            heroPreview(style, coverShade, false, Modifier.weight(1f).fillMaxHeight())
+                            heroPreview(style, coverShade, true, Modifier.weight(1f).fillMaxHeight())
+                        }
+                    }
+                }
             }
+            Column(
+                Modifier.padding(start = 16.dp, end = 16.dp, top = if (heroPreview != null) 4.dp else 16.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                content = options,
+            )
         }
+    }
+}
+
+/** One of a hero style's options inside its look card: the connected choices, then a line on what they do. */
+@Composable
+internal fun AppearanceLookChoice(label: String, help: String, options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        AppearanceChoicePicker(label, options, selected, onSelect)
+        Text(help, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

@@ -30,6 +30,6 @@ object HeroCardStyle {
 
     fun sanitize(value: String?): String = value?.trim()?.lowercase(Locale.ROOT)?.takeIf { it in entries } ?: DEFAULT
 
-    /** Every style but Block colours its card from the artwork, so it takes [HeroCoverShade] colours. */
+    /** Every style but Block draws its card from the artwork; Block is a solid card in [HeroCoverShade] colours. */
     fun usesArtworkColors(style: String?): Boolean = sanitize(style) != BLOCK
 }

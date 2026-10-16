@@ -44,6 +44,7 @@ fun OptimizedImage(
     errorContent: (@Composable BoxScope.() -> Unit)? = null,
     fallbackUrls: List<String?> = emptyList(),
     adaptToLayout: Boolean = true,
+    showLoadingPlaceholder: Boolean = true,
 ) {
     val sources = remember(url, fallbackUrls) { artworkUrls(url, *fallbackUrls.toTypedArray()) }
     val sizing = artworkLayoutSizing(proxyWidth, modifier, adaptToLayout)
@@ -72,7 +73,7 @@ fun OptimizedImage(
         }
     }
     Box(sizing.modifier.semantics { contentDescription?.let { this.contentDescription = it } }) {
-        OptimizedImageLoadingPlaceholder()
+        OptimizedImageLoadingPlaceholder(showLoadingPlaceholder)
         val attempt = current
         if (attempt == null) {
             OptimizedImageFailureContent(errorContent)
@@ -107,7 +108,7 @@ private fun ArtworkAttemptImage(
     val painter = rememberAsyncImagePainter(
         model = remember(attempt, width) {
             ImageRequest.Builder(context).data(attempt.url).size(width, width)
-                .memoryCacheKey("${attempt.url}-w$width").allowHardware(true).crossfade(150).build()
+                .memoryCacheKey(ArtworkPrefetch.memoryKey(attempt.url, width)).allowHardware(true).crossfade(150).build()
         },
     )
     val state = painter.state
@@ -133,7 +134,9 @@ private fun BoxScope.OptimizedImageFailureContent(errorContent: (@Composable Box
 }
 
 @Composable
-private fun OptimizedImageLoadingPlaceholder() {
+private fun OptimizedImageLoadingPlaceholder(show: Boolean) {
+    // Decorative layers (a blurred backdrop) skip the logo placeholder, so it never shows through.
+    if (!show) return
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
         ArtworkFallbackMark()
     }

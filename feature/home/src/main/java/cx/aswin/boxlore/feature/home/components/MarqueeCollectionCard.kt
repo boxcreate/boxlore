@@ -7,7 +7,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -106,22 +106,14 @@ internal fun MarqueeCollectionCard(
         currentPlayingPodcastId = currentPlayingPodcastId,
         isPlaying = isPlaying,
     )
-    BoxWithConstraints(modifier.fillMaxSize().background(shade.deep).testTag("home_hero_marquee_collection")) {
+    // Clipped: the backdrop reaches past the card, and a neighbouring card must never draw over this one.
+    Box(modifier.fillMaxSize().clipToBounds().background(shade.deep).testTag("home_hero_marquee_collection")) {
         Crossfade(targetState = podcast, label = "marqueeCollectionCover") { shown ->
-            OptimizedImage(
-                url = shown.imageUrl,
-                fallbackUrls = shown.artworkUrls(),
-                proxyWidth = 1080,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                colorFilter = rememberMarqueeLook(shown.imageUrl).filter,
-                modifier = Modifier.fillMaxSize(),
-            )
+            Box(Modifier.fillMaxSize()) { MarqueeBackdrop(shown.imageUrl, shown.artworkUrls(), rememberMarqueeLook(shown.imageUrl), coverTag = null) }
         }
-        MarqueeFrost(podcast.imageUrl, podcast.artworkUrls(), look.filter, look.topContent, look.veilAlpha, maxHeight)
         if (active) MarqueeReportTone(look.topContent)
         Column(
-            Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
+            Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep.copy(alpha = MarqueeWordsScrim), fade = MarqueeWordsFade)
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
             // The collection's name and position sit in the words' own column, so nothing can overlap them.

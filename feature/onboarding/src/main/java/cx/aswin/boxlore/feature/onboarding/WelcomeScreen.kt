@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.feature.onboarding
 
 import android.app.Activity
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -180,8 +179,8 @@ private fun WelcomeInvitation(clock: WelcomeMotionClock, width: Dp) {
         heading()
     }
     ) {
-        WelcomeEntryText(stringResource(R.string.welcome_curiosity_first_line), clock, 100L, headlineStyle)
-        WelcomeEntryText(stringResource(R.string.welcome_curiosity_second_line), clock, 230L, headlineStyle)
+        WelcomeEntryText(stringResource(R.string.welcome_curiosity_first_line), clock, WelcomeEntryTiming.FirstLineDelayMillis, headlineStyle)
+        WelcomeEntryText(stringResource(R.string.welcome_curiosity_second_line), clock, WelcomeEntryTiming.SecondLineDelayMillis, headlineStyle)
     }
     Spacer(Modifier.height(10.dp))
     WelcomeRotatingReply(clock)
@@ -201,12 +200,7 @@ private fun WelcomeEntryText(
             style = style,
             color = color,
             modifier = Modifier.graphicsLayer {
-                val progress = if (clock.revealComplete.value) {
-                    1f
-                } else {
-                    ((clock.elapsedMillis.value - delayMillis) / 650f).coerceIn(0f, 1f)
-                }
-                val eased = FastOutSlowInEasing.transform(progress)
+                val eased = if (clock.revealComplete.value) 1f else WelcomeEntryTiming.lineProgress(clock.elapsedMillis.value, delayMillis)
                 translationY = size.height * (1f - eased)
                 alpha = eased
             },
@@ -331,7 +325,7 @@ private fun WelcomeEchoPeek(clock: WelcomeMotionClock, buttonPress: InteractionS
     val duck = animateFloatAsState(if (pressed) 1f else 0f, spring(dampingRatio = 0.55f, stiffness = 650f), label = "Echo duck")
     fun Density.lift(): Float {
         // The clock keeps counting after the text reveal and never replays, so it alone decides
-        // the rise; the reveal flag flips at 1.3s, mid-rise.
+        // the rise; the reveal flag flips at 1.4s, mid-rise.
         val progress = if (clock.animationsDisabled.value) {
             1f
         } else {
@@ -386,8 +380,8 @@ private fun Modifier.reachUp(extra: Dp): Modifier = layout { measurable, constra
 private val WelcomeEchoDuck = 6.dp
 private val WelcomeEchoContactShadow = 11.dp
 
-private const val WelcomeEchoRiseDelayMillis = 700L
-private const val WelcomeEchoRiseMillis = 420L
+private const val WelcomeEchoRiseDelayMillis = WelcomeEntryTiming.EchoRiseDelayMillis
+private const val WelcomeEchoRiseMillis = WelcomeEntryTiming.EchoRiseMillis
 
 /** Ease-out with a small overshoot, so Echo pops up and settles. */
 internal fun welcomeEchoRise(progress: Float): Float {

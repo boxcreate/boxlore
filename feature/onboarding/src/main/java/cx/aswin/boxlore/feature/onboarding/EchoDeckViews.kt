@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
@@ -66,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -115,11 +117,10 @@ internal fun EchoDeckCard(deck: EchoDeck, metrics: EchoLayoutMetrics, preview: E
                     }
                 }
                 LaunchedEffect(Unit) { revealedUpTo = maxOf(revealedUpTo, index) }
-                EchoHoloCard(
+                EchoPrismCard(
                     card,
                     index,
                     deck.cards.size,
-                    metrics.artworkSize,
                     reveal = reveal,
                     modifier = Modifier.graphicsLayer {
                         translationX = throwTo.x * fling * size.width * 1.15f
@@ -134,6 +135,8 @@ internal fun EchoDeckCard(deck: EchoDeck, metrics: EchoLayoutMetrics, preview: E
         EchoClipButton(
             status,
             enabled = showClip,
+            episode = deck.cards.getOrNull(position)?.previewEpisodeTitle?.takeIf { it.isNotBlank() && metrics.tier != EchoLayoutTier.Compact },
+            twoLines = metrics.tier != EchoLayoutTier.Compact,
             modifier = Modifier.padding(top = 12.dp, bottom = 6.dp).alpha(if (showClip) 1f else 0f),
         ) { preview?.toggle() }
     }
@@ -172,27 +175,34 @@ private fun echoDeckBackward(): ContentTransform = ContentTransform(
 /** A card further down the deck, a little smaller and lower each layer. */
 @Composable
 private fun EchoDeckBackCard(layer: Int, modifier: Modifier) {
-    EchoHoloBack(
+    EchoPrismBack(
         modifier.graphicsLayer {
             translationY = (EchoDeckPeek * layer).toPx()
             scaleX = 1f - 0.06f * layer
             transformOrigin = TransformOrigin(0.5f, 1f)
             shadowElevation = (4.dp * (EchoDeckMaxBehind + 1 - layer)).toPx()
-            shape = EchoHoloShape
+            shape = EchoPrismShape
             clip = true
         },
     )
 }
 
-/** Play, a squiggly spinner while it buffers, then pause inside a squiggly ring that fills over the clip. */
+/**
+ * Play, a squiggly spinner while it buffers, then pause inside a squiggly ring that fills over the
+ * clip. It says how long the clip is and, on roomier screens, which episode it comes from; it keeps
+ * the same height on every card, so the card above never changes size.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun EchoClipButton(status: EchoPreviewStatus?, enabled: Boolean, modifier: Modifier, onToggle: () -> Unit) {
+private fun EchoClipButton(status: EchoPreviewStatus?, enabled: Boolean, episode: String?, twoLines: Boolean, modifier: Modifier, onToggle: () -> Unit) {
     val playing = status?.playing == true
     FilledTonalButton(
         onClick = onToggle,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 48.dp).then(if (enabled) Modifier.testTag("echo_deck_clip") else Modifier.clearAndSetSemantics { }),
+        modifier = modifier
+            .heightIn(min = if (twoLines) EchoClipTallHeight else 48.dp)
+            .widthIn(max = EchoClipMaxWidth)
+            .then(if (enabled) Modifier.testTag("echo_deck_clip") else Modifier.clearAndSetSemantics { }),
         contentPadding = PaddingValues(start = 12.dp, end = 20.dp),
     ) {
         Box(Modifier.size(30.dp), contentAlignment = Alignment.Center) {
@@ -206,9 +216,25 @@ private fun EchoClipButton(status: EchoPreviewStatus?, enabled: Boolean, modifie
             }
         }
         Spacer(Modifier.width(8.dp))
-        Text(stringResource(if (playing) R.string.echo_deck_pause else R.string.echo_deck_play), style = MaterialTheme.typography.labelLarge, maxLines = 1)
+        Column {
+            Text(
+                if (playing) stringResource(R.string.echo_deck_pause) else stringResource(R.string.echo_deck_play_length, EchoClipTiming.lengthLabel()),
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+            )
+            if (episode != null) {
+                Text(episode, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
     }
 }
+
+private val EchoClipTallHeight = 56.dp
+private val EchoClipMaxWidth = 320.dp
+
+/** The deck's buttons stop at this height, so the card keeps the room on tall screens. */
+internal val EchoDeckRowMaxHeight = 60.dp
+private const val EchoDeckLargeText = 1.3f
 
 private val EchoDeckRows = listOf(
     listOf(EchoDeckReaction.Dislike, EchoDeckReaction.Like),
@@ -240,8 +266,10 @@ internal fun EchoDeckReactions(position: Int, metrics: EchoLayoutMetrics, onReac
             .testTag("echo_deck_reactions"),
         verticalArrangement = Arrangement.spacedBy(EchoLayout.GroupGap),
     ) {
+        // At normal text sizes the buttons stop at 60dp so the card keeps the room; large text keeps the full height.
+        val rowHeight = if (LocalDensity.current.fontScale < EchoDeckLargeText) minOf(metrics.rowHeight, EchoDeckRowMaxHeight) else metrics.rowHeight
         EchoDeckRows.forEachIndexed { row, reactions ->
-            Row(Modifier.fillMaxWidth().height(metrics.rowHeight), horizontalArrangement = Arrangement.spacedBy(EchoLayout.GroupGap)) {
+            Row(Modifier.fillMaxWidth().height(rowHeight), horizontalArrangement = Arrangement.spacedBy(EchoLayout.GroupGap)) {
                 reactions.forEachIndexed { column, reaction ->
                     EchoReactionButton(reaction, echoTileCorners(row, column, EchoDeckRows.size, reactions.size, selected = false)) {
                         if (ready) {

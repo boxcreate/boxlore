@@ -19,6 +19,7 @@ import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
+import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.core.prefs.OpenAppTo
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -50,7 +51,9 @@ class AppearancePagesTest {
             state.value = state.value.copy(heroCardStyle = style)
         },
         onSetHeroCoverShade = { shades += it },
+        onSetHeroTideProgress = { rings += it },
     )
+    private val rings = mutableListOf<String>()
 
     /** A stand-in for Home's cards, with a button that must never receive a preview's taps. */
     private val fakePreview: AppearanceHeroPreview = { style, _, collection, modifier ->
@@ -99,9 +102,11 @@ class AppearancePagesTest {
                 AppearanceHomePage(state.value, actions, heroPreview = fakePreview, onBack = {})
             }
         }
-        compose.onNodeWithText("Hero card preview").assertExists()
+        compose.onNodeWithText("Block look").assertExists()
         compose.onNodeWithText("Block").assertIsSelected()
         compose.onNodeWithText("Shade behind text").assertDoesNotExist()
+        // Block takes the colour choice too, as its card color; never picked, it keeps the app theme.
+        compose.onNodeWithText("Card color").assertExists()
         compose.onNodeWithContentDescription("Preview of Block hero cards").performTouchInput { click(center) }
         assertEquals(0, previewButtonClicks)
 
@@ -123,10 +128,15 @@ class AppearancePagesTest {
         compose.onNodeWithText("Duotone colors").assertDoesNotExist()
         compose.onNodeWithText("Card color").assertExists()
 
-        // Tide sits between Cover and Duotone and takes the same card color.
+        compose.onNodeWithText("Progress ring").assertDoesNotExist()
+
+        // Tide sits between Cover and Duotone and takes the same card color, plus its ring's shape.
         compose.onNodeWithText("Tide").performScrollTo().performClick()
         assertEquals(listOf(HeroCardStyle.COVER, HeroCardStyle.DUOTONE, HeroCardStyle.HALO, HeroCardStyle.TIDE), styles)
         compose.onNodeWithText("Card color").assertExists()
+        compose.onNodeWithText("Progress ring").assertExists()
+        compose.onNodeWithText("Circle").performScrollTo().performClick()
+        assertEquals(listOf(HeroTideProgress.CIRCLE), rings)
 
         // Marquee is last and names the Dark choice for what it does: covers stay in full colour.
         compose.onNodeWithText("Marquee").performScrollTo().performClick()
@@ -151,7 +161,9 @@ class AppearancePagesTest {
     fun `summary names the look, letters and player choices`() {
         val summary = appearanceSummary(baseState.copy(artworkColorsEnabled = false, fullPlayerStyle = FullPlayerStyle.BUNPOD, miniPlayerSeekButtonsEnabled = true, currentFontRoundness = "crisp"))
         assertEquals("boxlore classic", summary.theme)
-        assertEquals("Block hero cards", summary.home)
+        assertEquals("Block hero cards, app theme color", summary.home)
+        assertEquals("Block hero cards, dark cards", appearanceSummary(baseState.copy(heroCoverShade = HeroCoverShade.DARK)).home)
+        assertEquals("Block hero cards, artwork color", appearanceSummary(baseState.copy(heroCoverShade = HeroCoverShade.ARTWORK)).home)
         assertEquals("bunpod · seek buttons on", summary.player)
         assertEquals("Crisp letters", summary.text)
         assertEquals("boxlore classic · artwork colors on", appearanceSummary(baseState).theme)

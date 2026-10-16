@@ -36,7 +36,7 @@ private const val TAG = "StylizedLogo"
  *
  * @param scrollFraction 0f = fully expanded (roomier), 1f = fully collapsed
  * @param overArtwork how much of the bar sits over Marquee's cover (1) rather than Home's body (0). Over
- * the cover the bar is clear (the cover shows a frosted band behind it) and its wordmark and status
+ * the cover the bar is clear (the cover shows a soft fade behind it) and its wordmark and status
  * icons take [artworkContent]; as the body's edge slides up under it, the bar fills with the body's
  * own colour. Null for every other hero style.
  */

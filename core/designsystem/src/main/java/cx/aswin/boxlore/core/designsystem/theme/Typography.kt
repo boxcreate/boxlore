@@ -21,7 +21,7 @@ import cx.aswin.boxlore.core.designsystem.R
 private const val TAG = "BoxLoreTypography"
 
 // Google Fonts Provider for dynamic font loading
-private val googleFontProvider =
+internal val googleFontProvider =
     GoogleFont.Provider(
         providerAuthority = "com.google.android.gms.fonts",
         providerPackage = "com.google.android.gms",

@@ -96,8 +96,12 @@ class HeroCardStylePreferencesTest {
     @Test
     fun coverShadeDefaultsToArtworkPersistsAndRejectsUnknownValues() = runTest {
         val repository = UserPreferencesRepository(context)
-        assertEquals(HeroCoverShade.ARTWORK, repository.heroCoverShadeStream.first())
-        assertEquals(HeroCoverShade.ARTWORK, repository.cachedHeroCoverShade)
+        // Unpicked reads as unset: artwork for the artwork styles, the app theme Block always had.
+        assertEquals(HeroCoverShade.UNSET, repository.heroCoverShadeStream.first())
+        assertEquals(HeroCoverShade.UNSET, repository.cachedHeroCoverShade)
+        assertEquals(HeroCoverShade.ARTWORK, HeroCoverShade.sanitize(repository.cachedHeroCoverShade))
+        assertEquals(HeroCoverShade.ARTWORK, HeroCoverShade.forStyle(HeroCardStyle.COVER, repository.cachedHeroCoverShade))
+        assertEquals(HeroCoverShade.THEME, HeroCoverShade.forStyle(HeroCardStyle.BLOCK, repository.cachedHeroCoverShade))
 
         repository.setHeroCoverShade(HeroCoverShade.THEME)
         assertEquals(HeroCoverShade.THEME, repository.heroCoverShadeStream.first())
@@ -105,8 +109,24 @@ class HeroCardStylePreferencesTest {
 
         repository.setHeroCoverShade(" DARK ")
         assertEquals(HeroCoverShade.DARK, repository.heroCoverShadeStream.first())
+        // Once picked, Block follows the pick like every other style.
+        assertEquals(HeroCoverShade.DARK, HeroCoverShade.forStyle(HeroCardStyle.BLOCK, repository.heroCoverShadeStream.first()))
 
         repository.setHeroCoverShade("sepia")
         assertEquals(HeroCoverShade.ARTWORK, repository.heroCoverShadeStream.first())
+    }
+
+    @Test
+    fun tideProgressDefaultsToWavyPersistsAndRejectsUnknownValues() = runTest {
+        val repository = UserPreferencesRepository(context)
+        assertEquals(HeroTideProgress.WAVY, repository.heroTideProgressStream.first())
+        assertEquals(HeroTideProgress.WAVY, repository.cachedHeroTideProgress)
+
+        repository.setHeroTideProgress(" Circle ")
+        assertEquals(HeroTideProgress.CIRCLE, repository.heroTideProgressStream.first())
+        assertEquals(HeroTideProgress.CIRCLE, UserPreferencesRepository(context).cachedHeroTideProgress)
+
+        repository.setHeroTideProgress("zigzag")
+        assertEquals(HeroTideProgress.WAVY, repository.heroTideProgressStream.first())
     }
 }

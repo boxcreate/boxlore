@@ -122,13 +122,21 @@ class UserPreferencesRepository(context: Context,) {
 
     suspend fun setHeroCardStyle(style: String) = appearance.heroCard.setStyle(style)
 
-    /** The shade behind the words on Cover hero cards ([HeroCoverShade]); artwork by default. */
+    /** The hero cards' colours ([HeroCoverShade]); [HeroCoverShade.UNSET] until picked. Read it with [HeroCoverShade.forStyle]. */
     val cachedHeroCoverShade: String
         get() = appearance.heroCard.cachedCoverShade
 
     val heroCoverShadeStream: Flow<String> = appearance.heroCard.coverShade
 
     suspend fun setHeroCoverShade(shade: String) = appearance.heroCard.setCoverShade(shade)
+
+    /** The ring round Tide's Play disc ([HeroTideProgress]); wavy by default. */
+    val cachedHeroTideProgress: String
+        get() = appearance.heroCard.cachedTideProgress
+
+    val heroTideProgressStream: Flow<String> = appearance.heroCard.tideProgress
+
+    suspend fun setHeroTideProgress(shape: String) = appearance.heroCard.setTideProgress(shape)
 
     val customThemeStream: Flow<ThemeSelection?> = appearance.customThemeStream
 

@@ -214,7 +214,7 @@ Episode push artwork keeps its six-second total deadline and uses 700ms per rout
 - [`:core:downloads` README](../core/downloads/README.md)
 - [`:core:playback` README](../core/playback/README.md)
 
-- Launch branding uses the white B/microphone vector on electric purple (#573DF5) for the system splash and adaptive launcher icon. The foreground is inset for launcher masks and also supplies the themed monochrome icon.
+- Launch branding uses the white B/microphone vector on electric purple (#573DF5) for the system splash and adaptive launcher icon. On a cold launch the splash stays at least 350 ms after the Activity is created, then fades out over 300 ms while the logo shrinks slightly (`SplashHoldPolicy`, `SplashHoldPolicyTest`); the release build otherwise drew its first frame so fast that the splash flashed for a split second. Recreation never holds it. The foreground is inset for launcher masks and also supplies the themed monochrome icon.
 
 ### Upright brand wordmarks
 

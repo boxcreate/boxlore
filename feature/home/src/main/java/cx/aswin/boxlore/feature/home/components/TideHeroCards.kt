@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
@@ -29,6 +30,7 @@ import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +62,7 @@ import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.artworkUrls
+import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -209,9 +212,13 @@ internal fun TidePanel(color: Color, modifier: Modifier = Modifier.fillMaxSize()
 
 internal enum class TideDiscIcon { Play, Pause, Details }
 
+/** The ring the listener picked for Tide's Play disc ([HeroTideProgress]); wavy by default. */
+val LocalHeroTideProgress = staticCompositionLocalOf { HeroTideProgress.DEFAULT }
+
 /**
  * The Play disc on the panel's edge: an 88dp notch in the panel's [ground] colour, Resume progress as a
- * wavy ring (moving while the episode plays) and a 56dp button in the shade's accent.
+ * ring and a 56dp button in the shade's accent. The ring is wavy (moving while the episode plays) or a
+ * plain circle, as picked in Appearance ([LocalHeroTideProgress]); both share size, stroke and colours.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -221,16 +228,29 @@ private fun TidePlayDisc(icon: TideDiscIcon, label: String, progress: HeroProgre
     val animated by animateFloatAsState(progress?.value ?: 0f, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "tide progress")
     Box(Modifier.size(TideDiscSize).background(ground, CircleShape), contentAlignment = Alignment.Center) {
         if (progress != null) {
-            val stroke = Stroke(with(LocalDensity.current) { 4.dp.toPx() }, cap = StrokeCap.Round)
-            CircularWavyProgressIndicator(
-                progress = { animated },
-                color = shade.accent,
-                trackColor = shade.container,
-                stroke = stroke,
-                trackStroke = stroke,
-                waveSpeed = if (progress.playing) WavyProgressIndicatorDefaults.CircularWavelength else 0.dp,
-                modifier = Modifier.size(76.dp).testTag("home_hero_progress").semantics { contentDescription = description },
-            )
+            val ring = Modifier.size(76.dp).testTag("home_hero_progress").semantics { contentDescription = description }
+            if (HeroTideProgress.sanitize(LocalHeroTideProgress.current) == HeroTideProgress.CIRCLE) {
+                CircularProgressIndicator(
+                    progress = { animated },
+                    color = shade.accent,
+                    trackColor = shade.container,
+                    strokeWidth = 4.dp,
+                    strokeCap = StrokeCap.Round,
+                    gapSize = 4.dp,
+                    modifier = ring,
+                )
+            } else {
+                val stroke = Stroke(with(LocalDensity.current) { 4.dp.toPx() }, cap = StrokeCap.Round)
+                CircularWavyProgressIndicator(
+                    progress = { animated },
+                    color = shade.accent,
+                    trackColor = shade.container,
+                    stroke = stroke,
+                    trackStroke = stroke,
+                    waveSpeed = if (progress.playing) WavyProgressIndicatorDefaults.CircularWavelength else 0.dp,
+                    modifier = ring,
+                )
+            }
         }
         Box(
             Modifier.size(56.dp).testTag("home_hero_play")

@@ -72,6 +72,8 @@ dependencies {
     implementation(projects.core.rss)
 
     implementation(libs.androidx.core.ktx)
+    // Marquee's frosted top bar blurs the live page behind it, as the floating nav bar's blur does.
+    implementation(libs.haze)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)

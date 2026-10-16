@@ -24,6 +24,9 @@ internal class WelcomeMotionClock(
 
 /** Pure timing rules shared by welcome artwork and copy; callers supply a positive scale. */
 internal object WelcomeFrameTiming {
+    /** Frames to wait before the entrance starts moving. */
+    const val WarmupFrames = 3
+
     private const val MaxFrameDeltaNanos = 100_000_000L
     private const val NanosPerMillisecond = 1_000_000.0
 
@@ -45,6 +48,9 @@ internal fun rememberWelcomeMotionClock(): WelcomeMotionClock {
     LaunchedEffect(lifecycle) {
         val durationScale = currentCoroutineContext()[MotionDurationScale]
         var elapsedNanos = elapsed.longValue * 1_000_000.0
+        // Lay out and decode the covers for a few frames before motion starts, so a cold-start
+        // hitch never eats the beginning of the glide. Only the very first entry waits.
+        var warmupFrames = if (elapsed.longValue == 0L) WelcomeFrameTiming.WarmupFrames else 0
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             snapshotFlow { durationScale?.scaleFactor ?: 1f }.collectLatest { scale ->
                 animationsDisabled.value = scale <= 0f
@@ -53,6 +59,10 @@ internal fun rememberWelcomeMotionClock(): WelcomeMotionClock {
                 var lastFrame = 0L
                 while (isActive) {
                     withFrameNanos { now ->
+                        if (warmupFrames > 0) {
+                            warmupFrames--
+                            return@withFrameNanos
+                        }
                         if (lastFrame != 0L) {
                             // Resuming does not fast-forward by the time spent in the background.
                             elapsedNanos = WelcomeFrameTiming.advanceElapsedNanos(elapsedNanos, now - lastFrame, scale)

@@ -1,6 +1,9 @@
 package cx.aswin.boxlore.feature.settings.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,8 +43,11 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isSpecified
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.round
+import kotlin.math.roundToInt
 
 private val TileShape = RoundedCornerShape(20.dp)
 private val PictureShape = RoundedCornerShape(14.dp)
@@ -142,46 +149,74 @@ internal fun SettingsPicture(modifier: Modifier = Modifier, content: @Composable
 }
 
 /**
- * [items] as one horizontally scrolling row of tiles that share the tallest one's height, opening
- * scrolled to [selectedIndex] so the current choice is in view. Tiles are sized to the row
- * ([settingsPictureRowTileWidth]) so two show whole and the next is cut off at the edge, which tells
- * the listener the row scrolls; [tileWidth] overrides that.
+ * [items] as one horizontally scrolling row of wide tiles that share the tallest one's height,
+ * opening scrolled to [selectedIndex] so the current choice is in view. Tiles are sized to the row
+ * ([settingsPictureRowTileWidth]): one whole tile and a clear part of the next on phones, more on
+ * wide windows, but never a whole number of tiles, so the cut-off tile always says the row scrolls.
+ * A fling settles on a tile's start edge. [tile] gets the width so a picture can keep its shape.
  */
 @Composable
 internal fun <T> SettingsPictureRow(
     items: List<T>,
     selectedIndex: Int,
     modifier: Modifier = Modifier,
-    tileWidth: Dp = Dp.Unspecified,
-    tile: @Composable (item: T, modifier: Modifier) -> Unit,
+    tile: @Composable (item: T, modifier: Modifier, width: Dp) -> Unit,
 ) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val width = if (tileWidth.isSpecified) tileWidth else settingsPictureRowTileWidth(maxWidth)
+        val width = settingsPictureRowTileWidth(maxWidth)
         val scroll = rememberScrollState()
-        val step = with(LocalDensity.current) { (width + TileGap).roundToPx() }
+        val step = with(LocalDensity.current) { (width + TileGap).toPx() }
         LaunchedEffect(Unit) {
-            if (selectedIndex > 0) scroll.scrollTo(selectedIndex * step)
+            if (selectedIndex > 0) scroll.scrollTo((selectedIndex * step).roundToInt())
         }
+        val snap = remember(scroll, step) { TileSnap(scroll, step) }
         Row(
-            Modifier.fillMaxWidth().horizontalScroll(scroll).height(IntrinsicSize.Min).selectableGroup(),
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scroll, flingBehavior = rememberSnapFlingBehavior(snap))
+                .height(IntrinsicSize.Min)
+                .selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(TileGap),
         ) {
-            items.forEach { item -> tile(item, Modifier.width(width).fillMaxHeight()) }
+            items.forEach { item -> tile(item, Modifier.width(width).fillMaxHeight(), width) }
         }
     }
 }
 
+/** Settles a fling on the nearest tile start in the fling's direction (the row's end stays reachable). */
+private class TileSnap(private val scroll: ScrollState, private val step: Float) : SnapLayoutInfoProvider {
+    override fun calculateSnapOffset(velocity: Float): Float =
+        settingsPictureRowSnapOffset(scroll.value.toFloat(), scroll.maxValue.toFloat(), step, velocity)
+}
+
+/** How far a row at [position] should move to settle on a tile start, given the fling [velocity]. */
+internal fun settingsPictureRowSnapOffset(position: Float, max: Float, step: Float, velocity: Float): Float {
+    if (step <= 0f) return 0f
+    val tiles = position / step
+    val target = when {
+        velocity > 0f -> ceil(tiles)
+        velocity < 0f -> floor(tiles)
+        else -> round(tiles)
+    } * step
+    // Past the last whole tile start the row simply ends; do not pull it back from its end.
+    return target.coerceAtMost(max).coerceAtLeast(0f) - position
+}
+
 /**
- * A tile width for a [rowWidth] row that shows two tiles whole and about a third of the next, so the
- * cut-off tile reads as more to scroll; kept between 132dp (pictures stay legible) and 200dp.
+ * A tile width for a [rowWidth] row: the fewest whole tiles (at least one) that keep each tile
+ * within [RowTileMax], plus a clear share of the next ([RowPeek]), so a whole number never fits exactly and the cut-off
+ * tile reads as more to scroll. Phones show one wide tile and about half the next.
  */
-internal fun settingsPictureRowTileWidth(rowWidth: Dp): Dp =
-    ((rowWidth - TileGap * 2) / RowVisibleTiles).coerceIn(RowTileMin, RowTileMax)
+internal fun settingsPictureRowTileWidth(rowWidth: Dp): Dp {
+    var whole = 1
+    while ((rowWidth - TileGap * whole) / (whole + RowPeek) > RowTileMax) whole++
+    return ((rowWidth - TileGap * whole) / (whole + RowPeek)).coerceAtLeast(RowTileMin)
+}
 
 private val TileGap = 8.dp
-private const val RowVisibleTiles = 2.35f
-private val RowTileMin = 132.dp
-private val RowTileMax = 200.dp
+private const val RowPeek = 0.45f
+private val RowTileMin = 160.dp
+private val RowTileMax = 320.dp
 
 /** [items] as equal-width tiles in rows of [columns]; tiles in a row share the tallest one's height. */
 @Composable

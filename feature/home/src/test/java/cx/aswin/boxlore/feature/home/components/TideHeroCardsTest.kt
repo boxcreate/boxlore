@@ -15,6 +15,7 @@ import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
+import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.core.testing.TestFixtures
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -46,10 +47,16 @@ class TideHeroCardsTest {
         .copy(latestEpisode = episode(id), episodeStatus = EpisodeStatus.IN_PROGRESS, resumeProgress = 0.4f)
     private fun resumeItem() = SmartHeroItem(HeroType.RESUME, show("a"), "Resume", description = "Episode a")
 
+    private val ring = mutableStateOf(HeroTideProgress.WAVY)
+
     private fun render(playingEpisode: String? = null) {
         composeRule.setContent {
             BoxLoreTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalHeroCardStyle provides HeroCardStyle.TIDE, LocalHeroCoverShade provides shade.value) {
+                CompositionLocalProvider(
+                    LocalHeroCardStyle provides HeroCardStyle.TIDE,
+                    LocalHeroCoverShade provides shade.value,
+                    LocalHeroTideProgress provides ring.value,
+                ) {
                     HeroCarousel(
                         heroItems = StableHeroList(listOf(item.value)),
                         onPlayClick = { podcast, _ -> plays += podcast.id },
@@ -64,6 +71,16 @@ class TideHeroCardsTest {
                     )
                 }
             }
+        }
+    }
+
+    @Test fun `the disc's progress ring shows in the wavy and the plain circle shape alike`() {
+        render()
+        listOf(HeroTideProgress.WAVY, HeroTideProgress.CIRCLE).forEach { shape ->
+            ring.value = shape
+            composeRule.waitForIdle()
+            composeRule.onNodeWithTag("home_hero_progress", useUnmergedTree = true).assertExists()
+            composeRule.onNodeWithTag("home_hero_play", useUnmergedTree = true).assertExists()
         }
     }
 

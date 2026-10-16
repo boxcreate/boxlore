@@ -2,7 +2,8 @@
 <resources>
     <!-- Appearance > Home: the hero card style picker. Block is the solid colour card; Cover fills the card with the artwork. -->
     <!-- Header above the non-interactive preview of the picked hero card style. -->
-    <string name="hero_card_preview_title">Hero card preview</string>
+    <!-- Heads the picked hero style's live preview and its options, for example "Tide look". -->
+    <string name="hero_card_look_title">%1$s look</string>
     <string name="hero_card_style_title">Hero cards</string>
     <string name="hero_card_style_footer">The big cards at the top of Home.</string>
     <string name="hero_card_style_block">Block</string>
@@ -31,6 +32,11 @@
     <string name="hero_card_colors_title">Card color</string>
     <string name="hero_card_colors_footer">Dark keeps cards near black. Artwork takes each cover\'s own color. App theme uses your accent color.</string>
     <!-- Shown under the picker only when Cover is chosen: the colour the artwork fades into behind the card's text. -->
+    <!-- Tide hero cards ring their Play button with listening progress; this picks the ring's shape. -->
+    <string name="hero_tide_progress_title">Progress ring</string>
+    <string name="hero_tide_progress_footer">Wavy ripples while an episode plays. Circle stays smooth.</string>
+    <string name="hero_tide_progress_wavy">Wavy</string>
+    <string name="hero_tide_progress_circle">Circle</string>
     <string name="hero_cover_shade_title">Shade behind text</string>
     <string name="hero_cover_shade_footer">Artwork takes a deep shade of each cover\'s own color. App theme uses your accent color.</string>
     <string name="hero_cover_shade_dark">Dark</string>

@@ -21,8 +21,11 @@ internal object AppearanceAnalyticsTracks {
         else -> sanitized
     }
 
-    fun heroColorsName(style: String?, shade: String?): String =
-        if (HeroCardStyle.usesArtworkColors(style)) HeroCoverShade.sanitize(shade) else NO_COLORS
+    /** Block in the app theme (its look before it had a colour choice) keeps reporting no colours, so breakdowns continue. */
+    fun heroColorsName(style: String?, shade: String?): String {
+        val colors = HeroCoverShade.forStyle(style, shade)
+        return if (!HeroCardStyle.usesArtworkColors(style) && colors == HeroCoverShade.THEME) NO_COLORS else colors
+    }
 
     /** One value per card look, e.g. `cover_artwork` or `block`, for single-property breakdowns. */
     fun heroStyleCombo(style: String?, shade: String?): String {

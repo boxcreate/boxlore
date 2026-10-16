@@ -37,7 +37,7 @@ internal val MarqueePreviewHeight = 480.dp
 
 /**
  * Marquee in Settings: a slice of Home rather than a lone card, since the style is the layout. The cover
- * runs under a floating top bar with its frosted band and wordmark, the page dots sit under Play, and
+ * runs under a floating top bar with its soft fade and wordmark, the page dots sit under Play, and
  * Your shows' rounded sheet rises over the cover's foot with its heading and a few shows. With
  * [collection] the cover is the Jump back in card with its strip of covers.
  */

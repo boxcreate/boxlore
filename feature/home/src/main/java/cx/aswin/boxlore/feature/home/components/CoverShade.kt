@@ -32,8 +32,8 @@ import cx.aswin.boxlore.core.prefs.HeroCoverShade
 /** The hero card style the listener chose in Appearance settings ([HeroCardStyle]); Block by default. */
 val LocalHeroCardStyle = staticCompositionLocalOf { HeroCardStyle.BLOCK }
 
-/** The colours Cover and Duotone cards take ([HeroCoverShade]): a shade behind Cover's words, Duotone's two tones. */
-val LocalHeroCoverShade = staticCompositionLocalOf { HeroCoverShade.DEFAULT }
+/** The stored hero colours ([HeroCoverShade]), unset until picked; each style reads it through [HeroCoverShade.forStyle] or sanitize. */
+val LocalHeroCoverShade = staticCompositionLocalOf { HeroCoverShade.UNSET }
 
 /**
  * The colours a Cover card's art fades into behind its words. Dark is a plain near-black shade;
@@ -90,7 +90,7 @@ internal fun rememberDuotoneLook(imageUrl: String?): DuotoneLook {
 
 /** The cover's palette in Artwork mode (cached ones at once, others once read); null in the other modes. */
 @Composable
-private fun rememberHeroArtworkPalette(imageUrl: String?, mode: String): ArtworkPalette? {
+internal fun rememberHeroArtworkPalette(imageUrl: String?, mode: String): ArtworkPalette? {
     val context = LocalContext.current
     val url = imageUrl?.trim()?.takeIf(String::isNotEmpty)
     val artwork = mode == HeroCoverShade.ARTWORK

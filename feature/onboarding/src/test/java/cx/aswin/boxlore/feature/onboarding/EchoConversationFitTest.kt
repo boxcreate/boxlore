@@ -88,6 +88,26 @@ class EchoConversationFitTest(private val widthDp: Int, private val heightDp: In
 
     @Test fun `show card`() = check(deck, expectEcho = mustShow)
 
+    // A very long name and a long pitch: the name shrinks or wraps and the pitch is still shown whole.
+    @Test fun `show card with a long name`() = check(
+        deck.copy(
+            aiDeck = deck.aiDeck.copy(
+                cards = listOf(
+                    OnboardingProbeCard(
+                        9,
+                        "The Dry Bar Comedy Podcast: Stand-Up Stories, Backstage Chats and Much More",
+                        "Dry Bar Comedy",
+                        role = "related",
+                        hook = "Stand-up comedians swap stories from the road and the stage, with plenty of tangents along the way and a few surprises.",
+                        question = "Clean stand-up, maybe?",
+                    ),
+                    deck.aiDeck.cards.last(),
+                ),
+            ),
+        ),
+        expectEcho = mustShow,
+    )
+
     private fun check(state: OnboardingUiState, expectEcho: Boolean) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -122,6 +142,15 @@ class EchoConversationFitTest(private val widthDp: Int, private val heightDp: In
         bounds("echo_deck_reactions")?.let { reactions ->
             assertTrue("the reactions are cut off on $label", reactions.bottom <= root.bottom + 1f)
             assertTrue("the card runs into the reactions on $label", bounds("echo_deck_card")!!.bottom <= reactions.top + 1f)
+            val card = bounds("echo_deck_card")!!
+            assertTrue("the card runs off the side on $label", card.left >= root.left - 1f && card.right <= root.right + 1f)
+            // The pitch is never cut short; the art gives way instead.
+            compose.onAllNodesWithTag("echo_deck_hook").fetchSemanticsNodes().forEach { node ->
+                val layouts = mutableListOf<TextLayoutResult>()
+                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
+                layouts.forEach { assertTrue("the card's pitch is cut short on $label", !it.hasVisualOverflow) }
+                assertTrue("the card's pitch runs past the card on $label", node.boundsInRoot.bottom <= card.bottom + 1f)
+            }
         }
         // The card's question is never cut short, beside Echo or in the headline slot.
         compose.onAllNodesWithTag("echo_deck_question").fetchSemanticsNodes().forEach { node ->

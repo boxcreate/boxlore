@@ -14,6 +14,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -141,7 +142,8 @@ class EchoOnboardingScreenTest {
         assertTrue(compose.onAllNodesWithTag("echo_question").fetchSemanticsNodes().isEmpty())
         assertTrue(compose.onAllNodesWithTag("echo_primary").fetchSemanticsNodes().isEmpty())
         compose.onNodeWithTag("echo_deck_card").assertIsDisplayed()
-        compose.onNodeWithText("1 of 2").assertIsDisplayed()
+        // The sticker on the art says what the card is for and where it sits in the deck.
+        compose.onNodeWithContentDescription("Taste test, 1 of 2").assertIsDisplayed()
         listOf("Sounds good", "Not for me", "I already listen", "Not sure").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
         assertEquals(listOf<Long?>(745392L), preview.loads)
 
@@ -150,7 +152,7 @@ class EchoOnboardingScreenTest {
         compose.onNodeWithTag("echo_deck_like").performClick()
         settle()
         compose.onNodeWithText("Shorter cases, maybe?").assertIsDisplayed()
-        compose.onNodeWithText("2 of 2").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Taste test, 2 of 2").assertIsDisplayed()
         // A positive answer picks the show and says so, briefly.
         compose.onNodeWithText("Serial added to your picks").assertIsDisplayed()
         // Answering stops the clip; the next card waits for its own tap.
