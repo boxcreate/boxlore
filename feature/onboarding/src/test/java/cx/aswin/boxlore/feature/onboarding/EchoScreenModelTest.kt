@@ -135,7 +135,7 @@ class EchoScreenModelTest {
         assertEquals(EchoOnboardingPhase.Question, EchoScreenModel.avatarPhase(question(), EchoScreenKind.Writing))
         assertEquals(EchoOnboardingPhase.Thinking, EchoScreenModel.avatarPhase(question().copy(isAiLoading = true), EchoScreenKind.Waiting))
         assertEquals(EchoOnboardingPhase.Rest, EchoScreenModel.avatarPhase(question(), EchoScreenKind.Error))
-        assertEquals(EchoOnboardingPhase.Presenting, EchoScreenModel.avatarPhase(question(), EchoScreenKind.Ready))
+        assertEquals(EchoOnboardingPhase.Ready, EchoScreenModel.avatarPhase(question(), EchoScreenKind.Ready))
         assertEquals(EchoOnboardingPhase.Presenting, EchoScreenModel.avatarPhase(question(), EchoScreenKind.Deck))
     }
 

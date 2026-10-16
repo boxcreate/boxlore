@@ -44,8 +44,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.catalog.backup.JsonBackupPhase
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
 import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
@@ -99,7 +102,7 @@ sealed interface OpmlImportState {
         val hasNotificationsEnabled: Boolean = false,
     ) : OpmlImportState
 
-    data class Error(val message: String,) : OpmlImportState
+    data class Error(val failure: ImportFailure) : OpmlImportState
 }
 
 private fun canDismissImportState(state: OpmlImportState): Boolean = when (state) {
@@ -119,6 +122,8 @@ data class OpmlImportDialogActions(
     val onImportJsonSelected: (android.net.Uri) -> Unit = {},
     val onImportOpmlSelected: (android.net.Uri) -> Unit = {},
     val onSyncAccountSelected: () -> Unit = {},
+    /** Back to the import options after a failure; without it the error screen offers only Close. */
+    val onChooseAnotherFile: (() -> Unit)? = null,
 )
 
 @Composable
@@ -204,7 +209,7 @@ private fun ImportDialogSurface(state: OpmlImportState, actions: OpmlImportDialo
             .fillMaxSize()
             .zIndex(200f)
             .boxloreFoldSafeViewport()
-            .boxloreCardWidth(BoxloreCardFamily.Utility)
+            .boxloreCardWidth(BoxloreCardFamily.Utility, maximumWidthDp = ImportMaxWidthDp)
             .pointerInput(Unit) { /* Block touch-through to welcome / player. */ },
         color = backgroundColor,
     ) {
@@ -243,6 +248,7 @@ private fun ImportCloseButton(onClick: () -> Unit, modifier: Modifier = Modifier
         modifier =
         modifier
             .size(48.dp)
+            .testTag("import_close")
             .background(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = CircleShape,
@@ -250,7 +256,7 @@ private fun ImportCloseButton(onClick: () -> Unit, modifier: Modifier = Modifier
     ) {
         Icon(
             imageVector = Icons.Rounded.Close,
-            contentDescription = "Close",
+            contentDescription = stringResource(R.string.import_close),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -263,17 +269,7 @@ private fun ImportDialogBody(
     onPickJson: () -> Unit,
     onPickOpml: () -> Unit,
 ) {
-    val progressHeroVisual = heroVisualFor(state)
-    if (progressHeroVisual != null) {
-        // Shared hero across loading → success so the checkmark continues the loader.
-        ProgressFlowScaffold(
-            hero = progressHeroVisual,
-            state = state,
-            onDone = actions.onDismissRequest,
-        )
-        return
-    }
-
+    // Working and done share one screen (and one Echo), so only the words change between them.
     AnimatedContent(
         targetState = state,
         modifier = Modifier.fillMaxSize(),
@@ -290,47 +286,38 @@ private fun ImportDialogBody(
                         scaleOut(targetScale = 0.98f, animationSpec = tween(180))
                     )
         },
-        contentKey = { contentKeyFor(it) },
+        contentKey = { importScreenFor(it) },
         label = "import_content",
     ) { current ->
-        ImportInteractiveContent(
-            state = current,
-            actions = actions,
-            onPickJson = onPickJson,
-            onPickOpml = onPickOpml,
-        )
+        when (importScreenFor(current)) {
+            ImportScreen.Pick ->
+                SelectorContent(
+                    onJson = onPickJson,
+                    onOpml = onPickOpml,
+                    onSyncAccount = actions.onSyncAccountSelected,
+                )
+
+            ImportScreen.Progress -> ProgressFlowScaffold(state = current, onDone = actions.onDismissRequest)
+
+            ImportScreen.Ask ->
+                AskCompletedContent(
+                    state = current as OpmlImportState.AskCompleted,
+                    onSelectionChanged = actions.onSelectionChanged,
+                    onConfirmCompleted = actions.onConfirmCompleted,
+                    onSkipCompleted = actions.onSkipCompleted,
+                )
+
+            ImportScreen.Failed ->
+                ErrorContent(
+                    failure = (current as OpmlImportState.Error).failure,
+                    onRetry = actions.onChooseAnotherFile,
+                    onClose = actions.onDismissRequest,
+                )
+
+            null -> Unit
+        }
     }
 }
 
-@Composable
-private fun ImportInteractiveContent(
-    state: OpmlImportState,
-    actions: OpmlImportDialogActions,
-    onPickJson: () -> Unit,
-    onPickOpml: () -> Unit,
-) {
-    when (state) {
-        is OpmlImportState.ShowSelector ->
-            SelectorContent(
-                onJson = onPickJson,
-                onOpml = onPickOpml,
-                onSyncAccount = actions.onSyncAccountSelected,
-            )
-
-        is OpmlImportState.AskCompleted ->
-            AskCompletedContent(
-                state = state,
-                onSelectionChanged = actions.onSelectionChanged,
-                onConfirmCompleted = actions.onConfirmCompleted,
-                onSkipCompleted = actions.onSkipCompleted,
-            )
-
-        is OpmlImportState.Error ->
-            ErrorContent(
-                message = state.message,
-                onClose = actions.onDismissRequest,
-            )
-
-        else -> Unit
-    }
-}
+/** The import screens stay a readable column on tablets and unfolded foldables. */
+private const val ImportMaxWidthDp = 560f

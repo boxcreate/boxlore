@@ -106,7 +106,8 @@ internal object EchoScreenModel {
     fun avatarPhase(state: OnboardingUiState, kind: EchoScreenKind): EchoOnboardingPhase = when (kind) {
         EchoScreenKind.Waiting -> if (state.isSynthesizing) EchoOnboardingPhase.Preparing else EchoOnboardingPhase.Thinking
         EchoScreenKind.Error -> EchoOnboardingPhase.Rest
-        EchoScreenKind.Ready, EchoScreenKind.Deck -> EchoOnboardingPhase.Presenting
+        EchoScreenKind.Ready -> EchoOnboardingPhase.Ready
+        EchoScreenKind.Deck -> EchoOnboardingPhase.Presenting
         else -> if (state.aiCurrentTurn <= 1 && state.aiHistory.isEmpty()) EchoOnboardingPhase.Welcome else EchoOnboardingPhase.Question
     }
 

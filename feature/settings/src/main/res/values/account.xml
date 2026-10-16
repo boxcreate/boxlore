@@ -1,32 +1,78 @@
 <resources>
+    <!-- Account & sync page. Reached from Settings › Cloud Sync & Backups and from onboarding's Import library. -->
     <string name="account_page_title">Account &amp; sync</string>
-    <string name="account_setup_title">Connect your library</string>
     <string name="account_back">Back</string>
+    <string name="account_not_now">Not now</string>
     <string name="account_echo_description">Echo, podcast companion</string>
     <string name="account_echo_change">Change Echo’s outfit</string>
-    <string name="account_connect_title">Your library, everywhere</string>
-    <string name="account_connect_body">Sign in to keep your shows, queue and listening progress in sync across devices.</string>
-    <string name="account_optional">An account is optional. You can keep listening without one.</string>
-    <string name="account_connected_title">You’re signed in</string>
-    <string name="account_connected_body">Your shows and listening progress will sync with this device.</string>
-    <string name="account_listener">boxlore listener</string>
-    <string name="account_continue">Continue to boxlore</string>
-    <string name="account_sync_title">Cloud sync</string>
-    <string name="account_sync_body">Subscriptions, queue and listening progress sync across your devices.</string>
-    <string name="account_sync_now">Sync now</string>
-    <string name="account_sync_retry">Try again</string>
-    <string name="account_sync_busy">Syncing your library</string>
-    <string name="account_sync_busy_body">Bringing your shows and listening progress up to date.</string>
-    <string name="account_sync_success">Library up to date</string>
-    <string name="account_sync_ready">Ready to sync</string>
-    <string name="account_sync_ready_body">Your shows, queue and listening progress sync automatically across devices.</string>
-    <string name="account_sync_error">Couldn’t sync your library</string>
-    <string name="account_sync_error_body">Your library is still available on this device. Try syncing again.</string>
-    <string name="account_sync_progress">Sync in progress</string>
+
+    <!-- Signed out -->
+    <string name="account_headline">Your library, on every device</string>
+    <string name="account_syncs_shows">Shows</string>
+    <string name="account_syncs_queue">Queue</string>
+    <string name="account_syncs_progress">Progress</string>
+    <string name="account_syncs_description">Syncs your shows, queue and listening progress</string>
+    <string name="account_sign_in_label">Sign in to sync</string>
+    <string name="account_google">Continue with Google</string>
+    <string name="account_google_detail">Use your Google account</string>
+    <string name="account_google_connecting">Connecting to Google…</string>
+    <string name="account_link">Email me a sign-in link</string>
+    <string name="account_link_detail">No password needed</string>
+    <string name="account_password">Use email and password</string>
+    <string name="account_password_detail">Sign in or create an account</string>
+    <string name="account_other_ways">Other ways to sign in</string>
+    <string name="account_email">Email address</string>
+    <string name="account_send_link">Send link</string>
     <string name="account_sign_in">Sign in</string>
     <string name="account_create">Create account</string>
-    <string name="account_email_methods">Or use email</string>
-    <string name="account_privacy_prefix">"By signing in or creating an account, you agree to our "</string>
-    <string name="account_email_hint">We’ll email a link to sign in on this device.</string>
-    <string name="account_spam_hint">If the email isn’t in your inbox, check Spam or Junk.</string>
+    <string name="account_password_label">Password</string>
+    <string name="account_confirm_password">Confirm password</string>
+    <string name="account_password_rule">At least 6 characters</string>
+    <string name="account_forgot_password">Forgot password?</string>
+    <string name="account_show_password">Show password</string>
+    <string name="account_hide_password">Hide password</string>
+    <string name="account_privacy_prefix">"By continuing, you agree to the "</string>
+
+    <!-- Check your email: a sign-in link, or confirming a new password account -->
+    <string name="account_check_title">Check your email</string>
+    <string name="account_check_body">Open the link we sent on this phone to finish signing in.</string>
+    <string name="account_confirm_title">Confirm your email</string>
+    <string name="account_confirm_body">Open the confirmation link we sent, then come back to boxlore. We’ll pick it up from there.</string>
+    <string name="account_sent_to">Sent to</string>
+    <string name="account_change_email">Change email</string>
+    <string name="account_open_gmail">Open Gmail</string>
+    <string name="account_open_email">Open email app</string>
+    <string name="account_resend_link">Resend link</string>
+    <string name="account_resend_email">Resend email</string>
+    <string name="account_resend_in">Resend in %1$ds</string>
+    <string name="account_confirmed">I’ve confirmed</string>
+    <string name="account_checking">Checking…</string>
+    <string name="account_spam_hint">Not in your inbox? Check your spam folder.</string>
+
+    <!-- Signed in -->
+    <string name="account_signed_in_title">You’re signed in</string>
+    <string name="account_listener">boxlore listener</string>
+    <string name="account_continue">Continue</string>
+    <string name="account_bringing">Bringing your library to this phone</string>
+    <string name="account_on_phone">Your library is on this phone</string>
+    <string name="account_tile_done">Done</string>
+    <string name="account_tile_syncing">Syncing</string>
+    <string name="account_continue_hint_title">No need to wait</string>
+    <string name="account_continue_hint_body">Continue whenever you like. Your library keeps syncing in the background.</string>
+    <string name="account_sync_on">Sync is on</string>
+    <string name="account_sync_on_body">Your library syncs automatically.</string>
+    <string name="account_sync_busy">Syncing your library</string>
+    <string name="account_sync_busy_body">Bringing your shows and progress up to date.</string>
+    <string name="account_sync_done">Up to date</string>
+    <string name="account_sync_error">Couldn’t sync</string>
+    <string name="account_sync_error_body">Your library is still on this phone.</string>
+    <string name="account_sync_now">Sync now</string>
+    <string name="account_sync_retry">Try again</string>
+    <string name="account_section">Account</string>
+    <string name="account_signed_in_with">Signed in with %1$s</string>
+    <string name="account_reset_password">Reset password</string>
+    <string name="account_sign_out">Sign out</string>
+    <string name="account_delete">Delete account</string>
+    <string name="account_privacy_policy">Privacy Policy</string>
+    <string name="account_how_deletion_works">How deletion works</string>
 </resources>

@@ -45,54 +45,45 @@ class AccountSettingsPageTest {
     }
 
     @Test
-    fun formatRelativeSyncTime_neverSynced_returnsNeverSynced() {
-        assertEquals("Never synced", formatRelativeSyncTime(0L))
-        assertEquals("Never synced", formatRelativeSyncTime(-100L))
+    fun formatRelativeSyncTime_neverSynced_saysNotYet() {
+        assertEquals("Not synced yet", formatRelativeSyncTime(0L))
+        assertEquals("Not synced yet", formatRelativeSyncTime(-100L))
     }
 
     @Test
-    fun formatRelativeSyncTime_futureTimestampOrClockSkew_returnsSyncedJustNow() {
+    fun formatRelativeSyncTime_futureTimestampOrClockSkew_saysJustNow() {
         val now = 100_000L
         assertEquals("Synced just now", formatRelativeSyncTime(now + 5_000L, now = now))
     }
 
     @Test
-    fun formatRelativeSyncTime_secondsAgo_returnsExpectedText() {
+    fun formatRelativeSyncTime_underAMinute_saysJustNow() {
         val now = 100_000L
-        // Under 30s
         assertEquals("Synced just now", formatRelativeSyncTime(now - 15_000L, now = now))
-        // 30s - 59s
-        assertEquals("Synced less than a minute ago", formatRelativeSyncTime(now - 45_000L, now = now))
+        assertEquals("Synced just now", formatRelativeSyncTime(now - 59_000L, now = now))
     }
 
     @Test
-    fun formatRelativeSyncTime_minutesAgo_returnsExpectedText() {
+    fun formatRelativeSyncTime_minutesAgo() {
         val now = 10_000_000L
-        // Exactly 1 minute
-        assertEquals("Synced 1m ago", formatRelativeSyncTime(now - 60_000L, now = now))
-        // Multiple minutes
-        assertEquals("Synced 15m ago", formatRelativeSyncTime(now - 15 * 60_000L, now = now))
-        assertEquals("Synced 59m ago", formatRelativeSyncTime(now - 59 * 60_000L, now = now))
+        assertEquals("Synced 1 min ago", formatRelativeSyncTime(now - 60_000L, now = now))
+        assertEquals("Synced 15 min ago", formatRelativeSyncTime(now - 15 * 60_000L, now = now))
+        assertEquals("Synced 59 min ago", formatRelativeSyncTime(now - 59 * 60_000L, now = now))
     }
 
     @Test
-    fun formatRelativeSyncTime_hoursAgo_returnsExpectedText() {
+    fun formatRelativeSyncTime_hoursAgo() {
         val now = 100_000_000L
-        // Exactly 1 hour
-        assertEquals("Synced 1h ago", formatRelativeSyncTime(now - 3600_000L, now = now))
-        // Multiple hours
-        assertEquals("Synced 5h ago", formatRelativeSyncTime(now - 5 * 3600_000L, now = now))
-        assertEquals("Synced 23h ago", formatRelativeSyncTime(now - 23 * 3600_000L, now = now))
+        assertEquals("Synced 1 hr ago", formatRelativeSyncTime(now - 3600_000L, now = now))
+        assertEquals("Synced 23 hr ago", formatRelativeSyncTime(now - 23 * 3600_000L, now = now))
     }
 
     @Test
-    fun formatRelativeSyncTime_daysAgo_returnsExpectedText() {
+    fun formatRelativeSyncTime_daysAgo() {
         val now = 500_000_000L
         val oneDay = 24 * 3600_000L
-        // Exactly 1 day
-        assertEquals("Synced 1d ago", formatRelativeSyncTime(now - oneDay, now = now))
-        // Multiple days
-        assertEquals("Synced 4d ago", formatRelativeSyncTime(now - 4 * oneDay, now = now))
+        assertEquals("Synced yesterday", formatRelativeSyncTime(now - oneDay, now = now))
+        assertEquals("Synced 4 days ago", formatRelativeSyncTime(now - 4 * oneDay, now = now))
     }
 
     @Test
@@ -121,20 +112,20 @@ class AccountSettingsPageTest {
     }
 
     @Test
-    fun resolveProviderLabel_returnsExpectedLabels() {
-        assertEquals("Google", resolveProviderLabel("google.com"))
-        assertEquals("Email Link", resolveProviderLabel("emailLink"))
-        assertEquals("Password", resolveProviderLabel("password"))
-        assertEquals("Password", resolveProviderLabel(null))
-        assertEquals("Password", resolveProviderLabel("custom"))
+    fun resolveProviderLine_saysHowTheAccountSignsIn() {
+        assertEquals("Signed in with Google", resolveProviderLine("google.com"))
+        assertEquals("Signed in with an email link", resolveProviderLine("emailLink"))
+        assertEquals("Signed in with a password", resolveProviderLine("password"))
+        assertEquals("Signed in with a password", resolveProviderLine(null))
     }
 
     @Test
-    fun resolveSyncPillText_returnsExpectedStrings() {
-        assertEquals("Syncing...", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Syncing))
-        assertEquals("Sync issue", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Error("Failed")))
-        assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Idle))
-        assertEquals("Cloud sync active", resolveSyncPillText(cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus.Success(1000L)))
+    fun accountEcho_holdsTheCloudHugsItWhileSyncingAndCyclesOutfits() {
+        assertEquals("account-cloud", accountEchoSequence(syncing = false, outfit = 0))
+        assertEquals("account-syncing", accountEchoSequence(syncing = true, outfit = 3))
+        assertEquals(AccountEchoOutfits[1], accountEchoSequence(syncing = false, outfit = nextAccountEchoOutfit(0)))
+        assertEquals(0, nextAccountEchoOutfit(AccountEchoOutfits.lastIndex))
+        assertEquals("account-cloud", accountEchoSequence(syncing = false, outfit = AccountEchoOutfits.size))
     }
 
     @Test
@@ -154,5 +145,14 @@ class AccountSettingsPageTest {
             isOnboarding = true,
         )
         org.junit.Assert.assertTrue(config.isOnboarding)
+    }
+
+    @Test
+    fun `the page mode follows sign-in, onboarding and pending emails`() {
+        assertEquals(AccountPageMode.SignedInOnboarding, accountPageMode(signedIn = true, onboarding = true, awaitingVerification = false, linkSent = false))
+        assertEquals(AccountPageMode.SignedInSettings, accountPageMode(signedIn = true, onboarding = false, awaitingVerification = false, linkSent = true))
+        assertEquals(AccountPageMode.ConfirmEmail, accountPageMode(signedIn = false, onboarding = true, awaitingVerification = true, linkSent = true))
+        assertEquals(AccountPageMode.CheckLinkEmail, accountPageMode(signedIn = false, onboarding = false, awaitingVerification = false, linkSent = true))
+        assertEquals(AccountPageMode.SignedOut, accountPageMode(signedIn = false, onboarding = true, awaitingVerification = false, linkSent = false))
     }
 }

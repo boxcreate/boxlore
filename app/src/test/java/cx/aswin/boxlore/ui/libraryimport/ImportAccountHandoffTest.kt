@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import cx.aswin.boxlore.core.designsystem.echo.LocalEchoMotion
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -35,7 +37,8 @@ class ImportAccountHandoffTest {
         var accountComposed = false
         var accountClicks = 0
         composeRule.setContent {
-            BoxLoreTheme(darkTheme = false, dynamicColor = false) {
+            CompositionLocalProvider(LocalEchoMotion provides false) {
+                BoxLoreTheme(darkTheme = false, dynamicColor = false) {
                 Box(Modifier.fillMaxSize()) {
                     if (state is OpmlImportState.Idle) {
                         SideEffect { accountComposed = true }
@@ -50,26 +53,27 @@ class ImportAccountHandoffTest {
                     )
                 }
             }
+            }
         }
         composeRule.mainClock.autoAdvance = false
-        composeRule.onNodeWithText("boxlore cloud sync").performClick()
+        composeRule.onNodeWithText("In my boxlore account").performClick()
         assertEquals("Sync selection navigates immediately", 1, opened)
         repeat(2) { composeRule.mainClock.advanceTimeByFrame() }
         composeRule.waitForIdle()
         assertTrue("Account is composed beneath the fading overlay", accountComposed)
         composeRule.mainClock.advanceTimeBy(100)
-        composeRule.onNodeWithText("boxlore cloud sync").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("In my boxlore account").assertIsDisplayed().performClick()
         assertEquals(1, opened)
         composeRule.mainClock.advanceTimeBy(300)
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("boxlore cloud sync").assertDoesNotExist()
+        composeRule.onNodeWithText("In my boxlore account").assertDoesNotExist()
         composeRule.onNodeWithText("Account destination").assertIsDisplayed()
         composeRule.onNodeWithText("Account destination").performClick()
         assertEquals("The completed overlay does not intercept Account touches", 1, accountClicks)
         composeRule.runOnUiThread { state = OpmlImportState.ShowSelector }
         repeat(2) { composeRule.mainClock.advanceTimeByFrame() }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("boxlore cloud sync").performClick()
+        composeRule.onNodeWithText("In my boxlore account").performClick()
         assertEquals(2, opened)
         composeRule.mainClock.autoAdvance = true
     }
