@@ -113,6 +113,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Halo's Play badge is no longer clipped. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - A JSON backup the restore rejects no longer shows "You're all set" with -1 shows (`jsonImportOutcome`). ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Import failures no longer show raw exception text, and "Nothing in your library changed" appears only when nothing was written. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Playback: safe artwork URIs in every queue path, controller reconnection with backoff, Play next without duplicates, resume from idle, guarded service start-up, and `PlaybackErrorSkipGuard` stopping endless skips over failing streams. ([#1128](https://github.com/boxcreate/boxlore/pull/1128)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- PostHog start-up moved off the main thread (`PostHogStartup`); paged completed-episode IDs; folder writes tolerate deleted folders; streaming RSS parsing for very large feeds; download starts and removals that no longer crash. ([#1128](https://github.com/boxcreate/boxlore/pull/1128)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Duplicate list keys in podcast info and subscription reordering, `"null"` episode route arguments, deferred Cast session sync, onboarding genre fallback and video overlay insets. ([#1128](https://github.com/boxcreate/boxlore/pull/1128)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -312,6 +315,12 @@ readme-copy:end pr=1123 -->
 ### Fixes
 - Restoring a damaged boxlore backup now says it couldn't be restored, instead of showing success.
 readme-copy:end pr=1124 -->
+
+<!-- readme-copy:start pr=1128
+### Fixes
+- boxlore crashes and freezes less when playing, downloading and starting up.
+- Playback stops after a few failed episodes instead of skipping forever, and Pause always works.
+readme-copy:end pr=1128 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added

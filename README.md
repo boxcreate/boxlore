@@ -129,6 +129,8 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>boxlore crashes and freezes less when playing, downloading and starting up. <a href="https://github.com/boxcreate/boxlore/pull/1128"><img src="https://img.shields.io/badge/PR-1128-6750A4?style=flat-square" alt="PR #1128" height="18"/></a></li>
+<li>Playback stops after a few failed episodes instead of skipping forever, and Pause always works. <a href="https://github.com/boxcreate/boxlore/pull/1128"><img src="https://img.shields.io/badge/PR-1128-6750A4?style=flat-square" alt="PR #1128" height="18"/></a></li>
 <li>Restoring a damaged boxlore backup now says it couldn't be restored, instead of showing success. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
 <li>Improve tablet card sizing, spacing and dark-mode readability, and keep player controls above system navigation. <a href="https://github.com/boxcreate/boxlore/pull/1118"><img src="https://img.shields.io/badge/PR-1118-6750A4?style=flat-square" alt="PR #1118" height="18"/></a></li>
 <li>Show pages no longer load forever when show details can’t be reached. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
