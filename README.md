@@ -223,7 +223,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <p align="center">
 <img src="docs/images/brand/screens/home.png?v=8c60a071" width="30%" alt="boxlore Home: resume in one tap, with picks for you, Daily mix and Smart Downloads"/>&nbsp;
 <img src="docs/images/brand/screens/player.png?v=83a9636a" width="30%" alt="The boxlore player in the show’s colours, with 0.5× to 3× speed, a sleep timer, chapters, transcripts and Google Cast"/>&nbsp;
-<img src="docs/images/brand/screens/bunpod.png?v=38759d7a" width="30%" alt="The bunpod player: larger titles, time left at a glance and big, easy controls"/>
+<img src="docs/images/brand/screens/player_minimal.png?v=a4581961" width="30%" alt="The minimal player: a larger title, time left at a glance and big, easy controls"/>
 </p>
 
 <br/>
