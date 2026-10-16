@@ -111,11 +111,6 @@ object AnalyticsHelper : Analytics {
         positionSeconds,
     )
 
-    fun trackLaunchPersonEnrichment(onboardingStatus: String? = null, subscriptionCountBucket: String? = null,) = GrowthSessionAnalyticsTracks.trackLaunchPersonEnrichment(
-        onboardingStatus,
-        subscriptionCountBucket,
-    )
-
     /**
      * App Check health/adoption. Captured once per launch on builds that ship
      * App Check. `token_obtained` = whether the SDK produced an attestation
@@ -666,8 +661,6 @@ object AnalyticsHelper : Analytics {
 
     fun trackLibraryHistorySession(timeSpentSeconds: Float, episodesClickedCount: Int, itemsDeletedCount: Int,) = LibraryAnalyticsTracks.trackLibraryHistorySession(timeSpentSeconds, episodesClickedCount, itemsDeletedCount)
 
-    fun trackLibraryHistoryTrackingNotice(action: String) = LibraryAnalyticsTracks.trackLibraryHistoryTrackingNotice(action)
-
     fun trackTopControlbarInteraction(action: String, screen: String,) = LibraryAnalyticsTracks.trackTopControlbarInteraction(action, screen)
 
     fun trackPlaybackRouteChanged(isRemote: Boolean, volumeControlAvailable: Boolean,) = LibraryAnalyticsTracks.trackPlaybackRouteChanged(isRemote, volumeControlAvailable)
@@ -854,18 +847,6 @@ object AnalyticsHelper : Analytics {
     fun trackOfflineModeEntered() = QueueContentAnalyticsTracks.trackOfflineModeEntered()
 
     fun trackDiscoverCategoryFiltered(categoryName: String) = QueueContentAnalyticsTracks.trackDiscoverCategoryFiltered(categoryName)
-
-    fun trackAutoChaptersRequested(episodeId: String, podcastId: String?, audioUrl: String,) = QueueContentAnalyticsTracks.trackAutoChaptersRequested(episodeId, podcastId, audioUrl)
-
-    fun trackAutoChaptersCompleted(episodeId: String, podcastId: String?, durationSeconds: Float, chaptersCount: Int,) = QueueContentAnalyticsTracks.trackAutoChaptersCompleted(episodeId, podcastId, durationSeconds, chaptersCount)
-
-    fun trackAutoChaptersFailed(episodeId: String, podcastId: String?, errorMessage: String,) = QueueContentAnalyticsTracks.trackAutoChaptersFailed(episodeId, podcastId, errorMessage)
-
-    fun trackAutoTranscriptRequested(episodeId: String, podcastId: String?, audioUrl: String,) = QueueContentAnalyticsTracks.trackAutoTranscriptRequested(episodeId, podcastId, audioUrl)
-
-    fun trackAutoTranscriptCompleted(episodeId: String, podcastId: String?, durationSeconds: Float, linesCount: Int,) = QueueContentAnalyticsTracks.trackAutoTranscriptCompleted(episodeId, podcastId, durationSeconds, linesCount)
-
-    fun trackAutoTranscriptFailed(episodeId: String, podcastId: String?, errorMessage: String,) = QueueContentAnalyticsTracks.trackAutoTranscriptFailed(episodeId, podcastId, errorMessage)
 
     fun trackDailyBriefingBannerTapped(region: String, date: String,) = QueueContentAnalyticsTracks.trackDailyBriefingBannerTapped(region, date)
 

@@ -15,7 +15,7 @@ Architecture: [`ARCHITECTURE.md`](../ARCHITECTURE.md).
 | `install_attributed` | Person `$set_once` `install_channel` | Attribution only — **never** a second install-count event. |
 | `deep_link_opened` | Custom glossary emit | SDK `captureDeepLinks = false`. |
 
-Launch enrichment (subscription bucket, onboarding status) goes on **person properties**, not a second open event.
+Launch enrichment (`first_seen_at`, `onboarding_status=pending`) goes on **person properties**, not a second open event.
 
 ## Enums
 
@@ -125,7 +125,6 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `player_chrome_interaction` | Mini/full player, control bar, or playback-route action | surface:string; action:string | screen:string; volume_control_available:bool | none |
 | `daily_briefing_action` | Briefing impression or interaction | action:string; region:string; date:string | content_id:string; source:string; chapter_index:int; chapter_title:string; method:string; playback_status:string; previous_region:string; episode_id:string; episode_title:string; podcast_id:string; podcast_title:string | none |
 | `home_import_banner_action` | Import banner shown/clicked/dismissed | action:string | — | none |
-| `library_history_tracking_notice` | One-time listening-history tracking reset notice shown/dismissed | action:string | — | none |
 | `android_auto_connected` | Auto session began | — | session_id:string | none |
 | `android_auto_disconnected` | Auto session ended | — | session_id:string; duration_seconds:int | none |
 | `android_auto_browse` | User browsed Auto media tree | node:string | action:string | none |
@@ -135,8 +134,6 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `rss_refresh_failed` | RSS feed refresh failed | — | podcast_id:string; error_type:string | none |
 | `progress_sync_anomaly` | Progress sync inconsistency detected | anomaly_type:string | episode_id:string | none |
 | `late_night_safeguard_decision` | Late-night listening safeguard fired | decision:string | — | none |
-| `auto_chapters_lifecycle` | Chapters request/complete/fail | stage:string | episode_id:string; error_message:string | none |
-| `auto_transcript_lifecycle` | Transcript request/complete/fail | stage:string | episode_id:string; error_message:string | none |
 | `proxy_fallback_triggered` | Image load fell back to proxy | — | reason:string | none |
 | `support_page_viewed` | Support boxlore development screen opened (one per visit; the `support-world` experiment exposure) | — | support_world:enum; assignment_source:enum; entry_point:string; local_hour:int; weekday:int | none |
 | `support_tier_toggled` | Support tier artifact swiped, picked or lore inspected | tier_title:string; codename:string; amount:string | is_lore_inspect:bool; support_world:enum; assignment_source:enum; tier_index:int | none |
@@ -151,13 +148,16 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | property | set_when | notes |
 | :--- | :--- | :--- |
 | first_seen_at | first process | `$set_once` |
-| onboarding_status | pending / completed / skipped_deeplink | |
-| onboarding_method | ai_chat / manual_genre / search / import / skip / deeplink_skip | |
+| onboarding_status | pending / completed | `pending` on first launch, `completed` when onboarding finishes |
+| onboarding_method | ai_chat / manual_genre / search / import / skip | set with `onboarding_status=completed` |
+| user_intent | onboarding complete | `casual_browser` (skip) / `ai_guided_listener` (AI chat) / `targeted_listener` (search) / `selective_curator` (manual genres) / `migrating_power_user` (import) |
+| favorite_genres | onboarding complete (AI chat, manual genres) | genre list |
+| listener_profile / genre_breadth / genre_enthusiasm | onboarding complete (manual genres) | derived from the picked genres (`GenrePersonaLogic`) |
 | install_channel | first open | |
+| referrer_raw / utm_source / share_token | first open, with the install referrer | `$set_once`, only when present |
 | notifications_enabled | permission decide | |
 | initial_podcasts_subscribed | onboarding complete | |
-| first_play_at | first playback_started | `$set_once` |
-| activated_at | onboarding complete + play ≤24h | `$set_once` |
+| first_play_at | first episode played | `$set_once`, with `first_episode_played_logged=true` |
 | home_hero_card_style | launch + hero style change | `block` / `cover` / `tide` / `duotone` / `halo` / `marquee`; set for the default too, once per process |
 | home_hero_colors | launch + hero colors change | `dark` / `artwork` / `theme`; `none` for Block |
 | home_hero_style_combo | launch + any hero look change | style and colors in one value (`cover_artwork`, `block`); resent after an identity reset |

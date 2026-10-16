@@ -84,7 +84,6 @@ object AnalyticsGlossary {
             "player_chrome_interaction",
             "daily_briefing_action",
             "home_import_banner_action",
-            "library_history_tracking_notice",
             "support_page_viewed",
             "support_tier_toggled",
             "support_donate_clicked",
@@ -104,8 +103,6 @@ object AnalyticsGlossary {
             "rss_refresh_failed",
             "progress_sync_anomaly",
             "late_night_safeguard_decision",
-            "auto_chapters_lifecycle",
-            "auto_transcript_lifecycle",
             "proxy_fallback_triggered",
         )
 

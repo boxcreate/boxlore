@@ -76,14 +76,4 @@ internal object GrowthSessionAnalyticsTracks {
             },
         )
     }
-
-    fun trackLaunchPersonEnrichment(onboardingStatus: String? = null, subscriptionCountBucket: String? = null,) {
-        if (onboardingStatus == null && subscriptionCountBucket == null) return
-        AnalyticsEmit.personSet(
-            buildMap {
-                onboardingStatus?.let { put("onboarding_status", it) }
-                subscriptionCountBucket?.let { put("subscription_count_bucket", it) }
-            },
-        )
-    }
 }

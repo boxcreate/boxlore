@@ -292,9 +292,6 @@ class GlossaryAllEventsEmissionTest {
                 "home_import_banner_action" to {
                     AnalyticsHelper.trackHomeImportBannerImpression()
                 },
-                "library_history_tracking_notice" to {
-                    AnalyticsHelper.trackLibraryHistoryTrackingNotice("shown")
-                },
                 "android_auto_connected" to { AnalyticsHelper.trackAndroidAutoConnected("s1") },
                 "android_auto_disconnected" to {
                     AnalyticsHelper.trackAndroidAutoDisconnected("s1", durationSeconds = 10)
@@ -325,12 +322,6 @@ class GlossaryAllEventsEmissionTest {
                 },
                 "late_night_safeguard_decision" to {
                     AnalyticsHelper.trackLateNightSafeguardDecision("allow", 30)
-                },
-                "auto_chapters_lifecycle" to {
-                    AnalyticsHelper.trackAutoChaptersRequested("e1", "p1", "https://example.com/a.mp3")
-                },
-                "auto_transcript_lifecycle" to {
-                    AnalyticsHelper.trackAutoTranscriptRequested("e1", "p1", "https://example.com/a.mp3")
                 },
                 "proxy_fallback_triggered" to {
                     AnalyticsHelper.trackProxyFallbackTriggered("cdn.example.com", 320)
@@ -376,7 +367,6 @@ class LifecycleSdkMappingTest {
         AnalyticsHelper.trackDeepLinkOpened("boxlore", isFirstOpen = true)
         AnalyticsHelper.trackOnboardingAbandoned("welcome", "ai")
         AnalyticsHelper.trackSessionRestorePrompt("dismiss")
-        AnalyticsHelper.trackLaunchPersonEnrichment("pending", "1_3")
         AnalyticsHelper.trackInstallChannelAttributed("play_store")
 
         val names = recorder.map { it.first }.toSet()
