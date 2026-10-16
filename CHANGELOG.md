@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library import screens in `:app` (`ImportPage`, `ImportFlowModel`): Echo on its stage, progress checklist, Start fresh, done and failure screens, with copy in `library_import.xml` and `ImportDialogAdaptiveTest` window-transition coverage. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add hermetic JVM coverage for setup actions, button semantics, narrow and enlarged-text layouts, first-line dismissal alignment and RTL geometry. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Support worlds experiment: `SupportPageHost` reads the `support-world` flag once per visit and shows today's power-cell page (control) or one of five themed worlds (neon, orbit, alchemy, abyss, sky) each rendered by the same `SupportDevelopmentPage` through a `SupportPageStyle` (art, fonts, names and copy only), with bundled 3D art and display fonts. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Support analytics: `support_entry_viewed` (Settings button impression) and `support_page_left` (dwell, tiers viewed, pay tapped); Support events now carry `support_world`, `assignment_source`, `tier_index`, `amount_usd` and `payments_live`. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Settings › Library › LeaveMeAlone (`RecommendationsSettingsPage`, `DiscoverySections` in `:core:prefs`) turns off the Brief, Picked for you and Explore's For you tab, Because you like, time-of-day rows and episode pages' Try these episodes; sections that are off make no requests (`collectDiscoverySection`). Appearance › Home links to it. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `recommendation_section_toggled` analytics event for each switch and for the Brief card's Always hide. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -80,6 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace the Home setup banner with a responsive Material 3 split layout, neutral raised action tiles, localized copy and an aligned dismissal control; preserve existing callbacks, eligibility, analytics and hero presentation. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `CrossPromotionDetector` is rebuilt on `CrossPromotionTitles`, `CrossPromotionNames` and `CrossPromotionDescription`; recall rose from about 0.2 to 0.83–0.91 at 0.92–0.98 precision on 817 hand-labelled catalog episodes (`CrossPromotionCorpusTest`). `CrossPromotionResolver` searches shorter name forms and matches colon, host and parenthetical titles. ([#1120](https://github.com/boxcreate/boxlore/pull/1120)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Info pages, the player and hero cards share one artwork colour picker (`selectArtworkSeed`, `artworkColorScheme`, `ArtworkShade`); the info and player phone goldens are re-recorded for it. ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Every Support pay tap, including the control's, opens a notice that payments aren't set up yet and nothing was charged. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Privacy settings and `docs/PRIVACY.md` describe approximate location and the Support page design test. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `PodcastRepository.getHomeRecommendations` replaces `getHomeBootstrapData` and asks bootstrap for recommendations only (`include`); the Brief card's Always hide is now the LeaveMeAlone switch and can be undone. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Simplify Echo clip decoding in `EchoClipFrames` to resolve SonarCloud issues; behaviour unchanged. ([#1125](https://github.com/boxcreate/boxlore/pull/1125)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -285,6 +289,12 @@ readme-copy:end pr=1120 -->
 - Jump back in shows real covers again after syncing.
 - Fullscreen transcripts keep their controls on screen.
 readme-copy:end pr=1121 -->
+
+<!-- readme-copy:start pr=1122
+### Improvements
+- Tapping to support boxlore now tells you that payments aren't set up yet, and nothing is charged.
+- Some listeners will see one of five new Support boxlore designs while we learn which one people like best.
+readme-copy:end pr=1122 -->
 
 <!-- readme-copy:start pr=1123
 ### Improvements
