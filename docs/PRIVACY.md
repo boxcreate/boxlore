@@ -32,7 +32,7 @@ And honestly, we track usage because we care. When we sit up at 2:00 AM fixing a
 Here is the data collected by our application and API services, and exactly how we use it:
 
 ### 1. App Navigation and Feature Use
-* **What is sent:** Screen opens, button taps, carousel swipes, settings adjustments, and general time spent.
+* **What is sent:** Screen opens, button taps, carousel swipes, settings adjustments, and general time spent. For some appearance settings we also keep your current choice, such as the Home hero card style and its colors, so we can see which looks people actually use.
 * **Why:** To see how many people actually use boxlore, which features feel alive, and which ones flop, so we can make better product calls.
 * **Real example:** Earlier versions had a Radio feature. The data showed that almost nobody clicked on it, so we removed it completely instead of keeping bloat in the app.
 
