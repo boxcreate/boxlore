@@ -91,6 +91,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Every Support pay tap, including the control's, opens a notice that payments aren't set up yet and nothing was charged. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Privacy settings and `docs/PRIVACY.md` describe approximate location and the Support page design test. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `PodcastRepository.getHomeRecommendations` replaces `getHomeBootstrapData` and asks bootstrap for recommendations only (`include`); the Brief card's Always hide is now the LeaveMeAlone switch and can be undone. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- API calls authenticate with an API session (`ApiSessionManager`) instead of the bundled app key; App Check runs only during the session exchange, so requests no longer wait on it. ([#1130](https://github.com/boxcreate/boxlore/pull/1130)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Expired sessions renew silently with a Keystore-backed device-key proof; limited sessions retry App Check in the background. ([#1130](https://github.com/boxcreate/boxlore/pull/1130)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- New `api_session_status` analytics event; `app_check_status` now includes a failure reason. ([#1130](https://github.com/boxcreate/boxlore/pull/1130)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Simplify Echo clip decoding in `EchoClipFrames` to resolve SonarCloud issues; behaviour unchanged. ([#1125](https://github.com/boxcreate/boxlore/pull/1125)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Tracked-feed backfill sends a scoped read-only service credential (`BOXLORE_SVC_BACKFILL_KEY`) to the catalog lookup when configured, falling back to the app key. ([#1126](https://github.com/boxcreate/boxlore/pull/1126)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -127,6 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Player-only artwork links no longer reach synced history and queue, and `repairPlaybackArtworkLinks` repairs rows older builds saved. ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Fullscreen transcript controls fit the visible screen height (`fitVisibleHeight`). ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `/sync` lookups are sent in chunks of 20, so libraries with more than 40 shows get every update. ([#1130](https://github.com/boxcreate/boxlore/pull/1130)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1097
 ### Improvements
@@ -335,6 +339,13 @@ readme-copy:end pr=1127 -->
 - boxlore crashes and freezes less when playing, downloading and starting up.
 - Playback stops after a few failed episodes instead of skipping forever, and Pause always works.
 readme-copy:end pr=1128 -->
+
+<!-- readme-copy:start pr=1130
+### Improvements
+- boxlore opens faster: Home no longer waits on a background check before loading.
+### Fixes
+- If you follow more than 40 shows, Auto-download now picks up new episodes from all of them.
+readme-copy:end pr=1130 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
