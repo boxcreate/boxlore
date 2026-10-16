@@ -70,6 +70,20 @@ class RoomFolderRepositoryTest {
     }
 
     @Test
+    fun linkingShowsToADeletedFolderIsIgnoredInsteadOfCrashing() = runTest {
+        // Regression: the cross-ref foreign key threw SQLiteConstraintException when a show was
+        // linked to a folder deleted moments earlier.
+        val folder = repository.createFolder(name = "Gone", icon = null, displaySize = FolderDisplaySize.COMPACT)
+        repository.deleteFolder(folder.id)
+
+        repository.addPodcastToFolder(podcastId = "pod-1", folderId = folder.id)
+        repository.setPodcastsForFolder(folder.id, listOf("pod-1", "pod-2"))
+
+        assertTrue(folderDao.getAllCrossRefsList().isEmpty())
+        assertFalse(folderDao.addPodcastToFolderIfExists(podcastId = "pod-1", folderId = folder.id))
+    }
+
+    @Test
     fun createFolderWithoutIconUsesNullIconGracefully() = runTest {
         val folder = repository.createFolder(
             name = "Minimalist Folder",

@@ -331,7 +331,14 @@ internal fun navPopExitTransition(fromRoute: String?, toRoute: String?,): androi
 // Navigation argument / route helpers (keeps destination methods under Sonar S3776)
 // ---------------------------------------------------------------------------
 
-internal fun encodeNavArg(s: String?): String = android.net.Uri.encode(s?.ifBlank { "_" } ?: "_")
+/**
+ * Navigation parses the literal string "null" as a null argument, which crashes non-nullable
+ * string arguments ("Wrong argument type ... string expected"), so it becomes the placeholder too.
+ */
+internal fun encodeNavArg(s: String?): String =
+    android.net.Uri.encode(s?.takeUnless { it.isBlank() || it == NAV_NULL_LITERAL } ?: "_")
+
+private const val NAV_NULL_LITERAL = "null"
 
 internal fun decodeNavArg(s: String?): String = try {
     if (s.isNullOrBlank() || s.trim() == "_") {

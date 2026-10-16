@@ -181,11 +181,9 @@ object AnalyticsHelper : Analytics {
 
     /** Flush and refresh flags so the SDK evaluates survey display conditions immediately. */
     private fun deliverSurveyTriggerEvent() {
-        try {
+        PostHogStartup.runWhenReady {
             PostHog.flush()
             PostHog.reloadFeatureFlags()
-        } catch (e: Exception) {
-            android.util.Log.e("AnalyticsHelper", "Failed to deliver survey trigger", e)
         }
     }
 
@@ -217,11 +215,12 @@ object AnalyticsHelper : Analytics {
 
     fun resetIdentity() {
         AnalyticsEmit.event("identity_reset", mapOf("reason" to "user_reset"))
-        PostHog.reset()
+        PostHogStartup.runWhenReady { PostHog.reset() }
         AppearanceAnalyticsTracks.resendHomeHeroStyleAfterIdentityReset()
     }
 
-    fun getDistinctId(): String = PostHog.distinctId()
+    /** Empty until PostHog finishes setting up; callers already fall back when blank. */
+    fun getDistinctId(): String = if (PostHogStartup.isReady) PostHog.distinctId() else ""
 
     /** Phase C — Auto + polish (PR9). */
     fun trackLateNightSafeguardDecision(decision: String, durationMinutes: Int? = null,) = PhaseCAnalyticsTracks.trackLateNightSafeguardDecision(decision, durationMinutes)
@@ -930,11 +929,7 @@ object AnalyticsHelper : Analytics {
     }
 
     override fun flush() {
-        try {
-            PostHog.flush()
-        } catch (e: Exception) {
-            android.util.Log.e("AnalyticsHelper", "Failed to flush PostHog", e)
-        }
+        PostHogStartup.runWhenReady { PostHog.flush() }
     }
 
     override fun capture(event: String, properties: Map<String, Any>,) {

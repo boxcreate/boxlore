@@ -90,7 +90,7 @@ internal class PlaybackTransportHelper(
                                     .setTitle(episode.title)
                                     .setArtist(episode.podcastTitle ?: podcast.title)
                                     .setArtworkUri(
-                                        android.net.Uri.parse(
+                                        PlaybackUris.parseOrNull(
                                             episode.imageUrl?.takeIf { it.isNotBlank() }
                                                 ?: episode.podcastImageUrl?.takeIf { it.isNotBlank() }
                                                 ?: podcast.imageUrl,
@@ -126,7 +126,7 @@ internal class PlaybackTransportHelper(
                             .setTitle(currentEpisode.title)
                             .setArtist(podcast?.title ?: "")
                             .setArtworkUri(
-                                android.net.Uri.parse(currentEpisode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast?.imageUrl ?: ""),
+                                PlaybackUris.parseOrNull(currentEpisode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast?.imageUrl),
                             ).setDisplayTitle(currentEpisode.title)
                             .setSubtitle(podcast?.title ?: "")
                             .setGenre(currentEpisode.podcastGenre ?: podcast?.genre ?: "Podcast")
@@ -154,6 +154,8 @@ internal class PlaybackTransportHelper(
         } else {
             Log.d("PlaybackRepo", "resume(): Media exists, just calling play()")
             applyResumeSource("resume_player")
+            // After a playback error the player sits idle; play() alone would not retry.
+            if (controller.playbackState == androidx.media3.common.Player.STATE_IDLE) controller.prepare()
             controller.play()
         }
     }

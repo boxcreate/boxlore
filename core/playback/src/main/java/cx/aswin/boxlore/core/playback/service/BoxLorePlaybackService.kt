@@ -239,7 +239,16 @@ open class BoxLorePlaybackService :
     override fun onCreate() {
         super.onCreate()
 
-        val localPlayer = getPlayerFactory().createExoPlayer()
+        val localPlayer =
+            try {
+                getPlayerFactory().createExoPlayer()
+            } catch (e: LinkageError) {
+                // Some ROMs report API 34 but lack the API 34 framework methods Media3 calls
+                // (Context.getDeviceId). Without a player there is no session to serve.
+                android.util.Log.e("BoxLorePlaybackService", "Unable to create the player on this device", e)
+                stopSelf()
+                return
+            }
         val player = getPlayerFactory().createCastPlayer(localPlayer)
         localExoPlayer = localPlayer
         playbackPlayer = player

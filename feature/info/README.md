@@ -72,6 +72,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 - UI runs on the main thread; refresh, subscribe, lookup, and related-content work use suspend APIs.
 - `EpisodeInfoScreen` delegates description and link list entries to a focused show-notes builder, preserving their order, formatting, visibility and chapter-seeking callback.
 - `EpisodeInfoNotesLoader` parses publisher HTML on a background dispatcher, fetches chapters and promotion matches independently, and cancels superseded requests. A generation guard also rejects late responses during metadata refreshes for the same episode. Invalid/empty remote chapters retain the description fallback; promotion failures do not block description or chapters.
+- Episode lists never repeat an id: `remountWithSupplements` and the displayed list drop duplicates, because offset pages overlap when episodes publish between "load more" requests and the list keys rows by episode id.
 
 ## Persistence & identity
 
@@ -105,6 +106,7 @@ src/main/java/cx/aswin/boxlore/feature/info/
 ```bash
 ./gradlew :feature:info:testDebugUnitTest
 ```
+- `PodcastInfoSupplementSupportTest` and `PodcastEpisodeSearchLogicTest` cover overlapping pages and repeated ids.
 
 ## CI relevance
 

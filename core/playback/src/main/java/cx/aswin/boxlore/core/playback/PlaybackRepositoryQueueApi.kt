@@ -12,7 +12,10 @@ suspend fun PlaybackRepository.playQueue(
     entryPoint: PlaybackEntryPoint = PlaybackEntryPoint.GENERIC,
     initialPositionMs: Long? = null,
     sourceContext: android.os.Bundle? = null,
-) = queueCoordinator.playQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext)
+) {
+    controllerBridge?.resetErrorSkips()
+    queueCoordinator.playQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext)
+}
 
 suspend fun PlaybackRepository.addToQueue(
     episode: Episode,

@@ -147,6 +147,7 @@ Unacknowledged tablet launches first show an opaque alpha notice with the Home f
 `StartupWorkGate` is process-scoped and releases optional cloud coordinator initialization, periodic sync scheduling, Smart Downloads scheduling/catch-up, foreground subscription sync and legacy RSS repair after the initial screen commits. Optional initialization uses a suspending mutex so ready does not release a burst of initializers. Home signals after loaded local content and two frames; other initial routes release after their first two frames. A headless worker/widget launch releases at the first idle main queue; `MainActivity` identifies a UI launch before creating content. If the first Activity stops before content is ready, background startup also releases; configuration recreation waits for the replacement UI. Recreated roots reuse the same gate. Repeated signals and cancelled initializers are safe (`StartupWorkGateTest`). Adaptive ranking telemetry also waits for readiness. Appearance flows use restored fast-cache values while background hydration fills missing DataStore keys; existing choices are never overwritten. Play update checks begin after the first two Compose frames. Playback/session restoration and preference identity remain owned by the existing composition root.
 
 - Release runtime dependency snapshots include Jsoup through `:core:catalog`, which owns shared show-notes resource and chapter parsing. No direct parser-library dependency is added here.
+`BoxLoreApplication.onCreate` never builds `PlaybackRepository` for Cast state. `AppContainer.synchronizeCastSession` keeps the latest state in `DeferredCastSessionState` and applies it when playback is first created, so widget, worker and notification starts no longer construct playback (prefs migration, MediaController bind) on the main thread. PostHog setup runs on a background thread through `:core:analytics` `PostHogStartup`, and environment super-properties are registered before queued calls replay. Navigation string arguments encode the literal text `null` as the `_` placeholder, because Navigation reads it as a null argument.
 
 ## Threading / lifecycle
 
@@ -197,6 +198,7 @@ Episode push artwork keeps its six-second total deadline and uses 700ms per rout
 ```bash
 ./gradlew :app:testDebugUnitTest
 ```
+- `DeferredCastSessionStateTest` covers Cast state before and after playback exists; `EpisodeNavRouteRegressionTest` covers the literal `null` argument.
 
 ## CI relevance
 

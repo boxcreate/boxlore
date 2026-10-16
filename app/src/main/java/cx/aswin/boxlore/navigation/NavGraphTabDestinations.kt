@@ -172,7 +172,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
             bottomContentPadding = miniPlayerPadding,
             onNavigateToHistory = { w.navigate("learn/history") },
             onEpisodeClick = { episode ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                fun encode(s: String?) = encodeNavArg(s)
                 val route =
                     "episode/${episode.id}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +
@@ -228,7 +228,7 @@ internal fun androidx.navigation.NavGraphBuilder.addLearnDestinations(w: NavGrap
             bottomContentPadding = miniPlayerPadding,
             onBack = { navController.popBackStack() },
             onEpisodeClick = { episode ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                fun encode(s: String?) = encodeNavArg(s)
                 val route =
                     "episode/${episode.id}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +
@@ -274,7 +274,7 @@ internal fun androidx.navigation.NavGraphBuilder.addBriefingDestination(w: NavGr
             onFeedbackClick = { w.actions.onShowFeedbackSheet() },
             bottomContentPadding = miniPlayerPadding,
             onEpisodeClick = { episode ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                fun encode(s: String?) = encodeNavArg(s)
                 val route =
                     "episode/${episode.id}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +
@@ -356,7 +356,7 @@ internal fun androidx.navigation.NavGraphBuilder.addExploreDestination(w: NavGra
                 w.navigate(route)
             },
             onEpisodeClick = { episode, podcast ->
-                fun encode(s: String?) = android.net.Uri.encode(s?.ifEmpty { "_" } ?: "_")
+                fun encode(s: String?) = encodeNavArg(s)
                 w.navigate(
                     "episode/${encode(episode.id)}/${encode(episode.title)}/" +
                         "${encode(episode.description.take(500))}/" +

@@ -146,6 +146,33 @@ class PlaybackQueueCoordinatorTest {
         assertEquals(listOf("2"), cx.aswin.boxlore.core.database.dao.QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
     }
 
+    @Test
+    fun episodesWithoutAnyArtworkStillBuildQueueItems() = runTest(testDispatcher) {
+        // Regression (0.0.25 NPE "uriString"): no episode, show or podcast artwork reached Uri.parse(null).
+        val bare = testEpisode("9", "pod-9").copy(imageUrl = null, podcastImageUrl = null)
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-9", "Show", "Host", "")
+
+        val items = queueCoordinator.buildMediaItems(listOf(bare), podcast, null)
+
+        assertNull(items.single().mediaMetadata.artworkUri)
+        assertTrue(queueCoordinator.addToQueue(bare, podcast))
+        queueCoordinator.addToQueueNext(testEpisode("10", "pod-9").copy(imageUrl = null, podcastImageUrl = null), podcast)
+        assertEquals(listOf("9", "10"), playerStateFlow.value.queue.map { it.id })
+    }
+
+    @Test
+    fun playNextOnQueuedEpisodeDoesNotDuplicateIt() = runTest(testDispatcher) {
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-1", "Show", "Host", "https://example.com/a.jpg")
+        val current = testEpisode("1", "pod-1")
+        val queued = testEpisode("2", "pod-1")
+        playerStateFlow.value = playerStateFlow.value.copy(currentEpisode = current, queue = listOf(current, queued))
+
+        queueCoordinator.addToQueueNext(queued, podcast)
+        queueCoordinator.addToQueueNext(queued, podcast)
+
+        assertEquals(listOf("1", "2"), playerStateFlow.value.queue.map { it.id })
+    }
+
     private fun testEpisode(id: String, podcastId: String) = Episode(
         id = id,
         title = "Episode $id",

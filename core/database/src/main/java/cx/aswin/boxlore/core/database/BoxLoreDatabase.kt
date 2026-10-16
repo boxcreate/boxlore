@@ -332,6 +332,9 @@ abstract class BoxLoreDatabase : RoomDatabase() {
         }
 
         fun getDatabase(context: android.content.Context): BoxLoreDatabase = INSTANCE ?: synchronized(this) {
+            // Re-check under the lock: a second Room instance on the same file can leave a
+            // query running against a closed connection.
+            INSTANCE?.let { return@synchronized it }
             renameDatabaseFileIfExists(context)
             val instance =
                 androidx.room.Room

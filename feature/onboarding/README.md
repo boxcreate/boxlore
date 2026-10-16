@@ -105,6 +105,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 - Preference completion writes go through `UserPreferencesRepository` and `BoxcastPrefs` supplied by app wiring.
 - Catalog and network actions use injected dependencies and suspend APIs; first publisher-feed persist is handed to application-scoped `SubscriptionForegroundSync` so navigation cannot cancel it.
 - UI runs on the main thread. Welcome motion shares one lifecycle-aware frame clock, pauses below STARTED, and resumes without replaying the entrance. The system animation-duration scale is honored; disabling animations reveals the full copy, shows static lore and freezes the reel. Travel and reveal values are read only by drawing layers, avoiding per-frame composition; the rotating subtitle composes only when its selected word changes. Bundled covers require no network request.
+- Genre synthesis handles its network failure inside the `async` child (`orFallbackOnFailure`) and falls back to trending charts. An exception escaping an `async` child fails the parent launch even when `await()` is caught, which crashed onboarding on timeouts.
 
 ## Persistence & identity
 
@@ -125,6 +126,7 @@ src/main/java/cx/aswin/boxlore/feature/onboarding/
 - `WelcomeMotionClockTest` covers negative/zero frame deltas, the 100ms frame cap before duration scaling, fast/slow animation settings and nanosecond-to-millisecond conversion with fractional accumulation.
 - Existing coverage includes genre limits, search back-step behavior, curriculum logic, suggestions presentation (loading gate / seed filter / back-clear), AI option icons, and AI chat message list logic. Progressive search pin-to-top is covered in `:core:designsystem` (`ProgressiveSearchScrollLogicTest`).
 - `WelcomeReelMotionTest` covers the entrance-to-loop handoff, reverse direction, repeated seams, long-running clocks, phase offsets and invalid inputs. `WelcomeWordLoopMotionTest` checks term order, the longer lore hold, entrance/exit timing, bounded poses, long-running clocks and the static reduced-motion state. Manually verify welcome on first launch: observe a full subtitle loop without layout shifts; discovery, search, import and skip route to their existing destinations. Backgrounding and returning resumes the loop, and disabled system animations leave the complete lore reply visible. Check narrow windows, RTL and larger text for scroll access to every action.
+- `OnboardingFallbackTest` checks a timeout inside `async` falls back without failing the parent.
 - ViewModel tests should use fakes for prefs, catalog, network, and analytics dependencies.
 
 ```bash

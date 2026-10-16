@@ -30,6 +30,7 @@ object NpsSurveyTriggers {
     ) {
         try {
             if (
+                cx.aswin.boxlore.core.analytics.PostHogStartup.isReady &&
                 PostHog.isFeatureEnabled("survey-nps-remote-trigger") &&
                 engagementCoordinator.canShowProactivePrompt(isCurrentlyPlaying())
             ) {

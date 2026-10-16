@@ -69,6 +69,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 - Production `RssPodcastRepository` is application-scoped through `AppContainer` and shared holders.
 - Feed fetch, parse, refresh, and database operations run through suspend APIs on IO-oriented dispatchers.
 - Freshness checks share a bounded conditional GET budget and use per-podcast locks to avoid duplicate refreshes.
+- Feeds larger than 4 MB skip the RSS library parser, which copies the whole feed into one String and ran out of memory, and use only the streaming pull parser (`RssParsePolicy`).
 
 ## Persistence & identity
 
@@ -87,6 +88,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 ```bash
 ./gradlew :core:rss:testDebugUnitTest
 ```
+- `RssParsePolicyTest` checks the size limit and that a large valid feed never reaches the library parser.
 
 ## CI relevance
 

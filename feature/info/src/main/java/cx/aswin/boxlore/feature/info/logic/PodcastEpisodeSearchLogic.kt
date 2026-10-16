@@ -4,7 +4,7 @@ import cx.aswin.boxlore.core.model.Episode
 
 /** Opening or clearing search retains the same loaded cards; only an active query can replace them. */
 internal fun podcastSearchDisplayEpisodes(active: Boolean, query: String, results: List<Episode>?, episodes: List<Episode>): List<Episode> =
-    if (active && query.isNotBlank()) results ?: episodes else episodes
+    (if (active && query.isNotBlank()) results ?: episodes else episodes).distinctBy { it.id }
 
 internal fun podcastSearchHasNoResults(active: Boolean, query: String, searching: Boolean, results: List<Episode>?): Boolean =
     active && query.isNotBlank() && !searching && results?.isEmpty() == true

@@ -68,6 +68,7 @@ src/main/java/cx/aswin/boxlore/feature/library/
 - Search stays in the top bar without removing the tab switcher. No glance/summary strip. Genre row is pills-only (sort/hide are not on that row).
 - Context menus & Scoped Reorder Mode: Long-pressing anywhere on a folder card (including member show preview covers) triggers the folder context menu (`Edit folder`, `Add shows to folder`, `Reorder folders`, `Delete folder`). Long-pressing a podcast inside `SubscriptionFolderDialog` triggers the folder podcast context menu (`Remove from folder`, `Move to another folder`, `Reorder shows in folder`, `Unsubscribe`). Long-pressing an unfiled podcast in the root grid triggers the root podcast context menu (`Add to folder`, `Reorder shows`). Entering reorder mode displays a floating `SubscriptionReorderBar` with `Save` and `Exit` buttons and a notice that sort will switch to Manual upon saving. Strict boundary protection prevents dragging across sections (folders cannot drag into shows, and vice versa).
 - Genre icon/label catalog in `subscriptions/SubscriptionGenreCatalog.kt` mirrors Explore (no feature→feature import).
+- The Shows grid and list never receive the same podcast twice: saved manual order and subscription rows are de-duplicated before they reach the keyed lazy lists.
 
 ## Dependencies
 
@@ -113,6 +114,7 @@ Artwork-only subscription headers try usable fallback candidates even when the p
 ```bash
 ./gradlew :feature:library:testDebugUnitTest
 ```
+- `SubscriptionReorderControlsTest` covers repeated ids in the saved order and in the subscription rows.
 
 ## CI relevance
 

@@ -248,6 +248,22 @@ class ListeningHistoryDaoInMemoryTest {
     }
 
     @Test
+    fun completedIdsAreReadInPagesAcrossPageBoundaries() = runTest {
+        // Regression (0.0.25): 18k+ completed episodes overflowed one cursor read
+        // ("Couldn't read row ... from CursorWindow"); reads are paged now.
+        val total = ListeningHistoryDao.COMPLETED_IDS_PAGE_SIZE * 2 + 7
+        dao.upsertAll((0 until total).map { history("ep-$it", isCompleted = true, isDirty = false) })
+        dao.upsert(history("not-done", isCompleted = false))
+
+        val ids = dao.getCompletedEpisodeIds()
+
+        assertEquals(total, ids.size)
+        assertEquals(total, ids.toSet().size)
+        assertFalse("not-done" in ids)
+        assertEquals(total, dao.getCompletedEpisodeIdsFlow().first().size)
+    }
+
+    @Test
     fun dirtyListeningHistoryAndMarkSynced() = runTest {
         dao.upsert(history("clean-1", isDirty = false))
         assertTrue(dao.getDirtyListeningHistory().isEmpty())

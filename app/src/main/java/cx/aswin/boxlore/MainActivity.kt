@@ -179,12 +179,10 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         isFirstResumeAfterLaunch = false
-        PostHog.register(
-            "local_time_of_day",
-            java.util.Calendar
-                .getInstance()
-                .get(java.util.Calendar.HOUR_OF_DAY),
-        )
+        val hourOfDay = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        cx.aswin.boxlore.core.analytics.PostHogStartup.runWhenReady {
+            PostHog.register("local_time_of_day", hourOfDay)
+        }
         if (!tabletAlphaNoticePending) resumeForegroundPrompts()
     }
 

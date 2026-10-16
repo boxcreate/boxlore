@@ -47,6 +47,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 - `AnalyticsHelper` is process-scoped and its methods are callable from any thread; the SDK handles internal dispatch.
 - `PendingEntryPoint` and `PlayerSessionAggregator` use synchronized or volatile state for cross-thread access.
 - `RecordingAnalytics.flush()` is a no-op suitable for tests.
+- PostHog setup runs off the main thread through `PostHogStartup` (it reads package info over binder and caused a startup ANR). Captures, person properties, flushes, resets and app-side `register` calls made before setup finishes are queued in order (bounded at 500) and replayed afterwards; environment super-properties are registered before the replay. Feature flags and `getDistinctId()` read as unset until setup finishes, and callers already fall back when they are.
 
 ## Persistence & identity
 
@@ -75,6 +76,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 ./gradlew :core:analytics:testDebugUnitTest
 ./gradlew :core:testing:testDebugUnitTest --tests '*GlossaryCoverageGuardTest'
 ```
+- `PostHogStartupTest` covers ordered replay, immediate calls after setup, the queue bound and the blank distinct id before setup.
 
 ## CI relevance
 

@@ -51,8 +51,20 @@ interface FolderDao {
     @Query("SELECT DISTINCT name FROM folders WHERE trim(name) != '' ORDER BY name ASC")
     fun getAllFolderNames(): Flow<List<String>>
 
+    /**
+     * Links a show to a folder only while the folder exists. The cross-ref has a foreign key on
+     * folderId, so linking to a folder deleted moments earlier (another screen, sync) used to crash.
+     */
+    @Transaction
+    suspend fun addPodcastToFolderIfExists(podcastId: String, folderId: String): Boolean {
+        if (getFolder(folderId) == null) return false
+        insertCrossRefs(listOf(PodcastFolderCrossRef(podcastId = podcastId, folderId = folderId)))
+        return true
+    }
+
     @Transaction
     suspend fun setPodcastsForFolder(folderId: String, podcastIds: List<String>) {
+        if (getFolder(folderId) == null) return
         deleteCrossRefsForFolder(folderId)
         val refs = podcastIds.distinct().map { PodcastFolderCrossRef(podcastId = it, folderId = folderId) }
         if (refs.isNotEmpty()) {

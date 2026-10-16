@@ -24,7 +24,6 @@ import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import cx.aswin.boxlore.core.network.FirebaseAuthAuthenticator
 import cx.aswin.boxlore.core.network.NetworkModule
-import cx.aswin.boxlore.core.playback.synchronizeCastSession
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.LearningEventLog
 import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
@@ -201,7 +200,13 @@ class BoxLoreApplication :
                         engagementCoordinator = engagementPromptCoordinator,
                     )
             }
-        PostHogAndroid.setup(this, config)
+        // Off the main thread: setup reads package info over binder (startup ANR). Calls made
+        // before it finishes are queued by PostHogStartup and replayed in order.
+        cx.aswin.boxlore.core.analytics.PostHogStartup.start {
+            PostHogAndroid.setup(this, config)
+            // Registered before queued calls replay so early events keep the internal tag.
+            registerPostHogEnvironment()
+        }
 
         // Non-fatal error sink: Crashlytics when available, Logcat fallback inside ErrorReporter.
         cx.aswin.boxlore.core.analytics.ErrorReporter.install { throwable, message ->
@@ -218,14 +223,6 @@ class BoxLoreApplication :
             }
         }
 
-        // Tag internal/test users so they can be filtered in PostHog settings
-        if (BuildConfig.DEBUG || BuildConfig.BOXLORE_ISOLATED_TESTS) {
-            PostHog.register("is_internal", true)
-            PostHog.register("app_environment", if (BuildConfig.BOXLORE_ISOLATED_TESTS) "update_test" else "debug")
-        } else {
-            PostHog.register("is_internal", false)
-            PostHog.register("app_environment", "production")
-        }
         reportAdaptiveRankingStatus()
 
         setupAppCheck()
@@ -329,7 +326,8 @@ class BoxLoreApplication :
     private fun syncCastSession(isActive: Boolean?) {
         castSessionGeneration += 1
         if (::container.isInitialized) {
-            container.playbackRepository.synchronizeCastSession(isActive)
+            // Never constructs playback here; the state is applied when playback is created.
+            container.synchronizeCastSession(isActive)
         }
     }
 
@@ -363,6 +361,17 @@ class BoxLoreApplication :
                     }.getOrDefault(false)
                 syncCastSession(isActive = isConnected)
             }
+        }
+    }
+
+    /** Tag internal/test users so they can be filtered in PostHog settings. */
+    private fun registerPostHogEnvironment() {
+        if (BuildConfig.DEBUG || BuildConfig.BOXLORE_ISOLATED_TESTS) {
+            PostHog.register("is_internal", true)
+            PostHog.register("app_environment", if (BuildConfig.BOXLORE_ISOLATED_TESTS) "update_test" else "debug")
+        } else {
+            PostHog.register("is_internal", false)
+            PostHog.register("app_environment", "production")
         }
     }
 
