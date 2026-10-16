@@ -65,7 +65,7 @@ import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsActions
 import cx.aswin.boxlore.feature.settings.pages.PrivacySettingsPage
 import cx.aswin.boxlore.feature.settings.pages.RecommendationsSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.SettingsHub
-import cx.aswin.boxlore.feature.settings.pages.SupportDevelopmentPage
+import cx.aswin.boxlore.feature.settings.pages.SupportPageHost
 import cx.aswin.boxlore.feature.settings.pages.SyncAndBackupsPage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -499,7 +499,7 @@ private fun SettingsDestinationContent(
             )
 
         ProfileSettingsDestination.Support ->
-            SupportDevelopmentPage(
+            SupportPageHost(
                 onBack = actions.onReturnToHub,
                 totalListeningHours = uiData.totalListeningHours,
             )

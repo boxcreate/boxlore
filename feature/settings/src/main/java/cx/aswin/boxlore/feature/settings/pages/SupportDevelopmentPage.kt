@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.settings.pages
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -24,14 +25,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
@@ -39,10 +40,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bolt
@@ -56,14 +55,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,42 +71,56 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.core.view.WindowCompat
-import cx.aswin.boxlore.core.analytics.AnalyticsHelper
-import cx.aswin.boxlore.core.designsystem.layout.BoxloreCardFamily
-import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
-import cx.aswin.boxlore.core.designsystem.layout.boxloreCardWidth
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.tabletInputFeedback
-import cx.aswin.boxlore.feature.settings.R
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.LocalSupportPageSession
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SUPPORT_OFFERS
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportPaymentNotice
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportWorldFont
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportWorldPlatform
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.TrackSupportTierChanges
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.rememberSupportReducedMotion
 import kotlin.math.absoluteValue
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
-private val StalinistOneFontFamily = FontFamily(
-    Font(R.font.stalinist_one, FontWeight.Normal),
-)
-
+/**
+ * The Support page. Today's power cells are the control arm; every experiment world reuses this
+ * exact page with its own [style].
+ */
 @Composable
 internal fun SupportDevelopmentPage(
     onBack: () -> Unit,
     totalListeningHours: Long? = null,
+    topBarActions: @Composable RowScope.() -> Unit = {},
+    style: SupportPageStyle = ControlSupportPageStyle,
 ) {
+    CompositionLocalProvider(LocalSupportPageStyle provides style) {
+        SupportPageScreen(onBack, totalListeningHours, topBarActions)
+    }
+}
+
+@Composable
+private fun SupportPageScreen(
+    onBack: () -> Unit,
+    totalListeningHours: Long?,
+    topBarActions: @Composable RowScope.() -> Unit,
+) {
+    val style = LocalSupportPageStyle.current
+    val tiers = style.tiers
+    val session = LocalSupportPageSession.current
+    var noticeVisible by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = noticeVisible) { noticeVisible = false }
     val view = LocalView.current
     DisposableEffect(Unit) {
         val window = (view.context as? Activity)?.window
@@ -119,28 +132,11 @@ internal fun SupportDevelopmentPage(
         }
     }
 
-    val pagerState = rememberPagerState(initialPage = 2) { SUPPORT_TIER_CARDS.size }
+    val pagerState = rememberPagerState(initialPage = 2) { tiers.size }
     val coroutineScope = rememberCoroutineScope()
-    val activeTier = SUPPORT_TIER_CARDS[pagerState.currentPage]
+    val activeTier = tiers[pagerState.currentPage]
 
-    LaunchedEffect(Unit) {
-        AnalyticsHelper.trackSupportPageViewed()
-    }
-
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }
-            .distinctUntilChanged()
-            .drop(1)
-            .collect { page ->
-                val tier = SUPPORT_TIER_CARDS[page]
-                AnalyticsHelper.trackSupportTierToggled(
-                    tierTitle = tier.title,
-                    codename = "${tier.codenameLine1} ${tier.codenameLine2}",
-                    amount = tier.cost,
-                    isLoreInspect = false,
-                )
-            }
-    }
+    TrackSupportTierChanges(pagerState, tiers, session)
 
     val activeAuraColor by animateColorAsState(
         targetValue = activeTier.auraColor,
@@ -148,46 +144,19 @@ internal fun SupportDevelopmentPage(
         label = "active_aura_color",
     )
 
-    val infiniteTransition = rememberInfiniteTransition(label = "support_page_atmosphere")
-    val plasmaPulse by infiniteTransition.animateFloat(
-        initialValue = 0.88f,
-        targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "plasma_pulse",
-    )
-    val particleProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(6500, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "particle_progress",
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(style.background),
     ) {
-        CosmicAtmosphereCanvas(
-            auraColor = activeAuraColor,
-            pulse = plasmaPulse,
-            particleProgress = particleProgress,
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.75f)
-                .align(Alignment.TopCenter),
-        )
+        SupportPageBackground(style, activeAuraColor)
 
         Scaffold(
             topBar = {
-                SupportTopAppBar(onBack = onBack)
+                SupportTopAppBar(onBack = onBack, actions = topBarActions)
             },
             containerColor = Color.Transparent,
+            modifier = if (noticeVisible) Modifier.clearAndSetSemantics { } else Modifier,
         ) { innerPadding ->
             SupportPageContent(
                 pagerState = pagerState,
@@ -199,9 +168,25 @@ internal fun SupportDevelopmentPage(
                         pagerState.animateScrollToPage(page)
                     }
                 },
+                onDonate = { tier ->
+                    val index = tiers.indexOf(tier).coerceAtLeast(0)
+                    session?.payTapped(
+                        offer = SUPPORT_OFFERS[index],
+                        tierName = tier.title,
+                        codename = "${tier.codenameLine1} ${tier.codenameLine2}",
+                    )
+                    noticeVisible = true
+                },
                 modifier = Modifier.padding(innerPadding),
             )
         }
+
+        SupportPaymentNotice(
+            visible = noticeVisible,
+            content = style.notice(pagerState.currentPage, activeAuraColor),
+            reducedMotion = rememberSupportReducedMotion(),
+            onDismiss = { noticeVisible = false },
+        )
     }
 }
 
@@ -212,60 +197,49 @@ private fun SupportPageContent(
     activeAuraColor: Color,
     totalListeningHours: Long?,
     onSelectTier: (Int) -> Unit,
+    onDonate: (SupportTierCardData) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
-    Column(
-        modifier = modifier.boxloreCardWidth(BoxloreCardFamily.Utility)
-            .fillMaxSize()
-            .then(if (tablet) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        SupportArtifactStage(
-            pagerState = pagerState,
-            tiers = SUPPORT_TIER_CARDS,
-            activeAuraColor = activeAuraColor,
-        )
-
-        Spacer(modifier = if (tablet) Modifier.height(20.dp) else Modifier.weight(1f))
-
-        SupportTierPicker(
-            selectedIndex = pagerState.currentPage,
-            tiers = SUPPORT_TIER_CARDS,
-            onSelect = onSelectTier,
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        SupportCtaSection(
-            tier = activeTier,
-            activeColor = activeAuraColor,
-            onDonateClick = { tier ->
-                AnalyticsHelper.trackSupportDonateClicked(
-                    tierTitle = tier.title,
-                    codename = "${tier.codenameLine1} ${tier.codenameLine2}",
-                    amount = tier.cost,
-                )
-            },
-        )
-
-        Spacer(modifier = if (tablet) Modifier.height(20.dp) else Modifier.weight(1f))
-
-        SupportMissionCard(
-            activeColor = activeAuraColor,
-            totalListeningHours = totalListeningHours,
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-    }
+    val style = LocalSupportPageStyle.current
+    SupportPageBody(
+        modifier = modifier,
+        stage = {
+            SupportArtifactStage(
+                pagerState = pagerState,
+                tiers = style.tiers,
+                activeAuraColor = activeAuraColor,
+            )
+        },
+        picker = {
+            SupportTierPicker(
+                selectedIndex = pagerState.currentPage,
+                tiers = style.tiers,
+                onSelect = onSelectTier,
+            )
+        },
+        cta = {
+            SupportCtaSection(
+                tier = activeTier,
+                activeColor = activeAuraColor,
+                verb = style.ctaVerb,
+                icon = style.ctaIcon,
+                onDonateClick = onDonate,
+            )
+        },
+        mission = {
+            SupportMissionCard(
+                activeColor = activeAuraColor,
+                totalListeningHours = totalListeningHours,
+            )
+        },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SupportTopAppBar(
     onBack: () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -288,9 +262,7 @@ private fun SupportTopAppBar(
                 )
             }
         },
-        actions = {
-            Spacer(modifier = Modifier.width(48.dp))
-        },
+        actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
         ),
@@ -304,6 +276,9 @@ private fun SupportArtifactStage(
     activeAuraColor: Color,
 ) {
     val haptic = LocalHapticFeedback.current
+    val session = LocalSupportPageSession.current
+    // Only the power cells have lore; a world's stage is not tappable.
+    val hasLore = LocalSupportPageStyle.current.skin == null
     var isStoryMode by remember(pagerState.currentPage) { mutableStateOf(false) }
     val storyProgress by animateFloatAsState(
         targetValue = if (isStoryMode) 1f else 0f,
@@ -320,17 +295,21 @@ private fun SupportArtifactStage(
             tiers = tiers,
             activeAuraColor = activeAuraColor,
             storyProgress = storyProgress,
-            onStageClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                val nextStoryMode = !isStoryMode
-                isStoryMode = nextStoryMode
-                val currentTier = tiers[pagerState.currentPage]
-                AnalyticsHelper.trackSupportTierToggled(
-                    tierTitle = currentTier.title,
-                    codename = "${currentTier.codenameLine1} ${currentTier.codenameLine2}",
-                    amount = currentTier.cost,
-                    isLoreInspect = nextStoryMode,
-                )
+            onStageClick = if (!hasLore) {
+                null
+            } else {
+                {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    val nextStoryMode = !isStoryMode
+                    isStoryMode = nextStoryMode
+                    val currentTier = tiers[pagerState.currentPage]
+                    session?.tierSelected(
+                        offer = SUPPORT_OFFERS[pagerState.currentPage],
+                        tierName = currentTier.title,
+                        codename = "${currentTier.codenameLine1} ${currentTier.codenameLine2}",
+                        isLoreInspect = nextStoryMode,
+                    )
+                }
             },
         )
 
@@ -349,9 +328,10 @@ private fun StageDisplayBox(
     tiers: List<SupportTierCardData>,
     activeAuraColor: Color,
     storyProgress: Float,
-    onStageClick: () -> Unit,
+    onStageClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+    val skin = LocalSupportPageStyle.current.skin
     val infiniteTransition = rememberInfiniteTransition(label = "unit_levitation_transition")
     val floatOffset by infiniteTransition.animateFloat(
         initialValue = -6f,
@@ -386,19 +366,28 @@ private fun StageDisplayBox(
         modifier = modifier
             .fillMaxWidth()
             .height(190.dp)
-            .tabletInputFeedback(interactionSource)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onStageClick,
+            .then(
+                if (onStageClick == null) {
+                    Modifier
+                } else {
+                    Modifier
+                        .tabletInputFeedback(interactionSource)
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClick = onStageClick,
+                        )
+                },
             ),
         contentAlignment = Alignment.Center,
     ) {
-        SupportLightningAtmosphere(
-            tier = tiers[pagerState.currentPage],
-            activeColor = activeAuraColor,
-            modifier = Modifier.requiredSize(440.dp),
-        )
+        if (skin == null) {
+            SupportLightningAtmosphere(
+                tier = tiers[pagerState.currentPage],
+                activeColor = activeAuraColor,
+                modifier = Modifier.requiredSize(440.dp),
+            )
+        }
 
         val pagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 4f)
 
@@ -413,13 +402,23 @@ private fun StageDisplayBox(
                 },
         )
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawTransformingPlatform(
-                pagePosition = pagePosition,
-                rotation = platformRotation,
+        if (skin == null) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawTransformingPlatform(
+                    pagePosition = pagePosition,
+                    rotation = platformRotation,
+                    pulse = platformPulse,
+                    tiers = tiers,
+                    storyProgress = storyProgress,
+                )
+            }
+        } else {
+            SupportWorldPlatform(
+                skin = skin,
+                accent = activeAuraColor,
+                drift = platformRotation / 360f,
                 pulse = platformPulse,
-                tiers = tiers,
-                storyProgress = storyProgress,
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -621,8 +620,9 @@ private fun SingleTierCodename(
     modifier: Modifier = Modifier,
 ) {
     if (alpha <= 0.01f) return
+    val style = LocalSupportPageStyle.current
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .graphicsLayer {
@@ -630,13 +630,32 @@ private fun SingleTierCodename(
                 this.scaleX = scale
                 this.scaleY = scale
             },
+    ) {
+        // Each line has 4dp of padding on its outer side, plus room for the font's swashes.
+        val lineWidth = constraints.maxWidth - with(LocalDensity.current) { (4.dp + style.codenameFont.overhang).roundToPx() }
+        val line1Size = rememberFittedCodenameSize(tier.codenameLine1, style.codenameFont, 42f, 1f, lineWidth)
+        val line2Size = rememberFittedCodenameSize(tier.codenameLine2, style.codenameFont, 52f, 1.5f, lineWidth)
+        SingleTierCodenameLines(tier, style.codenameFont, line1Size, line2Size)
+    }
+}
+
+@Composable
+private fun SingleTierCodenameLines(
+    tier: SupportTierCardData,
+    font: SupportWorldFont,
+    line1Size: Float,
+    line2Size: Float,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = tier.codenameLine1,
-            fontFamily = StalinistOneFontFamily,
-            fontSize = 42.sp,
-            lineHeight = 44.sp,
+            fontFamily = font.family,
+            fontWeight = font.weight,
+            fontSize = line1Size.sp,
+            lineHeight = (line1Size + 2f).sp,
             letterSpacing = 1.sp,
             textAlign = TextAlign.Start,
             color = tier.auraColor,
@@ -648,9 +667,10 @@ private fun SingleTierCodename(
         )
         Text(
             text = tier.codenameLine2,
-            fontFamily = StalinistOneFontFamily,
-            fontSize = 52.sp,
-            lineHeight = 54.sp,
+            fontFamily = font.family,
+            fontWeight = font.weight,
+            fontSize = line2Size.sp,
+            lineHeight = (line2Size + 2f).sp,
             letterSpacing = 1.5.sp,
             textAlign = TextAlign.End,
             color = tier.auraColor,
@@ -658,7 +678,7 @@ private fun SingleTierCodename(
             softWrap = false,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(end = 4.dp),
+                .padding(end = 4.dp + font.overhang),
         )
     }
 }
@@ -669,6 +689,7 @@ private fun SupportStageTierInfo(
     tiers: List<SupportTierCardData>,
 ) {
     val currentTier = tiers[selectedIndex]
+    val style = LocalSupportPageStyle.current
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -703,7 +724,7 @@ private fun SupportStageTierInfo(
                         modifier = Modifier.padding(bottom = 5.dp),
                     ) {
                         Text(
-                            text = "★ SUPREME PATRON UNIT",
+                            text = style.featuredChip,
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
                             color = if (targetTier.auraColor.luminance() > 0.45f) Color.Black else Color.White,
                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
@@ -713,7 +734,10 @@ private fun SupportStageTierInfo(
 
                 Text(
                     text = targetTier.title,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = GoogleSansWeight.bold),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = style.titleFont?.family,
+                        fontWeight = style.titleFont?.weight ?: GoogleSansWeight.bold,
+                    ),
                     color = Color.White,
                     textAlign = TextAlign.Center,
                 )
@@ -782,37 +806,16 @@ private fun SupportSegmentedGauge(
     }
 }
 
-internal fun buildSupportMissionAnnotatedString(totalListeningHours: Long?): AnnotatedString =
-    buildAnnotatedString {
-        append("Software that helps people learn, listen, and explore should simply exist without a catch. ")
-        if (totalListeningHours != null && totalListeningHours >= 5L) {
-            append("If boxlore has been a great companion across your ")
-            withStyle(
-                SpanStyle(
-                    fontWeight = GoogleSansWeight.bold,
-                    color = Color.White,
-                ),
-            ) {
-                append("$totalListeningHours hours")
-            }
-            append(" of listening, backing a power cell helps keep the app free and ad-free for everyone.")
-        } else {
-            append("No ads, no paywalls. Backing a power cell helps fund our servers and keep boxlore open for everyone.")
-        }
-    }
-
-internal fun getSupportMissionText(totalListeningHours: Long?): String =
-    buildSupportMissionAnnotatedString(totalListeningHours).text
-
 @Composable
 private fun SupportMissionCard(
     activeColor: Color,
     totalListeningHours: Long?,
     modifier: Modifier = Modifier,
 ) {
+    val style = LocalSupportPageStyle.current
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF0D0D14),
+        color = style.cardSurface,
         border = BorderStroke(1.dp, activeColor.copy(alpha = 0.22f)),
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -860,8 +863,8 @@ private fun SupportMissionCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val missionText = remember(totalListeningHours) {
-                buildSupportMissionAnnotatedString(totalListeningHours)
+            val missionText = remember(totalListeningHours, style.supportPhrase) {
+                buildSupportMissionAnnotatedString(totalListeningHours, style.supportPhrase)
             }
 
             Text(

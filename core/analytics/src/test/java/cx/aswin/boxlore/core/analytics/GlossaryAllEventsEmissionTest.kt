@@ -339,6 +339,12 @@ class GlossaryAllEventsEmissionTest {
                 "support_donate_clicked" to {
                     AnalyticsHelper.trackSupportDonateClicked("Witch Cell", "Witch Cell", "$5.00")
                 },
+                "support_entry_viewed" to {
+                    AnalyticsHelper.trackSupportEntryViewed("settings_top_bar")
+                },
+                "support_page_left" to {
+                    AnalyticsHelper.trackSupportPageLeft(SupportWorldContext("orbit", "experiment"), 4_200L, 2, true)
+                },
             )
     }
 }

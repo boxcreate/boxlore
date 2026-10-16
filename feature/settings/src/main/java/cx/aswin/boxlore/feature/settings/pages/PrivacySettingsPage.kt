@@ -155,10 +155,15 @@ internal fun PrivacySettingsPage(
         SettingsGroup(title = "4 · App and device") {
             PrivacyCategoryContent(
                 icon = Icons.Rounded.Devices,
-                collected = "App version, OS, device details, local hour, and your analytics ID.",
+                collected =
+                "App version, OS, device details, local hour and day, your analytics ID, " +
+                    "and approximate location (country, region, city and postcode area) that PostHog " +
+                    "works out from your IP address. The IP address itself isn’t kept.",
                 reason =
-                "We don’t really need this for product decisions — PostHog tracks it by default, " +
-                    "and we don’t currently have a clean way to turn that part off.",
+                "Most of this PostHog collects by default, and we don’t currently have a clean way " +
+                    "to turn that part off. We do use rough location to see which countries boxlore " +
+                    "is used in — for example, to check that support prices make sense in each country " +
+                    "once payments are on. boxlore never asks for or reads your phone’s location.",
                 example = null,
             )
         }
@@ -168,6 +173,21 @@ internal fun PrivacySettingsPage(
                 icon = Icons.Rounded.BugReport,
                 collected = "Technical errors and crash reports.",
                 reason = "Pretty obvious — if the app breaks, we need to know so we can fix it.",
+                example = null,
+            )
+        }
+
+        SettingsGroup(title = "6 · Support page test") {
+            PrivacyCategoryContent(
+                icon = Icons.Rounded.VolunteerActivism,
+                collected =
+                "Which of six Support boxlore designs you see, which support levels you look at, " +
+                    "whether you tap to pay, and how long you stay on that page.",
+                reason =
+                "This is part design survey, part our attempt to earn back what it costs to keep " +
+                    "boxlore running. We just want a rough idea of which designs lead more people to " +
+                    "support boxlore. It’s tied only to your anonymous analytics ID, never your name, " +
+                    "email or account.",
                 example = null,
             )
         }

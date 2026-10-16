@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.boxloreContentBottomPadding
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportEntryImpression
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportEntrySurface
 
 internal val LocalSettingsSplitPane = staticCompositionLocalOf { false }
 internal val LocalSettingsPaneBackVisible = staticCompositionLocalOf { true }
@@ -114,6 +116,9 @@ private fun TabletSettingsCategories(destination: ProfileSettingsDestination, co
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 8.dp), contentPadding = PaddingValues(bottom = boxloreContentBottomPadding(24.dp))) {
             settingsCategories.forEach { category ->
                 item(key = category.destination) {
+                    if (category.destination == ProfileSettingsDestination.Support) {
+                        SupportEntryImpression(SupportEntrySurface.SettingsCategoryList)
+                    }
                     NavigationDrawerItem(
                         label = { Text(category.title) },
                         selected = selected == category.destination,

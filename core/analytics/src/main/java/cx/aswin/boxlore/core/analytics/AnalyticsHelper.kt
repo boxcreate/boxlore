@@ -690,20 +690,46 @@ object AnalyticsHelper : Analytics {
         sectionsOff: Int,
     ) = RecommendationsAnalyticsTracks.trackSectionToggled(section, enabled, source, sectionsOff)
 
-    fun trackSupportPageViewed() = LibraryAnalyticsTracks.trackSupportPageViewed()
+    /**
+     * The `support-world` variant for this person when it is one of [knownVariants], or null before
+     * flags load or for an unknown value. Only a known variant records an exposure. Read once per visit.
+     */
+    fun supportWorldVariant(knownVariants: Set<String>): String? = SupportAnalyticsTracks.supportWorldVariant(knownVariants)
+
+    fun trackSupportEntryViewed(surface: String) = SupportAnalyticsTracks.trackSupportEntryViewed(surface)
+
+    fun trackSupportPageViewed(
+        world: SupportWorldContext? = null,
+        entryPoint: String? = null,
+        localHour: Int? = null,
+        weekday: Int? = null,
+    ) = SupportAnalyticsTracks.trackSupportPageViewed(world, entryPoint, localHour, weekday)
 
     fun trackSupportTierToggled(
         tierTitle: String,
         codename: String,
         amount: String,
         isLoreInspect: Boolean = false,
-    ) = LibraryAnalyticsTracks.trackSupportTierToggled(tierTitle, codename, amount, isLoreInspect)
+        world: SupportWorldContext? = null,
+        tierIndex: Int? = null,
+    ) = SupportAnalyticsTracks.trackSupportTierToggled(tierTitle, codename, amount, isLoreInspect, world, tierIndex)
 
     fun trackSupportDonateClicked(
         tierTitle: String,
         codename: String,
         amount: String,
-    ) = LibraryAnalyticsTracks.trackSupportDonateClicked(tierTitle, codename, amount)
+        world: SupportWorldContext? = null,
+        tierIndex: Int? = null,
+        amountUsd: Double? = null,
+        paymentsLive: Boolean? = null,
+    ) = SupportAnalyticsTracks.trackSupportDonateClicked(tierTitle, codename, amount, world, tierIndex, amountUsd, paymentsLive)
+
+    fun trackSupportPageLeft(
+        world: SupportWorldContext,
+        dwellMs: Long,
+        tiersViewed: Int,
+        payTapped: Boolean,
+    ) = SupportAnalyticsTracks.trackSupportPageLeft(world, dwellMs, tiersViewed, payTapped)
 
     fun trackMiniPlayerInteraction(
         action: String,

@@ -8,3 +8,13 @@ useDefault = true
   keywords = [
     "boxcast-app"
   ]
+
+# The episode tracker bot stores each feed's latest RSS item GUID as `lastRssKey`. These are public
+# episode identifiers, not secrets, but they trip `generic-api-key`. Only those lines in that file
+# are allowed; any other finding there still fails.
+[[allowlists]]
+  description = "Episode tracker lastRssKey (public RSS item GUIDs)"
+  condition = "AND"
+  paths = ['''^scripts/data/episode-tracker\.json$''']
+  regexTarget = "line"
+  regexes = ['''^\s*"lastRssKey":\s*"[^"]*",?\s*$''']
