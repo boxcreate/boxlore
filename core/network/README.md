@@ -8,13 +8,23 @@ Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and respon
 
 - `BoxLoreApi` defines the Retrofit service surface, including additive `GET search/typeahead` (Meili show typeahead), cloud sync endpoints (`POST user/sync/push`, `POST user/sync/pull`, `DELETE user/sync/account`), and legacy routes. Legacy `GET search` and `POST sync` are unchanged.
 - `FirebaseAuthAuthenticator` provides an OkHttp `Authenticator` handling HTTP 401 Unauthorized responses with Kotlin `Mutex` refresh serialization to prevent token refresh stampedes (consuming `AuthRepository` from `:core:auth`).
-- `NetworkModule` creates OkHttp, Retrofit, and related network clients, with automatic header redaction for `Authorization`, `X-App-Key`, and `X-Firebase-AppCheck`.
+- `NetworkModule` creates OkHttp, Retrofit, and related network clients, with automatic header redaction for `Authorization`, `X-App-Key`, `X-Firebase-AppCheck`, `X-Boxlore-Session`, `X-Session-Renew` and `X-Session-Proof`. Every request carries `X-App-Version` and `X-App-Channel` (`play` or `github`) when the app sets `appVersion` / `appChannel`. `createSessionExchangeClient()` is the plain client for `POST /auth/session` (no session interceptor, no Firebase authenticator, no cache).
+- **API sessions (`session/`, 2026-10-17).** This build authenticates with API session tickets only and **never sends the bundled app key**: `ApiSessionInterceptor` strips `X-App-Key` from every request. `NetworkModule.sessionManager` is set by the app at startup.
+  - `ApiSessionManager` owns the install's session. One shared `POST /auth/session` exchange runs at a time; `start()` begins it at launch when no usable session is stored, and requests wait for it (at most 15 s) only then: a fresh install, or after the 30-day attestation window. With a stored session, requests attach it without waiting. Failed exchanges back off (2 s, 5 s, 15 s, 30 s, 1 min, then every 5 min, or the server's `Retry-After`); inside a backoff, requests go out without a session at once. There is no app-key fallback.
+  - Exchanges send `{installId, platform: "android", channel, devicePublicKey}` (plus `turnstileToken` for a step-up) with `X-Firebase-AppCheck`. App Check is fetched only here, bounded to 6 s; a phone that has failed App Check gets its next session without asking App Check on the critical path.
+  - Renewal: once a token is past `exp` (30 s early, for requests in flight), requests add `X-Session-Proof: <unix seconds>.<signature>`, a SHA256withECDSA signature of `bls-renew.<sid>.<unix seconds>` by the device key (`AndroidKeystoreDeviceKey`: non-exportable EC P-256 in StrongBox when available, else the TEE). One proof is reused for up to 2 minutes. `X-Session-Renew` from a network response (never a cached one) replaces the token when it extends the same session. The API clock is learned from each token's `iat`, so a wrong phone clock does not break renewals.
+  - `session_expired` / `session_invalid` / `session_revoked`: the interceptor gets one new session and retries once. A session refused within a minute of being issued is not replaced again (the request returns its 401 and the exchange backs off), so a misconfigured API can't cause an exchange storm.
+  - Limited sessions (`attestation: none`): `ApiSessionScheduler` retries App Check in the background only while the app is in the foreground with a network, about a minute after the first failure, then hourly (three times), then daily, and swaps in the full session silently. Weaker sessions are also refreshed (without App Check) an hour before they run out, and App Check sessions re-attest a day before their window ends. Background exchanges are at least a minute apart.
+  - `verification_required` on an AI route: `ApiSessionStepUp` asks the app's `TurnstileTokenSource` for a token, exchanges it for a `challenge` session and retries once. It runs only when `stepUpEnabled` returns true (the app keeps it off until the API can verify Turnstile). Concurrent AI requests share one step-up; a failure starts a 30-minute cooldown in which AI requests return their 401 at once, so onboarding uses its non-AI path. `daily_ai_limit` (429) is passed straight to the caller.
+  - `ApiErrorCodes` reads the shield's `{"error": "<code>"}` bodies (`of(okhttp3.Response)` peeks without consuming; `of(retrofit2.Response)` reads the error body). `AI_UNAVAILABLE` lists the codes after which AI routes won't work for this session.
+  - `ApiSessionListener` reports each exchange (trigger, success, duration, attestation, limited, App Check attempt and failure category, server reason), the first renewal of each token or a renewal problem, and step-up outcomes; the app forwards them to `:core:analytics`.
+- `FirebaseAuthAuthenticator` ignores 401s carrying shield codes (`ApiErrorCodes.SHIELD_CODES`): those belong to the session interceptor, and a Firebase token can't fix them.
 - `StreamingJsonConverterFactory` streams response deserialization directly from OkHttp's `ResponseBody.byteStream()` via `Json.decodeFromStream` without monolithic string buffering.
 - DTOs under `cx.aswin.boxlore.core.network.model`, including recommendation, bootstrap, content catalog/v3, history, sync, user cloud sync (`UserSyncModels.kt` with `feedUrl` support on `UserSubscriptionSyncDto`), and request payload models. Onboarding curriculum / genre-synth / similar-shows requests accept optional `languages` (chip codes; proxy expands and defaults from country).
 - Next-turn onboarding requests may opt into `guided_v1`. `GuidedOnboardingTurn` adds separate response/question text, choices, action IDs and an explicit kind/intent alongside the legacy message/options/search fields. `OnboardingNextTurnRequest` also carries optional `features` (the app sends `finish_hint`), `country` and `languages`, all omitted when null; `GuidedOnboardingTurn.finish` (`hidden` / `available` / `prominent`) is decoded when the API sends it. Its absence remains compatible with older responses; synthesis requests do not implicitly opt in. Response interpretation belongs to onboarding rather than the HTTP layer.
 - `getOnboardingProbeDeck` (`POST onboarding/probe-deck`) returns `OnboardingProbeDeckResponse` (2-4 `OnboardingProbeCard`s or none; preview fields optional). `OnboardingNextTurnRequest.probeReactions` (`OnboardingProbeReaction`: id, title, `listen` / `like` / `dislike` / `unknown`) is omitted when null and is sent with next-turn, synthesize and probe-deck requests. `OnboardingProbeCard.toPodcast()` maps a card to the app's podcast model.
 - Onboarding synthesis, curriculum, genre and similar-show DTOs accept optional `recommendationFormat`. The updated flow explicitly sends `discovery_v2` to permit up to six recommendation rows; defaults omit the field, preserving older request behavior. Curriculum decoding preserves the API's row and show order and forwards opaque search queries unchanged. No response/storage migration is required.
-- App Check, app version, public-key, and device-header hooks used by application wiring.
+- App version, channel, session manager and device-header hooks used by application wiring. The bundled public key is still passed to `BoxLoreApi` methods for source compatibility, but the interceptor removes it before any request leaves.
 
 ## Internal structure
 
@@ -26,12 +36,25 @@ src/main/java/cx/aswin/boxlore/core/network/
   StreamingJsonConverterFactory.kt
   model/
     UserSyncModels.kt
+  session/
+    ApiSessionManager.kt       # shared exchange, request headers, renewals, rejections
+    ApiSessionBook.kt          # the manager's state (token, clock offset, backoffs, proof cache)
+    ApiSessionScheduler.kt     # foreground upkeep: App Check retries, refreshes
+    ApiSessionStepUp.kt        # Turnstile step-up with cooldown
+    ApiSessionPolicy.kt        # pure timing rules
+    ApiSessionInterceptor.kt   # OkHttp: attach, renew, retry once; strips X-App-Key
+    ApiSessionToken.kt         # bls1 token claims
+    ApiSessionPorts.kt         # App Check, Turnstile, device key, store, listener ports
+    ApiErrorCodes.kt
+    OkHttpSessionExchanger.kt  # POST /auth/session
+    AndroidKeystoreDeviceKey.kt
+    DataStoreApiSessionStore.kt
 ```
 
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:auth`.
-- Libraries: Retrofit, Kotlinx serialization, OkHttp, OkHttp logging interceptor, Gson, AndroidX annotation, and coroutines.
+- Libraries: Retrofit, Kotlinx serialization, OkHttp, OkHttp logging interceptor, Gson, AndroidX annotation, AndroidX DataStore Preferences (the session store), and coroutines. No Firebase: App Check and Turnstile come in through ports.
 - Reverse-edge rule: network must not depend on catalog, database, playback, downloads, designsystem, or feature modules.
 
 ## Threading / lifecycle
@@ -39,11 +62,13 @@ src/main/java/cx/aswin/boxlore/core/network/
 - OkHttp uses its own dispatcher threads.
 - Retrofit suspend functions must be called from coroutines, normally from repository IO paths.
 - Production clients are process-scoped when created by application wiring.
+- `ApiSessionManager` runs on the application scope (IO). The interceptor calls it on OkHttp threads and blocks only while waiting for a missing session, a one-time recovery, or a step-up on an AI route. Persistence is asynchronous and serialized. Listener callbacks arrive off the main thread.
 
 ## Persistence & identity
 
 - `BootstrapRequest.include` lists the reply parts the app uses (`INCLUDE_BRIEFING`, `INCLUDE_TRENDING`, `INCLUDE_CURATED_VIBES`, `INCLUDE_RECOMMENDATIONS`). It is omitted when null, which older Workers and app versions treat as every part.
 - No user data is persisted by this module.
+- API session state lives in the DataStore file `boxlore_api_session` (keys `session_token`, `install_id`, `clock_offset_seconds`, `app_check_failures`, `next_app_check_at_ms`). The install id is random (16 bytes, base64url) and separate from the analytics and sync device ids. The device key is the Keystore alias `boxlore_api_session_device_key`. Keep both names stable: renaming signs every install out of its session. The app's backup rules exclude the file, because a restored token could never renew without this phone's Keystore key.
 - Base URL, public key, app version, App Check tokens, and device identifiers are supplied at runtime by app or repository wiring.
 - API path and payload shape changes should be tested as contract changes.
 
@@ -52,6 +77,8 @@ src/main/java/cx/aswin/boxlore/core/network/
 - Unit tests live under `core/network/src/test`.
 - `BoxLoreApiContractTest` uses MockWebServer fixtures for endpoint contracts.
 - Prefer MockWebServer over live backend calls.
+- `session/ApiSessionInterceptorTest` (MockWebServer): a stored session goes out at once while an exchange hangs and no request carries `X-App-Key`; one exchange serves concurrent first requests; `X-Session-Renew` is stored and foreign or older renewals are ignored; the proof appears only from 30 s before `exp`; a missing device key sends no proof and reports it once; a refused session is replaced once; a brand-new session refused again backs off; failed exchanges back off without an app-key fallback; App Check failure gives a limited session and the next launch skips App Check; the step-up retries with a `challenge` session, a failed step-up returns the 401 and cools down, and it stays off until enabled; `daily_ai_limit` passes through; other hosts get no session.
+- `session/ApiSessionSchedulerTest` (virtual time): limited → full upgrade on the 1 min / hourly / daily schedule, nothing in the background or offline, an overdue retry when the network returns, and the pure next-step plan. `ApiSessionPolicyTest` covers token parsing, proof timing, usability, replacement and backoffs. `OkHttpSessionExchangerTest` covers the `/auth/session` body, headers and failure reasons. `FirebaseAuthAuthenticatorTest` checks shield 401s are left alone.
 - `OnboardingGuidedContractTest` checks legacy decoding, request-specific opt-in and structured recovery action decoding, including unknown additive fields, and the finish-hint opt-in (features, country, languages omitted by default; `finish` decoded), plus show deck cards with and without a preview and opt-in reactions.
 
 ```bash

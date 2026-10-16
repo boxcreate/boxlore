@@ -252,6 +252,12 @@ class ArchitectureGuardTest {
                         "Calendar",
                         "java\\.util\\.Calendar",
                         "MessageDigest",
+                        // JCA factories for the API session device key (Android Keystore).
+                        "KeyStore",
+                        "KeyPairGenerator",
+                        "Signature",
+                        // WebView cookies for the Turnstile step-up page.
+                        "android\\.webkit\\.CookieManager",
                         "WorkManager",
                         "androidx\\.work\\.WorkManager",
                         "MediaRouter",

@@ -10,6 +10,8 @@
     <include domain="file" path="datastore/" />
     <!-- Background feed access requires explicit consent on this installation. -->
     <exclude domain="file" path="datastore/auto_download_background.preferences_pb" />
+    <!-- The API session is bound to this phone's Keystore key; a restored copy could never renew. -->
+    <exclude domain="file" path="datastore/boxlore_api_session.preferences_pb" />
     <!-- Update offers and installation sessions belong to this device only. -->
     <exclude domain="sharedpref" path="boxlore_direct_updates.xml" />
     <exclude domain="sharedpref" path="boxlore_play_updates.xml" />

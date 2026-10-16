@@ -49,7 +49,9 @@ dependencies {
     implementation("androidx.annotation:annotation:1.7.1")
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
-            testImplementation(projects.core.testing)
+    // API session token, install id and App Check backoff (`boxlore_api_session`).
+    implementation(libs.androidx.datastore.preferences)
+    testImplementation(projects.core.testing)
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.vintage.engine)

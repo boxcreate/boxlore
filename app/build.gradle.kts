@@ -43,6 +43,13 @@ android {
 
     val resolvedApiBaseUrl = localProps.dual("BOXLORE_API_BASE_URL", "BOXCAST_API_BASE_URL")
     val resolvedPublicKey = localProps.dual("BOXLORE_PUBLIC_KEY", "BOXCAST_PUBLIC_KEY")
+    // Optional debug-only App Check debug secret (a UUID registered in the Firebase console).
+    val resolvedAppCheckDebugSecret =
+        localProps
+            .getProperty("BOXLORE_APPCHECK_DEBUG_SECRET")
+            ?.trim()
+            ?.filter { it.isLetterOrDigit() || it == '-' }
+            .orEmpty()
     val resolvedCastReceiverId =
         localProps
             .getProperty("BOXLORE_CAST_RECEIVER_ID")
@@ -85,6 +92,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "BOXLORE_APPCHECK_DEBUG_SECRET", "\"$resolvedAppCheckDebugSecret\"")
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
@@ -223,6 +233,8 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck.playintegrity)
+    // Origin-restricted JavaScript bridge for the Turnstile step-up page.
+    implementation("androidx.webkit:webkit:1.14.0")
     debugImplementation(libs.firebase.appcheck.debug)
 
     // Credentials / Google Sign-In

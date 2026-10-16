@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown only when Cloudflare's check needs the listener to confirm they are a person before
+         boxlore's AI suggestions (Echo, topic and show suggestions) can continue. The check itself
+         (a checkbox drawn by Cloudflare) sits below the body. -->
+    <string name="session_check_title">Quick check</string>
+    <string name="session_check_body">Confirm you’re a person to keep getting suggestions picked for you.</string>
+    <!-- Closes the check. Onboarding carries on without AI suggestions (topics or charts instead). -->
+    <string name="session_check_skip">Skip</string>
+</resources>

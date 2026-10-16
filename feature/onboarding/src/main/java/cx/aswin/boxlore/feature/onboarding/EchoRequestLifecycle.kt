@@ -3,6 +3,7 @@ package cx.aswin.boxlore.feature.onboarding
 import cx.aswin.boxlore.core.network.model.GuidedOnboardingTurn
 import cx.aswin.boxlore.core.network.model.OnboardingCurriculumRowDto
 import cx.aswin.boxlore.core.network.model.OnboardingHistoryEntry
+import cx.aswin.boxlore.core.network.session.ApiErrorCodes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -53,6 +54,13 @@ internal object EchoRequestPolicy {
         clearPending(question?.restoreOnto(state) ?: state)
 
     fun hasRecommendations(rows: List<OnboardingCurriculumRowDto>): Boolean = rows.any { it.podcasts.isNotEmpty() }
+
+    /**
+     * Whether a failed Echo turn should hand over to the topic picker instead of offering Try again:
+     * the API refused AI for this session ([ApiErrorCodes.AI_UNAVAILABLE]: the step-up failed or is
+     * off, or today's AI allowance is used), so a retry can't succeed.
+     */
+    fun picksTopicsAfter(apiErrorCode: String?): Boolean = apiErrorCode in ApiErrorCodes.AI_UNAVAILABLE
 }
 
 /** Transient question fields only; catalog results and account preferences stay live. */

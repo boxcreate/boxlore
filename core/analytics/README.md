@@ -11,6 +11,8 @@ Owns analytics event capture and non-fatal error reporting for Boxlore. The modu
 
 - `trackCustomThemeEditorOpened` emits once per editor visit. `trackCustomThemeSaved` is called after custom theme preference persistence succeeds. Both use glossary-backed events with only entry point or background style; no color values are captured. Facade and inventory tests cover both emissions.
 
+- `trackApiSessionStatus` emits `api_session_status` for API sessions (`ApiSessionAnalyticsTracks`): one event per `/auth/session` exchange (`kind=exchange`: `trigger`, `success`, `duration_ms`, `attestation`, `limited`, `app_check_attempted`, `failure_reason`, `server_reason`), per first renewal of a token or renewal problem (`kind=renew`, `renew_outcome`) and per Turnstile step-up (`kind=step_up`, `step_up_outcome`). Properties are categories only, never tokens, ids or keys. `trackAppCheckStatus` takes an optional `reason` (a short failure category such as `play_integrity_-9`); App Check now runs only inside a session exchange, so `app_check_status` arrives once per attempt rather than once per launch.
+
 - `Analytics` is the interface used by production code and tests.
 - `AnalyticsHelper` is the PostHog-backed production singleton.
 - `RecordingAnalytics` is an in-memory test double.

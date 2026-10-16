@@ -4,9 +4,11 @@ import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -117,6 +119,21 @@ class FirebaseAuthAuthenticatorTest {
         assertEquals("Bearer new-token-from-concurrent-thread", authenticatedRequest?.header("Authorization"))
         assertEquals(1, fakeRepo.cachedReadCount)
         assertEquals(0, fakeRepo.forceRefreshCount) // Stamped call avoided!
+    }
+
+    @Test
+    fun `leaves API session refusals to the session interceptor`() {
+        val fakeRepo = FakeAuthRepository(cachedToken = "stale-token", freshToken = "fresh-refreshed-token")
+        val authenticator = FirebaseAuthAuthenticator(fakeRepo)
+
+        for (code in listOf("session_expired", "session_invalid", "session_revoked", "verification_required")) {
+            val response = create401Response().newBuilder()
+                .body("""{"error":"$code"}""".toResponseBody("application/json".toMediaType()))
+                .build()
+            assertNull(authenticator.authenticate(null, response), code)
+        }
+        assertEquals(0, fakeRepo.forceRefreshCount)
+        assertEquals(0, fakeRepo.cachedReadCount)
     }
 
     @Test

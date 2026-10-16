@@ -806,15 +806,16 @@ class PodcastRepository(
             val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)
             val (podcastIndexHistory, podcastIndexSubscriptionIds) =
                 filterToPodcastIndexScope(history, subscribedPodcastIds)
+            val boundedInterests = boundedRecommendationInterests(interests)
             val recsReq =
                 if (
                     podcastIndexHistory.isNotEmpty() ||
-                    interests.isNotEmpty() ||
+                    boundedInterests.isNotEmpty() ||
                     podcastIndexSubscriptionIds.isNotEmpty()
                 ) {
                     cx.aswin.boxlore.core.network.model.RecommendationsRequest(
                         history = podcastIndexHistory,
-                        interests = interests,
+                        interests = boundedInterests,
                         country = resolvedCountry,
                         subscribedPodcastIds = podcastIndexSubscriptionIds,
                         subscribedGenres = subscribedGenres,

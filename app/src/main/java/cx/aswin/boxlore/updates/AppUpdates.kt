@@ -167,7 +167,7 @@ class AppUpdates internal constructor(
 }
 
 internal fun createAppUpdates(context: Context, scope: CoroutineScope): AppUpdates {
-    val usesPlay = !BuildConfig.BOXLORE_DIRECT_UPDATES || context.isInstalledFromPlayStore()
+    val usesPlay = cx.aswin.boxlore.session.InstallChannel.usesPlay(BuildConfig.BOXLORE_DIRECT_UPDATES) { context.isInstalledFromPlayStore() }
     val checkStore = AndroidUpdateCheckStore(context, usesPlay)
     val session = AndroidUpdateSessionStore(context)
     val cachedVersion = checkStore.cachedManifest?.versionCode ?: checkStore.cachedPlayVersion

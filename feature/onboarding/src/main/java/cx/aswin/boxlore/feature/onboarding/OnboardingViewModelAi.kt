@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.network.model.OnboardingHistoryEntry
 import cx.aswin.boxlore.core.network.model.OnboardingNextTurnRequest
 import cx.aswin.boxlore.core.network.model.OnboardingPart
 import cx.aswin.boxlore.core.network.model.toPodcast
+import cx.aswin.boxlore.core.network.session.ApiErrorCodes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
@@ -223,10 +224,18 @@ internal fun OnboardingViewModel.sendAiTurnInput() {
                         turnStartMs = System.currentTimeMillis()
                     }
                 } else {
+                    if (EchoRequestPolicy.picksTopicsAfter(ApiErrorCodes.of(response))) throw EchoAiUnavailableException()
                     throw Exception("Server returned error ${response.code()}")
                 }
             } catch (e: Exception) {
                 EchoRequestPolicy.ensureActive(e)
+                if (e is EchoAiUnavailableException) {
+                    // Echo is off for this install right now (no verification, or today's AI allowance
+                    // is used). Retrying can't help, so the listener carries on with the topic picker.
+                    Log.w("OnboardingViewModel", "Echo unavailable for this session; switching to topics")
+                    switchToLegacyOnboarding()
+                    return@launch
+                }
                 Log.e("OnboardingViewModel", "Error in sendAiTurnInput", e)
                 val userFriendlyMsg =
                     when (e) {
@@ -715,3 +724,6 @@ fun OnboardingViewModel.markOnboardingCompletedSilent(onDone: () -> Unit) {
     boxcastPrefs.setOnboardingCompleted(true)
     onDone()
 }
+
+/** The API refused Echo for this session even after any step-up (see [ApiErrorCodes.AI_UNAVAILABLE]). */
+internal class EchoAiUnavailableException : Exception("Echo is unavailable for this session")

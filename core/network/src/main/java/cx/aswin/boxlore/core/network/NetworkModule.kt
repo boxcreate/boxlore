@@ -1,6 +1,8 @@
 package cx.aswin.boxlore.core.network
 
 import android.util.Log
+import cx.aswin.boxlore.core.network.session.ApiSessionInterceptor
+import cx.aswin.boxlore.core.network.session.ApiSessionManager
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -12,35 +14,34 @@ object NetworkModule {
     private val contentType = "application/json".toMediaType()
 
     /**
-     * Supplies a Firebase App Check token for outgoing API requests. Set by the
-     * app module at startup (keeps this module free of Firebase dependencies).
-     * Must return null quickly on any failure so requests proceed without the
-     * header (fail-open): the Worker only observes tokens for now.
-     */
-    @Volatile
-    var appCheckTokenProvider: (() -> String?)? = null
-
-    /**
      * App version (BuildConfig.VERSION_NAME), set by the app module at startup.
-     * Sent as X-App-Version so the proxy can slice App Check adoption by build.
+     * Sent as X-App-Version so the API can slice session adoption by build.
      */
     @Volatile
     var appVersion: String? = null
 
-    private val appCheckInterceptor = okhttp3.Interceptor { chain ->
-        val token = try {
-            appCheckTokenProvider?.invoke()
-        } catch (e: Exception) {
-            Log.w("BoxCastAPI", "App Check token fetch failed; proceeding without", e)
-            null
-        }
+    /**
+     * Install channel (`play` or `github`), set by the app module at startup.
+     * Sent as X-App-Channel and in the session exchange.
+     */
+    @Volatile
+    var appChannel: String? = null
+
+    /**
+     * This install's API session, set by the app module at startup. Requests carry
+     * X-Boxlore-Session from it and never the bundled app key (see [ApiSessionInterceptor]).
+     */
+    @Volatile
+    var sessionManager: ApiSessionManager? = null
+
+    private val clientHeadersInterceptor = okhttp3.Interceptor { chain ->
         val builder = chain.request().newBuilder()
-        if (!token.isNullOrEmpty()) {
-            builder.header("X-Firebase-AppCheck", token)
-        }
         appVersion?.let { builder.header("X-App-Version", it) }
+        appChannel?.let { builder.header("X-App-Channel", it) }
         chain.proceed(builder.build())
     }
+
+    private val sessionInterceptor = ApiSessionInterceptor { sessionManager }
 
     /**
      * Optional Authenticator (e.g. FirebaseAuthAuthenticator) for handling HTTP 401
@@ -60,10 +61,14 @@ object NetworkModule {
         redactHeader("X-Firebase-AppCheck")
         redactHeader("X-App-Key")
         redactHeader("Authorization")
+        redactHeader(ApiSessionInterceptor.SESSION_HEADER)
+        redactHeader(ApiSessionInterceptor.RENEW_HEADER)
+        redactHeader(ApiSessionInterceptor.PROOF_HEADER)
     }
 
     private val okHttpClient = OkHttpClient.Builder().apply {
-        addInterceptor(appCheckInterceptor)
+        addInterceptor(clientHeadersInterceptor)
+        addInterceptor(sessionInterceptor)
         addInterceptor(loggingInterceptor)
         authenticator(
             okhttp3.Authenticator { route, response ->
@@ -74,6 +79,18 @@ object NetworkModule {
         readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
     }.build()
+
+    /**
+     * Plain client for `POST /auth/session`: no session interceptor (it would wait on itself), no
+     * Firebase authenticator and no cache. Shares the connection pool with API calls.
+     */
+    fun createSessionExchangeClient(): OkHttpClient = OkHttpClient.Builder()
+        .connectionPool(okHttpClient.connectionPool)
+        .addInterceptor(loggingInterceptor)
+        .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
 
     /**
      * BoxCast API via Cloudflare Worker proxy.
