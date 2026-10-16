@@ -42,9 +42,11 @@ bench_node.js
 proxy/
 
 # Sub-projects (local only)
-# Composer sources are public; the existing gateway and configuration stay local.
+# STRICTLY LOCAL: everything under admin-panel/ stays ignored except the public composer files
+# listed below. Never un-ignore its README/runbook, gateway, config.json, crypto.js, Firebase
+# project files (.firebaserc, firebase.json, database.rules.json, .firebase/), data backups, or
+# hosting, domain and deployment notes. Add new public files one by one, never a whole folder.
 admin-panel/*
-!admin-panel/README.md
 !admin-panel/public/
 admin-panel/public/*
 !admin-panel/public/notifyappusers/
@@ -54,6 +56,11 @@ admin-panel/public/notifyappusers/*
 !admin-panel/public/notifyappusers/composer.css
 !admin-panel/public/notifyappusers/preview.html
 !admin-panel/public/notifyappusers/announcements/
+admin-panel/public/notifyappusers/announcements/*
+!admin-panel/public/notifyappusers/announcements/font.ttf
+!admin-panel/public/notifyappusers/announcements/renderer.css
+!admin-panel/public/notifyappusers/announcements/renderer.html
+!admin-panel/public/notifyappusers/announcements/renderer.js
 telemetry-worker/
 
 # Local website checkout; keep the rest of docs/ tracked.
