@@ -47,10 +47,14 @@ class EchoClipFrames(private val assets: AssetManager, private val accent: Int, 
         if (closed) return@withContext
         val keep = setOfNotNull(current?.id, upcoming?.id)
         decoders.keys.filter { it !in keep }.forEach { decoders.remove(it)?.close() }
-        frames.keys.filter { it.clip !in keep || (it.clip == current?.id && it.index < frame - 2 && it.index < (current?.frames ?: 0) - EchoClipAhead) }.forEach(::release)
+        frames.keys.filter { it.clip !in keep || current?.leftBehind(it, frame) == true }.forEach(::release)
         current?.let { fill(it, frame, frame + EchoClipAhead) }
         upcoming?.takeIf { it.id != current?.id }?.let { fill(it, 0, EchoClipAhead - 1) }
     }
+
+    /** A frame of this clip that playback at [frame] has moved past; the clip's last few frames stay for the next loop round. */
+    private fun EchoMotionClip.leftBehind(key: EchoClipFrameKey, frame: Int): Boolean =
+        key.clip == id && key.index < frame - 2 && key.index < frames - EchoClipAhead
 
     private fun fill(clip: EchoMotionClip, from: Int, to: Int) {
         if (clip.id in broken) return
@@ -157,21 +161,26 @@ private class EchoClipDecoder(assets: AssetManager, private val clip: EchoMotion
         if (outputDone) return false
         repeat(EchoDecodeAttempts) {
             if (!inputDone) feedInput()
-            val index = codec.dequeueOutputBuffer(info, EchoDecodeTimeoutUs)
-            if (index >= 0) {
-                val end = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
-                val produced = info.size > 0
-                if (produced) codec.getOutputImage(index)?.use { unpack(it, out, mask) }
-                codec.releaseOutputBuffer(index, false)
-                if (end) outputDone = true
-                if (produced) {
-                    nextIndex++
-                    return true
-                }
-                if (end) return false
-            }
+            takeOutput(out, mask)?.let { return it }
         }
         error("Echo clip ${clip.id} stalled at frame $nextIndex")
+    }
+
+    /** One output buffer, if the codec has one ready: true for a decoded frame, false once the clip has ended, null for nothing yet. */
+    private fun takeOutput(out: IntArray, mask: ByteArray?): Boolean? {
+        val index = codec.dequeueOutputBuffer(info, EchoDecodeTimeoutUs)
+        if (index < 0) return null
+        val end = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
+        val produced = info.size > 0
+        if (produced) codec.getOutputImage(index)?.use { unpack(it, out, mask) }
+        codec.releaseOutputBuffer(index, false)
+        if (end) outputDone = true
+        if (produced) nextIndex++
+        return when {
+            produced -> true
+            end -> false
+            else -> null
+        }
     }
 
     fun rewind() {

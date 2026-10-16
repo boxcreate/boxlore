@@ -76,7 +76,7 @@ fun EchoSequence.at(elapsedMillis: Long): EchoTimelinePoint {
 
 /** One plane of a decoded YUV frame: its bytes and how far apart rows and pixels sit. */
 class EchoYuvPlane(val buffer: ByteBuffer, val rowStride: Int, val pixelStride: Int) {
-    fun at(row: Int, col: Int): Int = buffer.get(row * rowStride + col * pixelStride).toInt() and 0xFF
+    fun at(row: Int, col: Int): Int = buffer[row * rowStride + col * pixelStride].toInt() and 0xFF
 }
 
 /** A decoded YUV 4:2:0 frame (chroma at half resolution), read from [cropLeft], [cropTop]. */
