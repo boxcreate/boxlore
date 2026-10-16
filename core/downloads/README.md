@@ -74,6 +74,7 @@ Files under `core/data` are compatibility stubs for previously scheduled WorkMan
 
 ## Testing notes
 
+- `DownloadRepositoryTest` checks that removing an active download never starts the download service.
 - Unit tests live under `core/downloads/src/test`.
 - Existing coverage includes worker behavior, dependency-holder behavior, smart-download candidate logic, and `DownloadAnalyticsMapping` size/source/failure mapping.
 - Robolectric and WorkManager testing are enabled for worker tests.

@@ -52,6 +52,8 @@ internal class PlaybackQueueCoordinator(
     private val storePendingEntryPoint: (android.os.Bundle?) -> Unit,
     private val ensureCurrentHistoryRow: suspend () -> Unit,
     private val stopProgressTicker: () -> Unit,
+    /** Called whenever a queue starts from a listener action, so stream-failure counting starts fresh. */
+    private val onQueueStarted: () -> Unit = {},
 ) {
     private val castQueueSnapshotPolicy = CastQueueSnapshotPolicy()
     private var castQueueRecheckJob: Job? = null
@@ -258,6 +260,8 @@ internal class PlaybackQueueCoordinator(
         sourceContext: android.os.Bundle? = null,
     ) {
         Log.d("PlaybackRepo", "playQueue() called: count=${episodes.size}, start=$startIndex, podcastGenre='${podcast.genre}'")
+        // Every listener-started queue (play, play episode, play from queue, skip to an episode) lands here.
+        onQueueStarted()
         val requestedStartId = episodes.getOrNull(startIndex)?.id
         val uniqueEpisodes = episodes.distinctBy { it.id }
         val uniqueStartIndex =

@@ -28,17 +28,22 @@ object NpsSurveyTriggers {
         isCurrentlyPlaying: () -> Boolean,
         scope: CoroutineScope,
     ) {
-        try {
-            if (
-                cx.aswin.boxlore.core.analytics.PostHogStartup.isReady &&
-                PostHog.isFeatureEnabled("survey-nps-remote-trigger") &&
-                engagementCoordinator.canShowProactivePrompt(isCurrentlyPlaying())
-            ) {
-                AnalyticsHelper.trackSurveyNpsManualTrigger(source = "remote_flag")
-                PostHog.reloadFeatureFlags()
+        // The flag can only be read once PostHog is set up; queued callbacks run on the setup
+        // thread, so the check itself goes back to [scope].
+        cx.aswin.boxlore.core.analytics.PostHogStartup.runWhenReady {
+            scope.launch {
+                try {
+                    if (
+                        PostHog.isFeatureEnabled("survey-nps-remote-trigger") &&
+                        engagementCoordinator.canShowProactivePrompt(isCurrentlyPlaying())
+                    ) {
+                        AnalyticsHelper.trackSurveyNpsManualTrigger(source = "remote_flag")
+                        PostHog.reloadFeatureFlags()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Remote trigger check failed", e)
+                }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Remote trigger check failed", e)
         }
 
         scope.launch {
