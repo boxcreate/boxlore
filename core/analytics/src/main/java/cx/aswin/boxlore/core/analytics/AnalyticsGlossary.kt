@@ -47,6 +47,7 @@ object AnalyticsGlossary {
             "notification_received",
             "identity_reset",
             "app_check_status",
+            "api_session_status",
             "first_episode_played",
             // Phase A/B
             "search_performed",

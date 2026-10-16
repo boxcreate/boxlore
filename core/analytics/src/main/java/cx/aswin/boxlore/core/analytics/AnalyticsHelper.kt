@@ -122,15 +122,19 @@ object AnalyticsHelper : Analytics {
      * token; `provider` distinguishes debug vs Play Integrity. App version is
      * attached automatically by PostHog, so adoption can be sliced by build.
      */
-    override fun trackAppCheckStatus(tokenObtained: Boolean, provider: String,) {
+    override fun trackAppCheckStatus(tokenObtained: Boolean, provider: String, reason: String?,) {
         AnalyticsEmit.event(
             "app_check_status",
-            mapOf(
-                "token_obtained" to tokenObtained,
-                "provider" to provider,
-            ),
+            buildMap<String, Any> {
+                put("token_obtained", tokenObtained)
+                put("provider", provider)
+                reason?.let { put("reason", it.take(60)) }
+            },
         )
     }
+
+    /** See [ApiSessionAnalyticsTracks]: session exchanges, renewals and step-ups. */
+    fun trackApiSessionStatus(status: ApiSessionStatus) = ApiSessionAnalyticsTracks.trackApiSessionStatus(status)
 
     override fun trackFirstEpisodePlayed() {
         AnalyticsEmit.event(

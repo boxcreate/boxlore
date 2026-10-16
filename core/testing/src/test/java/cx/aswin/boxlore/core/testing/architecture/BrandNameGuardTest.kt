@@ -27,7 +27,8 @@ class BrandNameGuardTest {
 
     private val stringLiteral = Regex(""""((?:[^"\\]|\\.)*)"""")
 
-    // HTTP User-Agent product tokens: podcast hosts and stats services identify the app by them.
+    // HTTP User-Agent product tokens (podcast hosts and stats services identify the app by them)
+    // and protocol header names the API defines.
     private val allowedLiterals =
         setOf(
             "core/rss/src/main/java/cx/aswin/boxlore/core/rss/RssFeedClient.kt" to
@@ -36,6 +37,8 @@ class BrandNameGuardTest {
                 "BoxLore",
             "core/downloads/src/main/java/cx/aswin/boxlore/core/downloads/DownloadRepository.kt" to "BoxLore",
             "feature/onboarding/src/main/java/cx/aswin/boxlore/feature/onboarding/EchoShowPreview.kt" to "BoxLore",
+            // API session header name, fixed by the API shield's contract.
+            "core/network/src/main/java/cx/aswin/boxlore/core/network/session/ApiSessionInterceptor.kt" to "X-Boxlore-Session",
         )
 
     @Test

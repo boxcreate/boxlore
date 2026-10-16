@@ -558,6 +558,10 @@ fun BoxLoreAppRoot(
     ) {
         cx.aswin.boxlore.updates.AppUpdatesHost(application.container.appUpdates, activity) {
         CompositionLocalProvider(LocalBoxloreWindowLayout provides windowLayout, cx.aswin.boxlore.core.designsystem.components.LocalArtworkRecoveryGeneration provides artworkRecoveryGeneration, LocalNavigationStyle provides navigationStyle, cx.aswin.boxlore.core.designsystem.theme.LocalArtworkNavigationColors provides artworkNavigation) {
+            // Limited API sessions step up here before AI routes; invisible unless Turnstile asks for a tap.
+            application.apiSessions?.let { sessions ->
+                cx.aswin.boxlore.session.turnstile.TurnstileStepUpHost(sessions.turnstile, sessions.apiBaseUrl)
+            }
             loreQueueConflictEpisode?.let { pendingLoreEpisode ->
                 LoreQueueConflictDialog(
                     pendingLoreEpisode = pendingLoreEpisode,

@@ -4,6 +4,13 @@ import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.model.Episode
 
+/** Interests per recommendation request; the API caps legacy requests at 24 and v2 at 12. */
+internal const val MAX_RECOMMENDATION_INTERESTS = 12
+
+/** Trimmed, non-empty, distinct interests, at most [MAX_RECOMMENDATION_INTERESTS]. */
+internal fun boundedRecommendationInterests(interests: List<String>): List<String> =
+    interests.map(String::trim).filter(String::isNotEmpty).distinct().take(MAX_RECOMMENDATION_INTERESTS)
+
 internal fun PodcastRepository.fetchRecommendationV2(
     history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
     interests: List<String>,
@@ -12,7 +19,7 @@ internal fun PodcastRepository.fetchRecommendationV2(
     languages: List<String>,
 ): List<Episode>? {
     val seeds = buildRecommendationSeeds(history, subscribedPodcastIds)
-    val boundedInterests = interests.map(String::trim).filter(String::isNotEmpty).distinct().take(12)
+    val boundedInterests = boundedRecommendationInterests(interests)
     if (seeds.isEmpty() && boundedInterests.isEmpty()) return null
     val resolvedCountry = ContentRegions.canonicalize(country ?: "us")
     val request = cx.aswin.boxlore.core.network.model.RecommendationsV2Request(
@@ -110,7 +117,7 @@ internal fun PodcastRepository.fetchLegacyRecommendations(
 ): List<Episode> {
     val request = cx.aswin.boxlore.core.network.model.RecommendationsRequest(
         history = history,
-        interests = interests,
+        interests = boundedRecommendationInterests(interests),
         country = country,
         subscribedPodcastIds = subscribedPodcastIds,
         subscribedGenres = subscribedGenres,

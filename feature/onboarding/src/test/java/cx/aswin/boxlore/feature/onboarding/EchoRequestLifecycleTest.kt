@@ -122,4 +122,14 @@ class EchoRequestLifecycleTest {
         assertEquals(3, restored.aiCurrentTurn)
         assertFalse(restored.isSynthesizing)
     }
+
+    @Test fun `a turn refused for this session hands over to the topic picker instead of Try again`() {
+        // Step-up failed or off (401) and the daily AI allowance used up (429): retrying can't help.
+        assertTrue(EchoRequestPolicy.picksTopicsAfter("verification_required"))
+        assertTrue(EchoRequestPolicy.picksTopicsAfter("daily_ai_limit"))
+        // Ordinary failures keep Try again; refused sessions were already replaced by the network layer.
+        assertFalse(EchoRequestPolicy.picksTopicsAfter(null))
+        assertFalse(EchoRequestPolicy.picksTopicsAfter("session_expired"))
+        assertFalse(EchoRequestPolicy.picksTopicsAfter("Unauthorized"))
+    }
 }

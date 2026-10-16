@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.network
 
 import cx.aswin.boxlore.core.auth.AuthRepository
+import cx.aswin.boxlore.core.network.session.ApiErrorCodes
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -40,6 +41,10 @@ class FirebaseAuthAuthenticator(
      */
     override fun authenticate(route: Route?, response: Response): Request? {
         if (responseCount(response) >= MAX_RETRY_COUNT) {
+            return null
+        }
+        // API session refusals belong to ApiSessionInterceptor; a Firebase token can't fix them.
+        if (ApiErrorCodes.of(response) in ApiErrorCodes.SHIELD_CODES) {
             return null
         }
 

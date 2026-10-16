@@ -110,10 +110,14 @@ class RecordingAnalytics : Analytics {
         capture("first_episode_played")
     }
 
-    override fun trackAppCheckStatus(tokenObtained: Boolean, provider: String,) {
+    override fun trackAppCheckStatus(tokenObtained: Boolean, provider: String, reason: String?,) {
         capture(
             "app_check_status",
-            mapOf("token_obtained" to tokenObtained, "provider" to provider),
+            buildMap<String, Any> {
+                put("token_obtained", tokenObtained)
+                put("provider", provider)
+                reason?.let { put("reason", it) }
+            },
         )
     }
 }

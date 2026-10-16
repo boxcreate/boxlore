@@ -33,5 +33,6 @@ interface Analytics {
 
     fun trackFirstEpisodePlayed()
 
-    fun trackAppCheckStatus(tokenObtained: Boolean, provider: String,)
+    /** One App Check attempt; [reason] is a short failure category (null when a token was obtained). */
+    fun trackAppCheckStatus(tokenObtained: Boolean, provider: String, reason: String? = null,)
 }

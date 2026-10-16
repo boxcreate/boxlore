@@ -14,8 +14,6 @@ import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.SessionTransferCallback
-import com.google.android.gms.tasks.Tasks
-import com.google.firebase.appcheck.FirebaseAppCheck
 import com.posthog.PostHog
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
@@ -30,7 +28,6 @@ import cx.aswin.boxlore.surveys.BoxcastPostHogSurveysDelegate
 import cx.aswin.boxlore.sync.CloudSyncWorker
 import cx.aswin.boxlore.ui.StartupWorkGate
 import cx.aswin.boxlore.widgets.HomeScreenWidgetsInstaller
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -123,6 +120,10 @@ class BoxLoreApplication :
     lateinit var userPreferencesRepository: UserPreferencesRepository
         private set
 
+    /** This install's API session and its Turnstile step-up; null only without a valid API base URL. */
+    internal var apiSessions: cx.aswin.boxlore.session.ApiSessionSetup? = null
+        private set
+
     /** Shared orchestrator for NPS and Play review proactive prompts. */
     lateinit var engagementPromptCoordinator: EngagementPromptCoordinator
         private set
@@ -137,6 +138,8 @@ class BoxLoreApplication :
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
+        // Before anything can make an API request: start the shared session exchange behind the splash.
+        apiSessions = cx.aswin.boxlore.session.ApiSessionSetup.install(this, applicationScope)
         cx.aswin.boxlore.ui.CoilImageLoaderSetup.install(this)
 
         // Load the manifest-backed boxlore receiver before playback or Cast UI
@@ -156,6 +159,7 @@ class BoxLoreApplication :
                 sharedUserPreferences = userPreferencesRepository,
                 applicationScope = applicationScope,
             )
+        apiSessions?.observe(container.connectivityObserver.isOnlineFlow, applicationScope)
         setupCastSessionTracking()
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container
@@ -225,7 +229,6 @@ class BoxLoreApplication :
 
         reportAdaptiveRankingStatus()
 
-        setupAppCheck()
         // After queued launch transactions, distinguish a worker/widget process from
         // an Activity launch. UI launches release the gate from committed content.
         android.os.Looper.myQueue().addIdleHandler {
@@ -395,56 +398,6 @@ class BoxLoreApplication :
                     error,
                 )
             }
-        }
-    }
-
-    /**
-     * Firebase App Check attests that requests come from the genuine app.
-     * Debug builds use the debug provider (token must be registered in the
-     * Firebase console); release builds attest via Play Integrity. Tokens are
-     * attached to API calls as X-Firebase-AppCheck. Everything fails open:
-     * requests still go out without the header if attestation is unavailable,
-     * since the Worker is in log-only mode.
-     */
-    private fun setupAppCheck() {
-        try {
-            // Expose the build to the network layer so requests carry
-            // X-App-Version and the proxy can slice App Check adoption by build.
-            NetworkModule.appVersion = BuildConfig.VERSION_NAME
-            val provider = if (BuildConfig.DEBUG) "debug" else "play_integrity"
-            val appCheck = FirebaseAppCheck.getInstance()
-            installBuildAppCheckProvider(appCheck)
-            // Keep a valid token in the SDK's persistent cache at all times and
-            // refresh it in the background before expiry, so the interceptor gets
-            // an instant cache read instead of a live (and sometimes failing)
-            // fetch. With the 24h token TTL this is ~1 mint/user/day.
-            appCheck.setTokenAutoRefreshEnabled(true)
-            // Pre-warm: start the token exchange at launch so it's cached before
-            // the first API request, closing the cold-start gap. The result is
-            // reported once per launch to PostHog for adoption/health tracking.
-            appCheck
-                .getAppCheckToken(false)
-                .addOnSuccessListener {
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackAppCheckStatus(true, provider)
-                }.addOnFailureListener { e ->
-                    android.util.Log.w("BoxCastApp", "App Check pre-warm failed: ${e.message}")
-                    cx.aswin.boxlore.core.analytics.AnalyticsHelper
-                        .trackAppCheckStatus(false, provider)
-                }
-            NetworkModule.appCheckTokenProvider = {
-                try {
-                    // Called from OkHttp's background threads; returns the cached
-                    // token instantly unless it needs a refresh
-                    val task = FirebaseAppCheck.getInstance().getAppCheckToken(false)
-                    Tasks.await(task, 5, TimeUnit.SECONDS).token
-                } catch (e: Exception) {
-                    android.util.Log.w("BoxCastApp", "App Check token unavailable: ${e.message}")
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("BoxCastApp", "App Check setup failed", e)
         }
     }
 }

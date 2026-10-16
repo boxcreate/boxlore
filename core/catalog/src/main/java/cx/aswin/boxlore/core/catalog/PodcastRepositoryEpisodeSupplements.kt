@@ -78,23 +78,51 @@ internal suspend fun PodcastRepository.loadOptedInPodcastIds(): Set<String> = tr
     emptySet()
 }
 
+/** Ids per `/sync` call. The API serves only the first 40 ids of a request. */
+internal const val PI_SYNC_CHUNK_SIZE = 20
+
+/** `/sync` calls in flight at once for one library sync. */
+internal const val PI_SYNC_PARALLELISM = 2
+
+/**
+ * Latest PI episode per show. Whole libraries (Smart Downloads, backup restore) go out in chunks of
+ * [PI_SYNC_CHUNK_SIZE], at most [PI_SYNC_PARALLELISM] at a time, so every show is synced; a failed
+ * chunk leaves only its own shows without a tip.
+ */
 internal suspend fun PodcastRepository.fetchPiSyncTips(podcastIndexIds: List<String>): Map<String, Episode> {
-    if (podcastIndexIds.isEmpty()) return emptyMap()
+    val ids = podcastIndexIds.distinct()
+    if (ids.isEmpty()) return emptyMap()
+    return kotlinx.coroutines.coroutineScope {
+        val limit = kotlinx.coroutines.sync.Semaphore(PI_SYNC_PARALLELISM)
+        ids.chunked(PI_SYNC_CHUNK_SIZE).map { chunk ->
+            async { limit.withPermit { fetchPiSyncChunk(chunk) } }
+        }.awaitAll().fold(emptyMap()) { tips, chunk -> tips + chunk }
+    }
+}
+
+private fun PodcastRepository.fetchPiSyncChunk(podcastIndexIds: List<String>): Map<String, Episode> = try {
     val request =
         cx.aswin.boxlore.core.network.model
             .SyncRequest(podcastIndexIds)
     val response = api.syncSubscriptions(publicKey, request).execute()
-    if (!response.isSuccessful || response.body() == null) return emptyMap()
-    return response
-        .body()!!
-        .items
-        .mapNotNull { item ->
-            val ep =
-                item.latestEpisode?.let { mapToEpisode(it) }?.copy(
-                    podcastId = item.id,
-                )
-            if (ep != null) item.id to ep else null
-        }.toMap()
+    val body = response.body()
+    if (!response.isSuccessful || body == null) {
+        emptyMap()
+    } else {
+        body.items
+            .mapNotNull { item ->
+                val ep =
+                    item.latestEpisode?.let { mapToEpisode(it) }?.copy(
+                        podcastId = item.id,
+                    )
+                if (ep != null) item.id to ep else null
+            }.toMap()
+    }
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    android.util.Log.w("PodcastRepository", "PI sync chunk of ${podcastIndexIds.size} failed", e)
+    emptyMap()
 }
 
 internal suspend fun PodcastRepository.loadCachedFeedTips(podcastIndexIds: List<String>): Map<String, Episode> {

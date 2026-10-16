@@ -21,7 +21,8 @@ These values are part of the shipping product. Renames or recreations break upgr
 | `applicationId` | `cx.aswin.boxlore` |
 | Code packages / Android namespaces | `cx.aswin.boxlore.*` |
 | SharedPreferences **files** | Opened as `boxlore_*`; `PrefsFileMigrator` copies from legacy `boxcast_*` when needed. **Key** strings inside those files stay stable. |
-| DataStore | File name `user_preferences` |
+| DataStore | File name `user_preferences`; the API session uses its own file `boxlore_api_session` (`:core:network`), excluded from backup and device transfer |
+| API session device key | Android Keystore alias `boxlore_api_session_device_key` (non-exportable EC P-256 that signs session renewals) |
 | Room (main) | Database filename and tables stay stable |
 | Room (ranking) | Separate adaptive database owned by `:core:ranking` |
 | WorkManager | `LegacyWorkerFactory` plus permanent `core.data.*` stubs resolve historical FQCNs |
@@ -173,7 +174,7 @@ The primary runtime stack is **playback → catalog → prefs / domain / databas
 - Enums shared by catalog and UI (for example `AutoTranscriptState`) live in `:core:model`.
 - `:core:domain` holds ports; `:core:catalog` implements catalog-facing ports.
 - `:core:network` is HTTP/API only. `RssFeedClient` lives in `:core:rss` and reaches callers through `:core:catalog`’s `api(rss)` edge.
-- `getInstance` call sites stay on the AppContainer / Room / WorkManager / Calendar / MessageDigest / Firebase allowlist (Konsist).
+- `getInstance` call sites stay on the AppContainer / Room / WorkManager / Calendar / MessageDigest / JCA key (KeyStore, KeyPairGenerator, Signature) / Firebase allowlist (Konsist).
 - Extracted core modules keep `package` equal to the module root (permanent `core.data.*` stubs allowlisted).
 
 ## Composition root
