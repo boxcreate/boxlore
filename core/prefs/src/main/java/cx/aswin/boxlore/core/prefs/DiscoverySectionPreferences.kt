@@ -44,15 +44,14 @@ internal class DiscoverySectionPreferences(private val store: DataStore<Preferen
                     // Turning the Brief back on also undoes today's dismissal, so it shows at once.
                     if (on) preferences.remove(Keys.BRIEFING_DISMISSED_DATE)
                 }
-                DiscoverySection.PICKED_FOR_YOU -> {
-                    cache.edit().putBoolean(PICKED_FOR_YOU.name, on).apply()
-                    preferences[PICKED_FOR_YOU] = on
-                }
+                DiscoverySection.PICKED_FOR_YOU -> preferences[PICKED_FOR_YOU] = on
                 DiscoverySection.BECAUSE_YOU_LIKE -> preferences[BECAUSE_YOU_LIKE] = on
                 DiscoverySection.CURATED_ROWS -> preferences[CURATED_ROWS] = on
                 DiscoverySection.MORE_LIKE_THIS -> preferences[MORE_LIKE_THIS] = on
             }
         }
+        // Mirror only after DataStore commits, so a failed write cannot leave Explore on the wrong tab.
+        if (section == DiscoverySection.PICKED_FOR_YOU) cache.edit().putBoolean(PICKED_FOR_YOU.name, on).apply()
     }
 
     private companion object {

@@ -122,7 +122,14 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 },
                 discoverySections = settingsState.discoverySections,
                 onSetDiscoverySection = { section, on ->
-                    scope.launch { w.userPrefs.setDiscoverySection(section, on) }
+                    scope.launch {
+                        // A failed write keeps the stored value, which the switch keeps showing.
+                        try {
+                            w.userPrefs.setDiscoverySection(section, on)
+                        } catch (e: java.io.IOException) {
+                            android.util.Log.w("Settings", "LeaveMeAlone switch ${section.name} was not saved", e)
+                        }
+                    }
                 },
             ),
             appearanceSettings = buildAppearanceSettings(w),

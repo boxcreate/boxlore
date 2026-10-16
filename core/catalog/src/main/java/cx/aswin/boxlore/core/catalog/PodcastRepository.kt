@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
+import retrofit2.awaitResponse
 
 /**
  * Repository for podcast data via Boxlore API (Cloudflare Worker → Podcast Index).
@@ -663,7 +664,8 @@ class PodcastRepository(
                     country = resolvedCountry,
                     languages = queryLanguages,
                 )
-            val response = api.getSimilarEpisodes(publicKey, request).execute()
+            // Cancellable, so a switched-off Try these episodes or a closed page stops the request.
+            val response = api.getSimilarEpisodes(publicKey, request).awaitResponse()
             if (response.isSuccessful && response.body() != null) {
                 response.body()!!.items.mapNotNull { mapToEpisode(it) }
             } else {
@@ -841,6 +843,8 @@ class PodcastRepository(
             } else {
                 HomeRecommendations()
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             android.util.Log.e("PodcastRepository", "getHomeRecommendations failed", e)
             HomeRecommendations()

@@ -16,10 +16,9 @@ import cx.aswin.boxlore.core.playback.savePlaybackState
 import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.togglePlayPause
-import cx.aswin.boxlore.core.prefs.collectDiscoverySection
 import cx.aswin.boxlore.feature.info.logic.EpisodeOfflineMergeLogic
+import cx.aswin.boxlore.feature.info.logic.collectSimilarEpisodes
 import cx.aswin.boxlore.feature.info.logic.sharedLookup
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,7 +26,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -226,6 +224,8 @@ class EpisodeInfoViewModel(
         if (currentState is EpisodeInfoUiState.Success && currentState.episode.id == episodeId) {
             return
         }
+        // A new episode stops the previous one's Try these episodes request straight away.
+        similarEpisodesJob?.cancel()
 
         notesLoader.cancel()
         viewModelScope.launch {
@@ -467,58 +467,32 @@ class EpisodeInfoViewModel(
         // while the listener keeps the section on.
         similarEpisodesJob?.cancel()
         similarEpisodesJob = viewModelScope.launch {
-            collectDiscoverySection(
-                keys = flowOf(episodeId),
+            collectSimilarEpisodes(
+                episodeId = episodeId,
                 on = userPrefs.discoverySectionsStream.map { it.moreLikeThis },
-                clear = { updateEpisodeExtras(episodeId) { it.copy(similarEpisodes = emptyList(), similarEpisodesLoading = false) } },
-            ) {
-                updateEpisodeExtras(episodeId) { it.copy(similarEpisodesLoading = true) }
-                try {
+                state = _uiState,
+                fetch = {
                     android.util.Log.d("EpisodeInfo", "Fetching similar episodes for episodeId: $episodeId, title: $episodeTitle")
-
                     // Fetch the podcast details to get categories and author
                     val podcast = podcastDetails.await()
-                    val categories = podcast?.genre ?: ""
-                    val author = podcast?.artist ?: ""
-
                     val region = userPrefs.regionStream.first().takeIf { it.isNotBlank() } ?: "us"
-                    val languages = userPrefs.contentLanguagesStream.first()
-                    val similarEps =
-                        podcastRepository.getSimilarEpisodes(
-                            cx.aswin.boxlore.core.catalog.SimilarEpisodesQuery(
-                                episodeId = episodeId,
-                                podcastId = podcastId,
-                                title = episodeTitle,
-                                description = episodeDescription,
-                                podcastTitle = podcastTitle,
-                                categories = categories,
-                                author = author,
-                                limit = 10,
-                                country = region,
-                                languages = languages,
-                            ),
-                        )
-
-                    android.util.Log.d("EpisodeInfo", "Fetched ${similarEps.size} similar episodes")
-
-                    val currentSuccess = _uiState.value as? EpisodeInfoUiState.Success
-                    if (currentSuccess != null && currentSuccess.episode.id == episodeId) {
-                        _uiState.value =
-                            currentSuccess.copy(
-                                similarEpisodes = similarEps,
-                                similarEpisodesLoading = false,
-                            )
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    android.util.Log.e("EpisodeInfo", "Error fetching similar episodes", e)
-                    val currentSuccess = _uiState.value as? EpisodeInfoUiState.Success
-                    if (currentSuccess != null) {
-                        _uiState.value = currentSuccess.copy(similarEpisodesLoading = false)
-                    }
-                }
-            }
+                    podcastRepository.getSimilarEpisodes(
+                        cx.aswin.boxlore.core.catalog.SimilarEpisodesQuery(
+                            episodeId = episodeId,
+                            podcastId = podcastId,
+                            title = episodeTitle,
+                            description = episodeDescription,
+                            podcastTitle = podcastTitle,
+                            categories = podcast?.genre ?: "",
+                            author = podcast?.artist ?: "",
+                            limit = 10,
+                            country = region,
+                            languages = userPrefs.contentLanguagesStream.first(),
+                        ),
+                    ).also { android.util.Log.d("EpisodeInfo", "Fetched ${it.size} similar episodes") }
+                },
+                onError = { android.util.Log.e("EpisodeInfo", "Error fetching similar episodes", it) },
+            )
         }
     }
 
