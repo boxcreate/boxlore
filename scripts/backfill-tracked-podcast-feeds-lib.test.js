@@ -106,6 +106,23 @@ describe('backfill-tracked-podcast-feeds-lib', () => {
         assert.match(calls[0].url, /\/podcast\?id=42$/);
     });
 
+    it('sends the scoped service key instead of the app key when configured', async () => {
+        const calls = [];
+        await resolveTrackedPodcastFeed({
+            id: '42',
+            title: 'Show',
+            apiBaseUrl: 'https://api.example',
+            appKey: 'secret',
+            serviceKey: 'gh-backfill.svc-secret',
+            fetchImpl: async (url, options) => {
+                calls.push(options);
+                return { ok: true, json: async () => ({ feed: { url: 'https://feeds.example/show.xml' } }) };
+            },
+        });
+        assert.equal(calls[0].headers.Authorization, 'Svc gh-backfill.svc-secret');
+        assert.equal(calls[0].headers['X-App-Key'], undefined);
+    });
+
     it('probes a secure upgrade for legacy HTTP API URLs', async () => {
         const calls = [];
         const feedUrl =
