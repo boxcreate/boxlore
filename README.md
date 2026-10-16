@@ -70,6 +70,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>Smaller app download while retaining artwork, fonts and notification sounds. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
+<li>Echo now moves as you set up boxlore: it waves, thinks, shuffles show cards and looks around. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
+<li>Signing in to sync is simpler, and you can carry on while your shows, queue and progress come over. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
+<li>Importing your library is clearer: choose where your shows are, follow each step, and see what was added. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
 <li>Home's top cards now show each show's full cover. Pick Block, Cover, Tide, Duotone, Halo or Marquee, with colour options for each, in Settings > Appearance > Home. <a href="https://github.com/boxcreate/boxlore/pull/1119"><img src="https://img.shields.io/badge/PR-1119-6750A4?style=flat-square" alt="PR #1119" height="18"/></a></li>
 <li>Marquee puts one big cover under the top bar and moves to the next card on its own, pausing while you touch it. Tablets show Cover cards instead. <a href="https://github.com/boxcreate/boxlore/pull/1119"><img src="https://img.shields.io/badge/PR-1119-6750A4?style=flat-square" alt="PR #1119" height="18"/></a></li>
 <li>Appearance settings open on a short overview, with separate pages for Home, the player, navigation and text. <a href="https://github.com/boxcreate/boxlore/pull/1119"><img src="https://img.shields.io/badge/PR-1119-6750A4?style=flat-square" alt="PR #1119" height="18"/></a></li>
@@ -124,6 +127,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Restoring a damaged boxlore backup now says it couldn't be restored, instead of showing success. <a href="https://github.com/boxcreate/boxlore/pull/1124"><img src="https://img.shields.io/badge/PR-1124-6750A4?style=flat-square" alt="PR #1124" height="18"/></a></li>
 <li>Improve tablet card sizing, spacing and dark-mode readability, and keep player controls above system navigation. <a href="https://github.com/boxcreate/boxlore/pull/1118"><img src="https://img.shields.io/badge/PR-1118-6750A4?style=flat-square" alt="PR #1118" height="18"/></a></li>
 <li>Show pages no longer load forever when show details can’t be reached. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
 <li>The boxlore brief card stays on Home until you finish or hide it. <a href="https://github.com/boxcreate/boxlore/pull/1117"><img src="https://img.shields.io/badge/PR-1117-6750A4?style=flat-square" alt="PR #1117" height="18"/></a></li>
