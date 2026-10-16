@@ -114,7 +114,7 @@ Device RTDB rows use `rss:<show-id>~<registration-id>~<url-hash>`. Group only ma
 
 Before mutation, [`backfill-tracked-podcast-feeds.js`](backfill-tracked-podcast-feeds.js) saves numeric registrations and aggregated public RSS show metadata to [`data/tracked-podcasts-backups/`](data/tracked-podcasts-backups/), retaining one snapshot per UTC ISO week for the latest 10 weeks. The workflow must successfully commit a changed snapshot to `master` before repairing rows. Backups preserve every accepted public URL scope without publishing device registration IDs.
 
-Repair considers catalog rows without a valid HTTPS `feedUrl`. It uses the authenticated boxlore `/podcast` endpoint, probes HTTPS upgrades for legacy HTTP feeds, and falls back to an exact-title Apple directory match when the API cannot supply a secure URL. Transactions update only the `feedUrl` leaf, preserving newer app writes, `title`, and `imageUrl`. Unresolved rows are logged and retried next run. RSS rows are skipped rather than searched in the catalog.
+Repair considers catalog rows without a valid HTTPS `feedUrl`. It uses the authenticated boxlore `/podcast` endpoint (with the scoped read-only `BOXLORE_SVC_BACKFILL_KEY` secret when set, otherwise the legacy app key), probes HTTPS upgrades for legacy HTTP feeds, and falls back to an exact-title Apple directory match when the API cannot supply a secure URL. Transactions update only the `feedUrl` leaf, preserving newer app writes, `title`, and `imageUrl`. Unresolved rows are logged and retried next run. RSS rows are skipped rather than searched in the catalog.
 
 ### Release artifact contract guard
 

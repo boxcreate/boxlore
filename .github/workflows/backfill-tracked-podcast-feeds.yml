@@ -67,6 +67,8 @@ jobs:
       - name: Repair missing feed URLs
         run: node scripts/backfill-tracked-podcast-feeds.js --repair-only
         env:
+          # Scoped read-only catalog key (`gh-backfill.<secret>`); APP_SECRET_KEY is the fallback until it's set.
+          BOXLORE_SVC_KEY: ${{ secrets.BOXLORE_SVC_BACKFILL_KEY }}
           APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
           BOXLORE_API_BASE_URL: https://api.aswin.cx
 

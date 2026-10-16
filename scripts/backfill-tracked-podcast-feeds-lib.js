@@ -132,11 +132,20 @@ function exactItunesFeedUrl(payload, title) {
     return '';
 }
 
+/**
+ * Credential for the API: the workflow's scoped service key (`<id>.<secret>`,
+ * read-only catalog access) when configured, else the legacy app key.
+ */
+function catalogAuthHeaders({ serviceKey, appKey }) {
+    return serviceKey ? { Authorization: `Svc ${serviceKey}` } : { 'X-App-Key': appKey };
+}
+
 async function resolveTrackedPodcastFeed({
     id,
     title,
     apiBaseUrl,
     appKey,
+    serviceKey,
     fetchImpl = fetch,
 }) {
     if (String(id).startsWith('rss:')) return ''; // Private/premium feeds have no catalog identity to repair.
@@ -150,7 +159,7 @@ async function resolveTrackedPodcastFeed({
             headers: {
                 'Accept': 'application/json',
                 'User-Agent': BACKFILL_USER_AGENT,
-                'X-App-Key': appKey,
+                ...catalogAuthHeaders({ serviceKey, appKey }),
             },
         });
         if (response.ok) {
@@ -191,6 +200,7 @@ async function resolveTrackedPodcastFeed({
 
 module.exports = {
     BACKFILL_USER_AGENT,
+    catalogAuthHeaders,
     exactItunesFeedUrl,
     missingTrackedPodcasts,
     resolveTrackedPodcastFeed,

@@ -38,9 +38,10 @@ async function main() {
         throw new Error(`Unsupported mode: ${mode}`);
     }
     const apiBaseUrl = String(process.env.BOXLORE_API_BASE_URL || '').trim();
+    const serviceKey = String(process.env.BOXLORE_SVC_KEY || '').trim();
     const appKey = String(process.env.APP_SECRET_KEY || '').trim();
-    if (mode !== '--backup-only' && (!apiBaseUrl || !appKey)) {
-        throw new Error('BOXLORE_API_BASE_URL and APP_SECRET_KEY are required');
+    if (mode !== '--backup-only' && (!apiBaseUrl || (!serviceKey && !appKey))) {
+        throw new Error('BOXLORE_API_BASE_URL and BOXLORE_SVC_KEY (or the legacy APP_SECRET_KEY) are required');
     }
 
     admin.initializeApp({
@@ -77,6 +78,7 @@ async function main() {
                         ...podcast,
                         apiBaseUrl,
                         appKey,
+                        serviceKey,
                     }),
             }),
         );
