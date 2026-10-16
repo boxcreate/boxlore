@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -57,6 +58,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import cx.aswin.boxlore.core.designsystem.echo.EchoCharacter
+import cx.aswin.boxlore.core.designsystem.echo.EchoFloorLine
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.m3Shimmer
@@ -147,22 +150,63 @@ internal fun EchoSays(state: OnboardingUiState, kind: EchoScreenKind, avatarWidt
     }
 }
 
+/**
+ * Echo's figure. Echo's canvas is [HeightShare] times as tall as the figure is wide, with Echo's square
+ * frame drawn [FrameShare] times the figure's width, standing at [Floor] of the canvas: everything Echo
+ * does, up to the top of its hop and the edge of a fanned card, stays inside it. Behind Echo, its stage
+ * shape is [PlatformOverEcho] times Echo's resting height, centred on Echo, and stays inside its own
+ * square canvas at any angle. The figure is as tall as the larger of the two ([TotalShare]), so the
+ * layout around it always makes room for both (checked against every clip's reach in `EchoMomentsTest`).
+ * All shares are of the figure's width.
+ */
+internal object EchoFigureGeometry {
+    const val HeightShare = 0.84f
+    const val FrameShare = 1.17f
+    const val Floor = 0.975f
+    const val PlatformOverEcho = 1.14f
+
+    /** The top of Echo's head at rest, in its frame (the rest stills' reach). */
+    const val RestTop = 0.30f
+
+    /** Echo's resting height, as a share of the figure's width. */
+    val restHeight: Float get() = (boxY(EchoFloorLine) - boxY(RestTop)) * HeightShare
+
+    /** The stage's square canvas. */
+    val PlatformShare: Float get() = restHeight * PlatformOverEcho / EchoPlatformFill
+
+    val TotalShare: Float get() = maxOf(HeightShare, PlatformShare)
+
+    /** Where Echo's canvas starts below the figure's top, so Echo's middle at rest sits on the stage's centre. */
+    val EchoTop: Float get() = TotalShare / 2f - boxY((RestTop + EchoFloorLine) / 2f) * HeightShare
+
+    /** Where a height in Echo's frame lands in the box, as a share of the box height (0 is its top). */
+    fun boxY(frameY: Float): Float = Floor + (frameY - EchoFloorLine) * FrameShare / HeightShare
+
+    /** Where a point across Echo's frame lands in the box, as a share of the box width. */
+    fun boxX(frameX: Float): Float = 0.5f + (frameX - 0.5f) * FrameShare
+}
+
 /** On a show card Echo shrinks to this share of its usual width and sits beside its bubble. */
-private const val EchoDeckAvatarShare = 0.66f
+private const val EchoDeckAvatarShare = 0.85f
 private const val EchoDeckBubbleLines = 3
 
 /** Echo on its stage; the stage changes shape and turns with every new question and show card. */
 @Composable
 internal fun EchoFigure(state: OnboardingUiState, kind: EchoScreenKind, width: Dp, paused: Boolean, modifier: Modifier = Modifier) {
     val key = state.aiDeck.current?.takeIf { kind == EchoScreenKind.Deck }?.let { "deck:${it.id}" } ?: "${state.aiCurrentTurn}:${state.aiAssistantMessage}"
-    Box(modifier.width(width).testTag("echo_onboarding_avatar"), contentAlignment = Alignment.Center) {
-        // 58% of the width keeps even a squarish shape, turned 45°, inside Echo's box.
-        EchoQuestionPlatform(key, Modifier.size(width * 0.58f))
-        EchoOnboardingAvatar(
-            EchoScreenModel.avatarPhase(state, kind),
-            key,
-            Modifier.fillMaxWidth(),
+    Box(modifier.width(width).height(width * EchoFigureGeometry.TotalShare).testTag("echo_onboarding_avatar")) {
+        // A little bigger than Echo, centred on it, inside the figure at any angle (see EchoFigureGeometry).
+        EchoQuestionPlatform(key, Modifier.align(Alignment.Center).size(width * EchoFigureGeometry.PlatformShare))
+        val moment = echoOnboardingMoment(EchoScreenModel.avatarPhase(state, kind))
+        EchoCharacter(
+            sequence = moment.sequence,
+            modifier = Modifier.align(Alignment.TopCenter).offset(y = width * EchoFigureGeometry.EchoTop).height(width * EchoFigureGeometry.HeightShare),
+            playbackKey = key,
             paused = paused,
+            idle = moment.idle,
+            prefetch = EchoOnboardingSequences,
+            frameScale = EchoFigureGeometry.FrameShare / EchoFigureGeometry.HeightShare,
+            floor = EchoFigureGeometry.Floor,
         )
     }
 }

@@ -262,6 +262,7 @@ class AccountAuthHelpersTest {
         )
         val restored = saver.restore(legacyList) as AccountAuthState
         assertEquals("legacy@boxlore.example", restored.email)
+        org.junit.Assert.assertFalse(restored.methodChosen)
         assertEquals("", restored.password)
         assertEquals("", restored.confirmPassword)
         org.junit.Assert.assertTrue(restored.passwordVisible)

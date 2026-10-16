@@ -57,6 +57,8 @@ dependencies {
     implementation(libs.smooth.corner.rect)
     api(libs.coil.compose) // OptimizedImage composable uses Coil
     implementation(libs.kotlinx.coroutines.android)
+    // Echo's manifest (echo-character/manifest.json) is read as plain JSON.
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)

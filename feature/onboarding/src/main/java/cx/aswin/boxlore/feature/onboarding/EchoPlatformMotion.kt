@@ -67,14 +67,17 @@ internal fun EchoQuestionPlatform(questionKey: String, modifier: Modifier = Modi
     Canvas(modifier.testTag("echo_avatar_platform")) {
         val pose = echoPlatformPose(position.value)
         morphs[pose.from].toPath(pose.progress, path)
-        // Leave room for the gentle rotation within the existing avatar stage.
+        // At this fill every shape stays inside the canvas at any angle (the widest reaches 1.1x its size).
         matrix.reset()
-        matrix.scale(size.width * .9f, size.height * .9f)
+        matrix.scale(size.width * EchoPlatformFill, size.height * EchoPlatformFill)
         path.transform(matrix)
         path.translate(Offset(size.width / 2f, size.height / 2f) - path.getBounds().center)
         rotate(pose.rotation) { drawPath(path, color) }
     }
 }
+
+/** The share of its canvas a stage shape fills, before turning. */
+internal const val EchoPlatformFill = 0.9f
 
 /** Slightly underdamped, so the new shape settles with a small, expressive wobble. */
 private val EchoPlatformSpring = spring<Float>(dampingRatio = 0.62f, stiffness = 130f)

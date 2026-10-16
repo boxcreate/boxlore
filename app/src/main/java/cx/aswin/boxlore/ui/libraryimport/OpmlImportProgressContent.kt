@@ -4,34 +4,23 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
-import androidx.compose.material.icons.rounded.CloudSync
-import androidx.compose.material.icons.rounded.ImportExport
-import androidx.compose.material.icons.rounded.SettingsBackupRestore
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,501 +32,216 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import cx.aswin.boxlore.R
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
+import kotlin.math.roundToInt
 
-internal val ImportCorner = RoundedCornerShape(24.dp)
-
-internal fun contentKeyFor(state: OpmlImportState): String = when (state) {
-    OpmlImportState.Idle -> "idle"
-    OpmlImportState.ShowSelector -> "selector"
-    is OpmlImportState.ImportingJson -> "importing_json"
-    is OpmlImportState.Parsing -> "parsing"
-    is OpmlImportState.Importing -> "importing"
-    is OpmlImportState.AskCompleted -> "ask"
-    is OpmlImportState.Completing -> "completing"
-    is OpmlImportState.Success -> "success"
-    is OpmlImportState.Error -> "error"
-}
-
-internal fun heroVisualFor(state: OpmlImportState): ImportHeroVisual? = when (state) {
-    is OpmlImportState.ActiveImportState ->
-        if (state.totalCount > 0 && state.progress > 0f) {
-            ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
-        } else {
-            ImportHeroVisual.Indeterminate
-        }
-    is OpmlImportState.Parsing -> ImportHeroVisual.Indeterminate
-    is OpmlImportState.Completing -> ImportHeroVisual.Progress(state.progress.coerceIn(0f, 1f))
-    is OpmlImportState.Success -> ImportHeroVisual.Complete
-    else -> null
-}
-
+/**
+ * Importing and done on one screen: Echo shuffles its cards on the stage while the progress and the
+ * checklist below update, then hops when the shows are in. Only the words change between the steps.
+ */
 @Composable
-internal fun ProgressFlowScaffold(hero: ImportHeroVisual, state: OpmlImportState, onDone: () -> Unit,) {
-    Column(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .padding(top = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        ImportStatusHero(visual = hero)
-        Spacer(modifier = Modifier.height(28.dp))
-
-        AnimatedContent(
-            targetState = state,
-            transitionSpec = {
-                (fadeIn(tween(240)) + scaleIn(initialScale = 0.98f, animationSpec = tween(240))) togetherWith
-                    fadeOut(tween(160))
-            },
-            contentKey = { contentKeyFor(it) },
-            label = "import_progress_copy",
-        ) { current ->
-            when (current) {
-                is OpmlImportState.ImportingJson -> {
-                    when {
-                        current.totalCount > 0 ->
-                            ProgressCopy(
-                                title = "Restoring podcasts",
-                                subtitle = "Subscribing ${minOf(current.currentCount + 1, current.totalCount)} of ${current.totalCount}",
-                                detail = current.currentTitle.ifBlank { null },
-                            )
-
-                        else ->
-                            ProgressCopy(
-                                title = "Restoring podcasts",
-                                subtitle = "Preparing your library",
-                                detail = current.currentTitle.ifBlank { null },
-                            )
-                    }
+internal fun ProgressFlowScaffold(state: OpmlImportState, onDone: () -> Unit) {
+    ImportPage(
+        echo = importEchoMomentFor(state) ?: ImportEchoMoment.Working,
+        content = {
+            AnimatedContent(
+                targetState = state,
+                transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(160)) },
+                contentKey = { contentKeyFor(it) },
+                label = "import_progress_copy",
+            ) { current ->
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (current is OpmlImportState.Success) SuccessHeader(current) else WorkingHeader(current)
                 }
-
-                is OpmlImportState.Parsing ->
-                    ProgressCopy(
-                        title = "Reading OPML",
-                        subtitle = "Finding podcast feeds in your file",
-                    )
-
-                is OpmlImportState.Importing ->
-                    ProgressCopy(
-                        title = "Importing podcasts",
-                        subtitle = "Subscribing ${current.currentCount + 1} of ${current.totalCount}",
-                        detail = current.currentFeedTitle,
-                    )
-
-                is OpmlImportState.Completing ->
-                    ProgressCopy(
-                        title = "Marking history played",
-                        subtitle = "Catching up past episodes on selected shows",
-                        detail = current.currentShowTitle,
-                    )
-
-                is OpmlImportState.Success ->
-                    SuccessCopy(
-                        state = current,
-                        onDone = onDone,
-                    )
-
-                else -> Unit
             }
-        }
-    }
+        },
+        actions = {
+            AnimatedContent(
+                targetState = state,
+                transitionSpec = { fadeIn(tween(240)) togetherWith fadeOut(tween(160)) },
+                contentKey = { it is OpmlImportState.Success },
+                label = "import_progress_actions",
+            ) { current ->
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (current is OpmlImportState.Success) SuccessActions(current, onDone) else ImportSteps(importStepsFor(current))
+                }
+            }
+        },
+    )
 }
 
 @Composable
-internal fun ProgressCopy(title: String, subtitle: String, detail: String? = null,) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 20.dp),
-        )
-        if (!detail.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(28.dp))
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = ImportCorner,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 1.dp,
-            ) {
+private fun WorkingHeader(state: OpmlImportState) {
+    ImportTitle(
+        stringResource(
+            when (state) {
+                is OpmlImportState.Parsing -> R.string.import_reading_title
+                is OpmlImportState.ImportingJson -> R.string.import_restoring_title
+                is OpmlImportState.Completing -> R.string.import_marking_title
+                else -> R.string.import_importing_title
+            },
+        ),
+    )
+    val progress = importProgressFor(state) ?: return
+    val now = when (state) {
+        is OpmlImportState.Importing -> state.currentFeedTitle.takeIf { it.isNotBlank() }?.let { stringResource(R.string.import_now_subscribing, it) }
+        is OpmlImportState.Completing -> state.currentShowTitle.takeIf { it.isNotBlank() }?.let { stringResource(R.string.import_now_marking, it) }
+        is OpmlImportState.ImportingJson -> state.currentTitle.takeIf { it.isNotBlank() }?.let { stringResource(R.string.import_now_refreshing, it) }
+        else -> null
+    }
+    ImportProgressCard(progress, now)
+}
+
+@Composable
+private fun ImportProgressCard(progress: ImportProgress, now: String?) {
+    Surface(Modifier.fillMaxWidth().padding(top = 12.dp).testTag("import_progress"), shape = ImportCorner, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    text = detail,
+                    pluralStringResource(R.plurals.import_progress_count, progress.total, progress.current, progress.total),
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = GoogleSansWeight.semiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 18.dp),
                 )
-            }
-        }
-    }
-}
-
-@Composable
-internal fun SelectorContent(
-    onJson: () -> Unit,
-    onOpml: () -> Unit,
-    onSyncAccount: () -> Unit = {},
-) {
-    Column(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(top = 28.dp, bottom = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Box(
-            modifier =
-            Modifier
-                .size(76.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.LibraryBooks,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(36.dp),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = "Import library",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Sync your account, restore a backup, or migrate shows from another app.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 8.dp),
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        ImportOptionCard(
-            icon = Icons.Rounded.CloudSync,
-            title = "boxlore cloud sync",
-            subtitle = "Sign in to your account to restore subscriptions, queue, and history",
-            badge = "cloud",
-            onClick = onSyncAccount,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        ImportOptionCard(
-            icon = Icons.Rounded.SettingsBackupRestore,
-            title = "boxlore backup",
-            subtitle = "JSON restore with subscriptions, likes, and playback history",
-            badge = ".json",
-            onClick = onJson,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        ImportOptionCard(
-            icon = Icons.Rounded.ImportExport,
-            title = "Other app export",
-            subtitle = "OPML from Apple Podcasts, Spotify, Pocket Casts, and more",
-            badge = ".opml",
-            onClick = onOpml,
-        )
-    }
-}
-
-@Composable
-internal fun ImportOptionCard(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    badge: String,
-    onClick: () -> Unit,
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = ImportCorner,
-        colors =
-        CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-    ) {
-        Row(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier =
-                Modifier
-                    .size(48.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(14.dp),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = GoogleSansWeight.bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = GoogleSansWeight.medium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        softWrap = false,
-                        modifier =
-                        Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(6.dp),
-                            ).padding(horizontal = 7.dp, vertical = 2.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    stringResource(R.string.import_progress_percent, (progress.fraction * 100).roundToInt()),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
+            }
+            LinearProgressIndicator(
+                progress = { progress.fraction },
+                modifier = Modifier.fillMaxWidth().height(8.dp),
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            )
+            if (now != null) {
+                Text(now, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 }
 
+/** The checklist: finished steps are ticked (with what they found), the current one is filled, later ones are outlined. */
 @Composable
-internal fun SuccessCopy(state: OpmlImportState.Success, onDone: () -> Unit,) {
-    val context = LocalContext.current
-    var hasNotificationPermission by remember {
-        mutableStateOf(areAppNotificationsEnabled(context))
+private fun ImportSteps(steps: List<ImportStep>) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp).testTag("import_steps"), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        steps.forEach { step -> ImportStepRow(step) }
     }
+}
 
+@Composable
+private fun ImportStepRow(step: ImportStep) {
+    val status = stringResource(
+        when (step.status) {
+            ImportStepStatus.Done -> R.string.import_step_status_done
+            ImportStepStatus.Active -> R.string.import_step_status_now
+            ImportStepStatus.Upcoming -> R.string.import_step_status_next
+        },
+    )
+    val colors = MaterialTheme.colorScheme
+    Row(
+        Modifier.fillMaxWidth().semantics(mergeDescendants = true) { stateDescription = status },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        ImportStepMarker(step.status)
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(importStepLabel(step.kind)),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (step.status == ImportStepStatus.Active) GoogleSansWeight.semiBold else null,
+                color = if (step.status == ImportStepStatus.Upcoming) colors.onSurfaceVariant else colors.onSurface,
+            )
+            importStepDetail(step)?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant) }
+        }
+    }
+}
+
+/** Ticked when done, a filled ring for the step in progress, an outline for steps still to come. */
+@Composable
+private fun ImportStepMarker(status: ImportStepStatus) {
+    val colors = MaterialTheme.colorScheme
+    Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+        when (status) {
+            ImportStepStatus.Done -> Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = colors.primary, modifier = Modifier.size(24.dp))
+            ImportStepStatus.Active -> Box(Modifier.size(20.dp).border(BorderStroke(2.dp, colors.primary), CircleShape).padding(5.dp).background(colors.primary, CircleShape))
+            ImportStepStatus.Upcoming -> Box(Modifier.size(20.dp).border(BorderStroke(2.dp, colors.outlineVariant), CircleShape))
+        }
+    }
+}
+
+/** What a finished step found or added, when it counted shows. */
+@Composable
+private fun importStepDetail(step: ImportStep): String? {
+    val count = step.count?.takeIf { step.status == ImportStepStatus.Done } ?: return null
+    return when (step.kind) {
+        ImportStepKind.ReadFile -> pluralStringResource(R.plurals.import_step_read_done, count, count)
+        ImportStepKind.Subscribe -> pluralStringResource(R.plurals.import_step_subscribe_done, count, count)
+        else -> null
+    }
+}
+
+private fun importStepLabel(kind: ImportStepKind): Int = when (kind) {
+    ImportStepKind.ReadFile -> R.string.import_step_read
+    ImportStepKind.Subscribe -> R.string.import_step_subscribe
+    ImportStepKind.ChooseMarkPlayed -> R.string.import_step_choose
+    ImportStepKind.MarkPlayed -> R.string.import_step_mark
+    ImportStepKind.RestoreBackup -> R.string.import_step_restore
+    ImportStepKind.LatestEpisodes -> R.string.import_step_latest
+}
+
+@Composable
+private fun SuccessHeader(state: OpmlImportState.Success) {
+    ImportTitle(stringResource(if (state.isJson) R.string.import_done_backup_title else R.string.import_done_title))
+    ImportBody(stringResource(R.string.import_done_body))
+    Row(Modifier.fillMaxWidth().padding(top = 12.dp).testTag("import_stats"), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        ImportStatTile(state.importedCount, pluralStringResource(R.plurals.import_done_subscribed, state.importedCount), Modifier.weight(1f))
+        if (!state.isJson && state.completedCount > 0) {
+            ImportStatTile(state.completedCount, stringResource(R.string.import_done_marked), Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun ImportStatTile(value: Int, label: String, modifier: Modifier = Modifier) {
+    Surface(modifier.semantics(mergeDescendants = true) {}, shape = ImportCorner, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("$value", style = MaterialTheme.typography.displaySmall, fontWeight = GoogleSansWeight.bold, color = MaterialTheme.colorScheme.primary)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun SuccessActions(state: OpmlImportState.Success, onDone: () -> Unit) {
+    val context = LocalContext.current
+    var notificationsAllowed by remember { mutableStateOf(areAppNotificationsEnabled(context)) }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                hasNotificationPermission = areAppNotificationsEnabled(context)
-            }
+            if (event == Lifecycle.Event.ON_RESUME) notificationsAllowed = areAppNotificationsEnabled(context)
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-
-    val showNotificationPrompt =
-        state.isJson &&
-            state.hasNotificationsEnabled &&
-            !hasNotificationPermission
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "You're all set",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = successSubtitle(state.isJson),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-        ImportSuccessSummary(state = state)
-
-        if (showNotificationPrompt) {
-            Spacer(modifier = Modifier.height(16.dp))
-            ImportNotificationPermissionCard(
-                onPermissionChanged = { hasNotificationPermission = it },
-                onOpenSettings = { openAppNotificationSettings(context) },
-            )
-        }
-
-        Spacer(modifier = Modifier.height(28.dp))
-        Button(
-            onClick = onDone,
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Text(
-                text = "Continue",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-    }
-}
-
-internal fun successSubtitle(isJson: Boolean): String = if (isJson) {
-    "Your backup is restored and ready to listen."
-} else {
-    "Your shows are imported and ready to listen."
-}
-
-@Composable
-internal fun ImportSuccessSummary(state: OpmlImportState.Success) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = ImportCorner,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "Summary",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = GoogleSansWeight.bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            SummaryRow(label = "Imported shows", value = "${state.importedCount}")
-            if (!state.isJson && state.completedCount > 0) {
-                SummaryRow(label = "Marked played", value = "${state.completedCount}")
-            }
-        }
-    }
-}
-
-@Composable
-internal fun SummaryRow(label: String, value: String,) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.onSurface,
+    if (showsImportNotificationPrompt(state, notificationsAllowed)) {
+        ImportNotificationPermissionCard(
+            onPermissionChanged = { notificationsAllowed = it },
+            onOpenSettings = { openAppNotificationSettings(context) },
         )
     }
-}
-
-@Composable
-internal fun ErrorContent(message: String, onClose: () -> Unit,) {
-    Column(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .padding(top = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        ImportStatusHero(visual = ImportHeroVisual.Error)
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = "Import failed",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = GoogleSansWeight.bold,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = ImportCorner,
-            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
-        ) {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                textAlign = TextAlign.Center,
-                modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-            )
-        }
-        Spacer(modifier = Modifier.height(32.dp))
-        Button(
-            onClick = onClose,
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors =
-            ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-            ),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Text(
-                text = "Close",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-    }
+    ImportPrimaryButton(stringResource(R.string.import_continue), onDone, Modifier.testTag("import_continue"))
 }

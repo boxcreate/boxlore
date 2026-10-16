@@ -976,6 +976,7 @@ fun BoxLoreAppRoot(
                         val fromOnboarding = resolveIsFromOnboarding(onboardingCompleted, opmlImportSource)
                         navController.navigate("settings?page=account&fromOnboarding=$fromOnboarding&fromImport=true")
                     },
+                    onChooseAnotherFile = { opmlImportState = OpmlImportState.ShowSelector },
                 ),
             )
         }
