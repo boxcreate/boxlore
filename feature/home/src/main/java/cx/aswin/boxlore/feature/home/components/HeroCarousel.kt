@@ -81,6 +81,7 @@ fun HeroCarousel(
             item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID ||
                 item.type == cx.aswin.boxlore.feature.home.HeroType.NEW_EPISODES_GRID -> {
                 val resume = item.type == cx.aswin.boxlore.feature.home.HeroType.RESUME_GRID
+                BlockHeroColors(item.gridItems.firstOrNull()?.imageUrl) {
                 HeroGridCard(
                     items = item.gridItems,
                     title = stringResource(if (resume) R.string.home_hero_resume_collection else R.string.home_hero_new_collection),
@@ -93,8 +94,9 @@ fun HeroCarousel(
                     onPlaybackClick = onCollectionPlayback,
                     carouselItemDrawInfo = carouselItemDrawInfo,
                 )
+                }
             }
-            else -> {
+            else -> BlockHeroColors(item.podcast.imageUrl) {
                 HeroCard(
                     item = item,
                     onClick = heroPlayAction(item, i, playing, onPlayClick, onTogglePlayback), // Primary "Play" or "Pause" button action

@@ -220,12 +220,15 @@ class PodcastRepository(
         searchNetworkEpisodes(feedId, query)
     }
 
-    private val playerPrefs =
+    // Opened on first use: the migration reads the prefs file from disk, and this repository is
+    // constructed on the main thread during startup (it caused a startup ANR).
+    private val playerPrefs by lazy {
         PrefsFileMigrator.open(
             context,
             newName = PrefsFileMigrator.Files.PLAYER,
             oldName = PrefsFileMigrator.LegacyFiles.PLAYER,
         )
+    }
 
     internal fun getOrCreateDeviceUuid(): String {
         val key = "device_uuid"

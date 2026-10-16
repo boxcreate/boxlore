@@ -702,7 +702,7 @@ internal fun AppearanceActions.trackedForAnalytics(currentState: () -> Appearanc
     onSetHeroCardStyle = { style ->
         AnalyticsHelper.trackSettingsInteraction("hero_card_style_changed", style)
         val current = currentState()
-        val shade = current?.heroCoverShade ?: HeroCoverShade.DEFAULT
+        val shade = current?.heroCoverShade ?: HeroCoverShade.UNSET
         AnalyticsHelper.trackHomeHeroStyleSelected(current?.heroCardStyle, current?.heroCoverShade, style, shade)
         onSetHeroCardStyle(style)
     },
@@ -712,6 +712,10 @@ internal fun AppearanceActions.trackedForAnalytics(currentState: () -> Appearanc
         val style = current?.heroCardStyle ?: HeroCardStyle.DEFAULT
         AnalyticsHelper.trackHomeHeroStyleSelected(current?.heroCardStyle, current?.heroCoverShade, style, shade)
         onSetHeroCoverShade(shade)
+    },
+    onSetHeroTideProgress = { shape ->
+        AnalyticsHelper.trackSettingsInteraction("hero_tide_progress_changed", shape)
+        onSetHeroTideProgress(shape)
     },
     onApplyTheme = { selection, custom ->
         AnalyticsHelper.trackSettingsInteraction("surface_style_changed", selection.surfaceStyle)

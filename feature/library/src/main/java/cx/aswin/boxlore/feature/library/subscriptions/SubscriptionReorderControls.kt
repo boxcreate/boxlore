@@ -259,9 +259,9 @@ internal fun rememberShowsOrderedKeys(
             val podIds = unfiledPodcasts.map { it.id }.toSet()
             val ordered = manualOrder.filter { it in podIds }
             val remainder = unfiledPodcasts.map { it.id }.filter { it !in manualOrder }
-            ordered + remainder
+            (ordered + remainder).distinct()
         } else {
-            unfiledPodcasts.map { it.id }
+            unfiledPodcasts.map { it.id }.distinct()
         }
     }
     val orderedState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(incomingKeys) }
@@ -277,11 +277,13 @@ internal fun resolveOrderedPodcasts(
     isManualSort: Boolean,
     isRootReordering: Boolean = false,
 ): List<cx.aswin.boxlore.core.model.Podcast> {
-    if (!isManualSort && !isRootReordering) return unfiledPodcasts
+    // The grid and list key rows by podcast id, so a repeated id in the saved order or the
+    // subscription rows must never reach them.
+    if (!isManualSort && !isRootReordering) return unfiledPodcasts.distinctBy { it.id }
     val unfiledPodcastsById = unfiledPodcasts.associateBy { it.id }
     val mapped = orderedKeys.mapNotNull(unfiledPodcastsById::get)
     val missing = unfiledPodcasts.filter { it.id !in orderedKeys }
-    return mapped + missing
+    return (mapped + missing).distinctBy { it.id }
 }
 
 @Composable

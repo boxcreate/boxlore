@@ -32,6 +32,11 @@ class HomeHeroStyleAnalyticsTest {
         assertEquals("marquee", AppearanceAnalyticsTracks.heroStyleName(HeroCardStyle.MARQUEE))
         assertEquals("none", AppearanceAnalyticsTracks.heroColorsName(HeroCardStyle.BLOCK, HeroCoverShade.THEME))
         assertEquals("block", AppearanceAnalyticsTracks.heroStyleCombo(HeroCardStyle.BLOCK, HeroCoverShade.THEME))
+        // Block never picked reads as the app theme; picked artwork or dark colours report like the other styles.
+        assertEquals("block", AppearanceAnalyticsTracks.heroStyleCombo(HeroCardStyle.BLOCK, HeroCoverShade.UNSET))
+        assertEquals("block_artwork", AppearanceAnalyticsTracks.heroStyleCombo(HeroCardStyle.BLOCK, HeroCoverShade.ARTWORK))
+        assertEquals("block_dark", AppearanceAnalyticsTracks.heroStyleCombo(HeroCardStyle.BLOCK, HeroCoverShade.DARK))
+        assertEquals("cover_artwork", AppearanceAnalyticsTracks.heroStyleCombo(HeroCardStyle.COVER, HeroCoverShade.UNSET))
         assertEquals("duotone_theme", AppearanceAnalyticsTracks.heroStyleCombo(HeroCardStyle.DUOTONE, HeroCoverShade.THEME))
         assertEquals("cover_artwork", AppearanceAnalyticsTracks.heroStyleCombo(null, null))
     }
@@ -77,15 +82,16 @@ class HomeHeroStyleAnalyticsTest {
     fun `person properties follow the look once per change, not once per window change`() {
         repeat(3) { AnalyticsHelper.syncHomeHeroStylePersonProperties(HeroCardStyle.COVER, HeroCoverShade.ARTWORK) }
         AnalyticsHelper.syncHomeHeroStylePersonProperties(HeroCardStyle.BLOCK, HeroCoverShade.ARTWORK)
-        // Block ignores colours, so a colour change under it is the same look.
+        repeat(2) { AnalyticsHelper.syncHomeHeroStylePersonProperties(HeroCardStyle.BLOCK, HeroCoverShade.ARTWORK) }
+        // Block takes the colour choice too, so a colour change under it is a new look.
         AnalyticsHelper.syncHomeHeroStylePersonProperties(HeroCardStyle.BLOCK, HeroCoverShade.THEME)
         AnalyticsHelper.syncHomeHeroStylePersonProperties(HeroCardStyle.COVER, HeroCoverShade.ARTWORK)
 
         assertEquals(listOf(AnalyticsGlossary.PERSON_SET_EVENT), recorder.map { it.first }.distinct())
-        assertEquals(listOf("cover_artwork", "block", "cover_artwork"), recorder.map { it.second["home_hero_style_combo"] })
+        assertEquals(listOf("cover_artwork", "block_artwork", "block", "cover_artwork"), recorder.map { it.second["home_hero_style_combo"] })
         assertEquals(
             mapOf("home_hero_card_style" to "block", "home_hero_colors" to "none", "home_hero_style_combo" to "block"),
-            recorder[1].second,
+            recorder[2].second,
         )
     }
 

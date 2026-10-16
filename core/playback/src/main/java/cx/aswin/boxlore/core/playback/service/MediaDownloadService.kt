@@ -35,6 +35,10 @@ open class MediaDownloadService :
             "Failed to start MediaDownloadService as foreground service: ${e.message}",
             e,
         )
+        // A startForegroundService() start must reach startForeground() before stopping, or the
+        // system kills the app with ForegroundServiceDidNotStartInTimeException.
+        runCatching { startForeground(FOREGROUND_NOTIFICATION_ID, getForegroundNotification(emptyList(), 0)) }
+        runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         stopSelf()
         START_NOT_STICKY
     }

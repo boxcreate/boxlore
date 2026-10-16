@@ -59,6 +59,12 @@ internal object EchoClipTiming {
     fun progress(elapsed: Long): Float = (elapsed.toFloat() / LengthMillis).coerceIn(0f, 1f)
 
     fun finished(elapsed: Long): Boolean = elapsed >= LengthMillis
+
+    /** The clip's length as the clip button shows it, for example "0:45". */
+    fun lengthLabel(): String {
+        val seconds = LengthMillis / 1_000
+        return "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
+    }
 }
 
 /** Plays one show card's clip at a time. Reacting to a card never starts the next card's clip. */

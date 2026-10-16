@@ -36,6 +36,7 @@ import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.QueueManager
 import cx.aswin.boxlore.core.playback.QueueRepository
 import cx.aswin.boxlore.core.playback.service.MediaDownloadService
+import cx.aswin.boxlore.core.playback.synchronizeCastSession
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
@@ -198,6 +199,13 @@ class AppContainer(
         QueueRepository(database, podcastRepository, deviceIdentityPort)
     }
 
+    private val deferredCastSession = DeferredCastSessionState()
+
+    /** Forwards Cast state to playback, or keeps it until playback is first created. */
+    fun synchronizeCastSession(isActive: Boolean?) {
+        deferredCastSession.submit(isActive)
+    }
+
     val playbackRepository: PlaybackRepository by lazy {
         PlaybackRepository(
             context = appContext,
@@ -209,7 +217,9 @@ class AppContainer(
             podcastRepository = podcastRepository,
             rankingFeedbackRepository = rankingFeedbackRepository,
             userPreferencesRepository = userPreferencesRepository,
-        )
+        ).also { repository ->
+            deferredCastSession.attach { isActive -> repository.synchronizeCastSession(isActive) }
+        }
     }
 
     override val downloadRepository: DownloadRepository by lazy {

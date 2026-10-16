@@ -192,6 +192,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             navigationBlurLevel = settingsState.navigationBlurLevel,
             heroCardStyle = settingsState.heroCardStyle,
             heroCoverShade = settingsState.heroCoverShade,
+            heroTideProgress = settingsState.heroTideProgress,
             savedCustomTheme = settingsState.savedCustomTheme,
             discoverySections = settingsState.discoverySections,
         ),
@@ -214,6 +215,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             onSetNavigationBlurLevel = { level -> scope.launch { userPrefs.setNavigationBlurLevel(level) } },
             onSetHeroCardStyle = { style -> scope.launch { userPrefs.setHeroCardStyle(style) } },
             onSetHeroCoverShade = { shade -> scope.launch { userPrefs.setHeroCoverShade(shade) } },
+            onSetHeroTideProgress = { shape -> scope.launch { userPrefs.setHeroTideProgress(shape) } },
             onSetFontRoundness = { roundness -> scope.launch { userPrefs.setFontRoundness(roundness) } },
             onSetNavigationStyle = { style -> scope.launch { userPrefs.setNavigationStyle(style) } },
             onSetOpenAppTo = { openAppTo -> scope.launch { userPrefs.setOpenAppTo(openAppTo) } },
@@ -242,7 +244,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
         // Appearance previews draw Home's real hero cards from the listener's recent episodes.
         heroPreview = { style, coverShade, collection, modifier ->
             val sessions by w.playbackRepository.resumeSessions.collectAsState(initial = emptyList())
-            HeroStylePreview(style, coverShade, collection, sessions, modifier)
+            HeroStylePreview(style, coverShade, collection, sessions, modifier, tideProgress = settingsState.heroTideProgress)
         },
     )
 }

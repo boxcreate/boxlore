@@ -176,7 +176,7 @@ internal fun FullscreenVideoSystemUi(
         val window = activity?.window
         if (window != null) {
             val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
-            controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            controller.hide(videoOverlayBarTypes())
             controller.systemBarsBehavior =
                 androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
@@ -184,7 +184,7 @@ internal fun FullscreenVideoSystemUi(
             activity?.requestedOrientation = if (tablet) originalOrientation ?: android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             if (window != null) {
                 androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
-                    .show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                    .show(videoOverlayBarTypes())
             }
         }
     }
@@ -384,3 +384,10 @@ internal fun VideoProgressControls(
         }
     }
 }
+
+/**
+ * Status and navigation bars only. `systemBars()` also includes system overlays, which androidx.core
+ * maps through an API 34 method that some devices reporting API 34 do not have.
+ */
+internal fun videoOverlayBarTypes(): Int = androidx.core.view.WindowInsetsCompat.Type.statusBars() or
+    androidx.core.view.WindowInsetsCompat.Type.navigationBars()

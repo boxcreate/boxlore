@@ -109,6 +109,10 @@
     <!-- Badges on the card art. The deck is a taste test inside the chat, not recommendations yet: "core" shows fit what the listener said; "related" ones are a step away. -->
     <string name="echo_deck_core">Taste test</string>
     <string name="echo_deck_related">Wild card</string>
+    <!-- The sticker on the card's art: the badge above in capitals, then the card's place in the deck, for example "TASTE TEST · 01/03". -->
+    <string name="echo_deck_tag">%1$s · %2$02d/%3$02d</string>
     <string name="echo_deck_play">Play a clip</string>
+    <!-- The clip button with the clip's length, for example "Play a clip · 0:45". -->
+    <string name="echo_deck_play_length">Play a clip · %1$s</string>
     <string name="echo_deck_pause">Pause</string>
 </resources>

@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.core.playback.service
 
-import android.net.Uri
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -11,6 +10,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.EpisodeItem
 import cx.aswin.boxlore.core.playback.PlaybackQueueContext
+import cx.aswin.boxlore.core.playback.PlaybackUris
 import cx.aswin.boxlore.core.playback.QueueEntry
 import cx.aswin.boxlore.core.playback.QueueRepository
 import cx.aswin.boxlore.core.playback.SmartQueueEngine
@@ -66,7 +66,8 @@ class SmartQueueRefillCoordinator(
                 excludeEpisodeIds = snapshot.ids.toSet(),
                 currentContextSourceId = sourceId,
             )
-        }.filter { it.episode.id.toString() !in snapshot.ids }.distinctBy { it.episode.id }.take(room)
+        }.filter { it.episode.id.toString() !in snapshot.ids && !it.episode.enclosureUrl.isNullOrBlank() }
+            .distinctBy { it.episode.id }.take(room)
         if (entries.isEmpty()) return false
 
         // Room rolls back the entire batch if a new transport request or queue edit wins.
@@ -130,14 +131,14 @@ class SmartQueueRefillCoordinator(
         val pod = entry.podcast
         return MediaItem.Builder()
             .setMediaId(ep.id.toString())
-            .setUri(ep.enclosureUrl ?: "")
+            .setUri(ep.enclosureUrl)
             .setMimeType(ep.enclosureType?.takeIf { it.isNotBlank() })
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(ep.title)
                     .setSubtitle(pod.title)
                     .setArtist(pod.artist)
-                    .setArtworkUri(Uri.parse(ep.image ?: ep.feedImage ?: pod.imageUrl))
+                    .setArtworkUri(PlaybackUris.parseOrNull(ep.image ?: ep.feedImage ?: pod.imageUrl))
                     .setDisplayTitle(ep.title)
                     .setGenre(pod.genre)
                     .setIsPlayable(true)

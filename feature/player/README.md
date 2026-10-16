@@ -78,6 +78,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 - Playback and queue state come from application-scoped core dependencies supplied by app wiring.
 - Player colours (`rememberPlayerColors`) come from the cover's seed, read by the shared `:core:designsystem` artwork picker (`loadArtworkPalette`) that podcast and episode pages and Home's hero cards use: the full player is the brand scheme built from that seed (`artworkPlayerColorScheme`), and the mini bar is its primary container with a primary Play end (`ArtworkMiniPlayerColors.fromScheme`). Covers with no meaningful colour keep the app theme. Control tiles sit on surface and primary tints (quiet transport buttons on a translucent surface, the secondary rail on a 12% primary tray, chips and utility actions on the high surface container). The full-player background (`playerCanvas`) is a vertical gradient of the primary container over the surface with a soft primary glow behind the artwork. A cover already read (by a page or earlier playback) colours the player from the first frame, and light/dark switches rebuild the scheme without reading the art again. Art loads through Coil with its disk cache from the resolved episode→podcast artwork URL, so process death does not leave the sheet on the default theme. The scheme follows the saved surface style, so Pure black/white styles keep their grounds.
 - UI runs on the main thread; playback operations delegate to core repositories and Media3 session APIs.
+- The video overlay hides and shows only the status and navigation bars. `systemBars()` also includes system overlays, which androidx.core maps through an API 34 method some devices reporting API 34 lack.
 
 ## Persistence & identity
 
@@ -116,6 +117,7 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 ```bash
 ./gradlew :feature:player:testDebugUnitTest
 ```
+- `VideoOverlayBarTypesTest` checks the overlay never includes system overlays.
 
 ## CI relevance
 

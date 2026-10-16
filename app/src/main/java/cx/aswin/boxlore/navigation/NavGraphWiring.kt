@@ -158,7 +158,8 @@ data class NavSettingsState(
     val artworkColorsEnabled: Boolean = true,
     val navigationBlurLevel: String = cx.aswin.boxlore.core.prefs.NavigationBlurLevel.DEFAULT,
     val heroCardStyle: String = cx.aswin.boxlore.core.prefs.HeroCardStyle.DEFAULT,
-    val heroCoverShade: String = cx.aswin.boxlore.core.prefs.HeroCoverShade.DEFAULT,
+    val heroCoverShade: String = cx.aswin.boxlore.core.prefs.HeroCoverShade.UNSET,
+    val heroTideProgress: String = cx.aswin.boxlore.core.prefs.HeroTideProgress.DEFAULT,
     val savedCustomTheme: cx.aswin.boxlore.core.prefs.ThemeSelection? = null,
     val fullPlayerStyle: String = cx.aswin.boxlore.core.prefs.FullPlayerStyle.STANDARD,
     val discoverySections: cx.aswin.boxlore.core.prefs.DiscoverySections = cx.aswin.boxlore.core.prefs.DiscoverySections(),
@@ -331,7 +332,14 @@ internal fun navPopExitTransition(fromRoute: String?, toRoute: String?,): androi
 // Navigation argument / route helpers (keeps destination methods under Sonar S3776)
 // ---------------------------------------------------------------------------
 
-internal fun encodeNavArg(s: String?): String = android.net.Uri.encode(s?.ifBlank { "_" } ?: "_")
+/**
+ * Navigation parses the literal string "null" as a null argument, which crashes non-nullable
+ * string arguments ("Wrong argument type ... string expected"), so it becomes the placeholder too.
+ */
+internal fun encodeNavArg(s: String?): String =
+    android.net.Uri.encode(s?.takeUnless { it.isBlank() || it == NAV_NULL_LITERAL } ?: "_")
+
+private const val NAV_NULL_LITERAL = "null"
 
 internal fun decodeNavArg(s: String?): String = try {
     if (s.isNullOrBlank() || s.trim() == "_") {

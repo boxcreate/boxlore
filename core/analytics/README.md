@@ -6,7 +6,7 @@ Owns analytics event capture and non-fatal error reporting for Boxlore. The modu
 
 ## Public API
 
-- `trackHomeHeroStyleSelected` emits `home_hero_style_selected` when a Settings pick changes the Home hero look (style, colors, one-value combo, what changed, the previous combo); re-picking the current look sends nothing. `syncHomeHeroStylePersonProperties` keeps person properties `home_hero_card_style`, `home_hero_colors` and `home_hero_style_combo` on the current look, default included; it sends once per process and on each change, so activity recreation on rotation, fold or resize does not resend, and `resetIdentity` resends it to the new anonymous person. Both report the names in Settings (`block`, `cover`, …), not the stored keys, with colors `none` for Block (`AppearanceAnalyticsTracks`, `HomeHeroStyleAnalyticsTest`).
+- `trackHomeHeroStyleSelected` emits `home_hero_style_selected` when a Settings pick changes the Home hero look (style, colors, one-value combo, what changed, the previous combo); re-picking the current look sends nothing. `syncHomeHeroStylePersonProperties` keeps person properties `home_hero_card_style`, `home_hero_colors` and `home_hero_style_combo` on the current look, default included; it sends once per process and on each change, so activity recreation on rotation, fold or resize does not resend, and `resetIdentity` resends it to the new anonymous person. Both report the names in Settings (`block`, `cover`, …), not the stored keys, with colors `none` for Block in the app theme (its look before it had a colour choice, so the breakdown continues) and `block_artwork` / `block_dark` once a Block listener picks those (`AppearanceAnalyticsTracks`, `HomeHeroStyleAnalyticsTest`).
 - `trackRecommendationSectionToggled` emits `recommendation_section_toggled` when a LeaveMeAlone switch (Settings › Library) flips or the Brief card's Always hide turns the Brief off: `section` (names listeners see: `brief`, `picked_for_you`, `because_you_like`, `time_of_day_picks`, `more_like_this`), `enabled`, `source` (`settings` / `brief_card`) and `sections_off` after the change (`RecommendationsAnalyticsTracks`, `RecommendationsAnalyticsTest`). It sends events only, no person properties.
 
 - `trackCustomThemeEditorOpened` emits once per editor visit. `trackCustomThemeSaved` is called after custom theme preference persistence succeeds. Both use glossary-backed events with only entry point or background style; no color values are captured. Facade and inventory tests cover both emissions.
@@ -47,6 +47,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 - `AnalyticsHelper` is process-scoped and its methods are callable from any thread; the SDK handles internal dispatch.
 - `PendingEntryPoint` and `PlayerSessionAggregator` use synchronized or volatile state for cross-thread access.
 - `RecordingAnalytics.flush()` is a no-op suitable for tests.
+- PostHog setup runs off the main thread through `PostHogStartup` (it reads package info over binder and caused a startup ANR). Captures, person properties, flushes, resets and app-side `register` calls made before setup finishes are queued in order (bounded at 500) and replayed afterwards; environment super-properties are registered before the replay. Feature flags and `getDistinctId()` read as unset until setup finishes, and callers already fall back when they are.
 
 ## Persistence & identity
 
@@ -75,6 +76,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 ./gradlew :core:analytics:testDebugUnitTest
 ./gradlew :core:testing:testDebugUnitTest --tests '*GlossaryCoverageGuardTest'
 ```
+- `PostHogStartupTest` covers ordered replay, immediate calls after setup, the queue bound and the blank distinct id before setup.
 
 ## CI relevance
 

@@ -26,6 +26,15 @@ class EpisodeNavRouteRegressionTest {
     }
 
     @Test
+    fun encodeNavArg_turnsLiteralNullIntoPlaceholder() {
+        // Regression (0.0.24): Navigation reads the text "null" as a null argument, which crashed
+        // non-nullable string arguments with "Wrong argument type ... string expected".
+        assertNull(NavType.StringType.parseValue("null"))
+        assertEquals("_", encodeNavArg("null"))
+        assertEquals("Null", decodeNavArg(encodeNavArg("Null")))
+    }
+
+    @Test
     fun encodeNavArg_encodesSpecialCharactersAndEmojis() {
         val encoded = encodeNavArg("Q&A: Tech / AI? #1 & <cool> 🎙️")
         assertTrue(encoded.contains("%20"))

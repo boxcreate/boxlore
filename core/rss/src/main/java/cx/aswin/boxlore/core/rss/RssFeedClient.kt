@@ -178,7 +178,9 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         var customError: Exception? = null
         val libraryFeed =
             try {
-                parseWithLibrary(bytes, podcastId)
+                // The library parser needs the whole feed as one String (twice the bytes, plus its
+                // own copies), which ran out of memory on large feeds. Those use the streaming parser only.
+                if (RssParsePolicy.useLibraryParser(bytes.size)) parseWithLibrary(bytes, podcastId) else null
             } catch (error: Exception) {
                 libraryError = error
                 null

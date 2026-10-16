@@ -4,7 +4,6 @@ import cx.aswin.boxlore.core.database.FolderDao
 import cx.aswin.boxlore.core.database.FolderEntity
 import cx.aswin.boxlore.core.database.PodcastDao
 import cx.aswin.boxlore.core.database.PodcastEntity
-import cx.aswin.boxlore.core.database.PodcastFolderCrossRef
 import cx.aswin.boxlore.core.model.FolderDisplaySize
 import cx.aswin.boxlore.core.model.PodcastGenres
 import cx.aswin.boxlore.core.model.SubscriptionFolder
@@ -173,7 +172,7 @@ class RoomFolderRepository(
     }
 
     override suspend fun addPodcastToFolder(podcastId: String, folderId: String) {
-        folderDao.insertCrossRefs(listOf(PodcastFolderCrossRef(podcastId = podcastId, folderId = folderId)))
+        folderDao.addPodcastToFolderIfExists(podcastId = podcastId, folderId = folderId)
     }
 
     override suspend fun removePodcastFromFolder(podcastId: String, folderId: String) {

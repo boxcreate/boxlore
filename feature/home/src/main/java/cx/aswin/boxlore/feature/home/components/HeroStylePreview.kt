@@ -20,6 +20,7 @@ import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.PlaybackSession
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
+import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.feature.home.HeroType
 import cx.aswin.boxlore.feature.home.R
 import cx.aswin.boxlore.feature.home.SmartHeroItem
@@ -40,6 +41,7 @@ fun HeroStylePreview(
     collection: Boolean,
     sessions: List<PlaybackSession>,
     modifier: Modifier = Modifier,
+    tideProgress: String = HeroTideProgress.DEFAULT,
 ) {
     val packageName = LocalContext.current.packageName
     val podcasts = remember(sessions, collection, packageName) { heroPreviewPodcasts(sessions, collection, packageName) }
@@ -57,7 +59,7 @@ fun HeroStylePreview(
                 scaleY = scale
             }
             ) {
-                CompositionLocalProvider(LocalHeroCoverShade provides coverShade) {
+                CompositionLocalProvider(LocalHeroCoverShade provides coverShade, LocalHeroTideProgress provides tideProgress) {
                     HeroPreviewCard(HeroCardStyle.sanitize(style), collection, podcasts, upNext)
                 }
             }
@@ -79,7 +81,7 @@ private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<P
             HeroCardStyle.MARQUEE -> MarqueePreviewScreen(collection = true, podcasts = podcasts, upNext = emptyList())
             HeroCardStyle.HALO ->
                 HaloHeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}, onPlaybackClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
-            else -> HeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {})
+            else -> BlockHeroColors(podcasts.firstOrNull()?.imageUrl) { HeroGridCard(podcasts, title, HeroGridMode.Resume, onCellClick = {}) }
         }
     } else {
         val first = podcasts.first()
@@ -94,7 +96,7 @@ private fun HeroPreviewCard(style: String, collection: Boolean, podcasts: List<P
             HeroCardStyle.MARQUEE -> MarqueePreviewScreen(collection = false, podcasts = podcasts, upNext = upNext)
             HeroCardStyle.HALO ->
                 HaloHeroCard(item, onClick = {}, onArrowClick = {}, currentPlayingPodcastId = null, currentPlayingEpisodeId = null, isPlaying = false)
-            else -> HeroCard(item, onClick = {}, onArrowClick = {}, onToggleSubscription = {})
+            else -> BlockHeroColors(item.podcast.imageUrl) { HeroCard(item, onClick = {}, onArrowClick = {}, onToggleSubscription = {}) }
         }
     }
 }

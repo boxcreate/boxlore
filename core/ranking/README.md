@@ -59,6 +59,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 - Package root is `cx.aswin.boxlore.core.ranking`.
 - App backup rules exclude the adaptive database from automatic platform backup; explicit encrypted backup support is handled through ranking backup models.
 - Show facet keys follow the active podcast id; legacy RSS repair merges evidence into the PI key atomically.
+- The ranking database rebuilds on a version downgrade (`fallbackToDestructiveMigrationOnDowngrade`) so moving from a newer beta back to production never crashes on open; ranking state is relearned or restored from an explicit backup.
 
 ## Testing notes
 

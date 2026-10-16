@@ -78,6 +78,8 @@ internal class PodcastInfoSupplementSupport(
         userMessage: String? = state.userMessage,
         isFetchingFromFeed: Boolean = false,
     ): PodcastInfoUiState.Success {
+        // Offset pages overlap when episodes publish between requests; the list keys rows by id.
+        val uniqueEpisodes = piEpisodes.distinctBy { it.id }
         val podcast = state.podcast
         val eligible = EpisodeSupplementEligibility.canLoadMissingEpisodes(podcast)
         val catalogReady = !podcast.isRss && isCatalogReady(podcast.id)
@@ -94,13 +96,13 @@ internal class PodcastInfoSupplementSupport(
             }
         val display =
             if (podcast.isRss) {
-                piEpisodes
+                uniqueEpisodes
             } else {
-                EpisodeSupplementMergeLogic.sorted(piEpisodes, state.currentSort)
+                EpisodeSupplementMergeLogic.sorted(uniqueEpisodes, state.currentSort)
             }
         return state.copy(
             episodes = display,
-            piEpisodes = piEpisodes,
+            piEpisodes = uniqueEpisodes,
             hasMoreEpisodes = hasMoreEpisodes,
             isLoadingMore = isLoadingMore,
             userMessage = userMessage,

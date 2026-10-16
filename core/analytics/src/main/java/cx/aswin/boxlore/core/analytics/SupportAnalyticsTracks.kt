@@ -29,7 +29,8 @@ internal object SupportAnalyticsTracks {
     fun supportWorldVariant(knownVariants: Set<String>): String? =
         try {
             resolveSupportWorldVariant(knownVariants) { sendExposure ->
-                PostHog.getFeatureFlag(SUPPORT_WORLD_FLAG, null, sendExposure)
+                // Before setup the flag is unknown, which shows the default world without exposure.
+                if (PostHogStartup.isReady) PostHog.getFeatureFlag(SUPPORT_WORLD_FLAG, null, sendExposure) else null
             }
         } catch (e: Exception) {
             null

@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import cx.aswin.boxlore.core.designsystem.components.ArtworkPrefetch
 import cx.aswin.boxlore.core.designsystem.components.OptimizedImage
 import cx.aswin.boxlore.core.designsystem.theme.ArtworkShade
 import cx.aswin.boxlore.core.designsystem.theme.cachedArtworkPalette
@@ -83,7 +84,7 @@ internal val MarqueeCopyBottom = MarqueeSheetOverlap + MarqueeDotsReserve
 
 /**
  * A Marquee cover's colours: an optional two-tone filter, the shade its words sit on, and the colour
- * Home's top bar gives its wordmark over the cover's top ([topContent], with its frost's [veilAlpha]).
+ * Home's top bar gives its wordmark over the cover's top ([topContent], with its frost's tint, [veilAlpha]).
  */
 internal data class MarqueeLook(val filter: ColorFilter?, val shade: ArtworkShade, val topContent: Color, val veilAlpha: Float)
 
@@ -143,6 +144,7 @@ internal fun MarqueeHero(
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.collect { currentOnPageShown(it) } }
     val scroll = LocalHeroScrollOffset.current
     val heroHeight = marqueeHeroHeight()
+    MarqueeWarmColours(items)
     var touches by remember { mutableIntStateOf(0) }
     var holding by remember { mutableStateOf(false) }
     val dragged by pager.interactionSource.collectIsDraggedAsState()
@@ -204,6 +206,24 @@ internal fun MarqueeHero(
     }
 }
 
+/**
+ * Reads every card's colours and fetches its images before the listener swipes to it: a card arriving
+ * mid-swipe then draws its two-tone filter, wash and shade from its first frame, instead of showing its
+ * plain cover until its palette is read.
+ */
+@Composable
+private fun MarqueeWarmColours(items: List<SmartHeroItem>) {
+    val context = LocalContext.current
+    LaunchedEffect(items) {
+        val urls = items.flatMap { item ->
+            listOf(heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT)) + item.gridItems.map { it.imageUrl }
+        }.filterNotNull().distinct()
+        ArtworkPrefetch.prefetch(context, urls, MarqueeAmbientWidth)
+        ArtworkPrefetch.prefetch(context, urls, MarqueeCoverWidth)
+        urls.forEach { url -> runCatching { loadArtworkPalette(context, url) } }
+    }
+}
+
 /** The next three cards after [page], wrapping round, each by its cover and what it is. */
 @Composable
 private fun marqueeUpNext(items: List<SmartHeroItem>, page: Int): List<MarqueeNext> {
@@ -225,8 +245,8 @@ private fun marqueeUpNext(items: List<SmartHeroItem>, page: Int): List<MarqueeNe
 }
 
 /**
- * Marquee's single-episode card: the cover across the whole card in [rememberMarqueeLook]'s colours, a
- * frosted band behind the top bar ([MarqueeFrost]) and a shade behind the words at the bottom, Cover's
+ * Marquee's single-episode card: [MarqueeBackdrop] in [rememberMarqueeLook]'s colours (the whole cover
+ * melting into a wash of its own colours, a soft fade under the top bar), a shade behind the words, Cover's
  * words, and Play with a fixed width, details beside it, and covers of the next cards in the room left
  * over. While [active], it tells the top bar which words read over its cover.
  */
@@ -256,20 +276,12 @@ internal fun MarqueeHeroCard(
     val imageUrl = heroArtworkUrl(item.podcast, showFirst = item.type == HeroType.SPOTLIGHT)
     val look = rememberMarqueeLook(imageUrl)
     val shade = look.shade
-    BoxWithConstraints(modifier.fillMaxSize().background(shade.deep).testTag("home_hero_marquee").expressiveClickable(onClick = onArrowClick)) {
-        OptimizedImage(
-            url = imageUrl,
-            fallbackUrls = heroArtworkSources(item),
-            proxyWidth = 1080,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            colorFilter = look.filter,
-            modifier = Modifier.fillMaxSize().testTag("home_hero_artwork"),
-        )
-        MarqueeFrost(imageUrl, heroArtworkSources(item), look.filter, look.topContent, look.veilAlpha, maxHeight)
+    // Clipped: the backdrop reaches past the card, and a neighbouring card must never draw over this one.
+    Box(modifier.fillMaxSize().clipToBounds().background(shade.deep).testTag("home_hero_marquee").expressiveClickable(onClick = onArrowClick)) {
+        MarqueeBackdrop(imageUrl, heroArtworkSources(item), look)
         if (active) MarqueeReportTone(look.topContent)
         Column(
-            Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep)
+            Modifier.align(Alignment.BottomStart).fillMaxWidth().coverScrim(shade.deep.copy(alpha = MarqueeWordsScrim), fade = MarqueeWordsFade)
                 .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = MarqueeCopyBottom),
         ) {
             MarqueeChip(marqueeContext(item), shade, tag = "home_hero_marquee_chip")

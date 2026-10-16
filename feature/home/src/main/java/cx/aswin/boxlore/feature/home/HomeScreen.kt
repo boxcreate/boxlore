@@ -50,9 +50,12 @@ import cx.aswin.boxlore.feature.home.components.ChangeRecommendationPodcastSheet
 import cx.aswin.boxlore.feature.home.components.LocalHeroCardStyle
 import cx.aswin.boxlore.feature.home.components.LocalHeroCoverShade
 import cx.aswin.boxlore.feature.home.components.LocalHeroScrollOffset
+import cx.aswin.boxlore.feature.home.components.LocalHeroTideProgress
 import cx.aswin.boxlore.feature.home.components.LocalHeroTopInset
 import cx.aswin.boxlore.feature.home.components.LocalLastSeenEpisodes
+import cx.aswin.boxlore.feature.home.components.LocalMarqueeCardFrost
 import cx.aswin.boxlore.feature.home.components.LocalMarqueeTopTone
+import cx.aswin.boxlore.feature.home.components.MarqueeBarFrost
 import cx.aswin.boxlore.feature.home.components.MarqueeDetentConnection
 import cx.aswin.boxlore.feature.home.components.MarqueeSheetOverlap
 import cx.aswin.boxlore.feature.home.components.MarqueeTopTone
@@ -61,6 +64,8 @@ import cx.aswin.boxlore.feature.home.components.homeHeroStyle
 import cx.aswin.boxlore.feature.home.components.marqueeBarOverArtwork
 import cx.aswin.boxlore.feature.home.components.marqueeDetent
 import cx.aswin.boxlore.feature.home.logic.HomeMixMode
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
@@ -250,6 +255,7 @@ fun HomeRoute(
     val discoverySections by userPreferencesRepository.discoverySectionsStream.collectAsState(initial = null)
     val heroCardStyle by userPreferencesRepository.heroCardStyleStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroCardStyle })
     val heroCoverShade by userPreferencesRepository.heroCoverShadeStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroCoverShade })
+    val heroTideProgress by userPreferencesRepository.heroTideProgressStream.collectAsState(initial = remember { userPreferencesRepository.cachedHeroTideProgress })
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(viewModel) {
         viewModel.pinFeedback.collect { message ->
@@ -366,6 +372,7 @@ fun HomeRoute(
         LocalLastSeenEpisodes provides lastSeenEpisodes,
         LocalHeroCardStyle provides homeHeroStyle(heroCardStyle, LocalBoxloreWindowLayout.current.usesTabletLayout),
         LocalHeroCoverShade provides heroCoverShade,
+        LocalHeroTideProgress provides heroTideProgress,
         LocalHomeDiscoverySections provides discoverySections,
     ) {
         HomeScreen(
@@ -660,11 +667,15 @@ fun HomeScreen(
             val overArtwork: () -> Float = remember(gridState, overlapPx, edgePx) {
                 { marqueeBarOverArtwork(heroItem()?.let { it.offset.y + it.size.height }, overlapPx, topBarHeight, edgePx) }
             }
+            val marqueeFrost = remember { HazeState() }
             CompositionLocalProvider(
                 LocalHeroTopInset provides topInset,
                 LocalHeroScrollOffset provides heroScroll,
                 LocalMarqueeTopTone provides topTone,
-            ) { Box(Modifier.fillMaxSize().nestedScroll(detent)) { feed() } }
+                LocalMarqueeCardFrost provides false,
+            ) { Box(Modifier.fillMaxSize().nestedScroll(detent).hazeSource(marqueeFrost)) { feed() } }
+            // The bar's frost blurs the live page under it, fixed to the top at the bar's full height.
+            MarqueeBarFrost(marqueeFrost, topInset, topTone, overArtwork)
             HomeTopBar(
                 scrollFractionProvider = { scrollFraction },
                 showTopBarShortcuts = showTopBarShortcuts,

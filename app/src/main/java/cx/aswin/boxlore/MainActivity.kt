@@ -179,12 +179,10 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         isFirstResumeAfterLaunch = false
-        PostHog.register(
-            "local_time_of_day",
-            java.util.Calendar
-                .getInstance()
-                .get(java.util.Calendar.HOUR_OF_DAY),
-        )
+        val hourOfDay = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        cx.aswin.boxlore.core.analytics.PostHogStartup.runWhenReady {
+            PostHog.register("local_time_of_day", hourOfDay)
+        }
         if (!tabletAlphaNoticePending) resumeForegroundPrompts()
     }
 
@@ -221,7 +219,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         (application as BoxLoreApplication).startupWorkGate.onUiCreated()
-        installSplashScreen()
+        installSplashScreen().holdBriefly(coldStart = savedInstanceState == null)
         super.onCreate(savedInstanceState)
         restoreTabletAlphaNotice(savedInstanceState)
         consumedAuthLink = savedInstanceState?.getString(KEY_CONSUMED_AUTH_LINK) ?: consumedAuthLink
@@ -314,5 +312,26 @@ class MainActivity : ComponentActivity() {
         private const val KEY_PENDING_CROSS_DEVICE_AUTH_LINK = "cx.aswin.boxlore.pending_cross_device_auth_link"
         private const val KEY_TABLET_ALPHA_NOTICE_PENDING = "cx.aswin.boxlore.tablet_alpha_notice_pending"
         private var lastConsumedAuthLink: String? = null
+    }
+}
+
+/** Keeps the splash up for [SplashHoldPolicy.MIN_VISIBLE_MILLIS] on a cold launch, then fades it out. */
+private fun androidx.core.splashscreen.SplashScreen.holdBriefly(coldStart: Boolean) {
+    val createdAt = android.os.SystemClock.uptimeMillis()
+    setKeepOnScreenCondition {
+        SplashHoldPolicy.keepOnScreen(createdAt, android.os.SystemClock.uptimeMillis(), coldStart)
+    }
+    setOnExitAnimationListener { provider ->
+        provider.iconView.animate()
+            .scaleX(SplashHoldPolicy.EXIT_ICON_SCALE)
+            .scaleY(SplashHoldPolicy.EXIT_ICON_SCALE)
+            .setDuration(SplashHoldPolicy.EXIT_FADE_MILLIS)
+            .start()
+        provider.view.animate()
+            .alpha(0f)
+            .setDuration(SplashHoldPolicy.EXIT_FADE_MILLIS)
+            .setInterpolator(android.view.animation.AccelerateInterpolator())
+            .withEndAction { provider.remove() }
+            .start()
     }
 }

@@ -58,9 +58,22 @@ internal fun WelcomeCoverReel(
     // Decorative movement keeps the same physical direction in RTL; the actual UI mirrors normally.
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(CoverGap)) {
-                WelcomeCoverRow(UpperCovers, clock, coverSize, viewportWidth, reverse = false, phase = 0.0)
-                WelcomeCoverRow(LowerCovers, clock, coverSize, viewportWidth, reverse = true, phase = 0.24)
+            Column(
+                Modifier.graphicsLayer {
+                    alpha = if (clock.animationsDisabled.value) 1f else WelcomeReelMotion.coverAlpha(clock.elapsedMillis.value)
+                },
+                verticalArrangement = Arrangement.spacedBy(CoverGap),
+            ) {
+                WelcomeCoverRow(UpperCovers, clock, coverSize, viewportWidth, reverse = false, phase = 0.0, rowDelayMillis = 0L)
+                WelcomeCoverRow(
+                    LowerCovers,
+                    clock,
+                    coverSize,
+                    viewportWidth,
+                    reverse = true,
+                    phase = 0.24,
+                    rowDelayMillis = WelcomeReelMotion.RowStaggerMillis,
+                )
             }
             val edgeFraction = (16.dp / viewportWidth).coerceIn(0f, 0.1f)
             Box(
@@ -85,6 +98,7 @@ private fun WelcomeCoverRow(
     viewportWidth: Dp,
     reverse: Boolean,
     phase: Double,
+    rowDelayMillis: Long,
 ) {
     val cycleWidth = covers.size * (coverSize.value + CoverGap.value).toDouble()
     val painters = covers.map { painterResource(it) }
@@ -92,7 +106,7 @@ private fun WelcomeCoverRow(
     val copies = ceil(viewportWidth.value / cycleWidth).toInt() + 2
     Row(
         Modifier.wrapContentWidth(Alignment.Start, unbounded = true).graphicsLayer {
-            val distance = WelcomeReelMotion.distanceDp(clock.elapsedMillis.value)
+            val distance = WelcomeReelMotion.distanceDp(clock.elapsedMillis.value, rowDelayMillis)
             translationX = WelcomeReelMotion.wrappedOffsetDp(distance, cycleWidth, reverse, phase).dp.toPx()
         },
         horizontalArrangement = Arrangement.spacedBy(CoverGap),

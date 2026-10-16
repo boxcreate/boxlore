@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.onboarding
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.designsystem.components.ArtworkPrefetch
 import cx.aswin.boxlore.core.network.model.OnboardingHistoryEntry
 import cx.aswin.boxlore.core.network.model.OnboardingNextTurnRequest
 import cx.aswin.boxlore.core.network.model.toPodcast
@@ -69,9 +70,13 @@ internal fun OnboardingViewModel.requestShowDeckIfDue(history: List<OnboardingHi
             null
         }
         _uiState.update { it.copy(aiDeck = if (cards == null) EchoDeckLogic.failed(it.aiDeck) else EchoDeckLogic.loaded(it.aiDeck, cards)) }
-        // The deck is ready the moment its cards are; clips buffer behind it.
+        // The deck is ready the moment its cards are; artwork and clips load behind it, so the cards
+        // usually arrive with their artwork already in memory instead of loading on screen.
         val deck = _uiState.value.aiDeck
-        if (deck.status == EchoDeckStatus.Ready) deckClips.prefetch(deck.cards.mapNotNull(EchoDeckLogic::clip))
+        if (deck.status == EchoDeckStatus.Ready) {
+            ArtworkPrefetch.prefetch(getApplication(), deck.cards.map { it.toPodcast().imageUrl }, EchoDeckArtworkProxyWidth)
+            deckClips.prefetch(deck.cards.mapNotNull(EchoDeckLogic::clip))
+        }
     }
 }
 

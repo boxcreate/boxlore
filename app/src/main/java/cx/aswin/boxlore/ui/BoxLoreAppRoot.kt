@@ -400,6 +400,7 @@ fun BoxLoreAppRoot(
     val navigationBlurLevel by userPrefs.navigationBlurLevelStream.collectAsState(initial = remember { userPrefs.cachedNavigationBlurLevel })
     val heroCardStyle by userPrefs.heroCardStyleStream.collectAsState(initial = remember { userPrefs.cachedHeroCardStyle })
     val heroCoverShade by userPrefs.heroCoverShadeStream.collectAsState(initial = remember { userPrefs.cachedHeroCoverShade })
+    val heroTideProgress by userPrefs.heroTideProgressStream.collectAsState(initial = remember { userPrefs.cachedHeroTideProgress })
     // Person properties follow the hero look, default included, so dashboards can count every listener's pick.
     LaunchedEffect(heroCardStyle, heroCoverShade) { AnalyticsHelper.syncHomeHeroStylePersonProperties(heroCardStyle, heroCoverShade) }
     val savedCustomTheme by userPrefs.customThemeStream.collectAsState(initial = remember { userPrefs.cachedCustomTheme })
@@ -530,9 +531,11 @@ fun BoxLoreAppRoot(
     var activeFeatureFlag by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(dismissedFeatureVersion) {
         if (dismissedFeatureVersion != featureAnnouncementId && dismissedFeatureVersion != "android_auto_1.3.6") {
-            activeFeatureFlag = PostHog.getFeatureFlag("active_feature_announcement") as? String
-            PostHog.reloadFeatureFlags {
+            cx.aswin.boxlore.core.analytics.PostHogStartup.runWhenReady {
                 activeFeatureFlag = PostHog.getFeatureFlag("active_feature_announcement") as? String
+                PostHog.reloadFeatureFlags {
+                    activeFeatureFlag = PostHog.getFeatureFlag("active_feature_announcement") as? String
+                }
             }
         }
     }
@@ -678,6 +681,7 @@ fun BoxLoreAppRoot(
                     navigationBlurLevel = navigationBlurLevel,
                     heroCardStyle = heroCardStyle,
                     heroCoverShade = heroCoverShade,
+                    heroTideProgress = heroTideProgress,
                     savedCustomTheme = savedCustomTheme,
                     fontRoundness = fontRoundnessKey,
                     navigationStyle = navigationStyleKey,

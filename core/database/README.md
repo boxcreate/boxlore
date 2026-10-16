@@ -62,6 +62,9 @@ src/main/java/cx/aswin/boxlore/core/database/
 - `BoxLoreDatabase.getDatabase` is a process singleton created from application wiring.
 - DAO operations expose suspend functions and flows; callers should keep large database work off the main thread.
 - Feature modules should depend on ports or repositories rather than injecting `BoxLoreDatabase` directly.
+- Completed episode ids are read in pages of 1,000 inside one transaction (`ListeningHistoryDao.getCompletedEpisodeIds`). The Flow re-reads them on any `listening_history` change. A single cursor over tens of thousands of ids failed with "Couldn't read row … from CursorWindow".
+- `FolderDao.addPodcastToFolderIfExists` and `setPodcastsForFolder` do nothing when the folder no longer exists, so a link racing a folder deletion cannot violate the cross-ref foreign key.
+- `BoxLoreDatabase.getDatabase` re-checks the instance inside its lock so two threads never open separate Room instances on the same file.
 
 ## Persistence & identity
 
@@ -86,6 +89,7 @@ src/main/java/cx/aswin/boxlore/core/database/
 ```bash
 ./gradlew :core:database:testDebugUnitTest
 ```
+- `ListeningHistoryDaoInMemoryTest` reads completed ids across page boundaries.
 
 ## CI relevance
 

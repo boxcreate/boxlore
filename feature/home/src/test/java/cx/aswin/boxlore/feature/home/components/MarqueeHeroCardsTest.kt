@@ -122,9 +122,11 @@ class MarqueeHeroCardsTest {
         val hero = composeRule.onNodeWithTag("home_hero_marquee_hero").fetchSemanticsNode().boundsInRoot
         val cover = composeRule.onNodeWithTag("home_hero_artwork", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         assertEquals("the cover moves down as far as the hero scrolled up", 120f, cover.top - hero.top, 1f)
+        // The cover is shown whole across the full width, never cropped from the sides into the tall card.
+        assertEquals("the cover spans the card", hero.width, cover.width, 1f)
     }
 
-    @Test fun `the frosted band shows only under the floating top bar and the card reports its words' colour`() {
+    @Test fun `the frost shows only under the floating top bar and the card reports its words' colour`() {
         val tone = MarqueeTopTone().apply { content = Color.Red }
         render(topInset = 80.dp, tone = tone)
         composeRule.onNodeWithTag("home_hero_marquee_frost", useUnmergedTree = true).assertExists()
@@ -132,7 +134,7 @@ class MarqueeHeroCardsTest {
         composeRule.onNodeWithTag("home_hero_sheet_handle", useUnmergedTree = true).assertExists()
     }
 
-    @Test fun `without a top inset there is no frosted band`() {
+    @Test fun `without a top inset there is no frost`() {
         render()
         composeRule.onNodeWithTag("home_hero_marquee_frost", useUnmergedTree = true).assertDoesNotExist()
     }

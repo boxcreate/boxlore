@@ -389,6 +389,7 @@ class PlaybackRepository internal constructor(
 
     init {
         getOrCreateDeviceUuid()
+        mediaHandle.enableReconnect(repositoryScope) { initializeMediaController() }
         initializeMediaController()
         historyStore.monitorLikeState()
         chaptersController.monitorChaptersAndTranscripts()
@@ -423,9 +424,10 @@ class PlaybackRepository internal constructor(
 
     private fun initializeMediaController() {
         val sessionToken = SessionToken(context, ComponentName(context, BoxLorePlaybackService::class.java))
-        mediaHandle.future = MediaController.Builder(context, sessionToken).buildAsync()
-        mediaHandle.future?.addListener({
-            mediaHandle.controller = mediaHandle.future?.get()
+        val future = MediaController.Builder(context, sessionToken).buildAsync().also { mediaHandle.future = it }
+        future.addListener({
+            // A rejected connection retries later (bounded) instead of throwing on the main thread.
+            mediaHandle.controller = mediaHandle.connectedOrNull(future) ?: return@addListener
             // Restore the persisted playback speed so UI and ExoPlayer stay aligned
             // across process death and session clears (even when the rate is already 1×).
             repositoryScope.launch {

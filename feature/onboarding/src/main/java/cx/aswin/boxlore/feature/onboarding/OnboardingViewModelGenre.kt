@@ -58,41 +58,48 @@ internal fun OnboardingViewModel.synthesizeGenreOnboarding() {
                     }
 
                 // 2. Fetch AI curriculum rows from backend
+                // A failed async child fails the whole launch even when await() is caught, so
+                // network errors must be handled inside the child (fall back to charts).
                 val rowsDeferred =
                     async(Dispatchers.IO) {
-                        val formattedActivities =
-                            OnboardingCurriculumLogic.formatMappedSelections(
-                                selections = currentState.listeningActivities,
-                                genreMap = currentState.activityGenreMap,
-                                focusingPrefix = "focusing on",
-                            )
-                        val formattedLengths =
-                            OnboardingCurriculumLogic.formatMappedSelections(
-                                selections = currentState.preferredLengths,
-                                genreMap = currentState.lengthGenreMap,
-                                focusingPrefix = "for",
-                            )
+                        orFallbackOnFailure(
+                            fallback = emptyList(),
+                            onFailure = { e -> Log.e("OnboardingViewModel", "AI onboarding synthesis failed, falling back to charts", e) },
+                        ) {
+                            val formattedActivities =
+                                OnboardingCurriculumLogic.formatMappedSelections(
+                                    selections = currentState.listeningActivities,
+                                    genreMap = currentState.activityGenreMap,
+                                    focusingPrefix = "focusing on",
+                                )
+                            val formattedLengths =
+                                OnboardingCurriculumLogic.formatMappedSelections(
+                                    selections = currentState.preferredLengths,
+                                    genreMap = currentState.lengthGenreMap,
+                                    focusingPrefix = "for",
+                                )
 
-                        val request =
-                            OnboardingGenreSynthRequest(
-                                genres = currentState.selectedGenres.toList(),
-                                subGenres = currentState.selectedSubGenres.toList(),
-                                activity = formattedActivities,
-                                length = formattedLengths,
-                                country = locale.country,
-                                languages = locale.languages,
-                                recommendationFormat = "discovery_v2",
-                            )
-                        val response =
-                            podcastRepository.api
-                                .onboardingGenreSynth(
-                                    publicKey = podcastRepository.publicKey,
-                                    request = request,
-                                ).execute()
-                        if (response.isSuccessful && response.body() != null) {
-                            response.body()!!.map { it.copy(episodes = emptyList()) }
-                        } else {
-                            throw Exception("Failed to load curriculum from genre synthesis")
+                            val request =
+                                OnboardingGenreSynthRequest(
+                                    genres = currentState.selectedGenres.toList(),
+                                    subGenres = currentState.selectedSubGenres.toList(),
+                                    activity = formattedActivities,
+                                    length = formattedLengths,
+                                    country = locale.country,
+                                    languages = locale.languages,
+                                    recommendationFormat = "discovery_v2",
+                                )
+                            val response =
+                                podcastRepository.api
+                                    .onboardingGenreSynth(
+                                        publicKey = podcastRepository.publicKey,
+                                        request = request,
+                                    ).execute()
+                            if (response.isSuccessful && response.body() != null) {
+                                response.body()!!.map { it.copy(episodes = emptyList()) }
+                            } else {
+                                throw Exception("Failed to load curriculum from genre synthesis")
+                            }
                         }
                     }
 

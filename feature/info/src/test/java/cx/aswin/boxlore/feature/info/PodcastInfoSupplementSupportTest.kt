@@ -49,6 +49,30 @@ class PodcastInfoSupplementSupportTest {
     }
 
     @Test
+    fun `overlapping load-more pages never list an episode twice`() = runTest {
+        // Regression: offset pages overlap when episodes publish between requests; the episode list
+        // keys rows by id and crashed with "Key ... was already used".
+        val support =
+            PodcastInfoSupplementSupport(
+                episodeSupplementPort = FakePort(optedIn = mutableSetOf()),
+                loadPage = { _, _, _, _ -> error("should not reload") },
+            )
+        val state =
+            PodcastInfoUiState.Success(
+                podcast = TestFixtures.podcast(id = "rss:123"),
+                episodes = emptyList(),
+                isSubscribed = false,
+            )
+        val firstPage = listOf("1", "2", "3").map { TestFixtures.episode(id = it) }
+        val secondPage = listOf("3", "4").map { TestFixtures.episode(id = it) }
+
+        val remounted = support.remountWithSupplements(state, piEpisodes = firstPage + secondPage)
+
+        assertEquals(listOf("1", "2", "3", "4"), remounted.episodes.map(Episode::id))
+        assertEquals(listOf("1", "2", "3", "4"), remounted.piEpisodes.map(Episode::id))
+    }
+
+    @Test
     fun `autoOptIn returns null on NoDisconnect`() = runTest {
         val port = FakePort(optedIn = mutableSetOf())
         port.optInOutcome = EpisodeSupplementOutcome.NoDisconnect

@@ -15,8 +15,9 @@ class WelcomeReelMotionTest {
 
     @Test
     fun `the final reply completes its reveal once and stays visible`() {
-        assertFalse(WelcomeReelMotion.isRevealComplete(1299L, animationsDisabled = false, alreadyComplete = false))
-        assertTrue(WelcomeReelMotion.isRevealComplete(1300L, animationsDisabled = false, alreadyComplete = false))
+        val end = WelcomeEntryTiming.LastLineEndMillis
+        assertFalse(WelcomeReelMotion.isRevealComplete(end - 1L, animationsDisabled = false, alreadyComplete = false))
+        assertTrue(WelcomeReelMotion.isRevealComplete(end, animationsDisabled = false, alreadyComplete = false))
         assertTrue(WelcomeReelMotion.isRevealComplete(0L, animationsDisabled = false, alreadyComplete = true))
     }
 
@@ -27,73 +28,46 @@ class WelcomeReelMotionTest {
         assertEquals(0.0, WelcomeReelMotion.distanceDp(0L))
     }
 
-    @Test
-    fun `intro integrates the fast hold and quadratic slowdown before steady travel`() {
-        assertEquals(2400L, WelcomeReelMotion.IntroDurationMillis)
-        assertEquals(144.0, WelcomeReelMotion.distanceDp(600L), 0.000001)
-        assertEquals(276.0, WelcomeReelMotion.distanceDp(1500L), 0.000001)
-        assertEquals(307.2, WelcomeReelMotion.distanceDp(2400L), 0.000001)
-        assertEquals(323.2, WelcomeReelMotion.distanceDp(3400L), 0.000001)
-        assertEquals(16.0, WelcomeReelMotion.distanceDp(7100L) - WelcomeReelMotion.distanceDp(6100L), 0.000001)
-    }
+    private fun speedAt(millis: Long, rowDelay: Long = 0L): Double =
+        (WelcomeReelMotion.distanceDp(millis + 1L, rowDelay) - WelcomeReelMotion.distanceDp(millis - 1L, rowDelay)) * 500.0
 
     @Test
-    fun `brisk movement remains at 240dp per second throughout the first 600ms`() {
-        for (millis in listOf(0L, 100L, 300L, 599L)) {
-            val distance = WelcomeReelMotion.distanceDp(millis)
-            val speed = (WelcomeReelMotion.distanceDp(millis + 1L) - distance) * 1000.0
-            assertEquals(millis * 0.24, distance, 0.000001)
-            assertEquals(240.0, speed, 0.000001)
+    fun `covers glide a short distance then keep drifting without ever stopping`() {
+        // The pre-refresh welcome motion: a 120dp ease-out glide with a slow drift underneath.
+        val glideEnd = WelcomeReelMotion.EntranceMillis
+        val drifted = (glideEnd - WelcomeReelMotion.DriftDelayMillis) / 1000.0 * WelcomeReelMotion.DriftSpeedDpPerSecond
+        assertEquals(WelcomeReelMotion.EntranceTravelDp + drifted, WelcomeReelMotion.distanceDp(glideEnd), 0.0001)
+        for (millis in listOf(150L, 400L, 700L, 900L, 1100L, 3000L, 60_000L)) {
+            assertTrue(speedAt(millis) > 0.0, "moving at $millis ms")
         }
-        assertEquals(144.0, WelcomeReelMotion.distanceDp(600L), 0.000001)
+        assertEquals(WelcomeReelMotion.DriftSpeedDpPerSecond, speedAt(5_000L), 0.0001)
     }
 
     @Test
-    fun `distance and velocity stay continuous when the initial hold starts slowing`() {
-        val handoff = 600L
-        val atHandoff = WelcomeReelMotion.distanceDp(handoff)
-        val beforeHandoff = WelcomeReelMotion.distanceDp(handoff - 1L)
-        val afterHandoff = WelcomeReelMotion.distanceDp(handoff + 1L)
-        // Three-point derivatives approach the join without averaging the immediate slowdown.
-        val incomingSpeed =
-            (3.0 * atHandoff - 4.0 * beforeHandoff + WelcomeReelMotion.distanceDp(handoff - 2L)) * 500.0
-        val outgoingSpeed =
-            (-3.0 * atHandoff + 4.0 * afterHandoff - WelcomeReelMotion.distanceDp(handoff + 2L)) * 500.0
-
-        assertEquals(144.0, atHandoff, 0.000001)
-        assertEquals(240.0, incomingSpeed, 0.001)
-        assertEquals(240.0, outgoingSpeed, 0.001)
-        assertEquals(incomingSpeed, outgoingSpeed, 0.001)
-        assertEquals(0.24, atHandoff - beforeHandoff, 0.000001)
-        assertEquals(0.24, afterHandoff - atHandoff, 0.00013)
+    fun `the glide eases out after a soft start`() {
+        assertTrue(speedAt(100L) < speedAt(300L))
+        assertTrue(speedAt(500L) > speedAt(1000L))
     }
 
     @Test
-    fun `distance and velocity stay continuous at the intro handoff`() {
-        val handoff = WelcomeReelMotion.IntroDurationMillis
-        val atHandoff = WelcomeReelMotion.distanceDp(handoff)
-        val beforeHandoff = WelcomeReelMotion.distanceDp(handoff - 1L)
-        val afterHandoff = WelcomeReelMotion.distanceDp(handoff + 1L)
-        val incomingSpeed = (atHandoff - beforeHandoff) * 1000.0
-        val outgoingSpeed = (afterHandoff - atHandoff) * 1000.0
-
-        assertEquals(16.0, incomingSpeed, 0.001)
-        assertEquals(16.0, outgoingSpeed, 0.001)
-        assertEquals(incomingSpeed, outgoingSpeed, 0.001)
-        assertTrue(atHandoff > beforeHandoff && afterHandoff > atHandoff)
-        assertEquals(0.016, afterHandoff - atHandoff, 0.000001)
+    fun `the lower row starts its glide a beat later`() {
+        val delay = WelcomeReelMotion.RowStaggerMillis
+        assertTrue(WelcomeReelMotion.distanceDp(200L, delay) < WelcomeReelMotion.distanceDp(200L))
+        // Before the shared drift starts, the lower row's glide is the upper row's, shifted in time.
+        assertEquals(WelcomeReelMotion.distanceDp(300L), WelcomeReelMotion.distanceDp(300L + delay, delay), 0.0001)
     }
 
     @Test
-    fun `after the initial hold speed slows monotonically toward the steady speed`() {
-        val speeds =
-            listOf(600L, 1050L, 1500L, 1950L, 2400L).map { millis ->
-                (WelcomeReelMotion.distanceDp(millis + 1L) - WelcomeReelMotion.distanceDp(millis)) * 1000.0
-            }
+    fun `covers fade up from part opacity during the glide`() {
+        assertEquals(WelcomeReelMotion.FadeFromAlpha, WelcomeReelMotion.coverAlpha(0L), 0.0001f)
+        assertTrue(WelcomeReelMotion.coverAlpha(400L) in WelcomeReelMotion.FadeFromAlpha..1f)
+        assertEquals(1f, WelcomeReelMotion.coverAlpha(WelcomeReelMotion.FadeMillis), 0.0001f)
+    }
 
-        assertEquals(240.0, speeds.first(), 0.13)
-        assertEquals(16.0, speeds.last(), 0.001)
-        assertTrue(speeds.zipWithNext().all { (earlier, later) -> earlier > later })
+    @Test
+    fun `the reel always moves forward`() {
+        val positions = (0L..6000L step 25L).map { WelcomeReelMotion.distanceDp(it) }
+        assertTrue(positions.zipWithNext().all { (earlier, later) -> later >= earlier })
     }
 
     @Test

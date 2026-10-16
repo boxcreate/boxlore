@@ -17,6 +17,14 @@ class PodcastEpisodeSearchLogicTest {
     }
 
     @Test
+    fun `displayed episodes never repeat an id`() {
+        // The episode list keys rows by id; a repeated id crashed with "Key ... was already used".
+        val repeated = episodes + TestFixtures.episode(id = "first")
+        assertEquals(listOf("first", "second"), podcastSearchDisplayEpisodes(false, "", null, repeated).map { it.id })
+        assertEquals(listOf("first", "second"), podcastSearchDisplayEpisodes(true, "query", repeated, episodes).map { it.id })
+    }
+
+    @Test
     fun `pending first query keeps loaded cards until real results arrive`() {
         assertEquals(episodes, podcastSearchDisplayEpisodes(true, "query", null, episodes))
         assertFalse(podcastSearchHasNoResults(true, "query", true, null))

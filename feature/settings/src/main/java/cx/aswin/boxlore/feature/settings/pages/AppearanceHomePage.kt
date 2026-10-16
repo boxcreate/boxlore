@@ -8,12 +8,13 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
+import cx.aswin.boxlore.core.prefs.HeroTideProgress
 import cx.aswin.boxlore.feature.settings.R
-import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import cx.aswin.boxlore.feature.settings.components.SettingsNavigationRow
 import cx.aswin.boxlore.feature.settings.components.SettingsPicture
@@ -34,13 +35,24 @@ private val HeroStyleOptions = listOf(
     HeroStyleOption(HeroCardStyle.MARQUEE, R.string.hero_card_style_marquee, R.string.hero_card_style_marquee_description),
 )
 
-/** The colour choice's name and footer for each style that colours its cards from the artwork. */
+/** The colour choice's name and footer for each style. */
 private fun heroColorsCopy(style: String): Pair<Int, Int> = when (style) {
     HeroCardStyle.DUOTONE -> R.string.hero_duotone_colors_title to R.string.hero_duotone_colors_footer
-    HeroCardStyle.HALO, HeroCardStyle.TIDE -> R.string.hero_card_colors_title to R.string.hero_card_colors_footer
+    HeroCardStyle.BLOCK, HeroCardStyle.HALO, HeroCardStyle.TIDE -> R.string.hero_card_colors_title to R.string.hero_card_colors_footer
     HeroCardStyle.MARQUEE -> R.string.hero_marquee_colors_title to R.string.hero_marquee_colors_footer
     else -> R.string.hero_cover_shade_title to R.string.hero_cover_shade_footer
 }
+
+/**
+ * The hero picture's height in a [tileWidth] tile: the shape of the preview stage above (260dp on a
+ * phone-wide card), kept between 150dp and 240dp so short and wide tiles both stay readable.
+ */
+internal fun heroPickerPictureHeight(tileWidth: Dp): Dp = ((tileWidth - HeroTilePadding * 2) * HeroPictureShape).coerceIn(HeroPictureMin, HeroPictureMax)
+
+private val HeroTilePadding = 12.dp
+private const val HeroPictureShape = 0.78f
+private val HeroPictureMin = 150.dp
+private val HeroPictureMax = 240.dp
 
 /**
  * Home: a preview of the picked hero card style with its Jump back in card, every style as a
@@ -56,18 +68,15 @@ internal fun AppearanceHomePage(
     onOpenRecommendations: () -> Unit = {},
 ) {
     val style = HeroCardStyle.sanitize(state.heroCardStyle)
-    val shade = HeroCoverShade.sanitize(state.heroCoverShade)
+    // The stored choice, unpicked until a colour is chosen: each preview applies its own style's default.
+    val storedColors = state.heroCoverShade
+    val shade = HeroCoverShade.forStyle(style, storedColors)
     // Marquee is a phone layout; tablets show Cover cards, so the preview does too.
     val tablet = LocalBoxloreWindowLayout.current.usesTabletLayout
     val previewStyle = if (tablet && style == HeroCardStyle.MARQUEE) HeroCardStyle.COVER else style
     SettingsScaffold(title = "Home", onBack = onBack) {
-        if (heroPreview != null) {
-            SettingsTileSection(title = stringResource(R.string.hero_card_preview_title)) {
-                AppearanceHeroPreviewStage(previewStyle, shade, heroPreview, height = 260.dp)
-            }
-        }
         SettingsTileSection(title = stringResource(R.string.hero_card_style_title), footer = stringResource(R.string.hero_card_style_footer)) {
-            SettingsPictureRow(HeroStyleOptions, selectedIndex = HeroStyleOptions.indexOfFirst { it.key == style }) { option, modifier ->
+            SettingsPictureRow(HeroStyleOptions, selectedIndex = HeroStyleOptions.indexOfFirst { it.key == style }) { option, modifier, width ->
                 SettingsPictureTile(
                     label = stringResource(option.label),
                     description = stringResource(if (tablet && option.key == HeroCardStyle.MARQUEE) R.string.hero_card_style_marquee_description_tablet else option.description),
@@ -75,31 +84,48 @@ internal fun AppearanceHomePage(
                     onClick = { actions.onSetHeroCardStyle(option.key) },
                     modifier = modifier,
                 ) {
+                    // The picture keeps the Home card's shape as the tile widens.
+                    val pictureHeight = heroPickerPictureHeight(width)
                     if (heroPreview != null) {
-                        SettingsPicture { heroPreview(option.key, shade, false, Modifier.fillMaxWidth().height(170.dp)) }
+                        SettingsPicture { heroPreview(option.key, storedColors, false, Modifier.fillMaxWidth().height(pictureHeight)) }
                     } else {
-                        AppearancePicturePlaceholder()
+                        AppearancePicturePlaceholder(Modifier.height(pictureHeight))
                     }
                 }
             }
         }
-        // Every style but Block colours its cards from the artwork, so only they take these colours.
-        if (HeroCardStyle.usesArtworkColors(style)) {
-            val (colorsTitle, colorsFooter) = heroColorsCopy(style)
-            SettingsGroup(footer = stringResource(colorsFooter)) {
-                SettingsContent {
-                    AppearanceChoicePicker(
-                        label = stringResource(colorsTitle),
-                        options = listOf(
-                            // Marquee keeps covers in full colour for this choice, so it says so.
-                            HeroCoverShade.DARK to stringResource(
-                                if (style == HeroCardStyle.MARQUEE) R.string.hero_marquee_colors_full else R.string.hero_cover_shade_dark,
-                            ),
-                            HeroCoverShade.ARTWORK to stringResource(R.string.hero_cover_shade_artwork),
-                            HeroCoverShade.THEME to stringResource(R.string.hero_cover_shade_theme),
+        // The picked style's look sits right under the styles: a live preview with that style's own
+        // options beneath it, so every change shows at once and clearly belongs to the style.
+        val styleLabel = stringResource(HeroStyleOptions.first { it.key == style }.label)
+        SettingsTileSection(title = stringResource(R.string.hero_card_look_title, styleLabel)) {
+            AppearanceHeroLookCard(previewStyle, storedColors, heroPreview, previewHeight = 260.dp) {
+                // Every style takes the colour choice; Block fills its card with it.
+                val (colorsTitle, colorsFooter) = heroColorsCopy(style)
+                AppearanceLookChoice(
+                    label = stringResource(colorsTitle),
+                    help = stringResource(colorsFooter),
+                    options = listOf(
+                        // Marquee keeps covers in full colour for this choice, so it says so.
+                        HeroCoverShade.DARK to stringResource(
+                            if (style == HeroCardStyle.MARQUEE) R.string.hero_marquee_colors_full else R.string.hero_cover_shade_dark,
                         ),
-                        selected = shade,
-                        onSelect = actions.onSetHeroCoverShade,
+                        HeroCoverShade.ARTWORK to stringResource(R.string.hero_cover_shade_artwork),
+                        HeroCoverShade.THEME to stringResource(R.string.hero_cover_shade_theme),
+                    ),
+                    selected = shade,
+                    onSelect = actions.onSetHeroCoverShade,
+                )
+                // Tide alone rings its Play disc with Resume progress, so only it offers the ring's shape.
+                if (style == HeroCardStyle.TIDE) {
+                    AppearanceLookChoice(
+                        label = stringResource(R.string.hero_tide_progress_title),
+                        help = stringResource(R.string.hero_tide_progress_footer),
+                        options = listOf(
+                            HeroTideProgress.WAVY to stringResource(R.string.hero_tide_progress_wavy),
+                            HeroTideProgress.CIRCLE to stringResource(R.string.hero_tide_progress_circle),
+                        ),
+                        selected = HeroTideProgress.sanitize(state.heroTideProgress),
+                        onSelect = actions.onSetHeroTideProgress,
                     )
                 }
             }

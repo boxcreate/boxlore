@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.feature.onboarding
 
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -96,8 +95,7 @@ private fun WelcomeReplyPrefix(prefix: String, style: TextStyle, clock: WelcomeM
             style = style,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.graphicsLayer {
-                val progress = if (clock.revealComplete.value) 1f else ((clock.elapsedMillis.value - 650L) / 650f).coerceIn(0f, 1f)
-                val eased = FastOutSlowInEasing.transform(progress)
+                val eased = if (clock.revealComplete.value) 1f else WelcomeEntryTiming.lineProgress(clock.elapsedMillis.value, WelcomeEntryTiming.ReplyDelayMillis)
                 alpha = eased
                 translationY = size.height * (1f - eased)
             },

@@ -25,6 +25,7 @@ internal object Keys {
     val FULL_PLAYER_STYLE = stringPreferencesKey(FullPlayerStyle.PREF_KEY)
     val HERO_CARD_STYLE = stringPreferencesKey(HeroCardStyle.PREF_KEY)
     val HERO_COVER_SHADE = stringPreferencesKey(HeroCoverShade.PREF_KEY)
+    val HERO_TIDE_PROGRESS = stringPreferencesKey(HeroTideProgress.PREF_KEY)
     val HAS_DISMISSED_REGION_NUDGE = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_region_nudge")
     val HAS_DISMISSED_EXPLORE_REGION_NUDGE = androidx.datastore.preferences.core.booleanPreferencesKey("has_dismissed_explore_region_nudge")
     val WAS_INITIAL_REGION_MATCH = androidx.datastore.preferences.core.booleanPreferencesKey("was_initial_region_match")
