@@ -4,6 +4,7 @@ import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -325,6 +326,48 @@ class ApiSessionInterceptorTest {
         assertEquals(1, solves.get(), "the cooldown sends later AI requests straight to their fallback")
         assertEquals(0, exchanger.calls)
         assertEquals(ApiSessionStepUpOutcome.ChallengeFailed to "cancelled", listener.stepUps.single())
+    }
+
+    @Test
+    fun `a step-up holds only its own request, briefly, and still upgrades later requests`() {
+        val limited = sessionToken(sid = "l2", att = "none", tag = "limited")
+        val challenge = sessionToken(sid = "c2", att = "challenge", exp = BASE_S + DAY_S, attExp = BASE_S + 7 * DAY_S, tag = "challenge")
+        store.state = StoredApiSession(token = limited, installId = "install-123", appCheckFailures = 1, nextUpgradeAtMs = BASE_MS + 3_600_000)
+        exchanger.handler = { request -> if (request.turnstileToken == "turnstile-ok") issued(challenge) else issued(limited) }
+        val manager = manager(ApiSessionTiming(appCheckTimeoutMs = 500, requestWaitMs = 3_000, loadWaitMs = 1_000, stepUpTimeoutMs = 10_000, stepUpRequestWaitMs = 300))
+        val release = CompletableDeferred<Unit>()
+        val solves = AtomicInteger()
+        manager.turnstile = TurnstileTokenSource {
+            solves.incrementAndGet()
+            release.await()
+            TurnstileResult.Token("turnstile-ok")
+        }
+        manager.stepUpEnabled = { true }
+        val client = client(manager)
+        repeat(2) { server.enqueue(error(401, ApiErrorCodes.VERIFICATION_REQUIRED)) }
+        server.enqueue(ok())
+        val pool = Executors.newSingleThreadExecutor()
+        try {
+            val starter = pool.submit(Callable { get(client, "/onboarding/next-turn").use { it.code } })
+            eventually { solves.get() == 1 }
+
+            val started = System.nanoTime()
+            val second = get(client, "/onboarding/genre-synth").use { it.code }
+            assertEquals(401, second, "a request that finds a step-up running takes its fallback")
+            assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) < 2_000, "and does not wait on the step-up")
+            assertEquals(401, starter.get(5, TimeUnit.SECONDS), "the starter stops waiting at stepUpRequestWaitMs")
+            assertEquals(1, solves.get())
+
+            release.complete(Unit)
+            eventually { listener.stepUps.isNotEmpty() }
+            get(client, "/onboarding/similar-shows").use { assertEquals(200, it.code) }
+            server.takeRequest()
+            server.takeRequest()
+            assertEquals(challenge, server.takeRequest().session(), "the finished step-up serves later AI requests")
+        } finally {
+            release.complete(Unit)
+            pool.shutdownNow()
+        }
     }
 
     @Test

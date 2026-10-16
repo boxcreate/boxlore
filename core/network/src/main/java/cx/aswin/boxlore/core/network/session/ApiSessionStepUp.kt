@@ -28,14 +28,22 @@ internal class ApiSessionStepUp(
     private var job: Deferred<ApiSessionToken?>? = null
     private var cooldownUntilMs = 0L
 
-    /** A session good enough for AI routes, or null when the caller should use its fallback. */
-    suspend fun run(): ApiSessionToken? {
+    /**
+     * A session good enough for AI routes, or null when the caller should use its fallback.
+     * With [joinRunning] false, a caller that finds a step-up already running gets null at once
+     * instead of waiting on it; the step-up still completes for later requests.
+     */
+    suspend fun run(joinRunning: Boolean = true): ApiSessionToken? {
         usableToken()?.takeIf { !it.limited }?.let { return it }
         val turnstile = source ?: return null
         if (!runCatching { enabled() }.getOrDefault(false)) return null
         val running = synchronized(lock) {
-            job?.takeIf { it.isActive }
-                ?: if (clock() < cooldownUntilMs) null else scope.async { attempt(turnstile) }.also { job = it }
+            val active = job?.takeIf { it.isActive }
+            when {
+                active != null -> active.takeIf { joinRunning }
+                clock() < cooldownUntilMs -> null
+                else -> scope.async { attempt(turnstile) }.also { job = it }
+            }
         } ?: return null
         return running.await()
     }

@@ -22,6 +22,11 @@ data class ApiSessionTiming(
     val loadWaitMs: Long = 2_000L,
     /** The whole Turnstile step-up, including any interaction. */
     val stepUpTimeoutMs: Long = 150_000L,
+    /**
+     * How long the AI request that started a step-up holds its OkHttp thread. Past this it
+     * takes its fallback while the step-up finishes in the background for later requests.
+     */
+    val stepUpRequestWaitMs: Long = 45_000L,
     /** After a failed step-up, AI routes go straight to their fallback for this long. */
     val stepUpCooldownMs: Long = 30 * 60_000L,
 )
@@ -142,10 +147,13 @@ class ApiSessionManager(
     }
 
     /**
-     * A limited session reached an AI route (`verification_required`). Runs (or joins) the
-     * Turnstile step-up and returns headers for one retry, or null so the caller uses its fallback.
+     * A limited session reached an AI route (`verification_required`). Starts the Turnstile
+     * step-up and returns headers for one retry, or null so the caller uses its fallback.
+     * This runs on an OkHttp thread, so the wait is capped at [ApiSessionTiming.stepUpRequestWaitMs],
+     * and a request that finds a step-up already running doesn't join it: it takes its fallback.
      */
-    fun stepUpForAiRoute(): SessionHeaders? = runBlocking { stepUp.run() }?.let { current() }
+    fun stepUpForAiRoute(): SessionHeaders? =
+        runBlocking { withTimeoutOrNull(timing.stepUpRequestWaitMs) { stepUp.run(joinRunning = false) } }?.let { current() }
 
     fun onForegroundChanged(foreground: Boolean) = scheduler.setForeground(foreground)
 

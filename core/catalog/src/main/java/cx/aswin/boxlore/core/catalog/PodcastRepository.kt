@@ -534,7 +534,9 @@ class PodcastRepository(
     ): List<Episode> = withContext(Dispatchers.IO) {
         val (podcastIndexHistory, podcastIndexSubscriptionIds) =
             filterToPodcastIndexScope(history, subscribedPodcastIds)
-        if (podcastIndexHistory.isEmpty() && interests.isEmpty() && podcastIndexSubscriptionIds.isEmpty()) {
+        // Normalise once, so blank-only interests count as none and both request paths agree.
+        val boundedInterests = boundedRecommendationInterests(interests)
+        if (podcastIndexHistory.isEmpty() && boundedInterests.isEmpty() && podcastIndexSubscriptionIds.isEmpty()) {
             // Nothing Podcast Index-scoped to base recommendations on — skip the network call.
             return@withContext emptyList()
         }
@@ -550,7 +552,7 @@ class PodcastRepository(
                 append("|")
                 append(queryLanguages.joinToString(","))
                 append("|")
-                append(interests.sorted().joinToString(","))
+                append(boundedInterests.sorted().joinToString(","))
                 append("|")
                 append(podcastIndexSubscriptionIds.sorted().joinToString(","))
                 append("|")
@@ -571,7 +573,7 @@ class PodcastRepository(
                 try {
                     fetchRecommendationV2(
                         history = podcastIndexHistory,
-                        interests = interests,
+                        interests = boundedInterests,
                         country = resolvedCountry,
                         subscribedPodcastIds = podcastIndexSubscriptionIds,
                         languages = queryLanguages,
@@ -585,7 +587,7 @@ class PodcastRepository(
             val results =
                 v2Results ?: fetchLegacyRecommendations(
                     history = podcastIndexHistory,
-                    interests = interests,
+                    interests = boundedInterests,
                     country = resolvedCountry,
                     subscribedPodcastIds = podcastIndexSubscriptionIds,
                     subscribedGenres = subscribedGenres,

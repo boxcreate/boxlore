@@ -131,6 +131,25 @@ class PodcastRepositoryRequestBoundsTest {
     }
 
     @Test
+    fun `interests are trimmed, cleaned and deduplicated before the 12-item limit`() = runTest {
+        val interests = listOf(" Topic A ", "", "Topic A", "   ", " Topic B") + (1..20).map { "Interest $it" }
+
+        repository.getPersonalizedRecommendations(history = emptyList(), interests = interests, country = "us")
+
+        val expected = listOf("Topic A", "Topic B") + (1..10).map { "Interest $it" }
+        assertEquals(expected, parse(bodiesByPath.first { it.first == "/recommendations" }.second).interests())
+        assertEquals(expected, parse(bodiesByPath.first { it.first == "/recommendations/v2" }.second).interests())
+    }
+
+    @Test
+    fun `blank-only interests with no history or subscriptions make no request`() = runTest {
+        val results = repository.getPersonalizedRecommendations(history = emptyList(), interests = listOf("", "   "), country = "us")
+
+        assertTrue(results.isEmpty())
+        assertTrue(bodiesByPath.none { it.first.startsWith("/recommendations") })
+    }
+
+    @Test
     fun `Home recommendations send at most 12 interests in the bootstrap request`() = runTest {
         repository.getHomeRecommendations(country = "us", interests = (1..30).map { "Topic $it" })
 
