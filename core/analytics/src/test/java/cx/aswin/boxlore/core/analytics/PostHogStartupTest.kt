@@ -52,4 +52,28 @@ class PostHogStartupTest {
     fun `distinct id is blank before setup so callers use their fallback`() {
         assertEquals("", AnalyticsHelper.getDistinctId())
     }
+
+    @Test
+    fun `successful setup replays queued calls and marks ready`() {
+        val calls = mutableListOf<String>()
+        PostHogStartup.runWhenReady { calls += "register" }
+        PostHogStartup.finishSetup(setup = { calls += "setup" }, onFailure = {})
+        assertEquals(listOf("setup", "register"), calls)
+        assertTrue(PostHogStartup.isReady)
+        assertFalse(PostHogStartup.hasFailed)
+    }
+
+    @Test
+    fun `failed setup never counts as ready, drops the queue and ignores later calls`() {
+        val calls = mutableListOf<String>()
+        var failure: Throwable? = null
+        PostHogStartup.runWhenReady { calls += "queued" }
+        // An Error, not just an Exception: a missing class at setup must not leave calls waiting forever.
+        PostHogStartup.finishSetup(setup = { throw LinkageError("no PostHog") }, onFailure = { failure = it })
+        assertFalse(PostHogStartup.isReady)
+        assertTrue(PostHogStartup.hasFailed)
+        assertTrue(failure is LinkageError)
+        PostHogStartup.runWhenReady { calls += "later" }
+        assertTrue(calls.isEmpty(), "Got $calls")
+    }
 }

@@ -63,6 +63,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 
 ## Testing notes
 
+- `AdaptiveRankingDatabaseDowngradeTest` opens a newer on-disk schema and checks the database recreates its tables instead of crashing.
 - Unit tests live under `core/ranking/src/test`.
 - `AdaptiveRankingTest` covers cold-start blending, objective behavior, and opposite-outcome learning.
 - `YourShowsScorerTest` covers normalized deterministic ordering and single recency application, while `YourShowsSubscriptionRecencyTest` covers the bounded three-day floor and faster post-window decay. `AdaptiveCandidateScorerTest` verifies Home and Library receive identical Your Shows scores even when an adaptive model exists.

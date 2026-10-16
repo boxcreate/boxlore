@@ -62,4 +62,13 @@ class PlaybackErrorSkipGuardTest {
         assertTrue(cast.contains("Cast"))
         assertEquals("Stream unavailable, skipping…", PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_AND_PLAY, isRemote = false))
     }
+
+    @Test
+    fun `a paused skip never says it is skipping, since nothing starts`() {
+        val local = PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_PAUSED, isRemote = false)
+        val cast = PlaybackErrorMessages.forAction(PlaybackErrorSkipGuard.Action.SKIP_PAUSED, isRemote = true)
+        assertEquals("That episode couldn't play. The next one is ready.", local)
+        assertTrue(cast.contains("Cast") && cast.contains("next one is ready"))
+        assertTrue(!local.contains("skipping") && !cast.contains("skipping"))
+    }
 }

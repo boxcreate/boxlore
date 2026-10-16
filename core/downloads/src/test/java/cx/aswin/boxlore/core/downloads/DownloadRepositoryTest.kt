@@ -418,6 +418,27 @@ class DownloadRepositoryTest {
     }
 
     @Test
+    fun `removing an active download never starts the download service`() {
+        // Regression (ForegroundServiceStartNotAllowedException): removal used to start the download
+        // service, which Android 12+ refuses while the app is in the background.
+        var serviceLookups = 0
+        DownloadServiceLauncherHolder.instance =
+            DownloadServiceLauncher {
+                serviceLookups++
+                androidx.media3.exoplayer.offline.DownloadService::class.java
+            }
+        withDownloadTestLooper {
+            dao.insert(downloadEntity(episodeId = "ep-active", status = DownloadedEpisodeEntity.STATUS_DOWNLOADING))
+        }
+
+        withDownloadTestLooper { repository.removeDownload("ep-active").join() }
+
+        assertTrue(withDownloadTestLooper { pollUntil { dao.getDownload("ep-active") == null } })
+        assertEquals(0, serviceLookups)
+        assertNull(org.robolectric.Shadows.shadowOf(context as android.app.Application).nextStartedService)
+    }
+
+    @Test
     fun `awaitDownloadCompletion returns true immediately if already completed in DB`() =
         withDownloadTestLooper {
             dao.insert(

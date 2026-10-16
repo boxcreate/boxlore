@@ -344,6 +344,7 @@ class PlaybackRepository internal constructor(
             storePendingEntryPoint = ::storePendingEntryPoint,
             ensureCurrentHistoryRow = ::ensureCurrentHistoryRow,
             stopProgressTicker = ::stopProgressTicker,
+            onQueueStarted = { controllerBridge?.resetErrorSkips() },
         )
 
     internal val transportHelper =

@@ -13,7 +13,6 @@ suspend fun PlaybackRepository.playQueue(
     initialPositionMs: Long? = null,
     sourceContext: android.os.Bundle? = null,
 ) {
-    controllerBridge?.resetErrorSkips()
     queueCoordinator.playQueue(episodes, podcast, startIndex, entryPoint, initialPositionMs, sourceContext)
 }
 
