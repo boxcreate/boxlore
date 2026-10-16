@@ -12,13 +12,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
 
 /** True when the system animator scale is off, so worlds hold still instead of looping. */
 @Composable
@@ -49,19 +46,6 @@ internal fun rememberSupportLoop(
         ),
         label = label,
     )
-}
-
-/** Every world is dark, so status bar icons stay light while the page is shown. */
-@Composable
-internal fun SupportDarkSystemBars() {
-    val view = LocalView.current
-    DisposableEffect(view) {
-        val window = view.context.findActivity()?.window
-        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
-        val previous = controller?.isAppearanceLightStatusBars
-        controller?.isAppearanceLightStatusBars = false
-        onDispose { previous?.let { controller.isAppearanceLightStatusBars = it } }
-    }
 }
 
 /** Debug builds get a world switcher. Checked at runtime because this module has no BuildConfig. */

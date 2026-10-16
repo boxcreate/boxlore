@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +59,8 @@ internal fun SupportCtaSection(
     tier: SupportTierCardData,
     activeColor: Color,
     modifier: Modifier = Modifier,
+    verb: String = "Deploy",
+    icon: ImageVector? = null,
     onDonateClick: (SupportTierCardData) -> Unit = {},
 ) {
     val buttonContentColor = getSupportButtonContentColor(activeColor)
@@ -70,6 +73,8 @@ internal fun SupportCtaSection(
             tier = tier,
             activeColor = activeColor,
             contentColor = buttonContentColor,
+            verb = verb,
+            icon = icon,
             onClick = { onDonateClick(tier) },
         )
 
@@ -89,6 +94,8 @@ private fun SupportDeployButton(
     tier: SupportTierCardData,
     activeColor: Color,
     contentColor: Color,
+    verb: String,
+    icon: ImageVector?,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -150,7 +157,7 @@ private fun SupportDeployButton(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = if (tier.isFeatured) Icons.Rounded.Favorite else Icons.Rounded.Bolt,
+                    imageVector = icon ?: if (tier.isFeatured) Icons.Rounded.Favorite else Icons.Rounded.Bolt,
                     contentDescription = null,
                     tint = contentColor,
                     modifier = Modifier.size(16.dp),
@@ -159,7 +166,7 @@ private fun SupportDeployButton(
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            DeployButtonMeterRoll(tier = tier, contentColor = contentColor)
+            DeployButtonMeterRoll(tier = tier, verb = verb, contentColor = contentColor)
         }
     }
 }
@@ -167,6 +174,7 @@ private fun SupportDeployButton(
 @Composable
 private fun DeployButtonMeterRoll(
     tier: SupportTierCardData,
+    verb: String,
     contentColor: Color,
 ) {
     AnimatedContent(
@@ -184,7 +192,7 @@ private fun DeployButtonMeterRoll(
             horizontalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "Deploy ${currentTier.title}",
+                text = "$verb ${currentTier.title}",
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = GoogleSansWeight.bold,
                     letterSpacing = 0.2.sp,

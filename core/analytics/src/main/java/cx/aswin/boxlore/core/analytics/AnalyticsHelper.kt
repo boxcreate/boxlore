@@ -682,8 +682,11 @@ object AnalyticsHelper : Analytics {
 
     fun syncHomeHeroStylePersonProperties(style: String?, shade: String?) = AppearanceAnalyticsTracks.syncHomeHeroStylePersonProperties(style, shade)
 
-    /** The `support-world` variant for this person, or null before flags load. Read once per visit. */
-    fun supportWorldVariant(): String? = SupportAnalyticsTracks.supportWorldVariant()
+    /**
+     * The `support-world` variant for this person when it is one of [knownVariants], or null before
+     * flags load or for an unknown value. Only a known variant records an exposure. Read once per visit.
+     */
+    fun supportWorldVariant(knownVariants: Set<String>): String? = SupportAnalyticsTracks.supportWorldVariant(knownVariants)
 
     fun trackSupportEntryViewed(surface: String) = SupportAnalyticsTracks.trackSupportEntryViewed(surface)
 

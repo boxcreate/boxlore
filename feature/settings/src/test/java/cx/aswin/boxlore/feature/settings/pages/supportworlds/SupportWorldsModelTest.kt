@@ -1,6 +1,10 @@
 package cx.aswin.boxlore.feature.settings.pages.supportworlds
 
+import cx.aswin.boxlore.feature.settings.pages.ControlSupportPageStyle
 import cx.aswin.boxlore.feature.settings.pages.SUPPORT_TIER_CARDS
+import cx.aswin.boxlore.feature.settings.pages.getSupportMissionText
+import cx.aswin.boxlore.feature.settings.pages.supportCodenameFontSize
+import cx.aswin.boxlore.feature.settings.pages.supportWorldPageStyle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -44,8 +48,6 @@ class SupportWorldsModelTest {
             assertNull("Play Billing products are attached later", offer.productId)
         }
         assertEquals(2, SUPPORT_DEFAULT_OFFER_INDEX)
-        assertEquals(5, SUPPORT_TIER_TONES.size)
-        assertEquals(5, SUPPORT_RARITIES.size)
         assertFalse(SUPPORT_PAYMENTS_LIVE)
     }
 
@@ -68,7 +70,7 @@ class SupportWorldsModelTest {
     @Test
     fun `every payments-off notice names the price and says nothing was charged`() {
         val notices = SupportWorld.entries.mapNotNull { supportWorldSkin(it) }.map { it.notice.body("$6.99") } +
-            supportControlNoticeContent(art = 1, accent = SUPPORT_TIER_TONES[3].color, priceLabel = "$6.99").body
+            supportControlNoticeContent(art = 1, accent = SUPPORT_TIER_CARDS[3].auraColor, priceLabel = "$6.99").body
         assertEquals(6, notices.size)
         notices.forEach { body ->
             assertTrue(body, body.contains("$6.99"))
@@ -77,37 +79,47 @@ class SupportWorldsModelTest {
     }
 
     @Test
-    fun `split codenames fit the narrowest stage and never exceed the display size`() {
-        SupportWorld.entries.mapNotNull { supportWorldSkin(it) }
-            .filter { it.codename == SupportCodenameStyle.SplitName }
-            .forEach { skin ->
-                skin.tierNames.flatMap { it.uppercase().split(" ") }.forEach { word ->
-                    val size = codenameSizeDp(word.length, stageWidthDp = 360f, widthFactor = skin.displayWidthFactor)
-                    assertTrue("$word is too large", size <= 66f)
-                    assertTrue("$word overflows", size * word.length * skin.displayWidthFactor <= 360f - 28f + 0.01f)
-                }
+    fun `every world is today's page with only names, art and words swapped`() {
+        assertEquals(SUPPORT_TIER_CARDS, ControlSupportPageStyle.tiers)
+        assertNull(ControlSupportPageStyle.skin)
+        SupportWorld.entries.mapNotNull { supportWorldSkin(it) }.forEach { skin ->
+            val style = supportWorldPageStyle(skin)
+            assertEquals(skin.world, style.world)
+            assertEquals(skin.tierNames, style.tiers.map { it.title })
+            assertEquals(skin.tierArt, style.tiers.map { it.iconRes })
+            assertEquals(skin.tierNames.map { it.uppercase() }, style.tiers.map { "${it.codenameLine1} ${it.codenameLine2}" })
+            style.tiers.zip(SUPPORT_TIER_CARDS).forEach { (world, control) ->
+                assertEquals(control.cost, world.cost)
+                assertEquals(control.shortDuration, world.shortDuration)
+                assertEquals(control.powerImpact, world.powerImpact)
+                assertEquals(control.energySegments, world.energySegments)
+                assertEquals(control.auraColor, world.auraColor)
+                assertEquals(control.isFeatured, world.isFeatured)
             }
-    }
-
-    @Test
-    fun `mission copy mirrors today's page and never makes privacy claims`() {
-        assertEquals(
-            "No ads, no paywalls. Every snack helps fund the servers and keeps boxlore open for everyone.",
-            supportWorldMissionText("snack", 4L),
-        )
-        assertTrue(supportWorldMissionText("island", 42L).contains("across your 42 hours of listening"))
-        listOf(null, 0L, 5L, 120L).forEach { hours ->
-            val copy = supportWorldMissionText("relic", hours)
-            assertFalse(copy.contains("tracking", ignoreCase = true))
-            assertFalse(copy.contains("privacy", ignoreCase = true))
         }
     }
 
     @Test
-    fun `neon sign flickers only on its off-beats`() {
-        assertEquals(0.62f, neonFlickerAlpha(0f))
-        assertEquals(0.08f, neonFlickerAlpha(0.2f))
-        assertEquals(0.08f, neonFlickerAlpha(0.55f))
-        assertEquals(0.62f, neonFlickerAlpha(0.9f))
+    fun `a codename shrinks only when its measured width would overflow the stage`() {
+        assertEquals(52f, supportCodenameFontSize(fullSize = 52f, measuredWidth = 300f, availableWidth = 340f))
+        assertEquals(52f, supportCodenameFontSize(fullSize = 52f, measuredWidth = 340f, availableWidth = 340f))
+        assertEquals(26f, supportCodenameFontSize(fullSize = 52f, measuredWidth = 680f, availableWidth = 340f), 0.001f)
+        assertEquals(42f, supportCodenameFontSize(fullSize = 42f, measuredWidth = 0f, availableWidth = 340f))
+    }
+
+    @Test
+    fun `mission copy keeps today's wording and only swaps what a contribution backs`() {
+        assertEquals(
+            "Software that helps people learn, listen, and explore should simply exist without a catch. " +
+                "No ads, no paywalls. Every snack helps fund our servers and keep boxlore open for everyone.",
+            getSupportMissionText(4L, "every snack"),
+        )
+        assertTrue(getSupportMissionText(42L, "every island").contains("42 hours of listening, every island helps keep"))
+        assertEquals(getSupportMissionText(4L), getSupportMissionText(4L, "backing a power cell"))
+        listOf(null, 0L, 5L, 120L).forEach { hours ->
+            val copy = getSupportMissionText(hours, "every relic")
+            assertFalse(copy.contains("tracking", ignoreCase = true))
+            assertFalse(copy.contains("privacy", ignoreCase = true))
+        }
     }
 }

@@ -35,13 +35,13 @@ Owns the unified Settings hub, category pages (Account, Sync & Backups, Appearan
 - **Hero cards** (Appearance > Home) picks Block (the solid colour card), Cover (the cover fills the card and fades into a shade behind the text; selected until a listener picks another style), Tide (the whole cover above a wavy panel with a round Play button), Duotone (the cover redrawn in two tones of one colour, with the words straight on it) Halo (a cookie-shaped cover in a progress ring on a card tinted from it) or Marquee (a full-width cover under the top bar, with the next cards beside Play) from a sideways-scrolling row of picture tiles drawn from the real cards, above a larger preview of the picked style with its Jump back in card. With Cover, **Shade behind text** picks Dark, Artwork (a deep shade of each cover's colour) or App theme (a deep shade of the accent colour); with Duotone the same choice is **Duotone colors** (Dark redraws covers in black and white), with Tide and Halo **Card color**, and with Marquee **Cover colors**, where Dark is named **Full color** because Marquee keeps covers as they are (`heroColorsCopy`). They are hidden for Block, and the overview names the choice (for example "Duotone hero cards, artwork tones"). On tablets Home shows Cover instead of Marquee, so Marquee's tile says so ("A full-width cover on phones. Tablets show Cover cards instead.") and the larger preview shows Cover; `TabletSettingsCaptureTest` includes the Home page. Ordering, playback and details actions are the same. Changes are tracked as `hero_card_style_changed` and `hero_cover_shade_changed`, and each pick that changes the look also sends `home_hero_style_selected` with the full look: `trackedForAnalytics` reads the current `AppearanceUiState` at the moment of the pick (`rememberUpdatedState`), so a style pick carries the current colors and a color pick the current style. `AppearanceActionsTrackedTest` checks both callbacks are forwarded and that picks report the full look while re-picks report nothing; `AppearancePagesTest` covers the scrolling tiles, both colour pickers and the summaries; `SettingsPictureRowTest` checks the third tile is cut off on phone widths.
 
 - **Support worlds experiment.**
-  - `SupportPageHost` is the Support destination. Once per visit it reads the PostHog `support-world` flag through `AnalyticsHelper.supportWorldVariant()`.
+  - `SupportPageHost` is the Support destination. Once per visit it reads the PostHog `support-world` flag through `AnalyticsHelper.supportWorldVariant(knownVariants)`, which records an exposure only for one of the six known worlds.
   - It shows the assigned world: `control` (today's power-cell `SupportDevelopmentPage`), `neon`, `orbit`, `alchemy`, `abyss` or `sky`. A missing or unknown flag shows the control and reports `assignment_source=fallback`, so it never counts as an exposure.
-  - The five worlds share `SupportWorldPage` and are skinned by `SupportWorldSkin`: palette, bundled display font, 3D tier art, codename and platform style, button verb and payments-off notice. They sell the same five store-agnostic `SUPPORT_OFFERS`. `productId` is reserved for Play Billing.
+  - Every world is today's page: `SupportDevelopmentPage` takes a `SupportPageStyle` (`ControlSupportPageStyle` or `supportWorldPageStyle(skin)`), so the stage, tier info, picker, button, mission card and their spacing are identical in all six. A world swaps only its backdrop, platform and particles (`SupportWorldPlatform`), tier names, art and codenames, display and title fonts, featured chip, button verb and icon, mission noun and payments-off notice. Prices, server time, energy segments and tier colours stay the control's, and the five store-agnostic `SUPPORT_OFFERS` mirror them. `productId` is reserved for Play Billing. Only the power cells have lore, so a world's stage is not tappable.
   - Payments are off (`SUPPORT_PAYMENTS_LIVE`). Every pay tap, including the control's, opens `SupportPaymentNotice`. It closes from its button, an outside tap or Back, and states that nothing was charged.
   - `SupportPageSession` reports one view per visit with the world, assignment, entry point, local hour and weekday. It also reports tier picks, pay taps (`amount_usd`, `payments_live=false`) and one `support_page_left` with dwell, tiers viewed and pay intent. Rotation, resizing and folding restore the session rather than counting a second view.
   - `SupportEntryImpression` reports `support_entry_viewed` (`surface=settings_top_bar` on the phone hub, `settings_category_list` on the tablet list) once each time Settings shows the Support entry. A configuration restore never repeats it. This is the top of the funnel: Settings opened → Support entry seen → Support page viewed → pay tapped.
-  - World pages never scroll (`SupportWorldBody`). Portrait and tall windows stack the stage over the controls: the stage takes the leftover height, scaling down from its 330dp design when short, and the mission card drops out before the stage would fall below 220dp. Landscape windows shorter than 560dp put the stage beside compact controls. The payments-off notice drops its artwork below a 520dp window height.
+  - The Support page never scrolls (`SupportPageBody`). Windows with room for the full page (about 645dp of content height at 100% text) keep today's stacked layout: flexible gaps on phones, fixed 20dp gaps on tablets. Wider-than-tall windows without that room put the stage beside the picker and button, and narrow ones drop the mission card first. Codenames are measured and shrink only when a line would overflow; `SupportWorldFont.overhang` keeps swash faces clear of the edge. The payments-off notice drops its artwork below a 520dp window height. Tier picks are reported when the pager settles, so a tap across several tiers counts once.
   - Debug builds (`FLAG_DEBUGGABLE`) add a top-bar world switcher whose choice lasts for the process.
   - `SupportPageEnvironment` holds the flag reader, analytics sink, clock and configuration-change check, so tests can replace them.
   - World copy lives in Kotlin like the original Support page. Move the winning world's strings into resources when it graduates.
@@ -111,19 +111,19 @@ src/main/java/cx/aswin/boxlore/feature/settings/
     SettingsHub.kt
     SupportAtmosphere.kt
     SupportCtaSection.kt
-    SupportDevelopmentPage.kt                    # control arm (today's power-cell page)
+    SupportDevelopmentPage.kt                    # the Support page for every world
+    SupportPageLayout.kt                         # no-scroll arrangement, background, codename fit
+    SupportPageStyle.kt                          # control and world styles, mission copy
     SupportPageHost.kt                           # flag read, world routing, visit analytics
     SupportTierModels.kt
     supportworlds/
-      SupportWorld.kt                            # variants, assignment, offers, tier tones
-      SupportWorldSkins.kt                       # five skins + mission copy
-      SupportWorldPage.kt                        # shared world page
-      SupportWorldLayout.kt                      # no-scroll stacked / side-by-side arrangement
-      SupportWorldStage.kt                       # codename, platform, object, particles
+      SupportWorld.kt                            # variants, assignment, offers
+      SupportWorldSkins.kt                       # five skins
+      SupportWorldStage.kt                       # world platform, backdrop, notice copy
       SupportPaymentNotice.kt                    # payments-off notice (worlds + control)
       SupportControlNotice.kt                    # control notice copy, session local, tier tracking
       SupportPageSession.kt                      # visit analytics + saver
-      SupportWorldMotion.kt                      # reduced motion, loops, dark bars
+      SupportWorldMotion.kt                      # reduced motion, loops, debug check
       SupportWorldDebugMenu.kt                   # debug-only world switcher
       SupportEntryImpression.kt                  # Settings Support-entry impression
     SyncAndBackupsPage.kt
@@ -152,7 +152,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 ## Testing notes
 
-- Tablet top bars align with their bounded content column and keep a flat surface. Footer clearance follows actual mini-player visibility. Support content and RSS match confirmation remain scrollable in short viewports; phone spacing remains unchanged.
+- Tablet top bars align with their bounded content column and keep a flat surface. Footer clearance follows actual mini-player visibility. RSS match confirmation remains scrollable in short viewports; the Support page fits without scrolling instead (see Support worlds). Phone spacing remains unchanged.
 
 - Tablet settings use the shared Utility cap (720dp), including Smart Downloads, Feedback and Support outside the ordinary settings scaffold. Existing account/editor caps remain smaller or bound each editor column. Phone constraints are unchanged.
 
@@ -161,10 +161,10 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 - `PlayerStyleSectionTest` checks both selections, the exact design-credit link and large-text RTL accessibility. `AppearanceActionsTrackedTest` verifies that the player-style callback survives the analytics wrapper without toggling the miniplayer.
 
 - Support worlds:
-  - `SupportWorldsModelTest` covers flag mapping and fallback, debug override precedence, offer parity with today's page, skin completeness, payments-off copy in every arm, codename fit and mission copy.
+  - `SupportWorldsModelTest` covers flag mapping and fallback, debug override precedence, offer parity with today's page, skin completeness, payments-off copy in every arm, that each world style keeps the control's prices, times, segments and colours, codename shrinking and mission copy.
   - `SupportPageSessionTest` covers one view and one exit per visit, ignoring events outside a visit, saved-state restore without a second view, and the production event properties.
   - `SupportPageHostTest` (Robolectric) keeps the selected tier and an open notice through compact↔tablet transitions on both sides of the 600dp width, 480dp height and 840dp split gates. It also covers Back and outside-tap dismissal, a configuration restore without a second view, the control fallback and its notice, a single exit event, and the debug world switch.
-  - `SupportWorldLayoutTest` covers the arrangement thresholds (560dp side-by-side gate, mission card cut-off, larger text) and renders every world in a 392×800 portrait and an 800×392 landscape window with no scrollable node, and with the pay button and all five tiers on screen.
+  - `SupportPageLayoutTest` covers the arrangement thresholds (full stacked page, side by side, mission card cut-off, larger text) and renders the control and every world in 392×800 and 360×600 portrait and 800×392 landscape windows with no scrollable node, the pay button and tier info fully on screen, and the mission card shown only when it fits.
   - `SupportEntryImpressionTest` covers one impression per view, none for a configuration restore, a new one after returning, and the real Settings hub's top-bar surface.
   - Not covered by JVM tests: rendering quality on real devices and fold postures. Those need a phone, tablet or foldable check.
 - Unit tests live under `feature/settings/src/test`.

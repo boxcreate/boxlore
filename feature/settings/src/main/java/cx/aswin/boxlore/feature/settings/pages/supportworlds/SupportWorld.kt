@@ -1,7 +1,5 @@
 package cx.aswin.boxlore.feature.settings.pages.supportworlds
 
-import androidx.compose.ui.graphics.Color
-
 /** One look for the Support page. Each maps 1:1 to a variant of the `support-world` PostHog flag. */
 internal enum class SupportWorld(val variantKey: String) {
     Control("control"),
@@ -72,20 +70,3 @@ internal const val SUPPORT_DEFAULT_OFFER_INDEX = 2
 
 /** Payments are not connected yet, so every pay tap shows a notice and charges nothing. */
 internal const val SUPPORT_PAYMENTS_LIVE = false
-
-internal val SUPPORT_RARITIES = listOf("COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY")
-
-/** Tier colours shared by every world. They match today's page so auras stay comparable. */
-internal data class SupportTierTone(
-    val color: Color,
-    val highlight: Color,
-    val onColor: Color,
-)
-
-internal val SUPPORT_TIER_TONES: List<SupportTierTone> = listOf(
-    SupportTierTone(Color(0xFF2979FF), Color(0xFF4A8CFF), Color.White),
-    SupportTierTone(Color(0xFF00E676), Color(0xFF33EB8F), Color(0xFF03140A)),
-    SupportTierTone(Color(0xFFFFB300), Color(0xFFFFC233), Color(0xFF1A1205)),
-    SupportTierTone(Color(0xFF8B5CF6), Color(0xFF9D74FA), Color.White),
-    SupportTierTone(Color(0xFFFF2D55), Color(0xFFFF4A6C), Color.White),
-)

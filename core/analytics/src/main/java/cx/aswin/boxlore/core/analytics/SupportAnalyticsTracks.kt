@@ -22,16 +22,29 @@ internal object SupportAnalyticsTracks {
     const val SUPPORT_WORLD_FLAG = "support-world"
 
     /**
-     * Reads the assigned world variant. Calling this records PostHog's `$feature_flag_called`
-     * exposure, so callers read it once, when the Support page opens. Returns null when flags are
-     * not loaded yet or the SDK is unavailable.
+     * Reads the assigned world variant once, when the Support page opens. The flag is read without
+     * an exposure first; PostHog's `$feature_flag_called` is recorded only when the value is one of
+     * [knownVariants], so a missing, unloaded or unknown value never counts toward the experiment.
      */
-    fun supportWorldVariant(): String? =
+    fun supportWorldVariant(knownVariants: Set<String>): String? =
         try {
-            PostHog.getFeatureFlag(SUPPORT_WORLD_FLAG) as? String
+            resolveSupportWorldVariant(knownVariants) { sendExposure ->
+                PostHog.getFeatureFlag(SUPPORT_WORLD_FLAG, null, sendExposure)
+            }
         } catch (e: Exception) {
             null
         }
+
+    /**
+     * [readFlag] returns the flag value and records an exposure when asked to. Returns the
+     * normalised variant when it is known, otherwise null without an exposure.
+     */
+    internal fun resolveSupportWorldVariant(knownVariants: Set<String>, readFlag: (sendExposure: Boolean) -> Any?): String? {
+        val variant = (readFlag(false) as? String)?.trim()?.lowercase() ?: return null
+        if (variant !in knownVariants) return null
+        readFlag(true)
+        return variant
+    }
 
     /**
      * The Support boxlore entry was on screen: the Settings hub's top-bar button on phones

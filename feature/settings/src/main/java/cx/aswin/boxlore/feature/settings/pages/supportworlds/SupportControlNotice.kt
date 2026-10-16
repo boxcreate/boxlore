@@ -9,11 +9,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import cx.aswin.boxlore.feature.settings.pages.SUPPORT_TIER_CARDS
+import cx.aswin.boxlore.feature.settings.pages.SupportTierCardData
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 
-/** The visit's analytics session, read by today's power-cell page (the control arm). */
+/** The visit's analytics session, read by the Support page in every world. */
 internal val LocalSupportPageSession = staticCompositionLocalOf<SupportPageSession?> { null }
 
 /** Payments-off notice in today's power-cell style, so the control arm behaves like every world. */
@@ -40,15 +40,22 @@ internal fun supportControlNoticeContent(
     badgeContent = Color.White,
 )
 
-/** Reports each swipe or tap to another power cell, skipping the page the visit opened on. */
+/**
+ * Reports each tier the visitor lands on, skipping the one the visit opened on. Only settled pages
+ * count, so tapping across several tiers reports where it stops, not every tier it passes.
+ */
 @Composable
-internal fun TrackSupportTierChanges(pagerState: PagerState, session: SupportPageSession?) {
-    LaunchedEffect(pagerState, session) {
-        snapshotFlow { pagerState.currentPage }
+internal fun TrackSupportTierChanges(
+    pagerState: PagerState,
+    tiers: List<SupportTierCardData>,
+    session: SupportPageSession?,
+) {
+    LaunchedEffect(pagerState, tiers, session) {
+        snapshotFlow { pagerState.settledPage }
             .distinctUntilChanged()
             .drop(1)
             .collect { page ->
-                val tier = SUPPORT_TIER_CARDS[page]
+                val tier = tiers[page]
                 session?.tierSelected(
                     offer = SUPPORT_OFFERS[page],
                     tierName = tier.title,

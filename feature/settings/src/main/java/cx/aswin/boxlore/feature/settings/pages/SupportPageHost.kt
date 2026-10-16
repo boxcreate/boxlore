@@ -19,9 +19,9 @@ import cx.aswin.boxlore.feature.settings.pages.supportworlds.AnalyticsHelperSupp
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.LocalSupportPageSession
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportAnalyticsSink
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportPageSession
+import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportWorld
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportWorldDebugMenu
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportWorldDebugOverride
-import cx.aswin.boxlore.feature.settings.pages.supportworlds.SupportWorldPage
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.findActivity
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.rememberIsDebuggableApp
 import cx.aswin.boxlore.feature.settings.pages.supportworlds.resolveSupportWorld
@@ -33,7 +33,7 @@ import java.time.LocalDateTime
  * a fixed flag, a recording sink, a fake clock or a simulated configuration change.
  */
 internal data class SupportPageEnvironment(
-    val variantProvider: () -> String? = AnalyticsHelper::supportWorldVariant,
+    val variantProvider: () -> String? = { AnalyticsHelper.supportWorldVariant(SupportWorld.entries.map { it.variantKey }.toSet()) },
     val analyticsSink: SupportAnalyticsSink = AnalyticsHelperSupportSink,
     val elapsedMs: () -> Long = SystemClock::elapsedRealtime,
     /** Null detects a debuggable build at runtime. */
@@ -92,17 +92,12 @@ internal fun SupportPageHost(
 
     CompositionLocalProvider(LocalSupportPageSession provides session) {
         key(assignment.world) {
-            if (skin == null) {
-                SupportDevelopmentPage(onBack = onBack, totalListeningHours = totalListeningHours, topBarActions = actions)
-            } else {
-                SupportWorldPage(
-                    skin = skin,
-                    session = session,
-                    onBack = onBack,
-                    totalListeningHours = totalListeningHours,
-                    topBarActions = actions,
-                )
-            }
+            SupportDevelopmentPage(
+                onBack = onBack,
+                totalListeningHours = totalListeningHours,
+                topBarActions = actions,
+                style = skin?.let(::supportWorldPageStyle) ?: ControlSupportPageStyle,
+            )
         }
     }
 }

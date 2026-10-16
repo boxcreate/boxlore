@@ -8,9 +8,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
-import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -40,6 +43,10 @@ class SupportPageHostTest {
 
     private val sink = RecordingSupportSink()
     private var layout by mutableStateOf(BoxloreWindowLayout(390f, 844f))
+
+    /** The picker's tab for a price; the pay button repeats the price once that tier is chosen. */
+    private fun tierTab(price: String) =
+        compose.onNode(hasText(price) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
 
     @After fun resetDebugOverride() {
         SupportWorldDebugOverride.world = null
@@ -74,8 +81,8 @@ class SupportPageHostTest {
 
     @Test fun `selection and an open payments notice survive every window gate in both directions`() {
         compose.setContent { Host(variant = "orbit") }
-        compose.onNode(hasContentDescription("Ring Station, 3 full days, $6.99")).performClick()
-        compose.onNodeWithText("Launch Ring Station · $6.99").performClick()
+        tierTab("$6.99").performClick()
+        compose.onNodeWithText("Launch Ring Station").performClick()
         compose.onNodeWithText("Mission control isn't online yet").assertIsDisplayed()
 
         listOf(
@@ -96,23 +103,23 @@ class SupportPageHostTest {
 
         compose.onNodeWithText("Stand down").performClick()
         compose.onNodeWithText("Mission control isn't online yet").assertDoesNotExist()
-        compose.onNodeWithText("Launch Ring Station · $6.99").assertIsDisplayed()
+        compose.onNodeWithText("Launch Ring Station").assertIsDisplayed()
         assertEquals(listOf("view:orbit:experiment", "tier:3", "pay:3"), sink.events)
     }
 
     @Test fun `back and a tap outside close the notice without leaving the page`() {
         compose.setContent { Host(variant = "alchemy") }
-        compose.onNodeWithText("Conjure Sun Crystal · $2.49").performClick()
+        compose.onNodeWithText("Conjure Sun Crystal").performClick()
         compose.onNodeWithText("The cauldron isn't lit yet").assertIsDisplayed()
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
         compose.onNodeWithText("The cauldron isn't lit yet").assertDoesNotExist()
 
-        compose.onNodeWithText("Conjure Sun Crystal · $2.49").performClick()
+        compose.onNodeWithText("Conjure Sun Crystal").performClick()
         compose.onRoot().performTouchInput { click(Offset(24f, 24f)) }
         compose.waitForIdle()
         compose.onNodeWithText("The cauldron isn't lit yet").assertDoesNotExist()
-        compose.onNodeWithText("Conjure Sun Crystal · $2.49").assertIsDisplayed()
+        compose.onNodeWithText("Conjure Sun Crystal").assertIsDisplayed()
         assertEquals(0, sink.count("left"))
     }
 
@@ -120,14 +127,14 @@ class SupportPageHostTest {
         var variantReads = 0
         val restoration = StateRestorationTester(compose)
         restoration.setContent { Host(variant = "sky", onVariantRead = { variantReads++ }) }
-        compose.onNode(hasContentDescription("Beacon Citadel, 1 full week, $17.99")).performClick()
-        compose.onNodeWithText("Raise Beacon Citadel · $17.99").performClick()
+        tierTab("$17.99").performClick()
+        compose.onNodeWithText("Raise Beacon Citadel").performClick()
 
         restoration.emulateSavedInstanceStateRestore()
 
         compose.onNodeWithText("The skyport isn't open yet").assertIsDisplayed()
         compose.onNodeWithText("Back to the clouds").performClick()
-        compose.onNodeWithText("Raise Beacon Citadel · $17.99").assertIsDisplayed()
+        compose.onNodeWithText("Raise Beacon Citadel").assertIsDisplayed()
         assertEquals(1, variantReads)
         assertEquals(1, sink.count("view"))
         assertEquals(0, sink.count("left"))
@@ -143,7 +150,8 @@ class SupportPageHostTest {
     @Test fun `leaving the page reports one exit`() {
         var shown by mutableStateOf(true)
         compose.setContent { if (shown) Host(variant = "neon", changingConfigurations = false) }
-        compose.onNode(hasContentDescription("Glow Jar, 1 full week, $17.99")).performClick()
+        tierTab("$17.99").performClick()
+        compose.waitForIdle()
         shown = false
         compose.waitForIdle()
         assertEquals(listOf("view:neon:experiment", "tier:4", "left:neon"), sink.events)
@@ -154,7 +162,7 @@ class SupportPageHostTest {
         compose.setContent { Host(variant = "orbit", debuggable = true, changingConfigurations = false) }
         compose.onNodeWithContentDescription("Preview a Support world").performClick()
         compose.onNodeWithText("Abyss").performClick()
-        compose.onNodeWithText("Summon Amber Angler · $2.49").assertIsDisplayed()
+        compose.onNodeWithText("Summon Amber Angler").assertIsDisplayed()
         assertEquals(listOf("view:orbit:experiment", "left:orbit", "view:abyss:debug_override"), sink.events)
         assertEquals(SupportWorld.Abyss, SupportWorldDebugOverride.world)
     }
