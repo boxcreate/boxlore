@@ -37,6 +37,18 @@ class DefaultLandingTabsTest {
     }
 
     @Test
+    fun exploreWithoutForYouAlwaysOpensOnTop() {
+        listOf("foryou", "for_you", "top", null).forEach { navTab ->
+            listOf(ExploreDefaultTab.FOR_YOU, ExploreDefaultTab.TOP, null).forEach { preferred ->
+                assertEquals(
+                    ExploreDefaultTab.INDEX_TOP,
+                    ExploreDefaultTab.resolveIndex(navTab, hasCategory = false, preferred = preferred, forYouAvailable = false),
+                )
+            }
+        }
+    }
+
+    @Test
     fun subscriptionsSanitizeDefaultsToShows() {
         assertEquals(SubscriptionsDefaultTab.SHOWS, SubscriptionsDefaultTab.sanitize(null))
         assertEquals(SubscriptionsDefaultTab.SHOWS, SubscriptionsDefaultTab.sanitize("Shows"))

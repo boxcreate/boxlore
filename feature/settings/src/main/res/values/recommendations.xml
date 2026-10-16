@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library > LeaveMeAlone: switches for the optional suggestion sections. Names match the section titles people see in the app. -->
+    <!-- Page and row name. A nod to the GTA cheat code that clears your wanted level; keep it as one word, untranslated. -->
+    <string name="recommendations_title" translatable="false">LeaveMeAlone</string>
+    <!-- Subtext of the LeaveMeAlone row on Library and on Appearance > Home, both opening the same page. -->
+    <string name="recommendations_row_description">Turn off recommendations across the app</string>
+    <string name="recommendations_home_title">On Home</string>
+    <!-- "Explore shows" is the charts grid at the bottom of Home. Off sections make no requests, so they do not load. -->
+    <string name="recommendations_home_footer">Hero cards, Your shows and Explore shows always stay. Sections you turn off don’t load.</string>
+    <!-- The Brief is the daily audio news briefing card. Off is the same choice as the card's Always hide. -->
+    <string name="recommendations_brief">The Brief</string>
+    <string name="recommendations_brief_description">A short daily audio briefing</string>
+    <string name="recommendations_picked_for_you">Picked for you</string>
+    <!-- Turning it off also removes the For you tab from Explore, which shows the same picks. -->
+    <string name="recommendations_picked_for_you_description">Episodes based on your listening. Off also removes For you from Explore.</string>
+    <string name="recommendations_because_you_like">Because you like</string>
+    <string name="recommendations_because_you_like_description">Shows and episodes like one you listen to</string>
+    <!-- The rows under the greeting that changes through the day: Good Morning, Afternoon Break, Evening Unwind, Late Night Listen. -->
+    <string name="recommendations_time_of_day">Time-of-day picks</string>
+    <string name="recommendations_time_of_day_description">Rows that change through the day, like Good Morning</string>
+    <string name="recommendations_episodes_title">On episode pages</string>
+    <!-- The episode pages' similar-episodes section is titled "Try these episodes" there. Off makes no request. -->
+    <string name="recommendations_more_like_this">Try these episodes</string>
+    <string name="recommendations_more_like_this_description">Similar episodes at the end of each episode page</string>
+</resources>

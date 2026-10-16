@@ -1,7 +1,6 @@
 package cx.aswin.boxlore.core.catalog
 
 import com.google.gson.Gson
-import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot
 import cx.aswin.boxlore.core.catalog.logic.GroupedShowSearchResult
 import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
@@ -20,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
+import retrofit2.awaitResponse
 
 /**
  * Repository for podcast data via Boxlore API (Cloudflare Worker → Podcast Index).
@@ -664,7 +664,8 @@ class PodcastRepository(
                     country = resolvedCountry,
                     languages = queryLanguages,
                 )
-            val response = api.getSimilarEpisodes(publicKey, request).execute()
+            // Cancellable, so a switched-off Try these episodes or a closed page stops the request.
+            val response = api.getSimilarEpisodes(publicKey, request).awaitResponse()
             if (response.isSuccessful && response.body() != null) {
                 response.body()!!.items.mapNotNull { mapToEpisode(it) }
             } else {
@@ -785,15 +786,19 @@ class PodcastRepository(
         }
     }
 
-    suspend fun getHomeBootstrapData(
+    /**
+     * Personal picks for Home's Picked for you and Explore's For you. The bootstrap request asks
+     * the server for recommendations only, so it skips the Brief, trending and curated rows that
+     * those screens load on their own (or not at all, when the listener switched them off).
+     */
+    suspend fun getHomeRecommendations(
         country: String,
-        vibeIds: List<String>,
         history: List<cx.aswin.boxlore.core.network.model.HistoryItem> = emptyList(),
         interests: List<String> = emptyList(),
         subscribedPodcastIds: List<String> = emptyList(),
         subscribedGenres: List<String> = emptyList(),
         languages: List<String>? = null,
-    ): HomeBootstrapData = withContext(Dispatchers.IO) {
+    ): HomeRecommendations = withContext(Dispatchers.IO) {
         try {
             val resolvedCountry =
                 cx.aswin.boxlore.core.model.ContentRegions
@@ -821,65 +826,28 @@ class PodcastRepository(
             val request =
                 cx.aswin.boxlore.core.network.model.BootstrapRequest(
                     country = resolvedCountry,
-                    vibeIds = vibeIds,
+                    vibeIds = emptyList(),
                     deviceUuid = getOrCreateDeviceUuid(),
                     recommendationsRequest = recsReq,
                     languages = queryLanguages,
+                    include = listOf(cx.aswin.boxlore.core.network.model.BootstrapRequest.INCLUDE_RECOMMENDATIONS),
                 )
 
             val response = api.getHomeBootstrap(publicKey, getOrCreateDeviceUuid(), request).execute()
-            if (response.isSuccessful && response.body() != null) {
-                val body = response.body()!!
-
-                val trendingList = body.trending.map { mapToPodcast(it) }
-                val recommendationsList = body.recommendations.mapNotNull { mapToEpisode(it) }
-
-                val curatedVibesMap =
-                    body.curatedVibes.mapValues { entry ->
-                        entry.value.map { mapToPodcast(it) }
-                    }
-
-                var briefing = body.briefing
-                var briefingChapters = body.briefingChapters
-                if (briefing == null) {
-                    val mappedRegion = mapRegionForBriefing(resolvedCountry)
-                    android.util.Log.d(
-                        "PodcastRepository",
-                        "HomeBootstrapData briefing was null for country $resolvedCountry, attempting fallback fetch with mapped region $mappedRegion",
-                    )
-                    val fallbackBriefing = getBriefingMetadata(mappedRegion)
-                    if (fallbackBriefing != null) {
-                        briefing = fallbackBriefing
-                        val audioUri = android.net.Uri.parse(fallbackBriefing.audioUrl)
-                        val version = audioUri.getQueryParameter("v")
-                        val versionParam = if (version != null) "&v=$version" else ""
-                        val chaptersUrl =
-                            fallbackBriefing.chaptersUrl
-                                ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${fallbackBriefing.region}?d=${fallbackBriefing.date}$versionParam"
-                        try {
-                            briefingChapters =
-                                cx.aswin.boxlore.core.catalog.ChapterRepository
-                                    .getChapters(chaptersUrl)
-                        } catch (e: Exception) {
-                            android.util.Log.e("PodcastRepository", "Failed to fetch chapters for fallback briefing", e)
-                        }
-                    }
-                }
-
-                HomeBootstrapData(
-                    briefing = briefing,
-                    briefingChapters = briefingChapters,
-                    trending = trendingList,
-                    curatedVibes = curatedVibesMap,
-                    recommendations = recommendationsList,
-                    isRecommendationsFallback = body.isRecommendationsFallback ?: true,
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                HomeRecommendations(
+                    items = body.recommendations.mapNotNull { mapToEpisode(it) },
+                    isFallback = body.isRecommendationsFallback ?: true,
                 )
             } else {
-                HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
+                HomeRecommendations()
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
-            android.util.Log.e("PodcastRepository", "getHomeBootstrapData failed", e)
-            HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
+            android.util.Log.e("PodcastRepository", "getHomeRecommendations failed", e)
+            HomeRecommendations()
         }
     }
 

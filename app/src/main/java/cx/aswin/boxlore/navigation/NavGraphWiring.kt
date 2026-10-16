@@ -161,6 +161,7 @@ data class NavSettingsState(
     val heroCoverShade: String = cx.aswin.boxlore.core.prefs.HeroCoverShade.DEFAULT,
     val savedCustomTheme: cx.aswin.boxlore.core.prefs.ThemeSelection? = null,
     val fullPlayerStyle: String = cx.aswin.boxlore.core.prefs.FullPlayerStyle.STANDARD,
+    val discoverySections: cx.aswin.boxlore.core.prefs.DiscoverySections = cx.aswin.boxlore.core.prefs.DiscoverySections(),
 )
 
 /** Callbacks for OPML import state owned by MainActivity. */

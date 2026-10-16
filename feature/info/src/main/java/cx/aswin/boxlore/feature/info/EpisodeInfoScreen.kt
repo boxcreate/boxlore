@@ -74,6 +74,7 @@ fun EpisodeInfoScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val moreLikeThisOn by viewModel.moreLikeThisOn.collectAsState()
     cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf((uiState as? EpisodeInfoUiState.Success)?.episode?.takeIf { it.id == episodeId }?.imageUrl ?: episodeImageUrl, (uiState as? EpisodeInfoUiState.Success)?.episode?.takeIf { it.id == episodeId }?.podcastImageUrl), isLoading = uiState is EpisodeInfoUiState.Loading) {
     val likedEpisodeIds by viewModel.likedEpisodeIds.collectAsState()
     val completedEpisodeIds by viewModel.completedEpisodeIds.collectAsState()
@@ -290,7 +291,7 @@ fun EpisodeInfoScreen(
                         episodeShowNotes(state, viewModel::seekToPosition)
 
                         // Contextual "MORE LIKE THIS" RECOMMENDATIONS SECTION -> Card
-                        if (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty()) {
+                        if (moreLikeThisOn == true && (state.similarEpisodesLoading || state.similarEpisodes.isNotEmpty())) {
                             item {
                                 cx.aswin.boxlore.feature.info.sections.EpisodeInfoMoreLikeThisCard(
                                     state = state,

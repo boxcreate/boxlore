@@ -14,6 +14,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
+import cx.aswin.boxlore.core.prefs.DiscoverySection
+import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.FullPlayerStyle
 import cx.aswin.boxlore.core.prefs.HeroCardStyle
 import cx.aswin.boxlore.core.prefs.HeroCoverShade
@@ -156,5 +158,76 @@ class AppearancePagesTest {
         // Listeners who never picked see Cover on the Artwork shade.
         val unpicked = AppearanceUiState(currentThemeConfig = "system", isDynamicColorEnabled = false, currentThemeBrand = "violet", currentSurfaceStyle = "classic_dynamic")
         assertEquals("Cover hero cards, artwork shade", appearanceSummary(unpicked).home)
+    }
+
+    @Test
+    fun `Home page links to LeaveMeAlone instead of holding the switches`() {
+        var opened = 0
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) { AppearanceHomePage(state.value, actions, heroPreview = null, onBack = {}, onOpenRecommendations = { opened++ }) }
+        }
+        compose.onNodeWithText("Picked for you").assertDoesNotExist()
+        compose.onNodeWithText("Turn off recommendations across the app", substring = true).assertExists()
+        compose.onNodeWithText("LeaveMeAlone").performScrollTo().performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `LeaveMeAlone lists every section and each switch sets only its own`() {
+        val set = mutableListOf<Pair<DiscoverySection, Boolean>>()
+        val sections = mutableStateOf(DiscoverySections(becauseYouLike = false))
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                RecommendationsSettingsPage(sections.value, onSet = { section, on ->
+                    set += section to on
+                    sections.value = sections.value.with(section, on)
+                }, onBack = {})
+            }
+        }
+        compose.onNodeWithText("On Home").assertExists()
+        compose.onNodeWithText("On episode pages").performScrollTo()
+        listOf("The Brief", "Picked for you", "Because you like", "Time-of-day picks", "Try these episodes").forEach { title ->
+            compose.onNodeWithText(title).performScrollTo().performClick()
+        }
+        assertEquals(
+            listOf(
+                DiscoverySection.DAILY_BRIEF to false,
+                DiscoverySection.PICKED_FOR_YOU to false,
+                DiscoverySection.BECAUSE_YOU_LIKE to true,
+                DiscoverySection.CURATED_ROWS to false,
+                DiscoverySection.MORE_LIKE_THIS to false,
+            ),
+            set,
+        )
+        assertEquals(DiscoverySections(dailyBrief = false, pickedForYou = false, curatedRows = false, moreLikeThis = false), sections.value)
+    }
+
+    @Test
+    fun `Explore's opening tab choice shows only while Explore has For you`() {
+        state.value = baseState
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) { AppearanceNavigationPage(state.value, actions, onBack = {}) }
+        }
+        compose.onNodeWithText("Explore opens to").assertExists()
+        compose.runOnIdle { state.value = baseState.copy(discoverySections = DiscoverySections(pickedForYou = false)) }
+        compose.onNodeWithText("Explore opens to").assertDoesNotExist()
+        compose.onNodeWithText("Subscriptions opens to").assertExists()
+    }
+
+    @Test
+    fun `Library opens LeaveMeAlone`() {
+        var opened = 0
+        compose.setContent {
+            BoxLoreTheme(dynamicColor = false) {
+                LibrarySettingsPage(
+                    discoveryPreferences = LibraryDiscoveryPreferences("us", listOf("en"), {}, {}),
+                    onAddRssClick = {},
+                    onBack = {},
+                    onOpenRecommendations = { opened++ },
+                )
+            }
+        }
+        compose.onNodeWithText("LeaveMeAlone").performScrollTo().performClick()
+        assertEquals(1, opened)
     }
 }

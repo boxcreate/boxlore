@@ -4,6 +4,7 @@ internal fun String?.toSettingsDestination(): ProfileSettingsDestination = when 
     "account" -> ProfileSettingsDestination.Account
     "sync", "sync_and_backups", "sync-and-backups", "backups" -> ProfileSettingsDestination.SyncAndBackups
     "library" -> ProfileSettingsDestination.Library
+    "recommendations" -> ProfileSettingsDestination.Recommendations
     "appearance" -> ProfileSettingsDestination.Appearance
     "theme" -> ProfileSettingsDestination.Theme
     "playback" -> ProfileSettingsDestination.Playback
@@ -46,5 +47,6 @@ internal fun settingsDestinationMovesForward(from: ProfileSettingsDestination, t
     to == ProfileSettingsDestination.Hub -> false
     generateSequence(from.parent) { it.parent }.any { it == to } -> false
     from == ProfileSettingsDestination.Account && to == ProfileSettingsDestination.SyncAndBackups -> false
+    from == ProfileSettingsDestination.Recommendations && to == ProfileSettingsDestination.AppearanceHome -> false
     else -> true
 }

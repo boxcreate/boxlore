@@ -29,6 +29,21 @@ class AppearanceActionsTrackedTest {
     }
 
     @Test
+    fun `LeaveMeAlone switches reach the setter with their section and value`() {
+        val calls = mutableListOf<Pair<cx.aswin.boxlore.core.prefs.DiscoverySection, Boolean>>()
+        val tracked = trackedDiscoverySectionSetter(cx.aswin.boxlore.core.prefs.DiscoverySections()) { section, on -> calls.add(section to on) }
+        tracked(cx.aswin.boxlore.core.prefs.DiscoverySection.PICKED_FOR_YOU, false)
+        tracked(cx.aswin.boxlore.core.prefs.DiscoverySection.MORE_LIKE_THIS, true)
+        assertEquals(
+            listOf(
+                cx.aswin.boxlore.core.prefs.DiscoverySection.PICKED_FOR_YOU to false,
+                cx.aswin.boxlore.core.prefs.DiscoverySection.MORE_LIKE_THIS to true,
+            ),
+            calls,
+        )
+    }
+
+    @Test
     fun `saving a custom draft is separate from selecting or remembering an existing theme`() {
         val selection = cx.aswin.boxlore.core.prefs.ThemeSelection("custom", "standard")
         val calls = mutableListOf<String>()
@@ -149,7 +164,10 @@ class AppearanceActionsTrackedTest {
         try {
             var state = AppearanceUiState("system", false, "violet", "standard", heroCardStyle = HeroCardStyle.COVER, heroCoverShade = HeroCoverShade.THEME)
             val actions = AppearanceActions(
-                {}, {}, {}, {},
+                {},
+                {},
+                {},
+                {},
                 onSetHeroCardStyle = { state = state.copy(heroCardStyle = it) },
                 onSetHeroCoverShade = { state = state.copy(heroCoverShade = it) },
             ).trackedForAnalytics { state }

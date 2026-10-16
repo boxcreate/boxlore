@@ -20,6 +20,7 @@ import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.core.prefs.BoxcastPrefs
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
+import cx.aswin.boxlore.core.prefs.collectDiscoverySection
 import cx.aswin.boxlore.core.ranking.AdaptiveCandidateScorer
 import cx.aswin.boxlore.feature.home.logic.FilterSelectionAction
 import cx.aswin.boxlore.feature.home.logic.HomeBecauseYouLikeLogic
@@ -39,7 +40,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -271,10 +271,12 @@ class HomeViewModel(
         // Restore local caches together before publishing Home or starting API refreshes.
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
             homeCacheRestoreGate.restore {
+                // Sections the listener switched off stay empty instead of showing old picks.
+                val sections = userPrefs.discoverySectionsStream.first()
                 // Load cached recommendations
                 try {
                     val cached = boxcastPrefs.getCachedRecommendationsJson()
-                    if (cached != null) {
+                    if (sections.pickedForYou && cached != null) {
                         val json = Json { ignoreUnknownKeys = true }
                         val list = json.decodeFromString<List<Episode>>(cached)
                         _recommendations.value = list
@@ -292,7 +294,7 @@ class HomeViewModel(
                     val cached = boxcastPrefs.getCachedBylRecommendationsJson()
                     val cachedPods = boxcastPrefs.getCachedBylPodcastsJson()
                     val cachedPodId = boxcastPrefs.getCachedBylPodcastId()
-                    if (cachedPodId != null) {
+                    if (sections.becauseYouLike && cachedPodId != null) {
                         val json = Json { ignoreUnknownKeys = true }
                         if (cached != null) {
                             val list = json.decodeFromString<List<Episode>>(cached)
@@ -326,12 +328,16 @@ class HomeViewModel(
         // Observe overridden podcast ID and region, resolve favorite podcast, and fetch recommendations
         viewModelScope.launch {
             homeCacheRestoreGate.awaitRestore()
-            combine(
-                userPrefs.overriddenRecPodcastIdStream,
-                userPrefs.regionStream,
-            ) { overriddenId, region ->
-                overriddenId to region
-            }.collectLatest { (overriddenId, region) ->
+            collectDiscoverySection(
+                keys = combine(
+                    userPrefs.overriddenRecPodcastIdStream,
+                    userPrefs.regionStream,
+                ) { overriddenId, region ->
+                    overriddenId to region
+                },
+                on = sectionOn { it.becauseYouLike },
+                clear = { clearBecauseYouLike() },
+            ) { (overriddenId, region) ->
                 val activeSubs = subscriptionRepository.subscribedPodcasts.first()
                 val activeHistory = allHomeHistory.first()
 
@@ -733,9 +739,19 @@ class HomeViewModel(
         }
     }
 
+    /** The Brief card's Always hide: the same choice as turning the Brief off in LeaveMeAlone. */
     fun dismissBriefingForever() {
         viewModelScope.launch {
+            val sections = userPrefs.discoverySectionsStream.first()
             userPrefs.dismissBriefingForever()
+            if (sections.dailyBrief) {
+                cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackRecommendationSectionToggled(
+                    cx.aswin.boxlore.core.prefs.DiscoverySection.DAILY_BRIEF,
+                    enabled = false,
+                    source = "brief_card",
+                    sectionsOff = sections.with(cx.aswin.boxlore.core.prefs.DiscoverySection.DAILY_BRIEF, false).offCount,
+                )
+            }
         }
     }
 

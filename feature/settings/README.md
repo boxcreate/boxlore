@@ -120,6 +120,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 ## Persistence & identity
 
+- **Library → LeaveMeAlone** (`ProfileSettingsDestination.Recommendations`, titled LeaveMeAlone, parent Library, deep link `recommendations`) holds every switchable section: On Home (The Brief, Picked for you, Because you like, Time-of-day picks) and On episode pages (Try these episodes). Library opens it from its own card below Discovery (subtext "Turn off recommendations across the app", also used on the Appearance → Home link), and Appearance → Home links to it with `onOpenRecommendationsFromHome`, which records Appearance → Home as the Back target. The page reads `RegionSettings.discoverySections` and saves through `trackedDiscoverySectionSetter`, which sends `recommendation_section_toggled` (source `settings`). In the tablet split it highlights Library and keeps its Back arrow; the rows hold no local state, so resizing shows the stored values. `AppearanceUiState.discoverySections` is read-only: Navigation hides **Explore opens to** while Picked for you is off, since Explore then has only Top. Covered by `AppearancePagesTest`, `AppearanceActionsTrackedTest`, `SettingsBackNavigationTest` and `TabletSettingsLayoutTest`.
 - Settings read and write DataStore and `BoxcastPrefs` through `:core:prefs` APIs.
 - Stable Compose test tags include `settings_add_rss_*`, `settings_downloads_smart`, `settings_downloads_auto`, `settings_reset_analytics_confirm`, and `settings_reset_analytics_cancel`.
 

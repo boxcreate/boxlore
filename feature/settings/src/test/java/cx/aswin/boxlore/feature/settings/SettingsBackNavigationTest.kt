@@ -144,4 +144,29 @@ class SettingsBackNavigationTest {
         assertEquals(ProfileSettingsDestination.Support, "support_us".toSettingsDestination())
         assertEquals(ProfileSettingsDestination.Hub, "unknown".toSettingsDestination())
     }
+
+    @Test
+    fun recommendationsReturnsToLibraryOrToAppearanceHomeWhenOpenedFromThere() {
+        assertEquals(
+            SettingsBackAction.NavigateTo(ProfileSettingsDestination.Library),
+            resolveSettingsBackAction(false, previousDestination = null, initialPage = null, currentDestination = ProfileSettingsDestination.Recommendations),
+        )
+        assertEquals(
+            SettingsBackAction.NavigateTo(ProfileSettingsDestination.AppearanceHome),
+            resolveSettingsBackAction(false, previousDestination = ProfileSettingsDestination.AppearanceHome, initialPage = null, currentDestination = ProfileSettingsDestination.Recommendations),
+        )
+        assertEquals(ProfileSettingsDestination.Recommendations, "recommendations".toSettingsDestination())
+        assertEquals(
+            SettingsBackAction.NavigateBack,
+            resolveSettingsBackAction(false, previousDestination = null, initialPage = "recommendations", currentDestination = ProfileSettingsDestination.Recommendations),
+        )
+    }
+
+    @Test
+    fun recommendationsSlidesForwardWhenOpenedAndBackWhenLeft() {
+        assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.Library, ProfileSettingsDestination.Recommendations))
+        assertEquals(true, settingsDestinationMovesForward(ProfileSettingsDestination.AppearanceHome, ProfileSettingsDestination.Recommendations))
+        assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.Recommendations, ProfileSettingsDestination.Library))
+        assertEquals(false, settingsDestinationMovesForward(ProfileSettingsDestination.Recommendations, ProfileSettingsDestination.AppearanceHome))
+    }
 }

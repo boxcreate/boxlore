@@ -17,7 +17,9 @@ import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.togglePlayPause
 import cx.aswin.boxlore.feature.info.logic.EpisodeOfflineMergeLogic
+import cx.aswin.boxlore.feature.info.logic.collectSimilarEpisodes
 import cx.aswin.boxlore.feature.info.logic.sharedLookup
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -69,6 +71,14 @@ class EpisodeInfoViewModel(
 ) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow<EpisodeInfoUiState>(EpisodeInfoUiState.Loading)
     val uiState: StateFlow<EpisodeInfoUiState> = _uiState.asStateFlow()
+
+    /** Null until read. More like this shows and loads only while the listener keeps it on. */
+    val moreLikeThisOn: StateFlow<Boolean?> =
+        userPrefs.discoverySectionsStream
+            .map { it.moreLikeThis }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private var similarEpisodesJob: Job? = null
     private val crossPromotionResolver = cx.aswin.boxlore.core.catalog.crosspromo.CrossPromotionResolver(podcastRepository)
     private val notesLoader = cx.aswin.boxlore.feature.info.logic.EpisodeInfoNotesLoader(
         scope = viewModelScope,
@@ -214,6 +224,8 @@ class EpisodeInfoViewModel(
         if (currentState is EpisodeInfoUiState.Success && currentState.episode.id == episodeId) {
             return
         }
+        // A new episode stops the previous one's Try these episodes request straight away.
+        similarEpisodesJob?.cancel()
 
         notesLoader.cancel()
         viewModelScope.launch {
@@ -451,19 +463,19 @@ class EpisodeInfoViewModel(
             }
         }
 
-        // 4. Fetch similar episodes (contextual "More like this") from Qdrant Cloud via proxy
-        viewModelScope.launch {
-            try {
-                android.util.Log.d("EpisodeInfo", "Fetching similar episodes for episodeId: $episodeId, title: $episodeTitle")
-
-                // Fetch the podcast details to get categories and author
-                val podcast = podcastDetails.await()
-                val categories = podcast?.genre ?: ""
-                val author = podcast?.artist ?: ""
-
-                val region = userPrefs.regionStream.first().takeIf { it.isNotBlank() } ?: "us"
-                val languages = userPrefs.contentLanguagesStream.first()
-                val similarEps =
+        // 4. Fetch similar episodes (contextual "More like this") from Qdrant Cloud via proxy, only
+        // while the listener keeps the section on.
+        similarEpisodesJob?.cancel()
+        similarEpisodesJob = viewModelScope.launch {
+            collectSimilarEpisodes(
+                episodeId = episodeId,
+                on = userPrefs.discoverySectionsStream.map { it.moreLikeThis },
+                state = _uiState,
+                fetch = {
+                    android.util.Log.d("EpisodeInfo", "Fetching similar episodes for episodeId: $episodeId, title: $episodeTitle")
+                    // Fetch the podcast details to get categories and author
+                    val podcast = podcastDetails.await()
+                    val region = userPrefs.regionStream.first().takeIf { it.isNotBlank() } ?: "us"
                     podcastRepository.getSimilarEpisodes(
                         cx.aswin.boxlore.core.catalog.SimilarEpisodesQuery(
                             episodeId = episodeId,
@@ -471,31 +483,16 @@ class EpisodeInfoViewModel(
                             title = episodeTitle,
                             description = episodeDescription,
                             podcastTitle = podcastTitle,
-                            categories = categories,
-                            author = author,
+                            categories = podcast?.genre ?: "",
+                            author = podcast?.artist ?: "",
                             limit = 10,
                             country = region,
-                            languages = languages,
+                            languages = userPrefs.contentLanguagesStream.first(),
                         ),
-                    )
-
-                android.util.Log.d("EpisodeInfo", "Fetched ${similarEps.size} similar episodes")
-
-                val currentSuccess = _uiState.value as? EpisodeInfoUiState.Success
-                if (currentSuccess != null && currentSuccess.episode.id == episodeId) {
-                    _uiState.value =
-                        currentSuccess.copy(
-                            similarEpisodes = similarEps,
-                            similarEpisodesLoading = false,
-                        )
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("EpisodeInfo", "Error fetching similar episodes", e)
-                val currentSuccess = _uiState.value as? EpisodeInfoUiState.Success
-                if (currentSuccess != null) {
-                    _uiState.value = currentSuccess.copy(similarEpisodesLoading = false)
-                }
-            }
+                    ).also { android.util.Log.d("EpisodeInfo", "Fetched ${it.size} similar episodes") }
+                },
+                onError = { android.util.Log.e("EpisodeInfo", "Error fetching similar episodes", it) },
+            )
         }
     }
 

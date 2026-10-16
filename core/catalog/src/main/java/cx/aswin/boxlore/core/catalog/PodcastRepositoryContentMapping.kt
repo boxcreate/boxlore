@@ -148,4 +148,7 @@ data class HomeBootstrapData(
     val isRecommendationsFallback: Boolean = true
 )
 
+/** Personal picks from the bootstrap request; [isFallback] marks popular-in-region picks. */
+data class HomeRecommendations(val items: List<Episode> = emptyList(), val isFallback: Boolean = true)
+
 data class BecauseYouLikeData(val podcasts: List<Podcast> = emptyList(), val episodes: List<Episode> = emptyList())

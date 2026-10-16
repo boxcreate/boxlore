@@ -42,6 +42,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 
 ## Persistence & identity
 
+- `BootstrapRequest.include` lists the reply parts the app uses (`INCLUDE_BRIEFING`, `INCLUDE_TRENDING`, `INCLUDE_CURATED_VIBES`, `INCLUDE_RECOMMENDATIONS`). It is omitted when null, which older Workers and app versions treat as every part.
 - No user data is persisted by this module.
 - Base URL, public key, app version, App Check tokens, and device identifiers are supplied at runtime by app or repository wiring.
 - API path and payload shape changes should be tested as contract changes.

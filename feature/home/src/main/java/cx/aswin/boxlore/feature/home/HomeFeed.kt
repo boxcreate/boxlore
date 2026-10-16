@@ -56,6 +56,10 @@ internal data class PodcastFeedUiState(
     val seemsToLikePodcast: Podcast?,
     val showImportBanner: Boolean,
     val pinnedPodcastIds: Set<String> = emptySet(),
+    /** Off with Curated rows, which the greeting introduces. */
+    val showDiscoveryGreeting: Boolean = true,
+    /** False once Picked for you is off, which also removes Explore's For you tab. */
+    val exploreHasForYou: Boolean = true,
 )
 
 @androidx.compose.runtime.Stable

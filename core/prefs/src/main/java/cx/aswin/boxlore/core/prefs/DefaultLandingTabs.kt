@@ -21,10 +21,10 @@ object ExploreDefaultTab {
     /**
      * Resolves the Explore pager index.
      * A genre [hasCategory] or an explicit nav tab (`trending` / `top` / `for_you`) wins
-     * over [preferred].
+     * over [preferred]. Without [forYouAvailable] (Picked for you is off) Explore has only Top.
      */
-    fun resolveIndex(navTab: String?, hasCategory: Boolean, preferred: String?,): Int {
-        if (hasCategory) return INDEX_TOP
+    fun resolveIndex(navTab: String?, hasCategory: Boolean, preferred: String?, forYouAvailable: Boolean = true,): Int {
+        if (hasCategory || !forYouAvailable) return INDEX_TOP
         return when (navTab?.trim()?.lowercase()) {
             "trending", TOP -> INDEX_TOP
             "foryou", FOR_YOU -> INDEX_FOR_YOU

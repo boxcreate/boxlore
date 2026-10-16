@@ -73,6 +73,25 @@ class TabletSettingsLayoutTest {
         assertEquals(ProfileSettingsDestination.Appearance, settingsCategoryOf(ProfileSettingsDestination.CustomTheme))
         assertEquals(ProfileSettingsDestination.SyncAndBackups, settingsCategoryOf(ProfileSettingsDestination.Account))
         assertEquals(ProfileSettingsDestination.Downloads, settingsCategoryOf(ProfileSettingsDestination.Downloads))
+        assertEquals(ProfileSettingsDestination.Library, settingsCategoryOf(ProfileSettingsDestination.Recommendations))
+    }
+
+    @Test fun `Recommendations keeps its back arrow and highlights Library in the split through resizes`() {
+        selected.value = ProfileSettingsDestination.Recommendations
+        render()
+        fixture.compose.onNodeWithText("Library").assertIsSelected()
+        assertTrue(backVisible)
+        // A narrow window drops the category list; Recommendations keeps its Back arrow and its page.
+        fixture.compose.runOnIdle { paneWidth.value = 640 }
+        settle()
+        fixture.compose.onNodeWithText("Library").assertDoesNotExist()
+        assertTrue(backVisible)
+        fixture.compose.onNodeWithText("draft").assertIsDisplayed()
+        fixture.compose.runOnIdle { paneWidth.value = 1200 }
+        settle()
+        fixture.compose.onNodeWithText("Library").assertIsSelected()
+        assertTrue(backVisible)
+        fixture.compose.onNodeWithText("draft").assertIsDisplayed()
     }
 
     @Test fun `tablet categories and detail share even a player narrowed window and retain an editor draft through resize`() {

@@ -73,6 +73,7 @@ src/main/java/cx/aswin/boxlore/core/prefs/
 
 ## Persistence & identity
 
+- `DiscoverySections` / `DiscoverySection` (`discoverySectionsStream`, `setDiscoverySection`): switchable discovery sections, all on by default. The Brief reuses `briefing_dismissed_forever` inverted, so the Brief card's Always hide and Settings stay one choice; turning it on also clears `briefing_dismissed_date`. Picked for you, Because you like, time-of-day rows and More like this use `discovery_picked_for_you`, `discovery_because_you_like`, `discovery_curated_rows` and `discovery_more_like_this`. Picked for you is mirrored in the theme fast cache (`cachedPickedForYou`) so Explore picks its first tab before DataStore loads. `collectDiscoverySection` is the shared loader gate: it loads per key while a section is on, clears it with no request while off, and cancels a load in flight when switched off. `DiscoverySectionPreferencesTest` and `DiscoverySectionLoaderTest` cover persistence, defaults, the Brief mapping and the gate.
 - DataStore name `user_preferences` must remain stable.
 - Canonical SharedPreferences files include `boxlore_prefs` and `boxlore_theme_fast_cache`.
 - Legacy file names beginning with `boxcast_` are migrated through `PrefsFileMigrator`.

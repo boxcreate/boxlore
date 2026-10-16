@@ -44,7 +44,7 @@
     <string name="briefing_hide_today">Hide today</string>
     <string name="briefing_always_hide">Always hide the Brief</string>
     <string name="briefing_always_hide_title">Always hide the Brief?</string>
-    <string name="briefing_always_hide_description">Daily briefings will no longer appear on Home.</string>
+    <string name="briefing_always_hide_description">The Brief won’t appear on Home. You can turn it back on in Settings → Library → LeaveMeAlone.</string>
     <string name="briefing_confirm_always_hide">Always hide</string>
     <string name="briefing_send_feedback">Send feedback</string>
     <string name="briefing_card_pause">Pause</string>

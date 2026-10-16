@@ -421,7 +421,7 @@ The API is documented **by path and payload shape only**. How it retrieves or ra
 | `POST /recommendations` | Legacy v1 fallback (fuller history payload) |
 | `POST /recommendations/because-you-like` | Home “Because you like” |
 | `POST /episodes/similar` | Episode-info / queue neighbors (`country` + optional `languages`; oversample + `startsWith`) |
-| `POST` / `GET /home/bootstrap` | Cold-start briefing + trending (+ optional recs; forwards `languages`) |
+| `POST` / `GET /home/bootstrap` | Cold-start briefing + trending (+ optional recs; forwards `languages`). POST `include` limits the parts; the app asks for `recommendations` only (Home Picked for you, Explore For you) |
 | `GET /curated/curiosity-v3` | Learn / Lore deck |
 | `GET /search/semantic` | Explore natural-language search (`country` + optional `languages`; oversample + `startsWith`; conditional ≤2 eps/show) |
 | `GET /trending` | Charts / Discover / queue tiers |
