@@ -65,9 +65,10 @@ src/main/java/cx/aswin/boxlore/feature/explore/
 
 ## Persistence & identity
 
+- **Picked for you switch** (`DiscoverySections.pickedForYou` in `:core:prefs`): off removes the For you tab. Explore then shows Top alone with no pager or For you / Top switcher, skips the shared-cache hydrate and makes no recommendations request; a fetch already running cannot publish. `ExploreDefaultTab.resolveIndex(forYouAvailable = false)` and `cachedPickedForYou` open Top on the first frame. Turning it back on restores both tabs on Top. `ExploreTabPagerTest` covers Top alone, switching off while For you is open and back on, and resizing across the 600dp / 480dp tablet gates in both directions.
 - This module owns no raw storage files.
 - Learn history and recommendation caches are accessed through `BoxcastPrefs` in `:core:prefs`.
-- Explore For You uses the **same** Home bootstrap recommendations payload: hydrate from `BoxcastPrefs` shared cache, refresh via `PodcastRepository.getHomeBootstrapData` (country + content languages), and write that cache back (taste or popular-in-region fallback). It does not call the standalone empty-seed `getPersonalizedRecommendations` path.
+- Explore For You uses the **same** Home bootstrap recommendations payload: hydrate from `BoxcastPrefs` shared cache, refresh via `PodcastRepository.getHomeRecommendations` (country + content languages; the bootstrap request asks for recommendations only), and write that cache back (taste or popular-in-region fallback). It does not call the standalone empty-seed `getPersonalizedRecommendations` path.
 - Explore vibe picks call `getCuratedPodcasts` with the user's content region and languages (same as Home daypart rails).
 - Network DTOs map to feature UI models before entering UI state.
 

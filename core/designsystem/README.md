@@ -35,6 +35,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 - `LazyListKeyPolicy` provides safe deduplication and collision-free key generation for LazyColumn, LazyRow, and LazyGrid lists, preventing `IllegalArgumentException: Key was already used` crashes from duplicate backend feeds or search hits.
 - `share.ShareManager` for composite share cards and the system share sheet; emits glossary `share_content` via `:core:analytics`. `ShareBottomSheet` presents a clear content preview, a switch-style timestamp option, a primary artwork share action, and separate link/story actions.
 - `share.ShareCardRenderer` builds the share-card bitmaps used by `ShareManager`. Stories and square artwork separate episode/show details from a compact “Listen on” label and upright boxlore wordmark.
+- `echo.EchoCharacter` (added 2026-10-16) is the boxlore mascot, shared by onboarding (Welcome and the Echo conversation), Account & sync and the app's library import. It plays a named sequence from `assets/echo-character/manifest.json`: steps that play once, then an optional loop, each step a still (`front-rest`, `t1-rest`, the account outfits…) or a motion clip. Clips are short MP4s with colour, alpha and a glass mask stacked in one frame (384px wide, one keyframe, 24 fps), decoded off the main thread with `MediaCodec` (`EchoClipFrames`), a few frames ahead, the next clip prefetched 600ms early and a 120ms cross-fade between clips. Frames playback has moved past are released for reuse, except the clip's last few, which stay ready for the next loop round. Echo's face is two LED eyes drawn in code on the screen glass: each clip frame carries a tracked screen box, and the glass mask lets props pass in front of the eyes. `EchoIdle` scripts move the eyes (180ms darts, 150ms blinks) once a sequence rests. With `stageColor`, Echo stands on a Cookie9Sided stage 1.14 times its resting height, centred on its body, so the stage always follows Echo. Accent parts take a calmed tone of the theme's primary (`tintEchoAccents`). With animations off, or `LocalEchoMotion provides false` (tests), it shows the rest pose so screens can go idle. The assets take about 1.6 MB (nine clips 1.4 MB).
 
 ## Brand identity
 
@@ -48,6 +49,7 @@ Owns shared Compose visual primitives: theme, typography, shapes, motion, loader
 src/main/java/cx/aswin/boxlore/core/designsystem/
   component/
   components/
+  echo/                         # EchoCharacter, manifest model, clip decoding, eye grid
   list/
   layout/                       # pure window/fold and pane specifications
   share/
@@ -55,12 +57,13 @@ src/main/java/cx/aswin/boxlore/core/designsystem/
 src/main/res/
   drawable/
   font/
+src/main/assets/echo-character/  # manifest.json, stills (WebP) and clips/ (MP4)
 ```
 
 ## Dependencies
 
 - Project dependencies: `:core:model`, `:core:analytics`, `:core:prefs` (lettering axis + shared Google Sans Flex `Typeface` loader).
-- Libraries: Compose Material, MaterialKolor’s public, platform-independent Material Color Utilities JVM port (keeps the current Android SDK requirement), Material icons, graphics shapes, Coil, AndroidX activity/core, smooth corner rect, and coroutines.
+- Libraries: kotlinx.serialization JSON (the Echo manifest), Compose Material, MaterialKolor’s public, platform-independent Material Color Utilities JVM port (keeps the current Android SDK requirement), Material icons, graphics shapes, Coil, AndroidX activity/core, smooth corner rect, and coroutines.
 - Reverse-edge rule: designsystem must not depend on catalog, network, database, playback, downloads, or feature modules.
 
 ## Threading / lifecycle
@@ -79,6 +82,7 @@ src/main/res/
 
 - No user data, database files, DataStore names, or SharedPreferences files are owned here.
 - Resource names are app-internal UI contracts and should be changed with normal Android resource migration care.
+- Echo sequence ids in `assets/echo-character/manifest.json` (`welcome`, `onboarding-*`, `account-*`, `import-*`) are called by name from `:feature:onboarding`, `:feature:settings` and `:app`; each caller has a test that its ids ship in the manifest.
 - UI typeface: bundled **Google Sans Flex** variable font (`res/font/google_sans_flex_variable.ttf`). Default **ROND = 100 (Round)**; Appearance → Lettering can switch Crisp (0) / Soft (50) / Round (100) via `FontRoundness`, `LocalFontRoundness`, and `BoxLoreTheme(fontRoundness=…)`. `GoogleSansFlexTypeface` caches native faces by weight and axes (`ROND`, `opsz`, optional `wdth`); `Typography.kt` wraps each resolved face in a Compose `FontFamily` so Android skins cannot collapse Material typography weights. `GoogleSansWeight` centrally maps app emphasis to the lighter 400/400/500/600 scale. `rememberGoogleSansFamily()` is the shared helper for explicit weighted UI. Roboto Flex paths (`RobotoFlexFamily`, `LogoFontFamily`, `robotoflex_variable`) are unchanged. Shared connected chips: `ConnectedOptionSelector` (Appearance, Library history period/status filters; optional `contentPadding` / `labelStyle` for dense 3-up labels). Content region uses `RegionSegmentedSelector` (sheet list of 11 storefronts) and `ContentRegionLanguagePicker` / `ContentLanguageChipRow` (suggested-for-country + more languages; English locked). SIL OFL 1.1 text: [`licenses/GoogleSansFlex-OFL.txt`](licenses/GoogleSansFlex-OFL.txt).
 - Lettering roundness is mirrored in `boxlore_theme_fast_cache` key `font_roundness` (owned by `:core:prefs`) so share cards / Auto collage can read it without a Compose tree.
 - `BoxLoreNavigationBar` owns the selectable navigation presentation: a solid Material 3 floating 3+1 shell (Home / Explore / Library pill plus Lore action, with one persistent active indicator tracking all four tabs) or the classic four-tab bar. Its optional `compactProgress: State<Float>?` is supplied by the app alongside the mini-player's shared animation: Floating eases labels into icons and moves the same Lore action into a fourth pill slot during contraction, reserving its former 52dp trailing slot before playback docks. A single selection surface sits above the neutral pill/Lore backdrops and below their actions. It travels directly between all four targets in 240ms and morphs from the external Lore circle into the compact fourth-slot capsule. Retargeting starts at its current position and heads toward the latest tab without retaining travel in the previous direction; hiding it never retargets it to Home. Floating actions use ripple-free selectable semantics and subtle icon/label press scaling, so touch feedback cannot paint a second highlight. Solid high-container surfaces, a fine outline, restrained elevation, crossfading filled/outlined icons and press scaling keep both states consistent. Pill width, 16dp edge insets, and `AppFloatingNavigationActionGap` (14dp) stay fixed; the compact Lore target is 48dp. Placement follows layout direction, and selection semantics / spoken labels follow each persistent action. Progress is clamped and read during measurement, placement and graphics layers; neutral Lore elevation follows the shared contraction without per-frame composition. Classic ignores compact progress. Lore uses a subtle icon settling animation after initial content is ready. Lore restores the original blue/pale-blue/violet/red/gold/green multicolour aurora inside that same selection surface, with its original restrained 0.44 colour opacity and a softer broad highlight. Colour strength follows the actual indicator position with an eased blend, including interrupted tab changes, so no separate Lore highlight is painted. Cached diagonal/radial brushes and draw-only phase reads keep its 20-second round trip out of per-frame composition; the original sweep eases smoothly through both turnarounds, pauses while Lore is unselected and resumes from its retained position, and the parent selection shape clips both the external circle and compact capsule. `NavigationChromeMetrics` and `appBottomChromeContentPadding()` keep app and feature overlays clear of the selected chrome and its matching mini-player geometry.
@@ -86,6 +90,8 @@ src/main/res/
 Bitmap callers can choose a shorter per-attempt timeout while retaining outer cancellation; successful-source callbacks identify the original source rather than its transport route.
 
 ## Testing notes
+
+- `EchoCharacterModelTest` checks that every manifest frame ships as a WebP with its screen inside the frame and every clip as an MP4 with its screen tracked in every frame, and covers blinks, the LED grid (whole pixels from 3px apart), decode sizes, two mirrored eyes and the accent tint. `EchoMotionModelTest` covers sequences that play once and rest, loops, rejecting sequences with nowhere to rest, clip timing, and unpacking a stacked frame (colour above, alpha below, limited-range chroma).
 
 - TabletFeaturedRow packs a two-column feature beside later posters with caller-supplied spacing. Card-width callers may choose a narrower family maximum; tight slots retain their extent while centering the bounded surface. Actual shell mini-player visibility supplies tablet footer clearance. Brief artwork scaling is configurable while existing callers retain Fit.
 

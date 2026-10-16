@@ -80,6 +80,7 @@ import cx.aswin.boxlore.core.designsystem.theme.ShimmerScope
 import cx.aswin.boxlore.core.designsystem.theme.TrackScreenSession
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.prefs.ExploreDefaultTab
 import cx.aswin.boxlore.feature.explore.components.ExploreBrowseCardSkeleton
 import cx.aswin.boxlore.feature.explore.components.ExploreBrowseChromeState
 import cx.aswin.boxlore.feature.explore.components.ExploreBrowsePodcastCard
@@ -221,7 +222,9 @@ fun ExploreContent(
         }
 
         val isSearchModeActive = searchActive || state.searchQuery.isNotEmpty() || state.currentVibe != null
-        val browsePager = rememberExploreTabPagerState(state.selectedTab, active && !isSearchModeActive, onTabSelected)
+        val browsePager = rememberExploreTabPagerState(state.selectedTab, active && !isSearchModeActive && state.hasForYou, onTabSelected)
+        // Without Picked for you there is no For you tab, so Explore shows Top on its own.
+        val visibleTab = if (state.hasForYou) browsePager.visibleTab else ExploreDefaultTab.INDEX_TOP
         val forYouGridState = rememberLazyStaggeredGridState()
         val topGridState = rememberLazyStaggeredGridState()
         val searchGridState = rememberLazyStaggeredGridState()
@@ -229,7 +232,7 @@ fun ExploreContent(
         val gridState = when {
             state.currentVibe != null -> topicGridState
             isSearchModeActive -> searchGridState
-            browsePager.visibleTab == 1 -> forYouGridState
+            visibleTab == 1 -> forYouGridState
             else -> topGridState
         }
         val chromeState = remember { ExploreBrowseChromeState() }
@@ -825,6 +828,8 @@ fun ExploreContent(
             }
             if (isSearchModeActive) {
                 feed(state.selectedTab, gridState)
+            } else if (!state.hasForYou) {
+                feed(ExploreDefaultTab.INDEX_TOP, topGridState)
             } else {
                 HorizontalPager(
                     state = browsePager.pager,
@@ -917,7 +922,7 @@ fun ExploreContent(
                         }
 
                         // Genre filters (Top only).
-                        if (!isSearchModeActive && browsePager.visibleTab == 0) {
+                        if (!isSearchModeActive && visibleTab == 0) {
                             Spacer(modifier = Modifier.height(8.dp))
                             ExploreGenreSelector(
                                 selectedCategory = state.currentCategory,
@@ -926,7 +931,7 @@ fun ExploreContent(
                         }
 
                         // Mood shortcuts navigate; genre pills filter the Top feed.
-                        if (!isSearchModeActive && browsePager.visibleTab == 1 && state.suggestedVibes.isNotEmpty()) {
+                        if (!isSearchModeActive && visibleTab == 1 && state.suggestedVibes.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             ExploreVibeChipRow(
                                 vibes = state.suggestedVibes,
@@ -945,7 +950,7 @@ fun ExploreContent(
 
             // Centered Bottom FAB for switching between For You and Top (Material 3 Segmented Control FAB)
             AnimatedVisibility(
-                visible = !isSearchModeActive,
+                visible = !isSearchModeActive && state.hasForYou,
                 enter = fadeIn(),
                 exit = fadeOut(),
                 modifier = Modifier.align(Alignment.BottomCenter),

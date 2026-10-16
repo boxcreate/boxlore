@@ -120,6 +120,17 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 onSetContentLanguages = { languages ->
                     scope.launch { w.userPrefs.setContentLanguages(languages) }
                 },
+                discoverySections = settingsState.discoverySections,
+                onSetDiscoverySection = { section, on ->
+                    scope.launch {
+                        // A failed write keeps the stored value, which the switch keeps showing.
+                        try {
+                            w.userPrefs.setDiscoverySection(section, on)
+                        } catch (e: java.io.IOException) {
+                            android.util.Log.w("Settings", "LeaveMeAlone switch ${section.name} was not saved", e)
+                        }
+                    }
+                },
             ),
             appearanceSettings = buildAppearanceSettings(w),
             playbackSettings = buildPlaybackSettings(w),
@@ -182,6 +193,7 @@ private fun buildAppearanceSettings(w: NavGraphWiring): AppearanceSettings {
             heroCardStyle = settingsState.heroCardStyle,
             heroCoverShade = settingsState.heroCoverShade,
             savedCustomTheme = settingsState.savedCustomTheme,
+            discoverySections = settingsState.discoverySections,
         ),
         actions = AppearanceActions(
             onSetThemeConfig = { config -> scope.launch { userPrefs.setThemeConfig(config) } },

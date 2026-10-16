@@ -33,6 +33,10 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 
 `hero_card_style` / `home_hero_card_style`: `block`, `cover`, `tide`, `duotone`, `halo`, `marquee` (the names in Settings; stored keys `standard` and `classic` are reported as `block` and `cover`). `hero_colors` / `home_hero_colors`: `dark`, `artwork`, `theme` (App theme, the accent color), or `none` for Block, which takes no artwork colors. Marquee's **Full color** is the stored Dark choice, so it reports `dark`. `changed`: `style` or `colors`. `home_hero_style_selected` is skipped when a pick leaves the look unchanged. Tablets show Marquee as Cover; the event still reports the picked style.
 
+### LeaveMeAlone sections
+
+`section` on `recommendation_section_toggled`: `brief` (The Brief), `picked_for_you` (Home's Picked for you and Explore's For you tab), `because_you_like`, `time_of_day_picks` (the greeting and its curated rows) and `more_like_this` (Try these episodes on episode pages). `source`: `settings` (Settings › Library › LeaveMeAlone) or `brief_card` (the Brief card's Always hide, which is the same choice as turning The Brief off). `sections_off`: how many of the five are off after the change. A section that is off is hidden and makes no requests.
+
 ### content_type
 
 `podcast`, `episode`, `briefing`, `mixtape`, `announcement`, `unknown`
@@ -114,6 +118,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `custom_theme_editor_opened` | Custom theme editor becomes visible | entry_point:string | — | none |
 | `custom_theme_saved` | Custom theme preferences saved successfully | background_style:string | — | none |
 | `home_hero_style_selected` | Home hero card style or its colors picked in Settings › Appearance › Home | hero_card_style:string; hero_colors:string; hero_style_combo:string; changed:string | previous_hero_style_combo:string | none |
+| `recommendation_section_toggled` | A LeaveMeAlone switch flipped, or the Brief hidden from its card | section:string; enabled:bool; source:string; sections_off:int | — | none |
 | `feature_announcement_action` | In-app/feature announcement viewed/dismissed/acted | action:string | feature_id:string; category:string | none |
 | `offline_mode_entered` | App detected offline / offline UI | — | reason:string | none |
 | `player_chrome_interaction` | Mini/full player, control bar, or playback-route action | surface:string; action:string | screen:string; volume_control_available:bool | none |

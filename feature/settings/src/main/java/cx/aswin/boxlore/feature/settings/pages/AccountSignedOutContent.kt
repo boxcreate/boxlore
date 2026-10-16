@@ -1,46 +1,37 @@
 package cx.aswin.boxlore.feature.settings.pages
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Email
+import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -51,104 +42,61 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
-import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
 import cx.aswin.boxlore.feature.settings.R
 
+/**
+ * Signed out: "Your library, on every device" beside Echo, the three things that sync, then how to sign
+ * in. Before a method is picked there are three cards (Google, an email sign-in link, email and
+ * password); picking an email card opens its form in their place, with a way back to the cards (also
+ * on Back). The pick and anything typed survive rotation and resizing ([AccountAuthState] is saved).
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun ColumnScope.SignedOutContent(
-    authRepository: AuthRepository?,
-    state: AccountAuthState = rememberAccountAuthState(
-        authRepository = authRepository,
-    ),
-) {
-    val focusManager = LocalFocusManager.current
+internal fun ColumnScope.SignedOutContent(state: AccountAuthState) {
     val density = LocalDensity.current
-
     val actionButtonRequester = remember { BringIntoViewRequester() }
     val imeBottom = WindowInsets.ime.getBottom(density)
 
-    LaunchedEffect(state.isAwaitingVerification) {
-        if (state.isAwaitingVerification) {
-            focusManager.clearFocus()
-            state.isAnyInputFocused = false
-        }
-    }
-
     LaunchedEffect(imeBottom, state.isAnyInputFocused) {
-        if (imeBottom > 0 && state.isAnyInputFocused && !state.isAwaitingVerification) {
-            runCatching { actionButtonRequester.bringIntoView() }
-        }
+        if (imeBottom > 0 && state.isAnyInputFocused) runCatching { actionButtonRequester.bringIntoView() }
     }
+    BackHandler(enabled = state.methodChosen) { state.showMethods() }
 
-    AnimatedVisibility(
-        visible = !state.isAwaitingVerification,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically(),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            GoogleSignInButton(
-                isLoading = state.isGoogleLoading,
-                enabled = !state.isAnyLoading,
-                onClick = state::handleGoogleSignIn,
-            )
+    AccountHeader(stringResource(R.string.account_headline), subtitle = null, syncing = false)
+    AccountSyncTiles(state = null)
+    Text(stringResource(R.string.account_sign_in_label), Modifier.padding(top = 8.dp), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            Spacer(Modifier.height(14.dp))
-
-            Text(stringResource(R.string.account_email_methods), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            Spacer(Modifier.height(6.dp))
-        }
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-        ) {
-            AnimatedVisibility(
-                visible = !state.isAwaitingVerification,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    AccountAuthModeSelector(
-                        selected = state.activeAuthMode,
-                        onSelect = state::selectAuthMode,
+    if (!state.methodChosen) {
+        AccountMethodCards(state)
+    } else {
+        Surface(Modifier.fillMaxWidth().testTag("account_email_form"), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (!state.usePasswordAuth) {
+                    EmailLinkInputSection(state.toEmailInputState(), state.toEmailInputActions(actionButtonRequester), actionButtonRequester)
+                } else {
+                    val focusManager = LocalFocusManager.current
+                    PasswordAuthSection(
+                        state = state.toPasswordInputState(),
+                        actions = state.toPasswordInputActions(actionButtonRequester, onNextField = { focusManager.moveFocus(FocusDirection.Down) }),
+                        selectedMode = state.activeAuthMode,
+                        actionButtonRequester = actionButtonRequester,
                     )
-
-                    Spacer(Modifier.height(18.dp))
                 }
             }
-
-            PrimaryAuthCardBody(
-                state = state,
-                actionButtonRequester = actionButtonRequester,
-                focusManager = focusManager,
-            )
         }
     }
 
@@ -156,413 +104,102 @@ internal fun ColumnScope.SignedOutContent(
         prefix = stringResource(R.string.account_privacy_prefix),
         suffix = ".",
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        style = MaterialTheme.typography.bodySmall,
     )
 }
 
 @Composable
-private fun PrimaryAuthCardBody(
-    state: AccountAuthState,
-    actionButtonRequester: BringIntoViewRequester,
-    focusManager: FocusManager,
-) {
-    when {
-        state.isAwaitingVerification -> {
-            EmailVerificationPendingSection(
-                state = state,
-            )
+private fun AccountMethodCards(state: AccountAuthState) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AccountMethodCard(
+            title = stringResource(if (state.isGoogleLoading) R.string.account_google_connecting else R.string.account_google),
+            detail = stringResource(R.string.account_google_detail),
+            emphasized = true,
+            enabled = !state.isAnyLoading,
+            onClick = state::handleGoogleSignIn,
+            tag = "account_method_google",
+        ) {
+            Box(Modifier.size(36.dp).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                if (state.isGoogleLoading) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Image(painterResource(cx.aswin.boxlore.core.designsystem.R.drawable.ic_google_logo), contentDescription = null, modifier = Modifier.size(20.dp))
+                }
+            }
         }
-        state.magicLinkSent && !state.usePasswordAuth -> {
-            EmailLinkSentSection(
-                email = state.email,
-                isSignUp = false,
-                isAnyLoading = state.isAnyLoading,
-                onOpenEmail = { openGmailOrEmailApp(state.context, state.email) },
-                onUseDifferentEmail = state::resetToNewEmail,
-                onResendLink = state::submitEmailLink,
-            )
+        AccountMethodCard(stringResource(R.string.account_link), stringResource(R.string.account_link_detail), emphasized = false, enabled = !state.isAnyLoading, onClick = { state.chooseEmailMethod(password = false) }, tag = "account_method_link") {
+            AccountMethodIcon(Icons.Rounded.Email)
         }
-        !state.usePasswordAuth && state.activeAuthMode == AuthMode.SIGN_IN -> {
-            EmailLinkInputSection(
-                state = state.toEmailInputState(),
-                actions = state.toEmailInputActions(actionButtonRequester),
-                actionButtonRequester = actionButtonRequester,
-            )
+        AccountMethodCard(stringResource(R.string.account_password), stringResource(R.string.account_password_detail), emphasized = false, enabled = !state.isAnyLoading, onClick = { state.chooseEmailMethod(password = true) }, tag = "account_method_password") {
+            AccountMethodIcon(Icons.Rounded.Key)
         }
-        else -> {
-            PasswordAuthSection(
-                state = state.toPasswordInputState(),
-                actions = state.toPasswordInputActions(
-                    actionButtonRequester = actionButtonRequester,
-                    onNextField = { focusManager.moveFocus(FocusDirection.Down) },
-                ),
-                actionButtonRequester = actionButtonRequester,
-            )
-        }
+        state.errorMessage?.let { AuthErrorBanner(message = it) }
     }
 }
 
 @Composable
-private fun GoogleSignInButton(
-    isLoading: Boolean,
+private fun AccountMethodCard(
+    title: String,
+    detail: String,
+    emphasized: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
+    tag: String,
+    leading: @Composable () -> Unit,
 ) {
-    val googleShape = MaterialTheme.shapes.extraLarge
-    Card(
-        shape = googleShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .expressiveClickable(
-                shape = googleShape,
-                enabled = enabled,
-                onClick = onClick,
-            ),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (isLoading) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = "Connecting to Google...",
-                        modifier = Modifier.weight(1f, fill = false),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = GoogleSansWeight.medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Image(
-                        painter = painterResource(cx.aswin.boxlore.core.designsystem.R.drawable.ic_google_logo),
-                        contentDescription = "Google",
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = "Continue with Google",
-                        modifier = Modifier.weight(1f, fill = false),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = GoogleSansWeight.semiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmailLinkSentHeader(isSignUp: Boolean) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(40.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.Email,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = if (isSignUp) "Sign-up link sent!" else "Sign-in link sent!",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = GoogleSansWeight.bold,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = "Tap the link on this device to finish",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmailLinkSentAddressCard(email: String) {
+    val colors = MaterialTheme.colorScheme
     Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag(tag),
+        shape = RoundedCornerShape(24.dp),
+        color = if (emphasized) colors.primaryContainer else colors.surfaceContainerHigh,
+        contentColor = if (emphasized) colors.onPrimaryContainer else colors.onSurface,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Sent to",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = email,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = GoogleSansWeight.bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmailLinkSentSpamCard() {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.errorContainer,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .size(20.dp)
-                    .padding(top = 1.dp),
-            )
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Check your Spam or Junk folder",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = GoogleSansWeight.bold,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = stringResource(R.string.account_spam_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    lineHeight = 17.sp,
-                )
+        Row(Modifier.padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            leading()
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(detail, style = MaterialTheme.typography.bodySmall, color = if (emphasized) colors.onPrimaryContainer else colors.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-private fun EmailLinkSentFooter(
-    isAnyLoading: Boolean,
-    onUseDifferentEmail: () -> Unit,
-    onResendLink: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(onClick = onUseDifferentEmail) {
-            Text(
-                text = "Use different email",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        TextButton(
-            onClick = onResendLink,
-            enabled = !isAnyLoading,
-        ) {
-            Text(
-                text = "Resend link",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = GoogleSansWeight.bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
+private fun AccountMethodIcon(icon: ImageVector) {
+    Box(Modifier.size(36.dp).background(MaterialTheme.colorScheme.secondaryContainer, CircleShape), contentAlignment = Alignment.Center) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
     }
 }
 
 @Composable
-private fun EmailLinkSentSection(
-    email: String,
-    isSignUp: Boolean,
-    isAnyLoading: Boolean,
-    onOpenEmail: () -> Unit,
-    onUseDifferentEmail: () -> Unit,
-    onResendLink: () -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        EmailLinkSentHeader(isSignUp = isSignUp)
-
-        Spacer(Modifier.height(14.dp))
-
-        EmailLinkSentAddressCard(email = email)
-
-        Spacer(Modifier.height(12.dp))
-
-        EmailLinkSentSpamCard()
-
-        Spacer(Modifier.height(16.dp))
-
-        val isGmail = email.trim().endsWith("@gmail.com", ignoreCase = true) ||
-            email.trim().endsWith("@googlemail.com", ignoreCase = true)
-        Button(
-            onClick = onOpenEmail,
-            shape = MaterialTheme.shapes.large,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = if (isGmail) "Open Gmail" else "Open Email App",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-
-        Spacer(Modifier.height(6.dp))
-
-        EmailLinkSentFooter(
-            isAnyLoading = isAnyLoading,
-            onUseDifferentEmail = onUseDifferentEmail,
-            onResendLink = onResendLink,
-        )
-    }
-}
-
-@Composable
-private fun EmailLinkInputSection(
+private fun ColumnScope.EmailLinkInputSection(
     state: EmailInputState,
     actions: EmailInputActions,
     actionButtonRequester: BringIntoViewRequester,
 ) {
-    Text(
-        text = if (state.isSignUp) {
-            "Enter your email to create an account. We'll send an instant verification link."
-        } else {
-            stringResource(R.string.account_email_hint)
-        },
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-
-    Spacer(Modifier.height(12.dp))
-
+    Text(stringResource(R.string.account_link), style = MaterialTheme.typography.titleMedium)
     OutlinedTextField(
         value = state.email,
         onValueChange = actions.onEmailChange,
-        label = { Text("Email address") },
+        label = { Text(stringResource(R.string.account_email)) },
         leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
         singleLine = true,
         shape = MaterialTheme.shapes.large,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Email,
-            imeAction = ImeAction.Done,
-        ),
-        keyboardActions = KeyboardActions(
-            onDone = { actions.onSendLink() },
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    actions.onInputFocused()
-                }
-            },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { actions.onSendLink() }),
+        modifier = Modifier.fillMaxWidth().testTag("account_email_field").onFocusChanged { if (it.isFocused) actions.onInputFocused() },
     )
-
-    if (state.errorMessage != null) {
-        AuthErrorBanner(message = state.errorMessage)
-    }
-
-    Spacer(Modifier.height(16.dp))
-
-    Button(
-        onClick = actions.onSendLink,
+    state.errorMessage?.let { AuthErrorBanner(message = it) }
+    AccountPrimaryButton(
+        label = stringResource(R.string.account_send_link),
+        loading = state.isLoading,
         enabled = !state.isLoading && state.email.isNotBlank(),
-        shape = MaterialTheme.shapes.large,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .bringIntoViewRequester(actionButtonRequester),
-    ) {
-        if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        } else {
-            Text(
-                text = if (state.isSignUp) "Send Sign-Up Link" else "Send Sign-In Link",
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-    }
-
-    Spacer(Modifier.height(14.dp))
-
-    OutlinedButton(
-        onClick = actions.onSwitchToPassword,
-        shape = MaterialTheme.shapes.large,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Lock,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = if (state.isSignUp) "Sign up with password instead" else "Sign in with password instead",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = GoogleSansWeight.medium,
-        )
-    }
+        onClick = actions.onSendLink,
+        modifier = Modifier.bringIntoViewRequester(actionButtonRequester).testTag("account_send_link"),
+    )
+    AccountOtherWays(actions.onOtherWays)
 }
 
 private data class PasswordFieldState(
@@ -576,9 +213,9 @@ private data class PasswordFieldState(
 private fun PasswordTextField(
     state: PasswordFieldState,
     onInputFocused: () -> Unit,
-    label: String = "Password",
-    imeAction: ImeAction = ImeAction.Done,
-    onImeAction: () -> Unit = {},
+    label: String,
+    imeAction: ImeAction,
+    onImeAction: () -> Unit,
 ) {
     OutlinedTextField(
         value = state.value,
@@ -588,237 +225,91 @@ private fun PasswordTextField(
         trailingIcon = {
             IconButton(onClick = state.onToggleVisible) {
                 Icon(
-                    imageVector = if (state.isVisible) {
-                        Icons.Rounded.VisibilityOff
-                    } else {
-                        Icons.Rounded.Visibility
-                    },
-                    contentDescription = if (state.isVisible) "Hide password" else "Show password",
+                    imageVector = if (state.isVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                    contentDescription = stringResource(if (state.isVisible) R.string.account_hide_password else R.string.account_show_password),
                 )
             }
         },
-        visualTransformation = if (state.isVisible) {
-            VisualTransformation.None
-        } else {
-            PasswordVisualTransformation()
-        },
+        visualTransformation = if (state.isVisible) VisualTransformation.None else PasswordVisualTransformation(),
         singleLine = true,
         shape = MaterialTheme.shapes.large,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Password,
-            imeAction = imeAction,
-        ),
-        keyboardActions = KeyboardActions(
-            onAny = { onImeAction() },
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    onInputFocused()
-                }
-            },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = imeAction),
+        keyboardActions = KeyboardActions(onAny = { onImeAction() }),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { if (it.isFocused) onInputFocused() },
     )
 }
 
 @Composable
-private fun EmailTextField(
-    email: String,
-    onEmailChange: (String) -> Unit,
-    onNext: () -> Unit,
-    onInputFocused: () -> Unit,
+private fun ColumnScope.PasswordAuthSection(
+    state: PasswordInputState,
+    actions: PasswordInputActions,
+    selectedMode: AuthMode,
+    actionButtonRequester: BringIntoViewRequester,
 ) {
+    AccountAuthModeSelector(selected = selectedMode, onSelect = actions.onSelectMode)
     OutlinedTextField(
-        value = email,
-        onValueChange = onEmailChange,
-        label = { Text("Email address") },
+        value = state.email,
+        onValueChange = actions.onEmailChange,
+        label = { Text(stringResource(R.string.account_email)) },
         leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
         singleLine = true,
         shape = MaterialTheme.shapes.large,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Email,
-            imeAction = ImeAction.Next,
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = { onNext() },
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    onInputFocused()
-                }
-            },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { actions.onNextField() }),
+        modifier = Modifier.fillMaxWidth().testTag("account_email_field").onFocusChanged { if (it.isFocused) actions.onInputFocused() },
     )
-}
-
-@Composable
-private fun PasswordForgotPasswordRow(
-    isLoading: Boolean,
-    onForgotPassword: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 2.dp),
-        horizontalArrangement = Arrangement.End,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(
-            onClick = onForgotPassword,
-            enabled = !isLoading,
-        ) {
-            Text(
-                text = "Forgot password?",
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-    }
-}
-
-@Composable
-private fun PasswordSubmitButton(
-    isSignUp: Boolean,
-    isLoading: Boolean,
-    enabled: Boolean,
-    onSubmit: () -> Unit,
-    actionButtonRequester: BringIntoViewRequester,
-) {
-    Button(
-        onClick = onSubmit,
-        enabled = enabled,
-        shape = MaterialTheme.shapes.large,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .bringIntoViewRequester(actionButtonRequester),
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        } else {
-            Text(
-                text = if (isSignUp) "Create Account" else "Sign In",
-                fontWeight = GoogleSansWeight.bold,
-            )
-        }
-    }
-}
-
-@Composable
-private fun PasswordAuthSection(
-    state: PasswordInputState,
-    actions: PasswordInputActions,
-    actionButtonRequester: BringIntoViewRequester,
-) {
-    Text(
-        text = if (state.isSignUp) {
-            "Enter your email and create a password to set up your account."
-        } else {
-            "Enter your email and password to access your account."
-        },
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-
-    Spacer(Modifier.height(12.dp))
-
-    EmailTextField(
-        email = state.email,
-        onEmailChange = actions.onEmailChange,
-        onNext = actions.onNextField,
-        onInputFocused = actions.onInputFocused,
-    )
-
-    Spacer(Modifier.height(12.dp))
-
     PasswordTextField(
-        state = PasswordFieldState(
-            value = state.password,
-            isVisible = state.passwordVisible,
-            onValueChange = actions.onPasswordChange,
-            onToggleVisible = actions.onTogglePasswordVisible,
-        ),
+        state = PasswordFieldState(state.password, state.passwordVisible, actions.onPasswordChange, actions.onTogglePasswordVisible),
         onInputFocused = actions.onInputFocused,
-        label = "Password",
+        label = stringResource(R.string.account_password_label),
         imeAction = if (state.isSignUp) ImeAction.Next else ImeAction.Done,
         onImeAction = if (state.isSignUp) actions.onNextField else actions.onSubmit,
     )
-
     if (state.isSignUp) {
         Text(
-            text = "Must be at least 6 characters",
+            stringResource(R.string.account_password_rule),
+            Modifier.padding(start = 12.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 12.dp, top = 4.dp),
         )
-
-        Spacer(Modifier.height(10.dp))
-
         PasswordTextField(
-            state = PasswordFieldState(
-                value = state.confirmPassword,
-                isVisible = state.confirmPasswordVisible,
-                onValueChange = actions.onConfirmPasswordChange,
-                onToggleVisible = actions.onToggleConfirmPasswordVisible,
-            ),
+            state = PasswordFieldState(state.confirmPassword, state.confirmPasswordVisible, actions.onConfirmPasswordChange, actions.onToggleConfirmPasswordVisible),
             onInputFocused = actions.onInputFocused,
-            label = "Confirm password",
+            label = stringResource(R.string.account_confirm_password),
             imeAction = ImeAction.Done,
             onImeAction = actions.onSubmit,
         )
+    } else {
+        TextButton(actions.onForgotPassword, Modifier.align(Alignment.End).heightIn(min = 48.dp), enabled = !state.isLoading) {
+            Text(stringResource(R.string.account_forgot_password))
+        }
     }
-
-    if (!state.isSignUp) {
-        PasswordForgotPasswordRow(
-            isLoading = state.isLoading,
-            onForgotPassword = actions.onForgotPassword,
-        )
-    }
-
-    if (state.errorMessage != null) {
-        AuthErrorBanner(message = state.errorMessage)
-    }
-
-    Spacer(Modifier.height(16.dp))
-
-    val isSubmitEnabled = !state.isLoading &&
-        state.email.isNotBlank() &&
-        state.password.isNotBlank() &&
-        (!state.isSignUp || state.confirmPassword.isNotBlank())
-    PasswordSubmitButton(
-        isSignUp = state.isSignUp,
-        isLoading = state.isLoading,
-        enabled = isSubmitEnabled,
-        onSubmit = actions.onSubmit,
-        actionButtonRequester = actionButtonRequester,
+    state.errorMessage?.let { AuthErrorBanner(message = it) }
+    AccountPrimaryButton(
+        label = stringResource(if (state.isSignUp) R.string.account_create else R.string.account_sign_in),
+        loading = state.isLoading,
+        enabled = !state.isLoading && state.email.isNotBlank() && state.password.isNotBlank() && (!state.isSignUp || state.confirmPassword.isNotBlank()),
+        onClick = actions.onSubmit,
+        modifier = Modifier.bringIntoViewRequester(actionButtonRequester).testTag("account_password_submit"),
     )
+    AccountOtherWays(actions.onOtherWays)
+}
 
-    if (!state.isSignUp) {
-        Spacer(Modifier.height(14.dp))
+@Composable
+private fun ColumnScope.AccountOtherWays(onClick: () -> Unit) {
+    TextButton(onClick, Modifier.align(Alignment.CenterHorizontally).heightIn(min = 48.dp).testTag("account_other_ways")) {
+        Text(stringResource(R.string.account_other_ways))
+    }
+}
 
-        OutlinedButton(
-            onClick = actions.onSwitchToEmailLink,
-            shape = MaterialTheme.shapes.large,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Email,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "Email me a sign-in link instead",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = GoogleSansWeight.medium,
-            )
+/** The page's main action: full width, pill-shaped, a spinner while it works. */
+@Composable
+internal fun AccountPrimaryButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, loading: Boolean = false, enabled: Boolean = true) {
+    Button(onClick, modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = enabled, shape = CircleShape) {
+        if (loading) {
+            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+        } else {
+            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = GoogleSansWeight.medium)
         }
     }
 }

@@ -83,5 +83,52 @@ class HomeViewModelBriefingTest {
         job.cancel()
     }
 
+    @Test
+    fun `a switched-off Brief clears what was shown and never fetches`() = runTest {
+        collectHomeBriefings(flowOf(null), briefingState, chaptersState, { error("must not fetch") }, { error("must not fetch") })
+        assertNull(briefingState.value)
+        assertEquals(emptyList<Chapter>(), chaptersState.value)
+    }
+
+    @Test
+    fun `the Brief loads when switched back on and clears when switched off`() = runTest {
+        val on = MutableStateFlow(false)
+        val fetched = mutableListOf<String>()
+        briefingState.value = null
+        val job = launch {
+            collectHomeBriefings(briefingRegionsWhileOn(MutableStateFlow("in"), on), briefingState, chaptersState, { region ->
+                fetched += region
+                brief(region)
+            }, { chapters })
+        }
+        runCurrent()
+        assertEquals(emptyList<String>(), fetched)
+
+        on.value = true
+        runCurrent()
+        assertEquals(listOf("in"), fetched)
+        assertEquals(brief("in"), briefingState.value)
+
+        on.value = false
+        runCurrent()
+        assertNull(briefingState.value)
+        assertEquals(listOf("in"), fetched)
+        job.cancel()
+    }
+
+    @Test
+    fun `repeated regions still refresh the Brief at each daypart`() = runTest {
+        val regions = MutableSharedFlow<String>()
+        val seen = mutableListOf<String?>()
+        val job = launch { briefingRegionsWhileOn(regions, MutableStateFlow(true)).collect { seen += it } }
+        runCurrent()
+        regions.emit("in")
+        runCurrent()
+        regions.emit("in")
+        runCurrent()
+        assertEquals(listOf<String?>("in", "in"), seen)
+        job.cancel()
+    }
+
     private fun brief(region: String) = Briefing("2026-10-11", region, "Daily news", "", "https://example.invalid/audio", "")
 }

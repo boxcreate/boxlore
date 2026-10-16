@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library import: where the listener's shows are now. -->
+    <string name="import_pick_title">Bring your shows</string>
+    <string name="import_pick_body">Where are your podcasts now?</string>
+    <string name="import_option_account">In my boxlore account</string>
+    <string name="import_option_account_body">Sign in to sync your shows, queue and progress</string>
+    <string name="import_option_backup">In a boxlore backup</string>
+    <string name="import_option_backup_body">A .json file you saved from boxlore</string>
+    <string name="import_option_opml">In another podcast app</string>
+    <string name="import_option_opml_body">An OPML file from Pocket Casts, AntennaPod or most other apps</string>
+    <string name="import_opml_hint">Look for Export OPML in your podcast app’s settings.</string>
+    <string name="import_close">Close</string>
+
+    <!-- Library import: working. -->
+    <string name="import_reading_title">Reading your file</string>
+    <string name="import_importing_title">Importing your shows</string>
+    <string name="import_restoring_title">Restoring your backup</string>
+    <string name="import_marking_title">Marking old episodes played</string>
+    <plurals name="import_progress_count">
+        <item quantity="one">%1$d of %2$d show</item>
+        <item quantity="other">%1$d of %2$d shows</item>
+    </plurals>
+    <string name="import_progress_percent">%d%%</string>
+    <string name="import_now_subscribing">Subscribing to %s</string>
+    <string name="import_now_marking">Marking %s played</string>
+    <string name="import_now_refreshing">Getting episodes for %s</string>
+    <string name="import_step_read">Read your file</string>
+    <plurals name="import_step_read_done">
+        <item quantity="one">%d show found</item>
+        <item quantity="other">%d shows found</item>
+    </plurals>
+    <string name="import_step_subscribe">Subscribe to your shows</string>
+    <plurals name="import_step_subscribe_done">
+        <item quantity="one">%d show subscribed</item>
+        <item quantity="other">%d shows subscribed</item>
+    </plurals>
+    <string name="import_step_choose">Choose what to mark played</string>
+    <string name="import_step_mark">Mark old episodes played</string>
+    <string name="import_step_restore">Restore your shows and history</string>
+    <string name="import_step_latest">Get the latest episodes</string>
+    <string name="import_step_status_done">Done</string>
+    <string name="import_step_status_now">In progress</string>
+    <string name="import_step_status_next">Up next</string>
+
+    <!-- Library import: marking old episodes played. -->
+    <string name="import_fresh_title">Start fresh?</string>
+    <string name="import_fresh_body">Mark old episodes played, so your queue starts with what’s new.</string>
+    <plurals name="import_fresh_all">
+        <item quantity="one">All %d show</item>
+        <item quantity="other">All %d shows</item>
+    </plurals>
+    <string name="import_fresh_selected">%d selected</string>
+    <plurals name="import_fresh_confirm">
+        <item quantity="one">Mark %d show played</item>
+        <item quantity="other">Mark %d shows played</item>
+    </plurals>
+    <string name="import_fresh_skip">Keep everything unplayed</string>
+
+    <!-- Library import: done. -->
+    <string name="import_done_title">Your shows are in</string>
+    <string name="import_done_backup_title">Your backup is restored</string>
+    <string name="import_done_body">Ready when you are.</string>
+    <plurals name="import_done_subscribed">
+        <item quantity="one">show subscribed</item>
+        <item quantity="other">shows subscribed</item>
+    </plurals>
+    <string name="import_done_marked">marked played</string>
+    <string name="import_notify_body">Some shows have alerts or auto-downloads. They need notifications to work.</string>
+    <string name="import_notify_allow">Allow notifications</string>
+    <string name="import_notify_settings">Open settings</string>
+    <string name="import_continue">Continue</string>
+
+    <!-- Library import: failed. -->
+    <string name="import_failed_unreadable_title">Couldn’t open that file</string>
+    <string name="import_failed_unreadable_body">boxlore couldn’t read it.</string>
+    <string name="import_failed_no_feeds_title">No shows in that file</string>
+    <string name="import_failed_no_feeds_body">It doesn’t list any podcast feeds.</string>
+    <string name="import_failed_unreachable_title">Couldn’t add those shows</string>
+    <string name="import_failed_unreachable_body">None of the shows in that file could be reached. Check your connection and try again.</string>
+    <string name="import_failed_stopped_title">Import stopped partway</string>
+    <string name="import_failed_stopped_body">Shows added before it stopped are in your library. Try again to add the rest.</string>
+    <string name="import_failed_marking_title">Couldn’t mark everything played</string>
+    <string name="import_failed_marking_body">Your shows are subscribed, but some old episodes are still unplayed.</string>
+    <string name="import_failed_backup_title">Couldn’t restore that backup</string>
+    <string name="import_failed_backup_body">Check that it’s a .json backup from boxlore, then try again.</string>
+    <string name="import_unchanged">Nothing in your library changed.</string>
+    <string name="import_file_hint">Use an .opml file from your podcast app, or a .json backup from boxlore.</string>
+    <string name="import_choose_another">Choose another file</string>
+    <string name="import_try_again">Try again</string>
+</resources>

@@ -50,7 +50,7 @@ internal data class EmailInputState(
 internal data class EmailInputActions(
     val onEmailChange: (String) -> Unit,
     val onSendLink: () -> Unit,
-    val onSwitchToPassword: () -> Unit,
+    val onOtherWays: () -> Unit,
     val onInputFocused: () -> Unit,
 )
 
@@ -73,7 +73,8 @@ internal data class PasswordInputActions(
     val onToggleConfirmPasswordVisible: () -> Unit = {},
     val onForgotPassword: () -> Unit,
     val onSubmit: () -> Unit,
-    val onSwitchToEmailLink: () -> Unit,
+    val onOtherWays: () -> Unit,
+    val onSelectMode: (AuthMode) -> Unit,
     val onInputFocused: () -> Unit,
     val onNextField: () -> Unit,
 )
@@ -141,6 +142,7 @@ internal data class SavedAccountAuthState(
     val errorMessage: String? = null,
     val isAwaitingVerification: Boolean = false,
     val resendCooldownSeconds: Int = 0,
+    val methodChosen: Boolean = false,
 )
 
 internal class AccountAuthState(
@@ -153,6 +155,9 @@ internal class AccountAuthState(
 ) {
     var activeAuthMode by mutableStateOf(initialState.activeAuthMode)
     var usePasswordAuth by mutableStateOf(initialState.usePasswordAuth)
+
+    /** The listener picked email (a link or a password) from the sign-in cards; the cards return with [showMethods]. */
+    var methodChosen by mutableStateOf(initialState.methodChosen)
     var isAnyInputFocused by mutableStateOf(false)
 
     var email by mutableStateOf(initialState.email)
@@ -489,6 +494,7 @@ internal class AccountAuthState(
                     state.errorMessage,
                     state.isAwaitingVerification,
                     state.resendCooldownSeconds,
+                    state.methodChosen,
                 )
             },
             restore = { list ->
@@ -505,44 +511,45 @@ internal class AccountAuthState(
     }
 }
 
+/** Email me a sign-in link (one email field), or with [password] sign in or create an account. */
+internal fun AccountAuthState.chooseEmailMethod(password: Boolean) {
+    usePasswordAuth = password
+    if (!password) activeAuthMode = AuthMode.SIGN_IN
+    methodChosen = true
+    errorMessage = null
+}
+
+/** Back to the sign-in cards; what was typed stays. */
+internal fun AccountAuthState.showMethods() {
+    methodChosen = false
+    isAnyInputFocused = false
+    errorMessage = null
+    focusManager.clearFocus()
+}
+
 private fun restoreSavedAccountAuthState(list: List<*>): SavedAccountAuthState {
     val activeAuthMode = (list.getOrNull(0) as? String)?.let {
         runCatching { AuthMode.valueOf(it) }.getOrNull()
     } ?: AuthMode.SIGN_IN
-    val usePasswordAuth = list.getOrNull(1) as? Boolean ?: false
-    val email = (list.getOrNull(2) as? String).orEmpty()
-    val isLegacyNineItem = list.size >= 9 && list.getOrNull(3) is String
-
-    return if (isLegacyNineItem) {
-        SavedAccountAuthState(
-            activeAuthMode = activeAuthMode,
-            usePasswordAuth = usePasswordAuth,
-            email = email,
-            password = "",
-            confirmPassword = "",
-            passwordVisible = list.getOrNull(5) as? Boolean ?: false,
-            confirmPasswordVisible = list.getOrNull(6) as? Boolean ?: false,
-            magicLinkSent = list.getOrNull(7) as? Boolean ?: false,
-            errorMessage = list.getOrNull(8) as? String,
-            isAwaitingVerification = false,
-            resendCooldownSeconds = 0,
-        )
-    } else {
-        SavedAccountAuthState(
-            activeAuthMode = activeAuthMode,
-            usePasswordAuth = usePasswordAuth,
-            email = email,
-            password = "",
-            confirmPassword = "",
-            passwordVisible = list.getOrNull(3) as? Boolean ?: false,
-            confirmPasswordVisible = list.getOrNull(4) as? Boolean ?: false,
-            magicLinkSent = list.getOrNull(5) as? Boolean ?: false,
-            errorMessage = list.getOrNull(6) as? String,
-            isAwaitingVerification = list.getOrNull(7) as? Boolean ?: false,
-            resendCooldownSeconds = (list.getOrNull(8) as? Number)?.toInt() ?: 0,
-        )
-    }
+    // The old nine-item layout kept the password and its confirmation at 3 and 4; later items sat two further on.
+    val legacy = if (list.size >= 9 && list.getOrNull(3) is String) 2 else 0
+    return SavedAccountAuthState(
+        activeAuthMode = activeAuthMode,
+        usePasswordAuth = list.flagAt(1),
+        email = (list.getOrNull(2) as? String).orEmpty(),
+        password = "",
+        confirmPassword = "",
+        passwordVisible = list.flagAt(3 + legacy),
+        confirmPasswordVisible = list.flagAt(4 + legacy),
+        magicLinkSent = list.flagAt(5 + legacy),
+        errorMessage = list.getOrNull(6 + legacy) as? String,
+        isAwaitingVerification = legacy == 0 && list.flagAt(7),
+        resendCooldownSeconds = if (legacy == 0) (list.getOrNull(8) as? Number)?.toInt() ?: 0 else 0,
+        methodChosen = legacy == 0 && list.flagAt(9),
+    )
 }
+
+private fun List<*>.flagAt(index: Int): Boolean = getOrNull(index) as? Boolean ?: false
 
 private suspend fun executePasswordAuth(
     authRepository: AuthRepository?,
@@ -568,10 +575,7 @@ internal fun AccountAuthState.toEmailInputActions(actionButtonRequester: BringIn
         errorMessage = null
     },
     onSendLink = ::submitEmailLink,
-    onSwitchToPassword = {
-        usePasswordAuth = true
-        errorMessage = null
-    },
+    onOtherWays = { showMethods() },
     onInputFocused = {
         isAnyInputFocused = true
         scope.launch { runCatching { actionButtonRequester.bringIntoView() } }
@@ -609,10 +613,8 @@ internal fun AccountAuthState.toPasswordInputActions(
     onToggleConfirmPasswordVisible = { confirmPasswordVisible = !confirmPasswordVisible },
     onForgotPassword = ::handleForgotPassword,
     onSubmit = ::submitPasswordAuth,
-    onSwitchToEmailLink = {
-        usePasswordAuth = false
-        errorMessage = null
-    },
+    onOtherWays = { showMethods() },
+    onSelectMode = ::selectAuthMode,
     onInputFocused = {
         isAnyInputFocused = true
         scope.launch { runCatching { actionButtonRequester.bringIntoView() } }

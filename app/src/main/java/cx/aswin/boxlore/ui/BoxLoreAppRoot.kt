@@ -389,6 +389,7 @@ fun BoxLoreAppRoot(
     val restartForgottenEpisodes by userPrefs.restartForgottenEpisodesStream.collectAsState(initial = true)
     val sameShowQueueOnly by userPrefs.sameShowQueueOnlyStream.collectAsState(initial = false)
     val homeShortcutsInLibrary by userPrefs.homeShortcutsInLibraryStream.collectAsState(initial = false)
+    val discoverySections by userPrefs.discoverySectionsStream.collectAsState(initial = cx.aswin.boxlore.core.prefs.DiscoverySections())
     val useDynamicColor by userPrefs.useDynamicColorStream.collectAsState(
         initial = remember { userPrefs.cachedUseDynamicColor },
     )
@@ -694,6 +695,7 @@ fun BoxLoreAppRoot(
                     restartForgottenEpisodes = restartForgottenEpisodes,
                     sameShowQueueOnly = sameShowQueueOnly,
                     homeShortcutsInLibrary = homeShortcutsInLibrary,
+                    discoverySections = discoverySections,
                     widgetAppearance = widgetAppearance,
                     exploreDefaultTab = exploreDefaultTab,
                     subscriptionsDefaultTab = subscriptionsDefaultTab,
@@ -978,6 +980,7 @@ fun BoxLoreAppRoot(
                         val fromOnboarding = resolveIsFromOnboarding(onboardingCompleted, opmlImportSource)
                         navController.navigate("settings?page=account&fromOnboarding=$fromOnboarding&fromImport=true")
                     },
+                    onChooseAnotherFile = { opmlImportState = OpmlImportState.ShowSelector },
                 ),
             )
         }

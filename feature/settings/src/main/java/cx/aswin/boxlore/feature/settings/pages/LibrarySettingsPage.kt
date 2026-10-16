@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.RssFeed
@@ -25,10 +26,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cx.aswin.boxlore.core.designsystem.components.ContentRegionLanguagePicker
 import cx.aswin.boxlore.core.designsystem.theme.GoogleSansWeight
 import cx.aswin.boxlore.core.designsystem.theme.expressiveClickable
+import cx.aswin.boxlore.feature.settings.R
 import cx.aswin.boxlore.feature.settings.components.SettingsContent
 import cx.aswin.boxlore.feature.settings.components.SettingsDivider
 import cx.aswin.boxlore.feature.settings.components.SettingsGroup
@@ -50,6 +53,7 @@ internal fun LibrarySettingsPage(
     discoveryPreferences: LibraryDiscoveryPreferences,
     onAddRssClick: () -> Unit,
     onBack: () -> Unit,
+    onOpenRecommendations: () -> Unit = {},
 ) {
     var isCountryFaqExpanded by rememberSaveable { mutableStateOf(false) }
     val collapseCountryFaq = { isCountryFaqExpanded = false }
@@ -79,6 +83,19 @@ internal fun LibrarySettingsPage(
                 expanded = isCountryFaqExpanded,
                 onExpand = { isCountryFaqExpanded = true },
                 onCollapse = collapseCountryFaq,
+            )
+        }
+
+        // Its own card, apart from region and languages: it switches suggestions off app-wide.
+        SettingsGroup {
+            SettingsNavigationRow(
+                title = stringResource(R.string.recommendations_title),
+                supportingText = stringResource(R.string.recommendations_row_description),
+                icon = Icons.Rounded.AutoAwesome,
+                onClick = {
+                    collapseCountryFaq()
+                    onOpenRecommendations()
+                },
             )
         }
 

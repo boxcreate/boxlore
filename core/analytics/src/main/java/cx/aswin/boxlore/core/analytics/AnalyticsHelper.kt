@@ -682,6 +682,14 @@ object AnalyticsHelper : Analytics {
 
     fun syncHomeHeroStylePersonProperties(style: String?, shade: String?) = AppearanceAnalyticsTracks.syncHomeHeroStylePersonProperties(style, shade)
 
+    /** A LeaveMeAlone switch or the Brief card's Always hide; [source] is `settings` or `brief_card`. */
+    fun trackRecommendationSectionToggled(
+        section: cx.aswin.boxlore.core.prefs.DiscoverySection,
+        enabled: Boolean,
+        source: String,
+        sectionsOff: Int,
+    ) = RecommendationsAnalyticsTracks.trackSectionToggled(section, enabled, source, sectionsOff)
+
     /**
      * The `support-world` variant for this person when it is one of [knownVariants], or null before
      * flags load or for an unknown value. Only a known variant records an exposure. Read once per visit.

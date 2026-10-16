@@ -30,8 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add a tablet-only alpha startup screen with persistent acknowledgment before Welcome. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Home hero card styles Cover (replaces Classic), Tide, Duotone, Halo and Marquee alongside Block, each with its own skeleton and `HeroCoverShade` colour options. Marquee adds a pinned cover, frosted top bar, scroll stop, auto-advance and label chips. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Settings Appearance overview with Home, Player, Navigation and Text pages and picture tiles. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- `EchoCharacter` in `:core:designsystem`: manifest sequences of stills and alpha-packed MP4 motion clips decoded with `MediaCodec`, LED eyes on the tracked screen behind a glass mask, eye idle scripts, theme-tinted accents and a stage shape; `LocalEchoMotion` holds Echo still in tests. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Library import screens in `:app` (`ImportPage`, `ImportFlowModel`): Echo on its stage, progress checklist, Start fresh, done and failure screens, with copy in `library_import.xml` and `ImportDialogAdaptiveTest` window-transition coverage. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Sixteen complete light/dark theme presets in Minimal, Colorful and Bold collections. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add hermetic JVM coverage for setup actions, button semantics, narrow and enlarged-text layouts, first-line dismissal alignment and RTL geometry. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Settings › Library › LeaveMeAlone (`RecommendationsSettingsPage`, `DiscoverySections` in `:core:prefs`) turns off the Brief, Picked for you and Explore's For you tab, Because you like, time-of-day rows and episode pages' Try these episodes; sections that are off make no requests (`collectDiscoverySection`). Appearance › Home links to it. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `recommendation_section_toggled` analytics event for each switch and for the Brief card's Always hide. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - Replace blanket R8 keeps with scoped reflection and storage contracts, enable resource shrinking with dynamic-resource retention, and exclude the debug App Check SDK from release builds. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -66,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adapt Home modules, discovery rows, Settings, reading surfaces, dialogs and keyboard/mouse input to available tablet panes. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - `HeroCardStyle.DEFAULT` is Cover on the Artwork shade, and `HeroCardStylePreferences` saves only picked values. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - On tablets the artwork hero cards use the Hero width bound and Marquee falls back to Cover (`homeHeroStyle`); below `ShortHeroHeight` (tabletop folds) Duotone moves its time into the copy and Halo shows as Cover. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Onboarding Welcome and the Echo conversation use the shared `EchoCharacter`; 8.7 MB of onboarding strips and the Settings Echo atlas are replaced by 1.5 MB of shared assets. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Account & sync page redesigned: sign-in method cards, check-email screens, one sync status panel, and animated sync tiles with a "No need to wait" note during onboarding; `AccountPageAdaptiveTest` covers window transitions. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Streamlined automatic download settings with grouped controls, a connected episode-limit selector, and a separate help dialog. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Clarified that background episode checks are an optional backup when show notifications are off or do not arrive. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Appearance now has a dedicated Theme page with horizontal split-mode previews and one inline color-customization section. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -74,7 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace the Home setup banner with a responsive Material 3 split layout, neutral raised action tiles, localized copy and an aligned dismissal control; preserve existing callbacks, eligibility, analytics and hero presentation. ([#1116](https://github.com/boxcreate/boxlore/pull/1116)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `CrossPromotionDetector` is rebuilt on `CrossPromotionTitles`, `CrossPromotionNames` and `CrossPromotionDescription`; recall rose from about 0.2 to 0.83–0.91 at 0.92–0.98 precision on 817 hand-labelled catalog episodes (`CrossPromotionCorpusTest`). `CrossPromotionResolver` searches shorter name forms and matches colon, host and parenthetical titles. ([#1120](https://github.com/boxcreate/boxlore/pull/1120)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Info pages, the player and hero cards share one artwork colour picker (`selectArtworkSeed`, `artworkColorScheme`, `ArtworkShade`); the info and player phone goldens are re-recorded for it. ([#1121](https://github.com/boxcreate/boxlore/pull/1121)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- `PodcastRepository.getHomeRecommendations` replaces `getHomeBootstrapData` and asks bootstrap for recommendations only (`include`); the Brief card's Always hide is now the LeaveMeAlone switch and can be undone. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- Simplify Echo clip decoding in `EchoClipFrames` to resolve SonarCloud issues; behaviour unchanged. ([#1125](https://github.com/boxcreate/boxlore/pull/1125)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Preserve WorkManager input-merger constructors in optimized releases so one-time download and notification-hydration work can start. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Repair existing RSS imports without catalogue matching or changing saved show and episode identities. ([#1098](https://github.com/boxcreate/boxlore/pull/1098)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
@@ -97,6 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User-facing strings use boxlore, all lowercase. ([#1117](https://github.com/boxcreate/boxlore/pull/1117)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Keep tablet playback controls clear of system navigation, preserve ranked result ordering and improve artwork-themed dark-mode foregrounds. ([#1118](https://github.com/boxcreate/boxlore/pull/1118)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Halo's Play badge is no longer clipped. ([#1119](https://github.com/boxcreate/boxlore/pull/1119)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- A JSON backup the restore rejects no longer shows "You're all set" with -1 shows (`jsonImportOutcome`). ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
+- Import failures no longer show raw exception text, and "Nothing in your library changed" appears only when nothing was written. ([#1124](https://github.com/boxcreate/boxlore/pull/1124)) <!-- impact:user-impact-high --> <!-- copy:locked -->
 - Explain app-open discovery when enabling per-show auto-download without notifications or background checks, with an optional notification action that preserves the auto-download choice. ([#1097](https://github.com/boxcreate/boxlore/pull/1097)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Regular navigation highlights use the active theme accent, and Classic-navigation player placement includes Android system navigation insets. ([#1099](https://github.com/boxcreate/boxlore/pull/1099)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Remove custom theme editor press ripples and separate Pure Home mix surfaces without outlines or transparent resting cards. ([#1112](https://github.com/boxcreate/boxlore/pull/1112)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
@@ -275,6 +285,21 @@ readme-copy:end pr=1120 -->
 - Jump back in shows real covers again after syncing.
 - Fullscreen transcripts keep their controls on screen.
 readme-copy:end pr=1121 -->
+
+<!-- readme-copy:start pr=1123
+### Improvements
+- New LeaveMeAlone page in Settings › Library: turn off recommendations across the app, including the Brief, Picked for you, Because you like, time-of-day picks and Try these episodes. Sections you turn off don’t load.
+- Hiding the Brief from its card can now be undone in LeaveMeAlone.
+readme-copy:end pr=1123 -->
+
+<!-- readme-copy:start pr=1124
+### Improvements
+- Echo now moves as you set up boxlore: it waves, thinks, shuffles show cards and looks around.
+- Signing in to sync is simpler, and you can carry on while your shows, queue and progress come over.
+- Importing your library is clearer: choose where your shows are, follow each step, and see what was added.
+### Fixes
+- Restoring a damaged boxlore backup now says it couldn't be restored, instead of showing success.
+readme-copy:end pr=1124 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added

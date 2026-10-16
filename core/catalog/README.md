@@ -117,6 +117,7 @@ Main Kotlin files should remain below 1000 lines; extracted helpers keep reposit
 
 ## Persistence & identity
 
+- `PodcastRepository.getHomeRecommendations` replaces the old `getHomeBootstrapData`: Home's Picked for you and Explore's For you only used its recommendations, so it now sends `include = ["recommendations"]` on `POST /home/bootstrap` and returns `HomeRecommendations(items, isFallback)` without the Brief fallback fetch. Workers without `include` support still reply with every part, which the app ignores.
 - Main Room database identity is owned by `:core:database` and exposed through catalog APIs.
 - User preference and cache file names are owned by `:core:prefs` and catalog cache code.
 - RSS podcast IDs and negative episode IDs are owned by `:core:rss`.

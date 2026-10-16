@@ -6,11 +6,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Logout
-import androidx.compose.material.icons.rounded.DeleteForever
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Key
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -26,14 +21,9 @@ import androidx.compose.ui.platform.UriHandler
 import cx.aswin.boxlore.core.auth.AuthRepository
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.model.BoxLoreUser
-import cx.aswin.boxlore.feature.settings.components.SettingsActionRow
-import cx.aswin.boxlore.feature.settings.components.SettingsDivider
-import cx.aswin.boxlore.feature.settings.components.SettingsGroup
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-private const val PROVIDER_GOOGLE = "google.com"
-private const val PROVIDER_EMAIL_LINK = "emailLink"
 private const val ACCOUNT_DELETION_URL = "https://aswin.cx/boxlore/account-deletion/"
 
 @Composable
@@ -118,38 +108,38 @@ internal fun AccountSettingsPage(
         scrollState = scrollState,
     )
 
+    val user = currentUser
+    val isAwaiting = isAwaitingVerificationState(authState, user, context)
+    val mode = accountPageMode(user != null && !isAwaiting, isOnboarding, isAwaiting, authState.magicLinkSent && !authState.usePasswordAuth)
     AccountPageScaffold(
-        isOnboarding = isOnboarding,
         onBack = onBack,
+        isOnboarding = isOnboarding,
         scroll = scrollState,
-    ) {
-        val user = currentUser
-        val isAwaiting = isAwaitingVerificationState(authState, user, context)
-
-        if (user != null && !isAwaiting) {
-            AccountSignedInContent(
-                user = user,
-                syncStatus = syncStatus,
-                actions = SignedInActions(
-                    onResetPassword = {
-                        sendResetPasswordEmail(scope, authRepository, user.email, context)
-                    },
-                    onSignOut = {
-                        handleSignOut(authRepository, authState, context)
-                    },
-                    onDeleteAccountClick = { showDeleteConfirmation = true },
-                    onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
-                    onSyncNow = onSyncNow,
-                    onContinueToHome = onBack,
-                ),
-                isOnboarding = isOnboarding,
-            )
+        showNotNow = isOnboarding && !mode.signedIn,
+        bottomBar = if (mode == AccountPageMode.SignedInOnboarding) {
+            { AccountContinueButton(onBack) }
         } else {
-            if (!isAwaiting && !authState.magicLinkSent) AccountSignedOutIntro(isOnboarding)
-            SignedOutContent(
-                authRepository = authRepository,
-                state = authState,
-            )
+            null
+        },
+    ) {
+        when (mode) {
+            AccountPageMode.SignedInOnboarding -> user?.let { AccountSignedInOnboarding(it, syncStatus, onSyncNow) }
+            AccountPageMode.SignedInSettings -> user?.let {
+                AccountSignedInSettings(
+                    user = it,
+                    syncStatus = syncStatus,
+                    actions = SignedInActions(
+                        onResetPassword = { sendResetPasswordEmail(scope, authRepository, it.email, context) },
+                        onSignOut = { handleSignOut(authRepository, authState, context) },
+                        onDeleteAccountClick = { showDeleteConfirmation = true },
+                        onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
+                        onSyncNow = onSyncNow,
+                    ),
+                )
+            }
+            AccountPageMode.ConfirmEmail -> AccountCheckEmailContent(AccountEmailCheck.Confirm, authState)
+            AccountPageMode.CheckLinkEmail -> AccountCheckEmailContent(AccountEmailCheck.Link, authState)
+            AccountPageMode.SignedOut -> SignedOutContent(authState)
         }
     }
 
@@ -173,6 +163,24 @@ internal fun AccountSettingsPage(
         },
         onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
     )
+}
+
+/** What the Account page shows. Signed in, onboarding confirms with Continue; Settings manages the account. */
+internal enum class AccountPageMode(val signedIn: Boolean) {
+    SignedInOnboarding(true),
+    SignedInSettings(true),
+    ConfirmEmail(false),
+    CheckLinkEmail(false),
+    SignedOut(false),
+}
+
+/** A new password account waiting for its confirmation counts as signed out until confirmed; a sent sign-in link waits for the inbox. */
+internal fun accountPageMode(signedIn: Boolean, onboarding: Boolean, awaitingVerification: Boolean, linkSent: Boolean): AccountPageMode = when {
+    signedIn && onboarding -> AccountPageMode.SignedInOnboarding
+    signedIn -> AccountPageMode.SignedInSettings
+    awaitingVerification -> AccountPageMode.ConfirmEmail
+    linkSent -> AccountPageMode.CheckLinkEmail
+    else -> AccountPageMode.SignedOut
 }
 
 private fun isAwaitingVerificationState(
@@ -217,54 +225,4 @@ internal data class SignedInActions(
     val onDeleteAccountClick: () -> Unit,
     val onOpenAccountDeletionInfo: () -> Unit,
     val onSyncNow: () -> Unit,
-    val onContinueToHome: () -> Unit = {},
 )
-
-internal fun resolveProviderLabel(providerId: String?): String = when (providerId) {
-    PROVIDER_GOOGLE -> "Google"
-    PROVIDER_EMAIL_LINK -> "Email Link"
-    else -> "Password"
-}
-
-@Composable
-internal fun AccountManagementGroup(
-    user: BoxLoreUser,
-    onResetPassword: () -> Unit,
-    onSignOut: () -> Unit,
-    onDeleteAccountClick: () -> Unit,
-    onOpenAccountDeletionInfo: () -> Unit,
-) {
-    val isPasswordAccount = user.providerId != PROVIDER_GOOGLE && !user.email.isNullOrBlank()
-    SettingsGroup(title = "Account Management") {
-        if (isPasswordAccount) {
-            SettingsActionRow(
-                title = "Reset Password",
-                supportingText = "Send password reset instructions to ${user.email}",
-                icon = Icons.Rounded.Key,
-                onClick = onResetPassword,
-            )
-            SettingsDivider()
-        }
-        SettingsActionRow(
-            title = "Sign Out",
-            supportingText = "Disconnect this device from your cloud account",
-            icon = Icons.AutoMirrored.Rounded.Logout,
-            onClick = onSignOut,
-        )
-        SettingsDivider()
-        SettingsActionRow(
-            title = "Delete Account",
-            supportingText = "Permanently remove your cloud profile and cross-device data",
-            icon = Icons.Rounded.DeleteForever,
-            destructive = true,
-            onClick = onDeleteAccountClick,
-        )
-        SettingsDivider()
-        SettingsActionRow(
-            title = "Account & Data Deletion Info",
-            supportingText = "Learn how your data is handled after deletion or request partial data removal",
-            icon = Icons.Rounded.Info,
-            onClick = onOpenAccountDeletionInfo,
-        )
-    }
-}

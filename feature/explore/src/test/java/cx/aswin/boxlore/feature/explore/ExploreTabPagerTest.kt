@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.feature.explore
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
@@ -14,6 +16,8 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
+import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.theme.BoxLoreTheme
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -91,22 +95,68 @@ class ExploreTabPagerTest {
         assertTrue(selections.isEmpty())
     }
 
-    private fun show() {
+    @Test fun `without For you Explore shows Top alone with no switcher or paging`() {
+        state.value = state.value.copy(hasForYou = false, selectedTab = 0)
+        show()
+        composeRule.onNodeWithTag("explore_browse_pager").assertDoesNotExist()
+        composeRule.onNodeWithText("Top show 0").assertIsDisplayed()
+        composeRule.onNode(hasText("For you") and isSelectable()).assertDoesNotExist()
+        composeRule.onNodeWithText("Recommendation 0").assertDoesNotExist()
+        composeRule.onNodeWithText("News").assertExists()
+        assertTrue(selections.isEmpty())
+    }
+
+    @Test fun `switching For you off while it is open lands on Top and back on restores both tabs`() {
+        show()
+        composeRule.onNodeWithText("Recommendation 0").assertIsDisplayed()
+        composeRule.runOnIdle { state.value = state.value.copy(hasForYou = false, selectedTab = 0, recommendations = emptyList()) }
+        composeRule.onNodeWithTag("explore_browse_pager").assertDoesNotExist()
+        composeRule.onNodeWithText("Top show 0").assertIsDisplayed()
+
+        composeRule.runOnIdle { state.value = state.value.copy(hasForYou = true, recommendations = List(3) { Episode("episode_$it", "Recommendation $it", "", "", podcastTitle = "Show") }) }
+        composeRule.onNodeWithText("Top").assertIsSelected()
+        composeRule.onNodeWithTag("explore_browse_pager").performTouchInput { swipeRight() }
+        composeRule.onNode(hasText("For you") and isSelectable()).assertIsSelected()
+        assertEquals(listOf(1), selections)
+    }
+
+    @Test fun `Top alone survives resizing across the tablet gates in both directions`() {
+        state.value = state.value.copy(hasForYou = false, selectedTab = 0)
+        val window = mutableStateOf(BoxloreWindowLayout(412f, 1_000f))
+        show { content -> CompositionLocalProvider(LocalBoxloreWindowLayout provides window.value) { content() } }
+        listOf(
+            BoxloreWindowLayout(600f, 800f),
+            BoxloreWindowLayout(1_000f, 479f),
+            BoxloreWindowLayout(1_280f, 800f),
+            BoxloreWindowLayout(599f, 800f),
+            BoxloreWindowLayout(412f, 1_000f),
+        ).forEach { size ->
+            composeRule.runOnIdle { window.value = size }
+            composeRule.onNodeWithTag("explore_browse_pager").assertDoesNotExist()
+            composeRule.onNodeWithText("Top show 0").assertExists()
+            composeRule.onNode(hasText("For you") and isSelectable()).assertDoesNotExist()
+        }
+        assertTrue(selections.isEmpty())
+    }
+
+    private fun show(wrap: @Composable (@Composable () -> Unit) -> Unit = { it() }) {
         composeRule.setContent {
-            BoxLoreTheme(dynamicColor = false) {
-                ExploreContent(
-                    uiState = state.value,
-                    onSearchQueryChanged = {},
-                    onCategorySelected = {},
-                    onPodcastClick = { _, _, _, _ -> },
-                    onEpisodeClick = { _, _ -> },
-                    onTabSelected = {
-                        selections.add(it)
-                        state.value = state.value.copy(selectedTab = it)
-                    },
-                    onVibeSelected = { _, _ -> },
-                    onClearVibe = {},
-                )
+            wrap {
+                BoxLoreTheme(dynamicColor = false) {
+                    ExploreContent(
+                        uiState = state.value,
+                        onSearchQueryChanged = {},
+                        onCategorySelected = {},
+                        onPodcastClick = { _, _, _, _ -> },
+                        onEpisodeClick = { _, _ -> },
+                        onTabSelected = {
+                            selections.add(it)
+                            state.value = state.value.copy(selectedTab = it)
+                        },
+                        onVibeSelected = { _, _ -> },
+                        onClearVibe = {},
+                    )
+                }
             }
         }
     }
