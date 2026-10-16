@@ -185,7 +185,9 @@ class GlossaryAllEventsEmissionTest {
                     AnalyticsHelper.trackAppCheckStatus(tokenObtained = true, provider = "debug")
                 },
                 "api_session_status" to {
-                    AnalyticsHelper.trackApiSessionStatus(kind = "exchange", success = true, trigger = "launch", attestation = "appcheck", limited = false)
+                    AnalyticsHelper.trackApiSessionStatus(
+                        ApiSessionStatus(kind = "exchange", success = true, trigger = "launch", attestation = "appcheck", limited = false),
+                    )
                 },
                 "first_episode_played" to { AnalyticsHelper.trackFirstEpisodePlayed() },
                 "home_surface_tapped" to {

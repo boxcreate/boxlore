@@ -89,11 +89,17 @@ enum class ApiSessionStepUpOutcome(val wire: String) {
 
 /** Analytics hooks; the app forwards them to `:core:analytics`. Called off the main thread. */
 interface ApiSessionListener {
-    fun onExchange(event: ApiSessionExchangeEvent) {}
+    fun onExchange(event: ApiSessionExchangeEvent) {
+        // Optional hook: a listener overrides only the events it reports.
+    }
 
-    fun onRenewal(outcome: ApiSessionRenewOutcome, attestation: ApiAttestation) {}
+    fun onRenewal(outcome: ApiSessionRenewOutcome, attestation: ApiAttestation) {
+        // Optional hook: a listener overrides only the events it reports.
+    }
 
-    fun onStepUp(outcome: ApiSessionStepUpOutcome, reason: String?, durationMs: Long) {}
+    fun onStepUp(outcome: ApiSessionStepUpOutcome, reason: String?, durationMs: Long) {
+        // Optional hook: a listener overrides only the events it reports.
+    }
 
     companion object {
         val None = object : ApiSessionListener {}

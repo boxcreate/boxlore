@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.session
 
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.analytics.ApiSessionStatus
 import cx.aswin.boxlore.core.network.session.ApiAttestation
 import cx.aswin.boxlore.core.network.session.ApiSessionExchangeEvent
 import cx.aswin.boxlore.core.network.session.ApiSessionListener
@@ -21,34 +22,40 @@ internal class ApiSessionAnalyticsListener(private val appCheckProvider: String)
             )
         }
         AnalyticsHelper.trackApiSessionStatus(
-            kind = "exchange",
-            success = event.success,
-            trigger = event.trigger.wire,
-            attestation = event.attestation?.wire,
-            limited = event.limited,
-            durationMs = event.durationMs,
-            appCheckAttempted = event.appCheckAttempted,
-            failureReason = event.failureReason,
-            serverReason = event.serverReason,
+            ApiSessionStatus(
+                kind = "exchange",
+                success = event.success,
+                trigger = event.trigger.wire,
+                attestation = event.attestation?.wire,
+                limited = event.limited,
+                durationMs = event.durationMs,
+                appCheckAttempted = event.appCheckAttempted,
+                failureReason = event.failureReason,
+                serverReason = event.serverReason,
+            ),
         )
     }
 
     override fun onRenewal(outcome: ApiSessionRenewOutcome, attestation: ApiAttestation) {
         AnalyticsHelper.trackApiSessionStatus(
-            kind = "renew",
-            success = outcome == ApiSessionRenewOutcome.Renewed,
-            attestation = attestation.wire,
-            renewOutcome = outcome.wire,
+            ApiSessionStatus(
+                kind = "renew",
+                success = outcome == ApiSessionRenewOutcome.Renewed,
+                attestation = attestation.wire,
+                renewOutcome = outcome.wire,
+            ),
         )
     }
 
     override fun onStepUp(outcome: ApiSessionStepUpOutcome, reason: String?, durationMs: Long) {
         AnalyticsHelper.trackApiSessionStatus(
-            kind = "step_up",
-            success = outcome == ApiSessionStepUpOutcome.Passed,
-            durationMs = durationMs,
-            stepUpOutcome = outcome.wire,
-            failureReason = reason,
+            ApiSessionStatus(
+                kind = "step_up",
+                success = outcome == ApiSessionStepUpOutcome.Passed,
+                durationMs = durationMs,
+                stepUpOutcome = outcome.wire,
+                failureReason = reason,
+            ),
         )
     }
 }

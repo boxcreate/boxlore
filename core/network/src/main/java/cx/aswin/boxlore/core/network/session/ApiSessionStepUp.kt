@@ -42,11 +42,14 @@ internal class ApiSessionStepUp(
 
     private suspend fun attempt(turnstile: TurnstileTokenSource): ApiSessionToken? {
         val started = clock()
-        val solved = nonCancellationFailure({ TurnstileResult.Failed("error") }) {
+        val solved: TurnstileResult = nonCancellationFailure<TurnstileResult>({ TurnstileResult.Failed("error") }) {
             withTimeoutOrNull(timing.stepUpTimeoutMs) { turnstile.solve() } ?: TurnstileResult.Failed("timeout")
         }
-        if (solved is TurnstileResult.Failed) return fail(ApiSessionStepUpOutcome.ChallengeFailed, solved.reason, started)
-        val token = exchange(ApiSessionTrigger.StepUp, false, (solved as TurnstileResult.Token).value)
+        val turnstileToken = when (solved) {
+            is TurnstileResult.Failed -> return fail(ApiSessionStepUpOutcome.ChallengeFailed, solved.reason, started)
+            is TurnstileResult.Token -> solved.value
+        }
+        val token = exchange(ApiSessionTrigger.StepUp, false, turnstileToken)
         if (token == null || token.limited) return fail(ApiSessionStepUpOutcome.NotAccepted, token?.let { "limited" } ?: "exchange_failed", started)
         listener.safely { onStepUp(ApiSessionStepUpOutcome.Passed, null, clock() - started) }
         return token

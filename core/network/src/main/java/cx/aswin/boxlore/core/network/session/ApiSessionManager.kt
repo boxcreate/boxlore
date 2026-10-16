@@ -191,15 +191,15 @@ class ApiSessionManager(
         val started = clock()
         val installId = synchronized(lock) { book.installIdOrCreate() }
         val publicKey = runCatching { deviceKey.publicKey() }.getOrNull()
-        val appCheckResult = if (useAppCheck) {
-            nonCancellationFailure({ AppCheckResult.Failed("error") }) {
+        val appCheckResult: AppCheckResult? = if (useAppCheck) {
+            nonCancellationFailure<AppCheckResult>({ AppCheckResult.Failed("error") }) {
                 withTimeoutOrNull(timing.appCheckTimeoutMs) { appCheck.fetch() } ?: AppCheckResult.Failed("timeout")
             }
         } else {
             null
         }
         val appCheckToken = (appCheckResult as? AppCheckResult.Token)?.value
-        val result = nonCancellationFailure({ SessionExchangeResult.Failed("error") }) {
+        val result: SessionExchangeResult = nonCancellationFailure<SessionExchangeResult>({ SessionExchangeResult.Failed("error") }) {
             exchanger.exchange(SessionExchangeRequest(installId, publicKey, appCheckToken, turnstileToken))
         }
         val issued = (result as? SessionExchangeResult.Issued)?.let { it to ApiSessionToken.parse(it.session) }

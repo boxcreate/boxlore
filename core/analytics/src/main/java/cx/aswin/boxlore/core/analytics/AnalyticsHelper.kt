@@ -134,21 +134,7 @@ object AnalyticsHelper : Analytics {
     }
 
     /** See [ApiSessionAnalyticsTracks]: session exchanges, renewals and step-ups. */
-    fun trackApiSessionStatus(
-        kind: String,
-        success: Boolean,
-        trigger: String? = null,
-        attestation: String? = null,
-        limited: Boolean? = null,
-        durationMs: Long? = null,
-        appCheckAttempted: Boolean? = null,
-        renewOutcome: String? = null,
-        stepUpOutcome: String? = null,
-        failureReason: String? = null,
-        serverReason: String? = null,
-    ) = ApiSessionAnalyticsTracks.trackApiSessionStatus(
-        kind, success, trigger, attestation, limited, durationMs, appCheckAttempted, renewOutcome, stepUpOutcome, failureReason, serverReason,
-    )
+    fun trackApiSessionStatus(status: ApiSessionStatus) = ApiSessionAnalyticsTracks.trackApiSessionStatus(status)
 
     override fun trackFirstEpisodePlayed() {
         AnalyticsEmit.event(

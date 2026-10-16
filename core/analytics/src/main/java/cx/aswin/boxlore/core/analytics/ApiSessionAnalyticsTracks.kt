@@ -1,40 +1,41 @@
 package cx.aswin.boxlore.core.analytics
 
 /**
- * `api_session_status`: how this install gets and keeps its API session. One event per
- * `/auth/session` exchange (`kind = exchange`), per first silent renewal of a token or renewal
- * problem (`kind = renew`), and per Turnstile step-up (`kind = step_up`). Properties carry
- * categories only: never tokens, ids or keys.
+ * One `api_session_status` event: an API session exchange (`kind = exchange`), the first silent
+ * renewal of a token or a renewal problem (`kind = renew`), or a Turnstile step-up
+ * (`kind = step_up`). Null properties are left out. Categories only: never tokens, ids or keys.
  */
+data class ApiSessionStatus(
+    val kind: String,
+    val success: Boolean,
+    val trigger: String? = null,
+    val attestation: String? = null,
+    val limited: Boolean? = null,
+    val durationMs: Long? = null,
+    val appCheckAttempted: Boolean? = null,
+    val renewOutcome: String? = null,
+    val stepUpOutcome: String? = null,
+    val failureReason: String? = null,
+    val serverReason: String? = null,
+)
+
+/** `api_session_status`: how this install gets and keeps its API session. */
 internal object ApiSessionAnalyticsTracks {
     const val EVENT = "api_session_status"
 
-    @Suppress("LongParameterList") // One event shape shared by exchanges, renewals and step-ups.
-    fun trackApiSessionStatus(
-        kind: String,
-        success: Boolean,
-        trigger: String? = null,
-        attestation: String? = null,
-        limited: Boolean? = null,
-        durationMs: Long? = null,
-        appCheckAttempted: Boolean? = null,
-        renewOutcome: String? = null,
-        stepUpOutcome: String? = null,
-        failureReason: String? = null,
-        serverReason: String? = null,
-    ) {
+    fun trackApiSessionStatus(status: ApiSessionStatus) {
         val properties = buildMap<String, Any> {
-            put("kind", kind)
-            put("success", success)
-            trigger?.let { put("trigger", it) }
-            attestation?.let { put("attestation", it) }
-            limited?.let { put("limited", it) }
-            durationMs?.let { put("duration_ms", it) }
-            appCheckAttempted?.let { put("app_check_attempted", it) }
-            renewOutcome?.let { put("renew_outcome", it) }
-            stepUpOutcome?.let { put("step_up_outcome", it) }
-            failureReason?.let { put("failure_reason", it.take(MAX_REASON_LENGTH)) }
-            serverReason?.let { put("server_reason", it.take(MAX_REASON_LENGTH)) }
+            put("kind", status.kind)
+            put("success", status.success)
+            status.trigger?.let { put("trigger", it) }
+            status.attestation?.let { put("attestation", it) }
+            status.limited?.let { put("limited", it) }
+            status.durationMs?.let { put("duration_ms", it) }
+            status.appCheckAttempted?.let { put("app_check_attempted", it) }
+            status.renewOutcome?.let { put("renew_outcome", it) }
+            status.stepUpOutcome?.let { put("step_up_outcome", it) }
+            status.failureReason?.let { put("failure_reason", it.take(MAX_REASON_LENGTH)) }
+            status.serverReason?.let { put("server_reason", it.take(MAX_REASON_LENGTH)) }
         }
         AnalyticsEmit.event(EVENT, properties)
     }
