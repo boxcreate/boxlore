@@ -88,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Simplify Echo clip decoding in `EchoClipFrames` to resolve SonarCloud issues; behaviour unchanged. ([#1125](https://github.com/boxcreate/boxlore/pull/1125)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Tracked-feed backfill sends a scoped read-only service credential (`BOXLORE_SVC_BACKFILL_KEY`) to the catalog lookup when configured, falling back to the app key. ([#1126](https://github.com/boxcreate/boxlore/pull/1126)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- The announcement composer guide moved to `docs/ANNOUNCEMENT_COMPOSER.md`; `admin-panel/` stays ignored apart from the public composer files, now listed individually. ([#1129](https://github.com/boxcreate/boxlore/pull/1129)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Preserve WorkManager input-merger constructors in optimized releases so one-time download and notification-hydration work can start. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Repair existing RSS imports without catalogue matching or changing saved show and episode identities. ([#1098](https://github.com/boxcreate/boxlore/pull/1098)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->

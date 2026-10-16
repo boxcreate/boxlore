@@ -77,7 +77,7 @@ The composer offers compact/fullscreen alerts, controlled accent/image styles an
 
 If preview validation fails, correct the reported field or shorten the message, then preview again. If approval is stale, review the current draft and approve it again. If Firebase validation fails, inspect that workflow step; no message was delivered. If delivery is accepted but the device shows nothing, check the selected build/audience, notification permission, release code and Play exclusion. Retry a live message only after confirming that a previous request was not accepted.
 
-The public composer and renderer are versioned here; its existing private gateway/auth/hosting configuration remains unchanged and ignored. Deploying the panel is a separate operation. See [admin composer](../admin-panel/README.md) and [isolated app testing](../docs/TESTING.md#isolated-update-and-announcement-testing).
+The public composer and renderer are versioned here; its existing private gateway/auth/hosting configuration remains unchanged and ignored. Deploying the panel is a separate operation. See [admin composer](../docs/ANNOUNCEMENT_COMPOSER.md) and [isolated app testing](../docs/TESTING.md#isolated-update-and-announcement-testing).
 
 The local updater fixture accepts `--notes-file` for long UTF-8 sample release notes. It preserves the supplied text in the test manifest and `/notes` page, validates the Android character/response bounds, and never publishes or sends anything.
 
