@@ -168,7 +168,7 @@ class AnalyticsGlossaryAllowlistTest {
     @Test
     fun `phase A union B has expected cardinality`() {
         // 35 Phase A + 1 A/B + 29 Phase B + 5 Support + 2 custom-theme + 1 hero-style + 1 LeaveMeAlone events.
-        assertEquals(75, AnalyticsGlossary.PHASE_A_UNION_B.size)
+        assertEquals(74, AnalyticsGlossary.PHASE_A_UNION_B.size)
     }
 
     @Test
@@ -181,7 +181,7 @@ class AnalyticsGlossaryAllowlistTest {
         assertTrue(AnalyticsGlossary.isAllowedEvent("adaptive_ranking_status"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("android_auto_connected"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("android_auto_browse"))
-        assertEquals(12, AnalyticsGlossary.PHASE_C.size)
+        assertEquals(10, AnalyticsGlossary.PHASE_C.size)
     }
 
     @Test
@@ -191,8 +191,14 @@ class AnalyticsGlossaryAllowlistTest {
         assertTrue(AnalyticsGlossary.isAllowedEvent("queue_modified"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("search_performed"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("feedback_submitted"))
-        assertTrue(AnalyticsGlossary.isAllowedEvent("library_history_tracking_notice"))
         assertTrue(AnalyticsGlossary.isAllowedEvent("\$set"))
+    }
+
+    @Test
+    fun `retired events with no caller are no longer allowed`() {
+        listOf("library_history_tracking_notice", "auto_chapters_lifecycle", "auto_transcript_lifecycle").forEach { name ->
+            assertFalse(AnalyticsGlossary.isAllowedEvent(name), "$name was retired and must not be captured")
+        }
     }
 
     @Test
@@ -261,7 +267,6 @@ class AnalyticsGlossaryAllowlistTest {
             )
             AnalyticsHelper.trackLateNightSafeguardDecision("prompt_shown")
             AnalyticsHelper.trackProxyFallbackTriggered("cdn.example", 200)
-            AnalyticsHelper.trackAutoChaptersRequested("e1", "p1", "https://example/audio.mp3")
         } finally {
             restore()
         }
@@ -285,8 +290,6 @@ class AnalyticsGlossaryAllowlistTest {
         assertTrue(eventNames.contains("adaptive_ranking_status"))
         assertTrue(eventNames.contains("late_night_safeguard_decision"))
         assertTrue(eventNames.contains("proxy_fallback_triggered"))
-        assertTrue(eventNames.contains("auto_chapters_lifecycle"))
-        assertFalse(eventNames.contains("auto_chapters_requested"))
     }
 }
 

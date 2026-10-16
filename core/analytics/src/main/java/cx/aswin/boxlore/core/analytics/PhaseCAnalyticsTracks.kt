@@ -98,28 +98,6 @@ internal object PhaseCAnalyticsTracks {
         )
     }
 
-    fun trackAutoChaptersLifecycle(stage: String, episodeId: String? = null, errorMessage: String? = null,) {
-        AnalyticsEmit.event(
-            "auto_chapters_lifecycle",
-            buildMap {
-                put("stage", stage)
-                episodeId?.let { put("episode_id", it) }
-                errorMessage?.let { put("error_message", it) }
-            },
-        )
-    }
-
-    fun trackAutoTranscriptLifecycle(stage: String, episodeId: String? = null, errorMessage: String? = null,) {
-        AnalyticsEmit.event(
-            "auto_transcript_lifecycle",
-            buildMap {
-                put("stage", stage)
-                episodeId?.let { put("episode_id", it) }
-                errorMessage?.let { put("error_message", it) }
-            },
-        )
-    }
-
     fun trackProxyFallbackTriggered(imageHost: String, proxyWidth: Int, sampleMultiplier: Int = 10,) {
         AnalyticsEmit.event(
             "proxy_fallback_triggered",

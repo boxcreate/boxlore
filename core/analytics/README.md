@@ -65,6 +65,7 @@ src/main/java/cx/aswin/boxlore/core/analytics/
 - Deep links: custom `deep_link_opened` (`captureDeepLinks = false`).
 - Weekly Pulse KPIs stay on **Application Opened** / **Application Installed**.
 - Coverage inventory: [`docs/analytics/glossary_emission_coverage.csv`](../../docs/analytics/glossary_emission_coverage.csv) (`emission` | `sdk_backed` | `person_props_only`).
+- Events whose callers are gone leave the glossary with their façades: `library_history_tracking_notice` (the History notice was removed) and `auto_chapters_lifecycle` / `auto_transcript_lifecycle` (the on-device chapters and transcript calls were removed). The unused launch enrichment façade (`subscription_count_bucket`) went with them. `RecordingAnalyticsTest` checks the retired names stay out of the allowlist.
 
 ## Testing notes
 

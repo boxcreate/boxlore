@@ -324,17 +324,13 @@ class AnalyticsTracksFacadeTest {
         AnalyticsHelper.trackLibraryDownloadsSession(10f, 1, 2)
         AnalyticsHelper.trackLibraryHistoryViewed("nav")
         AnalyticsHelper.trackLibraryHistorySession(10f, 1, 2)
-        AnalyticsHelper.trackLibraryHistoryTrackingNotice("shown")
-        AnalyticsHelper.trackLibraryHistoryTrackingNotice("dismissed")
         AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(true)
         AnalyticsHelper.trackLibrarySubscriptionsLayoutToggled(false)
         AnalyticsHelper.trackLibrarySubscriptionsSortChanged("recent", "shows")
         AnalyticsHelper.trackLibrarySubscriptionsGenreFiltered("News", "shows")
 
         assertTrue("library_destination_viewed" in names())
-        assertTrue("library_history_tracking_notice" in names())
         assertEquals(16, names().count { it == "library_destination_viewed" })
-        assertEquals(2, names().count { it == "library_history_tracking_notice" })
     }
 
     @Test
@@ -403,21 +399,6 @@ class AnalyticsTracksFacadeTest {
         assertTrue("offline_mode_entered" in names())
         assertTrue("explore_recommendation_tapped" in names())
         assertTrue(firstProps("queue_modified").containsKey("source_count_server"))
-    }
-
-    @Test
-    fun autoChaptersTranscriptEvents() {
-        AnalyticsHelper.trackAutoChaptersRequested("e1", "p1", "http://a")
-        AnalyticsHelper.trackAutoChaptersRequested("e1", null, "")
-        AnalyticsHelper.trackAutoChaptersCompleted("e1", "p1", 12f, 5)
-        AnalyticsHelper.trackAutoChaptersFailed("e1", "p1", "err")
-        AnalyticsHelper.trackAutoTranscriptRequested("e1", "p1", "http://a")
-        AnalyticsHelper.trackAutoTranscriptRequested("e1", null, "")
-        AnalyticsHelper.trackAutoTranscriptCompleted("e1", "p1", 12f, 30)
-        AnalyticsHelper.trackAutoTranscriptFailed("e1", "p1", "err")
-
-        assertTrue("auto_chapters_lifecycle" in names())
-        assertTrue("auto_transcript_lifecycle" in names())
     }
 
     @Test
