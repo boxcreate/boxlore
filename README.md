@@ -204,9 +204,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 - **The boxlore brief.** An optional daily news episode, with sources.
 
 <p align="center">
-<img src="docs/images/brand/screens/lore.png?v=39694344" width="30%" alt="Lore: a question card about Krakatoa that leads to an episode, with Play and Add to queue"/>&nbsp;
-<img src="docs/images/brand/screens/explore.png?v=7d858bb5" width="30%" alt="Explore: search by idea, picks for you, ideas for the time of day and top shows by region"/>&nbsp;
-<img src="docs/images/brand/screens/welcome.png?v=902680c5" width="30%" alt="Welcome: meet Echo, answer a few questions and get shows picked for you, or import your library"/>
+<img src="docs/images/brand/screens/lore.png?v=5e0ce722" width="30%" alt="Lore: a question card about Krakatoa that leads to an episode, with Play and Add to queue"/>&nbsp;
+<img src="docs/images/brand/screens/explore.png?v=915419b3" width="30%" alt="Explore: search by idea, picks for you, ideas for the time of day and top shows by region"/>&nbsp;
+<img src="docs/images/brand/screens/welcome.png?v=bac80a1c" width="30%" alt="Welcome: meet Echo, answer a few questions and get shows picked for you, or import your library"/>
 </p>
 
 <br/>
@@ -221,9 +221,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 - **Ready before you go offline.** Smart Downloads get new episodes onto your phone.
 
 <p align="center">
-<img src="docs/images/brand/screens/home.png?v=664f2616" width="30%" alt="boxlore Home: resume in one tap, with picks for you, Daily mix and Smart Downloads"/>&nbsp;
-<img src="docs/images/brand/screens/player.png?v=40627d11" width="30%" alt="The boxlore player in the show’s colours, with 0.5× to 3× speed, a sleep timer, chapters, transcripts and Google Cast"/>&nbsp;
-<img src="docs/images/brand/screens/bunpod.png?v=2098e298" width="30%" alt="The bunpod player: larger titles, time left at a glance and big, easy controls"/>
+<img src="docs/images/brand/screens/home.png?v=a46e40e1" width="30%" alt="boxlore Home: resume in one tap, with picks for you, Daily mix and Smart Downloads"/>&nbsp;
+<img src="docs/images/brand/screens/player.png?v=9893830f" width="30%" alt="The boxlore player in the show’s colours, with 0.5× to 3× speed, a sleep timer, chapters, transcripts and Google Cast"/>&nbsp;
+<img src="docs/images/brand/screens/bunpod.png?v=d87514d6" width="30%" alt="The bunpod player: larger titles, time left at a glance and big, easy controls"/>
 </p>
 
 <br/>
@@ -241,8 +241,8 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 
 <p align="center">
 <img src="docs/images/brand/screens/home_styles.png?v=7c9b1be2" width="30%" alt="Six Home styles: Block, Cover, Tide, Duotone, Halo and Marquee"/>&nbsp;
-<img src="docs/images/brand/screens/themes.png?v=6a6d1cce" width="30%" alt="The custom theme editor with a live preview in light and dark and any colour you like"/>&nbsp;
-<img src="docs/images/brand/screens/backup.png?v=10978eaa" width="30%" alt="Cloud sync and backups: full library backup, OPML import and export, and sync across your devices"/>
+<img src="docs/images/brand/screens/themes.png?v=b755cb0c" width="30%" alt="The custom theme editor with a live preview in light and dark and any colour you like"/>&nbsp;
+<img src="docs/images/brand/screens/backup.png?v=2e4cfedf" width="30%" alt="Cloud sync and backups: full library backup, OPML import and export, and sync across your devices"/>
 </p>
 
 <br/>
