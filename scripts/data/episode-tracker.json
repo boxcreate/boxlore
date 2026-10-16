@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-16T13:25:34.437Z",
+  "lastRun": "2026-10-16T17:36:29.856Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0dfcfea-cfc6-11f0-83c5-df5cfc8cd54e",
@@ -49,10 +49,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "182e7682-ae7f-4e4b-b60c-9988270963a5",
-      "lastEpisodeTitle": "9am ET, October 16 | The latest headlines from NPR",
+      "lastRssKey": "e1b6b313-4be4-4530-990e-6e2f6e83a846",
+      "lastEpisodeTitle": "1pm ET, October 16 | The latest headlines from NPR",
       "lastEpisodeId": "61772764727",
-      "lastCheckedAt": 1792157137830
+      "lastCheckedAt": 1792172195311
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75811774",
@@ -61,10 +61,10 @@
       "lastCheckedAt": 1792157138690
     },
     "78573": {
-      "lastRssKey": "b4d80f5e-ed0f-4be9-b79f-158ebbe85381",
-      "lastEpisodeTitle": "„Nicușor Dan n-a trădat. A MINȚIT” | DUMITRU BORȚUN #IGDLCC 353",
-      "lastEpisodeId": "61730063293",
-      "lastCheckedAt": 1791993268314
+      "lastRssKey": "f07edcdb-affc-4f5b-90af-f56b2304c234",
+      "lastEpisodeTitle": "CINE E ÎN „ÎNTUNERIC?” - De ce fug politicienii de anticipate | CRISTIAN PREDA #IGDLCC 354",
+      "lastEpisodeId": "61832314594",
+      "lastCheckedAt": 1792172196607
     },
     "83316": {
       "lastRssKey": "50f497e6-c59c-11f1-89b8-3fc61e72e568",
@@ -179,16 +179,16 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "199E15A1-0E51-499F-9B26-BE67266AE37A",
-      "lastEpisodeTitle": "Tesla’s New Roadster Takes Flight",
+      "lastRssKey": "4470DA45-F3A2-402C-B2BF-7E1AADD68814",
+      "lastEpisodeTitle": "Musk Funnels Millions Into Texas Senate Race",
       "lastEpisodeId": "61820659794",
-      "lastCheckedAt": 1792157164883
+      "lastCheckedAt": 1792172209501
     },
     "331078": {
-      "lastRssKey": "13887818-b823-11f1-957c-073ba46e3b04",
-      "lastEpisodeTitle": "Anthropic's Growth Is Slowing",
+      "lastRssKey": "13d617f8-b823-11f1-957c-17f52bfecc2a",
+      "lastEpisodeTitle": "What Is Meta's Muse Spark Open?",
       "lastEpisodeId": "61780869884",
-      "lastCheckedAt": 1792085846302
+      "lastCheckedAt": 1792172210277
     },
     "353744": {
       "lastRssKey": "flightcast:01M4NT5N4PZP5NCJHH2GNWHCTN",
@@ -197,10 +197,10 @@
       "lastCheckedAt": 1791800225358
     },
     "385117": {
-      "lastRssKey": "d42d8496-c962-11f1-8bbe-37b537fd6e70",
-      "lastEpisodeTitle": "9AM ET 10/16/2026 Newscast",
+      "lastRssKey": "5b351fdc-c984-11f1-b425-7f06c2b91d7e",
+      "lastEpisodeTitle": "AOC joins El-Sayed in Michigan during final stretch before midterm elections",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792157165914
+      "lastCheckedAt": 1792172211164
     },
     "386911": {
       "lastRssKey": "b375f64a-c406-11f1-8e68-cbb96a8897a4",
@@ -227,10 +227,10 @@
       "lastCheckedAt": 1792085849269
     },
     "415434": {
+      "lastRssKey": "cb68b3b8-c3c7-11f0-8340-9fd6c7b49460",
+      "lastEpisodeTitle": "Apple's HomeView has an app problem",
       "lastEpisodeId": "61800989294",
-      "lastEpisodeTitle": "Everything's recording everybody. What now?",
-      "lastRssKey": "4a6c39c4-6e7b-11f1-94bf-5b791dc3d173",
-      "lastCheckedAt": 1792120673988
+      "lastCheckedAt": 1792172213458
     },
     "419624": {
       "lastRssKey": "74efceaf-712b-4224-b007-97721480e6f4",
@@ -251,10 +251,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M529S3ZJR1540QAHBWQ5R7D5",
-      "lastEpisodeTitle": "What hospitals can do about healthcare costs",
+      "lastRssKey": "01M52GWBNBWST7RHHBY4YCBD74",
+      "lastEpisodeTitle": "Minnesota's data center debate",
       "lastEpisodeId": "61797772896",
-      "lastCheckedAt": 1792157171340
+      "lastCheckedAt": 1792172217679
     },
     "432535": {
       "lastRssKey": "7519f2d2-1e3b-405d-b08e-1c3da35a65e7",
@@ -333,10 +333,10 @@
       "lastCheckedAt": 1791800244261
     },
     "483834": {
-      "lastRssKey": "6ad1154a7c5c47f85e059eb4",
-      "lastEpisodeTitle": "New Legend of Zelda: Ocarina of Time Remake Trailer, Abbott Elementary S6 Guest Stars— October 15th, 2026",
-      "lastEpisodeId": "61790264943",
-      "lastCheckedAt": 1792097929310
+      "lastRssKey": "6ad2578fb9a0305b8575967a",
+      "lastEpisodeTitle": "Grand Theft Auto VI Launch Trailer, The Mummy 4 Official Film Title— October 16th, 2026",
+      "lastEpisodeId": "61836894264",
+      "lastCheckedAt": 1792172229224
     },
     "490022": {
       "lastRssKey": "d82eadfc-ec5f-4685-9b73-7f49b5b47297",
@@ -648,10 +648,10 @@
       "lastCheckedAt": 1791594418220
     },
     "980370": {
-      "lastRssKey": "6acfa619b3381b9dbb7c315c",
-      "lastEpisodeTitle": "How to stop homelessness before it starts | Jen Loving",
+      "lastRssKey": "6acfa672b3381b9dbb7c315d",
+      "lastEpisodeTitle": "Is your body language working against you? | Cara Hale Alter",
       "lastEpisodeId": "61781993390",
-      "lastCheckedAt": 1792085908587
+      "lastCheckedAt": 1792172262740
     },
     "998969": {
       "lastRssKey": "audioboom-01a13607-6145-7f47-83a9-d416842aae7f",
@@ -694,9 +694,9 @@
       "lastCheckedAt": 1792067879531
     },
     "1047865": {
-      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-an-ummah-that-feels-broken",
-      "lastEpisodeTitle": "An Ummah That Feels Broken",
-      "lastCheckedAt": 1791617606946
+      "lastRssKey": "https://muslimcentral.com/nouman-ali-khan-when-speaking-my-truth-becomes-a-major-sin",
+      "lastEpisodeTitle": "When “Speaking My Truth” Becomes A Major Sin",
+      "lastCheckedAt": 1792172269879
     },
     "1065434": {
       "lastRssKey": "http://www.podquiz.com/quiz.php?q=pq/1124",
@@ -723,10 +723,10 @@
       "lastCheckedAt": 1791910489692
     },
     "1116485": {
-      "lastRssKey": "6ad1ec51922154d512a5955e",
-      "lastEpisodeTitle": "Liverpool FAVOURITES To Sign Alex Scott | Daily News Update",
+      "lastRssKey": "6ad1f321dad410c492a17830",
+      "lastEpisodeTitle": "Brentford v Liverpool | Premier League Match Preview",
       "lastEpisodeId": "61724731821",
-      "lastCheckedAt": 1792157223668
+      "lastCheckedAt": 1792172275487
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -747,10 +747,10 @@
       "lastCheckedAt": 1791192574497
     },
     "1193286": {
-      "lastRssKey": "ea494d86-c8eb-11f1-8dc4-0b0c3a05665b",
-      "lastEpisodeTitle": "How Concerned Should We Be About Dobes? | The Sick Podcast with Tony Marinaro October 15 2026",
+      "lastRssKey": "abdf3522-c97e-11f1-ac96-b3e94096d052",
+      "lastEpisodeTitle": "Le Premier Trio DOIT En Donner Plus & Slafkovsky Inquiète | Le Sick Podcast Avec Tony Marinaro 16/10/26",
       "lastEpisodeId": "61815090259",
-      "lastCheckedAt": 1792139151788
+      "lastCheckedAt": 1792172278553
     },
     "1199730": {
       "lastRssKey": "2c3ffa25-fb78-4559-b68e-7f7580a4190d",
@@ -1019,10 +1019,10 @@
       "lastCheckedAt": 1791939312925
     },
     "4780435": {
-      "lastRssKey": "tag:soundcloud,2010:tracks/2407924290",
-      "lastEpisodeTitle": "وعي ١١٢ | سلسلة الصحابة | سعد بن معاذ",
+      "lastRssKey": "tag:soundcloud,2010:tracks/2420343036",
+      "lastEpisodeTitle": "وعي | سلسلة الصحابة | زيد بن حارثة رضي الله عنه",
       "lastEpisodeId": "58381513018",
-      "lastCheckedAt": 1790385287621
+      "lastCheckedAt": 1792172296995
     },
     "4790854": {
       "lastRssKey": "cmuwepgsa02m901vp8jesaz4m",
@@ -1082,10 +1082,10 @@
       "lastCheckedAt": 1792047722268
     },
     "5716308": {
-      "lastRssKey": "urn:bbc:podcast:p0pgh12r",
-      "lastEpisodeTitle": "EP 228: Antiques Roadshow",
+      "lastRssKey": "urn:bbc:podcast:p0ph431n",
+      "lastEpisodeTitle": "Preview 26/27: Man Utd (H)",
       "lastEpisodeId": "61287000533",
-      "lastCheckedAt": 1791910518230
+      "lastCheckedAt": 1792172300708
     },
     "5716515": {
       "lastRssKey": "https://www.greatdetectives.net/detectives/?p=51899",
@@ -1660,10 +1660,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/65aabf41-a1bd-5b6f-ad32-c4b6d50a8489",
-      "lastEpisodeTitle": "The SURPRISING SIGNS Someone Is ASLIGHTINGYou Dr. Ramani ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/cd7ea5dc-0138-50d2-b210-18b50e53f336",
+      "lastEpisodeTitle": "When the scapegoat helps the golden child ~ Dr. Ramani",
       "lastEpisodeId": "61761430954",
-      "lastCheckedAt": 1792157274758
+      "lastCheckedAt": 1792172337494
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
