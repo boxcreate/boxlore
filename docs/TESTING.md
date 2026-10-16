@@ -243,6 +243,8 @@ See [`docs/screenshots/README.md`](screenshots/README.md).
 | `gitleaks.yml` | Secret scan | PR / push to master | Done |
 | `maestro-nightly.yml` | Validate Maestro YAML; optional Cloud device job when configured | Nightly / manual | Done |
 
+**Gitleaks allowlist:** `.gitleaks.toml` allows only the `lastRssKey` lines in `scripts/data/episode-tracker.json`. They hold public RSS item GUIDs written by the episode tracker bot. Without it, the local `gitleaks protect --staged` hook flags them whenever master is merged into a branch.
+
 **Merge gate:** master uses a branch ruleset with no merge queue. Required checks are **`testDebugUnitTest`** and **`coderabbit-threads-resolved`**. SonarCloud, CodeRabbit, and Gitleaks also run on PRs. Fix all Sonar new-code issues and address every CodeRabbit finding, marking every review thread Resolved; the bare CodeRabbit status only confirms that the review completed.
 
 The unit suite cancels prior in-progress runs on each PR push. `[skip unit]` in the PR title no-ops that job only for docs/chore changes with no logic risk; it still reports green. Actions → Run workflow always runs the full suite. If the review decision is `CHANGES_REQUESTED`, stop automated merging and have a maintainer handle the review or merge manually. Otherwise squash-merge after the required checks are green and review requirements are satisfied. A maintainer may explicitly authorize bypassing required status checks for a specific PR; report remaining checks and known risks first. General merge authorization does not authorize a bypass, and review requirements still apply. Repository-administration procedures belong in root `AGENTS.internal.md`.
