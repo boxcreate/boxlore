@@ -61,7 +61,8 @@ internal data class SupportWorldSkin(
     /** Null fills the page. Orbit pins its planet edge under the stage instead. */
     val backdropHeight: Dp?,
     val display: SupportWorldFont,
-    val label: SupportWorldFont,
+    /** Null uses the app's text font for the notice chip. */
+    val label: SupportWorldFont?,
     /** Null uses the app's text font for tier names. */
     val name: SupportWorldFont?,
     val stage: SupportStageStyle,
@@ -75,22 +76,18 @@ internal data class SupportWorldSkin(
     val notice: SupportWorldNotice,
 )
 
-private val Bungee = SupportWorldFont(FontFamily(Font(R.font.support_bungee)), FontWeight.Normal)
-private val Oxanium = SupportWorldFont(
-    FontFamily(Font(R.font.support_oxanium_extrabold, FontWeight.ExtraBold)),
-    FontWeight.ExtraBold,
-)
+private val PressStart2P = SupportWorldFont(FontFamily(Font(R.font.support_press_start_2p)), FontWeight.Normal)
+private val Michroma = SupportWorldFont(FontFamily(Font(R.font.support_michroma)), FontWeight.Normal)
 private val CinzelDecorative = SupportWorldFont(
     FontFamily(Font(R.font.support_cinzel_decorative_black, FontWeight.Black)),
     FontWeight.Black,
     overhang = 16.dp,
 )
 private val Cinzel = SupportWorldFont(FontFamily(Font(R.font.support_cinzel_bold, FontWeight.Bold)), FontWeight.Bold)
-private val Fredoka = SupportWorldFont(
-    FontFamily(Font(R.font.support_fredoka_semibold, FontWeight.SemiBold)),
-    FontWeight.SemiBold,
-)
-private val Lilita = SupportWorldFont(FontFamily(Font(R.font.support_lilita_one)), FontWeight.Normal)
+
+/** Bundled as a subset with Latin letters, digits and basic punctuation; it only sets codenames. */
+private val RubikMicrobe = SupportWorldFont(FontFamily(Font(R.font.support_rubik_microbe)), FontWeight.Normal)
+private val UncialAntiqua = SupportWorldFont(FontFamily(Font(R.font.support_uncial_antiqua)), FontWeight.Normal)
 
 private const val NOT_CHARGED = "Payments aren't set up yet, so nothing was charged."
 
@@ -106,8 +103,8 @@ internal val NeonSkin = SupportWorldSkin(
     ),
     backdrop = R.drawable.support_neon_bg,
     backdropHeight = null,
-    display = Bungee,
-    label = Bungee,
+    display = PressStart2P,
+    label = PressStart2P,
     name = null,
     stage = SupportStageStyle.NeonShelf,
     particles = SupportParticleStyle.RisingSparks,
@@ -147,8 +144,8 @@ internal val OrbitSkin = SupportWorldSkin(
     ),
     backdrop = R.drawable.support_orbit_bg,
     backdropHeight = 540.dp,
-    display = Oxanium,
-    label = Oxanium,
+    display = Michroma,
+    label = Michroma,
     name = null,
     stage = SupportStageStyle.OrbitRings,
     particles = SupportParticleStyle.TwinklingStars,
@@ -229,9 +226,9 @@ internal val AbyssSkin = SupportWorldSkin(
     ),
     backdrop = R.drawable.support_abyss_bg,
     backdropHeight = null,
-    display = Fredoka,
-    label = Fredoka,
-    name = Fredoka,
+    display = RubikMicrobe,
+    label = null,
+    name = null,
     stage = SupportStageStyle.LightShaft,
     particles = SupportParticleStyle.Bubbles,
     tierNames = listOf("Lantern Jelly", "Glow Nautilus", "Amber Angler", "Violet Manta", "Crimson Leviathan"),
@@ -270,9 +267,9 @@ internal val SkySkin = SupportWorldSkin(
     ),
     backdrop = R.drawable.support_sky_bg,
     backdropHeight = null,
-    display = Lilita,
-    label = Lilita,
-    name = Lilita,
+    display = UncialAntiqua,
+    label = UncialAntiqua,
+    name = UncialAntiqua,
     stage = SupportStageStyle.CloudBank,
     particles = SupportParticleStyle.Sparkles,
     tierNames = listOf("Seedling Rock", "Meadow Isle", "Windmill Isle", "Star Observatory", "Beacon Citadel"),

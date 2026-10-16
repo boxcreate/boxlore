@@ -133,7 +133,7 @@ src/main/java/cx/aswin/boxlore/feature/settings/
 
 - Project dependencies: `:core:model`, `:core:domain`, `:core:catalog`, `:core:downloads`, `:core:network`, `:core:prefs`, `:core:designsystem`, `:core:analytics`, `:core:ranking`, and `:core:rss`.
 - Libraries: Compose, Navigation, lifecycle ViewModel/runtime, Coil, Kotlin serialization, AndroidX Credentials, Google ID, Roborazzi.
-- Bundled Support world assets: 31 WebP drawables in `res/drawable-nodpi/support_*` (about 1 MB) and six display fonts in `res/font/support_*` (Bungee, Oxanium, Cinzel Decorative, Cinzel, Fredoka, Lilita One; about 320 KB). Each font's SIL Open Font License is in `licenses/`.
+- Bundled Support world assets: 31 WebP drawables in `res/drawable-nodpi/support_*` (about 1 MB) and six display fonts in `res/font/support_*` (about 680 KB): Press Start 2P (neon), Michroma (orbit), Cinzel Decorative and Cinzel (alchemy), Rubik Microbe (abyss codenames only, bundled as a Latin subset) and Uncial Antiqua (sky). Each font's SIL Open Font License is in `licenses/`. Press Start 2P and Uncial Antiqua have Reserved Font Names, so they ship unmodified.
 - Reverse-edge rule: feature modules must not depend on other feature modules.
 
 ## Threading / lifecycle
