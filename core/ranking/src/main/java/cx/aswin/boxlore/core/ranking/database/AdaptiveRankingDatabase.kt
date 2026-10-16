@@ -28,7 +28,11 @@ abstract class AdaptiveRankingDatabase : RoomDatabase() {
                 context.applicationContext,
                 AdaptiveRankingDatabase::class.java,
                 DATABASE_NAME,
-            ).build()
+            )
+                // Moving from a newer beta back to production must not crash on open; ranking
+                // state is relearned (or restored from an explicit backup) instead.
+                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
+                .build()
                 .also { instance = it }
         }
     }

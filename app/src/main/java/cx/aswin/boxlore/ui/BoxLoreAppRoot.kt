@@ -530,9 +530,11 @@ fun BoxLoreAppRoot(
     var activeFeatureFlag by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(dismissedFeatureVersion) {
         if (dismissedFeatureVersion != featureAnnouncementId && dismissedFeatureVersion != "android_auto_1.3.6") {
-            activeFeatureFlag = PostHog.getFeatureFlag("active_feature_announcement") as? String
-            PostHog.reloadFeatureFlags {
+            cx.aswin.boxlore.core.analytics.PostHogStartup.runWhenReady {
                 activeFeatureFlag = PostHog.getFeatureFlag("active_feature_announcement") as? String
+                PostHog.reloadFeatureFlags {
+                    activeFeatureFlag = PostHog.getFeatureFlag("active_feature_announcement") as? String
+                }
             }
         }
     }

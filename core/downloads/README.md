@@ -64,6 +64,7 @@ Files under `core/data` are compatibility stubs for previously scheduled WorkMan
 - Workers resolve dependencies through `DownloadsDependenciesHolder.require()`.
 - Media3 download work and cache I/O run off the main thread.
 - Periodic smart-download work is scheduled and cancelled through WorkManager APIs.
+- Removing a download never starts `MediaDownloadService`; removal goes straight to `DownloadManager`. Starting the service from the background (for example after playback finished) crashed with `ForegroundServiceStartNotAllowedException` whenever a download was running. Episodes without an audio URL are never downloaded (`DownloadAudioUri`).
 
 ## Persistence & identity
 
@@ -73,6 +74,7 @@ Files under `core/data` are compatibility stubs for previously scheduled WorkMan
 
 ## Testing notes
 
+- `DownloadRepositoryTest` checks that removing an active download never starts the download service.
 - Unit tests live under `core/downloads/src/test`.
 - Existing coverage includes worker behavior, dependency-holder behavior, smart-download candidate logic, and `DownloadAnalyticsMapping` size/source/failure mapping.
 - Robolectric and WorkManager testing are enabled for worker tests.
@@ -80,6 +82,7 @@ Files under `core/data` are compatibility stubs for previously scheduled WorkMan
 ```bash
 ./gradlew :core:downloads:testDebugUnitTest
 ```
+- `DownloadAudioUriTest` covers episodes whose audio URL is null or blank.
 
 ## CI relevance
 

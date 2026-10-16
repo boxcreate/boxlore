@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -78,6 +79,7 @@ class PlaybackQueueCoordinatorTest {
 
         val mockController = mock(MediaController::class.java)
         `when`(mockController.mediaItemCount).thenReturn(0)
+        `when`(mockController.playbackParameters).thenReturn(androidx.media3.common.PlaybackParameters.DEFAULT)
         mediaHandle = PlaybackMediaControllerHandle()
         mediaHandle.controller = mockController
 
@@ -97,8 +99,12 @@ class PlaybackQueueCoordinatorTest {
                 storePendingEntryPoint = {},
                 ensureCurrentHistoryRow = {},
                 stopProgressTicker = {},
+                onQueueStarted = { queueStarts++ },
             )
     }
+
+    /** Listener-started queues counted through the coordinator's hook. */
+    private var queueStarts = 0
 
     @After
     fun tearDown() {
@@ -144,6 +150,48 @@ class PlaybackQueueCoordinatorTest {
         assertEquals(initialSeq + 1L, meta.queueSequence)
         assertTrue(meta.isDirty)
         assertEquals(listOf("2"), cx.aswin.boxlore.core.database.dao.QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
+    }
+
+    @Test
+    fun episodesWithoutAnyArtworkStillBuildQueueItems() = runTest(testDispatcher) {
+        // Regression (0.0.25 NPE "uriString"): no episode, show or podcast artwork reached Uri.parse(null).
+        val bare = testEpisode("9", "pod-9").copy(imageUrl = null, podcastImageUrl = null)
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-9", "Show", "Host", "")
+
+        val items = queueCoordinator.buildMediaItems(listOf(bare), podcast, null)
+
+        assertNull(items.single().mediaMetadata.artworkUri)
+        assertTrue(queueCoordinator.addToQueue(bare, podcast))
+        queueCoordinator.addToQueueNext(testEpisode("10", "pod-9").copy(imageUrl = null, podcastImageUrl = null), podcast)
+        assertEquals(listOf("9", "10"), playerStateFlow.value.queue.map { it.id })
+    }
+
+    @Test
+    fun playNextOnQueuedEpisodeDoesNotDuplicateIt() = runTest(testDispatcher) {
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-1", "Show", "Host", "https://example.com/a.jpg")
+        val current = testEpisode("1", "pod-1")
+        val queued = testEpisode("2", "pod-1")
+        playerStateFlow.value = playerStateFlow.value.copy(currentEpisode = current, queue = listOf(current, queued))
+
+        queueCoordinator.addToQueueNext(queued, podcast)
+        queueCoordinator.addToQueueNext(queued, podcast)
+
+        assertEquals(listOf("1", "2"), playerStateFlow.value.queue.map { it.id })
+    }
+
+    @Test
+    fun everyListenerStartedQueueResetsStreamFailureCounting() = runTest(testDispatcher) {
+        // Regression: only PlaybackRepository.playQueue reset the skip guard, so a fresh episode tapped
+        // after two failures could stop on its first failure.
+        val podcast = cx.aswin.boxlore.core.model.Podcast("pod-1", "Show", "Host", "https://example.com/a.jpg")
+        val episodes = listOf(testEpisode("1", "pod-1"), testEpisode("2", "pod-1"))
+
+        queueCoordinator.playEpisode(episodes.first(), podcast)
+        queueCoordinator.playFromQueueIndex("2", episodes, podcast)
+        queueCoordinator.playQueue(episodes, podcast, 1)
+        advanceUntilIdle()
+
+        assertEquals(3, queueStarts)
     }
 
     private fun testEpisode(id: String, podcastId: String) = Episode(

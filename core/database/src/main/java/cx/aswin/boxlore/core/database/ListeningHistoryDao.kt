@@ -4,7 +4,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapLatest
 
 @Dao
 interface ListeningHistoryDao {
@@ -183,12 +186,34 @@ interface ListeningHistoryDao {
     @Query("UPDATE listening_history SET isCompleted = :isCompleted, isDirty = 1 WHERE episodeId = :episodeId")
     suspend fun setCompletionStatus(episodeId: String, isCompleted: Boolean,)
 
-    // Get all episode IDs that have been fully played (for "unplayed" filtering in queue)
-    @Query("SELECT episodeId FROM listening_history WHERE isCompleted = 1")
-    fun getCompletedEpisodeIdsFlow(): Flow<List<String>>
+    // Get all episode IDs that have been fully played (for "unplayed" filtering in queue).
+    // Listeners with tens of thousands of completed episodes (bulk "mark all played") overflowed a
+    // single cursor read ("Couldn't read row ... from CursorWindow"), so reads are paged.
+    @Query("SELECT episodeId FROM listening_history WHERE isCompleted = 1 ORDER BY episodeId LIMIT :limit OFFSET :offset")
+    suspend fun getCompletedEpisodeIdsPage(limit: Int, offset: Int): List<String>
 
-    @Query("SELECT episodeId FROM listening_history WHERE isCompleted = 1")
-    suspend fun getCompletedEpisodeIds(): List<String>
+    /** Emits whenever listening_history changes; the value is only a change signal. */
+    @Query("SELECT COUNT(*) FROM listening_history WHERE isCompleted = 1")
+    fun completedEpisodeCountFlow(): Flow<Int>
+
+    @Transaction
+    suspend fun getCompletedEpisodeIds(): List<String> {
+        val ids = ArrayList<String>()
+        var offset = 0
+        while (true) {
+            val page = getCompletedEpisodeIdsPage(COMPLETED_IDS_PAGE_SIZE, offset)
+            ids.addAll(page)
+            if (page.size < COMPLETED_IDS_PAGE_SIZE) return ids
+            offset += COMPLETED_IDS_PAGE_SIZE
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getCompletedEpisodeIdsFlow(): Flow<List<String>> = completedEpisodeCountFlow().mapLatest { getCompletedEpisodeIds() }
+
+    companion object {
+        const val COMPLETED_IDS_PAGE_SIZE = 1_000
+    }
 
     // Get unique podcast IDs played after the given timestamp
     @Query("SELECT DISTINCT podcastId FROM listening_history WHERE lastPlayedAt > :sinceTimestamp")

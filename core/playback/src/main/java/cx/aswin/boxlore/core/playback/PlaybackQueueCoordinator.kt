@@ -19,7 +19,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 
 /**
@@ -53,6 +52,8 @@ internal class PlaybackQueueCoordinator(
     private val storePendingEntryPoint: (android.os.Bundle?) -> Unit,
     private val ensureCurrentHistoryRow: suspend () -> Unit,
     private val stopProgressTicker: () -> Unit,
+    /** Called whenever a queue starts from a listener action, so stream-failure counting starts fresh. */
+    private val onQueueStarted: () -> Unit = {},
 ) {
     private val castQueueSnapshotPolicy = CastQueueSnapshotPolicy()
     private var castQueueRecheckJob: Job? = null
@@ -230,7 +231,7 @@ internal class PlaybackQueueCoordinator(
                     .Builder()
                     .setTitle(episode.title)
                     .setArtist(episode.podcastTitle ?: podcast.title)
-                    .setArtworkUri(resolvedUrl?.let(android.net.Uri::parse))
+                    .setArtworkUri(PlaybackUris.parseOrNull(resolvedUrl))
                     .setDisplayTitle(episode.title)
                     .setSubtitle(episode.podcastTitle ?: podcast.title)
                     .setGenre(episode.podcastGenre ?: podcast.genre)
@@ -259,6 +260,8 @@ internal class PlaybackQueueCoordinator(
         sourceContext: android.os.Bundle? = null,
     ) {
         Log.d("PlaybackRepo", "playQueue() called: count=${episodes.size}, start=$startIndex, podcastGenre='${podcast.genre}'")
+        // Every listener-started queue (play, play episode, play from queue, skip to an episode) lands here.
+        onQueueStarted()
         val requestedStartId = episodes.getOrNull(startIndex)?.id
         val uniqueEpisodes = episodes.distinctBy { it.id }
         val uniqueStartIndex =
@@ -275,9 +278,7 @@ internal class PlaybackQueueCoordinator(
 
         prefs.edit().putBoolean(playerDismissedKey, false).apply()
 
-        if (mediaHandle.controller == null) {
-            mediaHandle.controller = mediaHandle.future?.await()
-        }
+        mediaHandle.awaitController()
 
         mediaHandle.controller?.let { controller ->
             // A rich source bundle (e.g. "episode_info_screen", "home_hero_*") always wins.
@@ -393,10 +394,7 @@ internal class PlaybackQueueCoordinator(
             return false
         }
 
-        if (mediaHandle.controller == null) {
-            Log.d("PlaybackRepo", "addToQueue: mediaHandle.controller null, awaiting...")
-            mediaHandle.controller = mediaHandle.future?.await()
-        }
+        mediaHandle.awaitController()
 
         mediaHandle.controller?.let { controller ->
             Log.d("PlaybackRepo", "addToQueue: mediaHandle.controller ready, mediaItemCount=${controller.mediaItemCount}")
@@ -407,7 +405,7 @@ internal class PlaybackQueueCoordinator(
                     .Builder()
                     .setTitle(episode.title)
                     .setArtist(podcast.title)
-                    .setArtworkUri(android.net.Uri.parse(resolvedUrl))
+                    .setArtworkUri(PlaybackUris.parseOrNull(resolvedUrl))
                     .setDisplayTitle(episode.title)
                     .setSubtitle(podcast.title)
                     .setGenre(episode.podcastGenre ?: podcast.genre)
@@ -460,65 +458,52 @@ internal class PlaybackQueueCoordinator(
         episode: Episode,
         podcast: Podcast,
     ) {
-        if (mediaHandle.controller == null) {
-            mediaHandle.controller = mediaHandle.future?.await()
-        }
+        mediaHandle.awaitController()
 
         mediaHandle.controller?.let { controller ->
-            val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(episode, podcast)
-            Log.d("PlaybackRepo", "addToQueueNext: epId=${episode.id}, resolvedImageUrl='$resolvedUrl'")
-            val metadata =
-                androidx.media3.common.MediaMetadata
-                    .Builder()
-                    .setTitle(episode.title)
-                    .setArtist(podcast.title)
-                    .setArtworkUri(android.net.Uri.parse(resolvedUrl))
-                    .setDisplayTitle(episode.title)
-                    .setSubtitle(podcast.title)
-                    .setGenre(episode.podcastGenre ?: podcast.genre)
-                    .setExtras(PlaybackArtworkMetadata.extras(episode, podcast))
-                    .build()
-
-            val mediaItem =
-                MediaItem
-                    .Builder()
-                    .setUri(episode.audioUrl)
-                    .setMimeType(episode.enclosureType)
-                    .setMediaMetadata(metadata)
-                    .setMediaId(episode.id)
-                    .setCustomCacheKey(
-                        PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
-                    ) // Match DownloadRequest custom key
-                    .build()
-
-            // Insert at index 1 (after current playing item)
-            // If queue is empty or has 1 item, this adds to end (index 1)
-            val insertIndex = if (controller.mediaItemCount > 0) controller.currentMediaItemIndex + 1 else 0
-            controller.addMediaItem(insertIndex, mediaItem)
-
-            // Update local state
-            val currentQueue = playerStateFlow.value.queue
-
-            val newQueue =
-                if (currentQueue.isNotEmpty()) {
-                    // Insert at index 1
-                    val mutable = currentQueue.toMutableList()
-                    // Find current episode index in local queue to be safe
-                    val currentId = playerStateFlow.value.currentEpisode?.id
-                    val currentIndex = if (currentId != null) mutable.indexOfFirst { it.id == currentId } else 0
-
-                    val safeIndex = if (currentIndex != -1) currentIndex + 1 else 1
-
-                    if (mutable.size >= safeIndex) {
-                        mutable.add(safeIndex, episode)
-                    } else {
-                        mutable.add(episode)
-                    }
-                    mutable.toList()
-                } else {
-                    listOf(episode)
+            val currentId = playerStateFlow.value.currentEpisode?.id
+            if (episode.id == currentId) return
+            val mediaIds = (0 until controller.mediaItemCount).map { controller.getMediaItemAt(it).mediaId }
+            val existingIndex = QueueMath.mediaIndexOfEpisode(mediaIds, episode.id)
+            if (existingIndex >= 0) {
+                // Already queued: move it up instead of adding a duplicate (lists key rows by id).
+                val currentIndex = controller.currentMediaItemIndex
+                if (existingIndex != currentIndex) {
+                    controller.moveMediaItem(existingIndex, QueueMath.playNextTargetIndex(existingIndex, currentIndex))
                 }
+            } else {
+                val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(episode, podcast)
+                Log.d("PlaybackRepo", "addToQueueNext: epId=${episode.id}, resolvedImageUrl='$resolvedUrl'")
+                val metadata =
+                    androidx.media3.common.MediaMetadata
+                        .Builder()
+                        .setTitle(episode.title)
+                        .setArtist(podcast.title)
+                        .setArtworkUri(PlaybackUris.parseOrNull(resolvedUrl))
+                        .setDisplayTitle(episode.title)
+                        .setSubtitle(podcast.title)
+                        .setGenre(episode.podcastGenre ?: podcast.genre)
+                        .setExtras(PlaybackArtworkMetadata.extras(episode, podcast))
+                        .build()
 
+                val mediaItem =
+                    MediaItem
+                        .Builder()
+                        .setUri(episode.audioUrl)
+                        .setMimeType(episode.enclosureType)
+                        .setMediaMetadata(metadata)
+                        .setMediaId(episode.id)
+                        .setCustomCacheKey(
+                            PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                        ) // Match DownloadRequest custom key
+                        .build()
+
+                // Insert after the current item; an empty player gets it at index 0.
+                val insertIndex = if (controller.mediaItemCount > 0) controller.currentMediaItemIndex + 1 else 0
+                controller.addMediaItem(insertIndex, mediaItem)
+            }
+
+            val newQueue = QueueMath.placeNext(playerStateFlow.value.queue, currentId, episode) { it.id }
             playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
             syncQueueToDb()
         }
@@ -554,9 +539,7 @@ internal class PlaybackQueueCoordinator(
                 )
             }
 
-        if (mediaHandle.controller == null) {
-            mediaHandle.controller = mediaHandle.future?.await()
-        }
+        mediaHandle.awaitController()
 
         val controller = mediaHandle.controller
         if (controller == null) {
@@ -572,7 +555,7 @@ internal class PlaybackQueueCoordinator(
                         .Builder()
                         .setTitle(ep.title)
                         .setArtist(podcast.title)
-                        .setArtworkUri(android.net.Uri.parse(resolvedUrl))
+                        .setArtworkUri(PlaybackUris.parseOrNull(resolvedUrl))
                         .setDisplayTitle(ep.title)
                         .setSubtitle(podcast.title)
                         .setGenre(ep.podcastGenre ?: podcast.genre)
@@ -631,9 +614,7 @@ internal class PlaybackQueueCoordinator(
         episodeId: String,
         deferSkipSignal: Boolean = false,
     ): RemovedQueueItem? {
-        if (mediaHandle.controller == null) {
-            mediaHandle.controller = mediaHandle.future?.await()
-        }
+        mediaHandle.awaitController()
 
         val queueItem =
             try {
@@ -737,9 +718,7 @@ internal class PlaybackQueueCoordinator(
     suspend fun undoQueueRemoval(removed: RemovedQueueItem) {
         val episode = removed.episode
         if (playerStateFlow.value.queue.any { it.id == episode.id }) return
-        if (mediaHandle.controller == null) {
-            mediaHandle.controller = mediaHandle.future?.await()
-        }
+        mediaHandle.awaitController()
         val controller = mediaHandle.controller ?: return
 
         val isLore = removed.contextType == QueueMath.CONTEXT_TYPE_LORE
@@ -756,7 +735,7 @@ internal class PlaybackQueueCoordinator(
                 .Builder()
                 .setTitle(episode.title)
                 .setArtist(episode.podcastTitle ?: "")
-                .setArtworkUri(android.net.Uri.parse(resolvedUrl))
+                .setArtworkUri(PlaybackUris.parseOrNull(resolvedUrl))
                 .setDisplayTitle(episode.title)
                 .setSubtitle(episode.podcastTitle ?: "")
                 .setGenre(episode.podcastGenre ?: "Podcast")
@@ -880,9 +859,7 @@ internal class PlaybackQueueCoordinator(
      * player first, then the persisted queue rows (which survive process restarts).
      */
     suspend fun hasNonLoreQueue(): Boolean {
-        if (mediaHandle.controller == null) {
-            mediaHandle.controller = mediaHandle.future?.await()
-        }
+        mediaHandle.awaitController()
         val controller = mediaHandle.controller
         if (controller != null && controller.mediaItemCount > 0) {
             val mediaIds = (0 until controller.mediaItemCount).map { controller.getMediaItemAt(it).mediaId }

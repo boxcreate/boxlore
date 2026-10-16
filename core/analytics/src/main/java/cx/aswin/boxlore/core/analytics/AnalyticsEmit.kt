@@ -12,12 +12,14 @@ internal object AnalyticsEmit {
 
     @Volatile
     var eventSink: (String, Map<String, Any>) -> Unit = { event, properties ->
-        PostHog.capture(event = event, properties = properties)
+        PostHogStartup.runWhenReady { PostHog.capture(event = event, properties = properties) }
     }
 
     @Volatile
     var personSetSink: (Map<String, Any>) -> Unit = { userProperties ->
-        PostHog.capture(event = AnalyticsGlossary.PERSON_SET_EVENT, userProperties = userProperties)
+        PostHogStartup.runWhenReady {
+            PostHog.capture(event = AnalyticsGlossary.PERSON_SET_EVENT, userProperties = userProperties)
+        }
     }
 
     /** Test helper: install a recording sink; returns captured event names + props. */

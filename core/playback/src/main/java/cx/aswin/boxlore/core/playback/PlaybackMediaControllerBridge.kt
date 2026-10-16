@@ -44,6 +44,12 @@ internal class PlaybackMediaControllerBridge(
 ) : Player.Listener {
     private var lastReportedRemote: Boolean? = null
     private var pendingCastTransition: PendingCastTransition? = null
+    private val errorSkipGuard = PlaybackErrorSkipGuard()
+
+    /** Called when the listener starts a new queue, so earlier failures do not count against it. */
+    fun resetErrorSkips() {
+        errorSkipGuard.reset()
+    }
 
     fun syncPlaybackRoute() {
         val controller = mediaHandle.controller ?: return
@@ -112,6 +118,7 @@ internal class PlaybackMediaControllerBridge(
         val oldIsPlaying = playerStateFlow.value.isPlaying
         playerStateFlow.value = playerStateFlow.value.copy(isPlaying = isPlaying)
         if (isPlaying) {
+            errorSkipGuard.onPlaybackSucceeded()
             if (!oldIsPlaying) {
                 onPlaybackStarted()
             }
@@ -188,41 +195,48 @@ internal class PlaybackMediaControllerBridge(
         // Try to skip the bad item instead of nuking the entire queue
         val currentIndex = controller.currentMediaItemIndex
         val hasNext = currentIndex < controller.mediaItemCount - 1
+        val action = errorSkipGuard.onError(hasNext = hasNext, playWhenReady = controller.playWhenReady)
 
-        if (hasNext) {
-            // Remove the failed item and advance to the next one
-            Log.d("PlaybackRepo", "onPlayerError: Skipping failed item '${failedEpisode?.title}', advancing to next")
-            controller.removeMediaItem(currentIndex)
-            val newQueue = queue.filterNot { it.id == failedEpisode?.id }
-            playerStateFlow.value =
-                playerStateFlow.value.copy(
-                    queue = newQueue,
-                    isLoading = true,
-                )
-            controller.prepare()
-            controller.play()
-        } else {
-            // No more items — clear everything
-            Log.d("PlaybackRepo", "onPlayerError: No more items in queue, clearing.")
-            controller.stop()
-            controller.clearMediaItems()
-            playerStateFlow.value =
-                playerStateFlow.value.copy(
-                    isPlaying = false,
-                    isLoading = false,
-                    currentEpisode = null,
-                    queue = emptyList(),
-                )
+        when (action) {
+            PlaybackErrorSkipGuard.Action.SKIP_AND_PLAY, PlaybackErrorSkipGuard.Action.SKIP_PAUSED -> {
+                Log.d("PlaybackRepo", "onPlayerError: Skipping failed item '${failedEpisode?.title}', advancing to next ($action)")
+                controller.removeMediaItem(currentIndex)
+                val newQueue = queue.filterNot { it.id == failedEpisode?.id }
+                val autoPlay = action == PlaybackErrorSkipGuard.Action.SKIP_AND_PLAY
+                playerStateFlow.value =
+                    playerStateFlow.value.copy(
+                        queue = newQueue,
+                        isLoading = autoPlay,
+                        isPlaying = autoPlay && playerStateFlow.value.isPlaying,
+                    )
+                controller.prepare()
+                // Never resume after the listener paused; play() here used to override pause.
+                if (autoPlay) controller.play()
+            }
+            PlaybackErrorSkipGuard.Action.STOP -> {
+                Log.w("PlaybackRepo", "onPlayerError: ${errorSkipGuard.consecutiveFailures} failures in a row, stopping auto-skip")
+                controller.pause()
+                stopProgressTicker()
+                playerStateFlow.value = playerStateFlow.value.copy(isPlaying = false, isLoading = false)
+            }
+            PlaybackErrorSkipGuard.Action.CLEAR_QUEUE -> {
+                // No more items — clear everything
+                Log.d("PlaybackRepo", "onPlayerError: No more items in queue, clearing.")
+                controller.stop()
+                controller.clearMediaItems()
+                playerStateFlow.value =
+                    playerStateFlow.value.copy(
+                        isPlaying = false,
+                        isLoading = false,
+                        currentEpisode = null,
+                        queue = emptyList(),
+                    )
+            }
         }
 
         scope.launch {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                val message =
-                    if (playerStateFlow.value.playbackRoute.isRemote) {
-                        "That episode could not play on this Cast device."
-                    } else {
-                        "Stream unavailable, skipping…"
-                    }
+                val message = PlaybackErrorMessages.forAction(action, isRemote = playerStateFlow.value.playbackRoute.isRemote)
                 android.widget.Toast
                     .makeText(
                         context,

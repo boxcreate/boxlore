@@ -35,6 +35,23 @@ object QueueMath {
     /** Same detection, from persisted queue rows (survives process restarts). */
     fun hasNonLoreContextTypes(contextTypes: List<String?>): Boolean = contextTypes.any { it != CONTEXT_TYPE_LORE }
 
+    /**
+     * Places [item] right after the item whose id is [currentId], removing any earlier copy so
+     * "Play next" on a queued episode moves it instead of listing it twice.
+     */
+    fun <T> placeNext(list: List<T>, currentId: String?, item: T, idOf: (T) -> String): List<T> {
+        val itemId = idOf(item)
+        if (itemId == currentId) return list
+        val without = list.filterNot { idOf(it) == itemId }
+        if (without.isEmpty()) return listOf(item)
+        val currentIndex = currentId?.let { id -> without.indexOfFirst { idOf(it) == id } } ?: 0
+        val insertAt = if (currentIndex >= 0) currentIndex + 1 else 1
+        return without.toMutableList().apply { add(insertAt.coerceAtMost(size), item) }
+    }
+
+    /** Final index for moving the item at [fromIndex] to just after [currentIndex] in a player. */
+    fun playNextTargetIndex(fromIndex: Int, currentIndex: Int): Int = if (fromIndex > currentIndex) currentIndex + 1 else currentIndex
+
     /** Moves an element within a list, returning a new list. */
     fun <T> moveItem(list: List<T>, fromIndex: Int, toIndex: Int): List<T> {
         if (fromIndex == toIndex) return list

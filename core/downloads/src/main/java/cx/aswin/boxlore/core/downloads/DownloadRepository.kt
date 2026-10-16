@@ -106,6 +106,8 @@ open class DownloadRepository(
     }
 
     open suspend fun addAutoDownload(episode: Episode, podcast: Podcast): Boolean {
+        // Catalog episodes can arrive without an audio URL even though the model declares one.
+        val audioUri = DownloadAudioUri.parseOrNull(episode) ?: return false
         val dao = database.downloadedEpisodeDao()
         val admitted = database.withTransaction {
             if (database.autoDownloadDao().getRelease(episode.id)?.state == cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity.REMOVED) return@withTransaction false
@@ -136,7 +138,7 @@ open class DownloadRepository(
             true
         }
         if (!admitted) return false
-        val request = DownloadRequest.Builder(episode.id, android.net.Uri.parse(episode.audioUrl))
+        val request = DownloadRequest.Builder(episode.id, audioUri)
             .setCustomCacheKey(EpisodeMediaCacheKey.of(episode.id, episode.audioUrl))
             .setData("${podcast.id}|${podcast.title}|${episode.title}|auto".toByteArray()).build()
         // Synchronous dispatch on Media3's application looper. Exceptions reach the worker for retry.
@@ -183,6 +185,7 @@ open class DownloadRepository(
         isSmartDownloaded: Boolean = false,
         isForeground: Boolean = true,
     ) {
+        val audioUri = DownloadAudioUri.parseOrNull(episode) ?: return
         val source = if (isSmartDownloaded) "smart" else "manual"
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackDownloadRequested(
             episode.id,
@@ -191,7 +194,7 @@ open class DownloadRepository(
         )
         val downloadRequest =
             DownloadRequest
-                .Builder(episode.id, android.net.Uri.parse(episode.audioUrl))
+                .Builder(episode.id, audioUri)
                 .setCustomCacheKey(EpisodeMediaCacheKey.of(episode.id, episode.audioUrl))
                 .setData(
                     // Serialize needed metadata to restore if app killed
@@ -208,6 +211,8 @@ open class DownloadRepository(
         }
     }
 
+    /** [isForeground] is kept for callers; removal never starts the download service. */
+    @Suppress("UNUSED_PARAMETER")
     open fun removeDownload(episodeId: String, isForeground: Boolean = true): Job {
         // Capture artwork paths BEFORE triggering removal to avoid a race with
         // the DownloadManager listener (which deletes the DB row on STATE_REMOVING).
@@ -232,7 +237,9 @@ open class DownloadRepository(
                 null
             }
 
-            notifyServiceRemoveDownload(context, episodeId, isForeground)
+            // Removal goes straight to DownloadManager (evictFromCaches). Starting the download
+            // service here crashed with ForegroundServiceStartNotAllowedException whenever a
+            // download was running while the app was in the background (e.g. after playback ended).
             evictFromCaches(context, episodeId, customCacheKey)
             cleanupArtwork(
                 database = database,
@@ -729,25 +736,6 @@ private fun enqueueDirectlyToManager(context: Context, downloadRequest: Download
         }
     } catch (e: Exception) {
         android.util.Log.e("DownloadRepo", "Failed to add download directly to DownloadManager", e)
-    }
-}
-
-private fun notifyServiceRemoveDownload(
-    context: Context,
-    episodeId: String,
-    isForeground: Boolean,
-) {
-    if (isForeground) {
-        try {
-            DownloadService.sendRemoveDownload(
-                context,
-                DownloadRepository.mediaDownloadServiceClass(),
-                episodeId,
-                false,
-            )
-        } catch (e: Exception) {
-            Log.w("DownloadRepo", "sendRemoveDownload failed for $episodeId", e)
-        }
     }
 }
 

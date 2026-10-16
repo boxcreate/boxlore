@@ -86,4 +86,28 @@ class QueueMathTest {
         assertEquals(list, QueueMath.moveItem(list, -1, 2))
         assertEquals(list, QueueMath.moveItem(list, 0, 3))
     }
+
+    // ── play next ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `play next on a queued episode moves it instead of duplicating it`() {
+        val queue = listOf("a", "b", "c", "d")
+        // Regression: "Play next" twice listed the episode twice and crashed the keyed queue list.
+        assertEquals(listOf("a", "d", "b", "c"), QueueMath.placeNext(queue, currentId = "a", item = "d") { it })
+        assertEquals(listOf("a", "d", "b", "c"), QueueMath.placeNext(listOf("a", "d", "b", "c"), "a", "d") { it })
+    }
+
+    @Test
+    fun `play next inserts after the current episode or at the front`() {
+        assertEquals(listOf("a", "x", "b"), QueueMath.placeNext(listOf("a", "b"), "a", "x") { it })
+        assertEquals(listOf("a", "x", "b"), QueueMath.placeNext(listOf("a", "b"), null, "x") { it })
+        assertEquals(listOf("x"), QueueMath.placeNext(emptyList(), "a", "x") { it })
+        assertEquals(listOf("a", "b"), QueueMath.placeNext(listOf("a", "b"), "a", "a") { it })
+    }
+
+    @Test
+    fun `play next player move targets the slot after the current item`() {
+        assertEquals(3, QueueMath.playNextTargetIndex(fromIndex = 5, currentIndex = 2))
+        assertEquals(2, QueueMath.playNextTargetIndex(fromIndex = 0, currentIndex = 2))
+    }
 }

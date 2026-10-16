@@ -25,6 +25,23 @@ class SubscriptionReorderControlsTest {
     }
 
     @Test
+    fun `resolveOrderedPodcasts never repeats a show the grid keys by id`() {
+        // Regression: a repeated id in the saved order or the subscription rows crashed the keyed grid.
+        val manual = resolveOrderedPodcasts(
+            unfiledPodcasts = unfiled + podcastA,
+            orderedKeys = listOf("pod-b", "pod-b", "pod-a"),
+            isManualSort = true,
+        )
+        assertEquals(listOf("pod-b", "pod-a", "pod-c"), manual.map { it.id })
+        val automatic = resolveOrderedPodcasts(
+            unfiledPodcasts = unfiled + podcastA,
+            orderedKeys = emptyList(),
+            isManualSort = false,
+        )
+        assertEquals(listOf("pod-a", "pod-b", "pod-c"), automatic.map { it.id })
+    }
+
+    @Test
     fun `resolveOrderedPodcasts respects orderedKeys when isManualSort is true`() {
         val result = resolveOrderedPodcasts(
             unfiledPodcasts = unfiled,
