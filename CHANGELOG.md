@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support analytics: `support_entry_viewed` (Settings button impression) and `support_page_left` (dwell, tiers viewed, pay tapped); Support events now carry `support_world`, `assignment_source`, `tier_index`, `amount_usd` and `payments_live`. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Settings › Library › LeaveMeAlone (`RecommendationsSettingsPage`, `DiscoverySections` in `:core:prefs`) turns off the Brief, Picked for you and Explore's For you tab, Because you like, time-of-day rows and episode pages' Try these episodes; sections that are off make no requests (`collectDiscoverySection`). Appearance › Home links to it. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `recommendation_section_toggled` analytics event for each switch and for the Brief card's Always hide. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Opening an emailed sign-in link opens Account & sync, which shows Signing you in, then the first sync, or why the link failed (Send a new link for used or expired links, Try again otherwise). `EmailLinkSignIn` in `core:auth` holds the app-scoped sign-in state, and `SignInLinkExpiredException` marks used or expired links; the sign-in toasts are removed. ([#1135](https://github.com/boxcreate/boxlore/pull/1135)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - Replace blanket R8 keeps with scoped reflection and storage contracts, enable resource shrinking with dynamic-resource retention, and exclude the debug App Check SDK from release builds. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -351,6 +352,11 @@ readme-copy:end pr=1128 -->
 ### Fixes
 - If you follow more than 40 shows, Auto-download now picks up new episodes from all of them.
 readme-copy:end pr=1130 -->
+
+<!-- readme-copy:start pr=1135
+### Improvements
+- Opening a sign-in link from your email now shows boxlore signing you in and syncing your library. If the link has expired, you can send a new one right there.
+readme-copy:end pr=1135 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
