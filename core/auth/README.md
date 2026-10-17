@@ -8,7 +8,8 @@ Provides authentication abstractions and implementations (Firebase).
 
 - `AuthRepository` (authentication operations, Google, Magic Link, Email/Password, `sendEmailVerification()`, `reloadUser()`)
 - `AuthException`, `RecentLoginRequiredException`
-- `FirebaseAuthRepository` (supports optional `onPreDeleteAccount` callback invoked before Firebase account deletion)
+- `FirebaseAuthRepository` (supports optional `onPreDeleteAccount` callback invoked before Firebase account deletion). A used or expired sign-in link fails with `SignInLinkExpiredException` (Firebase's `ERROR_INVALID_ACTION_CODE` / `ERROR_EXPIRED_ACTION_CODE`).
+- `EmailLinkSignIn` and `EmailLinkSignInStatus` (Idle, SigningIn, SignedIn, Failed with `expired` and the address): signs in from an opened email link, ignores the same link arriving again while it signs in, retries the last link after a failure, and counts up `accountPageRequests` (time-based, so a request after process recreation is still newer than one the UI saved) so the app opens Account & sync once per link.
 
 ## Internal structure
 
@@ -27,6 +28,7 @@ Provides authentication abstractions and implementations (Firebase).
 
 - IO / background tasks for network and authentication operations.
 - Application-scoped repository instance exposed via `AppContainer`.
+- `EmailLinkSignIn` is application-scoped too (`AppContainer.emailLinkSignIn`), so a sign-in in flight survives activity recreation, rotation, folding and window resizes.
 
 ## Persistence & identity
 
@@ -34,7 +36,7 @@ Provides authentication abstractions and implementations (Firebase).
 
 ## Testing notes
 
-- Unit tests in `src/test` covering `AuthRepository` contracts, verification state, user reload, and error propagation.
+- Unit tests in `src/test` covering `AuthRepository` contracts, verification state, user reload, and error propagation. `EmailLinkSignInTest` covers the sign-in states, duplicate links, retry, dismiss, rising Account page requests and the used-or-expired error codes.
 - Local command:
 
 ```bash

@@ -33,6 +33,16 @@
     <string name="account_hide_password">Hide password</string>
     <string name="account_privacy_prefix">"By continuing, you agree to the "</string>
 
+    <!-- Opening a sign-in link: signing in, or why it didn’t work -->
+    <string name="account_link_signing_in">Signing you in</string>
+    <string name="account_link_signing_in_body">Checking your link. Your library syncs right after.</string>
+    <string name="account_link_expired">This link has expired</string>
+    <string name="account_link_expired_body">Sign-in links work once and expire after a while.</string>
+    <string name="account_link_send_new">Send a new link</string>
+    <string name="account_link_failed">Couldn’t sign you in</string>
+    <string name="account_link_failed_body">Check your connection and try the link again.</string>
+    <string name="account_link_try_again">Try again</string>
+
     <!-- Check your email: a sign-in link, or confirming a new password account -->
     <string name="account_check_title">Check your email</string>
     <string name="account_check_body">Open the link we sent on this phone to finish signing in.</string>

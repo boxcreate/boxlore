@@ -41,6 +41,7 @@ import cx.aswin.boxlore.feature.settings.dialogs.AddRssFeedDialog
 import cx.aswin.boxlore.feature.settings.dialogs.ResetAnalyticsDialog
 import cx.aswin.boxlore.feature.settings.dialogs.RssMatchConfirmationDialog
 import cx.aswin.boxlore.feature.settings.pages.AboutSettingsPage
+import cx.aswin.boxlore.feature.settings.pages.AccountEmailLinkUi
 import cx.aswin.boxlore.feature.settings.pages.AccountSettingsPage
 import cx.aswin.boxlore.feature.settings.pages.AppInfo
 import cx.aswin.boxlore.feature.settings.pages.AppearanceActions
@@ -106,6 +107,8 @@ data class SettingsRepositories(
     val syncStatusFlow: StateFlow<CloudSyncUiStatus>? = null,
     val onSyncNow: (() -> Unit)? = null,
     val totalListeningHoursFlow: Flow<Long>? = null,
+    /** Signing in from emailed links, shown on the Account page. */
+    val emailLinkSignIn: cx.aswin.boxlore.core.auth.EmailLinkSignIn? = null,
 )
 
 /** [SettingsScreen]'s top-level identifiers/callbacks that aren't tied to a specific sub-page. */
@@ -397,6 +400,33 @@ private fun SettingsAnimatedPages(
     }
 }
 
+/** Account & sync, with an opened sign-in link's progress from [SettingsRepositories.emailLinkSignIn]. */
+@Composable
+private fun AccountDestination(
+    repositories: SettingsRepositories,
+    config: SettingsScreenConfig,
+    onBack: () -> Unit,
+    syncStatus: CloudSyncUiStatus,
+) {
+    val emailLinkSignIn = repositories.emailLinkSignIn
+    val emailLinkStatus by (
+        emailLinkSignIn?.status?.collectAsStateWithLifecycle()
+            ?: remember { mutableStateOf<cx.aswin.boxlore.core.auth.EmailLinkSignInStatus>(cx.aswin.boxlore.core.auth.EmailLinkSignInStatus.Idle) }
+    )
+    AccountSettingsPage(
+        authRepository = repositories.authRepository,
+        onBack = onBack,
+        syncStatus = syncStatus,
+        onSyncNow = repositories.onSyncNow ?: {},
+        isOnboarding = config.isOnboarding,
+        emailLink = AccountEmailLinkUi(
+            status = emailLinkStatus,
+            onRetry = { emailLinkSignIn?.retry() },
+            onDismiss = { emailLinkSignIn?.dismiss() },
+        ),
+    )
+}
+
 @Composable
 private fun SettingsDestinationContent(
     destination: ProfileSettingsDestination,
@@ -416,13 +446,7 @@ private fun SettingsDestinationContent(
             )
 
         ProfileSettingsDestination.Account ->
-            AccountSettingsPage(
-                authRepository = repositories.authRepository,
-                onBack = actions.onReturnToHub,
-                syncStatus = syncStatus,
-                onSyncNow = repositories.onSyncNow ?: {},
-                isOnboarding = config.isOnboarding,
-            )
+            AccountDestination(repositories, config, onBack = actions.onReturnToHub, syncStatus = syncStatus)
 
         ProfileSettingsDestination.SyncAndBackups ->
             SyncAndBackupsPage(
