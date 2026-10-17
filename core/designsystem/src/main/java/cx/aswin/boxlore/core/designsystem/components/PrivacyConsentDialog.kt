@@ -311,7 +311,7 @@ private fun ConsentOptions(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 4.dp).clickable {
                             try {
-                                uriHandler.openUri("https://aswin.cx/boxlore/privacy")
+                                uriHandler.openUri("https://boxlore.in/privacy/")
                             } catch (_: Exception) {
                                 // Ignore if browser cannot be opened
                             }

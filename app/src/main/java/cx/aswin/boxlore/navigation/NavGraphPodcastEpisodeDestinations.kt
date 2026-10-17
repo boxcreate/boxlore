@@ -57,9 +57,7 @@ internal fun androidx.navigation.NavGraphBuilder.addPodcastDestination(w: NavGra
         deepLinks = listOf(
             navDeepLink { uriPattern = "boxlore://podcast/{podcastId}" },
             navDeepLink { uriPattern = "boxcast://podcast/{podcastId}" },
-            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=podcast&id={podcastId}" },
-            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=podcast&id={podcastId}" },
-        ),
+        ) + WebAppLinks.podcastShareDeepLinks(),
     ) { backStackEntry ->
         val podcastId = backStackEntry.arguments?.getString("podcastId") ?: return@composable
         val briefingRegion = briefingRegionFromPodcastId(podcastId)
@@ -344,21 +342,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
             navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&autoplay={autoplay}" },
             navDeepLink { uriPattern = "boxcast://episode/{episodeId}?autoplay={autoplay}" },
             navDeepLink { uriPattern = "boxcast://episode/{episodeId}" },
-            navDeepLink {
-                uriPattern =
-                    "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}"
-            },
-            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&t={t}&autoplay={autoplay}" },
-            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}&autoplay={autoplay}" },
-            navDeepLink { uriPattern = "https://aswin.cx/boxlore/share?type=episode&id={episodeId}" },
-            navDeepLink {
-                uriPattern =
-                    "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}"
-            },
-            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&t={t}&autoplay={autoplay}" },
-            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}&autoplay={autoplay}" },
-            navDeepLink { uriPattern = "https://aswin.cx/boxcast/share?type=episode&id={episodeId}" },
-        ),
+        ) + WebAppLinks.episodeShareDeepLinks(),
     ) { backStackEntry ->
         val args = backStackEntry.arguments ?: return@composable
         val episodeId = args.getString("episodeId") ?: ""

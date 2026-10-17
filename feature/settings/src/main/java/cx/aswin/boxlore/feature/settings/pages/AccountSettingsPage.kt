@@ -26,7 +26,7 @@ import cx.aswin.boxlore.core.model.BoxLoreUser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-private const val ACCOUNT_DELETION_URL = "https://aswin.cx/boxlore/account-deletion/"
+private const val ACCOUNT_DELETION_URL = "https://boxlore.in/account-deletion/"
 
 @Composable
 private fun AccountStateEffects(

@@ -55,6 +55,9 @@ class FirebaseAuthRepository(
         val actionCodeSettings = ActionCodeSettings.newBuilder()
             .setUrl(magicLinkUrl)
             .setHandleCodeInApp(true)
+            // Puts the emailed link on boxlore.in, which the app verifies, so tapping it opens
+            // the app instead of a browser page on the Firebase default domain.
+            .setLinkDomain(MAGIC_LINK_DOMAIN)
             .setAndroidPackageName(packageName, true, null)
             .build()
         auth.sendSignInLinkToEmail(email, actionCodeSettings).awaitTask()
@@ -126,7 +129,10 @@ class FirebaseAuthRepository(
     }.getOrNull()
 
     companion object {
-        const val MAGIC_LINK_DEFAULT_URL = "https://aswin.cx/boxlore/auth"
+        const val MAGIC_LINK_DEFAULT_URL = "https://boxlore.in/auth"
+
+        /** Firebase Hosting domain for emailed sign-in links (`/__/auth/links`); the app claims that path. */
+        const val MAGIC_LINK_DOMAIN = "boxlore.in"
         const val PACKAGE_NAME_DEFAULT = "cx.aswin.boxlore"
         private val RECENT_LOGIN_KEYWORDS = listOf(
             "recent-login",

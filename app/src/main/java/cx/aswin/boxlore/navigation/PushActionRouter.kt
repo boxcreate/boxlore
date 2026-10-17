@@ -45,8 +45,7 @@ internal fun dispatchPushAction(
 /** Prevents unrecognized verified App Links from dispatching back to MainActivity. */
 internal fun externalPushActionIntent(uri: Uri): Intent {
     val intent = Intent(Intent.ACTION_VIEW, uri)
-    val claimed = uri.host == "aswin.cx" && listOf("/boxlore/share", "/boxcast/share", "/boxlore/auth").any { uri.path.orEmpty().startsWith(it) }
-    if (!claimed) return intent
+    if (!WebAppLinks.isClaimed(uri)) return intent
     return Intent.createChooser(intent, null).apply {
         putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(BuildConfig.APPLICATION_ID, MainActivity::class.java.name)))
     }
