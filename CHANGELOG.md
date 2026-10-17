@@ -102,6 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README screenshots now show current light-mode screens for Lore, Explore, Welcome, Home, both players, Home styles, themes, and sync and backups. ([#1132](https://github.com/boxcreate/boxlore/pull/1132)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Replaced the featured image and kept the previous version under docs/images/archive. ([#1132](https://github.com/boxcreate/boxlore/pull/1132)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - README screenshots now show two compact feature labels per screen, placed so they do not cover the app. ([#1134](https://github.com/boxcreate/boxlore/pull/1134)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- README screenshots now use larger phones, with feature labels that rest on the phone frame instead of the app. ([#1136](https://github.com/boxcreate/boxlore/pull/1136)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Preserve WorkManager input-merger constructors in optimized releases so one-time download and notification-hydration work can start. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Repair existing RSS imports without catalogue matching or changing saved show and episode identities. ([#1098](https://github.com/boxcreate/boxlore/pull/1098)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
