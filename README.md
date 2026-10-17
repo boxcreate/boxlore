@@ -10,7 +10,7 @@
 <!-- download-play:end -->
 &nbsp;&nbsp;
 <!-- download-apk:start -->
-<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.28.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
+<a href="https://github.com/boxcreate/boxlore/releases/latest/download/boxlore-v0.0.29.apk"><img src="docs/images/button_github_v8.svg" width="224" height="60" alt="Download the boxlore APK from GitHub"/></a>
 <!-- download-apk:end -->
 &nbsp;&nbsp;
 <!-- download-obtainium:start -->
@@ -63,6 +63,14 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+New features and improvements for the next release are currently in development.
+<!-- release-upcoming:end -->
+
+
+### What's New · `v0.0.29` · 2026-10-17
+
+<!-- release-whats-new:start -->
+<!-- release-meta: version=v0.0.29 date=2026-10-17 -->
 <b>🚨 Critical:</b>
 <ul align="left">
 <li>Fixed a release-build issue that could prevent automatic and Smart downloads from starting. <a href="https://github.com/boxcreate/boxlore/pull/1106"><img src="https://img.shields.io/badge/PR-1106-6750A4?style=flat-square" alt="PR #1106" height="18"/></a></li>
@@ -161,32 +169,6 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Fullscreen transcripts keep their controls on screen. <a href="https://github.com/boxcreate/boxlore/pull/1121"><img src="https://img.shields.io/badge/PR-1121-6750A4?style=flat-square" alt="PR #1121" height="18"/></a></li>
 <li>Navigation highlights match your chosen accent, and the miniplayer stays above the navbar when Android navigation buttons are enabled. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
 <li>When automatic downloads depend on opening boxlore, a notice explains this and offers to turn on show notifications. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
-</ul>
-<!-- release-upcoming:end -->
-
-
-### What's New · `v0.0.28` · 2026-10-04
-
-<!-- release-whats-new:start -->
-<!-- release-meta: version=v0.0.28 date=2026-10-04 -->
-<b>🚨 Critical:</b>
-<ul align="left">
-<li>Automatic downloads now recover new episodes when an episode alert is missing, resume after interruptions, and work with notifications turned off. Manually saved episodes stay protected. <a href="https://github.com/boxcreate/boxlore/pull/1092"><img src="https://img.shields.io/badge/PR-1092-6750A4?style=flat-square" alt="PR #1092" height="18"/></a></li>
-</ul>
-<b>⚡ Improvements:</b>
-<ul align="left">
-<li>The floating player shrinks into a compact artwork control as you scroll, with playback progress kept visible and Lore moving into the navigation bar. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
-<li>Enjoy refined miniplayer controls and smoother transitions into the full player. Optional seek buttons are available in Appearance settings. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
-<li>Home loads more consistently, with smoother loading placeholders and less content blinking during refreshes. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
-<li>Background episode checks are now optional in Auto-Download Settings. They start off, explain their battery and data costs, offer network and charging restrictions, and pause when the battery is low. <a href="https://github.com/boxcreate/boxlore/pull/1094"><img src="https://img.shields.io/badge/PR-1094-6750A4?style=flat-square" alt="PR #1094" height="18"/></a></li>
-<li>Auto-downloads still use new-episode pushes and normal refreshes while boxlore is open. Routine feed checks now share a six-hour cooldown and refresh large libraries in smaller batches. <a href="https://github.com/boxcreate/boxlore/pull/1094"><img src="https://img.shields.io/badge/PR-1094-6750A4?style=flat-square" alt="PR #1094" height="18"/></a></li>
-<li>Added a dedicated Support boxlore experience in Settings with interactive tactical artifacts and lore inspection. <a href="https://github.com/boxcreate/boxlore/pull/1090"><img src="https://img.shields.io/badge/PR-1090-6750A4?style=flat-square" alt="PR #1090" height="18"/></a></li>
-</ul>
-<b>🐛 Fixes:</b>
-<ul align="left">
-<li>Floating tab selectors and Play All follow the player's compact position. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
-<li>Lore colours follow the active artwork more reliably, and long Settings titles wrap across two lines. <a href="https://github.com/boxcreate/boxlore/pull/1095"><img src="https://img.shields.io/badge/PR-1095-6750A4?style=flat-square" alt="PR #1095" height="18"/></a></li>
-<li>New Episodes now plays the remaining list in order and resumes unfinished episodes at the right position. <a href="https://github.com/boxcreate/boxlore/pull/1093"><img src="https://img.shields.io/badge/PR-1093-6750A4?style=flat-square" alt="PR #1093" height="18"/></a></li>
 </ul>
 <!-- release-whats-new:end -->
 
