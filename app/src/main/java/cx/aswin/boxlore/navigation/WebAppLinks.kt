@@ -13,9 +13,12 @@ import androidx.navigation.navDeepLink
 internal object WebAppLinks {
     /** Path prefixes claimed per host. */
     val claimedPaths: Map<String, List<String>> = mapOf(
-        "boxlore.in" to listOf("/share", "/auth"),
+        "boxlore.in" to listOf("/share", "/auth", EMAIL_SIGN_IN_LINK_PATH),
         "aswin.cx" to listOf("/boxlore/share", "/boxcast/share", "/boxlore/auth"),
     )
+
+    /** Where Firebase serves emailed sign-in links on its link domain. */
+    const val EMAIL_SIGN_IN_LINK_PATH = "/__/auth/links"
 
     /** Share page addresses, current first. */
     val shareBases: List<String> = listOf(

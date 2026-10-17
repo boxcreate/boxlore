@@ -102,6 +102,8 @@
                 <data android:host="boxlore.in" />
                 <data android:pathPrefix="/share" />
                 <data android:pathPrefix="/auth" />
+                <!-- Emailed sign-in links (Firebase Hosting link domain) -->
+                <data android:pathPrefix="/__/auth/links" />
             </intent-filter>
 
             <!-- Links shared by older builds -->

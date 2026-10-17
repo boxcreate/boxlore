@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import cx.aswin.boxlore.core.auth.FirebaseAuthRepository
 import cx.aswin.boxlore.core.model.ShareLinkBuilder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -84,6 +85,13 @@ class WebAppLinksTest {
             "https://aswin.cx/share?type=podcast&id=1",
             "https://example.org/share?type=podcast&id=1",
         ).forEach { assertFalse(it, WebAppLinks.isClaimed(Uri.parse(it))) }
+    }
+
+    @Test fun `emailed sign-in links open the app instead of a browser page`() {
+        val action = Uri.encode("https://boxcasts.firebaseapp.com/__/auth/action?mode=signIn&oobCode=abc&continueUrl=https://boxlore.in/auth")
+        val emailed = Uri.parse("https://${FirebaseAuthRepository.MAGIC_LINK_DOMAIN}${WebAppLinks.EMAIL_SIGN_IN_LINK_PATH}?link=$action")
+        assertTrue(emailed.toString(), WebAppLinks.isClaimed(emailed))
+        assertTrue(WebAppLinks.isClaimed(Uri.parse(FirebaseAuthRepository.MAGIC_LINK_DEFAULT_URL)))
     }
 
     @Test fun `an unmatched boxlore_in link cannot reopen boxlore through the external fallback`() {
