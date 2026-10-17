@@ -132,6 +132,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>Choose from sixteen new complete themes, with simple light/dark previews and clearer wallpaper and custom-color controls. <a href="https://github.com/boxcreate/boxlore/pull/1099"><img src="https://img.shields.io/badge/PR-1099-6750A4?style=flat-square" alt="PR #1099" height="18"/></a></li>
 <li>Automatic download settings are easier to read, with grouped controls and a separate help guide. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
 <li>Backup background checks now clearly explain how they help when show notifications are off or do not arrive. <a href="https://github.com/boxcreate/boxlore/pull/1097"><img src="https://img.shields.io/badge/PR-1097-6750A4?style=flat-square" alt="PR #1097" height="18"/></a></li>
+<li>Links you share from boxlore now use boxlore.in. Links shared before still open in the app. <a href="https://github.com/boxcreate/boxlore/pull/1133"><img src="https://img.shields.io/badge/PR-1133-6750A4?style=flat-square" alt="PR #1133" height="18"/></a></li>
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">

@@ -95,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API calls authenticate with an API session (`ApiSessionManager`) instead of the bundled app key; App Check runs only during the session exchange, so requests no longer wait on it. ([#1130](https://github.com/boxcreate/boxlore/pull/1130)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Expired sessions renew silently with a Keystore-backed device-key proof; limited sessions retry App Check in the background. ([#1130](https://github.com/boxcreate/boxlore/pull/1130)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New `api_session_status` analytics event; `app_check_status` now includes a failure reason. ([#1130](https://github.com/boxcreate/boxlore/pull/1130)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Share links, the email sign-in link and the privacy and account-deletion links use `https://boxlore.in`; sign-in emails use `boxlore.in` as their link domain so the link opens the app directly. The app verifies `boxlore.in` `/share`, `/auth` and `/__/auth/links` as App Links and keeps opening `aswin.cx` share and sign-in links; `WebAppLinks` holds the verified hosts, paths and share deep links, and `WebAppLinksManifestTest` keeps the manifest in step. ([#1133](https://github.com/boxcreate/boxlore/pull/1133)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Require authored PR release copy and preserve its wording while ordering release notes; remove Groq rewriting. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Simplify Echo clip decoding in `EchoClipFrames` to resolve SonarCloud issues; behaviour unchanged. ([#1125](https://github.com/boxcreate/boxlore/pull/1125)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Tracked-feed backfill sends a scoped read-only service credential (`BOXLORE_SVC_BACKFILL_KEY`) to the catalog lookup when configured, falling back to the app key. ([#1126](https://github.com/boxcreate/boxlore/pull/1126)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -353,6 +354,11 @@ readme-copy:end pr=1128 -->
 ### Fixes
 - If you follow more than 40 shows, Auto-download now picks up new episodes from all of them.
 readme-copy:end pr=1130 -->
+
+<!-- readme-copy:start pr=1133
+### Improvements
+- Links you share from boxlore now use boxlore.in. Links shared before still open in the app.
+readme-copy:end pr=1133 -->
 
 <!-- readme-copy:start pr=1135
 ### Improvements
