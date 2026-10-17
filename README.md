@@ -118,6 +118,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <li>The Lore queue prompt explains how to start a new queue or add episodes to your current one. <a href="https://github.com/boxcreate/boxlore/pull/1101"><img src="https://img.shields.io/badge/PR-1101-6750A4?style=flat-square" alt="PR #1101" height="18"/></a></li>
 <li>Imported RSS shows now refresh and support automatic and Smart Downloads. Existing imports upgrade while keeping your saved state. <a href="https://github.com/boxcreate/boxlore/pull/1098"><img src="https://img.shields.io/badge/PR-1098-6750A4?style=flat-square" alt="PR #1098" height="18"/></a></li>
 <li>Enable release notifications for public RSS feeds after confirmation. Keep notifications off for private or premium feeds because the shared checker publishes feed URLs in public backups. <a href="https://github.com/boxcreate/boxlore/pull/1098"><img src="https://img.shields.io/badge/PR-1098-6750A4?style=flat-square" alt="PR #1098" height="18"/></a></li>
+<li>Opening a sign-in link from your email now shows boxlore signing you in and syncing your library. If the link has expired, you can send a new one right there. <a href="https://github.com/boxcreate/boxlore/pull/1135"><img src="https://img.shields.io/badge/PR-1135-6750A4?style=flat-square" alt="PR #1135" height="18"/></a></li>
 <li>boxlore opens faster: Home no longer waits on a background check before loading. <a href="https://github.com/boxcreate/boxlore/pull/1130"><img src="https://img.shields.io/badge/PR-1130-6750A4?style=flat-square" alt="PR #1130" height="18"/></a></li>
 <li>New LeaveMeAlone page in Settings › Library: turn off recommendations across the app, including the Brief, Picked for you, Because you like, time-of-day picks and Try these episodes. Sections you turn off don’t load. <a href="https://github.com/boxcreate/boxlore/pull/1123"><img src="https://img.shields.io/badge/PR-1123-6750A4?style=flat-square" alt="PR #1123" height="18"/></a></li>
 <li>Hiding the Brief from its card can now be undone in LeaveMeAlone. <a href="https://github.com/boxcreate/boxlore/pull/1123"><img src="https://img.shields.io/badge/PR-1123-6750A4?style=flat-square" alt="PR #1123" height="18"/></a></li>
@@ -204,9 +205,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 - **The boxlore brief.** An optional daily news episode, with sources.
 
 <p align="center">
-<img src="docs/images/brand/screens/lore.png?v=8af50774" width="30%" alt="Lore: a question card about Krakatoa that leads to an episode, with Play and Add to queue"/>&nbsp;
-<img src="docs/images/brand/screens/explore.png?v=f8e223e6" width="30%" alt="Explore: search by idea, picks for you, ideas for the time of day and top shows by region"/>&nbsp;
-<img src="docs/images/brand/screens/welcome.png?v=7414e7b8" width="30%" alt="Welcome: meet Echo, answer a few questions and get shows picked for you, or import your library"/>
+<img src="docs/images/brand/screens/lore.png?v=37be7c2b" width="30%" alt="Lore: a question card about Krakatoa that leads to an episode, with Play and Add to queue"/>&nbsp;
+<img src="docs/images/brand/screens/explore.png?v=982f4363" width="30%" alt="Explore: search by idea, picks for you, ideas for the time of day and top shows by region"/>&nbsp;
+<img src="docs/images/brand/screens/welcome.png?v=380b3263" width="30%" alt="Welcome: meet Echo, answer a few questions and get shows picked for you, or import your library"/>
 </p>
 
 <br/>
@@ -221,9 +222,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 - **Ready before you go offline.** Smart Downloads get new episodes onto your phone.
 
 <p align="center">
-<img src="docs/images/brand/screens/home.png?v=8c60a071" width="30%" alt="boxlore Home: resume in one tap, with picks for you, Daily mix and Smart Downloads"/>&nbsp;
-<img src="docs/images/brand/screens/player.png?v=83a9636a" width="30%" alt="The boxlore player in the show’s colours, with 0.5× to 3× speed, a sleep timer, chapters, transcripts and Google Cast"/>&nbsp;
-<img src="docs/images/brand/screens/player_minimal.png?v=a4581961" width="30%" alt="The minimal player: a larger title, time left at a glance and big, easy controls"/>
+<img src="docs/images/brand/screens/home.png?v=b8a56563" width="30%" alt="boxlore Home: resume in one tap, with picks for you, Daily mix and Smart Downloads"/>&nbsp;
+<img src="docs/images/brand/screens/player.png?v=00e04b66" width="30%" alt="The boxlore player in the show’s colours, with 0.5× to 3× speed, a sleep timer, chapters, transcripts and Google Cast"/>&nbsp;
+<img src="docs/images/brand/screens/player_minimal.png?v=8abdadf9" width="30%" alt="The minimal player: a larger title, time left at a glance and big, easy controls"/>
 </p>
 
 <br/>
@@ -240,9 +241,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 - **And much, much more.** See [every feature](#every-feature).
 
 <p align="center">
-<img src="docs/images/brand/screens/home_styles.png?v=c6c701c7" width="30%" alt="Six Home styles: Block, Cover, Tide, Duotone, Halo and Marquee"/>&nbsp;
-<img src="docs/images/brand/screens/themes.png?v=290f25fa" width="30%" alt="The custom theme editor with a live preview in light and dark and any colour you like"/>&nbsp;
-<img src="docs/images/brand/screens/backup.png?v=54c018ca" width="30%" alt="Cloud sync and backups: full library backup, OPML import and export, and sync across your devices"/>
+<img src="docs/images/brand/screens/home_styles.png?v=852b0011" width="30%" alt="Six Home styles: Block, Cover, Tide, Duotone, Halo and Marquee"/>&nbsp;
+<img src="docs/images/brand/screens/themes.png?v=da22748c" width="30%" alt="The custom theme editor with a live preview in light and dark and any colour you like"/>&nbsp;
+<img src="docs/images/brand/screens/backup.png?v=ad347ce6" width="30%" alt="Cloud sync and backups: full library backup, OPML import and export, and sync across your devices"/>
 </p>
 
 <br/>

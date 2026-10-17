@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support analytics: `support_entry_viewed` (Settings button impression) and `support_page_left` (dwell, tiers viewed, pay tapped); Support events now carry `support_world`, `assignment_source`, `tier_index`, `amount_usd` and `payments_live`. ([#1122](https://github.com/boxcreate/boxlore/pull/1122)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Settings › Library › LeaveMeAlone (`RecommendationsSettingsPage`, `DiscoverySections` in `:core:prefs`) turns off the Brief, Picked for you and Explore's For you tab, Because you like, time-of-day rows and episode pages' Try these episodes; sections that are off make no requests (`collectDiscoverySection`). Appearance › Home links to it. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - `recommendation_section_toggled` analytics event for each switch and for the Brief card's Always hide. ([#1123](https://github.com/boxcreate/boxlore/pull/1123)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- Opening an emailed sign-in link opens Account & sync, which shows Signing you in, then the first sync, or why the link failed (Send a new link for used or expired links, Try again otherwise). `EmailLinkSignIn` in `core:auth` holds the app-scoped sign-in state, and `SignInLinkExpiredException` marks used or expired links; the sign-in toasts are removed. ([#1135](https://github.com/boxcreate/boxlore/pull/1135)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - Add public announcement composition and offline preview tooling with draft review and contract tests. ([#1108](https://github.com/boxcreate/boxlore/pull/1108)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - Replace blanket R8 keeps with scoped reflection and storage contracts, enable resource shrinking with dynamic-resource retention, and exclude the debug App Check SDK from release builds. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
@@ -100,6 +101,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The announcement composer guide moved to `docs/ANNOUNCEMENT_COMPOSER.md`; `admin-panel/` stays ignored apart from the public composer files, now listed individually. ([#1129](https://github.com/boxcreate/boxlore/pull/1129)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - README screenshots now show current light-mode screens for Lore, Explore, Welcome, Home, both players, Home styles, themes, and sync and backups. ([#1132](https://github.com/boxcreate/boxlore/pull/1132)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - Replaced the featured image and kept the previous version under docs/images/archive. ([#1132](https://github.com/boxcreate/boxlore/pull/1132)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- README screenshots now show two compact feature labels per screen, placed so they do not cover the app. ([#1134](https://github.com/boxcreate/boxlore/pull/1134)) <!-- impact:no-user-impact --> <!-- copy:locked -->
+- README screenshots now use larger phones, with feature labels that rest on the phone frame instead of the app. ([#1136](https://github.com/boxcreate/boxlore/pull/1136)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Fixed
 - Preserve WorkManager input-merger constructors in optimized releases so one-time download and notification-hydration work can start. ([#1106](https://github.com/boxcreate/boxlore/pull/1106)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Repair existing RSS imports without catalogue matching or changing saved show and episode identities. ([#1098](https://github.com/boxcreate/boxlore/pull/1098)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
@@ -350,6 +353,11 @@ readme-copy:end pr=1128 -->
 ### Fixes
 - If you follow more than 40 shows, Auto-download now picks up new episodes from all of them.
 readme-copy:end pr=1130 -->
+
+<!-- readme-copy:start pr=1135
+### Improvements
+- Opening a sign-in link from your email now shows boxlore signing you in and syncing your library. If the link has expired, you can send a new one right there.
+readme-copy:end pr=1135 -->
 ## [v0.0.28] - 2026-10-04
 
 ### Added
