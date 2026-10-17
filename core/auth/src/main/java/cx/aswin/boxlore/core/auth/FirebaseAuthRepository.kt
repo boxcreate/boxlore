@@ -122,7 +122,7 @@ class FirebaseAuthRepository(
     }.getOrNull()
 
     companion object {
-        const val MAGIC_LINK_DEFAULT_URL = "https://aswin.cx/boxlore/auth"
+        const val MAGIC_LINK_DEFAULT_URL = "https://boxlore.in/auth"
         const val PACKAGE_NAME_DEFAULT = "cx.aswin.boxlore"
         private val RECENT_LOGIN_KEYWORDS = listOf(
             "recent-login",

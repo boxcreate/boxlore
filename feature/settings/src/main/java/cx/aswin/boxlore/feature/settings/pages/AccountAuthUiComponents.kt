@@ -154,7 +154,7 @@ internal fun AuthErrorBanner(message: String) {
     }
 }
 
-internal const val BOXLORE_PRIVACY_POLICY_URL = "https://aswin.cx/boxlore/privacy/"
+internal const val BOXLORE_PRIVACY_POLICY_URL = "https://boxlore.in/privacy/"
 
 @Composable
 internal fun PrivacyPolicyNotice(

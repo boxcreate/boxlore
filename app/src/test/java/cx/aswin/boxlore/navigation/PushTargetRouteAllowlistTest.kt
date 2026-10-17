@@ -17,6 +17,7 @@ class PushTargetRouteAllowlistTest {
         assertTrue(PushTargetRouteAllowlist.isAllowed("episode/abc?autoplay=true"))
         assertTrue(PushTargetRouteAllowlist.isAllowed("boxlore://episode/abc"))
         assertTrue(PushTargetRouteAllowlist.isAllowed("https://aswin.cx/boxlore/share?type=episode&id=1"))
+        assertTrue(PushTargetRouteAllowlist.isAllowed("https://boxlore.in/share?type=episode&id=1"))
     }
 
     @Test

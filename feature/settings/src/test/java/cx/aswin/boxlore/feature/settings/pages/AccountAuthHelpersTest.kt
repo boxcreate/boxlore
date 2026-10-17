@@ -692,7 +692,7 @@ class AccountAuthHelpersTest {
 
     @Test
     fun boxlorePrivacyPolicyUrl_isCorrectEndpoint() {
-        assertEquals("https://aswin.cx/boxlore/privacy/", BOXLORE_PRIVACY_POLICY_URL)
+        assertEquals("https://boxlore.in/privacy/", BOXLORE_PRIVACY_POLICY_URL)
     }
 
     @Test

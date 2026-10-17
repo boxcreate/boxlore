@@ -41,7 +41,7 @@ private fun rememberIsOnline(application: BoxLoreApplication): Boolean {
  *  - library / library/history / library/liked / library/subscriptions
  *  - library/downloads / library/downloads/settings / library/downloads/show
  *  - library/auto_downloads/settings
- *  - podcast/{podcastId}  (+ deep links: boxlore://, boxcast://, https://aswin.cx/...)
+ *  - podcast/{podcastId}  (+ deep links: boxlore://, boxcast://, https share links in WebAppLinks)
  *  - episode/{episodeId}/...  (full path + deep links)
  *  - episode/{episodeId}      (simplified deep-link route)
  */

@@ -91,7 +91,20 @@
                 <data android:scheme="boxcast" />
             </intent-filter>
 
-            <!-- Web Domain App Links (HTTPS only; HTTP DAL redirects and fails autoVerify) -->
+            <!-- Web Domain App Links (HTTPS only; HTTP DAL redirects and fails autoVerify).
+                 Hosts and paths must match navigation/WebAppLinks.kt. One filter per host:
+                 hosts and paths in a single filter combine into every pairing. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="boxlore.in" />
+                <data android:pathPrefix="/share" />
+                <data android:pathPrefix="/auth" />
+            </intent-filter>
+
+            <!-- Links shared by older builds -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

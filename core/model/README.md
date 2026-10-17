@@ -69,7 +69,7 @@ src/main/java/cx/aswin/boxlore/core/model/
 ## Testing notes
 
 - Unit tests live under `core/model/src/test`.
-- `ShareLinkBuilderTest` covers share URL invariants.
+- `ShareLinkBuilderTest` covers share URL invariants. Share links use `https://boxlore.in/share`; the app still opens the older `aswin.cx` share links.
 - Prefer pure JVM tests for additional formatters or value helpers.
 
 ```bash
