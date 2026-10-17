@@ -15,6 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -60,9 +64,11 @@ internal fun ColumnScope.AccountLinkFailedContent(
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // A new link went out: the page moves on to Check your email.
-    LaunchedEffect(state.magicLinkSent) {
-        if (state.magicLinkSent) onDismiss()
+    // Only a link sent from this screen moves the page on to Check your email; an earlier
+    // "link sent" flag from before the failure must not skip past it.
+    var newLinkRequested by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(newLinkRequested, state.magicLinkSent) {
+        if (newLinkRequested && state.magicLinkSent) onDismiss()
     }
 
     Text(
@@ -82,7 +88,9 @@ internal fun ColumnScope.AccountLinkFailedContent(
                     label = stringResource(R.string.account_link_send_new),
                     onClick = {
                         state.chooseEmailMethod(password = false)
+                        state.magicLinkSent = false
                         state.email = failure.email
+                        newLinkRequested = true
                         state.submitEmailLink()
                     },
                     modifier = Modifier.testTag("account_link_send_new"),

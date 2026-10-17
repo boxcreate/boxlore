@@ -48,7 +48,8 @@ class EmailLinkSignIn(
      */
     val accountPageRequests: StateFlow<Long> = _accountPageRequests.asStateFlow()
 
-    private var lastAttempt: Attempt? = null
+    // Written on the caller's thread, read when the sign-in returns on [scope].
+    @Volatile private var lastAttempt: Attempt? = null
 
     fun isSignInLink(link: String): Boolean = authRepository.isSignInWithEmailLink(link)
 

@@ -168,10 +168,16 @@ fun BoxLoreAppRoot(
     val accountPageRequest by application.container.emailLinkSignIn.accountPageRequests.collectAsState()
     var handledAccountPageRequest by rememberSaveable { mutableLongStateOf(0L) }
     LaunchedEffect(accountPageRequest) {
-        if (accountPageRequest <= handledAccountPageRequest) return@LaunchedEffect
-        handledAccountPageRequest = accountPageRequest
         val entry = navController.currentBackStackEntry
-        if (!cx.aswin.boxlore.navigation.isAccountPage(entry?.destination?.route, entry?.arguments?.getString("page"))) {
+        val action = cx.aswin.boxlore.navigation.accountPageRequestAction(
+            request = accountPageRequest,
+            handled = handledAccountPageRequest,
+            route = entry?.destination?.route,
+            page = entry?.arguments?.getString("page"),
+        )
+        if (action == cx.aswin.boxlore.navigation.AccountPageRequestAction.Ignore) return@LaunchedEffect
+        handledAccountPageRequest = accountPageRequest
+        if (action == cx.aswin.boxlore.navigation.AccountPageRequestAction.Open) {
             tabletNavigation.navigate(navController, cx.aswin.boxlore.navigation.ACCOUNT_PAGE_ROUTE)
         }
     }
