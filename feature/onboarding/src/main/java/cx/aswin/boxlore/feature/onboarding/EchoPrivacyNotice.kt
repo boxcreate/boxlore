@@ -22,7 +22,7 @@ internal fun EchoPrivacyNotice() {
         val start = copy.indexOf(policy)
         addLink(
             LinkAnnotation.Url(
-                "https://aswin.cx/boxlore/privacy/",
+                "https://boxlore.in/privacy/",
                 TextLinkStyles(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)),
             ),
             start,

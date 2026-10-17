@@ -8,7 +8,7 @@ Provides authentication abstractions and implementations (Firebase).
 
 - `AuthRepository` (authentication operations, Google, Magic Link, Email/Password, `sendEmailVerification()`, `reloadUser()`)
 - `AuthException`, `RecentLoginRequiredException`
-- `FirebaseAuthRepository` (supports optional `onPreDeleteAccount` callback invoked before Firebase account deletion)
+- `FirebaseAuthRepository` (supports optional `onPreDeleteAccount` callback invoked before Firebase account deletion). Magic links are emailed on the `boxlore.in` link domain (`ActionCodeSettings.setLinkDomain`, Firebase's `/__/auth/links` page), so tapping one opens the app directly, and they return to `https://boxlore.in/auth`; `boxlore.in` must stay an authorized domain in Firebase Auth.
 
 ## Internal structure
 

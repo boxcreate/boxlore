@@ -1,7 +1,7 @@
 package cx.aswin.boxlore.core.model
 
 object ShareLinkBuilder {
-    private const val BASE_URL = "https://aswin.cx/boxlore/share"
+    private const val BASE_URL = "https://boxlore.in/share"
 
     fun podcast(id: String): String = "$BASE_URL?type=podcast&id=$id"
 
