@@ -2,7 +2,7 @@ package cx.aswin.boxlore.feature.settings.pages
 
 import android.app.Application
 import androidx.compose.foundation.layout.Column
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -58,7 +58,7 @@ class AccountLinkFailedContentTest {
                 BoxLoreTheme(dynamicColor = false) {
                     val state = rememberAccountAuthState(authRepository = repository)
                     // A link was sent earlier in this session, before the opened one failed.
-                    remember { state.magicLinkSent = true }
+                    LaunchedEffect(Unit) { state.magicLinkSent = true }
                     Column {
                         AccountLinkFailedContent(
                             failure = EmailLinkSignInStatus.Failed(expired = true, email = "listener@example.test"),
