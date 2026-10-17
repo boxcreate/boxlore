@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import cx.aswin.boxlore.core.auth.AuthRepository
+import cx.aswin.boxlore.core.auth.EmailLinkSignInStatus
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.model.BoxLoreUser
 import kotlinx.coroutines.CoroutineScope
@@ -81,6 +83,7 @@ internal fun AccountSettingsPage(
     syncStatus: CloudSyncUiStatus = CloudSyncUiStatus.Idle,
     onSyncNow: () -> Unit = {},
     isOnboarding: Boolean = false,
+    emailLink: AccountEmailLinkUi = AccountEmailLinkUi(),
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -110,37 +113,29 @@ internal fun AccountSettingsPage(
 
     val user = currentUser
     val isAwaiting = isAwaitingVerificationState(authState, user, context)
-    val mode = accountPageMode(user != null && !isAwaiting, isOnboarding, isAwaiting, authState.magicLinkSent && !authState.usePasswordAuth)
+    val mode = accountPageModeFor(user, isAwaiting, isOnboarding, authState, emailLink.status)
+    LaunchedEffect(mode) {
+        if (mode.showsLinkResult) scrollState.animateScrollTo(0)
+    }
+    val signedInActions = SignedInActions(
+        onResetPassword = { sendResetPasswordEmail(scope, authRepository, user?.email, context) },
+        onSignOut = { handleSignOut(authRepository, authState, context) },
+        onDeleteAccountClick = { showDeleteConfirmation = true },
+        onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
+        onSyncNow = onSyncNow,
+    )
     AccountPageScaffold(
         onBack = onBack,
         isOnboarding = isOnboarding,
         scroll = scrollState,
-        showNotNow = isOnboarding && !mode.signedIn,
+        showNotNow = isOnboarding && mode.offersNotNow,
         bottomBar = if (mode == AccountPageMode.SignedInOnboarding) {
             { AccountContinueButton(onBack) }
         } else {
             null
         },
     ) {
-        when (mode) {
-            AccountPageMode.SignedInOnboarding -> user?.let { AccountSignedInOnboarding(it, syncStatus, onSyncNow) }
-            AccountPageMode.SignedInSettings -> user?.let {
-                AccountSignedInSettings(
-                    user = it,
-                    syncStatus = syncStatus,
-                    actions = SignedInActions(
-                        onResetPassword = { sendResetPasswordEmail(scope, authRepository, it.email, context) },
-                        onSignOut = { handleSignOut(authRepository, authState, context) },
-                        onDeleteAccountClick = { showDeleteConfirmation = true },
-                        onOpenAccountDeletionInfo = onOpenAccountDeletionInfo,
-                        onSyncNow = onSyncNow,
-                    ),
-                )
-            }
-            AccountPageMode.ConfirmEmail -> AccountCheckEmailContent(AccountEmailCheck.Confirm, authState)
-            AccountPageMode.CheckLinkEmail -> AccountCheckEmailContent(AccountEmailCheck.Link, authState)
-            AccountPageMode.SignedOut -> SignedOutContent(authState)
-        }
+        AccountModeContent(mode, user, syncStatus, authState, emailLink, signedInActions)
     }
 
     AccountSettingsDialogs(
@@ -165,19 +160,76 @@ internal fun AccountSettingsPage(
     )
 }
 
+@Composable
+private fun ColumnScope.AccountModeContent(
+    mode: AccountPageMode,
+    user: BoxLoreUser?,
+    syncStatus: CloudSyncUiStatus,
+    authState: AccountAuthState,
+    emailLink: AccountEmailLinkUi,
+    signedInActions: SignedInActions,
+) {
+    val linkFailure = emailLink.status as? EmailLinkSignInStatus.Failed
+    when (mode) {
+        AccountPageMode.SignedInOnboarding -> user?.let { AccountSignedInOnboarding(it, syncStatus, signedInActions.onSyncNow) }
+        AccountPageMode.SignedInSettings -> user?.let { AccountSignedInSettings(user = it, syncStatus = syncStatus, actions = signedInActions) }
+        AccountPageMode.SigningInWithLink -> AccountSigningInContent()
+        AccountPageMode.LinkFailed -> linkFailure?.let { AccountLinkFailedContent(it, authState, onRetry = emailLink.onRetry, onDismiss = emailLink.onDismiss) }
+        AccountPageMode.ConfirmEmail -> AccountCheckEmailContent(AccountEmailCheck.Confirm, authState)
+        AccountPageMode.CheckLinkEmail -> AccountCheckEmailContent(AccountEmailCheck.Link, authState)
+        AccountPageMode.SignedOut -> SignedOutContent(authState)
+    }
+}
+
+private fun accountPageModeFor(
+    user: BoxLoreUser?,
+    isAwaiting: Boolean,
+    isOnboarding: Boolean,
+    authState: AccountAuthState,
+    linkStatus: EmailLinkSignInStatus,
+): AccountPageMode = accountPageMode(
+    signedIn = user != null && !isAwaiting,
+    onboarding = isOnboarding,
+    awaitingVerification = isAwaiting,
+    linkSent = authState.magicLinkSent && !authState.usePasswordAuth,
+    signingInWithLink = linkStatus == EmailLinkSignInStatus.SigningIn,
+    linkFailed = linkStatus is EmailLinkSignInStatus.Failed,
+)
+
 /** What the Account page shows. Signed in, onboarding confirms with Continue; Settings manages the account. */
 internal enum class AccountPageMode(val signedIn: Boolean) {
     SignedInOnboarding(true),
     SignedInSettings(true),
+    SigningInWithLink(false),
+    LinkFailed(false),
     ConfirmEmail(false),
     CheckLinkEmail(false),
     SignedOut(false),
+    ;
+
+    /** An opened sign-in link's progress or failure, shown from the top of the page. */
+    val showsLinkResult: Boolean get() = this == SigningInWithLink || this == LinkFailed
+
+    /** Onboarding offers Not now until the listener is signed in, except while a link is signing them in. */
+    val offersNotNow: Boolean get() = !signedIn && this != SigningInWithLink
 }
 
-/** A new password account waiting for its confirmation counts as signed out until confirmed; a sent sign-in link waits for the inbox. */
-internal fun accountPageMode(signedIn: Boolean, onboarding: Boolean, awaitingVerification: Boolean, linkSent: Boolean): AccountPageMode = when {
+/**
+ * A new password account waiting for its confirmation counts as signed out until confirmed; a sent sign-in link
+ * waits for the inbox. An opened sign-in link shows its progress, or why it failed, until the listener is signed in.
+ */
+internal fun accountPageMode(
+    signedIn: Boolean,
+    onboarding: Boolean,
+    awaitingVerification: Boolean,
+    linkSent: Boolean,
+    signingInWithLink: Boolean = false,
+    linkFailed: Boolean = false,
+): AccountPageMode = when {
     signedIn && onboarding -> AccountPageMode.SignedInOnboarding
     signedIn -> AccountPageMode.SignedInSettings
+    signingInWithLink -> AccountPageMode.SigningInWithLink
+    linkFailed -> AccountPageMode.LinkFailed
     awaitingVerification -> AccountPageMode.ConfirmEmail
     linkSent -> AccountPageMode.CheckLinkEmail
     else -> AccountPageMode.SignedOut

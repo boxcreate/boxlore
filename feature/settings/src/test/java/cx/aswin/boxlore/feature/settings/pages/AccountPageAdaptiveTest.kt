@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
+import cx.aswin.boxlore.core.auth.EmailLinkSignInStatus
 import cx.aswin.boxlore.core.catalog.sync.CloudSyncUiStatus
 import cx.aswin.boxlore.core.designsystem.layout.BoxloreWindowLayout
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
@@ -141,6 +142,98 @@ class AccountPageAdaptiveTest {
         compose.onNodeWithTag("account_continue_hint").assertDoesNotExist()
         compose.onNodeWithTag("account_continue").performClick()
         assertEquals(1, continued)
+    }
+
+    @Test fun `signing in from a link, then its failure, hold through every window both ways`() {
+        val status = mutableStateOf<EmailLinkSignInStatus>(EmailLinkSignInStatus.SigningIn)
+        var retries = 0
+        renderWithLink(status, onRetry = { retries++ })
+        val windows = listOf(
+            BoxloreWindowLayout(599f, 900f),
+            BoxloreWindowLayout(600f, 900f),
+            BoxloreWindowLayout(1280f, 800f),
+            BoxloreWindowLayout(1280f, 479f),
+            BoxloreWindowLayout(1280f, 480f),
+            BoxloreWindowLayout(839f, 1180f),
+            BoxloreWindowLayout(360f, 740f),
+        )
+        windows.forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            compose.onNodeWithText("Signing you in").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("account_signing_in").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("account_method_link").assertDoesNotExist()
+        }
+
+        compose.runOnIdle { status.value = EmailLinkSignInStatus.Failed(expired = true, email = "listener@example.test") }
+        windows.reversed().forEach { next ->
+            compose.runOnIdle { window.value = next }
+            compose.waitForIdle()
+            compose.onNodeWithText("This link has expired").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("account_link_send_new").performScrollTo().assertIsDisplayed()
+        }
+
+        compose.runOnIdle { status.value = EmailLinkSignInStatus.Failed(expired = false, email = "listener@example.test") }
+        compose.onNodeWithText("Couldn’t sign you in").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("account_link_try_again").performScrollTo().performClick()
+        assertEquals(1, retries)
+
+        compose.onNodeWithTag("account_link_other_ways").performScrollTo().performClick()
+        compose.waitForIdle()
+        assertEquals(EmailLinkSignInStatus.Idle, status.value)
+        compose.onNodeWithTag("account_method_link").performScrollTo().assertIsDisplayed()
+        assertEquals(0, backs)
+    }
+
+    @Test fun `a failed link stays on the page when the activity is recreated`() {
+        val status = mutableStateOf<EmailLinkSignInStatus>(EmailLinkSignInStatus.Failed(expired = true, email = "listener@example.test"))
+        val restoration = StateRestorationTester(compose)
+        restoration.setContent {
+            EchoStillTheme(dynamicColor = false) {
+                AccountSettingsPage(authRepository = null, onBack = {}, emailLink = AccountEmailLinkUi(status = status.value))
+            }
+        }
+        compose.onNodeWithTag("account_link_send_new").performScrollTo().assertIsDisplayed()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithText("This link has expired").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("account_link_send_new").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test fun `onboarding hides Not now while a link signs in`() {
+        val status = mutableStateOf<EmailLinkSignInStatus>(EmailLinkSignInStatus.SigningIn)
+        compose.setContent {
+            EchoStillTheme(dynamicColor = false) {
+                AccountSettingsPage(authRepository = null, onBack = {}, isOnboarding = true, emailLink = AccountEmailLinkUi(status = status.value))
+            }
+        }
+        compose.onNodeWithText("Signing you in").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("account_not_now").assertDoesNotExist()
+        compose.runOnIdle { status.value = EmailLinkSignInStatus.Failed(expired = false, email = "listener@example.test") }
+        compose.onNodeWithTag("account_not_now").assertExists()
+    }
+
+    private fun renderWithLink(status: androidx.compose.runtime.MutableState<EmailLinkSignInStatus>, onRetry: () -> Unit) {
+        compose.setContent {
+            EchoStillTheme(dynamicColor = false) {
+                val layout = window.value
+                CompositionLocalProvider(LocalBoxloreWindowLayout provides layout) {
+                    Box(Modifier.requiredSize(layout.widthDp.dp, layout.heightDp.dp)) {
+                        AdaptiveSettingsLayout(ProfileSettingsDestination.Account, SettingsScreenConfig(onBack = { backs++ }, onResetAnalytics = {}), {}) {
+                            AccountSettingsPage(
+                                authRepository = null,
+                                onBack = { backs++ },
+                                emailLink = AccountEmailLinkUi(
+                                    status = status.value,
+                                    onRetry = onRetry,
+                                    onDismiss = { status.value = EmailLinkSignInStatus.Idle },
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
     }
 
     private fun render() {

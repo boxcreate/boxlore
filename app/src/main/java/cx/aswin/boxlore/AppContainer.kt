@@ -419,6 +419,11 @@ class AppContainer(
         }
     }
 
+    /** Signing in from emailed links; the Account page shows its progress. */
+    val emailLinkSignIn: cx.aswin.boxlore.core.auth.EmailLinkSignIn by lazy {
+        cx.aswin.boxlore.core.auth.EmailLinkSignIn(authRepository, syncScope)
+    }
+
     override val userSyncCoordinator: UserSyncCoordinator by lazy {
         val queuePort = queueRepository
         val subResolver = SubscriptionSyncResolver(

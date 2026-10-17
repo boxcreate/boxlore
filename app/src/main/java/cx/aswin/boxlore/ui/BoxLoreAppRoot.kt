@@ -23,9 +23,11 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -160,6 +162,18 @@ fun BoxLoreAppRoot(
         }.onFailure { Log.w("BoxLoreAppRoot", "Unable to open notification target", it) }
         intent.removeExtra("target_route")
         warmStartIntent.value = null
+    }
+
+    // A sign-in link opens Account & sync, which shows the sign-in and the first sync.
+    val accountPageRequest by application.container.emailLinkSignIn.accountPageRequests.collectAsState()
+    var handledAccountPageRequest by rememberSaveable { mutableLongStateOf(0L) }
+    LaunchedEffect(accountPageRequest) {
+        if (accountPageRequest <= handledAccountPageRequest) return@LaunchedEffect
+        handledAccountPageRequest = accountPageRequest
+        val entry = navController.currentBackStackEntry
+        if (!cx.aswin.boxlore.navigation.isAccountPage(entry?.destination?.route, entry?.arguments?.getString("page"))) {
+            tabletNavigation.navigate(navController, cx.aswin.boxlore.navigation.ACCOUNT_PAGE_ROUTE)
+        }
     }
 
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
