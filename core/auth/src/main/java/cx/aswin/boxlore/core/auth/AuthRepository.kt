@@ -27,6 +27,12 @@ interface AuthRepository {
 /** Base exception for authentication errors across providers. */
 open class AuthException(message: String?, cause: Throwable? = null) : Exception(message, cause)
 
+/** Thrown when an emailed sign-in link was already used or has expired. */
+class SignInLinkExpiredException(
+    message: String? = "This sign-in link was already used or has expired",
+    cause: Throwable? = null,
+) : AuthException(message, cause)
+
 /**
  * Thrown when a sensitive operation (like account deletion) requires the user
  * to have signed in recently.

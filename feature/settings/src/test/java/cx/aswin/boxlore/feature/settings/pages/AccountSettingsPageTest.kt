@@ -155,4 +155,13 @@ class AccountSettingsPageTest {
         assertEquals(AccountPageMode.CheckLinkEmail, accountPageMode(signedIn = false, onboarding = false, awaitingVerification = false, linkSent = true))
         assertEquals(AccountPageMode.SignedOut, accountPageMode(signedIn = false, onboarding = true, awaitingVerification = false, linkSent = false))
     }
+
+    @Test
+    fun `an opened sign-in link shows its progress or failure until the listener is signed in`() {
+        assertEquals(AccountPageMode.SigningInWithLink, accountPageMode(signedIn = false, onboarding = false, awaitingVerification = true, linkSent = true, signingInWithLink = true, linkFailed = true))
+        assertEquals(AccountPageMode.LinkFailed, accountPageMode(signedIn = false, onboarding = true, awaitingVerification = true, linkSent = true, linkFailed = true))
+        assertEquals(AccountPageMode.SignedInSettings, accountPageMode(signedIn = true, onboarding = false, awaitingVerification = false, linkSent = false, signingInWithLink = true))
+        assertEquals(AccountPageMode.SignedInOnboarding, accountPageMode(signedIn = true, onboarding = true, awaitingVerification = false, linkSent = false, linkFailed = true))
+        assertEquals(AccountPageMode.SignedOut, accountPageMode(signedIn = false, onboarding = false, awaitingVerification = false, linkSent = false, signingInWithLink = false, linkFailed = false))
+    }
 }

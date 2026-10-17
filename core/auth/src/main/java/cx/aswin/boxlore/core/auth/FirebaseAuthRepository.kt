@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.auth
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -67,6 +68,9 @@ class FirebaseAuthRepository(
         try {
             val authResult = auth.signInWithEmailLink(email, emailLink).awaitTask()
             authResult.user.toBoxLoreUser() ?: error("User was null after email link sign-in")
+        } catch (e: FirebaseAuthException) {
+            if (isUsedOrExpiredLinkError(e.errorCode)) throw SignInLinkExpiredException(e.message, e)
+            throw e
         } finally {
             pendingEmailStore?.setPendingEmail(null)
         }
@@ -132,6 +136,10 @@ class FirebaseAuthRepository(
         )
     }
 }
+
+/** Firebase's error codes for a sign-in link that was already used, has expired or was mangled. */
+internal fun isUsedOrExpiredLinkError(errorCode: String?): Boolean =
+    errorCode == "ERROR_INVALID_ACTION_CODE" || errorCode == "ERROR_EXPIRED_ACTION_CODE"
 
 private fun FirebaseUser?.toBoxLoreUser(): BoxLoreUser? =
     this?.let {

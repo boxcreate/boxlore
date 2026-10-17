@@ -68,6 +68,7 @@ private fun androidx.navigation.NavGraphBuilder.addMainSettingsRoute(w: NavGraph
                 rankingFeedbackRepository = container.rankingFeedbackRepository,
                 authRepository = container.authRepository,
                 syncStatusFlow = container.cloudSyncTriggerCoordinator.syncStatusFlow,
+                emailLinkSignIn = container.emailLinkSignIn,
                 onSyncNow = {
                     scope.launch {
                         container.cloudSyncTriggerCoordinator.triggerManualSync()
