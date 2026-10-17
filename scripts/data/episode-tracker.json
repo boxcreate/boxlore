@@ -1,11 +1,11 @@
 {
-  "lastRun": "2026-10-17T05:54:41.298Z",
+  "lastRun": "2026-10-17T10:11:38.383Z",
   "podcasts": {
     "2123": {
-      "lastRssKey": "f0dfcfea-cfc6-11f0-83c5-df5cfc8cd54e",
-      "lastEpisodeTitle": "Benn Jordan thinks the surveillance problem is much bigger than Flock",
+      "lastRssKey": "8274cd60-b924-11f1-b9e8-2b1d941659fb",
+      "lastEpisodeTitle": "Why Elon Musk wants to sell you cell service",
       "lastEpisodeId": "61769011773",
-      "lastCheckedAt": 1792067761561
+      "lastCheckedAt": 1792231898797
     },
     "6921": {
       "lastRssKey": "urn:bbc:podcast:w3ct8k7l",
@@ -50,10 +50,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "fe553331-2a79-48d8-a506-138c48db525d",
-      "lastEpisodeTitle": "1am ET, October 17 | The latest headlines from NPR",
+      "lastRssKey": "1892f265-d261-42ae-bd45-9072d1ebf8b0",
+      "lastEpisodeTitle": "6am ET, October 17 | The latest headlines from NPR",
       "lastEpisodeId": "61772764727",
-      "lastCheckedAt": 1792216485254
+      "lastCheckedAt": 1792231902207
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75811774",
@@ -192,16 +192,16 @@
       "lastCheckedAt": 1792172210277
     },
     "353744": {
-      "lastRssKey": "flightcast:01M4NT5N4PZP5NCJHH2GNWHCTN",
-      "lastEpisodeTitle": "Why Being the Most Reliable Person Is Ruining You",
+      "lastRssKey": "flightcast:01M4NT3KNMWVE4FPEY557BEGHV",
+      "lastEpisodeTitle": "Dr. K Fact Checks Ironic Mental Health Advice",
       "lastEpisodeId": "60962825498",
-      "lastCheckedAt": 1791800225358
+      "lastCheckedAt": 1792231920316
     },
     "385117": {
-      "lastRssKey": "ed365b6c-c9e8-11f1-b666-975334769827",
-      "lastEpisodeTitle": "1AM ET 10/17/2026 Newscast",
+      "lastRssKey": "d60fc3a4-ca12-11f1-88e0-8f853d9630b9",
+      "lastEpisodeTitle": "6AM ET 10/17/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792216496754
+      "lastCheckedAt": 1792231920532
     },
     "386911": {
       "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
@@ -226,6 +226,12 @@
       "lastEpisodeTitle": "The Zodiac /// Part 5",
       "lastEpisodeId": "61776427517",
       "lastCheckedAt": 1792085849269
+    },
+    "414094": {
+      "lastRssKey": "Buzzsprout-19893728",
+      "lastEpisodeTitle": "Lanterns Episode 7 Review",
+      "lastEpisodeId": "61104472046",
+      "lastCheckedAt": 1792231922753
     },
     "415434": {
       "lastRssKey": "cb68b3b8-c3c7-11f0-8340-9fd6c7b49460",
@@ -264,10 +270,10 @@
       "lastCheckedAt": 1791834997310
     },
     "437685": {
-      "lastRssKey": "6e634f48-bc91-11f1-84e4-532e5f578bc0",
-      "lastEpisodeTitle": "The Thirty Years’ War (Encore)",
-      "lastEpisodeId": "61817871391",
-      "lastCheckedAt": 1792157172767
+      "lastRssKey": "6e83672e-bc91-11f1-84e4-9728a31a7be8",
+      "lastEpisodeTitle": "Caravanserais",
+      "lastEpisodeId": "61868781975",
+      "lastCheckedAt": 1792231926297
     },
     "438184": {
       "lastRssKey": "610b43b4-c8e4-11f1-af17-cbb687bfb677",
@@ -495,10 +501,10 @@
       "lastCheckedAt": 1792107505242
     },
     "743229": {
-      "lastEpisodeId": "61819863947",
-      "lastEpisodeTitle": "MAGA's Midterm Defectors",
-      "lastRssKey": "5a11f380-4ebb-453f-9a5d-85afd8b130eb",
-      "lastCheckedAt": 1792157198811
+      "lastEpisodeId": "61870600799",
+      "lastEpisodeTitle": "50 Years In, What's the Point of U2? Bono and the Edge Have Answers.",
+      "lastRssKey": "e8c36736-f4cd-4ec4-a2a3-160b00977f8d",
+      "lastCheckedAt": 1792231947709
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -712,10 +718,10 @@
       "lastCheckedAt": 1792120712526
     },
     "1076260": {
-      "lastRssKey": "6d13aa42-55ac-405f-842a-b4de011263ea",
-      "lastEpisodeTitle": "Nico Dijkshoorn, Maurice de Hond & Dick Maas",
+      "lastRssKey": "5954fc7f-d4b0-4e0c-b39d-b4e501119ec1",
+      "lastEpisodeTitle": "Shelly Sterk, Gordon & Fajah Lourens",
       "lastEpisodeId": "61528924171",
-      "lastCheckedAt": 1791617609121
+      "lastCheckedAt": 1792231967456
     },
     "1106580": {
       "lastRssKey": "cmv4shig900f801x95kbmhxc0",
@@ -724,10 +730,10 @@
       "lastCheckedAt": 1791910489692
     },
     "1116485": {
-      "lastRssKey": "6ad1f321dad410c492a17830",
-      "lastEpisodeTitle": "Brentford v Liverpool | Premier League Match Preview",
+      "lastRssKey": "6ad22c8f006a6b206eb720c0",
+      "lastEpisodeTitle": "Man City MUST be Punished Now & Trey to Play More for Liverpool!? | Redmen Weekly",
       "lastEpisodeId": "61724731821",
-      "lastCheckedAt": 1792172275487
+      "lastCheckedAt": 1792231972161
     },
     "1149997": {
       "lastRssKey": "3eba3442-d6c2-47fe-b02d-e453f366c161",
@@ -760,10 +766,10 @@
       "lastCheckedAt": 1791835041701
     },
     "1208307": {
-      "lastRssKey": "6ad080b7937a3c900ff14441",
-      "lastEpisodeTitle": "The inside story of Rwanda's new F1 circuit design",
+      "lastRssKey": "6ad252357c5c47f85e2008c2",
+      "lastEpisodeTitle": "Tech Show: What Red Bull's improvement & Mercedes' upgrade troubles mean for 2027",
       "lastEpisodeId": "61669001851",
-      "lastCheckedAt": 1792067889178
+      "lastCheckedAt": 1792231975784
     },
     "1258562": {
       "lastRssKey": "6ad0ce1fb9a0305b85511b5c",
@@ -812,10 +818,10 @@
       "lastCheckedAt": 1792019363878
     },
     "1366771": {
-      "lastRssKey": "6ad26008e53019e890e3e3ae",
-      "lastEpisodeTitle": "Evening briefing Friday 16th October",
-      "lastEpisodeId": "61839980955",
-      "lastCheckedAt": 1792182822850
+      "lastRssKey": "6ad3215bf38f25c0f08a405b",
+      "lastEpisodeTitle": "Daily briefing Saturday 17th October",
+      "lastEpisodeId": "61868370959",
+      "lastCheckedAt": 1792231979686
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -824,10 +830,10 @@
       "lastCheckedAt": 1791480710030
     },
     "1388001": {
-      "lastRssKey": "96dd60c5-59ad-45df-84e5-f295d68f9b9f",
-      "lastEpisodeTitle": "Comment l'Europe peut-elle être plus forte ?",
+      "lastRssKey": "5efb6c74-4824-448d-a72a-de6c381b3e92",
+      "lastEpisodeTitle": "Donald Trump lâche Volodymyr Zelensky sans crier gare",
       "lastEpisodeId": "61661068342",
-      "lastCheckedAt": 1792139156768
+      "lastCheckedAt": 1792231980858
     },
     "1545709": {
       "lastRssKey": "audioboom-01a1306b-31ec-7784-beab-36f86b377033",
@@ -866,10 +872,10 @@
       "lastCheckedAt": 1791329810491
     },
     "2407094": {
-      "lastRssKey": "6ad259e087770ecee1eb7298",
-      "lastEpisodeTitle": "Le 17 octobre approche, le gouvernement prépare sa réponse (16/10)",
+      "lastRssKey": "6ad25d50052e2223f8eeda6e",
+      "lastEpisodeTitle": "(Pop) Les plateformes musicales s’élèvent contre les musiques générées par IA… HugoDécrypte",
       "lastEpisodeId": "61843905678",
-      "lastCheckedAt": 1792182825832
+      "lastCheckedAt": 1792231983518
     },
     "2574026": {
       "lastRssKey": "0052b4a6-c38c-11f1-9a53-8b7d6258a474",
@@ -1038,9 +1044,9 @@
       "lastCheckedAt": 1792139169933
     },
     "4898105": {
-      "lastRssKey": "432a4a46-c927-11f1-8555-1318575bb549",
-      "lastEpisodeTitle": "The GTA 6 Launch Trailer has Arrived",
-      "lastCheckedAt": 1792157242113
+      "lastRssKey": "c14c8466-c84b-11f1-9664-d7177fb1e532",
+      "lastEpisodeTitle": "IGN Game Review: Castlevania: Belmont’s Curse",
+      "lastCheckedAt": 1792231992458
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1119,10 +1125,10 @@
       "lastCheckedAt": 1792085956738
     },
     "5930143": {
-      "lastRssKey": "96dd60c5-59ad-45df-84e5-f295d68f9b9f",
-      "lastEpisodeTitle": "Comment l'Europe peut-elle être plus forte ?",
-      "lastEpisodeId": "61718127595",
-      "lastCheckedAt": 1792139178346
+      "lastRssKey": "5efb6c74-4824-448d-a72a-de6c381b3e92",
+      "lastEpisodeTitle": "Donald Trump lâche Volodymyr Zelensky sans crier gare",
+      "lastEpisodeId": "61868268229",
+      "lastCheckedAt": 1792231998532
     },
     "5945547": {
       "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
@@ -1185,10 +1191,10 @@
       "lastCheckedAt": 1791957192404
     },
     "6467886": {
-      "lastRssKey": "b1d70608-c799-11f1-b6d1-1bd08d445f39",
-      "lastEpisodeTitle": "#341 - Er verrät mir, wer Nord Stream gesprengt hat (Journalist)",
-      "lastEpisodeId": "61533308920",
-      "lastCheckedAt": 1792008135146
+      "lastRssKey": "12c10cfe-c955-11f1-9317-3b084f4bafce",
+      "lastEpisodeTitle": "#342 - Das Ende von Deutschland steht bevor (Markus Krall)",
+      "lastEpisodeId": "61867606054",
+      "lastCheckedAt": 1792232001282
     },
     "6559880": {
       "lastRssKey": "93bc9450-c8dc-11f1-975e-638a8fb269ad",
@@ -1255,10 +1261,10 @@
       "lastCheckedAt": 1791759946586
     },
     "6726996": {
-      "lastRssKey": "d0a952b0-c876-11f1-b260-3b375bb1b2e3",
-      "lastEpisodeTitle": "October 16 (Isaiah 52–55; Psalm 99; Acts 23)",
-      "lastEpisodeId": "61813544949",
-      "lastCheckedAt": 1792139193181
+      "lastEpisodeId": "61865405026",
+      "lastEpisodeTitle": "October 17 (Isaiah 56–58; Psalm 100; Acts 24–25)",
+      "lastRssKey": "fac5e6d4-c93f-11f1-a88e-eb5277fd0569",
+      "lastCheckedAt": 1792232012686
     },
     "6744768": {
       "lastRssKey": "56c4d7e1-2bbf-4918-9416-4678408d476e",
@@ -1333,10 +1339,10 @@
       "lastCheckedAt": 1792139196739
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779938",
-      "lastEpisodeTitle": "Gang Busters - Carnival Caper",
+      "lastRssKey": "https://api.spreaker.com/episode/59779939",
+      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Harold Trandem Matter",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1792157261309
+      "lastCheckedAt": 1792232015690
     },
     "6912659": {
       "lastRssKey": "561d1781-bda9-4d36-9565-21d87a7de5ac",
@@ -1590,10 +1596,10 @@
       "lastCheckedAt": 1789158722412
     },
     "7634730": {
-      "lastRssKey": "ccc58c1c-9247-47f3-a505-e9ba07ca05c8",
-      "lastEpisodeTitle": "The Millennium Dome (Part 3)",
-      "lastEpisodeId": "61514655659",
-      "lastCheckedAt": 1791594489712
+      "lastRssKey": "727391b6-a8ae-48c0-8c63-48af67444e68",
+      "lastEpisodeTitle": "The Millennium Dome (Part 4)",
+      "lastEpisodeId": "61868709767",
+      "lastCheckedAt": 1792232026283
     },
     "7639797": {
       "lastRssKey": "0bd3cd59-7551-4f3e-bdab-349a17ce29b4",
@@ -1661,10 +1667,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/3a74b75f-60d0-5a75-9b37-668995b0561a",
-      "lastEpisodeTitle": "Are you having flashbacks to your narcissistic relationship ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/91846bc2-0f27-5fbb-b899-feb397f7159e",
+      "lastEpisodeTitle": "Dont toxic splain the narcissists behavior ~ Dr. Ramani",
       "lastEpisodeId": "61854546834",
-      "lastCheckedAt": 1792216586015
+      "lastCheckedAt": 1792232028711
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
