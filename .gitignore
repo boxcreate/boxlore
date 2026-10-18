@@ -100,3 +100,6 @@ posthog-setup-report.md
 /AGENTS.internal.md
 /.codex/hooks.json
 /.codex/hooks/
+
+# Catalog sync vector attribution log (written on the runner)
+scripts/data/attribution/

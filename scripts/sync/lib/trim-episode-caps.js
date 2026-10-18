@@ -12,6 +12,7 @@ const qdrant = require('./qdrant');
 const turso = require('./turso');
 const cfg = require('./config');
 const { loadCapsByPodcastId } = require('./episode-caps');
+const attribution = require('./attribution');
 
 const DELETE_CHUNK = 500;
 
@@ -30,7 +31,7 @@ async function trimEpisodeCaps(opts = {}) {
         allPoints = await qdrant.scrollAll(
             cfg.EPISODES_COLLECTION,
             null,
-            ['podcast_id', 'published_date'],
+            ['podcast_id', 'published_date', 'id'],
             1000
         );
         log.info(`Scanned ${log.fmt(allPoints.length)} points in ${log.duration(Date.now() - scanStart)}`);
@@ -53,7 +54,7 @@ async function trimEpisodeCaps(opts = {}) {
         }
         const key = String(pid);
         if (!byShow.has(key)) byShow.set(key, []);
-        byShow.get(key).push({ id: pt.id, date: pt.payload?.published_date || 0 });
+        byShow.get(key).push({ id: pt.id, date: pt.payload?.published_date || 0, eid: pt.payload?.id });
     }
     log.info(`Distinct shows: ${log.fmt(byShow.size)} (${unknownPodcastId} points without podcast_id)`);
 
@@ -67,6 +68,7 @@ async function trimEpisodeCaps(opts = {}) {
     }
 
     const trimDeleteIds = [];
+    const trimDeleted = [];
     let trimmedShows = 0;
     for (const [podId, points] of byShow.entries()) {
         const cap = caps.get(podId) || cfg.EPISODE_CAP_DEFAULT;
@@ -74,17 +76,33 @@ async function trimEpisodeCaps(opts = {}) {
         points.sort((a, b) => b.date - a.date);
         const excess = points.slice(cap);
         trimDeleteIds.push(...excess.map(p => p.id));
+        trimDeleted.push(...excess.map(p => ({ podId, ...p })));
         trimmedShows++;
     }
     log.info(`Shows over cap: ${log.fmt(trimmedShows)} · excess points: ${log.fmt(trimDeleteIds.length)}`);
 
     if (!dryRun && trimDeleteIds.length > 0) {
+        // Audio URLs of the points being trimmed, for the attribution log only.
+        let audio = new Map();
+        try {
+            audio = await qdrant.payloadsByIds(cfg.EPISODES_COLLECTION, trimDeleteIds, ['audio_url']);
+        } catch {
+            audio = new Map();
+        }
         for (let i = 0; i < trimDeleteIds.length; i += DELETE_CHUNK) {
             await qdrant.deleteByIds(
                 cfg.EPISODES_COLLECTION,
                 trimDeleteIds.slice(i, i + DELETE_CHUNK),
                 true
             );
+            for (const p of trimDeleted.slice(i, i + DELETE_CHUNK)) {
+                attribution.episodeDeleted('6', p.podId, {
+                    eid: p.eid,
+                    pub: p.date,
+                    audioUrl: audio.get(String(p.id))?.audio_url,
+                }, 'cap');
+            }
+            attribution.flush();
         }
         log.info(`Deleted ${log.fmt(trimDeleteIds.length)} excess episode points (wait=true)`);
     } else if (dryRun) {

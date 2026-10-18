@@ -36,6 +36,7 @@ const {
     itunesInCountries,
 } = require('./lib/chart-countries');
 const scalars = require('./lib/scalars');
+const attribution = require('./lib/attribution');
 
 const UPSERT_BATCH = 100;
 
@@ -45,6 +46,7 @@ async function ensureIndexes() {
 }
 
 async function main() {
+    const startedS = Math.floor(Date.now() / 1000);
     turso.assertEnv();
     qdrant.assertEnv();
     pi.assertEnv();
@@ -142,16 +144,27 @@ async function main() {
     let piFetches = 0;
     let errors = 0;
     let processedCount = 0;
+    let stored = 0;
+    let pruned = 0;
+    const storedPids = new Set();
 
     // Points buffered for batch upsert; flag + tip-queue clears follow durable writes.
     let pointsQueue = [];
+    // Parallel to pointsQueue: what each point is, for the attribution log.
+    let metaQueue = [];
     /** @type {{ id: string, clearTip: boolean }[]} */
     let completeQueue = [];
 
     async function flush() {
         if (pointsQueue.length > 0) {
             await qdrant.upsert(cfg.EPISODES_COLLECTION, pointsQueue);
+            stored += pointsQueue.length;
+            for (const m of metaQueue) {
+                attribution.episodeStored(m.pid, m.ep, m.queue);
+                storedPids.add(Number(m.pid));
+            }
             pointsQueue = [];
+            metaQueue = [];
         }
         if (completeQueue.length > 0) {
             const ids = completeQueue.map((c) => c.id);
@@ -168,6 +181,7 @@ async function main() {
             completeQueue = [];
         }
         turso.flushStats();
+        attribution.flush();
     }
 
     const runProg = log.budgetProgress(cfg.MAX_EMBEDDINGS_PER_RUN, 'embeddings', 50);
@@ -196,6 +210,9 @@ async function main() {
         processedCount++;
         const showCap = caps.get(pod.id) || cfg.EPISODE_CAP_DEFAULT;
         const lane = laneForShow(pod, tipSet);
+        let queue = 'cold';
+        if (tipSet.has(pod.id)) queue = 'tip';
+        else if (pod.qdrant_podcast_vectorized === 1) queue = 'inc';
 
         let episodes = handoff.take(pod.id);
         if (episodes) {
@@ -226,11 +243,29 @@ async function main() {
         const uuids = eps.map((e) => e.uuid);
 
         // Prune BEFORE insert: hard-cap this show to its country cap (wait=true).
+        const pruneFilter = {
+            must: [{ key: 'podcast_id', match: { value: parseInt(pod.id, 10) || 0 } }],
+            must_not: [{ has_id: uuids }],
+        };
+        // Read what the prune will remove, for the attribution log only.
+        let pruning = [];
         try {
-            await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, {
-                must: [{ key: 'podcast_id', match: { value: parseInt(pod.id, 10) || 0 } }],
-                must_not: [{ has_id: uuids }],
-            }, true);
+            pruning = await qdrant.scrollAll(
+                cfg.EPISODES_COLLECTION, pruneFilter, ['id', 'published_date', 'audio_url'], 256,
+            );
+        } catch {
+            pruning = [];
+        }
+        try {
+            await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, pruneFilter, true);
+            pruned += pruning.length;
+            for (const p of pruning) {
+                attribution.episodeDeleted('4', pod.id, {
+                    eid: p.payload?.id,
+                    pub: p.payload?.published_date,
+                    audioUrl: p.payload?.audio_url,
+                }, 'prune');
+            }
         } catch (e) {
             errors++;
             log.warn(`Prune failed for show ${pod.id} (${pod.title.substring(0, 40)}): ${e.message} - skipping upsert`);
@@ -253,6 +288,7 @@ async function main() {
         let budgetBroke = false;
         let corruptSkipped = 0;
         const showPoints = [];
+        const showMeta = [];
         for (const item of toEmbed) {
             if (budget - showPoints.length <= 0) {
                 budgetBroke = true;
@@ -320,6 +356,7 @@ async function main() {
                     vector,
                     payload: prepared.payload,
                 });
+                showMeta.push({ pid: pod.id, ep, queue });
                 runProg.tick();
             } catch (e) {
                 errors++;
@@ -333,6 +370,7 @@ async function main() {
         if (lane === 'tip') embTip += showPoints.length;
         else embCold += showPoints.length;
         pointsQueue.push(...showPoints);
+        metaQueue.push(...showMeta);
 
         const complete = showVectorizeComplete({
             showFailed,
@@ -358,6 +396,7 @@ async function main() {
                     `${completeQueue.length} shows): ${e.message}`,
                 );
                 pointsQueue = [];
+                metaQueue = [];
                 completeQueue = [];
             }
         }
@@ -374,12 +413,21 @@ async function main() {
             `Final Qdrant flush failed (${pointsQueue.length} points, ` +
             `${completeQueue.length} shows): ${e.message}`,
         );
+        metaQueue = [];
     }
+    attribution.flush();
 
     try {
         await handoff.flush();
     } catch {
         // best-effort
+    }
+
+    let reasons = '';
+    try {
+        reasons = attribution.runReasons({ since: startedS, pids: storedPids }).text;
+    } catch (e) {
+        log.warn(`Attribution reasons unavailable (non-fatal): ${e.message}`);
     }
 
     const backlog = drainOrder.length - processedCount;
@@ -390,9 +438,11 @@ async function main() {
         apiCalls: pi.getApiCallCount(),
         detail:
             `${log.fmt(embedded)}/${log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN)} budget ` +
-            `(tip ${embTip} · cold ${embCold}) · ${showsCompleted} done · ` +
+            `(tip ${embTip} · cold ${embCold}) · stored ${log.fmt(stored)} · pruned ${log.fmt(pruned)} · ` +
+            `${showsCompleted} done · ` +
             `${partialShows} partial · skip ${showsFullySkipped} · ` +
-            `handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors`,
+            `handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors` +
+            (reasons ? `\n  ${reasons}` : ''),
     });
     log.summaryTable('Stage 4: Vectorize Episodes', [{
         stage: 'vectorize-episodes',
@@ -401,8 +451,10 @@ async function main() {
         apiCalls: pi.getApiCallCount(),
         detail:
             `${embedded}/${cfg.MAX_EMBEDDINGS_PER_RUN} budget tip=${embTip} cold=${embCold}, ` +
+            `stored ${stored}, pruned ${pruned}, ` +
             `${showsCompleted} done, partial ${partialShows}, skip ${showsFullySkipped}, ` +
-            `handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors`,
+            `handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors` +
+            (reasons ? `, ${reasons}` : ''),
     }]);
 
     if (processedCount > 20 && errors > processedCount) {
@@ -416,5 +468,6 @@ main()
     .catch((err) => {
         log.error(`vectorize-episodes failed: ${err.message}`);
         turso.flushStats();
+        attribution.flush();
         process.exit(1);
     });

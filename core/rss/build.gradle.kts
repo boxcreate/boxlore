@@ -70,6 +70,8 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.okhttp)
     testImplementation("org.mockito:mockito-core:5.14.2")
+    // Reads the shared episode recipe fixture (src/test/resources/fixtures).
+    testImplementation(libs.gson)
     // Real XmlPullParser implementation backing the android.util.Xml test stub so the
     // custom RSS parser can be exercised hermetically off-device.
     testImplementation("net.sf.kxml:kxml2:2.3.0")

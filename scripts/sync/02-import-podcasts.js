@@ -28,6 +28,7 @@ const {
     existingItunesAmong,
     reuseMissingIdsFile,
 } = require('./lib/import-missing');
+const attribution = require('./lib/attribution');
 
 const MISSING_IDS_FILE = 'missing_itunes_ids.txt';
 const CSV_FILE = 'podcasts_export.csv';
@@ -433,6 +434,8 @@ async function main() {
     }
 
     registerImportedCandidates(importedIds);
+    for (const id of new Set(importedIds)) attribution.showImported(id, { via: mode });
+    attribution.flush();
 
     const stats = turso.getStats();
     log.costFooter('Stage 2 · Import Podcasts', {

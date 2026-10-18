@@ -15,6 +15,7 @@ const embedder = require('./lib/embedder');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
 const scalars = require('./lib/scalars');
+const attribution = require('./lib/attribution');
 const {
     loadCountriesByItunesId,
     itunesInCountries,
@@ -147,6 +148,8 @@ async function main() {
     async function flush() {
         if (pointsQueue.length > 0) {
             await qdrant.upsert(cfg.PODCASTS_COLLECTION, pointsQueue);
+            for (const p of pointsQueue) attribution.showVectorStored(p.payload?.id);
+            attribution.flush();
             pointsQueue = [];
         }
         if (flagQueue.length > 0) {

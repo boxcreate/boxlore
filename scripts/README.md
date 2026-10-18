@@ -24,6 +24,9 @@ A Git push does not deploy this pipeline. Changes to `scripts/sync/` or `scripts
 | [`scripts/sync/lib/podcast-index.js`](sync/lib/podcast-index.js) | PI API client — Retry-After / global cooldown failsafes |
 | [`scripts/sync/lib/text.js`](sync/lib/text.js) | Description cleaning + embed text (**uncapped**; `PAYLOAD_DESCRIPTION_MAX` null) |
 | [`scripts/sync/lib/scalars.js`](sync/lib/scalars.js) | Scrub non-scalars before Qdrant/Turso writes |
+| [`scripts/sync/lib/attribution.js`](sync/lib/attribution.js) | Vector attribution log: one JSON line per episode point stored or deleted (prune, cap trim), show vector stored, and show imported or deleted. Written to `SYNC_ATTRIBUTION_DIR` (default `scripts/data/attribution/`, gitignored) as daily files, gzipped after the day ends and kept 60 days. Best effort: a write failure never fails a stage. Stage 4 adds `stored`, `pruned` and `reasons …` to its run line |
+| [`scripts/sync/attribution-report.js`](sync/attribution-report.js) | Read-only report over that log: embeddings by reason (new episode, first coverage, returning show, re-embed after cap trim or prune, Podcast Index ID change, backfill), deletions, and how long chart entrants stay. `--days N`, `--json` |
+| [`scripts/sync/lib/episode-recipe-id.js`](sync/lib/episode-recipe-id.js) | boxlore episode IDs from (show ID, catalog key); must match the app's `EpisodeRecipeId` and the shared fixture in `core/rss/src/test/resources/fixtures/` |
 | [`scripts/package.json`](package.json) | Sync Node deps + `npm run test:sync` |
 
 The runner orchestrator lives outside this repository. It invokes the stages in order and, before stage 2's bulk path, produces `podcasts_export.csv` (columns must match `PODCAST_IMPORT_COLUMNS` in `sync/lib/config.js`) from a locally stored copy of the public Podcast Index weekly dump, which it refreshes separately. Stage scripts never download the dump themselves.

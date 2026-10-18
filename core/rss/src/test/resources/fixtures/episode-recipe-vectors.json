@@ -1,0 +1,165 @@
+{
+  "recipe": "boxlore-ep1",
+  "about": "Shared test vectors for boxlore episode recipe IDs. Every implementation must reproduce catalogKey and recipeId for each case. Copies in other repositories must stay byte-identical; tests assert this file's SHA-256.",
+  "formula": "recipeId = 2^52 + (first 8 bytes of SHA-256(UTF-8(\"boxlore-ep1\" + U+0000 + showId + U+0000 + catalogKey)) as big-endian unsigned 64-bit, AND 2^52 - 1)",
+  "recipeIdMin": 4503599627370496,
+  "recipeIdMax": 9007199254740991,
+  "trimRanges": [
+    "0009-000D",
+    "001C-0020",
+    "00A0",
+    "1680",
+    "180E",
+    "2000-200A",
+    "2028-2029",
+    "202F",
+    "205F",
+    "3000"
+  ],
+  "cases": [
+    {
+      "name": "GUID",
+      "showId": 3391039,
+      "guid": "https://api.spreaker.com/episode/75827097",
+      "enclosureUrl": "https://dts.podtrac.com/redirect.mp3/api.spreaker.com/download/episode/75827097/16_oct_26_tt_16_oct_128.mp3",
+      "catalogKey": "https://api.spreaker.com/episode/75827097",
+      "recipeId": 8825297254050678
+    },
+    {
+      "name": "GUID padded with ASCII whitespace",
+      "showId": 3391039,
+      "guid": "  https://api.spreaker.com/episode/75827097\n\t",
+      "enclosureUrl": "https://dts.podtrac.com/redirect.mp3/api.spreaker.com/download/episode/75827097/16_oct_26_tt_16_oct_128.mp3",
+      "catalogKey": "https://api.spreaker.com/episode/75827097",
+      "recipeId": 8825297254050678
+    },
+    {
+      "name": "GUID padded with NBSP and U+3000",
+      "showId": 3391039,
+      "guid": "\u00a0https://api.spreaker.com/episode/75827097\u3000",
+      "enclosureUrl": "https://dts.podtrac.com/redirect.mp3/api.spreaker.com/download/episode/75827097/16_oct_26_tt_16_oct_128.mp3",
+      "catalogKey": "https://api.spreaker.com/episode/75827097",
+      "recipeId": 8825297254050678
+    },
+    {
+      "name": "No GUID: enclosure URL",
+      "showId": 3391039,
+      "guid": null,
+      "enclosureUrl": "https://dts.podtrac.com/redirect.mp3/api.spreaker.com/download/episode/75827097/16_oct_26_tt_16_oct_128.mp3",
+      "catalogKey": "https://dts.podtrac.com/redirect.mp3/api.spreaker.com/download/episode/75827097/16_oct_26_tt_16_oct_128.mp3",
+      "recipeId": 4545894965880778
+    },
+    {
+      "name": "Blank GUID: enclosure URL",
+      "showId": 3391039,
+      "guid": " \t\n\u00a0",
+      "enclosureUrl": " https://dts.podtrac.com/redirect.mp3/api.spreaker.com/download/episode/75827097/16_oct_26_tt_16_oct_128.mp3 ",
+      "catalogKey": "https://dts.podtrac.com/redirect.mp3/api.spreaker.com/download/episode/75827097/16_oct_26_tt_16_oct_128.mp3",
+      "recipeId": 4545894965880778
+    },
+    {
+      "name": "Buzzsprout GUID",
+      "showId": 75075,
+      "guid": "Buzzsprout-19865045",
+      "enclosureUrl": null,
+      "catalogKey": "Buzzsprout-19865045",
+      "recipeId": 8665876719383229
+    },
+    {
+      "name": "Same GUID on another show",
+      "showId": 75075,
+      "guid": "https://api.spreaker.com/episode/75827097",
+      "enclosureUrl": null,
+      "catalogKey": "https://api.spreaker.com/episode/75827097",
+      "recipeId": 6500619945010015
+    },
+    {
+      "name": "Digit-only GUID stays text",
+      "showId": 75075,
+      "guid": "00123",
+      "enclosureUrl": null,
+      "catalogKey": "00123",
+      "recipeId": 7154922372649705
+    },
+    {
+      "name": "Digit-only GUID without leading zeros",
+      "showId": 75075,
+      "guid": "123",
+      "enclosureUrl": null,
+      "catalogKey": "123",
+      "recipeId": 5785295040034240
+    },
+    {
+      "name": "Non-ASCII GUID, including a surrogate pair",
+      "showId": 75075,
+      "guid": "\u00e9pisode-\u65e5\u672c-\ud83c\udfa7",
+      "enclosureUrl": null,
+      "catalogKey": "\u00e9pisode-\u65e5\u672c-\ud83c\udfa7",
+      "recipeId": 6611624967615306
+    },
+    {
+      "name": "Inner whitespace is kept",
+      "showId": 75075,
+      "guid": "a \u00a0 b",
+      "enclosureUrl": null,
+      "catalogKey": "a \u00a0 b",
+      "recipeId": 6120369890131505
+    },
+    {
+      "name": "U+FEFF is kept",
+      "showId": 75075,
+      "guid": "\ufeffabc\ufeff",
+      "enclosureUrl": null,
+      "catalogKey": "\ufeffabc\ufeff",
+      "recipeId": 7102682155248018
+    },
+    {
+      "name": "U+0001 and U+0085 are kept",
+      "showId": 75075,
+      "guid": "\u0001abc\u0085",
+      "enclosureUrl": null,
+      "catalogKey": "\u0001abc\u0085",
+      "recipeId": 6969715703986979
+    },
+    {
+      "name": "U+001C..U+001F are trimmed",
+      "showId": 75075,
+      "guid": "\u001c\u001dabc\u001e\u001f",
+      "enclosureUrl": null,
+      "catalogKey": "abc",
+      "recipeId": 7789570202883564
+    },
+    {
+      "name": "U+2007 and U+202F are trimmed",
+      "showId": 75075,
+      "guid": "\u2007abc\u202f",
+      "enclosureUrl": null,
+      "catalogKey": "abc",
+      "recipeId": 7789570202883564
+    },
+    {
+      "name": "U+180E is trimmed (Android), U+200B is kept",
+      "showId": 75075,
+      "guid": "\u180eabc\u200b",
+      "enclosureUrl": null,
+      "catalogKey": "abc\u200b",
+      "recipeId": 7809396976602051
+    },
+    {
+      "name": "Blank GUID and blank enclosure: skip",
+      "showId": 3391039,
+      "guid": "\u3000",
+      "enclosureUrl": " \n",
+      "catalogKey": null,
+      "recipeId": null
+    },
+    {
+      "name": "No GUID and no enclosure: skip",
+      "showId": 3391039,
+      "guid": null,
+      "enclosureUrl": null,
+      "catalogKey": null,
+      "recipeId": null
+    }
+  ]
+}
