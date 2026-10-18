@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-18T08:14:22.509Z",
+  "lastRun": "2026-10-18T12:43:06.560Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "8274cd60-b924-11f1-b9e8-2b1d941659fb",
@@ -50,10 +50,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "f7763a79-208c-4c6d-8bd2-67cd1faa3016",
-      "lastEpisodeTitle": "4am ET, October 18 | The latest headlines from NPR",
+      "lastRssKey": "0bc6c23b-d0db-43e1-9c03-5edf2a005439",
+      "lastEpisodeTitle": "8am ET, October 18 | The latest headlines from NPR",
       "lastEpisodeId": "61889696843",
-      "lastCheckedAt": 1792311273816
+      "lastCheckedAt": 1792327392078
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75811774",
@@ -198,10 +198,10 @@
       "lastCheckedAt": 1792231920316
     },
     "385117": {
-      "lastRssKey": "40cb4b10-cacb-11f1-ad5e-739a3c67461a",
-      "lastEpisodeTitle": "4AM ET 10/18/2026 Newscast",
+      "lastRssKey": "c75cdbaa-caec-11f1-8768-5313982eea83",
+      "lastEpisodeTitle": "8AM ET 10/18/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792311292827
+      "lastCheckedAt": 1792327425900
     },
     "386911": {
       "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
@@ -270,10 +270,10 @@
       "lastCheckedAt": 1791834997310
     },
     "437685": {
-      "lastRssKey": "6e83672e-bc91-11f1-84e4-9728a31a7be8",
-      "lastEpisodeTitle": "Caravanserais",
-      "lastEpisodeId": "61868781975",
-      "lastCheckedAt": 1792231926297
+      "lastRssKey": "70243752-bc91-11f1-84e4-4b1def143d3a",
+      "lastEpisodeTitle": "Leopold and Loeb",
+      "lastEpisodeId": "61908540969",
+      "lastCheckedAt": 1792327433921
     },
     "438184": {
       "lastRssKey": "610b43b4-c8e4-11f1-af17-cbb687bfb677",
@@ -501,10 +501,10 @@
       "lastCheckedAt": 1792280777094
     },
     "743229": {
-      "lastEpisodeId": "61870600799",
-      "lastEpisodeTitle": "50 Years In, What's the Point of U2? Bono and the Edge Have Answers.",
-      "lastRssKey": "e8c36736-f4cd-4ec4-a2a3-160b00977f8d",
-      "lastCheckedAt": 1792231947709
+      "lastRssKey": "177fe27d-cc52-4fad-bc7d-3a2ba67a0949",
+      "lastEpisodeTitle": "Elizabeth Holmes and Nathan Fielder Keep Us Guessing",
+      "lastEpisodeId": "61910299948",
+      "lastCheckedAt": 1792327465313
     },
     "743322": {
       "lastEpisodeId": "51557400761",
@@ -602,10 +602,10 @@
       "lastCheckedAt": 1791910460912
     },
     "902798": {
-      "lastRssKey": "38c9827a-ec37-4716-a9c4-eb8b0d30b7ce",
-      "lastEpisodeTitle": "Top Investor’s Warning: Global Crisis Coming For Your Wealth | Saurabh Mukherjea | FO573 Raj Shamani",
+      "lastRssKey": "5a14e9ff-5ef4-43c4-b0c5-633fc562a65c",
+      "lastEpisodeTitle": "How to Read People, Build Trust & Choose Better Friends | Adam Grant | FO576 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1791658076662
+      "lastCheckedAt": 1792327472195
     },
     "906591": {
       "lastRssKey": "37ac382a-c871-11f1-964b-b757f2fed14f",
@@ -748,10 +748,10 @@
       "lastCheckedAt": 1792120717131
     },
     "1186507": {
-      "lastRssKey": "729f6f33d4e683caa9d29d7d192c7371",
-      "lastEpisodeTitle": "Therapie & Training Talk #210 - TWUP #335 Heilung, Regeneration & die Grenze des Trainings",
-      "lastEpisodeId": "61259261546",
-      "lastCheckedAt": 1791192574497
+      "lastRssKey": "967679437c900374ef45e32952f4f9c9",
+      "lastEpisodeTitle": "Therapie & Training Talk #211 - TWUP #336 Creatin & Muskelzerrungen",
+      "lastEpisodeId": "61913008431",
+      "lastCheckedAt": 1792327496751
     },
     "1193286": {
       "lastRssKey": "e741c146-c9b7-11f1-bd19-4797b3842b8c",
@@ -1044,9 +1044,9 @@
       "lastCheckedAt": 1792139169933
     },
     "4898105": {
-      "lastRssKey": "c14c8466-c84b-11f1-9664-d7177fb1e532",
-      "lastEpisodeTitle": "IGN Game Review: Castlevania: Belmont’s Curse",
-      "lastCheckedAt": 1792231992458
+      "lastRssKey": "887b2ad4-c927-11f1-bf9c-2bb37b76c7b4",
+      "lastEpisodeTitle": "IGN Movie Review: Street Fighter",
+      "lastCheckedAt": 1792327519227
     },
     "5107672": {
       "lastRssKey": "2f7576fb-60c0-44ed-b499-b0ef7a7b718d",
@@ -1179,10 +1179,10 @@
       "lastCheckedAt": 1792182844853
     },
     "6280366": {
+      "lastRssKey": "2e7e85c6-3669-4fda-9436-a7359086f7d8",
+      "lastEpisodeTitle": "A Potentially Historic AI Breakthrough",
       "lastEpisodeId": "61844258433",
-      "lastEpisodeTitle": "The Biggest AI News This Week Is Getting Overlooked",
-      "lastRssKey": "fda04d9b-832c-4032-b45f-bd478fac7ddb",
-      "lastCheckedAt": 1792182845258
+      "lastCheckedAt": 1792327530885
     },
     "6413946": {
       "lastRssKey": "6a305d5a-c43c-48e6-a0c4-ab50dd375ce0",
@@ -1327,16 +1327,16 @@
       "lastCheckedAt": 1792263898917
     },
     "6866732": {
-      "lastRssKey": "https://api.spreaker.com/episode/75838821",
-      "lastEpisodeTitle": "ভূত নিয়ে খেলা",
-      "lastEpisodeId": "61881901850",
-      "lastCheckedAt": 1792256004205
+      "lastRssKey": "https://api.spreaker.com/episode/75844566",
+      "lastEpisodeTitle": "উমাশঙ্কর চৌবে - হাতের মুঠোয় মৃত্যু, ঠান্ডা মাথায় খুন, ছক্কাপুট",
+      "lastEpisodeId": "61909898245",
+      "lastCheckedAt": 1792327539958
     },
     "6872190": {
-      "lastRssKey": "https://api.spreaker.com/episode/75811565",
-      "lastEpisodeTitle": "7 Actitudes que HUMILLAN a Quien No te RESPETA - ESTOICISMO para Recuperar tu Dignidad en Silencio",
-      "lastEpisodeId": "61819057002",
-      "lastCheckedAt": 1792245169195
+      "lastRssKey": "https://api.spreaker.com/episode/75813310",
+      "lastEpisodeTitle": "8 LECCIONES DE EPICTETO PARA SER FUERTE EMOCIONALMENTE SABIDURÍA ESTOICA para Mantener la Calma Cuando Todo se Complica",
+      "lastEpisodeId": "61909859252",
+      "lastCheckedAt": 1792327540499
     },
     "6894068": {
       "lastRssKey": "6a0504a8-c8c8-11f1-acde-b7c884c486a7",
@@ -1345,10 +1345,10 @@
       "lastCheckedAt": 1792139196739
     },
     "6897392": {
-      "lastRssKey": "https://api.spreaker.com/episode/59779939",
-      "lastEpisodeTitle": "Yours Truly, Johnny Dollar - The Harold Trandem Matter",
+      "lastRssKey": "https://api.spreaker.com/episode/59779941",
+      "lastEpisodeTitle": "The Adventures of Maisie - The Dude Ranch",
       "lastEpisodeId": "59068613094",
-      "lastCheckedAt": 1792232015690
+      "lastCheckedAt": 1792327541030
     },
     "6912659": {
       "lastRssKey": "561d1781-bda9-4d36-9565-21d87a7de5ac",
@@ -1549,10 +1549,10 @@
       "lastCheckedAt": 1786911630083
     },
     "7492905": {
-      "lastRssKey": "130e8dd0-5aa1-11f1-a6e8-f7d4c6cc135f",
-      "lastEpisodeTitle": "LeapPad: Book smarts",
+      "lastRssKey": "addfc438-8f70-11f1-880d-4b014281a72d",
+      "lastEpisodeTitle": "Overhead projectors: Turn around",
       "lastEpisodeId": "61240131563",
-      "lastCheckedAt": 1791729750232
+      "lastCheckedAt": 1792327556871
     },
     "7504615": {
       "lastRssKey": "1cca6162-9735-4ef3-9645-127c6082af43",
@@ -1572,10 +1572,10 @@
       "lastCheckedAt": 1789657943228
     },
     "7550348": {
-      "lastRssKey": "c5402625-f173-4ed9-8f77-9cb91b09423b",
-      "lastEpisodeTitle": "Saturday, October 17, 2026 - 5 Minute AI News",
+      "lastRssKey": "0dc619a7-2231-4ec2-a25b-b8942ca2bee9",
+      "lastEpisodeTitle": "Sunday, October 18, 2026 - 5 Minute AI News",
       "lastEpisodeId": "61670582677",
-      "lastCheckedAt": 1792245179159
+      "lastCheckedAt": 1792327558764
     },
     "7551349": {
       "lastRssKey": "3bffeee6-6692-4c96-99fd-b4e2013b84fb",
@@ -1697,10 +1697,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/78b2cb2c-3af0-52a1-aff9-6819d80b143b",
-      "lastEpisodeTitle": "When the narcissist manipulates you by lying about things their therapist said ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/007ee798-6be2-5855-81c0-280ecfc60f3f",
+      "lastEpisodeTitle": "Wisdom vs knowledge about narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "61854546834",
-      "lastCheckedAt": 1792311474852
+      "lastCheckedAt": 1792327564776
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
