@@ -8,8 +8,9 @@ import java.security.MessageDigest
  * [feedUrl] is included only for HTTPS publisher feeds on shows the user opted into
  * for episode notifications — the checker then polls RSS instead of Podcast Index `max=1`.
  *
- * Live RTDB rules allow only `title`, `imageUrl`, and optional HTTPS `feedUrl`
- * (delete of `feedUrl` is allowed). Extra children are rejected.
+ * Live RTDB rules allow only `title`, `imageUrl`, and optional HTTPS `feedUrl`. Extra children are
+ * rejected. A client may delete `feedUrl` but never a whole row: any write that would leave the row
+ * empty is refused, so deleting `feedUrl` is refused only when no row exists.
  */
 object TrackedPodcastRtdbLogic {
     /** FCM excludes colons; keep numeric topics unchanged and RSS payload ids canonical. */
