@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-18T12:43:06.560Z",
+  "lastRun": "2026-10-18T16:21:42.487Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "8274cd60-b924-11f1-b9e8-2b1d941659fb",
@@ -50,10 +50,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "0bc6c23b-d0db-43e1-9c03-5edf2a005439",
-      "lastEpisodeTitle": "8am ET, October 18 | The latest headlines from NPR",
+      "lastRssKey": "625fd7e4-aec8-424d-b737-027fd3623bbc",
+      "lastEpisodeTitle": "12pm ET, October 18 | The latest headlines from NPR",
       "lastEpisodeId": "61889696843",
-      "lastCheckedAt": 1792327392078
+      "lastCheckedAt": 1792340508540
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75811774",
@@ -78,6 +78,12 @@
       "lastEpisodeTitle": "#24 OS HOMENS DO PODCAST ABANDONADO",
       "lastEpisodeId": "9110652221",
       "lastCheckedAt": 1789640192955
+    },
+    "150970": {
+      "lastRssKey": "d7a6b21f-29d5-4cd9-85f6-5d772586c765",
+      "lastEpisodeTitle": "\"Jessica Biel\"",
+      "lastEpisodeId": "61610544336",
+      "lastCheckedAt": 1792340510330
     },
     "152922": {
       "lastRssKey": "6ad2b6333243d006bb488d6d",
@@ -198,10 +204,10 @@
       "lastCheckedAt": 1792231920316
     },
     "385117": {
-      "lastRssKey": "c75cdbaa-caec-11f1-8768-5313982eea83",
-      "lastEpisodeTitle": "8AM ET 10/18/2026 Newscast",
+      "lastRssKey": "4b2fc5ac-cb0e-11f1-80c6-a7258f362660",
+      "lastEpisodeTitle": "12PM ET 10/18/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792327425900
+      "lastCheckedAt": 1792340533840
     },
     "386911": {
       "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
@@ -214,6 +220,12 @@
       "lastEpisodeTitle": "How to trust public media again with Jessica Malaty Rivera",
       "lastEpisodeId": "61322900538",
       "lastCheckedAt": 1791881994602
+    },
+    "392525": {
+      "lastRssKey": "gid://art19-episode-locator/V0/EOZbyI9dYmmXlWm7eSXubfr7OnnV8oroUFRtjkbE0Hc",
+      "lastEpisodeTitle": "Season 6, Ep 9 - Corpse Collector at Court (w/ Anna Garcia)",
+      "lastEpisodeId": "61646552199",
+      "lastCheckedAt": 1792340535827
     },
     "398589": {
       "lastRssKey": "gid://art19-episode-locator/V0/jnj-PQM4wA57sgalWBVtCCwdsNaEQ16dPSrTbEu6xgQ",
@@ -240,10 +252,10 @@
       "lastCheckedAt": 1792172213458
     },
     "419624": {
-      "lastRssKey": "74efceaf-712b-4224-b007-97721480e6f4",
-      "lastEpisodeTitle": "Spór o Zaolzie 1945. Jak Polska i Czechosłowacja stanęły na krawędzi wojny",
-      "lastEpisodeId": "61584746109",
-      "lastCheckedAt": 1791746498163
+      "lastRssKey": "720588cc-5f78-4227-8a10-bbf1e2e9008f",
+      "lastEpisodeTitle": "Musieli lądować na zamarzniętym jeziorze. Zestrzelenie lotu KAL 902",
+      "lastEpisodeId": "61920773851",
+      "lastCheckedAt": 1792340539236
     },
     "431205": {
       "lastRssKey": "da275a07-dc6b-4309-9c0b-0d3c89cd0a60",
@@ -358,10 +370,10 @@
       "lastCheckedAt": 1792139106471
     },
     "497129": {
-      "lastRssKey": "12381::3577747",
-      "lastEpisodeTitle": "Frohes Schaffen Mudda! (#424)",
+      "lastRssKey": "12381::3582215",
+      "lastEpisodeTitle": "Setze den Felpa auf ich lauf durch die Noche (#425)",
       "lastEpisodeId": "60920801786",
-      "lastCheckedAt": 1791746513852
+      "lastCheckedAt": 1792340550399
     },
     "499394": {
       "lastRssKey": "flightcast:01M1P5R2DYEM65ABQ1YNEB6FXH",
@@ -416,6 +428,12 @@
       "lastEpisodeTitle": "Heimspiel: Berliner Fieberschübe (mit Shakuntala Banerjee)",
       "lastEpisodeId": "61898525697",
       "lastCheckedAt": 1792293118880
+    },
+    "547598": {
+      "lastRssKey": "0deae976-c8d7-11f1-9b54-f332b573aee5",
+      "lastEpisodeTitle": "My Monday Morning: Gayle King",
+      "lastEpisodeId": "61919277168",
+      "lastCheckedAt": 1792340564466
     },
     "555343": {
       "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/cap/twit_1105/4abd3831-5d83-4c6e-9c2e-8b287dc0e3ee.mp3",
@@ -589,6 +607,12 @@
       "lastEpisodeId": "60118865665",
       "lastCheckedAt": 1791835023248
     },
+    "861225": {
+      "lastRssKey": "3c59d24c-c957-11f1-ad60-ff2c33929da7",
+      "lastEpisodeTitle": "✏️ Borrowing things (Part 3) + Transcript",
+      "lastEpisodeId": "61824868451",
+      "lastCheckedAt": 1792340579566
+    },
     "889671": {
       "lastRssKey": "a6bfd57d-bf4d-41c1-ae58-1a5ec341b456",
       "lastEpisodeTitle": "Epic Games Launcher Linux BETA, Ethernet Audio Interfaces, 16-Core ARM!",
@@ -637,6 +661,12 @@
       "lastEpisodeId": "61758053189",
       "lastCheckedAt": 1792047672210
     },
+    "946759": {
+      "lastRssKey": "14111915-f514-41f5-974f-dd8f7dd0114d",
+      "lastEpisodeTitle": "Israelis have changed. Will they change their leader?",
+      "lastEpisodeId": "61911321509",
+      "lastCheckedAt": 1792340591447
+    },
     "947138": {
       "lastRssKey": "8230ca54-b5cc-11f0-92f1-3f464036c2ff",
       "lastEpisodeTitle": "Apple Homeview, Microsoft Surface Ultra, and Fitbit Edge. It's TECHtober.",
@@ -659,6 +689,12 @@
       "lastEpisodeTitle": "Sunday Pick: How to reclaim your narrative (w/ Monica Lewinsky) | from How to Be a Better Human",
       "lastEpisodeId": "61781993390",
       "lastCheckedAt": 1792311389848
+    },
+    "987298": {
+      "lastEpisodeId": "58532253791",
+      "lastEpisodeTitle": "The Hutter Prize: Compression, prediction, and the limits of intelligence",
+      "lastRssKey": "8f896c32-c855-461b-bb7b-0894b9391721",
+      "lastCheckedAt": 1792340595608
     },
     "998969": {
       "lastRssKey": "audioboom-01a13607-6145-7f47-83a9-d416842aae7f",
@@ -842,10 +878,10 @@
       "lastCheckedAt": 1792245143585
     },
     "1621172": {
-      "lastRssKey": "https://krfp.org/?p=33534",
-      "lastEpisodeTitle": "Evening Report &#8211; Thu., Sep 17, 2026 &#8211; Christ Church-Affiliated Logos K-12 School Sports Stadium in Moscow after Charlie Kirk",
-      "lastEpisodeId": "59662120628",
-      "lastCheckedAt": 1789727972144
+      "lastRssKey": "https://krfp.org/?p=33652",
+      "lastEpisodeTitle": "Evening Report – Fri., Oct 16, 2026 – Latah Commission Candidates’ Forum / Commission Candidate Carole Wells",
+      "lastEpisodeId": "61897671056",
+      "lastCheckedAt": 1792340618263
     },
     "1809220": {
       "lastRssKey": "a55f8447-6ee1-4b1b-8070-b4d00183971c",
@@ -1143,10 +1179,10 @@
       "lastCheckedAt": 1792085957396
     },
     "5972153": {
-      "lastRssKey": "13618554-ca30-11f1-a801-334e58cafda2",
-      "lastEpisodeTitle": "Trump drops Russia sanctions, Israeli settlers attack US photojournalist, Oregon police say teacher and parent stopped school shooter",
+      "lastRssKey": "0b67b788-caf8-11f1-b6bd-3f51b31356fc",
+      "lastEpisodeTitle": "France unrest, Canada military base, Pope Leo and Siberian bears",
       "lastEpisodeId": "61824161974",
-      "lastCheckedAt": 1792245160955
+      "lastCheckedAt": 1792340642024
     },
     "5980114": {
       "lastRssKey": "87b35dd1-0b9c-4aaa-9a78-b2842079aedd",
@@ -1321,10 +1357,10 @@
       "lastCheckedAt": 1792085967633
     },
     "6866470": {
-      "lastRssKey": "https://api.spreaker.com/episode/75839351",
-      "lastEpisodeTitle": "ইনকুইজিশন",
-      "lastEpisodeId": "61884649466",
-      "lastCheckedAt": 1792263898917
+      "lastRssKey": "https://api.spreaker.com/episode/75846273",
+      "lastEpisodeTitle": "Shorts: মহামায়া",
+      "lastEpisodeId": "61915619171",
+      "lastCheckedAt": 1792340662651
     },
     "6866732": {
       "lastRssKey": "https://api.spreaker.com/episode/75844566",
@@ -1452,6 +1488,12 @@
       "lastEpisodeId": "61802415279",
       "lastCheckedAt": 1792280857138
     },
+    "7207593": {
+      "lastRssKey": "3b7ba7e2-a585-11f1-b239-73ce7ef6552e",
+      "lastEpisodeTitle": "Paul McCartney",
+      "lastEpisodeId": "61675201717",
+      "lastCheckedAt": 1792340670331
+    },
     "7239415": {
       "lastRssKey": "4030f7a8-caa4-11f1-bde0-0369faf1f451",
       "lastEpisodeTitle": "It's like wizardry at this point...",
@@ -1483,10 +1525,10 @@
       "lastCheckedAt": 1789429375187
     },
     "7319490": {
-      "lastRssKey": "01a1271e-d0bc-73cf-9961-c83ced90f956",
-      "lastEpisodeTitle": "1 Liberal vs 20 MAGA (ft. The Split’s David Mauricio) | Surrounded",
+      "lastRssKey": "01a136f7-0575-74fa-a14e-6488b0655297",
+      "lastEpisodeTitle": "David Breaks Down His Debates with Conservatives | Surrounded Follow-Up",
       "lastEpisodeId": "60031436115",
-      "lastCheckedAt": 1791729747850
+      "lastCheckedAt": 1792340671734
     },
     "7321248": {
       "lastRssKey": "Buzzsprout-19773144",
@@ -1697,10 +1739,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/007ee798-6be2-5855-81c0-280ecfc60f3f",
-      "lastEpisodeTitle": "Wisdom vs knowledge about narcissistic relationships ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/2c0a62ca-b287-525c-9f88-93a224014162",
+      "lastEpisodeTitle": "How the narcissist can make amends ~ Dr. Ramani",
       "lastEpisodeId": "61854546834",
-      "lastCheckedAt": 1792327564776
+      "lastCheckedAt": 1792340681590
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
