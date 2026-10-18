@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-18T16:21:42.487Z",
+  "lastRun": "2026-10-18T18:47:02.093Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "8274cd60-b924-11f1-b9e8-2b1d941659fb",
@@ -50,10 +50,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "625fd7e4-aec8-424d-b737-027fd3623bbc",
-      "lastEpisodeTitle": "12pm ET, October 18 | The latest headlines from NPR",
-      "lastEpisodeId": "61889696843",
-      "lastCheckedAt": 1792340508540
+      "lastRssKey": "5e5ad52d-47f7-4cab-8b79-b93e59373828",
+      "lastEpisodeTitle": "2pm ET, October 18 | The latest headlines from NPR",
+      "lastEpisodeId": "61924679069",
+      "lastCheckedAt": 1792349226290
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75811774",
@@ -68,10 +68,10 @@
       "lastCheckedAt": 1792172196607
     },
     "83316": {
-      "lastRssKey": "50f497e6-c59c-11f1-89b8-3fc61e72e568",
-      "lastEpisodeTitle": "A Call to Die | Lakepointe Church | David Nasser",
+      "lastRssKey": "a4c22b28-cb22-11f1-8504-ebaed0be4e0a",
+      "lastEpisodeTitle": "The ALL-OR-NOTHING Journey Jesus Invites You To Take | Into The Breach | Pastor Josh Howerton",
       "lastEpisodeId": "59407301336",
-      "lastCheckedAt": 1791746480614
+      "lastCheckedAt": 1792349229026
     },
     "92655": {
       "lastRssKey": "9e95ade0-b8bf-41cd-99ae-9f381f9c2350",
@@ -204,10 +204,10 @@
       "lastCheckedAt": 1792231920316
     },
     "385117": {
-      "lastRssKey": "4b2fc5ac-cb0e-11f1-80c6-a7258f362660",
-      "lastEpisodeTitle": "12PM ET 10/18/2026 Newscast",
+      "lastRssKey": "11d861c2-cb1f-11f1-8d06-d71727e14c4f",
+      "lastEpisodeTitle": "2PM ET 10/18/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792340533840
+      "lastCheckedAt": 1792349241626
     },
     "386911": {
       "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
@@ -352,10 +352,10 @@
       "lastCheckedAt": 1791800244261
     },
     "483834": {
-      "lastRssKey": "6ad2bf7fd3bfab176e164eb7",
-      "lastEpisodeTitle": "Stephen Chow’s Kung Fu Soccer US Release Date, The Fourth Wing Adaptation Casts Leads — October 17th, 2026",
+      "lastRssKey": "6ad2bfd52c705f746c849da6",
+      "lastEpisodeTitle": "Yellowjackets S4 Official Trailer, Ethan Hawke to Star in Horror Podcast — October 18th, 2026",
       "lastEpisodeId": "61836894264",
-      "lastCheckedAt": 1792263789571
+      "lastCheckedAt": 1792349257830
     },
     "490022": {
       "lastRssKey": "d82eadfc-ec5f-4685-9b73-7f49b5b47297",
@@ -707,6 +707,12 @@
       "lastEpisodeTitle": "CoreWeave Crash, AI Trade Cracks, Anthropic IPO Red Flags, Bill Gates Doomer",
       "lastEpisodeId": "61856260248",
       "lastCheckedAt": 1792216532361
+    },
+    "1021757": {
+      "lastEpisodeId": "56106672656",
+      "lastEpisodeTitle": "Ep 395: 'Locked' (2025)",
+      "lastRssKey": "finalgirlshorrorcast.podbean.com/2e4445b5-ef6b-34f5-b7b4-649c2d983d96",
+      "lastCheckedAt": 1792349294779
     },
     "1021803": {
       "lastRssKey": "flightcast:01M3W9R8XN6YMSFCKFPHV0TN12",
@@ -1321,10 +1327,10 @@
       "lastCheckedAt": 1792200435603
     },
     "6763230": {
-      "lastRssKey": "27e02f38-c51e-11f1-b9d3-2f8ff3a3c037",
-      "lastEpisodeTitle": "The Lurker on the Stairway | CreepCast",
+      "lastRssKey": "2b90bbcc-caa3-11f1-908f-8f9aecbb599f",
+      "lastEpisodeTitle": "Where Caterpillars Die | CreepCast",
       "lastEpisodeId": "60655943057",
-      "lastCheckedAt": 1791746608564
+      "lastCheckedAt": 1792349358696
     },
     "6764080": {
       "lastRssKey": "a8dc3501-1098-46cd-b4c3-b4e1008cad6d",
@@ -1483,10 +1489,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a14c2c-b284-72b1-9869-f679d7656caa",
-      "lastEpisodeTitle": "Tucker Carlson’s Most Uncomfortable Moment Yet? | The Trio Live",
+      "lastRssKey": "audioboom-01a15023-7d80-7c87-a2a3-7cdf9f74cc74",
+      "lastEpisodeTitle": "Ukraine Reporter TORCHES Marco Rubio’s Excuses Over Starlink Slowdown (w/ Caolan Robertson)",
       "lastEpisodeId": "61802415279",
-      "lastCheckedAt": 1792280857138
+      "lastCheckedAt": 1792349370188
     },
     "7207593": {
       "lastRssKey": "3b7ba7e2-a585-11f1-b239-73ce7ef6552e",
@@ -1739,10 +1745,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/2c0a62ca-b287-525c-9f88-93a224014162",
-      "lastEpisodeTitle": "How the narcissist can make amends ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/74f3b8d1-4399-5aaf-a18c-efe8f79e0b68",
+      "lastEpisodeTitle": "Coping with your feelings when the narcissist jumps into a new relationship ~ Dr. Ramani",
       "lastEpisodeId": "61854546834",
-      "lastCheckedAt": 1792340681590
+      "lastCheckedAt": 1792349383386
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
