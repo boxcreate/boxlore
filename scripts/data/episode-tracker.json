@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-18T18:47:02.093Z",
+  "lastRun": "2026-10-18T21:16:20.698Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "8274cd60-b924-11f1-b9e8-2b1d941659fb",
@@ -50,10 +50,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "5e5ad52d-47f7-4cab-8b79-b93e59373828",
-      "lastEpisodeTitle": "2pm ET, October 18 | The latest headlines from NPR",
+      "lastRssKey": "b9b24f4e-23e0-46db-bfb7-6bf5ef464b1a",
+      "lastEpisodeTitle": "5pm ET, October 18 | The latest headlines from NPR",
       "lastEpisodeId": "61924679069",
-      "lastCheckedAt": 1792349226290
+      "lastCheckedAt": 1792358186082
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75811774",
@@ -204,10 +204,10 @@
       "lastCheckedAt": 1792231920316
     },
     "385117": {
-      "lastRssKey": "11d861c2-cb1f-11f1-8d06-d71727e14c4f",
-      "lastEpisodeTitle": "2PM ET 10/18/2026 Newscast",
+      "lastRssKey": "33d887ca-cb38-11f1-91c1-7f53e4385439",
+      "lastEpisodeTitle": "5PM ET 10/18/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792349241626
+      "lastCheckedAt": 1792358215288
     },
     "386911": {
       "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
@@ -311,10 +311,10 @@
       "lastCheckedAt": 1782580346423
     },
     "461319": {
-      "lastRssKey": "81a9d597-62aa-41dd-85ca-71a743712258",
-      "lastEpisodeTitle": "We Told You! | Tesla Time News 689",
-      "lastEpisodeId": "61788686824",
-      "lastCheckedAt": 1792097924311
+      "lastRssKey": "c5891e07-b685-4c77-9ddf-3c05cb3427e6",
+      "lastEpisodeTitle": "Tesla Roadster: Here's the Details | Tesla Time News 690",
+      "lastEpisodeId": "61927720248",
+      "lastCheckedAt": 1792358226275
     },
     "462634": {
       "lastRssKey": "gid://art19-episode-locator/V0/SMHdx5oujav94cVL--T2BOxs_s0ZuGgXnuJkwWOuJNw",
@@ -697,10 +697,10 @@
       "lastCheckedAt": 1792340595608
     },
     "998969": {
-      "lastRssKey": "audioboom-01a13607-6145-7f47-83a9-d416842aae7f",
-      "lastEpisodeTitle": "Midweek Mini: Hidden Cities under the Amazon",
-      "lastEpisodeId": "61591339766",
-      "lastCheckedAt": 1792008080994
+      "lastRssKey": "audioboom-01a150c9-1c18-704c-a73e-8d972be44e9a",
+      "lastEpisodeTitle": "Episode 371: The Men Who Were The Mummy",
+      "lastEpisodeId": "61928804794",
+      "lastCheckedAt": 1792358273333
     },
     "1015378": {
       "lastRssKey": "f5b1cd7e-b9a3-4c1d-9159-375cab50f6a8",
@@ -766,10 +766,10 @@
       "lastCheckedAt": 1792231967456
     },
     "1106580": {
-      "lastRssKey": "cmv4shig900f801x95kbmhxc0",
-      "lastEpisodeTitle": "The KK Show 382 - 26歲就踏入異國婚姻 佳諭",
+      "lastRssKey": "cmvdq6jrb056z01zgcnr01uhg",
+      "lastEpisodeTitle": "百靈果NEWS｜聯準會高層亂發裸照被中國間諜滲透，中國女局長一戰八男，美國期中選舉要翻盤了",
       "lastEpisodeId": "59827465254",
-      "lastCheckedAt": 1791910489692
+      "lastCheckedAt": 1792358284864
     },
     "1116485": {
       "lastRssKey": "6ad3a973da0217b6e66be329",
@@ -1549,10 +1549,10 @@
       "lastCheckedAt": 1791800357026
     },
     "7339079": {
-      "lastRssKey": "46672c1b-8426-4ea0-a6c5-d07f79de44c2",
-      "lastEpisodeTitle": "The Friendly Skeleton Coffee Club ☕ Cozy Halloween Sleep Story for Adults | Relaxing Bedtime Story for Grown Ups to Fall Asleep Fast & Drift into Deep Sleep",
-      "lastEpisodeId": "61888980556",
-      "lastCheckedAt": 1792311462363
+      "lastRssKey": "505255e9-f913-4b0c-a90d-e50c130af324",
+      "lastEpisodeTitle": "The Sleepy Dragon’s Magical Pumpkin Patch | Cozy Autumn Sleep Story for Adults, Relaxing Bedtime Story for Grown Ups, Deep Sleep & Peaceful Dreams",
+      "lastEpisodeId": "61928864711",
+      "lastCheckedAt": 1792358348592
     },
     "7348627": {
       "lastRssKey": "1692a38e-e325-45e9-a290-f75fbf84569e",
@@ -1638,10 +1638,10 @@
       "lastCheckedAt": 1791882122893
     },
     "7587315": {
+      "lastRssKey": "bddd218e-ca24-11f1-bd2d-2715ea55a169",
+      "lastEpisodeTitle": "Mathematicians Are The Canary Down The AI Coal Mine",
       "lastEpisodeId": "61767846647",
-      "lastEpisodeTitle": "The Right Way To Open A Shaken Soda Can",
-      "lastRssKey": "644fa36a-c7c9-11f1-acb1-57e962f997d6",
-      "lastCheckedAt": 1792067945868
+      "lastCheckedAt": 1792358353222
     },
     "7591415": {
       "lastRssKey": "25715bb9bb991bb1b6624ed73857c45b98ce94cd",
@@ -1745,10 +1745,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/74f3b8d1-4399-5aaf-a18c-efe8f79e0b68",
-      "lastEpisodeTitle": "Coping with your feelings when the narcissist jumps into a new relationship ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/d52584c0-e671-58e3-be67-40ef28e881fc",
+      "lastEpisodeTitle": "This is NOT narcissistic baiting ~ Dr. Ramani",
       "lastEpisodeId": "61854546834",
-      "lastCheckedAt": 1792349383386
+      "lastCheckedAt": 1792358359408
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
