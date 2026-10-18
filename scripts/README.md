@@ -17,9 +17,12 @@ A Git push does not deploy this pipeline. Changes to `scripts/sync/` or `scripts
 | [`scripts/sync/lib/tip-queue.js`](sync/lib/tip-queue.js) | Turso `ep_vec_tip_queue` — durable tip lane (IDs); stage 3 upsert, stage 4 delete on complete |
 | [`scripts/sync/lib/vectorize-lanes.js`](sync/lib/vectorize-lanes.js) | Tip-first drain order + partial-complete flag rules for stage 4 |
 | [`scripts/sync/lib/pi-handoff.js`](sync/lib/pi-handoff.js) | Same-run episode payloads stage 3→4 (not cross-run durable) |
-| [`scripts/sync/lib/turso.js`](sync/lib/turso.js) + [`turso-page.js`](sync/lib/turso-page.js) | HTTP Turso client; **always page** large SELECTs (`RESPONSE_TOO_LARGE`) |
+| [`scripts/sync/lib/turso.js`](sync/lib/turso.js) + [`turso-page.js`](sync/lib/turso-page.js) | HTTP Turso client; **always page** large SELECTs (`RESPONSE_TOO_LARGE`). Digit-only strings bind as integers by default; wrap catalog keys and other opaque IDs in `turso.text()` to keep them text |
 | [`scripts/sync/lib/staleness.js`](sync/lib/staleness.js) | Core vs relaxed episode-check windows |
-| [`scripts/sync/lib/episode-caps.js`](sync/lib/episode-caps.js) | Per-storefront episode vector caps |
+| [`scripts/sync/lib/episode-caps.js`](sync/lib/episode-caps.js) | Per-storefront episode vector caps (us/gb 50, else 20), plus earned caps: a show keeps the highest cap it had while its vectors are kept (`shows[id].k` in the sync state), so leaving the US/GB charts doesn't delete and later re-embed 30 vectors |
+| [`scripts/sync/lib/trim-episode-caps.js`](sync/lib/trim-episode-caps.js) | Nightly per-show trim (stage 6 and `remediate-qdrant.js`). Uses the larger of the chart cap and the earned cap, and **fails closed**: if the cap lookup fails, nothing is trimmed |
+| [`scripts/sync/lib/vector-window.js`](sync/lib/vector-window.js) | Stage 4's window: shows with no vectors get their newest `NEW_ENTRANT_EPISODES` (5) first and the rest after `NEW_ENTRANT_DEPTH_DAYS` (7; `shows[id].d`); pruning only against a full window; stage 3 never hands stage 4 a one-item fallback |
+| [`scripts/sync/lib/vector-spool.js`](sync/lib/vector-spool.js) | Computed vectors whose upload failed are written to `SYNC_SPOOL_DIR` (default `scripts/data/vector-spool/`, gitignored) and uploaded first by the next stage 4; batches older than 7 days are dropped |
 | [`scripts/sync/lib/embedder.js`](sync/lib/embedder.js) | Embedding providers: `bge` (default) and `qwen` |
 | [`scripts/sync/lib/podcast-index.js`](sync/lib/podcast-index.js) | PI API client — Retry-After / global cooldown failsafes |
 | [`scripts/sync/lib/text.js`](sync/lib/text.js) | Description cleaning + embed text (**uncapped**; `PAYLOAD_DESCRIPTION_MAX` null) |
