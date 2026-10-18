@@ -137,6 +137,15 @@ module.exports = {
     API_IMPORT_CAP: 200,
     PI_UNAVAILABLE_TTL_MS: 30 * 24 * 60 * 60 * 1000,
 
+    // --- New chart entrants (own-episode-IDs plan, P1a; plan section 10b item 5b) ---
+    // A show with no vectors yet gets only its newest NEW_ENTRANT_EPISODES embedded. The rest of
+    // its window waits until it has charted for NEW_ENTRANT_DEPTH_DAYS; most entrants leave first.
+    NEW_ENTRANT_EPISODES: Math.max(1, parseInt(process.env.NEW_ENTRANT_EPISODES || '5', 10) || 5),
+    NEW_ENTRANT_DEPTH_DAYS: Math.max(0, parseFloat(process.env.NEW_ENTRANT_DEPTH_DAYS || '7') || 0),
+    // Computed vectors whose upload failed wait here for the next run (P1a). On the runner this is
+    // set to durable data/ so redeploys keep it.
+    VECTOR_SPOOL_DIR: process.env.SYNC_SPOOL_DIR || 'scripts/data/vector-spool',
+
     // --- Cleanup ---
     CLEANUP_GRACE_DAYS: 7,
     CLEANUP_SAFETY_MIN_CHARTS: 500,

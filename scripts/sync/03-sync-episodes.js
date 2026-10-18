@@ -19,6 +19,7 @@ const pi = require('./lib/podcast-index');
 const state = require('./lib/state');
 const text = require('./lib/text');
 const cfg = require('./lib/config');
+const { handoffList } = require('./lib/vector-window');
 const handoff = require('./lib/pi-handoff');
 const tipQueue = require('./lib/tip-queue');
 const { loadCapsByPodcastId } = require('./lib/episode-caps');
@@ -223,12 +224,11 @@ async function main() {
                 }
 
                 // New/changed: pull full cap once for Turso + stage-4 handoff
-                let episodes = tip;
-                if (maxEps > 1) {
-                    episodes = await pi.episodesByFeedId(podId, maxEps);
-                    if (episodes.length === 0) episodes = tip;
-                }
-                handoff.put(podId, episodes);
+                const full = maxEps > 1 ? await pi.episodesByFeedId(podId, maxEps) : null;
+                // Hand stage 4 only a complete list, never the one-item tip (handoffList).
+                const window = handoffList(full, maxEps);
+                if (window) handoff.put(podId, window);
+                const episodes = window || tip;
                 const latest = episodes[0] || latestTip;
                 // Prefer cached medium from import/prior sync; never spend a PI call on it.
                 const medium = rec.m || 'podcast';

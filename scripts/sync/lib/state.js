@@ -14,7 +14,9 @@
  *       "c": <lastCheckedMs>, "e": "<latestEpId>", "m": "<medium>",
  *       "n": 1 (present only for News shows),
  *       "x": 1 (present only when show is on relaxed-check countries only — 48h),
- *       "s": <lastSeenInChartsMs>
+ *       "s": <lastSeenInChartsMs>,
+ *       "k": <earned episode cap: the highest cap the show had while its vectors were kept>,
+ *       "d": <ms epoch when a newest-first show gets its full window (removed once flagged)>
  *     }
  *   }
  * }
