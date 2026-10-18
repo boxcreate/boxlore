@@ -101,5 +101,6 @@ posthog-setup-report.md
 /.codex/hooks.json
 /.codex/hooks/
 
-# Catalog sync vector attribution log (written on the runner)
+# Catalog sync runtime data written on the runner (attribution log, vector spool)
 scripts/data/attribution/
+scripts/data/vector-spool/

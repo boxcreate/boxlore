@@ -193,6 +193,15 @@ async function facetCounts(collection, key, filter, limit) {
     return out;
 }
 
+/** Exact number of points matching a filter. */
+async function countPoints(collection, filter) {
+    const res = await request(`/collections/${collection}/points/count`, {
+        method: 'POST',
+        body: JSON.stringify({ filter, exact: true }),
+    });
+    return Number(res.result?.count) || 0;
+}
+
 /**
  * Upsert points with wait=true: the call returns only after the write is
  * durable, so callers can safely mark work as complete afterwards.
@@ -261,6 +270,6 @@ async function enableQuantization(collection) {
 module.exports = {
     assertEnv, stableUUID, request, collectionInfo, ensureCollection, dropCollection,
     payloadSchema, ensurePayloadIndex, ensureEpisodesCollection, ensurePodcastsCollection,
-    existingIds, payloadsByIds, facetCounts, upsert, deleteByIds, deleteByFilter, scrollAll,
+    existingIds, payloadsByIds, facetCounts, countPoints, upsert, deleteByIds, deleteByFilter, scrollAll,
     enableQuantization,
 };

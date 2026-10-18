@@ -19,7 +19,7 @@
  * default (surgical trim):
  *   1. Measure current collection state.
  *   2. Delete episode points belonging to non-chart shows.
- *   3. Trim every chart show to its latest EPISODES_PER_SHOW episode points.
+ *   3. Trim every chart show to its own cap (trim-episode-caps.js: chart cap or earned cap).
  *   4. Cross-check Turso qdrant_vectorized flags against actual point counts;
  *      reset false positives (flag=1 but zero points) so the pipeline heals them.
  *   5. Report before/after point counts.
@@ -34,6 +34,7 @@ const turso = require('./lib/turso');
 const qdrant = require('./lib/qdrant');
 const cfg = require('./lib/config');
 const { loadCountriesByItunesId } = require('./lib/chart-countries');
+const { trimEpisodeCaps } = require('./lib/trim-episode-caps');
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const SKIP_QUANTIZATION = process.argv.includes('--skip-quantization');
@@ -122,7 +123,7 @@ async function main() {
 
     log.banner('Qdrant Remediation', {
         'Mode': DRY_RUN ? 'DRY RUN (no writes)' : 'LIVE',
-        'Episodes per show': String(cfg.EPISODES_PER_SHOW),
+        'Episode caps': `us/gb ${cfg.EPISODE_CAP_BY_COUNTRY.us} · else ${cfg.EPISODE_CAP_DEFAULT} (or the cap a show earned)`,
         'Quantization': SKIP_QUANTIZATION ? 'skipped' : 'int8 scalar + on-disk originals',
     });
 
@@ -220,31 +221,13 @@ async function main() {
     log.endGroup();
 
     // ---------------------------------------------------------------
-    log.group(`Step 5: Trim chart shows to latest ${cfg.EPISODES_PER_SHOW} points`);
-    let trimmedShows = 0;
-    let trimmedPoints = 0;
-    const trimDeleteIds = [];
-    const touchedShowIds = [];
-
-    for (const [showId, points] of byShow.entries()) {
-        if (!chartShowIds.has(showId)) continue;
-        if (points.length <= cfg.EPISODES_PER_SHOW) continue;
-        points.sort((a, b) => b.date - a.date);
-        const excess = points.slice(cfg.EPISODES_PER_SHOW);
-        trimDeleteIds.push(...excess.map(p => p.id));
-        trimmedShows++;
-        trimmedPoints += excess.length;
-        touchedShowIds.push(showId);
-    }
-    log.info(`Shows over the ${cfg.EPISODES_PER_SHOW}-episode limit: ${log.fmt(trimmedShows)} (${log.fmt(trimmedPoints)} excess points)`);
-
-    if (!DRY_RUN && trimDeleteIds.length > 0) {
-        for (let i = 0; i < trimDeleteIds.length; i += DELETE_CHUNK) {
-            await qdrant.deleteByIds(cfg.EPISODES_COLLECTION, trimDeleteIds.slice(i, i + DELETE_CHUNK));
-        }
-        log.info(`Deleted ${log.fmt(trimDeleteIds.length)} excess points`);
-    }
-    log.endGroup();
+    // Per-show caps (us/gb 50, else 20, or the cap a show earned), the same rule as the nightly
+    // trim. This step used to trim every show to the deprecated maximum of 50. Fails closed.
+    const trim = await trimEpisodeCaps({ dryRun: DRY_RUN });
+    if (trim.failed) log.warn('Step 5 skipped: chart cap lookup failed, nothing trimmed');
+    const trimmedShows = trim.trimmedShows;
+    const trimmedPoints = trim.failed ? 0 : trim.excessPoints;
+    const touchedShowIds = trim.trimmedShowIds;
 
     // ---------------------------------------------------------------
     log.group('Step 6: Cross-check qdrant_vectorized flags');
@@ -316,7 +299,7 @@ async function main() {
     log.summaryTable('Qdrant Remediation', [
         { stage: 'Scan', reads: allPoints.length, detail: `${byShow.size} shows in collection` },
         { stage: 'Non-chart deletion', detail: `${nonChartShowIds.length} shows / ${nonChartPoints} points${DRY_RUN ? ' (dry run)' : ''}` },
-        { stage: 'Trim to latest ' + cfg.EPISODES_PER_SHOW, detail: `${trimmedShows} shows / ${trimmedPoints} points${DRY_RUN ? ' (dry run)' : ''}` },
+        { stage: 'Trim to per-show caps', detail: `${trimmedShows} shows / ${trimmedPoints} points${DRY_RUN ? ' (dry run)' : ''}${trim.failed ? ' (skipped: cap lookup failed)' : ''}` },
         { stage: 'Flag resets', reads: stats.reads, writes: stats.writes, detail: `${toReset.length} shows queued for healing` },
     ]);
     log.info(`\nDone. Turso cost: ${log.fmt(stats.reads)} reads / ${log.fmt(stats.writes)} writes`);

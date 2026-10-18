@@ -11,7 +11,10 @@
  *   3) Cold both=0, oldest last_ep_sync first, leftover budget only
  *
  * Prefers PI handoff from stage 3 (same-run); falls back to PI fetch.
- * Prune-before-insert keeps every show at its country cap.
+ * Prune-before-insert keeps every show at its cap, but only against a full window.
+ * Caps are retention-aware (the larger of today's chart cap and the cap a show earned).
+ * Shows with no vectors get their newest episodes first and the rest after a few days.
+ * A failed upload is spooled to disk and uploaded first by the next run.
  * qdrant_vectorized=1 + tip-queue DELETE only when the show fully completes
  * (not on mid-show budget break). Upserts use wait=true.
  */
@@ -30,7 +33,10 @@ const {
     showVectorizeComplete,
     laneForShow,
 } = require('./lib/vectorize-lanes');
-const { capsFromCountriesByItunes } = require('./lib/episode-caps');
+const { capsFromCountriesByItunes, rememberEarnedCaps, effectiveCap } = require('./lib/episode-caps');
+const { planWindow, dueForDepth, clearDepth, pruneIsSafe } = require('./lib/vector-window');
+const vectorSpool = require('./lib/vector-spool');
+const state = require('./lib/state');
 const {
     loadCountriesByItunesId,
     itunesInCountries,
@@ -60,6 +66,43 @@ async function main() {
         log.info('No full-tier countries configured - nothing to vectorize');
         return;
     }
+
+    const st = state.load();
+    stateRef = st;
+    const nowMs = Date.now();
+    const storedPids = new Set();
+
+    // Vectors from an upload that failed in an earlier run go up first, so the existence
+    // checks below see them and nothing is embedded twice.
+    const replayed = await vectorSpool.replay(
+        (points) => qdrant.upsert(cfg.EPISODES_COLLECTION, points),
+        (metas) => {
+            for (const m of metas) {
+                attribution.episodeStored(m.pid, m.ep, m.queue);
+                storedPids.add(Number(m.pid));
+            }
+        },
+    );
+    if (replayed.batches || replayed.dropped || replayed.left) {
+        log.info(
+            `Spool: ${log.fmt(replayed.points)} vectors re-uploaded from ${replayed.batches} batch(es)` +
+            ` · ${replayed.dropped} dropped · ${replayed.left} still waiting`,
+        );
+    }
+
+    // Shows whose newest-first phase is over get one more pass at their full cap.
+    // A show's depth date is cleared only once its flag is stored; if an UPDATE fails, the run's
+    // state save keeps the date and the next run tries again.
+    const depthDue = dueForDepth(st, nowMs);
+    for (let i = 0; i < depthDue.length; i += 200) {
+        const chunk = depthDue.slice(i, i + 200);
+        await turso.execute(
+            `UPDATE podcasts SET qdrant_vectorized = 0 WHERE id IN (${chunk.map(() => '?').join(',')})`,
+            chunk,
+        );
+        clearDepth(st, chunk);
+    }
+    if (depthDue.length) log.info(`Depth: ${log.fmt(depthDue.length)} show(s) flagged for their full window`);
 
     // --- Pending shows (paged); chart membership in JS (no CAST on charts) ---
     const countriesByItunes = await loadCountriesByItunesId(turso);
@@ -114,18 +157,23 @@ async function main() {
     }
 
     const caps = capsFromCountriesByItunes(drainOrder, countriesByItunes, fullTier);
+    rememberEarnedCaps(st, caps);
     log.banner('Stage 4 · Vectorize Episodes', {
         'Pending shows': log.fmt(pending.length),
         'Tip queue (on charts)': log.fmt(tipCount),
         'Incremental (show=1)': log.fmt(incrementalCount),
         'Cold (both=0)': log.fmt(coldCount),
         'Embedding budget': log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN),
-        'Caps': `us/gb ${cfg.EPISODE_CAP_BY_COUNTRY.us} · else ${cfg.EPISODE_CAP_DEFAULT}`,
+        'Caps': `us/gb ${cfg.EPISODE_CAP_BY_COUNTRY.us} · else ${cfg.EPISODE_CAP_DEFAULT} · or earned`,
+        'New shows': cfg.NEW_ENTRANT_DEPTH_DAYS > 0
+            ? `newest ${cfg.NEW_ENTRANT_EPISODES} first, rest after ${cfg.NEW_ENTRANT_DEPTH_DAYS} d`
+            : 'full window',
         'Embed provider': cfg.EMBED_PROVIDER,
         'Handoff': handoff.handoffPath(),
         'Collection': cfg.EPISODES_COLLECTION,
     });
     if (drainOrder.length === 0) {
+        state.save(st);
         log.summaryTable('Stage 4: Vectorize Episodes', [{
             stage: 'vectorize-episodes', reads: turso.getStats().reads,
             writes: turso.getStats().writes, detail: 'queue empty',
@@ -146,7 +194,10 @@ async function main() {
     let processedCount = 0;
     let stored = 0;
     let pruned = 0;
-    const storedPids = new Set();
+    let pruneSkipped = 0;
+    let newestShows = 0;
+    let spooledPoints = 0;
+    let flushes = 0;
 
     // Points buffered for batch upsert; flag + tip-queue clears follow durable writes.
     let pointsQueue = [];
@@ -182,6 +233,12 @@ async function main() {
         }
         turso.flushStats();
         attribution.flush();
+        if (++flushes % 25 === 0) state.save(st);
+    }
+
+    /** A failed upload: keep the computed vectors for the next run instead of dropping them. */
+    function spoolFailedBatch() {
+        if (pointsQueue.length && vectorSpool.spool(pointsQueue, metaQueue)) spooledPoints += pointsQueue.length;
     }
 
     const runProg = log.budgetProgress(cfg.MAX_EMBEDDINGS_PER_RUN, 'embeddings', 50);
@@ -208,8 +265,26 @@ async function main() {
             break;
         }
         processedCount++;
-        const showCap = caps.get(pod.id) || cfg.EPISODE_CAP_DEFAULT;
+        const showCap = effectiveCap(pod.id, caps, st);
         const lane = laneForShow(pod, tipSet);
+        // Newest first for shows with no vectors yet; the count is skipped once a phase is known.
+        const rec = st.shows[pod.id] || (st.shows[pod.id] = {});
+        let existingCount = -1;
+        if (rec.d == null && cfg.NEW_ENTRANT_DEPTH_DAYS > 0) {
+            try {
+                existingCount = await qdrant.countPoints(cfg.EPISODES_COLLECTION, {
+                    must: [{ key: 'podcast_id', match: { value: parseInt(pod.id, 10) || 0 } }],
+                });
+            } catch {
+                existingCount = -1; // unknown: treat as an ordinary show
+            }
+        }
+        const window = planWindow(rec, existingCount, showCap, {
+            now: nowMs,
+            newestEpisodes: cfg.NEW_ENTRANT_EPISODES,
+            depthDays: cfg.NEW_ENTRANT_DEPTH_DAYS,
+        });
+        if (window.phase === 'newest') newestShows++;
         let queue = 'cold';
         if (tipSet.has(pod.id)) queue = 'tip';
         else if (pod.qdrant_podcast_vectorized === 1) queue = 'inc';
@@ -219,7 +294,7 @@ async function main() {
             handoffHits++;
         } else {
             try {
-                episodes = await pi.episodesByFeedId(pod.id, showCap);
+                episodes = await pi.episodesByFeedId(pod.id, window.cap);
                 piFetches++;
             } catch (e) {
                 errors++;
@@ -236,28 +311,33 @@ async function main() {
             continue;
         }
 
-        const eps = episodes.slice(0, showCap).map((ep) => ({
+        const eps = episodes.slice(0, window.cap).map((ep) => ({
             raw: ep,
             uuid: qdrant.stableUUID(ep.id),
         }));
         const uuids = eps.map((e) => e.uuid);
 
-        // Prune BEFORE insert: hard-cap this show to its country cap (wait=true).
+        // Prune BEFORE insert: hard-cap this show to its window (wait=true), but only when the
+        // list fills the window; a shorter list may be partial and must never delete vectors.
         const pruneFilter = {
             must: [{ key: 'podcast_id', match: { value: parseInt(pod.id, 10) || 0 } }],
             must_not: [{ has_id: uuids }],
         };
+        const pruneSafe = pruneIsSafe(eps.length, window.cap);
+        if (!pruneSafe) pruneSkipped++;
         // Read what the prune will remove, for the attribution log only.
         let pruning = [];
         try {
-            pruning = await qdrant.scrollAll(
-                cfg.EPISODES_COLLECTION, pruneFilter, ['id', 'published_date', 'audio_url'], 256,
-            );
+            if (pruneSafe) {
+                pruning = await qdrant.scrollAll(
+                    cfg.EPISODES_COLLECTION, pruneFilter, ['id', 'published_date', 'audio_url'], 256,
+                );
+            }
         } catch {
             pruning = [];
         }
         try {
-            await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, pruneFilter, true);
+            if (pruneSafe) await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, pruneFilter, true);
             pruned += pruning.length;
             for (const p of pruning) {
                 attribution.episodeDeleted('4', pod.id, {
@@ -395,6 +475,7 @@ async function main() {
                     `Qdrant upsert batch failed (${pointsQueue.length} points, ` +
                     `${completeQueue.length} shows): ${e.message}`,
                 );
+                spoolFailedBatch();
                 pointsQueue = [];
                 metaQueue = [];
                 completeQueue = [];
@@ -413,9 +494,11 @@ async function main() {
             `Final Qdrant flush failed (${pointsQueue.length} points, ` +
             `${completeQueue.length} shows): ${e.message}`,
         );
+        spoolFailedBatch();
         metaQueue = [];
     }
     attribution.flush();
+    state.save(st);
 
     try {
         await handoff.flush();
@@ -439,6 +522,8 @@ async function main() {
         detail:
             `${log.fmt(embedded)}/${log.fmt(cfg.MAX_EMBEDDINGS_PER_RUN)} budget ` +
             `(tip ${embTip} · cold ${embCold}) · stored ${log.fmt(stored)} · pruned ${log.fmt(pruned)} · ` +
+            `prune skipped ${pruneSkipped} · newest-first ${newestShows} · depth ${depthDue.length} · ` +
+            `spooled ${spooledPoints} · replayed ${replayed.points} · ` +
             `${showsCompleted} done · ` +
             `${partialShows} partial · skip ${showsFullySkipped} · ` +
             `handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors` +
@@ -451,7 +536,8 @@ async function main() {
         apiCalls: pi.getApiCallCount(),
         detail:
             `${embedded}/${cfg.MAX_EMBEDDINGS_PER_RUN} budget tip=${embTip} cold=${embCold}, ` +
-            `stored ${stored}, pruned ${pruned}, ` +
+            `stored ${stored}, pruned ${pruned}, prune skipped ${pruneSkipped}, newest-first ${newestShows}, ` +
+            `depth ${depthDue.length}, spooled ${spooledPoints}, replayed ${replayed.points}, ` +
             `${showsCompleted} done, partial ${partialShows}, skip ${showsFullySkipped}, ` +
             `handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors` +
             (reasons ? `, ${reasons}` : ''),
@@ -463,11 +549,15 @@ async function main() {
     }
 }
 
+/** The run's sync state, so a crash still saves earned caps and newest-first dates. */
+let stateRef = null;
+
 main()
     .then(() => turso.flushStats())
     .catch((err) => {
         log.error(`vectorize-episodes failed: ${err.message}`);
         turso.flushStats();
         attribution.flush();
+        if (stateRef) state.save(stateRef);
         process.exit(1);
     });

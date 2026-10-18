@@ -80,4 +80,45 @@ async function loadCapsByPodcastId(podcastIds) {
     return map;
 }
 
-module.exports = { loadCapsByPodcastId, capsFromCountriesByItunes, ID_CHUNK };
+/**
+ * Retention-aware caps: a show keeps the highest cap it earned while its vectors are kept.
+ *
+ * Without this, a US/GB show that leaves those charts (or every chart, during its grace
+ * window) drops from 50 to 20, loses 30 vectors, and re-embeds them if it comes back.
+ * The earned cap lives in the per-show sync state (`shows[id].k`, see state.js), which
+ * stage 6 deletes together with the show's vectors, so it lasts exactly as long as they do.
+ *
+ * Added in P1a of the own-episode-IDs plan (plan section 10b, "cap drop on chart exit").
+ */
+
+/**
+ * Raises each show's earned cap to its current chart cap. Returns how many were raised.
+ * @param {{ shows: Record<string, object> }} st sync state (state.load())
+ * @param {Map<string, number>} chartCaps podcast id → cap from today's charts
+ */
+function rememberEarnedCaps(st, chartCaps) {
+    let raised = 0;
+    for (const [id, cap] of chartCaps) {
+        const rec = st.shows[String(id)] || (st.shows[String(id)] = {});
+        if (!(Number(rec.k) >= cap)) {
+            rec.k = cap;
+            raised++;
+        }
+    }
+    return raised;
+}
+
+/**
+ * The cap to enforce: the larger of today's chart cap and the earned cap, else the default.
+ * @param {string|number} id
+ * @param {Map<string, number>} chartCaps
+ * @param {{ shows?: Record<string, object> } | null} st
+ */
+function effectiveCap(id, chartCaps, st) {
+    const chart = chartCaps.get(String(id)) || 0;
+    const earned = Number(st?.shows?.[String(id)]?.k) || 0;
+    const best = Math.max(chart, earned);
+    return best > 0 ? best : cfg.EPISODE_CAP_DEFAULT;
+}
+
+module.exports = { loadCapsByPodcastId, capsFromCountriesByItunes, rememberEarnedCaps, effectiveCap, ID_CHUNK };

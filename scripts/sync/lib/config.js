@@ -15,6 +15,8 @@
  * Embedder: EMBED_PROVIDER=bge (default, GHA/cloud) or qwen (VPS local ONNX).
  * Episode caps: us/gb = 50, else 20 (must match VPS Qwen backfill).
  */
+const path = require('node:path');
+
 const COUNTRIES = [
     { code: 'us', tier: 'full', check: 'core' },
     { code: 'in', tier: 'full', check: 'core' },
@@ -136,6 +138,16 @@ module.exports = {
     DUMP_THRESHOLD: 300,
     API_IMPORT_CAP: 200,
     PI_UNAVAILABLE_TTL_MS: 30 * 24 * 60 * 60 * 1000,
+
+    // --- New chart entrants (own-episode-IDs plan, P1a; plan section 10b item 5b) ---
+    // A show with no vectors yet gets only its newest NEW_ENTRANT_EPISODES embedded. The rest of
+    // its window waits until it has charted for NEW_ENTRANT_DEPTH_DAYS; most entrants leave first.
+    NEW_ENTRANT_EPISODES: Math.max(1, parseInt(process.env.NEW_ENTRANT_EPISODES || '5', 10) || 5),
+    NEW_ENTRANT_DEPTH_DAYS: Math.max(0, parseFloat(process.env.NEW_ENTRANT_DEPTH_DAYS || '7') || 0),
+    // Computed vectors whose upload failed wait here for the next run (P1a). On the runner this is
+    // set to durable data/ so redeploys keep it. The default is scripts/data/vector-spool whatever
+    // the working directory, so every run replays from the folder the last one spooled into.
+    VECTOR_SPOOL_DIR: process.env.SYNC_SPOOL_DIR || path.resolve(__dirname, '../../data/vector-spool'),
 
     // --- Cleanup ---
     CLEANUP_GRACE_DAYS: 7,
