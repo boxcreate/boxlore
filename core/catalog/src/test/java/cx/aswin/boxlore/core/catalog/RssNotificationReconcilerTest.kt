@@ -165,6 +165,46 @@ class RssNotificationReconcilerTest {
         }
     }
 
+    @Test fun cleanupKeepsTheTrackedNodeAndDropsOnlyItsFeedUrlBecauseTheRulesRefuseNodeDeletes() = runTest {
+        val store = MemoryRssNotificationRegistrations().apply { remember(record) }
+        val firebase = RulesFirebase()
+        val remote = FirebaseRssNotificationRemote(firebase)
+        assertTrue(RssNotificationReconciler(store, { show() }, consent, remote).reconcile())
+        assertEquals(url, firebase.nodes.getValue(record.key)["feedUrl"])
+        assertEquals(setOf(record.topic), firebase.topics)
+
+        assertTrue(RssNotificationReconciler(store, { show().copy(notificationsEnabled = false) }, consent, remote).reconcile())
+        assertEquals(mapOf("title" to "Show", "imageUrl" to ""), firebase.nodes[record.key])
+        assertTrue(firebase.topics.isEmpty())
+        assertTrue(store.records().isEmpty())
+    }
+
+    @Test fun cleanupOfAKeyThatWasNeverPublishedStillLeavesItsTopicAndClearsTheJournal() = runTest {
+        val legacy = RssNotificationRegistration.legacy(id, "device-a")
+        val store = MemoryRssNotificationRegistrations().apply { remember(legacy) }
+        val firebase = RulesFirebase().apply { topics += legacy.topic }
+        assertTrue(RssNotificationReconciler(store, { show() }, consent, FirebaseRssNotificationRemote(firebase)).reconcile())
+        assertTrue(firebase.nodes.isEmpty())
+        assertTrue(firebase.topics.isEmpty())
+        assertTrue(store.records().isEmpty())
+    }
+
+    @Test fun cleanupFailureOtherThanARulesRefusalKeepsTheTopicAndTheObligation() = runTest {
+        val store = MemoryRssNotificationRegistrations().apply { remember(record) }
+        val firebase = RulesFirebase().apply {
+            topics += record.topic
+            deleteFailure = IOException("offline")
+        }
+        val reconciler = RssNotificationReconciler(store, { null }, consent, FirebaseRssNotificationRemote(firebase))
+        assertFalse(reconciler.reconcile())
+        assertEquals(setOf(record.topic), firebase.topics)
+        assertEquals(listOf(record), store.records())
+        firebase.deleteFailure = null
+        assertTrue(reconciler.reconcile())
+        assertTrue(firebase.topics.isEmpty())
+        assertTrue(store.records().isEmpty())
+    }
+
     private fun show() = PodcastEntity(id, "Show", "Author", "", "", isSubscribed = true, notificationsEnabled = true, feedUrl = url)
     private fun newFile() = File(ApplicationProvider.getApplicationContext<Context>().noBackupFilesDir, "rss-journal-test-${System.nanoTime()}")
 
@@ -183,6 +223,34 @@ class RssNotificationReconcilerTest {
             calls += "remove:${record.key}"
             if (failRemoval) throw IOException("FCM unsubscribe failed after RTDB acknowledgement")
             removed += record
+        }
+    }
+
+    /** Applies the deployed `tracked_podcasts/$podcastId` write rule: a write must leave the node with at least one child. */
+    private class RulesFirebase : TrackedPodcastFirebase {
+        val nodes = mutableMapOf<String, Map<String, String>>()
+        val topics = mutableSetOf<String>()
+        var deleteFailure: Exception? = null
+
+        override suspend fun set(key: String, payload: Map<String, String>) {
+            if (payload.isEmpty()) throw TrackedPodcastWriteRefused()
+            nodes[key] = payload
+        }
+
+        override suspend fun delete(path: String) {
+            deleteFailure?.let { throw it }
+            val key = path.substringBefore('/')
+            val remaining = if ('/' in path) nodes[key].orEmpty() - path.substringAfter('/') else emptyMap()
+            if (remaining.isEmpty()) throw TrackedPodcastWriteRefused()
+            nodes[key] = remaining
+        }
+
+        override suspend fun subscribe(topic: String) {
+            topics += topic
+        }
+
+        override suspend fun unsubscribe(topic: String) {
+            topics -= topic
         }
     }
 }
