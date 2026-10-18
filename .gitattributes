@@ -1,0 +1,2 @@
+# The recipe fixture is hash-checked by tests; never convert its line endings.
+core/rss/src/test/resources/fixtures/episode-recipe-vectors.json -text

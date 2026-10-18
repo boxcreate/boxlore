@@ -163,6 +163,37 @@ async function existingIds(collection, ids) {
 }
 
 /**
+ * Payload fields for these point ids. Returns Map of string id -> payload.
+ * Missing points are simply absent.
+ */
+async function payloadsByIds(collection, ids, fields) {
+    const out = new Map();
+    const CHUNK_SIZE = 1000;
+    for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const res = await request(`/collections/${collection}/points`, {
+            method: 'POST',
+            body: JSON.stringify({ ids: ids.slice(i, i + CHUNK_SIZE), with_vector: false, with_payload: fields }),
+        });
+        for (const p of (res.result || [])) out.set(String(p.id), p.payload || {});
+    }
+    return out;
+}
+
+/**
+ * Exact point counts per value of an indexed payload key (Qdrant facet API).
+ * Returns Map of String(value) -> count.
+ */
+async function facetCounts(collection, key, filter, limit) {
+    const res = await request(`/collections/${collection}/facet`, {
+        method: 'POST',
+        body: JSON.stringify({ key, filter, limit, exact: true }),
+    });
+    const out = new Map();
+    for (const hit of (res.result?.hits || [])) out.set(String(hit.value), Number(hit.count) || 0);
+    return out;
+}
+
+/**
  * Upsert points with wait=true: the call returns only after the write is
  * durable, so callers can safely mark work as complete afterwards.
  */
@@ -230,5 +261,6 @@ async function enableQuantization(collection) {
 module.exports = {
     assertEnv, stableUUID, request, collectionInfo, ensureCollection, dropCollection,
     payloadSchema, ensurePayloadIndex, ensureEpisodesCollection, ensurePodcastsCollection,
-    existingIds, upsert, deleteByIds, deleteByFilter, scrollAll, enableQuantization,
+    existingIds, payloadsByIds, facetCounts, upsert, deleteByIds, deleteByFilter, scrollAll,
+    enableQuantization,
 };

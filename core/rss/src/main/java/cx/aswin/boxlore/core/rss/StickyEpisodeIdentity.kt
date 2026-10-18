@@ -8,11 +8,12 @@ package cx.aswin.boxlore.core.rss
  * a new row (I8). Duplicate guid on the same show is first-wins (I9).
  */
 object StickyEpisodeIdentity {
-    fun catalogKey(guid: String?, enclosureUrl: String?,): String? {
-        val fromGuid = guid?.trim()?.takeIf(String::isNotBlank)
-        if (fromGuid != null) return fromGuid
-        return enclosureUrl?.trim()?.takeIf(String::isNotBlank)
-    }
+    /**
+     * Trimmed GUID, else trimmed enclosure URL. Uses the recipe's explicit trim set
+     * ([EpisodeRecipeId.catalogKey]), which equals Kotlin's `trim()` on Android, so
+     * keys already stored on devices are unchanged and stay hashable.
+     */
+    fun catalogKey(guid: String?, enclosureUrl: String?,): String? = EpisodeRecipeId.catalogKey(guid, enclosureUrl)
 
     /**
      * @return catalog key, or null when the item must be skipped (I3).

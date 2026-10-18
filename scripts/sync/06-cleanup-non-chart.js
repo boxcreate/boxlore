@@ -32,6 +32,7 @@ const tipQueue = require('./lib/tip-queue');
 const handoff = require('./lib/pi-handoff');
 const { trimEpisodeCaps } = require('./lib/trim-episode-caps');
 const { CHARTS_ITUNES_FIRST_CURSOR } = require('./lib/chart-countries');
+const attribution = require('./lib/attribution');
 
 const QDRANT_CHUNK = 500;
 const DELETE_CHUNK = 200;
@@ -169,12 +170,26 @@ async function main() {
         const chunk = toDelete.slice(i, i + QDRANT_CHUNK);
         const intIds = chunk.map(p => parseInt(p.id, 10)).filter(n => !isNaN(n));
         const uuids = chunk.map(p => qdrant.stableUUID(p.id));
+        const chunkFilter = { must: [{ key: 'podcast_id', match: { any: intIds } }] };
+        // Points per show, for the attribution log only.
+        let pointCounts = null;
         try {
-            await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, {
-                must: [{ key: 'podcast_id', match: { any: intIds } }],
-            }, true);
+            pointCounts = await qdrant.facetCounts(cfg.EPISODES_COLLECTION, 'podcast_id', chunkFilter, intIds.length);
+        } catch {
+            pointCounts = null;
+        }
+        try {
+            await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, chunkFilter, true);
             await qdrant.deleteByIds(cfg.PODCASTS_COLLECTION, uuids, true);
             qdrantOk.push(...chunk);
+            for (const p of chunk) {
+                attribution.showDeleted(p.id, {
+                    points: pointCounts ? (pointCounts.get(String(p.id)) || 0) : undefined,
+                    lastSeen: st.shows[p.id]?.s,
+                    itunesId: p.itunesId,
+                });
+            }
+            attribution.flush();
             log.info(`Deleted vectors for shows ${i + 1}-${Math.min(i + QDRANT_CHUNK, toDelete.length)} of ${toDelete.length}`);
         } catch (e) {
             qdrantFailedChunks++;
@@ -268,9 +283,13 @@ async function main() {
 }
 
 main()
-    .then(() => turso.flushStats())
+    .then(() => {
+        turso.flushStats();
+        attribution.flush();
+    })
     .catch(err => {
         log.error(`cleanup-non-chart failed: ${err.message}`);
         turso.flushStats();
+        attribution.flush();
         process.exit(1);
     });

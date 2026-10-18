@@ -128,6 +128,14 @@ class StickyEpisodeIdentityTest {
     }
 
     @Test
+    fun catalogKeyTrimsLikeAndroidOnEveryRuntime() {
+        // Android's trim() removes U+180E; the desktop JVM's doesn't. Keys must match the device.
+        assertEquals("guid-1", StickyEpisodeIdentity.catalogKey("\u180Eguid-1\u00A0", null))
+        assertEquals("\uFEFFguid-1", StickyEpisodeIdentity.catalogKey("\uFEFFguid-1", null))
+        assertNull(StickyEpisodeIdentity.catalogKey("\u180E\u3000", " "))
+    }
+
+    @Test
     fun i10_seasonIsNotPartOfCatalogKey() {
         val key = StickyEpisodeIdentity.catalogKey("guid-1", "https://cdn.example/a.mp3")
         assertEquals("guid-1", key)
