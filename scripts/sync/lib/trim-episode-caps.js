@@ -24,7 +24,7 @@ const DELETE_CHUNK = 500;
 
 /**
  * @param {{ dryRun?: boolean, loadCaps?: Function }} [opts] loadCaps is for tests
- * @returns {Promise<{ showsScanned: number, trimmedShows: number, deletedPoints: number, keptEarned?: number, failed?: boolean }>}
+ * @returns {Promise<{ showsScanned: number, trimmedShows: number, trimmedShowIds: string[], deletedPoints: number, excessPoints?: number, keptEarned?: number, failed?: boolean }>}
  */
 async function trimEpisodeCaps(opts = {}) {
     const dryRun = Boolean(opts.dryRun);
@@ -49,7 +49,7 @@ async function trimEpisodeCaps(opts = {}) {
         if (/404|not found|doesn't exist|does not exist/i.test(e.message)) {
             log.warn(`Episodes collection missing - nothing to trim: ${e.message}`);
             log.endGroup();
-            return { showsScanned: 0, trimmedShows: 0, deletedPoints: 0 };
+            return { showsScanned: 0, trimmedShows: 0, trimmedShowIds: [], deletedPoints: 0 };
         }
         throw e;
     }
@@ -75,14 +75,14 @@ async function trimEpisodeCaps(opts = {}) {
     } catch (e) {
         log.warn(`Cap lookup failed (${e.message}) — skipping the trim (fail closed)`);
         log.endGroup();
-        return { showsScanned: byShow.size, trimmedShows: 0, deletedPoints: 0, failed: true };
+        return { showsScanned: byShow.size, trimmedShows: 0, trimmedShowIds: [], deletedPoints: 0, failed: true };
     }
 
     const st = state.load();
     const raised = rememberEarnedCaps(st, caps);
     const trimDeleteIds = [];
     const trimDeleted = [];
-    let trimmedShows = 0;
+    const trimmedShowIds = [];
     let keptEarned = 0;
     for (const [podId, points] of byShow.entries()) {
         const cap = effectiveCap(podId, caps, st);
@@ -94,9 +94,9 @@ async function trimEpisodeCaps(opts = {}) {
         const excess = points.slice(cap);
         trimDeleteIds.push(...excess.map(p => p.id));
         trimDeleted.push(...excess.map(p => ({ podId, ...p })));
-        trimmedShows++;
+        trimmedShowIds.push(podId);
     }
-    log.info(`Shows over cap: ${log.fmt(trimmedShows)} · excess points: ${log.fmt(trimDeleteIds.length)}`);
+    log.info(`Shows over cap: ${log.fmt(trimmedShowIds.length)} · excess points: ${log.fmt(trimDeleteIds.length)}`);
     log.info(`Earned caps: ${log.fmt(raised)} raised · ${log.fmt(keptEarned)} shows kept above today's chart cap`);
     if (!dryRun) state.save(st);
 
@@ -131,7 +131,8 @@ async function trimEpisodeCaps(opts = {}) {
     log.endGroup();
     return {
         showsScanned: byShow.size,
-        trimmedShows,
+        trimmedShows: trimmedShowIds.length,
+        trimmedShowIds,
         deletedPoints: dryRun ? 0 : trimDeleteIds.length,
         excessPoints: trimDeleteIds.length,
         keptEarned,

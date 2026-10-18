@@ -227,6 +227,7 @@ async function main() {
     if (trim.failed) log.warn('Step 5 skipped: chart cap lookup failed, nothing trimmed');
     const trimmedShows = trim.trimmedShows;
     const trimmedPoints = trim.failed ? 0 : trim.excessPoints;
+    const touchedShowIds = trim.trimmedShowIds;
 
     // ---------------------------------------------------------------
     log.group('Step 6: Cross-check qdrant_vectorized flags');

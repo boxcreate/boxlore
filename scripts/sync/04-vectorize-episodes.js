@@ -34,7 +34,7 @@ const {
     laneForShow,
 } = require('./lib/vectorize-lanes');
 const { capsFromCountriesByItunes, rememberEarnedCaps, effectiveCap } = require('./lib/episode-caps');
-const { planWindow, takeDueForDepth, pruneIsSafe } = require('./lib/vector-window');
+const { planWindow, dueForDepth, clearDepth, pruneIsSafe } = require('./lib/vector-window');
 const vectorSpool = require('./lib/vector-spool');
 const state = require('./lib/state');
 const {
@@ -91,13 +91,16 @@ async function main() {
     }
 
     // Shows whose newest-first phase is over get one more pass at their full cap.
-    const depthDue = takeDueForDepth(st, nowMs);
+    // A show's depth date is cleared only once its flag is stored; if an UPDATE fails, the run's
+    // state save keeps the date and the next run tries again.
+    const depthDue = dueForDepth(st, nowMs);
     for (let i = 0; i < depthDue.length; i += 200) {
         const chunk = depthDue.slice(i, i + 200);
         await turso.execute(
             `UPDATE podcasts SET qdrant_vectorized = 0 WHERE id IN (${chunk.map(() => '?').join(',')})`,
             chunk,
         );
+        clearDepth(st, chunk);
     }
     if (depthDue.length) log.info(`Depth: ${log.fmt(depthDue.length)} show(s) flagged for their full window`);
 

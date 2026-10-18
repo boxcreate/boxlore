@@ -75,6 +75,7 @@ const TEXT_MARK = Symbol('turso.text');
  * Binds a value as TEXT even when it is all digits. mapArgType otherwise sends
  * digit-only strings as integers, which would turn a catalog key (GUID) "00123"
  * into 123. Use it for every catalog key and other opaque string identifiers.
+ * No sync query binds a catalog key yet: the P1 identity tables are the first users.
  * Added in P1a of the own-episode-IDs plan (plan section 4, SQL binding).
  * COMPAT(own-ids): catalog keys must stay text. Permanent: never remove (MIGRATION.md §5).
  */

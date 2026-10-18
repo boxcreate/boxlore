@@ -40,18 +40,23 @@ function planWindow(rec, existingCount, showCap, { now, newestEpisodes, depthDay
 
 /**
  * Shows whose depth date has passed: stage 4 flags them for one more pass at full cap.
- * Clears their `d` so it happens once. Shows no longer charted simply never get picked up.
+ * Shows no longer charted simply never get picked up. Does not change the state.
  * @returns {string[]} podcast ids
  */
-function takeDueForDepth(st, now) {
-    const due = [];
-    for (const [id, rec] of Object.entries(st.shows || {})) {
-        if (rec && rec.d != null && Number(rec.d) <= now) {
-            delete rec.d;
-            due.push(id);
-        }
+function dueForDepth(st, now) {
+    return Object.entries(st.shows || {})
+        .filter(([, rec]) => rec && rec.d != null && Number(rec.d) <= now)
+        .map(([id]) => id);
+}
+
+/**
+ * Clears the depth date of shows whose flag is now stored, so their pass happens once.
+ * Call it only after the flag UPDATE succeeded; a failed one keeps the date for the next run.
+ */
+function clearDepth(st, ids) {
+    for (const id of ids) {
+        if (st.shows && st.shows[id]) delete st.shows[id].d;
     }
-    return due;
 }
 
 /** Prune only when the list fills the window; a shorter list may be partial. */
@@ -70,4 +75,4 @@ function handoffList(full, maxEps) {
     return Array.isArray(full) && full.length > 0 ? full : null;
 }
 
-module.exports = { planWindow, takeDueForDepth, pruneIsSafe, handoffList, DAY_MS };
+module.exports = { planWindow, dueForDepth, clearDepth, pruneIsSafe, handoffList, DAY_MS };

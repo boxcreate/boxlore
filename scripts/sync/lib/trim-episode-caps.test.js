@@ -45,6 +45,7 @@ describe('nightly cap trim', () => {
     it('keeps an earned cap and trims everyone else to their chart cap', async () => {
         const out = await trimEpisodeCaps({ loadCaps: async () => new Map([['1', 20], ['2', 20]]) });
         assert.equal(out.trimmedShows, 1);
+        assert.deepEqual(out.trimmedShowIds, ['2'], 'remediate-qdrant re-flags these');
         assert.equal(out.deletedPoints, 5);
         assert.equal(out.keptEarned, 1);
         assert.ok(deleted.every((id) => id.startsWith('2-')), 'only show 2 loses points');
@@ -56,6 +57,7 @@ describe('nightly cap trim', () => {
     it('trims nothing when the cap lookup fails (it used to cut every show to 20)', async () => {
         const out = await trimEpisodeCaps({ loadCaps: async () => { throw new Error('sqld down'); } });
         assert.equal(out.failed, true);
+        assert.deepEqual(out.trimmedShowIds, []);
         assert.equal(out.deletedPoints, 0);
         assert.deepEqual(deleted, []);
         assert.equal(saved, null);

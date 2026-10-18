@@ -5,7 +5,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { planWindow, takeDueForDepth, pruneIsSafe, handoffList, DAY_MS } = require('./vector-window');
+const { planWindow, dueForDepth, clearDepth, pruneIsSafe, handoffList, DAY_MS } = require('./vector-window');
+const cfg = require('./config');
 const vectorSpool = require('./vector-spool');
 const { rememberEarnedCaps, effectiveCap } = require('./episode-caps');
 
@@ -30,9 +31,19 @@ describe('newest first for shows with no vectors', () => {
 
     it('flags each show for its full window once, when its depth date has passed', () => {
         const st = { shows: { a: { d: opts.now - 1 }, b: { d: opts.now + DAY_MS }, c: { k: 50 } } };
-        assert.deepEqual(takeDueForDepth(st, opts.now), ['a']);
+        assert.deepEqual(dueForDepth(st, opts.now), ['a']);
+        clearDepth(st, ['a']);
         assert.equal('d' in st.shows.a, false);
-        assert.deepEqual(takeDueForDepth(st, opts.now), []);
+        assert.equal(st.shows.b.d, opts.now + DAY_MS);
+        assert.deepEqual(dueForDepth(st, opts.now), []);
+    });
+
+    it('keeps the depth date until the flag is stored, so a failed UPDATE retries next run', () => {
+        const st = { shows: { a: { d: opts.now - 1 } } };
+        assert.deepEqual(dueForDepth(st, opts.now), ['a']);
+        // The UPDATE failed: nothing was cleared, and the saved state still has the date.
+        assert.equal(st.shows.a.d, opts.now - 1);
+        assert.deepEqual(dueForDepth(st, opts.now), ['a']);
     });
 });
 
@@ -71,7 +82,7 @@ describe('vector spool', () => {
     const point = (id) => ({ id: `p${id}`, vector: [0.1, 0.2], payload: { id } });
 
     it('re-uploads a failed batch first, then removes it', async () => {
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'spool-'));
+        const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'spool-')), 'nested');
         assert.ok(vectorSpool.spool([point(1), point(2)], [{ pid: '7', ep: { id: 1 } }], dir));
         assert.equal(fs.statSync(dir).mode & 0o777, 0o700);
         const uploaded = [];
@@ -91,11 +102,21 @@ describe('vector spool', () => {
         assert.deepEqual(failed, { batches: 0, points: 0, dropped: 0, left: 2 });
         assert.equal(fs.readdirSync(dir).length, 2);
 
+        // Older than both batches, so the replay reaches it before the first failed upload.
+        fs.writeFileSync(path.join(dir, `${Date.now() - 60_000}-deadbeef.json`), '{not json');
+        const broken = await vectorSpool.replay(async () => { throw new Error('qdrant down'); }, null, { dir });
+        assert.equal(broken.dropped, 1, 'a broken file is dropped before any upload');
+        assert.equal(fs.readdirSync(dir).length, 2);
+
         const now = Date.now() + (vectorSpool.MAX_AGE_DAYS + 1) * DAY_MS;
-        fs.writeFileSync(path.join(dir, `${Date.now()}-deadbeef.json`), '{not json');
         const old = await vectorSpool.replay(async () => {}, null, { dir, now });
-        assert.equal(old.dropped, 3);
+        assert.equal(old.dropped, 2);
         assert.deepEqual(fs.readdirSync(dir), []);
+    });
+
+    it('uses one spool folder whatever the working directory', () => {
+        if (process.env.SYNC_SPOOL_DIR) return;
+        assert.equal(cfg.VECTOR_SPOOL_DIR, path.resolve(__dirname, '../../data/vector-spool'));
     });
 
     it('does nothing for an empty batch or a missing folder', async () => {
