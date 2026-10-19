@@ -129,12 +129,12 @@ function upsertStatements(db, sid, items, { source, now }) {
 }
 
 /**
- * Bootstrap of one show in one transaction: its book rows, every PI alias, and each row's legacy
- * served ID (the ID its point already has). Nothing is written if any statement fails.
+ * One show's book rows in one transaction: rows, every PI alias, and each row's served ID (the ID its
+ * point already has, or for stage 4 its current PI ID). Nothing is written if any statement fails.
  * @param {object[]} items as for upsertEpisodes, plus `servedId`
  */
-async function bootstrapShow(db, sid, items, { now }) {
-    const stmts = upsertStatements(db, sid, items, { source: 'bootstrap', now });
+async function bootstrapShow(db, sid, items, { now, source = 'bootstrap' }) {
+    const stmts = upsertStatements(db, sid, items, { source, now });
     for (const it of items) {
         if (it.servedId == null) continue;
         stmts.push({

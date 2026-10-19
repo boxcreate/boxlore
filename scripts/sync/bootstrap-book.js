@@ -7,7 +7,11 @@
  * book rows in one transaction (served ID = the PI ID the point already has), then stamp `eid` and
  * `catalog_key` on each point (`eid_missing` when unmapped). Point IDs and vectors never change.
  *
- *   node sync/bootstrap-book.js [--minutes N] [--dry] [--limit-shows N]
+ *   node sync/bootstrap-book.js [--minutes N] [--dry] [--limit-shows N] [--catch-up]
+ *
+ * --catch-up only takes shows that still have points with neither `eid` nor `eid_missing` (added
+ * between the main pass and stage 4 writing identities itself, or by a run whose book write failed).
+ * It keeps its own state file, and can be run again any time.
  *
  * Progress lives in SYNC_BOOTSTRAP_STATE (default scripts/data/book-bootstrap.json); a show is
  * checkpointed once both writes finished, so a stopped run repeats at most one show (idempotent).
@@ -30,10 +34,11 @@ const opt = (name, def) => {
     return i === -1 ? def : args[i + 1];
 };
 const DRY = args.includes('--dry');
+const CATCH_UP = args.includes('--catch-up');
 const MINUTES = Number(opt('--minutes', '20'));
 const LIMIT = Number(opt('--limit-shows', '0'));
 const STATE = process.env.SYNC_BOOTSTRAP_STATE || path.resolve(__dirname, '../data/book-bootstrap.json');
-const STATE_FILE = DRY ? STATE.replace(/\.json$/, '.dry.json') : STATE;
+const STATE_FILE = STATE.replace(/\.json$/, `${CATCH_UP ? '.catchup' : ''}${DRY ? '.dry' : ''}.json`);
 const PI_MAX = 1000;
 
 function loadState() {
@@ -52,8 +57,10 @@ function saveState(st) {
     fs.renameSync(tmp, STATE_FILE);
 }
 
+const UNSTAMPED = { must: [{ is_empty: { key: 'eid' } }, { is_empty: { key: 'eid_missing' } }] };
+
 async function listShows() {
-    const points = await qdrant.scrollAll(cfg.EPISODES_COLLECTION, null, ['podcast_id'], 5000);
+    const points = await qdrant.scrollAll(cfg.EPISODES_COLLECTION, CATCH_UP ? UNSTAMPED : null, ['podcast_id'], 5000);
     return [...new Set(points.map((p) => Number(p.payload?.podcast_id)).filter((n) => Number.isSafeInteger(n) && n > 0))]
         .sort((a, b) => a - b);
 }
@@ -67,6 +74,8 @@ async function main() {
     const deadline = Date.now() + MINUTES * 60_000;
 
     let st = loadState();
+    // A finished catch-up pass is history: list the unstamped shows again.
+    if (st && CATCH_UP && st.idx >= st.shows.length) st = null;
     if (!st) {
         if (!DRY) await ensureBookSchema(db);
         const shows = await listShows();
@@ -76,7 +85,7 @@ async function main() {
             piErrors: 0, bookErrors: 0, failedShows: [],
         };
         saveState(st);
-        log.info(`Bootstrap: ${shows.length} shows with episode points`);
+        log.info(`Bootstrap${CATCH_UP ? ' catch-up' : ''}: ${shows.length} shows ${CATCH_UP ? 'with unstamped points' : 'with episode points'}`);
     }
     if (!DRY) await qdrant.ensurePayloadIndex(cfg.EPISODES_COLLECTION, 'eid', 'integer');
 
@@ -128,7 +137,7 @@ async function main() {
     log.info(`${DRY ? 'DRY ' : ''}Bootstrap shows ${from}..${st.idx} of ${st.shows.length}: ` +
         `${st.points} points, ${st.stamped} mapped (${pct}%), ${st.missing} missing, ${st.duplicates} duplicates, ` +
         `${st.rows} rows, PI errors ${st.piErrors}, book errors ${st.bookErrors}, PI calls ${pi.getApiCallCount()}`);
-    if (st.idx >= st.shows.length) log.info('Bootstrap complete');
+    if (st.idx >= st.shows.length) log.info(CATCH_UP ? 'Bootstrap catch-up complete' : 'Bootstrap complete');
 }
 
 main().catch((e) => {
