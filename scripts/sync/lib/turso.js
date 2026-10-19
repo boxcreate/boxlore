@@ -83,13 +83,22 @@ function text(value) {
     return { [TEXT_MARK]: true, value: value === null || value === undefined ? null : String(value) };
 }
 
-/** Map JS values to Turso pipeline arg types. */
+/**
+ * Map JS values to Turso pipeline arg types.
+ * Objects and arrays are refused: `String()` turned them into "[object Object]", which an
+ * earlier writer stored in 7,751 catalog rows. Scrub values first (scalars.js) or
+ * JSON.stringify them on purpose. Added in P0 of the own-episode-IDs plan (plan section 14).
+ */
 function mapArgType(val) {
     if (val && typeof val === 'object' && val[TEXT_MARK]) {
         return val.value === null ? { type: 'null', value: null } : { type: 'text', value: val.value };
     }
     if (val === null || val === undefined || val === '') {
         return { type: 'null', value: null };
+    }
+    if (typeof val === 'object' || typeof val === 'function') {
+        const kind = Array.isArray(val) ? 'an array' : `a ${val.constructor?.name || 'plain'} object`;
+        throw new TypeError(`Turso: refusing to bind ${kind}; pass a string, number or null (JSON.stringify it on purpose)`);
     }
     if (typeof val === 'number') {
         return { type: Number.isInteger(val) ? 'integer' : 'float', value: String(val) };
