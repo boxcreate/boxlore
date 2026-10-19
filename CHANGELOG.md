@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EpisodeRecipeId` in `:core:rss` and `scripts/sync/lib/episode-recipe-id.js` compute boxlore episode IDs from (show ID, catalog key), checked against a shared fixture. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync logs why each vector point is stored or deleted; `scripts/sync/attribution-report.js` summarizes the log. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `turso.text()` in the sync's Turso client binds catalog keys as text. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
+- `docs/EPISODE_IDS.md` documents episode identity, recipe IDs, collision handling and aliases. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 ### Changed
 - `StickyEpisodeIdentity.catalogKey` trims with an explicit character set equal to Kotlin's `trim()` on Android, so catalog keys no longer depend on the runtime's Unicode tables. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - New chart shows get their newest 5 episodes embedded first and the rest of their window after 7 days on the charts (`NEW_ENTRANT_EPISODES`, `NEW_ENTRANT_DEPTH_DAYS`). ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RSS notification cleanup removes only the RTDB `feedUrl` child instead of the whole `tracked_podcasts` row, which the rules refuse. A refused delete for a row that does not exist still unsubscribes the FCM topic and clears the journal entry, so `RssNotificationSyncWorker` no longer retries indefinitely. ([#1140](https://github.com/boxcreate/boxlore/pull/1140)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - The catalog sync no longer deletes vectors it later re-embeds: the nightly trim fails closed, shows keep the highest cap they earned, partial episode lists never cause pruning, and vectors from a failed upload are spooled and uploaded by the next run. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync refuses to store objects as `[object Object]` text: its Turso client rejects them, and the show import and latest-episode update scrub Podcast Index values first. ([#1144](https://github.com/boxcreate/boxlore/pull/1144)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
+- `EpisodeRecipeId` rejects show IDs above 2^53 − 1, matching the scripts implementation. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1140
 ### Fixes
