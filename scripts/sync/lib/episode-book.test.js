@@ -100,6 +100,18 @@ describe('episode book', () => {
         assert.deepEqual(await db.query('SELECT COUNT(*) FROM served_show'), [[0]], 'a clash writes nothing');
     });
 
+    it('bootstraps a show in one transaction, or not at all', async () => {
+        const items = [ep('a', { piId: 61, servedId: 61, extraPiIds: [70] }), ep('b', { piId: 62, servedId: 62 })];
+        assert.deepEqual(await book.bootstrapShow(db, 9, items, { now: 5 }), { ok: true, error: null });
+        assert.deepEqual(await db.query('SELECT catalog_key, served_id, source FROM episode_book ORDER BY catalog_key'),
+            [['a', 61, 'bootstrap'], ['b', 62, 'bootstrap']]);
+        assert.deepEqual(await db.query('SELECT pi_id FROM episode_pi_alias ORDER BY pi_id'), [[61], [62], [70]]);
+
+        const bad = await book.bootstrapShow(db, 10, [ep('c', { piId: 63, servedId: 63 }), ep('d', { piId: 64, servedId: 61 })], { now: 6 });
+        assert.equal(bad.ok, false, 'served ID 61 already belongs to show 9');
+        assert.deepEqual(await db.query('SELECT COUNT(*) FROM episode_book WHERE sid = 10'), [[0]]);
+    });
+
     it('an unknown episode gets no served ID', async () => {
         assert.deepEqual(await book.issueServedId(db, 7, 'missing', 9000000000000003, 1), { ok: false, servedId: null });
     });

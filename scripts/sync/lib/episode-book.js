@@ -87,6 +87,12 @@ const nullable = (v) => (v === undefined || v === '' ? null : v);
  * @returns {Promise<{ ok: boolean, error?: string, written: number }>}
  */
 async function upsertEpisodes(db, sid, items, { source, now }) {
+    const res = await db.atomic(upsertStatements(db, sid, items, { source, now }));
+    return { ok: res.ok, error: res.error, written: res.ok ? items.length : 0 };
+}
+
+/** The statements behind upsertEpisodes, for callers that add more to the same transaction. */
+function upsertStatements(db, sid, items, { source, now }) {
     const stmts = [];
     for (const it of items) {
         const meta = [it.title, it.audioUrl, it.imageUrl, it.duration, it.publishedAt, it.description, it.chaptersUrl, it.transcriptUrl]
@@ -98,12 +104,13 @@ async function upsertEpisodes(db, sid, items, { source, now }) {
                   ${META_COLUMNS.map((c) => `${c} = COALESCE(excluded.${c}, ${c})`).join(', ')}, updated_at = excluded.updated_at`,
             args: [it.eid, sid, db.text(it.key), ...meta, source, now, now],
         });
-        if (it.piId != null) {
+        for (const piId of [it.piId, ...(it.extraPiIds || [])]) {
+            if (piId == null) continue;
             stmts.push({
                 sql: `INSERT INTO episode_pi_alias (pi_id, rid, seen_at)
                       SELECT ?, rid, ? FROM episode_book WHERE sid = ? AND catalog_key = ?
                       ON CONFLICT (pi_id) DO UPDATE SET seen_at = excluded.seen_at`,
-                args: [it.piId, now, sid, db.text(it.key)],
+                args: [piId, now, sid, db.text(it.key)],
             });
         }
     }
@@ -118,8 +125,25 @@ async function upsertEpisodes(db, sid, items, { source, now }) {
             args: chunk,
         });
     }
+    return stmts;
+}
+
+/**
+ * Bootstrap of one show in one transaction: its book rows, every PI alias, and each row's legacy
+ * served ID (the ID its point already has). Nothing is written if any statement fails.
+ * @param {object[]} items as for upsertEpisodes, plus `servedId`
+ */
+async function bootstrapShow(db, sid, items, { now }) {
+    const stmts = upsertStatements(db, sid, items, { source: 'bootstrap', now });
+    for (const it of items) {
+        if (it.servedId == null) continue;
+        stmts.push({
+            sql: 'UPDATE episode_book SET served_id = COALESCE(served_id, ?) WHERE sid = ? AND catalog_key = ?',
+            args: [it.servedId, sid, db.text(it.key)],
+        });
+    }
     const res = await db.atomic(stmts);
-    return { ok: res.ok, error: res.error, written: res.ok ? items.length : 0 };
+    return { ok: res.ok, error: res.error };
 }
 
 /**
@@ -180,6 +204,8 @@ module.exports = {
     COLUMN_MIGRATIONS,
     ensureBookSchema,
     upsertEpisodes,
+    upsertStatements,
+    bootstrapShow,
     recordLegacyServedId,
     issueServedId,
     servedIdOf,
