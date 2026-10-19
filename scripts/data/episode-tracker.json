@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-19T01:34:44.872Z",
+  "lastRun": "2026-10-19T07:21:09.307Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "8274cd60-b924-11f1-b9e8-2b1d941659fb",
@@ -38,10 +38,10 @@
       "lastCheckedAt": 1792097871958
     },
     "48166": {
-      "lastRssKey": "68b66323-6e74-4c90-8157-ef3f1ed0d042",
-      "lastEpisodeTitle": "Home Depot",
-      "lastEpisodeId": "60351137045",
-      "lastCheckedAt": 1789363039070
+      "lastRssKey": "9c3ce276-af3c-49a3-9d45-94b784b9c6a5",
+      "lastEpisodeTitle": "Seinfeld",
+      "lastEpisodeId": "61942151660",
+      "lastCheckedAt": 1792394473641
     },
     "55386": {
       "lastRssKey": "gid://art19-episode-locator/V0/EMJnpl-EUS3VboA8Zs_S61OfqlPB5XN2Toe2zzJ8oRA",
@@ -50,10 +50,10 @@
       "lastCheckedAt": 1791834979771
     },
     "55810": {
-      "lastRssKey": "f374bdeb-f8a2-4bbf-8cc2-a2135ec7be8a",
-      "lastEpisodeTitle": "9pm ET, October 18 | The latest headlines from NPR",
+      "lastRssKey": "a16f3204-4a34-4b9f-ad84-33c79e94eeee",
+      "lastEpisodeTitle": "3am ET, October 19 | The latest headlines from NPR",
       "lastEpisodeId": "61924679069",
-      "lastCheckedAt": 1792373691278
+      "lastCheckedAt": 1792394475429
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75850346",
@@ -62,10 +62,10 @@
       "lastCheckedAt": 1792373692286
     },
     "78573": {
-      "lastRssKey": "f07edcdb-affc-4f5b-90af-f56b2304c234",
-      "lastEpisodeTitle": "CINE E ÎN „ÎNTUNERIC?” - De ce fug politicienii de anticipate | CRISTIAN PREDA #IGDLCC 354",
-      "lastEpisodeId": "61832314594",
-      "lastCheckedAt": 1792172196607
+      "lastRssKey": "cba3d0ca-cdce-4c88-b344-4e37779577eb",
+      "lastEpisodeTitle": "„ÎMPU*****-MĂ DACĂ NU SE ÎNTÂMPLĂ” - Spitale de 10 ori mai ieftine cu AI | GEORGE HABER #IGDLCC 355",
+      "lastEpisodeId": "61946895635",
+      "lastCheckedAt": 1792394476844
     },
     "83316": {
       "lastRssKey": "a4c22b28-cb22-11f1-8504-ebaed0be4e0a",
@@ -80,10 +80,10 @@
       "lastCheckedAt": 1789640192955
     },
     "150970": {
-      "lastRssKey": "d7a6b21f-29d5-4cd9-85f6-5d772586c765",
-      "lastEpisodeTitle": "\"Jessica Biel\"",
-      "lastEpisodeId": "61610544336",
-      "lastCheckedAt": 1792340510330
+      "lastRssKey": "8df0643c-5c45-47d5-bb94-069aa0cba101",
+      "lastEpisodeTitle": "\"Colman Domingo\"",
+      "lastEpisodeId": "61947684803",
+      "lastCheckedAt": 1792394477831
     },
     "152922": {
       "lastRssKey": "6ad2b6333243d006bb488d6d",
@@ -140,10 +140,10 @@
       "lastCheckedAt": 1791910405781
     },
     "229239": {
-      "lastRssKey": "38f5cb80-2c75-11f1-aa69-3bd75423085e",
-      "lastEpisodeTitle": "Father Of Quantum Computing: How To Think Like A Genius - David Deutsch - #1164",
-      "lastEpisodeId": "61617133054",
-      "lastCheckedAt": 1792216493143
+      "lastRssKey": "4bf3f892-2c75-11f1-98b6-43d07b9ef9ba",
+      "lastEpisodeTitle": "Forgotten War Heroes Who Changed The World - The Fat Electrician - #1165",
+      "lastEpisodeId": "61946774292",
+      "lastCheckedAt": 1792394501432
     },
     "230598": {
       "lastRssKey": "b90d8a2c-a54a-11f0-b1fc-3b9845813b0d",
@@ -174,10 +174,10 @@
       "lastCheckedAt": 1782580346119
     },
     "318297": {
-      "lastRssKey": "DC5461C7-3996-4E6C-835E-C7BDE7B49E23",
-      "lastEpisodeTitle": "How Does Apple’s Siri Compete In an Agentic World?",
-      "lastEpisodeId": "61813309370",
-      "lastCheckedAt": 1792139089995
+      "lastRssKey": "C18626C6-D250-46B8-9E4E-D79AF54B5C8B",
+      "lastEpisodeTitle": "How This Dot-Com Era CEO Is Navigating The AI Boom",
+      "lastEpisodeId": "61948065452",
+      "lastCheckedAt": 1792394503718
     },
     "320115": {
       "lastRssKey": "acfe34f0-2887-11f1-b030-632bf23c4dd3",
@@ -204,10 +204,10 @@
       "lastCheckedAt": 1792231920316
     },
     "385117": {
-      "lastRssKey": "becdbfa0-cb59-11f1-a5a3-8fd983c9eebf",
-      "lastEpisodeTitle": "9PM ET 10/18/2026 Newscast",
+      "lastRssKey": "0905ac04-cb8c-11f1-8139-33a0fb013794",
+      "lastEpisodeTitle": "3AM ET 10/19/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792373705914
+      "lastCheckedAt": 1792394505459
     },
     "386911": {
       "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
@@ -222,10 +222,10 @@
       "lastCheckedAt": 1791881994602
     },
     "392525": {
-      "lastRssKey": "gid://art19-episode-locator/V0/EOZbyI9dYmmXlWm7eSXubfr7OnnV8oroUFRtjkbE0Hc",
-      "lastEpisodeTitle": "Season 6, Ep 9 - Corpse Collector at Court (w/ Anna Garcia)",
-      "lastEpisodeId": "61646552199",
-      "lastCheckedAt": 1792340535827
+      "lastRssKey": "gid://art19-episode-locator/V0/UmwkE6bZpYVao1mtsq5BJCpNAXM134jijHg8kIcDrsM",
+      "lastEpisodeTitle": "Season 6, Ep 10 - Root the Newt (w/ Adam Schreck)",
+      "lastEpisodeId": "61945319847",
+      "lastCheckedAt": 1792394507393
     },
     "398589": {
       "lastRssKey": "gid://art19-episode-locator/V0/jnj-PQM4wA57sgalWBVtCCwdsNaEQ16dPSrTbEu6xgQ",
@@ -300,10 +300,10 @@
       "lastCheckedAt": 1791882002545
     },
     "444785": {
-      "lastRssKey": "f9911592-c3d5-47c0-9adc-3c50164d1dff",
-      "lastEpisodeTitle": "Who should Montreal Canadiens pursue in trade/free agency? | NHL rule change wishlist | Habs mailbag",
+      "lastRssKey": "728483c8-1b1b-404c-bf81-e98c0b6d4ddf",
+      "lastEpisodeTitle": "MR. SATURDAY NIGHT: Cole Caufield Delivers in OT THRILLER as Montreal Canadiens Power Past Sabres",
       "lastEpisodeId": "61806774686",
-      "lastCheckedAt": 1792139099217
+      "lastCheckedAt": 1792394516367
     },
     "448245": {
       "lastEpisodeId": "56601446692",
@@ -329,10 +329,10 @@
       "lastCheckedAt": 1791927894943
     },
     "466583": {
-      "lastRssKey": "548ce69c-c461-11f1-8a84-8f2fa24b17ca",
-      "lastEpisodeTitle": "Lizzie Borden Took an Axe...Or Did She?",
+      "lastRssKey": "8c6198b8-c8dc-11f1-abcd-230b6f5598f1",
+      "lastEpisodeTitle": "The Pillow Pyro Who Terrorized Southern California",
       "lastEpisodeId": "61524186052",
-      "lastCheckedAt": 1791800238178
+      "lastCheckedAt": 1792394519118
     },
     "467929": {
       "lastRssKey": "49214172-58ed-4e39-b86e-a1befa06603a",
@@ -376,10 +376,10 @@
       "lastCheckedAt": 1792340550399
     },
     "499394": {
-      "lastRssKey": "flightcast:01M1P5R2DYEM65ABQ1YNEB6FXH",
-      "lastEpisodeTitle": "Most Replayed Moment: Christian vs Atheist - Is Faith A Human Creation?",
-      "lastEpisodeId": "61613358303",
-      "lastCheckedAt": 1792139109063
+      "lastRssKey": "flightcast:01M52K4W4RGVJVCWCEV5Q2CWM6",
+      "lastEpisodeTitle": "The Deathbed Doctor: Weeks Before Death, Patients Start Having Visions! | Dr Christopher Kerr",
+      "lastEpisodeId": "61946890447",
+      "lastCheckedAt": 1792394527804
     },
     "500708": {
       "lastRssKey": "desiringgod.org-resource-8b0860c8",
@@ -388,10 +388,10 @@
       "lastCheckedAt": 1792157185826
     },
     "503644": {
-      "lastRssKey": "397c7a8f-5540-4d6c-b099-f51b68415fee",
-      "lastEpisodeTitle": "Bubble Gum and Cyanide",
-      "lastEpisodeId": "61756496292",
-      "lastCheckedAt": 1792047637939
+      "lastRssKey": "09ba9aed-8104-4841-9f0c-a18f736637bf",
+      "lastEpisodeTitle": "Martin Short Returns Again",
+      "lastEpisodeId": "61941963316",
+      "lastCheckedAt": 1792394535002
     },
     "509873": {
       "lastRssKey": "ce7ab08a-0560-4e8a-86dc-804d899b059e",
@@ -424,10 +424,10 @@
       "lastCheckedAt": 1791976650165
     },
     "545784": {
-      "lastRssKey": "f861c66719ff87b4f304a2d2c23d6c43",
-      "lastEpisodeTitle": "Heimspiel: Berliner Fieberschübe (mit Shakuntala Banerjee)",
-      "lastEpisodeId": "61898525697",
-      "lastCheckedAt": 1792293118880
+      "lastRssKey": "4f092f6f2ea9a4a3421fb3ecb23fc27d",
+      "lastEpisodeTitle": "Enemy in Paris  (mit Nikki Hassan-Nia)",
+      "lastEpisodeId": "61939868248",
+      "lastCheckedAt": 1792394541184
     },
     "547598": {
       "lastRssKey": "0deae976-c8d7-11f1-9b54-f332b573aee5",
@@ -436,10 +436,10 @@
       "lastCheckedAt": 1792340564466
     },
     "555343": {
-      "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/cap/twit_1105/4abd3831-5d83-4c6e-9c2e-8b287dc0e3ee.mp3",
-      "lastEpisodeTitle": "TWiT 1105: Agents Gone Wild - Windows' New Surface Laptop Ultra & RTX Spark Dev Box!",
+      "lastRssKey": "https://pdst.fm/e/pscrb.fm/rss/p/mgln.ai/e/294/cdn.twit.tv/cap/twit_1106/6f13c6bc-2078-4c73-a5b7-d32909292336.mp3",
+      "lastEpisodeTitle": "TWiT 1106: The 10-Day Reply Guy - RAMageddon, HomeView, Ikigai, & the Flying Tesla Roadster",
       "lastEpisodeId": "61612049447",
-      "lastCheckedAt": 1791800259006
+      "lastCheckedAt": 1792394542210
     },
     "555427": {
       "lastEpisodeId": "386077022",
@@ -483,10 +483,10 @@
       "lastCheckedAt": 1792157193180
     },
     "628250": {
-      "lastRssKey": "bbf76e5a-f0dc-4dba-ab92-f5eb682b93c9",
-      "lastEpisodeTitle": "530503 Big_Carney",
+      "lastRssKey": "993308f3-28db-4624-a984-5127f18ffe49",
+      "lastEpisodeTitle": "530510 Big_Joke",
       "lastEpisodeId": "61608821604",
-      "lastCheckedAt": 1792139119661
+      "lastCheckedAt": 1792394546193
     },
     "640518": {
       "lastRssKey": "6ad0c0493b41843137fe98d0",
@@ -531,10 +531,10 @@
       "lastCheckedAt": 1787801220675
     },
     "743411": {
-      "lastRssKey": "b3c5373d-b7bc-4713-9940-4dfb78bdbd00",
-      "lastEpisodeTitle": "MISSING: Gregory ‘Keith’ Mann Jr.",
-      "lastEpisodeId": "61610522437",
-      "lastCheckedAt": 1791800269864
+      "lastRssKey": "c9773075-6a68-477f-803a-ffe4bba0a930",
+      "lastEpisodeTitle": "MURDERED: Nori Amaya",
+      "lastEpisodeId": "61947617730",
+      "lastCheckedAt": 1792394552998
     },
     "744119": {
       "lastRssKey": "71995239-57b4-45c4-8174-b4e401556405",
@@ -596,10 +596,10 @@
       "lastCheckedAt": 1792047658425
     },
     "838740": {
-      "lastRssKey": "60347344-c85c-11f1-a83d-97123759cf09",
-      "lastEpisodeTitle": "How to Stop Feeling Guilty And Let Go Of Past Mistakes",
+      "lastRssKey": "23814c18-caa2-11f1-aeed-f74d3c5a519a",
+      "lastEpisodeTitle": "EZRA FRECH: \"I Was Put on This Earth to Change the Way We See Disability\"",
       "lastEpisodeId": "61712521794",
-      "lastCheckedAt": 1792139130137
+      "lastCheckedAt": 1792394557200
     },
     "853158": {
       "lastRssKey": "9ad2dd57-a288-4573-a80d-56a3f5d7ddda",
@@ -638,16 +638,16 @@
       "lastCheckedAt": 1792067858534
     },
     "923571": {
-      "lastEpisodeId": "61813539834",
-      "lastEpisodeTitle": "A Mother Vanishes: Inside the Bhatt Murder Trial",
-      "lastRssKey": "e77b326c-1366-11f1-8a09-6b4547845885",
-      "lastCheckedAt": 1792139131945
+      "lastRssKey": "ac5796ec-76e7-11f0-a0e6-f36fa6807991",
+      "lastEpisodeTitle": "The Detective and the Chewing Gum Sting",
+      "lastEpisodeId": "61948204408",
+      "lastCheckedAt": 1792394561441
     },
     "928708": {
-      "lastRssKey": "7da9d8ec-c749-11f1-bd06-ef26dbe09cbb",
-      "lastEpisodeTitle": "History Today - Oct. 18",
+      "lastRssKey": "7fff918a-c803-11f1-8933-6b6ce0915ff0",
+      "lastEpisodeTitle": "History Today - Oct. 19",
       "lastEpisodeId": "61903037297",
-      "lastCheckedAt": 1792311382651
+      "lastCheckedAt": 1792394562189
     },
     "938111": {
       "lastRssKey": "desiringgod.org-resource-77f6df3e",
@@ -674,15 +674,22 @@
       "lastCheckedAt": 1792139134936
     },
     "952276": {
-      "lastRssKey": "d263ac64-926d-41ee-885e-84384ae63940",
-      "lastEpisodeTitle": "450: CA Surrogacy Scandal, David Prevatte, Sandra Birchmore & Baby Angelita Updates",
-      "lastCheckedAt": 1792047674180
+      "lastRssKey": "85a437b7-685c-4ead-9967-141a2f0d2afb",
+      "lastEpisodeTitle": "451: Mansion Turned Prison & 32 Nanny Cams That Caught EVERYTHING! | CA Surrogacy House of Horrors",
+      "lastEpisodeId": "61947639037",
+      "lastCheckedAt": 1792394570357
     },
     "959112": {
       "lastRssKey": "https://9to5google.com/?p=733632",
       "lastEpisodeTitle": "Pixelated 121: Is Googlebook the first real post-smartphone PC?",
       "lastEpisodeId": "61847212877",
       "lastCheckedAt": 1792192599527
+    },
+    "972281": {
+      "lastRssKey": "gid://art19-episode-locator/V0/7zouEqDAKBGbORvVIjssGvrELuRMAn4j8gPa_EtVF-4",
+      "lastEpisodeTitle": "Mina and Lucy's Guide to Slaying Dracula: The Night Before Halloween",
+      "lastEpisodeId": "61775927231",
+      "lastCheckedAt": 1792394573548
     },
     "980370": {
       "lastRssKey": "6acf9f12b3381b9dbb7c315b",
@@ -860,10 +867,10 @@
       "lastCheckedAt": 1792366287372
     },
     "1366771": {
-      "lastRssKey": "6ad4801a0c6b30397b8bb334",
-      "lastEpisodeTitle": "Daily briefing Sunday 18th October",
-      "lastEpisodeId": "61868370959",
-      "lastCheckedAt": 1792311406776
+      "lastRssKey": "6ad58b79aa02353b87d55636",
+      "lastEpisodeTitle": "Morning briefing Monday 19th October",
+      "lastEpisodeId": "61941444213",
+      "lastCheckedAt": 1792394594698
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -872,10 +879,10 @@
       "lastCheckedAt": 1791480710030
     },
     "1388001": {
-      "lastRssKey": "512e405d-7663-467e-aac8-f98b11903572",
-      "lastEpisodeTitle": "Les gouvernements anti-immigrationnistes désormais majoritaires en Europe",
+      "lastRssKey": "af50c2aa-347d-4535-a32a-329c07067311",
+      "lastEpisodeTitle": "La France affaiblie dans le monde après les violences du week-end",
       "lastEpisodeId": "61907121545",
-      "lastCheckedAt": 1792311407213
+      "lastCheckedAt": 1792394595446
     },
     "1545709": {
       "lastRssKey": "audioboom-01a14a0d-e28b-72dd-8e1d-f5fa1f73595c",
@@ -943,10 +950,10 @@
       "lastCheckedAt": 1788029139347
     },
     "3040942": {
-      "lastRssKey": "f2d1c356-b7b7-11f1-9f37-6bdc1ee7bbe8",
-      "lastEpisodeTitle": "409. The World Map Is Changing  (English Vocabulary Lesson)",
-      "lastEpisodeId": "61611038376",
-      "lastCheckedAt": 1791800312918
+      "lastRssKey": "b0c963fe-c178-11f1-ab8b-13d8bc9fb3b4",
+      "lastEpisodeTitle": "410. Why Spain Is Banning Evictions? (Vocabulary in the News)",
+      "lastEpisodeId": "61941576937",
+      "lastCheckedAt": 1792394602939
     },
     "3236561": {
       "lastRssKey": "ceb72316-99d7-11f0-bf91-072267aee406",
@@ -985,10 +992,10 @@
       "lastCheckedAt": 1788608402916
     },
     "3759297": {
-      "lastRssKey": "5fbd2f52-c8b9-11f1-a0cc-f747ebf605b1",
-      "lastEpisodeTitle": "\"Copper Point\" (The Scary Tapes)",
+      "lastRssKey": "bc71ecaa-cb85-11f1-b0a9-bb717ad1883d",
+      "lastEpisodeTitle": "Our Strange Addiction",
       "lastEpisodeId": "61617875374",
-      "lastCheckedAt": 1792139164189
+      "lastCheckedAt": 1792394606957
     },
     "3880049": {
       "lastEpisodeId": "13360674190",
@@ -1015,10 +1022,10 @@
       "lastCheckedAt": 1792008115201
     },
     "4112681": {
-      "lastRssKey": "Buzzsprout-19937611",
-      "lastEpisodeTitle": "#155 - Sleep & Nature's Call",
-      "lastEpisodeId": "61610773338",
-      "lastCheckedAt": 1791800317247
+      "lastRssKey": "Buzzsprout-19980637",
+      "lastEpisodeTitle": "#156 - Smell and Memory",
+      "lastEpisodeId": "61947808068",
+      "lastCheckedAt": 1792394609153
     },
     "4150268": {
       "lastRssKey": "gid://art19-episode-locator/V0/qHE1tOz-0Jxenzb6sz3wgkZtBZS2dLmpFm3j9X-ZOY0",
@@ -1080,10 +1087,10 @@
       "lastCheckedAt": 1791800321598
     },
     "4894842": {
-      "lastRssKey": "fe3d9b78-e59a-49cf-afe3-74638f128bca",
-      "lastEpisodeTitle": "One Last Fare/Mom's Cooking | Campfire Stories with MrBallen",
-      "lastEpisodeId": "61813160657",
-      "lastCheckedAt": 1792139169933
+      "lastRssKey": "3061b772-c2f2-4abf-b632-98f25a5b9df6",
+      "lastEpisodeTitle": "Under Construction (PODCAST EXCLUSIVE EPISODE)",
+      "lastEpisodeId": "61947598161",
+      "lastCheckedAt": 1792394614241
     },
     "4898105": {
       "lastRssKey": "887b2ad4-c927-11f1-bf9c-2bb37b76c7b4",
@@ -1131,10 +1138,10 @@
       "lastCheckedAt": 1791453925650
     },
     "5698881": {
-      "lastRssKey": "edd88c2a-d5a5-4204-bc05-a7b953a1e121",
-      "lastEpisodeTitle": "This One Skill Makes Every Relationship Better",
-      "lastEpisodeId": "61863007568",
-      "lastCheckedAt": 1792216559130
+      "lastRssKey": "ae0342e7-719d-40a6-a5a0-9e259a27736a",
+      "lastEpisodeTitle": "Mayo Clinic Dermatologist: 5 Small Habits for Healthier, Younger, and Amazing Skin",
+      "lastEpisodeId": "61941917734",
+      "lastCheckedAt": 1792394617402
     },
     "5716308": {
       "lastRssKey": "urn:bbc:podcast:p0ph431n",
@@ -1173,10 +1180,10 @@
       "lastCheckedAt": 1792085956738
     },
     "5930143": {
-      "lastRssKey": "512e405d-7663-467e-aac8-f98b11903572",
-      "lastEpisodeTitle": "Les gouvernements anti-immigrationnistes désormais majoritaires en Europe",
+      "lastRssKey": "af50c2aa-347d-4535-a32a-329c07067311",
+      "lastEpisodeTitle": "La France affaiblie dans le monde après les violences du week-end",
       "lastEpisodeId": "61868268229",
-      "lastCheckedAt": 1792311432593
+      "lastCheckedAt": 1792394624280
     },
     "5945547": {
       "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
@@ -1309,10 +1316,10 @@
       "lastCheckedAt": 1792366332679
     },
     "6726996": {
-      "lastEpisodeId": "61905359039",
-      "lastEpisodeTitle": "October 18 (Isaiah 59–62; Psalm 101; Acts 26)",
-      "lastRssKey": "25889fd2-ca09-11f1-85fa-1f06fcc0286b",
-      "lastCheckedAt": 1792311439762
+      "lastRssKey": "4f87412a-cad2-11f1-9e6e-d328e5d99c1b",
+      "lastEpisodeTitle": "October 19 (Isaiah 63–66; Psalm 102; Acts 27)",
+      "lastEpisodeId": "61947967224",
+      "lastCheckedAt": 1792394634855
     },
     "6744768": {
       "lastRssKey": "56c4d7e1-2bbf-4918-9416-4678408d476e",
@@ -1405,10 +1412,10 @@
       "lastCheckedAt": 1792192654199
     },
     "6956562": {
+      "lastRssKey": "f05756c1-11e2-4976-84e1-88f006c22e3b",
+      "lastEpisodeTitle": "Where is India’s crackdown on food safety headed?",
       "lastEpisodeId": "61802651790",
-      "lastEpisodeTitle": "Breaking down the Nobel Prize for Economics 2026",
-      "lastRssKey": "b44d2d80-78c3-4af9-93b0-e3c16ad07bf9",
-      "lastCheckedAt": 1792120752708
+      "lastCheckedAt": 1792394640764
     },
     "6959250": {
       "lastRssKey": "6abb9e04-6d2b-475f-b74e-997b1a644de4",
@@ -1441,10 +1448,10 @@
       "lastCheckedAt": 1792311445047
     },
     "7023146": {
-      "lastRssKey": "udBkrYWnmge1d4sieS86zyybnDZfnD7w",
-      "lastEpisodeTitle": "Introducing RedHanded: Mexico's Notorious 'Little Old Lady Killer’",
+      "lastRssKey": "5f034a80-834e-11f0-ac1d-07c3409e9209",
+      "lastEpisodeTitle": "Chris Watts: The Family Man Pt. 1",
       "lastEpisodeId": "61813622845",
-      "lastCheckedAt": 1792139199650
+      "lastCheckedAt": 1792394644555
     },
     "7045713": {
       "lastRssKey": "sonsofpatriarchy.podbean.com/8c867280-f689-387b-acd9-e385184f81ee",
@@ -1471,10 +1478,10 @@
       "lastCheckedAt": 1792019413815
     },
     "7156500": {
-      "lastRssKey": "https://api.spreaker.com/episode/75575134",
-      "lastEpisodeTitle": "Hebrews 12:7 | Hardship is NOT Discipline",
-      "lastEpisodeId": "61608213903",
-      "lastCheckedAt": 1791800354024
+      "lastRssKey": "https://api.spreaker.com/episode/75575140",
+      "lastEpisodeTitle": "2 Corinthians 12:9 | The foolishness of boasting in weakness",
+      "lastEpisodeId": "61945471999",
+      "lastCheckedAt": 1792394647581
     },
     "7183032": {
       "lastRssKey": "63509e39-a722-4bfb-ad34-098c737882f7",
@@ -1608,10 +1615,10 @@
       "lastCheckedAt": 1791882120610
     },
     "7529115": {
-      "lastRssKey": "6ab999ef554d86cd55758046",
-      "lastEpisodeTitle": "S3E4 The Body Language of Lying",
+      "lastRssKey": "6acfe7350c6b30397b17da6d",
+      "lastEpisodeTitle": "S3E5 How To Interrogate A Monster: Saddam Hussein",
       "lastEpisodeId": "61614500491",
-      "lastCheckedAt": 1791800360003
+      "lastCheckedAt": 1792394655732
     },
     "7540523": {
       "lastRssKey": "8257452a-d639-4918-8fb2-7ca994d89861",
@@ -1745,10 +1752,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/1091ea99-5235-560c-b6ec-0c46145c7304",
-      "lastEpisodeTitle": "I treat people badly am I a narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/df17bafa-d911-5a26-8077-b00e1282dfdb",
+      "lastEpisodeTitle": "Try THIS tool for healing from narcissistic relationships ~ Dr. Ramani",
       "lastEpisodeId": "61854546834",
-      "lastCheckedAt": 1792373842035
+      "lastCheckedAt": 1792394663237
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
@@ -1841,9 +1848,9 @@
       "lastCheckedAt": 1792311486003
     },
     "rss:ee4918efb46338e50a689354121bfb1f4aa93bd73226e11d96378962810c701b~ee4918efb46338e50a689354121bfb1f4aa93bd73226e11d96378962810c701b": {
-      "lastRssKey": "sha256:64e656f9321cf379ed0c3413314ca573dceb153c1d3f1e1ad6ffc0d8a9f8f9f4",
-      "lastEpisodeTitle": "Злодейский шкафчик и танцевальный анализ",
-      "lastCheckedAt": 1792311487112
+      "lastRssKey": "sha256:f58f99a6549b8469a30b708e724e22cc965181c30ffc3a732529f5d9d3085c67",
+      "lastEpisodeTitle": "Синдром настрадамуса и татуировка Дэдпула",
+      "lastCheckedAt": 1792394672300
     }
   }
 }
