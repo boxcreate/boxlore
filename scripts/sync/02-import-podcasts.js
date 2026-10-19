@@ -29,6 +29,7 @@ const {
     reuseMissingIdsFile,
 } = require('./lib/import-missing');
 const attribution = require('./lib/attribution');
+const { apiImportArgs } = require('./lib/catalog-rows');
 
 const MISSING_IDS_FILE = 'missing_itunes_ids.txt';
 const CSV_FILE = 'podcasts_export.csv';
@@ -280,20 +281,7 @@ async function importFromAPI(itunesIds = null) {
                   VALUES (${placeholders}, 0, 0)
                   ON CONFLICT(id) DO UPDATE SET itunes_id = excluded.itunes_id
                   WHERE itunes_id IS NULL OR itunes_id != excluded.itunes_id`,
-            args: [
-                feed.id,
-                feed.itunesId || itunesId,
-                feed.title || 'Unknown Title',
-                feed.author || 'Unknown Author',
-                feed.description || '',
-                feed.image || feed.artwork || '',
-                feed.url || '',
-                feed.link || '',
-                categoriesStr,
-                feed.language || 'en',
-                feed.explicit ? '1' : '0',
-                feed.itunesType || 'episodic',
-            ],
+            args: apiImportArgs(feed, itunesId, categoriesStr),
         });
         imported++;
 

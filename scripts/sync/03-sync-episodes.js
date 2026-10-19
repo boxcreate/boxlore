@@ -17,7 +17,7 @@ const log = require('./lib/log');
 const turso = require('./lib/turso');
 const pi = require('./lib/podcast-index');
 const state = require('./lib/state');
-const text = require('./lib/text');
+const { tipUpdateArgs } = require('./lib/catalog-rows');
 const cfg = require('./lib/config');
 const { handoffList } = require('./lib/vector-window');
 const handoff = require('./lib/pi-handoff');
@@ -242,23 +242,7 @@ async function main() {
                         latest_ep_persons = ?, latest_ep_transcripts = ?,
                         medium = ?, last_ep_sync = ?, qdrant_vectorized = 0
                     WHERE id = ?
-                `, [
-                    String(latest.id),
-                    latest.title || '',
-                    latest.datePublished || 0,
-                    latest.duration || 0,
-                    latest.enclosureUrl || '',
-                    latest.image || latest.feedImage || '',
-                    latest.enclosureType || 'audio/mpeg',
-                    text.cleanDescription(latest.description),
-                    latest.chaptersUrl || null,
-                    latest.transcriptUrl || null,
-                    latest.persons ? JSON.stringify(latest.persons) : null,
-                    latest.transcripts ? JSON.stringify(latest.transcripts) : null,
-                    medium,
-                    Date.now(),
-                    podId,
-                ]);
+                `, tipUpdateArgs(latest, medium, Date.now(), podId));
                 await tipQueue.upsert(turso, podId, latest.id);
                 updated++;
                 tipReflags++;
