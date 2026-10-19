@@ -187,6 +187,35 @@ async function transaction(statements) {
     return pipelineRequest(requests);
 }
 
+/**
+ * Runs statements as one transaction in a single Hrana batch: each step runs only if the previous
+ * one succeeded, then COMMIT; a failure skips the rest and ROLLBACK runs, so nothing is half-written.
+ * Unlike transaction(), a failed statement can't be followed by a COMMIT.
+ * Added in P1 of the own-episode-IDs plan (book writes, plan section 8).
+ * @returns {Promise<{ ok: boolean, error: string | null, results: object[] }>}
+ */
+async function atomic(statements) {
+    const steps = [{ stmt: { sql: 'BEGIN' } }];
+    for (const s of statements) {
+        steps.push({
+            stmt: { sql: s.sql, args: (s.args || []).map(mapArgType) },
+            condition: { type: 'ok', step: steps.length - 1 },
+        });
+    }
+    const commit = steps.length;
+    steps.push({ stmt: { sql: 'COMMIT' }, condition: { type: 'ok', step: commit - 1 } });
+    steps.push({ stmt: { sql: 'ROLLBACK' }, condition: { type: 'not', cond: { type: 'ok', step: commit } } });
+    const res = await pipelineRequest([{ type: 'batch', batch: { steps } }, { type: 'close' }]);
+    const out = res?.results?.[0];
+    if (out?.type === 'error') return { ok: false, error: out.error?.message || 'batch failed', results: [] };
+    const result = out?.response?.result || {};
+    const errors = result.step_errors || [];
+    const firstError = errors.find((e) => e) || null;
+    const ok = Boolean(result.step_results?.[commit]) && !errors[commit];
+    if (ok) writes += statements.length;
+    return { ok, error: firstError ? firstError.message || String(firstError) : null, results: (result.step_results || []).slice(1, commit) };
+}
+
 /** Extract row arrays of plain values from an execute() result. */
 function rows(res, resultIndex = 0) {
     const raw = res?.results?.[resultIndex]?.response?.result?.rows || [];
@@ -224,5 +253,5 @@ async function fetchAllPaged(opts) {
 module.exports = {
     assertEnv, beginStep, getStats, flushStats,
     execute, batch, transaction, rows, scalar, healthCheck,
-    fetchAllPaged, PAGE_SIZE, text, mapArgType,
+    fetchAllPaged, PAGE_SIZE, text, mapArgType, atomic,
 };
