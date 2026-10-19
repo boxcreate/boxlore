@@ -10,6 +10,9 @@
  *   written before the vector, so identity is committed first.
  * - An item with no GUID and no enclosure keeps today's naming and is stamped `eid_missing`.
  * - Two items with one key in a window: the first wins (PI's order; feeds use document order).
+ * - A new key whose PI ID is already served for another key (a publisher changed the GUID and PI
+ *   kept its ID) is deferred: no book row, today's naming, no stamps, so the rest of the show is still
+ *   recorded and no served ID is ever taken from another episode (docs/EPISODE_IDS.md §4).
  *
  * The bootstrap and stage 4 never overlap (both hold the shared job lock), so no per-show fence
  * is needed. COMPAT(own-ids): permanent.
@@ -27,16 +30,18 @@ const num = (v) => {
  * @param {number} sid show ID
  * @param {object[]} episodes PI items in window order
  * @param {Map<string, number>} servedByKey the book's served IDs for this show
- * @returns {{ items: object[], newRows: object[], aliases: object[], duplicates: number, renamed: number }}
+ * @param {Map<number, string>} [ownerByServed] who holds these PI IDs as served IDs ("sid\u0000key")
+ * @returns {{ items: object[], newRows: object[], aliases: object[], duplicates: number, renamed: number, deferred: number }}
  *   items: { raw, piId, servedId, uuid, stamps } per kept episode
  */
-function resolveIdentities(sid, episodes, servedByKey) {
+function resolveIdentities(sid, episodes, servedByKey, ownerByServed = new Map()) {
     const items = [];
     const newRows = [];
     const aliases = [];
     const seen = new Set();
     let duplicates = 0;
     let renamed = 0;
+    let deferred = 0;
     for (const raw of episodes) {
         const piId = num(raw?.id);
         const key = catalogKey(raw?.guid, raw?.enclosureUrl);
@@ -51,6 +56,11 @@ function resolveIdentities(sid, episodes, servedByKey) {
         seen.add(key);
         const eid = recipeId(sid, key);
         const known = servedByKey.get(key);
+        if (known == null && piId != null && ownerByServed.has(piId) && ownerByServed.get(piId) !== `${sid}\u0000${key}`) {
+            deferred++;
+            items.push({ raw, piId, servedId: piId, uuid: stableUUID(piId), stamps: null, deferred: true });
+            continue;
+        }
         const servedId = known ?? piId;
         if (known == null) {
             newRows.push({
@@ -69,7 +79,7 @@ function resolveIdentities(sid, episodes, servedByKey) {
         }
         items.push({ raw, piId, servedId, uuid: stableUUID(servedId), stamps: { eid, catalog_key: key } });
     }
-    return { items, newRows, aliases, duplicates, renamed };
+    return { items, newRows, aliases, duplicates, renamed, deferred };
 }
 
 /** The book's served IDs for these keys of one show. */
@@ -87,4 +97,19 @@ async function loadServedIds(db, sid, keys) {
     return out;
 }
 
-module.exports = { resolveIdentities, loadServedIds };
+/** Which (show, key) already holds each of these IDs as its served ID: Map id -> "sid\u0000key". */
+async function loadServedOwners(db, ids) {
+    const out = new Map();
+    const unique = [...new Set(ids)];
+    for (let i = 0; i < unique.length; i += 200) {
+        const chunk = unique.slice(i, i + 200);
+        const rows = await db.query(
+            `SELECT served_id, sid, catalog_key FROM episode_book WHERE served_id IN (${chunk.map(() => '?').join(',')})`,
+            chunk,
+        );
+        for (const [served, sid, key] of rows) out.set(Number(served), `${Number(sid)}\u0000${key}`);
+    }
+    return out;
+}
+
+module.exports = { resolveIdentities, loadServedIds, loadServedOwners };

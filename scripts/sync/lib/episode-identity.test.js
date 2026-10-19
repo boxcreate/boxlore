@@ -3,7 +3,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const { DatabaseSync } = require('node:sqlite');
-const { loadServedIds, resolveIdentities } = require('./episode-identity');
+const { loadServedIds, loadServedOwners, resolveIdentities } = require('./episode-identity');
 const { stableUUID } = require('./qdrant');
 const { recipeId } = require('./episode-recipe-id');
 const book = require('./episode-book');
@@ -38,6 +38,23 @@ describe('resolveIdentities', () => {
     });
 });
 
+describe('a changed GUID under the same Podcast Index ID', () => {
+    it('defers the new key instead of taking a served ID from another episode', () => {
+        const owners = new Map([[61, `${SID}\u0000old-guid`]]);
+        const r = resolveIdentities(SID, [ep(61, 'new-guid'), ep(62, 'other')], new Map(), owners);
+        assert.equal(r.deferred, 1);
+        assert.deepEqual(r.items[0], { raw: r.items[0].raw, piId: 61, servedId: 61, uuid: stableUUID(61), stamps: null, deferred: true });
+        assert.deepEqual(r.newRows.map((x) => x.key), ['other'], 'the rest of the show is still recorded');
+    });
+
+    it('is not a clash when the ID is held by the same key', () => {
+        const owners = new Map([[61, `${SID}\u0000g`]]);
+        const r = resolveIdentities(SID, [ep(61, 'g')], new Map([['g', 61]]), owners);
+        assert.equal(r.deferred, 0);
+        assert.deepEqual(r.items[0].stamps, { eid: recipeId(SID, 'g'), catalog_key: 'g' });
+    });
+});
+
 describe('loadServedIds', () => {
     it('reads served IDs for the given keys, digit-only keys included', async () => {
         const raw = new DatabaseSync(':memory:');
@@ -64,5 +81,7 @@ describe('loadServedIds', () => {
         assert.deepEqual([...m.entries()].sort(), [['00123', 61], ['b', 62]]);
         const [[source]] = await db.query('SELECT source FROM episode_book LIMIT 1');
         assert.equal(source, 'pi');
+        const owners = await loadServedOwners(db, [61, 62, 99]);
+        assert.deepEqual([...owners.entries()].sort(), [[61, `${SID}\u000000123`], [62, `${SID}\u0000b`]]);
     });
 });

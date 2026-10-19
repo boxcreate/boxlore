@@ -37,7 +37,7 @@ const { capsFromCountriesByItunes, rememberEarnedCaps, effectiveCap } = require(
 const { planWindow, dueForDepth, clearDepth, pruneIsSafe } = require('./lib/vector-window');
 const vectorSpool = require('./lib/vector-spool');
 const { bookDb, bootstrapShow, ensureBookSchema } = require('./lib/episode-book');
-const { loadServedIds, resolveIdentities } = require('./lib/episode-identity');
+const { loadServedIds, loadServedOwners, resolveIdentities } = require('./lib/episode-identity');
 const { catalogKey } = require('./lib/episode-recipe-id');
 const state = require('./lib/state');
 const {
@@ -206,6 +206,7 @@ async function main() {
     let bookRows = 0;
     let bookErrors = 0;
     let renamedEps = 0;
+    let deferredEps = 0;
 
     // Points buffered for batch upsert; flag + tip-queue clears follow durable writes.
     let pointsQueue = [];
@@ -327,7 +328,8 @@ async function main() {
         try {
             const sid = Number(pod.id);
             const keys = [...new Set(windowEps.map((ep) => catalogKey(ep.guid, ep.enclosureUrl)).filter(Boolean))];
-            ident = resolveIdentities(sid, windowEps, await loadServedIds(book, sid, keys));
+            const piIds = windowEps.map((ep) => Number(ep.id)).filter((n) => Number.isSafeInteger(n) && n > 0);
+            ident = resolveIdentities(sid, windowEps, await loadServedIds(book, sid, keys), await loadServedOwners(book, piIds));
             const writes = [...ident.newRows, ...ident.aliases.map((a) => ({ key: a.key, eid: a.eid, piId: a.piId, servedId: null }))];
             if (writes.length) {
                 const res = await bootstrapShow(book, sid, writes, { now: Math.floor(Date.now() / 1000), source: 'pi' });
@@ -335,6 +337,7 @@ async function main() {
                 bookRows += ident.newRows.length;
             }
             renamedEps += ident.renamed;
+            deferredEps += ident.deferred;
         } catch (e) {
             bookErrors++;
             ident = null;
@@ -351,7 +354,8 @@ async function main() {
             must: [{ key: 'podcast_id', match: { value: parseInt(pod.id, 10) || 0 } }],
             must_not: [{ has_id: uuids }],
         };
-        const pruneSafe = pruneIsSafe(eps.length, window.cap);
+        // The fetched list decides whether pruning is safe; folding duplicates must not make it look partial.
+        const pruneSafe = pruneIsSafe(windowEps.length, window.cap);
         if (!pruneSafe) pruneSkipped++;
         // Read what the prune will remove, for the attribution log only.
         let pruning = [];
@@ -556,7 +560,7 @@ async function main() {
             `${showsCompleted} done · ` +
             `${partialShows} partial · skip ${showsFullySkipped} · ` +
             `handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors · ` +
-            `book ${bookRows} rows · renamed ${renamedEps} · book errors ${bookErrors}` +
+            `book ${bookRows} rows · renamed ${renamedEps} · deferred ${deferredEps} · book errors ${bookErrors}` +
             (reasons ? `\n  ${reasons}` : ''),
     });
     log.summaryTable('Stage 4: Vectorize Episodes', [{

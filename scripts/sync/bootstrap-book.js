@@ -74,6 +74,8 @@ async function main() {
     const deadline = Date.now() + MINUTES * 60_000;
 
     let st = loadState();
+    // A finished catch-up pass is history: list the unstamped shows again.
+    if (st && CATCH_UP && st.idx >= st.shows.length) st = null;
     if (!st) {
         if (!DRY) await ensureBookSchema(db);
         const shows = await listShows();
