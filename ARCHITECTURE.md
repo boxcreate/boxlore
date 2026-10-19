@@ -28,7 +28,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 | WorkManager | `LegacyWorkerFactory` plus permanent `core.data.*` stubs resolve historical FQCNs |
 | Deep links | `boxlore://` and `boxcast://`, plus both HTTPS share-path prefixes |
 | BuildConfig | Prefer `BOXLORE_*`; Gradle still dual-reads `BOXCAST_*` fallbacks |
-| Episode / media IDs | `rss:` prefixes, negative RSS IDs, mediaId prefixes, and `customCacheKey` schemes stay as implemented. PI **episode supplements** also use negative episode IDs (generated under an `rss:` feed namespace) but keep `Episode.podcastId` as the Podcast Index show id — they are not `rss:` library rows |
+| Episode / media IDs | `rss:` prefixes, negative RSS IDs, mediaId prefixes, and `customCacheKey` schemes stay as implemented. PI **episode supplements** also use negative episode IDs (generated under an `rss:` feed namespace) but keep `Episode.podcastId` as the Podcast Index show id — they are not `rss:` library rows. Episode identity (show ID, catalog key), recipe IDs, collisions and aliases follow [`docs/EPISODE_IDS.md`](docs/EPISODE_IDS.md) |
 | Playback instance | One UI-scoped `PlaybackRepository`; routes and workers must not construct a second one |
 | Object graph order | DB → `PodcastRepository` → `QueueRepository` → `PlaybackRepository` → `QueueManager` → `SmartDownloadManager` |
 | Smart Queue refill | Owned by `BoxLorePlaybackService` only |
