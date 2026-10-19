@@ -29,6 +29,9 @@ object EpisodeRecipeId {
     const val MIN: Long = 1L shl 52
     const val MAX: Long = (1L shl 53) - 1
     private const val LOW_52_BITS: Long = MIN - 1
+
+    /** Largest show ID with recipe IDs: 2^53 - 1, so JS (`Number.MAX_SAFE_INTEGER`) agrees on every namespace. */
+    const val SHOW_ID_MAX: Long = (1L shl 53) - 1
     private const val DIGEST_PREFIX_BYTES = 8
 
     /** True for the UTF-16 units the recipe trims (Char.isWhitespace on Android). */
@@ -57,10 +60,10 @@ object EpisodeRecipeId {
     /**
      * Recipe ID for an already-trimmed [catalogKey] on a numeric show.
      *
-     * @throws IllegalArgumentException when [showId] isn't positive or the key isn't canonical
+     * @throws IllegalArgumentException when [showId] is outside 1..[SHOW_ID_MAX] or the key isn't canonical
      */
     fun recipeId(showId: Long, catalogKey: String): Long {
-        require(showId > 0) { "Recipe IDs need a positive numeric show ID" }
+        require(showId in 1..SHOW_ID_MAX) { "Recipe IDs need a numeric show ID in 1..2^53 - 1" }
         require(catalogKey.isNotEmpty() && trimKey(catalogKey) == catalogKey) {
             "Recipe IDs need a trimmed, non-empty catalog key"
         }

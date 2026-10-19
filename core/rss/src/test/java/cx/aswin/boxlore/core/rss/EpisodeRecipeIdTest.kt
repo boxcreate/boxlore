@@ -82,6 +82,9 @@ class EpisodeRecipeIdTest {
         assertThrows<IllegalArgumentException> { EpisodeRecipeId.recipeId(75075, "") }
         assertThrows<IllegalArgumentException> { EpisodeRecipeId.recipeId(0, "a") }
         assertThrows<IllegalArgumentException> { EpisodeRecipeId.recipeId(-3391039, "a") }
+        assertThrows<IllegalArgumentException> { EpisodeRecipeId.recipeId(EpisodeRecipeId.SHOW_ID_MAX + 1, "a") }
+        assertThrows<IllegalArgumentException> { EpisodeRecipeId.recipeId(Long.MAX_VALUE, "a") }
+        assertTrue(EpisodeRecipeId.isRecipeId(EpisodeRecipeId.recipeId(EpisodeRecipeId.SHOW_ID_MAX, "a")))
         assertNull(EpisodeRecipeId.forItem(75075, " ", null))
     }
 

@@ -7,7 +7,7 @@ The rules every boxlore component follows to identify an episode. Server compone
 ## 1. What an episode is
 
 - An episode is **(show ID, catalog key)**. Everything else (Podcast Index episode IDs, recipe IDs, server-issued IDs, local negative IDs) is a handle that points at that pair.
-- **Show ID:** the Podcast Index feed ID, a positive integer. It is the episode namespace (`epNs`) and never changes once an ID has been issued under it.
+- **Show ID:** the Podcast Index feed ID, an integer in `1..2^53 − 1` (`Number.MAX_SAFE_INTEGER`, so every implementation agrees on it). It is the episode namespace (`epNs`) and never changes once an ID has been issued under it.
 - **Catalog key:** `trim(guid)` if non-empty, else `trim(enclosureUrl)` if non-empty, else the item has no identity and is skipped.
 - A changed GUID is a new episode. No alias is made across keys without evidence.
 
@@ -26,7 +26,7 @@ range     = 4,503,599,627,370,496 .. 9,007,199,254,740,991   (all safe JS intege
 - `TRIM_SET` is exactly what Kotlin's `String.trim()` removes on Android (Android treats U+180E as whitespace; JDK 17 does not). JS must use the explicit set: `String.prototype.trim()` also strips U+FEFF and keeps U+001C–U+001F and U+180E.
 - U+FEFF, U+0001 and U+200B are kept.
 - "First 8 bytes, then the low 52 bits" is the only reading. For show 3391039 and key `https://api.spreaker.com/episode/75827097` the answer is `8825297254050678`.
-- Recipe IDs are minted only for numeric show IDs. `rss:` shows (added by URL) never get recipe IDs and keep their negative IDs.
+- Recipe IDs are minted only for numeric show IDs in that range; implementations reject anything else. `rss:` shows (added by URL) never get recipe IDs and keep their negative IDs.
 - The tag `boxlore-ep1` is never reused for a different recipe. A new recipe gets a new tag and its own range.
 
 **Shared fixture.** `episode-recipe-vectors.json` (18 cases, SHA-256 `e272d820972c4f9d7cd215c510bfdb7effa382ceb1982617419279189a5ae292`) is the source of truth. Every implementation has a test that matches every case and asserts the fixture's hash, so a changed copy fails CI.
