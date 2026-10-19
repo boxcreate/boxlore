@@ -42,6 +42,7 @@ Follow [the PR template](.github/PULL_REQUEST_TEMPLATE.md) for Conventional Comm
 | :--- | :--- |
 | Local setup and build versus runtime configuration | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Architecture, dependency direction, stable identities | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Episode identity and recipe IDs | [docs/EPISODE_IDS.md](docs/EPISODE_IDS.md) |
 | Commands, test selection, coverage, CI | [docs/TESTING.md](docs/TESTING.md) |
 | Script responsibilities and development checks | [scripts/README.md](scripts/README.md) |
 | Module documentation format | [docs/MODULE_README_TEMPLATE.md](docs/MODULE_README_TEMPLATE.md) |
