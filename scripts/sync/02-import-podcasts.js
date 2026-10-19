@@ -29,6 +29,7 @@ const {
     reuseMissingIdsFile,
 } = require('./lib/import-missing');
 const attribution = require('./lib/attribution');
+const { apiImportArgs, categoryList } = require('./lib/catalog-rows');
 
 const MISSING_IDS_FILE = 'missing_itunes_ids.txt';
 const CSV_FILE = 'podcasts_export.csv';
@@ -272,28 +273,13 @@ async function importFromAPI(itunesIds = null) {
 
         ids.push(String(feed.id));
         foundItunesIds.push(String(itunesId));
-        const categoriesStr = feed.categories
-            ? sortCategories(Object.values(feed.categories).join(', '))
-            : '';
+        const categoriesStr = sortCategories(categoryList(feed.categories));
         statements.push({
             sql: `INSERT INTO podcasts (${cols.join(',')}, qdrant_vectorized, qdrant_podcast_vectorized)
                   VALUES (${placeholders}, 0, 0)
                   ON CONFLICT(id) DO UPDATE SET itunes_id = excluded.itunes_id
                   WHERE itunes_id IS NULL OR itunes_id != excluded.itunes_id`,
-            args: [
-                feed.id,
-                feed.itunesId || itunesId,
-                feed.title || 'Unknown Title',
-                feed.author || 'Unknown Author',
-                feed.description || '',
-                feed.image || feed.artwork || '',
-                feed.url || '',
-                feed.link || '',
-                categoriesStr,
-                feed.language || 'en',
-                feed.explicit ? '1' : '0',
-                feed.itunesType || 'episodic',
-            ],
+            args: apiImportArgs(feed, itunesId, categoriesStr),
         });
         imported++;
 
