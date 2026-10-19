@@ -36,6 +36,9 @@ const {
 const { capsFromCountriesByItunes, rememberEarnedCaps, effectiveCap } = require('./lib/episode-caps');
 const { planWindow, dueForDepth, clearDepth, pruneIsSafe } = require('./lib/vector-window');
 const vectorSpool = require('./lib/vector-spool');
+const { bookDb, bootstrapShow, ensureBookSchema } = require('./lib/episode-book');
+const { loadServedIds, resolveIdentities } = require('./lib/episode-identity');
+const { catalogKey } = require('./lib/episode-recipe-id');
 const state = require('./lib/state');
 const {
     loadCountriesByItunesId,
@@ -59,6 +62,8 @@ async function main() {
     turso.beginStep('vectorize-episodes');
     await turso.healthCheck();
     await ensureIndexes();
+    const book = bookDb(turso);
+    await ensureBookSchema(book);
     await tipQueue.ensureTable(turso);
     await qdrant.ensureEpisodesCollection(cfg.VECTOR_DIM, cfg.EPISODES_COLLECTION);
 
@@ -198,6 +203,9 @@ async function main() {
     let newestShows = 0;
     let spooledPoints = 0;
     let flushes = 0;
+    let bookRows = 0;
+    let bookErrors = 0;
+    let renamedEps = 0;
 
     // Points buffered for batch upsert; flag + tip-queue clears follow durable writes.
     let pointsQueue = [];
@@ -311,10 +319,30 @@ async function main() {
             continue;
         }
 
-        const eps = episodes.slice(0, window.cap).map((ep) => ({
-            raw: ep,
-            uuid: qdrant.stableUUID(ep.id),
-        }));
+        // Identity first (P1 handover, lib/episode-identity.js): the book's served ID names each point,
+        // and new episodes get their book row before any vector. On a book failure this show keeps
+        // today's naming for this run, unstamped, and the bootstrap's catch-up pass records it later.
+        const windowEps = episodes.slice(0, window.cap);
+        let ident = null;
+        try {
+            const sid = Number(pod.id);
+            const keys = [...new Set(windowEps.map((ep) => catalogKey(ep.guid, ep.enclosureUrl)).filter(Boolean))];
+            ident = resolveIdentities(sid, windowEps, await loadServedIds(book, sid, keys));
+            const writes = [...ident.newRows, ...ident.aliases.map((a) => ({ key: a.key, eid: a.eid, piId: a.piId, servedId: null }))];
+            if (writes.length) {
+                const res = await bootstrapShow(book, sid, writes, { now: Math.floor(Date.now() / 1000), source: 'pi' });
+                if (!res.ok) throw new Error(res.error || 'book write failed');
+                bookRows += ident.newRows.length;
+            }
+            renamedEps += ident.renamed;
+        } catch (e) {
+            bookErrors++;
+            ident = null;
+            log.warn(`Book identity failed for show ${pod.id}: ${e.message} - unstamped this run`);
+        }
+        const eps = ident
+            ? ident.items
+            : windowEps.map((ep) => ({ raw: ep, uuid: qdrant.stableUUID(ep.id), servedId: ep.id, stamps: null }));
         const uuids = eps.map((e) => e.uuid);
 
         // Prune BEFORE insert: hard-cap this show to its window (wait=true), but only when the
@@ -400,7 +428,7 @@ async function main() {
             try {
                 const vector = await embedder.embed(embedText);
                 const prepared = scalars.prepareEpisodePayload({
-                    id: scalars.asPositiveInt(ep.id, 0),
+                    id: scalars.asPositiveInt(item.servedId ?? ep.id, 0),
                     title: text.safeTruncate(epTitle),
                     description: text.safeTruncate(
                         typeof ep.description === 'string' ? ep.description : '',
@@ -426,6 +454,7 @@ async function main() {
                     log.warn(`Skip ep payload show ${pod.id}: ${prepared.reason}`);
                     continue;
                 }
+                if (item.stamps) Object.assign(prepared.payload, item.stamps);
                 if (prepared.scrubbed.length) {
                     log.warn(
                         `Scrubbed optional ep fields for show ${pod.id}: ${prepared.scrubbed.join(',')}`,
@@ -526,7 +555,8 @@ async function main() {
             `spooled ${spooledPoints} · replayed ${replayed.points} · ` +
             `${showsCompleted} done · ` +
             `${partialShows} partial · skip ${showsFullySkipped} · ` +
-            `handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors` +
+            `handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors · ` +
+            `book ${bookRows} rows · renamed ${renamedEps} · book errors ${bookErrors}` +
             (reasons ? `\n  ${reasons}` : ''),
     });
     log.summaryTable('Stage 4: Vectorize Episodes', [{
