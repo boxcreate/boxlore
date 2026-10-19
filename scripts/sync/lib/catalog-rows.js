@@ -6,7 +6,7 @@
  * turso.mapArgType refuses objects, so one odd optional field would otherwise fail the
  * whole write (a stage 2 batch of 50 shows, or a show's tip update every run). Optional
  * text becomes '' or null and bad numbers become 0, the same as a missing field. IDs are
- * passed through untouched: a broken ID should fail the write, not be guessed.
+ * never guessed: show IDs pass through to the binder, and an invalid tip episode ID throws.
  * Added in P0 of the own-episode-IDs plan (plan section 14).
  */
 
