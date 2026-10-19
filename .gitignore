@@ -104,3 +104,4 @@ posthog-setup-report.md
 # Catalog sync runtime data written on the runner (attribution log, vector spool)
 scripts/data/attribution/
 scripts/data/vector-spool/
+scripts/data/book-bootstrap*.json
