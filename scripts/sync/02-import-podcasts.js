@@ -29,7 +29,7 @@ const {
     reuseMissingIdsFile,
 } = require('./lib/import-missing');
 const attribution = require('./lib/attribution');
-const { apiImportArgs } = require('./lib/catalog-rows');
+const { apiImportArgs, categoryList } = require('./lib/catalog-rows');
 
 const MISSING_IDS_FILE = 'missing_itunes_ids.txt';
 const CSV_FILE = 'podcasts_export.csv';
@@ -273,9 +273,7 @@ async function importFromAPI(itunesIds = null) {
 
         ids.push(String(feed.id));
         foundItunesIds.push(String(itunesId));
-        const categoriesStr = feed.categories
-            ? sortCategories(Object.values(feed.categories).join(', '))
-            : '';
+        const categoriesStr = sortCategories(categoryList(feed.categories));
         statements.push({
             sql: `INSERT INTO podcasts (${cols.join(',')}, qdrant_vectorized, qdrant_podcast_vectorized)
                   VALUES (${placeholders}, 0, 0)

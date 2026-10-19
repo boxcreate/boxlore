@@ -20,6 +20,21 @@ const orNull = (v) => asScalarString(v, '') || null;
 /** Structured fields are stored as JSON text on purpose. */
 const jsonOrNull = (v) => (v && typeof v === 'object' ? JSON.stringify(v) : null);
 
+/** An episode ID must be a non-empty string or a number; anything else fails the write. */
+function episodeIdText(v) {
+    if ((typeof v === 'string' && v.trim() !== '') || (typeof v === 'number' && Number.isFinite(v))) return String(v);
+    throw new TypeError(`Invalid episode id (${v === null ? 'null' : typeof v})`);
+}
+
+/**
+ * Stage 2: PI's category map ({ "1": "News", ... }) as "News, Politics" before sorting.
+ * Non-scalar or junk values are dropped so the rest survive.
+ */
+function categoryList(categories) {
+    if (!categories || typeof categories !== 'object') return '';
+    return Object.values(categories).map((c) => str(c).trim()).filter(Boolean).join(', ');
+}
+
 /**
  * Stage 2: values for an API import, in cfg.PODCAST_IMPORT_COLUMNS order.
  * @param {object} feed           PI podcast object
@@ -49,7 +64,7 @@ function apiImportArgs(feed, itunesId, categories) {
  */
 function tipUpdateArgs(latest, medium, nowMs, podId) {
     return [
-        String(latest.id),
+        episodeIdText(latest.id),
         str(latest.title),
         asNonNegInt(latest.datePublished, 0),
         asNonNegInt(latest.duration, 0),
@@ -67,4 +82,4 @@ function tipUpdateArgs(latest, medium, nowMs, podId) {
     ];
 }
 
-module.exports = { apiImportArgs, tipUpdateArgs };
+module.exports = { apiImportArgs, tipUpdateArgs, categoryList };
