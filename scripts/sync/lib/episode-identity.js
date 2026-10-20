@@ -12,9 +12,12 @@
  * - Two items with one key in a window: the first wins (PI's order; feeds use document order).
  * - A new key whose PI ID is already served for another key is deferred: no book row, today's
  *   naming, so the rest of the show is still recorded and no served ID is ever taken from another
- *   episode (docs/EPISODE_IDS.md §4). Almost always a duplicate feed: Podcast Index lists one podcast
- *   under two show IDs that share episode IDs. The point is stamped `eid_shared` with the owning show,
- *   so the bootstrap's catch-up doesn't pick it up again.
+ *   episode (docs/EPISODE_IDS.md §4). Its point is the owner's (it is named by that served ID), so:
+ *   - owner in this show (the publisher changed the GUID, PI kept the ID): stamped with the owner's
+ *     `eid` and `catalog_key`;
+ *   - owner in another show (a duplicate feed: Podcast Index lists one podcast under two show IDs
+ *     that share episode IDs): stamped `eid_shared` with the owning show.
+ *   Either way the bootstrap's catch-up doesn't pick it up again.
  *
  * The bootstrap and stage 4 never overlap (both hold the shared job lock), so no per-show fence
  * is needed. COMPAT(own-ids): permanent.
@@ -60,8 +63,7 @@ function resolveIdentities(sid, episodes, servedByKey, ownerByServed = new Map()
         const known = servedByKey.get(key);
         if (known == null && piId != null && ownerByServed.has(piId) && ownerByServed.get(piId) !== `${sid}\u0000${key}`) {
             deferred++;
-            const ownerSid = Number(ownerByServed.get(piId).split('\u0000')[0]);
-            items.push({ raw, piId, servedId: piId, uuid: stableUUID(piId), stamps: { eid_shared: ownerSid }, deferred: true });
+            items.push({ raw, piId, servedId: piId, uuid: stableUUID(piId), stamps: ownerStamps(sid, ownerByServed.get(piId)), deferred: true });
             continue;
         }
         const servedId = known ?? piId;
@@ -83,6 +85,14 @@ function resolveIdentities(sid, episodes, servedByKey, ownerByServed = new Map()
         items.push({ raw, piId, servedId, uuid: stableUUID(servedId), stamps: { eid, catalog_key: key } });
     }
     return { items, newRows, aliases, duplicates, renamed, deferred };
+}
+
+/** Stamps for a point whose served ID another (show, key) owns: that key's identity in this show, else `eid_shared`. */
+function ownerStamps(sid, owner) {
+    const cut = owner.indexOf('\u0000');
+    const ownerSid = Number(owner.slice(0, cut));
+    const ownerKey = owner.slice(cut + 1);
+    return ownerSid === sid ? { eid: recipeId(sid, ownerKey), catalog_key: ownerKey } : { eid_shared: ownerSid };
 }
 
 /** The book's served IDs for these keys of one show. */
@@ -115,4 +125,4 @@ async function loadServedOwners(db, ids) {
     return out;
 }
 
-module.exports = { resolveIdentities, loadServedIds, loadServedOwners };
+module.exports = { resolveIdentities, loadServedIds, loadServedOwners, ownerStamps };

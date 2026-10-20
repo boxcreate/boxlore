@@ -39,11 +39,11 @@ describe('resolveIdentities', () => {
 });
 
 describe('a changed GUID under the same Podcast Index ID', () => {
-    it('defers the new key instead of taking a served ID from another episode', () => {
+    it('defers the new key and stamps the point with the key that owns its served ID', () => {
         const owners = new Map([[61, `${SID}\u0000old-guid`]]);
         const r = resolveIdentities(SID, [ep(61, 'new-guid'), ep(62, 'other')], new Map(), owners);
         assert.equal(r.deferred, 1);
-        assert.deepEqual(r.items[0], { raw: r.items[0].raw, piId: 61, servedId: 61, uuid: stableUUID(61), stamps: { eid_shared: SID }, deferred: true });
+        assert.deepEqual(r.items[0], { raw: r.items[0].raw, piId: 61, servedId: 61, uuid: stableUUID(61), stamps: { eid: recipeId(SID, 'old-guid'), catalog_key: 'old-guid' }, deferred: true });
         assert.deepEqual(r.newRows.map((x) => x.key), ['other'], 'the rest of the show is still recorded');
     });
 

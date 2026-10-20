@@ -10,9 +10,12 @@
  *   `eid_missing`: it keeps its identity and is retried later. A key is never guessed.
  * - Two points with the same key (PI re-listed the episode under a new ID) share one book row;
  *   the extra PI IDs become aliases. Stage 4's served-ID naming removes the duplicate later.
- * - A point whose PI ID is already another episode's served ID (a duplicate feed: PI lists one
- *   podcast under two show IDs that share episode IDs) gets no row and is stamped `eid_shared` with
- *   the owning show, so one show's transaction never fails on another show's ID.
+ * - A point whose PI ID is already another key's served ID gets no row, so the show's transaction
+ *   never fails on it. The point belongs to the owner (it is named by that served ID):
+ *   - owner in this show (a changed GUID under the same PI ID): stamped with the owner's `eid` and
+ *     `catalog_key`, like any recorded point;
+ *   - owner in another show (a duplicate feed: PI lists one podcast under two show IDs that share
+ *     episode IDs): stamped `eid_shared` with the owning show.
  */
 
 const { catalogKey, recipeId } = require('./episode-recipe-id');
@@ -51,7 +54,11 @@ function planShow(sid, points, piItems, ownerByServed = new Map()) {
         }
         const owner = ownerByServed.get(piId);
         if (owner != null && owner !== `${sid}\u0000${key}`) {
-            shared.push({ pointId: p.id, ownerSid: Number(owner.split('\u0000')[0]) });
+            const cut = owner.indexOf('\u0000');
+            const ownerSid = Number(owner.slice(0, cut));
+            const ownerKey = owner.slice(cut + 1);
+            if (ownerSid === sid) stamps.push({ pointId: p.id, eid: recipeId(sid, ownerKey), key: ownerKey });
+            else shared.push({ pointId: p.id, ownerSid });
             continue;
         }
         const eid = recipeId(sid, key);
