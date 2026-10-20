@@ -73,7 +73,14 @@ describe('tipUpdateArgs', () => {
         const args = tipUpdateArgs(latest, 'podcast', 1234, '42');
         assert.deepEqual(args, ['9001', 'Ep 1', 1790000000, 1800, 'https://cdn.example/1.mp3',
             'https://img.example/f.jpg', 'audio/mp4', 'Hi & bye', 'https://cdn.example/ch.json', null,
-            JSON.stringify([{ name: 'Host', role: 'host' }]), null, 'podcast', 1234, '42']);
+            JSON.stringify([{ name: 'Host', role: 'host' }]), null, 'podcast', 1234, turso.text(null), null, '42']);
+    });
+
+    it('puts the served ID in the tip and keeps the catalog key as text', () => {
+        const args = tipUpdateArgs(latest, 'podcast', 1234, '42', { servedId: 4503599627370777, key: '00123', eid: 4503599627370777 });
+        assert.equal(args[0], '4503599627370777');
+        assert.deepEqual(bindAll(args.slice(14, 16)), [{ type: 'text', value: '00123' }, { type: 'integer', value: '4503599627370777' }]);
+        assert.equal(args.at(-1), '42');
     });
 
     it('fails on an invalid episode id instead of storing it as text', () => {

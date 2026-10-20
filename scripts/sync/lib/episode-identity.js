@@ -95,6 +95,26 @@ function ownerStamps(sid, owner) {
     return ownerSid === sid ? { eid: recipeId(sid, ownerKey), catalog_key: ownerKey } : { eid_shared: ownerSid };
 }
 
+/**
+ * Stage 3 tip identity: the show's latest PI item under its served ID (by catalog key, else through
+ * its PI ID as an alias in this show), with its key and recipe ID; PI's own ID when the book doesn't
+ * know the episode yet (stage 4 records it later in the same run, with that ID).
+ * @returns {Promise<{ servedId: number|null, key: string|null, eid: number|null }>}
+ */
+async function tipIdentity(db, sid, item) {
+    const piId = num(item?.id);
+    const key = catalogKey(item?.guid, item?.enclosureUrl);
+    const eid = key ? recipeId(sid, key) : null;
+    let servedId = key ? (await loadServedIds(db, sid, [key])).get(key) ?? null : null;
+    if (servedId == null && piId != null) {
+        const rows = await db.query(
+            `SELECT b.served_id FROM episode_pi_alias a JOIN episode_book b ON b.rid = a.rid
+             WHERE a.pi_id = ? AND b.sid = ? AND b.served_id IS NOT NULL`, [piId, sid]);
+        if (rows.length) servedId = Number(rows[0][0]);
+    }
+    return { servedId: servedId ?? piId, key, eid };
+}
+
 /** The book's served IDs for these keys of one show. */
 async function loadServedIds(db, sid, keys) {
     const out = new Map();
@@ -125,4 +145,4 @@ async function loadServedOwners(db, ids) {
     return out;
 }
 
-module.exports = { resolveIdentities, loadServedIds, loadServedOwners, ownerStamps };
+module.exports = { resolveIdentities, loadServedIds, loadServedOwners, ownerStamps, tipIdentity };

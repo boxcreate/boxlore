@@ -93,3 +93,31 @@ describe('loadServedIds', () => {
         assert.deepEqual([...owners.entries()].sort(), [[61, `${SID}\u000000123`], [62, `${SID}\u0000b`]]);
     });
 });
+
+describe('stage 3 tip identity', () => {
+    const { DatabaseSync } = require('node:sqlite');
+    const { tipIdentity } = require('./episode-identity');
+    const { BOOK_TABLES } = require('./episode-book');
+    function book() {
+        const raw = new DatabaseSync(':memory:');
+        for (const sql of BOOK_TABLES) raw.exec(sql);
+        const toArgs = (args = []) => args.map((a) => (a && typeof a === 'object' && 'value' in a ? a.value : a));
+        return {
+            raw,
+            text: (v) => ({ value: v === null || v === undefined ? null : String(v) }),
+            query: async (sql, args) => raw.prepare(sql).all(...toArgs(args)).map((r) => Object.values(r)),
+        };
+    }
+
+    it('uses the served ID by key, then by PI alias, else the PI ID', async () => {
+        const db = book();
+        db.raw.exec(`INSERT INTO episode_book (rid, eid, sid, catalog_key, served_id, source, first_seen_at, updated_at)
+            VALUES (1, 1, ${SID}, 'feed-only', 4503599627370777, 'feed', 1, 1), (2, 2, ${SID}, 'renamed', 61, 'bootstrap', 1, 1)`);
+        db.raw.exec('INSERT INTO episode_pi_alias (pi_id, rid, seen_at) VALUES (61, 2, 1), (777, 2, 1)');
+        assert.deepEqual(await tipIdentity(db, SID, { id: 999, guid: 'feed-only' }),
+            { servedId: 4503599627370777, key: 'feed-only', eid: recipeId(SID, 'feed-only') });
+        assert.equal((await tipIdentity(db, SID, { id: 777, guid: 'changed-guid' })).servedId, 61, 'PI renumbered it');
+        assert.equal((await tipIdentity(db, SID, { id: 555, guid: 'new' })).servedId, 555, 'not in the book yet');
+        assert.equal((await tipIdentity(db, 1, { id: 777, guid: 'x' })).servedId, 777, 'an alias in another show never counts');
+    });
+});

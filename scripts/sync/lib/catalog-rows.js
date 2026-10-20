@@ -1,5 +1,7 @@
 'use strict';
 
+const turso = require('./turso');
+
 /**
  * Catalog row values built from Podcast Index data, scrubbed before they are bound.
  *
@@ -60,11 +62,13 @@ function apiImportArgs(feed, itunesId, categories) {
 
 /**
  * Stage 3: values for the latest-episode UPDATE, in the statement's SET order
- * (latest_ep_id … medium, last_ep_sync), followed by the show ID.
+ * (latest_ep_id … medium, last_ep_sync, latest_ep_key, latest_ep_eid), followed by the show ID.
+ * `identity` (lib/episode-identity.js tipIdentity) puts the episode's served ID in latest_ep_id, the
+ * ID every app build sees on Home, trending and bootstrap; without it, PI's ID is used as before.
  */
-function tipUpdateArgs(latest, medium, nowMs, podId) {
+function tipUpdateArgs(latest, medium, nowMs, podId, identity = null) {
     return [
-        episodeIdText(latest.id),
+        episodeIdText(identity?.servedId ?? latest.id),
         str(latest.title),
         asNonNegInt(latest.datePublished, 0),
         asNonNegInt(latest.duration, 0),
@@ -78,6 +82,8 @@ function tipUpdateArgs(latest, medium, nowMs, podId) {
         jsonOrNull(latest.transcripts),
         str(medium) || 'podcast',
         nowMs,
+        turso.text(identity?.key ?? null),
+        identity?.eid ?? null,
         podId,
     ];
 }
