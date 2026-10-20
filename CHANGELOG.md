@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The catalog sync records new episodes in the episode book, names their vectors by served ID, and no longer re-embeds an episode when Podcast Index changes its ID. ([#1147](https://github.com/boxcreate/boxlore/pull/1147)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 ### Fixed
 - RSS notification cleanup removes only the RTDB `feedUrl` child instead of the whole `tracked_podcasts` row, which the rules refuse. A refused delete for a row that does not exist still unsubscribes the FCM topic and clears the journal entry, so `RssNotificationSyncWorker` no longer retries indefinitely. ([#1140](https://github.com/boxcreate/boxlore/pull/1140)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
+- New-episode notifications carry a working feed address for shows that moved, use stable episode IDs, and are never sent twice after a partly failed check. ([#1150](https://github.com/boxcreate/boxlore/pull/1150)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - The catalog sync no longer deletes vectors it later re-embeds: the nightly trim fails closed, shows keep the highest cap they earned, partial episode lists never cause pruning, and vectors from a failed upload are spooled and uploaded by the next run. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync refuses to store objects as `[object Object]` text: its Turso client rejects them, and the show import and latest-episode update scrub Podcast Index values first. ([#1144](https://github.com/boxcreate/boxlore/pull/1144)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `EpisodeRecipeId` rejects show IDs above 2^53 − 1, matching the scripts implementation. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -31,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixes
 - Turning off episode notifications for an RSS feed now stops sharing its feed link from your device. Links already shared stay in earlier public backups.
 readme-copy:end pr=1140 -->
+
+<!-- readme-copy:start pr=1150
+### Improvements
+- New-episode notifications keep working for shows that moved to a new feed address.
+readme-copy:end pr=1150 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added

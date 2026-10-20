@@ -63,6 +63,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>⚡ Improvements:</b>
+<ul align="left">
+<li>New-episode notifications keep working for shows that moved to a new feed address. <a href="https://github.com/boxcreate/boxlore/pull/1150"><img src="https://img.shields.io/badge/PR-1150-6750A4?style=flat-square" alt="PR #1150" height="18"/></a></li>
+</ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
 <li>Turning off episode notifications for an RSS feed now stops sharing its feed link from your device. Links already shared stay in earlier public backups. <a href="https://github.com/boxcreate/boxlore/pull/1140"><img src="https://img.shields.io/badge/PR-1140-6750A4?style=flat-square" alt="PR #1140" height="18"/></a></li>
