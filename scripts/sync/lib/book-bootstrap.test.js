@@ -46,4 +46,12 @@ describe('planShow', () => {
             { set_payload: { payload: { eid_missing: true }, points: ['u3'] } },
         ]);
     });
+
+    it('leaves a duplicate feed\'s episodes to the show that holds their IDs, and marks them', () => {
+        const owners = new Map([[61, '7650363\u0000g'], [62, `${SID}\u0000g-62`]]);
+        const plan = planShow(SID, [point('u1', 61), point('u2', 62), point('u4', 63)], [item(61, 'g'), item(62, 'g-62'), item(63, 'g-63')], owners);
+        assert.deepEqual(plan.shared, [{ pointId: 'u1', ownerSid: 7650363 }]);
+        assert.deepEqual(plan.items.map((x) => x.key), ['g-62', 'g-63'], 'its own episodes are still recorded');
+        assert.deepEqual(stampOperations(plan).at(-1), { set_payload: { payload: { eid_shared: 7650363 }, points: ['u1'] } });
+    });
 });

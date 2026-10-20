@@ -43,8 +43,16 @@ describe('a changed GUID under the same Podcast Index ID', () => {
         const owners = new Map([[61, `${SID}\u0000old-guid`]]);
         const r = resolveIdentities(SID, [ep(61, 'new-guid'), ep(62, 'other')], new Map(), owners);
         assert.equal(r.deferred, 1);
-        assert.deepEqual(r.items[0], { raw: r.items[0].raw, piId: 61, servedId: 61, uuid: stableUUID(61), stamps: null, deferred: true });
+        assert.deepEqual(r.items[0], { raw: r.items[0].raw, piId: 61, servedId: 61, uuid: stableUUID(61), stamps: { eid_shared: SID }, deferred: true });
         assert.deepEqual(r.newRows.map((x) => x.key), ['other'], 'the rest of the show is still recorded');
+    });
+
+    it('marks an episode a duplicate feed already holds with the owning show', () => {
+        const owners = new Map([[61, `7650363\u0000g`]]);
+        const r = resolveIdentities(5893516, [ep(61, 'g')], new Map(), owners);
+        assert.equal(r.deferred, 1);
+        assert.deepEqual(r.items[0].stamps, { eid_shared: 7650363 });
+        assert.deepEqual(r.newRows, []);
     });
 
     it('is not a clash when the ID is held by the same key', () => {

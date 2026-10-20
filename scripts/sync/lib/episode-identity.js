@@ -10,9 +10,11 @@
  *   written before the vector, so identity is committed first.
  * - An item with no GUID and no enclosure keeps today's naming and is stamped `eid_missing`.
  * - Two items with one key in a window: the first wins (PI's order; feeds use document order).
- * - A new key whose PI ID is already served for another key (a publisher changed the GUID and PI
- *   kept its ID) is deferred: no book row, today's naming, no stamps, so the rest of the show is still
- *   recorded and no served ID is ever taken from another episode (docs/EPISODE_IDS.md §4).
+ * - A new key whose PI ID is already served for another key is deferred: no book row, today's
+ *   naming, so the rest of the show is still recorded and no served ID is ever taken from another
+ *   episode (docs/EPISODE_IDS.md §4). Almost always a duplicate feed: Podcast Index lists one podcast
+ *   under two show IDs that share episode IDs. The point is stamped `eid_shared` with the owning show,
+ *   so the bootstrap's catch-up doesn't pick it up again.
  *
  * The bootstrap and stage 4 never overlap (both hold the shared job lock), so no per-show fence
  * is needed. COMPAT(own-ids): permanent.
@@ -58,7 +60,8 @@ function resolveIdentities(sid, episodes, servedByKey, ownerByServed = new Map()
         const known = servedByKey.get(key);
         if (known == null && piId != null && ownerByServed.has(piId) && ownerByServed.get(piId) !== `${sid}\u0000${key}`) {
             deferred++;
-            items.push({ raw, piId, servedId: piId, uuid: stableUUID(piId), stamps: null, deferred: true });
+            const ownerSid = Number(ownerByServed.get(piId).split('\u0000')[0]);
+            items.push({ raw, piId, servedId: piId, uuid: stableUUID(piId), stamps: { eid_shared: ownerSid }, deferred: true });
             continue;
         }
         const servedId = known ?? piId;
