@@ -89,7 +89,12 @@ function stateChanged(previous, next) {
 async function resolveTrackedRelease({ podcastId, podcastData, existing, fetchRssNewest, fetchPiLatest, now, registryEntry = null }) {
     const pureRss = String(podcastId).startsWith('rss:');
     const registered = usableFeedUrl(podcastData.feedUrl);
-    const feedUrl = pureRss ? registered : workingFeedUrl(podcastData, registryEntry);
+    // Without the registry this run (API down, no key), keep the address the state last read, so
+    // an outage never flips a show back to a dead address and back again.
+    const remembered = usableFeedUrl(existing && existing.lastFeedUrl);
+    const feedUrl = pureRss
+        ? registered
+        : (registryEntry ? workingFeedUrl(podcastData, registryEntry) : (remembered || registered || null));
     let rssItem = null;
     if (feedUrl) {
         try {

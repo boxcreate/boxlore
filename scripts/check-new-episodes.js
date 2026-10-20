@@ -181,8 +181,9 @@ async function run() {
             }
             const podcastTitle = podcastData.title || "Podcast";
             const existingState = state.podcasts[stateId];
+            let release = null;
             try {
-                const release = await lib.resolveTrackedRelease({
+                release = await lib.resolveTrackedRelease({
                     podcastId, podcastData, existing: existingState, fetchRssNewest, fetchPiLatest,
                     registryEntry: registry.get(String(podcastId)) || null,
                 });
@@ -199,7 +200,13 @@ async function run() {
                 }
                 console.log(`Checked ${podcastId}: ${decision.reason}`);
             } catch (podcastError) {
-                if (podcastError && /refusing to send/.test(podcastError.message)) throw podcastError;
+                if (podcastError && /refusing to send/.test(podcastError.message)) {
+                    // A broadcast topic would be a bug that reaches every install: stop the run.
+                    if (lib.BROADCAST_TOPICS.has(lib.notificationTopic(podcastId, release?.data?.feedUrl))) throw podcastError;
+                    sendFailures++;
+                    console.error(`Refused the topic for ${String(podcastId).startsWith('rss:') ? 'an rss show' : podcastId}; skipping it.`);
+                    continue;
+                }
                 if (podcastError && podcastError.code && String(podcastError.code).startsWith('messaging/')) sendFailures++;
                 // Never print private feed URLs or request errors for pure RSS registrations.
                 if (String(podcastId).startsWith('rss:')) console.warn(`RSS check failed for ${podcastId}; retaining baseline for retry`);

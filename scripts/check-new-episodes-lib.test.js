@@ -542,6 +542,19 @@ describe('working addresses, served IDs and safe topics (own-episode-IDs P2)', (
         assert.equal(next.decision.notify, true, 'after the switch, real releases notify again');
     });
 
+    it('a registry outage keeps the remembered working address instead of flipping back', async () => {
+        const seen = [];
+        const existing = { lastRssKey: 'k1', lastEpisodeTitle: 'A', lastFeedUrl: 'https://new.example/rss', lastCheckedAt: 1 };
+        const release = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: { title: 'Show', feedUrl: 'https://old.example/rss' }, existing, registryEntry: null,
+            fetchRssNewest: async (url) => { seen.push(url); return { title: 'B', guid: 'k2', enclosureUrl: 'https://cdn/b.mp3' }; },
+            fetchPiLatest: async () => null, now: 2,
+        });
+        assert.deepEqual(seen, ['https://new.example/rss']);
+        assert.equal(release.decision.notify, true, 'a real release during the outage still notifies');
+        assert.equal(release.decision.nextState.lastFeedUrl, 'https://new.example/rss');
+    });
+
     it('the Podcast Index fallback push carries the working address too', async () => {
         const release = await lib.resolveTrackedRelease({
             podcastId: '74467', podcastData: { title: 'Show' }, existing: { lastEpisodeId: '1' }, registryEntry: repaired,
