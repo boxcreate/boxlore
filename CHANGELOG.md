@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/EPISODE_IDS.md` documents episode identity, recipe IDs, collision handling and aliases. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - The catalog sync can create and write the episode book: permanent episode identity rows with recipe and served IDs, written all-or-nothing through `turso.atomic()`. ([#1146](https://github.com/boxcreate/boxlore/pull/1146)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 ### Changed
+- New-episode notifications are checked hourly on our own server instead of GitHub Actions, whose schedule ran every few hours. ([#1151](https://github.com/boxcreate/boxlore/pull/1151)) <!-- impact:user-impact-low+backend-change --> <!-- copy:locked -->
 - `StickyEpisodeIdentity.catalogKey` trims with an explicit character set equal to Kotlin's `trim()` on Android, so catalog keys no longer depend on the runtime's Unicode tables. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - New chart shows get their newest 5 episodes embedded first and the rest of their window after 7 days on the charts (`NEW_ENTRANT_EPISODES`, `NEW_ENTRANT_DEPTH_DAYS`). ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync records new episodes in the episode book, names their vectors by served ID, and no longer re-embeds an episode when Podcast Index changes its ID. ([#1147](https://github.com/boxcreate/boxlore/pull/1147)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -37,6 +38,11 @@ readme-copy:end pr=1140 -->
 ### Improvements
 - New-episode notifications keep working for shows that moved to a new feed address.
 readme-copy:end pr=1150 -->
+
+<!-- readme-copy:start pr=1151
+### Improvements
+- New-episode notifications arrive sooner after a release.
+readme-copy:end pr=1151 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added

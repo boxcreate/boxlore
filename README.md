@@ -66,6 +66,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>New-episode notifications keep working for shows that moved to a new feed address. <a href="https://github.com/boxcreate/boxlore/pull/1150"><img src="https://img.shields.io/badge/PR-1150-6750A4?style=flat-square" alt="PR #1150" height="18"/></a></li>
+<li>New-episode notifications arrive sooner after a release. <a href="https://github.com/boxcreate/boxlore/pull/1151"><img src="https://img.shields.io/badge/PR-1151-6750A4?style=flat-square" alt="PR #1151" height="18"/></a></li>
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
