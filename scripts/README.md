@@ -93,13 +93,13 @@ The local updater fixture accepts `--notes-file` for long UTF-8 sample release n
 
 ### Check New Episodes
 
-[`.github/workflows/new-episode-check.yml`](../.github/workflows/new-episode-check.yml) runs approximately every 30 minutes on GitHub Actions. It polls notification registrations independently of catalog sync.
+The checker runs **hourly on the VPS** (netcup-panel `stack/notifier`: a systemd timer runs this script from the sync runner's copy, with its own Firebase service account that can only read `tracked_podcasts` and send pushes). GitHub's scheduled runs came every 2–6 hours instead of every 30 minutes. [`.github/workflows/new-episode-check.yml`](../.github/workflows/new-episode-check.yml) is now a manual fallback that rehearses (`dry_run`) by default; a live run there would use the repo's older state file. It polls notification registrations independently of catalog sync.
 
 | What | Where |
 | :--- | :--- |
 | Script | [`scripts/check-new-episodes.js`](check-new-episodes.js) + [`check-new-episodes-lib.js`](check-new-episodes-lib.js) |
 | Who to poll | Firebase RTDB `tracked_podcasts/{podcastIndexId}` (client writes this when **show notifications** are on). Rules allow `title`, `imageUrl`, and optional HTTPS `feedUrl` only — extra children are rejected. |
-| Last-notified state | [`scripts/data/episode-tracker.json`](data/episode-tracker.json) (the Action commits this) |
+| Last-notified state | `NOTIFIER_STATE_FILE` on the VPS (`/var/lib/boxlore-notifier/episode-tracker.json`, in the daily backup). [`scripts/data/episode-tracker.json`](data/episode-tracker.json) is the last state from GitHub Actions |
 | Tests | `npm ci` then `npm run test:check-new-episodes` from `scripts/` (the Check New Episodes workflow runs the same script after `npm ci`) |
 
 Release selection and recovery:

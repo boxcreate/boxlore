@@ -1,15 +1,15 @@
 name: Check New Episodes
 
+# The checker runs hourly on the VPS (netcup-panel stack/notifier) with its own state file. This
+# workflow is a manual fallback only: a live run here uses the repo's older state and would resend
+# releases, so it rehearses by default. Turn dry_run off only after copying the VPS state back.
 on:
-  schedule:
-    # Run every 30 minutes
-    - cron: '*/30 * * * *'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
     inputs:
       dry_run:
         description: 'Rehearsal: decide and log, send nothing, save nothing'
         type: boolean
-        default: false
+        default: true
 
 concurrency:
   group: tracked-podcast-rtdb-maintenance

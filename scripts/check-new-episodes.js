@@ -144,7 +144,9 @@ async function run() {
     }
 
     // 3. Read state file (local json)
-    const statePath = path.join(__dirname, 'data/episode-tracker.json');
+    // On the VPS the state lives outside the code checkout (NOTIFIER_STATE_FILE); the repo copy is
+    // the last state from when the job ran on GitHub Actions.
+    const statePath = process.env.NOTIFIER_STATE_FILE || path.join(__dirname, 'data/episode-tracker.json');
     
     // Ensure the data directory exists
     const dataDir = path.dirname(statePath);
