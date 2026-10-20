@@ -107,8 +107,14 @@ async function main() {
             saveState(st);
             continue;
         }
-        // PI IDs another show already serves (duplicate feeds) are left to that show.
-        const owners = await loadServedOwners(db, points.map((p) => Number(p.payload?.id)).filter((n) => Number.isSafeInteger(n) && n > 0));
+        // PI IDs another show already serves (duplicate feeds) are left to that show. A dry run on a
+        // database without the book yet has no owners.
+        let owners = new Map();
+        try {
+            owners = await loadServedOwners(db, points.map((p) => Number(p.payload?.id)).filter((n) => Number.isSafeInteger(n) && n > 0));
+        } catch (e) {
+            if (!(DRY && /no such table: episode_book/i.test(String(e.message)))) throw e;
+        }
         const plan = planShow(sid, points, items, owners);
         if (!DRY && points.length) {
             const res = await bootstrapShow(db, sid, plan.items, { now: Math.floor(Date.now() / 1000) });
