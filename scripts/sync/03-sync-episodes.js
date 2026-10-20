@@ -18,6 +18,8 @@ const turso = require('./lib/turso');
 const pi = require('./lib/podcast-index');
 const state = require('./lib/state');
 const { tipUpdateArgs } = require('./lib/catalog-rows');
+const { bookDb } = require('./lib/episode-book');
+const { tipIdentity } = require('./lib/episode-identity');
 const cfg = require('./lib/config');
 const { handoffList } = require('./lib/vector-window');
 const handoff = require('./lib/pi-handoff');
@@ -112,6 +114,7 @@ async function countDueByCountry(ids) {
 
 async function main() {
     turso.assertEnv();
+    const book = bookDb(turso);
     pi.assertEnv();
     turso.beginStep('sync-episodes');
     await turso.healthCheck();
@@ -233,6 +236,14 @@ async function main() {
                 // Prefer cached medium from import/prior sync; never spend a PI call on it.
                 const medium = rec.m || 'podcast';
 
+                // The tip carries the episode's served ID (own-episode-IDs P2); change detection and the
+                // tip queue keep PI's own ID.
+                let identity = null;
+                try {
+                    identity = await tipIdentity(book, Number(podId), latest);
+                } catch (e) {
+                    log.warn(`Show ${podId}: tip identity lookup failed (${e.message}); using its PI ID`);
+                }
                 await turso.execute(`
                     UPDATE podcasts SET
                         latest_ep_id = ?, latest_ep_title = ?, latest_ep_date = ?,
@@ -240,9 +251,10 @@ async function main() {
                         latest_ep_type = ?, latest_ep_description = ?,
                         latest_ep_chapters_url = ?, latest_ep_transcript_url = ?,
                         latest_ep_persons = ?, latest_ep_transcripts = ?,
-                        medium = ?, last_ep_sync = ?, qdrant_vectorized = 0
+                        medium = ?, last_ep_sync = ?, latest_ep_key = ?, latest_ep_eid = ?,
+                        qdrant_vectorized = 0
                     WHERE id = ?
-                `, tipUpdateArgs(latest, medium, Date.now(), podId));
+                `, tipUpdateArgs(latest, medium, Date.now(), podId, identity));
                 await tipQueue.upsert(turso, podId, latest.id);
                 updated++;
                 tipReflags++;
