@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The catalog sync refuses to store objects as `[object Object]` text: its Turso client rejects them, and the show import and latest-episode update scrub Podcast Index values first. ([#1144](https://github.com/boxcreate/boxlore/pull/1144)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `EpisodeRecipeId` rejects show IDs above 2^53 − 1, matching the scripts implementation. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
 - The episode book bootstrap no longer fails a show whose episodes a duplicate Podcast Index feed already holds; those episodes are marked with the show that holds them. ([#1148](https://github.com/boxcreate/boxlore/pull/1148)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
+- Episodes that Podcast Index renumbers or lists twice keep their original ID for older app builds. ([#1149](https://github.com/boxcreate/boxlore/pull/1149)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1140
 ### Fixes
