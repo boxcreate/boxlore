@@ -505,3 +505,76 @@ describe('accepted RSS URL isolation', () => {
         assert.equal(lib.applyPureRssCheck({ existing: kept[newScope], item: { guid: 'new' } }).notify, false);
     });
 });
+
+describe('working addresses, served IDs and safe topics (own-episode-IDs P2)', () => {
+    const repaired = { feedUrl: 'https://new.example/rss', feedSource: 'registry:apple' };
+    const dumpOnly = { feedUrl: 'https://pi.example/rss', feedSource: 'pidump' };
+
+    it('a confirmed registry address wins; the dump fills in only when nothing is registered', () => {
+        assert.equal(lib.workingFeedUrl({ feedUrl: 'https://old.example/rss' }, repaired), 'https://new.example/rss');
+        assert.equal(lib.workingFeedUrl({ feedUrl: 'https://old.example/rss' }, dumpOnly), 'https://old.example/rss');
+        assert.equal(lib.workingFeedUrl({}, dumpOnly), 'https://pi.example/rss');
+        assert.equal(lib.workingFeedUrl({ feedUrl: 'https://old.example/rss' }, null), 'https://old.example/rss');
+    });
+
+    it('reads the working address, starts it quietly, and remembers it', async () => {
+        const seen = [];
+        const existing = { lastRssKey: 'guid-old', lastEpisodeTitle: 'Old', lastEpisodeId: '61', lastCheckedAt: 1 };
+        const release = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: { title: 'Show', feedUrl: 'https://old.example/rss' }, existing,
+            registryEntry: repaired,
+            fetchRssNewest: async (url) => { seen.push(url); return { title: 'Relabelled old episode', guid: 'moved-guid', enclosureUrl: 'https://cdn/a.mp3' }; },
+            fetchPiLatest: async () => null, now: 5,
+        });
+        assert.deepEqual(seen, ['https://new.example/rss']);
+        assert.equal(release.decision.notify, false, 'a moved feed relabelling old episodes is not a release');
+        assert.equal(release.decision.reason, 'rss-address-changed');
+        assert.equal(release.decision.nextState.lastFeedUrl, 'https://new.example/rss');
+        assert.equal(release.data.feedUrl, 'https://new.example/rss', 'the push carries the working address');
+        assert.deepEqual(release.identity, { piId: null, guid: 'moved-guid', enclosureUrl: 'https://cdn/a.mp3' });
+
+        const next = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: { title: 'Show', feedUrl: 'https://old.example/rss' }, existing: release.decision.nextState,
+            registryEntry: repaired,
+            fetchRssNewest: async () => ({ title: 'Truly new', guid: 'brand-new', enclosureUrl: 'https://cdn/b.mp3' }),
+            fetchPiLatest: async () => null, now: 6,
+        });
+        assert.equal(next.decision.notify, true, 'after the switch, real releases notify again');
+    });
+
+    it('the Podcast Index fallback push carries the working address too', async () => {
+        const release = await lib.resolveTrackedRelease({
+            podcastId: '74467', podcastData: { title: 'Show' }, existing: { lastEpisodeId: '1' }, registryEntry: repaired,
+            fetchRssNewest: async () => { throw new Error('down'); },
+            fetchPiLatest: async () => ({ id: 2, title: 'New', guid: 'g2', enclosureUrl: 'https://cdn/2.mp3' }), now: 1,
+        });
+        assert.equal(release.data.feedUrl, 'https://new.example/rss');
+        assert.deepEqual(release.identity, { piId: 2, guid: 'g2', enclosureUrl: 'https://cdn/2.mp3' });
+    });
+
+    it('state changes are saved even when the decision says unchanged', () => {
+        const existing = { lastRssKey: 'a', lastEpisodeId: '61' };
+        const decision = lib.applyCheck({ existing, source: 'rss', newest: { key: 'b', title: 'T', piEpisodeId: '61' }, now: 9 });
+        assert.equal(decision.reason, 'unchanged');
+        assert.equal(lib.stateChanged(existing, decision.nextState), true, 'the new RSS key must be kept');
+        assert.equal(lib.stateChanged(existing, { ...existing }), false);
+    });
+
+    it('pushes carry the served ID, or open the show when there is none', () => {
+        const data = { type: 'new_episode', podcastId: '74467', episodeId: '61', route: 'boxlore://episode/61?autoplay=false' };
+        assert.deepEqual(lib.applyServedId(data, '74467', 4503599627370777), { ...data, episodeId: '4503599627370777', route: 'boxlore://episode/4503599627370777?autoplay=false' });
+        const none = lib.applyServedId(data, '74467', null);
+        assert.equal(none.episodeId, undefined);
+        assert.equal(none.route, 'boxlore://podcast/74467');
+        assert.equal(lib.applyServedId(data, '74467', '-5').route, 'boxlore://podcast/74467', 'never a negative or malformed ID');
+    });
+
+    it('never sends a new-episode push to a broadcast topic', () => {
+        for (const topic of ['all_users', 'prod_users', 'play_users', 'new_ep_', 'new_ep_1 ', 'news', '']) {
+            assert.throws(() => lib.newEpisodeFcmMessage(topic, {}), /refusing to send/, topic);
+        }
+        assert.equal(lib.newEpisodeFcmMessage('new_ep_74467', {}).topic, 'new_ep_74467');
+        const rssTopic = lib.notificationTopic('rss:abc', 'https://feeds.example/x');
+        assert.equal(lib.newEpisodeFcmMessage(rssTopic, {}).topic, rssTopic);
+    });
+});
