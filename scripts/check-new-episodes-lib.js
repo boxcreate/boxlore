@@ -48,9 +48,53 @@ function applyPureRssCheck({ existing, item, now = Date.now() }) {
     return decision;
 }
 
-async function resolveTrackedRelease({ podcastId, podcastData, existing, fetchRssNewest, fetchPiLatest, now }) {
+/**
+ * The feed address the job reads and puts in pushes (own-episode-IDs plan P2, R6). A confirmed
+ * registry address (the old one is dead and a working one was verified) wins over the address the
+ * phone registered; with no registered address, the registry's view (Podcast Index's) is used.
+ * @param {{ feedUrl?: string, feedSource?: string }|null} registryEntry from /internal/notifier/shows
+ */
+function workingFeedUrl(podcastData, registryEntry) {
+    const registered = usableFeedUrl(podcastData && podcastData.feedUrl);
+    const known = registryEntry ? usableFeedUrl(registryEntry.feedUrl) : null;
+    if (known && String(registryEntry.feedSource || '').startsWith('registry:')) return known;
+    return registered || known || null;
+}
+
+/**
+ * Records which address the RSS state came from when it isn't the registered one, and treats the
+ * first read of a different address as a quiet baseline: a moved feed can relabel old episodes, and
+ * that must never look like a new release.
+ */
+function withFeedAddress(decision, { existing, feedUrl, registered, newest, now }) {
+    const previous = (existing && existing.lastFeedUrl) || registered;
+    if (existing && existing.lastRssKey && feedUrl && previous && feedUrl !== previous) {
+        decision = {
+            notify: false,
+            reason: 'rss-address-changed',
+            nextState: { ...existing, lastRssKey: newest.key, lastEpisodeTitle: newest.title, lastCheckedAt: now },
+        };
+    }
+    const nextState = { ...decision.nextState };
+    if (feedUrl && feedUrl !== registered) nextState.lastFeedUrl = feedUrl;
+    else delete nextState.lastFeedUrl;
+    return { ...decision, nextState };
+}
+
+/** True when the state for a show changed and must be saved (even when the decision is "unchanged"). */
+function stateChanged(previous, next) {
+    return JSON.stringify(previous ?? null) !== JSON.stringify(next ?? null);
+}
+
+async function resolveTrackedRelease({ podcastId, podcastData, existing, fetchRssNewest, fetchPiLatest, now, registryEntry = null }) {
     const pureRss = String(podcastId).startsWith('rss:');
-    const feedUrl = usableFeedUrl(podcastData.feedUrl);
+    const registered = usableFeedUrl(podcastData.feedUrl);
+    // Without the registry this run (API down, no key), keep the address the state last read, so
+    // an outage never flips a show back to a dead address and back again.
+    const remembered = usableFeedUrl(existing && existing.lastFeedUrl);
+    const feedUrl = pureRss
+        ? registered
+        : (registryEntry ? workingFeedUrl(podcastData, registryEntry) : (remembered || registered || null));
     let rssItem = null;
     if (feedUrl) {
         try {
@@ -67,13 +111,51 @@ async function resolveTrackedRelease({ podcastId, podcastData, existing, fetchRs
         let piEpisode = null;
         try { piEpisode = await fetchPiLatest(podcastId); } catch (_) { /* RSS owns the release. */ }
         const matched = rssMatchesPi(rssItem, piEpisode);
-        const decision = applyCheck({ existing, source: 'rss', newest: { key: rssItemKey(rssItem), title: rssItem.title || 'New Episode', piEpisodeId: matched ? String(piEpisode.id) : undefined }, now });
-        return { decision, data: buildRssFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, rssItem, piEpisode: matched ? piEpisode : null, feedUrl }) };
+        const newest = { key: rssItemKey(rssItem), title: rssItem.title || 'New Episode', piEpisodeId: matched ? String(piEpisode.id) : undefined };
+        const decision = withFeedAddress(applyCheck({ existing, source: 'rss', newest, now }), { existing, feedUrl, registered, newest, now });
+        return {
+            decision,
+            data: buildRssFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, rssItem, piEpisode: matched ? piEpisode : null, feedUrl }),
+            identity: { piId: matched ? piEpisode.id : null, guid: rssItem.guid || null, enclosureUrl: rssItem.enclosureUrl || null },
+        };
     }
     const piEpisode = await fetchPiLatest(podcastId);
     if (!piEpisode) return null;
     const decision = applyCheck({ existing, source: 'pi', newest: { piEpisodeId: String(piEpisode.id), title: piEpisode.title || 'New Episode', rssKey: rssItemKey(piEpisode) }, now });
-    return { decision, data: buildPiFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, piEpisode }) };
+    return {
+        decision,
+        data: buildPiFcmData({ podcastId, podcastTitle: podcastData.title || 'Podcast', imageUrl: podcastData.imageUrl, piEpisode, feedUrl }),
+        identity: { piId: piEpisode.id, guid: piEpisode.guid || null, enclosureUrl: piEpisode.enclosureUrl || null },
+    };
+}
+
+/**
+ * Puts the episode's served ID in a push (own-episode-IDs plan P2): a Podcast Index ID can change
+ * or belong to a renumbered episode, the served ID never does. Without one (an episode only the feed
+ * lists that no one has been served yet, or the lookup failed) the push opens the show instead, so
+ * a push never carries an ID that could point at the wrong episode.
+ */
+function applyServedId(data, podcastId, servedId) {
+    const out = { ...data };
+    if (servedId != null && /^[1-9][0-9]{0,15}$/.test(String(servedId))) {
+        out.episodeId = String(servedId);
+        out.route = `boxlore://episode/${servedId}?autoplay=false`;
+    } else {
+        delete out.episodeId;
+        out.route = `boxlore://podcast/${canonicalPodcastId(podcastId)}`;
+    }
+    return out;
+}
+
+/** Broadcast topics reach every install: a new-episode push must never go there (0.0.25 hydrates and notifies for any). */
+const BROADCAST_TOPICS = new Set(['all_users', 'prod_users', 'play_users', 'debug_users', 'beta_users']);
+const NEW_EPISODE_TOPIC = /^new_ep_([0-9]{1,16}|rss_[A-Za-z0-9._~%-]{1,800})$/;
+
+function assertNewEpisodeTopic(topic) {
+    if (typeof topic !== 'string' || BROADCAST_TOPICS.has(topic) || !NEW_EPISODE_TOPIC.test(topic)) {
+        throw new Error(`refusing to send a new-episode push to topic ${JSON.stringify(topic)}`);
+    }
+    return topic;
 }
 
 function decodeXml(value) {
@@ -417,7 +499,7 @@ function buildRssFcmData({
     return omitEmpty(data);
 }
 
-function buildPiFcmData({ podcastId, podcastTitle, imageUrl, piEpisode }) {
+function buildPiFcmData({ podcastId, podcastTitle, imageUrl, piEpisode, feedUrl }) {
     const episodeId = String(piEpisode.id);
     return omitEmpty({
         type: 'new_episode',
@@ -427,6 +509,8 @@ function buildPiFcmData({ podcastId, podcastTitle, imageUrl, piEpisode }) {
         episodeId,
         duration: durationMinutes(piEpisode.duration),
         image: String(piEpisode.image || piEpisode.feedImage || imageUrl || ''),
+        // R6: the working address rides along, as it does in RSS pushes.
+        feedUrl: feedUrl || '',
         route: `boxlore://episode/${episodeId}?autoplay=false`,
     });
 }
@@ -451,7 +535,13 @@ module.exports = {
     MAX_FEED_BYTES,
     rssDownloadDecision,
     fetchRssText,
+    workingFeedUrl,
+    withFeedAddress,
+    stateChanged,
+    applyServedId,
+    assertNewEpisodeTopic,
+    BROADCAST_TOPICS,
 };
 
 // These topics are opted-in visible release alerts, qualifying for prompt Android delivery.
-module.exports.newEpisodeFcmMessage = (topic, data) => ({ topic, data, android: { priority: 'high' } });
+module.exports.newEpisodeFcmMessage = (topic, data) => ({ topic: assertNewEpisodeTopic(topic), data, android: { priority: 'high' } });

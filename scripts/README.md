@@ -110,6 +110,14 @@ Release selection and recovery:
 - The Action never creates negative episode IDs. Unmatched feed-only releases omit `episodeId` and open the podcast page. The phone persists the raw GUID/enclosure hint before hydration and resolves the release in its publisher-feed Room catalog.
 - Visible alerts request high Android FCM priority. Foreground discovery recovers missed episodes by default. Background auto-download discovery is off by default and requires separate consent; the phone has no periodic notification worker.
 
+Working addresses and episode IDs (with the `BOXLORE_SVC_NOTIFIER_KEY` secret; without it the checker behaves as before):
+
+- At the start of a run the checker asks the boxlore API (`POST /internal/notifier/shows`) for each catalog show's working feed address. A confirmed address (the registered one is dead and a working one was verified) replaces it for the RSS check and in the push; Podcast Index fallback pushes now carry `feedUrl` too. The first read of a different address quietly seeds a baseline (`rss-address-changed`, with `lastFeedUrl` in the state), because a moved feed can relabel old episodes.
+- Before sending, it asks `POST /internal/notifier/episodes` for the episode's served ID, the ID that never changes, and puts it in `episodeId` and `route`. With none (a feed-only episode nobody has been served yet) or when the API fails, the push opens the show instead.
+- Every state change is saved, including `unchanged` decisions that moved a key forward. The state file is written even when a run stops part-way, the commit step always runs, and a failed push leaves that show's state alone so it is retried (the run then shows as failed).
+- New-episode pushes only go to `new_ep_<id>` and `new_ep_rss_…` topics; broadcast topics are refused.
+- A manual run with `dry_run` decides and logs (never feed addresses) without sending or saving anything.
+
 ### Public RSS notification registrations
 
 The checker supports explicitly opted-in public `rss:` subscriptions from RTDB. Topics use `new_ep_rss_<id>_<sha256-of-trimmed-feed-url>` and payloads retain `rss:<id>`. Pure RSS failures or disabled URLs preserve the last-good state for retry and never fall back to PI. Each new URL scope quietly seeds a baseline; repeated keys remain quiet and FCM failures do not advance it.
