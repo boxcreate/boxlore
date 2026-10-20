@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-19T23:51:52.447Z",
+  "lastRun": "2026-10-20T03:33:45.453Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0535f60-cfc6-11f0-83c5-77a2398a036f",
@@ -50,16 +50,16 @@
       "lastCheckedAt": 1792421535960
     },
     "55810": {
-      "lastRssKey": "9c2fefff-8897-489e-87a9-939cb1e53a2d",
-      "lastEpisodeTitle": "7pm ET, October 19 | The latest headlines from NPR",
+      "lastRssKey": "45a69115-b66b-446d-a786-feb7d20ba9b3",
+      "lastEpisodeTitle": "11pm ET, October 19 | The latest headlines from NPR",
       "lastEpisodeId": "61984181993",
-      "lastCheckedAt": 1792453916285
+      "lastCheckedAt": 1792467229677
     },
     "69930": {
-      "lastRssKey": "https://api.spreaker.com/episode/75864330",
-      "lastEpisodeTitle": "The Catch Up: 3 gunmen who shot at Tiger Shroff caught (19 October)",
-      "lastEpisodeId": "61978900182",
-      "lastCheckedAt": 1792453916871
+      "lastRssKey": "https://api.spreaker.com/episode/75864303",
+      "lastEpisodeTitle": "Deep Dive: How the government can get your social media posts removed",
+      "lastEpisodeId": "61986301907",
+      "lastCheckedAt": 1792467230565
     },
     "78573": {
       "lastRssKey": "cba3d0ca-cdce-4c88-b344-4e37779577eb",
@@ -204,10 +204,10 @@
       "lastCheckedAt": 1792421561147
     },
     "385117": {
-      "lastRssKey": "21d22646-cc12-11f1-8d3c-97ff3c75d45a",
-      "lastEpisodeTitle": "7PM ET 10/19/2026 Newscast",
+      "lastRssKey": "ac7d51a0-cc33-11f1-911c-fbf752f04be7",
+      "lastEpisodeTitle": "11PM ET 10/19/2026 Newscast",
       "lastEpisodeId": "61772708611",
-      "lastCheckedAt": 1792453927990
+      "lastCheckedAt": 1792467261655
     },
     "386911": {
       "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
@@ -317,10 +317,10 @@
       "lastCheckedAt": 1792358226275
     },
     "462634": {
-      "lastRssKey": "gid://art19-episode-locator/V0/SMHdx5oujav94cVL--T2BOxs_s0ZuGgXnuJkwWOuJNw",
-      "lastEpisodeTitle": "398. The Ax Murders of Clementine Barnabet -- Dixie Drugstore",
-      "lastEpisodeId": "60982003329",
-      "lastCheckedAt": 1791856362541
+      "lastRssKey": "gid://art19-episode-locator/V0/TaCcg6nC1QFCKddnTsXBTw5zqP7-0ey4gJ5Fz0meyLk",
+      "lastEpisodeTitle": "399. Japanese Urban Legends -- Yoshimi Battles the Pink Robots Pt. 1",
+      "lastEpisodeId": "61989885362",
+      "lastCheckedAt": 1792467273593
     },
     "463931": {
       "lastRssKey": "3d9885d3-d196-4c81-98a0-76252b8c3a4d",
@@ -424,10 +424,10 @@
       "lastCheckedAt": 1792421583007
     },
     "545784": {
-      "lastRssKey": "4f092f6f2ea9a4a3421fb3ecb23fc27d",
-      "lastEpisodeTitle": "Enemy in Paris  (mit Nikki Hassan-Nia)",
-      "lastEpisodeId": "61939868248",
-      "lastCheckedAt": 1792394541184
+      "lastRssKey": "6196ac008cf987c0c8e0c6f4056f7949",
+      "lastEpisodeTitle": "Nievidia",
+      "lastEpisodeId": "61991003409",
+      "lastCheckedAt": 1792467286622
     },
     "547598": {
       "lastRssKey": "b39f7bca-cbf7-11f1-afff-cba3fc3904e4",
@@ -879,10 +879,10 @@
       "lastCheckedAt": 1792366287372
     },
     "1366771": {
-      "lastRssKey": "6ad644ed5c03f86a4676b74e",
-      "lastEpisodeTitle": "Evening briefing Monday 19th October",
+      "lastRssKey": "6ad6cfdb819a15003ca33e41",
+      "lastEpisodeTitle": "Morning Briefing Tuesday 20th October",
       "lastEpisodeId": "61972937191",
-      "lastCheckedAt": 1792441466446
+      "lastCheckedAt": 1792467329885
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -980,10 +980,10 @@
       "lastCheckedAt": 1792421632288
     },
     "3353685": {
-      "lastRssKey": "34ab50f8-c9ce-11f1-9ddb-635dd4f5334e",
-      "lastEpisodeTitle": "Tesla's \"Flying\" Roadster Jumps a Semi, Ads Deliver Zero-Click Spyware, Nvidia RTX Spark Falls Short + more!",
+      "lastRssKey": "30059ba2-cc22-11f1-9b66-4745fb545c1e",
+      "lastEpisodeTitle": "PS6 Could Cost Over $1,000, Modder Ports DLSS 5 to AMD GPUs, Anthropic's 50-Death AI Safety Bill + more!",
       "lastEpisodeId": "61862891299",
-      "lastCheckedAt": 1792216551921
+      "lastCheckedAt": 1792467335654
     },
     "3423895": {
       "lastRssKey": "/92d395d2d982b88584e788ad59647c45",
@@ -1574,10 +1574,10 @@
       "lastCheckedAt": 1792454042754
     },
     "7348627": {
-      "lastRssKey": "f1c8e5e0-8eb9-41c9-984a-057c546c528f",
-      "lastEpisodeTitle": "Disturbing Unsolved Cases | 331",
-      "lastEpisodeId": "61703280523",
-      "lastCheckedAt": 1792373833658
+      "lastRssKey": "d2d005d0-243c-46ef-b11c-1ac6bff3be95",
+      "lastEpisodeTitle": "Unsolved Disappearances With Chilling Twists | 332",
+      "lastEpisodeId": "61987761997",
+      "lastCheckedAt": 1792467368795
     },
     "7376606": {
       "lastRssKey": "dbcee1c3-5ef3-480f-87a2-8bd9129c7338",
@@ -1699,10 +1699,10 @@
       "lastCheckedAt": 1789640289064
     },
     "7641673": {
-      "lastRssKey": "50b848c9-073e-4c68-987a-44d7a613d406",
-      "lastEpisodeTitle": "1.5 Hours of Historical Mysteries, Legends and Lore Explained",
+      "lastRssKey": "0d9b6909-64d0-4888-b30e-26c5c10a74cc",
+      "lastEpisodeTitle": "2 Bizarre Historical Mysteries Explained",
       "lastEpisodeId": "61708965775",
-      "lastCheckedAt": 1792293208262
+      "lastCheckedAt": 1792467373541
     },
     "7662230": {
       "lastEpisodeId": "48800123551",
@@ -1722,10 +1722,10 @@
       "lastCheckedAt": 1792139213640
     },
     "7722206": {
-      "lastRssKey": "931f473e-674a-4bd8-bd7a-3a5a683b7aa8",
-      "lastEpisodeTitle": "NASA's Perseverance Just Found the Strongest Evidence Yet of Ancient Life on Mars",
-      "lastEpisodeId": "61905721962",
-      "lastCheckedAt": 1792373840469
+      "lastRssKey": "1d5a2d9d-fc9c-4dc6-bb3c-bd90e42f4cb2",
+      "lastEpisodeTitle": "The Cryptid Iceberg: The Deeper You Go, the Stranger It Gets",
+      "lastEpisodeId": "61990271026",
+      "lastCheckedAt": 1792467374398
     },
     "7756959": {
       "lastRssKey": "e8d527e8-cc17-11f1-b59f-9fc3159421c9",
@@ -1770,10 +1770,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/a30304e7-e1de-5ac8-9af9-845a45891b02",
-      "lastEpisodeTitle": "All I can talk about is the narcissist ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/9ecc15ed-b739-504e-8536-6ef6c137a6c0",
+      "lastEpisodeTitle": "When the narcissist tricks you into doing something and then shames you for it ~ Dr. Ramani",
       "lastEpisodeId": "61854546834",
-      "lastCheckedAt": 1792454049546
+      "lastCheckedAt": 1792467375681
     },
     "7935877": {
       "lastRssKey": "flightcast:01M4S25DHYY8QTBGRZPP8PKY21",
