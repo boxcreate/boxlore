@@ -43,7 +43,9 @@ const BOOK_TABLES = [
     `CREATE TABLE IF NOT EXISTS episode_pi_alias (
         pi_id INTEGER PRIMARY KEY, rid INTEGER NOT NULL, seen_at INTEGER NOT NULL
     )`,
-    // Shows where any episode was served with a recipe ID (drives the Worker's v1 overlay).
+    // Shows where some episode's served ID differs from a Podcast Index ID listed for it: served
+    // under a recipe ID, or PI renumbered or duplicated it. Drives the Worker's v1 overlay, which
+    // translates those PI IDs back to the served ID.
     `CREATE TABLE IF NOT EXISTS served_show (
         sid INTEGER PRIMARY KEY, first_served_at INTEGER NOT NULL
     )`,
@@ -142,8 +144,24 @@ async function bootstrapShow(db, sid, items, { now, source = 'bootstrap' }) {
             args: [it.servedId, sid, db.text(it.key)],
         });
     }
+    stmts.push(servedShowStatement(sid, now));
     const res = await db.atomic(stmts);
     return { ok: res.ok, error: res.error };
+}
+
+/**
+ * Marks the show in `served_show` when one of its episodes is listed by Podcast Index under an ID
+ * other than its served ID (a renumbered or duplicated episode, or a recipe-served one), so the
+ * Worker's v1 overlay translates that PI ID back to the served ID. Runs in the writer's transaction.
+ * COMPAT(own-ids): permanent.
+ */
+function servedShowStatement(sid, now) {
+    return {
+        sql: `INSERT OR IGNORE INTO served_show (sid, first_served_at)
+              SELECT ?, ? WHERE EXISTS (SELECT 1 FROM episode_pi_alias a JOIN episode_book b ON b.rid = a.rid
+                WHERE b.sid = ? AND b.served_id IS NOT NULL AND a.pi_id != b.served_id)`,
+        args: [sid, now, sid],
+    };
 }
 
 /**
