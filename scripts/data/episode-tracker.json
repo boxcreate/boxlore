@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-10-20T14:25:29.196Z",
+  "lastRun": "2026-10-20T17:38:08.116Z",
   "podcasts": {
     "2123": {
       "lastRssKey": "f0535f60-cfc6-11f0-83c5-77a2398a036f",
@@ -50,10 +50,10 @@
       "lastCheckedAt": 1792421535960
     },
     "55810": {
-      "lastRssKey": "9927d43b-dc89-412a-a101-ce8a2ef71d5a",
-      "lastEpisodeTitle": "10am ET, October 20 | The latest headlines from NPR",
+      "lastRssKey": "91e3c626-0089-4c6f-88d3-f84a87a7a576",
+      "lastEpisodeTitle": "1pm ET, October 20 | The latest headlines from NPR",
       "lastEpisodeId": "61984181993",
-      "lastCheckedAt": 1792506334294
+      "lastCheckedAt": 1792517894069
     },
     "69930": {
       "lastRssKey": "https://api.spreaker.com/episode/75864303",
@@ -186,10 +186,10 @@
       "lastCheckedAt": 1790028455041
     },
     "325708": {
-      "lastRssKey": "ADEF1241-7348-4540-A066-7E30BECB643A",
-      "lastEpisodeTitle": "AI Jitters Return",
+      "lastRssKey": "A5F4E6F2-DFAC-40B6-B93C-46BB2B324BEF",
+      "lastEpisodeTitle": "GM Stock Slides as Iran War Drives Up Costs",
       "lastEpisodeId": "61977993227",
-      "lastCheckedAt": 1792506361056
+      "lastCheckedAt": 1792517913232
     },
     "331078": {
       "lastRssKey": "153b64ae-b823-11f1-957c-1b3cb1b9b506",
@@ -204,16 +204,16 @@
       "lastCheckedAt": 1792421561147
     },
     "385117": {
-      "lastRssKey": "dfcf18d4-cc8f-11f1-afbb-dbdec804c207",
-      "lastEpisodeTitle": "10AM ET 10/20/2026 Newscast",
+      "lastRssKey": "01b78e0e-cca9-11f1-9634-e3e343bc979f",
+      "lastEpisodeTitle": "1PM ET 10/20/2026 Newscast",
       "lastEpisodeId": "62003887489",
-      "lastCheckedAt": 1792506362335
+      "lastCheckedAt": 1792517914973
     },
     "386911": {
-      "lastRssKey": "abd0dec0-c9ae-11f1-8af7-e72d12cc2260",
-      "lastEpisodeTitle": "NerdCast 1052 - RPG Western 3: Por Uns Forasteiros a Mais",
+      "lastRssKey": "b362e4a0-cca9-11f1-80bd-5f24b63c2114",
+      "lastEpisodeTitle": "NerdCast Extra - Visão nos Quadrinhos",
       "lastEpisodeId": "61170825617",
-      "lastCheckedAt": 1792192555944
+      "lastCheckedAt": 1792517915873
     },
     "388141": {
       "lastRssKey": "6abc15a66ffb28f8d6e0fe4c",
@@ -270,10 +270,10 @@
       "lastCheckedAt": 1786765059294
     },
     "432449": {
-      "lastRssKey": "01M5CJAVDH9SC569MHVBNFCC1J",
-      "lastEpisodeTitle": "Anthropic and SpaceX get charitable",
+      "lastRssKey": "01M5CVY6XPY14D4XT29D6ACP40",
+      "lastEpisodeTitle": "A green light for Boeing",
       "lastEpisodeId": "61961127768",
-      "lastCheckedAt": 1792506369080
+      "lastCheckedAt": 1792517922314
     },
     "432535": {
       "lastRssKey": "b91984cb-3958-44e5-93a1-594bf62085c0",
@@ -288,10 +288,10 @@
       "lastCheckedAt": 1792487376257
     },
     "438184": {
-      "lastRssKey": "140afff2-cbad-11f1-8b99-3b8894703c43",
-      "lastEpisodeTitle": "We put a multimillionaire’s portfolio into Claude (the results shocked us)",
+      "lastRssKey": "3b253f7a-cc99-11f1-9f91-bb08f63fa057",
+      "lastEpisodeTitle": "This 3-hour Elizabeth Holmes doc broke our brains",
       "lastEpisodeId": "61625434006",
-      "lastCheckedAt": 1792421569171
+      "lastCheckedAt": 1792517924935
     },
     "444331": {
       "lastRssKey": "00365dc6-c6af-11f1-a25e-43df1a1611c9",
@@ -364,10 +364,10 @@
       "lastCheckedAt": 1792421573347
     },
     "491579": {
-      "lastRssKey": "6ad602d5b3fd74c05a72923d",
-      "lastEpisodeTitle": "Beren Cross: Agreed in Principle | The West Stand",
+      "lastRssKey": "6ad7877fd068f3179613b7fe",
+      "lastEpisodeTitle": "Football Manager #24: Free Labour",
       "lastEpisodeId": "61963955522",
-      "lastCheckedAt": 1792421573949
+      "lastCheckedAt": 1792517931059
     },
     "497129": {
       "lastRssKey": "12381::3582215",
@@ -498,7 +498,8 @@
       "lastRssKey": "6ad0c0493b41843137fe98d0",
       "lastEpisodeTitle": "UPS die Pannenshow",
       "lastEpisodeId": "60793415595",
-      "lastCheckedAt": 1792107499350
+      "lastCheckedAt": 1792107499350,
+      "lastFeedUrl": "https://feeds.acast.com/public/shows/660bbcb57c973e001624fdb8"
     },
     "665403": {
       "lastRssKey": "faba502e-a6c9-48e3-ae9f-6ef9a26cbb70",
@@ -614,10 +615,10 @@
       "lastCheckedAt": 1792421599173
     },
     "861225": {
-      "lastRssKey": "3c59d24c-c957-11f1-ad60-ff2c33929da7",
-      "lastEpisodeTitle": "✏️ Borrowing things (Part 3) + Transcript",
-      "lastEpisodeId": "61824868451",
-      "lastCheckedAt": 1792340579566
+      "lastRssKey": "3670cb2c-cc9c-11f1-b25c-0fd9148ffe08",
+      "lastEpisodeTitle": "🎵 Music (Part 1) + Transcript",
+      "lastEpisodeId": "62019373379",
+      "lastCheckedAt": 1792517954066
     },
     "889671": {
       "lastRssKey": "a6bfd57d-bf4d-41c1-ae58-1a5ec341b456",
@@ -632,10 +633,10 @@
       "lastCheckedAt": 1791910460912
     },
     "902798": {
-      "lastRssKey": "5a14e9ff-5ef4-43c4-b0c5-633fc562a65c",
-      "lastEpisodeTitle": "How to Read People, Build Trust & Choose Better Friends | Adam Grant | FO576 Raj Shamani",
+      "lastRssKey": "dfc91297-48f6-48a7-8b47-403676520b53",
+      "lastEpisodeTitle": "Social Scientist: Why Everyone Wants To Look Rich & Successful | Rob Henderson | FO577 Raj Shamani",
       "lastEpisodeId": "58415182781",
-      "lastCheckedAt": 1792327472195
+      "lastCheckedAt": 1792517956776
     },
     "906591": {
       "lastRssKey": "59c34f2e-cc50-11f1-b978-c7444b155a3b",
@@ -698,16 +699,17 @@
       "lastCheckedAt": 1792394573548
     },
     "980370": {
-      "lastRssKey": "6acfa742b3381b9dbb7c315f",
-      "lastEpisodeTitle": "What if you could read the DNA of your future child? | Noor Siddiqui",
+      "lastRssKey": "6ad77fd358c0e97ce0c32f31",
+      "lastEpisodeTitle": "Why the best learners talk to themselves | Tania Lombrozo",
       "lastEpisodeId": "61781993390",
-      "lastCheckedAt": 1792441441409
+      "lastCheckedAt": 1792517965755
     },
     "987298": {
       "lastEpisodeId": "58532253791",
       "lastEpisodeTitle": "The Hutter Prize: Compression, prediction, and the limits of intelligence",
       "lastRssKey": "8f896c32-c855-461b-bb7b-0894b9391721",
-      "lastCheckedAt": 1792340595608
+      "lastCheckedAt": 1792340595608,
+      "lastFeedUrl": "https://corecursive.libsyn.com/feed"
     },
     "998969": {
       "lastRssKey": "audioboom-01a150c9-1c18-704c-a73e-8d972be44e9a",
@@ -753,7 +755,8 @@
       "lastEpisodeId": "61802840872",
       "lastEpisodeTitle": "The climate changing power of 400 billion toasters",
       "lastRssKey": "urn:bbc:podcast:w3ct9789",
-      "lastCheckedAt": 1792441448174
+      "lastCheckedAt": 1792441448174,
+      "lastFeedUrl": "https://podcasts.files.bbci.co.uk/b036f7w2.rss"
     },
     "1047718": {
       "lastRssKey": "6ad5f4f98f08244ca8d0d3b4",
@@ -815,10 +818,10 @@
       "lastCheckedAt": 1792366281524
     },
     "1193286": {
-      "lastRssKey": "a4b7d086-cc05-11f1-9d86-2b28f6eca892",
-      "lastEpisodeTitle": "Major Takeaways From The Habs’ Win vs Sabres! | The Sick Podcast with Tony Marinaro October 19 2026",
+      "lastRssKey": "b2c9e81a-cc9d-11f1-aeba-1bb570cf02e8",
+      "lastEpisodeTitle": "Dobes Devant Le Filet : Une Décision Risquée De Martin St-Louis? | Le Sick Podcast Avec Tony Marinaro 20/10/26",
       "lastEpisodeId": "61996242682",
-      "lastCheckedAt": 1792487422403
+      "lastCheckedAt": 1792517978296
     },
     "1199730": {
       "lastRssKey": "2c3ffa25-fb78-4559-b68e-7f7580a4190d",
@@ -879,10 +882,10 @@
       "lastCheckedAt": 1792366287372
     },
     "1366771": {
-      "lastRssKey": "6ad745726a9e2a41c3dd8dbb",
-      "lastEpisodeTitle": "Afternoon Briefing Tuesday 20th October",
+      "lastRssKey": "6ad7a1ff3ad7f685519df462",
+      "lastEpisodeTitle": "Evening briefing Tuesday 20th October",
       "lastEpisodeId": "61972937191",
-      "lastCheckedAt": 1792506422649
+      "lastCheckedAt": 1792517982130
     },
     "1380325": {
       "lastRssKey": "Buzzsprout-19823766",
@@ -915,10 +918,10 @@
       "lastCheckedAt": 1790385270880
     },
     "1963447": {
-      "lastRssKey": "76335fcc-cc0b-11f1-ab31-e746eb57277c",
-      "lastEpisodeTitle": "ATRD Ep. 246 - 12 Chilling PARANORMAL Stories",
+      "lastRssKey": "6fa224ba-cbff-11f1-9527-e379294db4b4",
+      "lastEpisodeTitle": "4 HOURS of Glitch Stories to Help You Sleep (Scary Stories From Dark Dreams - Glitch 31)",
       "lastEpisodeId": "61691223762",
-      "lastCheckedAt": 1792454005419
+      "lastCheckedAt": 1792517984125
     },
     "2136580": {
       "lastRssKey": "23c80120-2e70-4efb-80e7-3020213d2fb0",
@@ -1198,10 +1201,10 @@
       "lastCheckedAt": 1792487448331
     },
     "5945547": {
-      "lastRssKey": "608f46a3-eb47-44cc-96ef-e1e57075db35",
-      "lastEpisodeTitle": "Episode 150 - Treasure, Tyrants & Tinseltown ft. Ami Goradia",
+      "lastRssKey": "0da47757-ee1f-4ddd-b540-2b2e4c9862e5",
+      "lastEpisodeTitle": "Episode 151 - Sitcoms, Suplexes & Saint-Tropez",
       "lastEpisodeId": "61746245186",
-      "lastCheckedAt": 1792085957396
+      "lastCheckedAt": 1792518000559
     },
     "5972153": {
       "lastRssKey": "c2a14d8e-cc55-11f1-8d4e-f397786c26a8",
@@ -1261,7 +1264,8 @@
       "lastEpisodeId": "61967806001",
       "lastEpisodeTitle": "#343 - Ich frage Isi Glück, wie ich Ballermann-Star werden kann",
       "lastRssKey": "0682a9e8-caf9-11f1-b335-13e8c5237620",
-      "lastCheckedAt": 1792441504636
+      "lastCheckedAt": 1792441504636,
+      "lastFeedUrl": "https://feeds.megaphone.fm/UNGESKRIPTETMEDIAGMBH9200557996"
     },
     "6559880": {
       "lastRssKey": "4fb680b4-cbdd-11f1-bd79-2b60d4325881",
@@ -1421,7 +1425,8 @@
       "lastRssKey": "ea395cee-c30c-11f1-b29c-afa20acd3563",
       "lastEpisodeTitle": "Die Chlamydien-Hexe 🧙‍♀️",
       "lastEpisodeId": "61515851381",
-      "lastCheckedAt": 1792192654199
+      "lastCheckedAt": 1792192654199,
+      "lastFeedUrl": "https://feeds.megaphone.fm/GLT8915357524"
     },
     "6956562": {
       "lastRssKey": "f05756c1-11e2-4976-84e1-88f006c22e3b",
@@ -1508,10 +1513,10 @@
       "lastCheckedAt": 1786559336271
     },
     "7201724": {
-      "lastRssKey": "audioboom-01a1569b-4e9e-7ace-a845-6c4b448d5807",
-      "lastEpisodeTitle": "Trump Is Running His Administration Like a Male Beauty Pageant",
+      "lastRssKey": "audioboom-01a15a3f-9d10-7f2c-945c-1c4bdf81eb1c",
+      "lastEpisodeTitle": "Mike Johnson Gets Grilled on Fox News as GOP Disaster Looms",
       "lastEpisodeId": "62013136598",
-      "lastCheckedAt": 1792506469097
+      "lastCheckedAt": 1792518013746
     },
     "7207593": {
       "lastRssKey": "3b93b4ea-a585-11f1-b239-0778a47cd77a",
@@ -1598,10 +1603,10 @@
       "lastCheckedAt": 1790239315290
     },
     "7437277": {
-      "lastRssKey": "a90ce30c-b334-4ad5-99ed-d247a7dab383",
-      "lastEpisodeTitle": "That's a lot of undead demons",
+      "lastRssKey": "386187c9-e723-4bed-ab81-4cb09fbfea61",
+      "lastEpisodeTitle": "We might drown",
       "lastEpisodeId": "60440726220",
-      "lastCheckedAt": 1791910550125
+      "lastCheckedAt": 1792518017248
     },
     "7447848": {
       "lastRssKey": "06d3648c-a469-469a-8d8c-09aaf4e4f9c5",
@@ -1771,10 +1776,10 @@
       "lastCheckedAt": 1786559339176
     },
     "7932902": {
-      "lastRssKey": "mnbg87vgfd.podbean.com/9a35cd96-2a75-5f89-9388-8f7c40b1a8d6",
-      "lastEpisodeTitle": "What future faking IS vs what it is NOT ~ Dr. Ramani",
+      "lastRssKey": "mnbg87vgfd.podbean.com/bef4a892-431a-52b1-8d8f-77abd0e26e02",
+      "lastEpisodeTitle": "Backlash after exposing the narcissist ~ Dr. Ramani",
       "lastEpisodeId": "61854546834",
-      "lastCheckedAt": 1792506477892
+      "lastCheckedAt": 1792518023732
     },
     "7935877": {
       "lastRssKey": "flightcast:01M58DSH82E7B3D3GP1YDP0Z6R",
