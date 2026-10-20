@@ -100,6 +100,15 @@ describe('episode book', () => {
         assert.deepEqual(await db.query('SELECT COUNT(*) FROM served_show'), [[0]], 'a clash writes nothing');
     });
 
+    it('marks the show for the overlay when a PI ID differs from the served ID, and only then', async () => {
+        await book.bootstrapShow(db, 9, [ep('a', { piId: 61, servedId: 61 })], { now: 5 });
+        assert.deepEqual(await db.query('SELECT COUNT(*) FROM served_show'), [[0]], 'PI ID = served ID: nothing to translate');
+        await book.bootstrapShow(db, 9, [ep('a', { piId: 75 })], { now: 6, source: 'pi' });
+        assert.deepEqual(await db.query('SELECT sid, first_served_at FROM served_show'), [[9, 6]], 'PI renumbered the episode');
+        await book.bootstrapShow(db, 11, [ep('b', { piId: 80, servedId: 80, extraPiIds: [81] })], { now: 7 });
+        assert.deepEqual(await db.query('SELECT sid FROM served_show ORDER BY sid'), [[9], [11]], 'PI listed it twice');
+    });
+
     it('bootstraps a show in one transaction, or not at all', async () => {
         const items = [ep('a', { piId: 61, servedId: 61, extraPiIds: [70] }), ep('b', { piId: 62, servedId: 62 })];
         assert.deepEqual(await book.bootstrapShow(db, 9, items, { now: 5 }), { ok: true, error: null });
