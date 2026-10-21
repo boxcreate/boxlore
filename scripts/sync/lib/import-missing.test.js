@@ -75,3 +75,17 @@ describe('lookupItunesIds onFound', () => {
         assert.deepEqual(order, ['lookup 1', 'write 1', 'lookup 2', 'lookup 3', 'write 3']);
     });
 });
+
+describe('lookupItunesIds on a Podcast Index pause', () => {
+    it('stops at the pause and leaves the rest for the next run', async () => {
+        const looked = [];
+        const out = await lookupItunesIds(['1', '2', '3', '4'], async (id) => {
+            looked.push(id);
+            if (id === '2') throw Object.assign(new Error('Podcast Index paused'), { code: 'PI_SUSPENDED' });
+            return { id: Number(id) };
+        });
+        assert.deepEqual(looked, ['1', '2'], 'no lookups after the pause');
+        assert.deepEqual(out.found.map((f) => f.itunesId), ['1']);
+        assert.deepEqual(out.failedIds, ['2', '3', '4'], 'retried next run, never denylisted');
+    });
+});

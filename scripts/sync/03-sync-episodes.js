@@ -210,6 +210,9 @@ async function main() {
     log.endGroup();
 
     let updated = 0, unchanged = 0, empty = 0, errors = 0, tipReflags = 0;
+    // Podcast Index paused (lib/podcast-index.js): the rest of this run's checks wait for the next run.
+    let piPaused = null;
+    let checkedBeforePause = 0;
     const windows = { usable: 0, unusable: 0, failed: 0, feed: 0 };
 
     /** Saves a fetched list as the show's window (WINDOWS_MODE shadow/on). Never fails the show. */
@@ -291,6 +294,10 @@ async function main() {
                 tipUpdatedThisBatch = true;
                 state.recordCheck(st, podId, { latestEpId: latest.id }).m = medium;
             } catch (e) {
+                if (pi.isSuspended(e)) {
+                    piPaused = piPaused || e;
+                    return;
+                }
                 errors++;
                 log.warn(`Show ${podId}: ${e.message}`);
             }
@@ -299,6 +306,12 @@ async function main() {
         turso.flushStats();
         // Persist tip ids soon after successful UPDATEs so a crash does not re-flag.
         if (tipUpdatedThisBatch || (i / CONCURRENCY) % 20 === 0) state.save(st);
+        if (piPaused) {
+            // Exact: shows whose check finished (the paused ones stay due).
+            checkedBeforePause = updated + unchanged + empty + errors;
+            log.warn(`[PI] ${piPaused.message}: ${log.fmt(due.length - checkedBeforePause)} checks wait for the next run`);
+            break;
+        }
     }
 
     state.save(st);
@@ -372,10 +385,13 @@ async function main() {
         detail:
             `${due.length} checked (${deferred} deferred): ${updated} new (tip_reflags=${tipReflags}), ${unchanged} unchanged, ` +
             `${empty} empty, ${errors} errors · due news=${staleNews} core=${staleCore} relaxed=${staleRelaxed}` +
+            ` · ${pi.summary()}` +
+            (piPaused ? ` · ${due.length - checkedBeforePause} checks left for the next run` : '') +
             (cfg.R5_MODE !== 'off' ? ` · ${r5Line}` : '') +
             (windowLine ? ` · ${windowLine}` : ''),
     }]);
 
+    // A pause is "try later", not a failure; only real errors over half the checks fail the stage.
     if (due.length > 20 && errors > due.length / 2) {
         log.error(`More than half of episode checks failed (${errors}/${due.length})`);
         process.exit(1);
