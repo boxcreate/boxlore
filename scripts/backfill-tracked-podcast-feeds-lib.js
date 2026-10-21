@@ -82,6 +82,85 @@ function missingTrackedPodcasts(trackedPodcasts) {
         }));
 }
 
+/**
+ * The weekly repair plan for tracked catalog shows, from one RTDB read and the registry view
+ * (`/internal/notifier/shows`: `{ feedUrl, feedSource, flags }` per show ID).
+ * - `fill`: no valid HTTPS address saved. Uses the registry's HTTPS address when it has one;
+ *   otherwise `to` is empty and the caller resolves one (API, HTTPS upgrade, exact Apple title).
+ * - `replace`: the registry proved the show's old address dead (`addressRepair`) and confirmed a
+ *   different working one (`registry:` source). The same rule the API uses to repair show pages.
+ * `read` is the exact saved value, so the write can refuse a row that changed since this read.
+ */
+function planTrackedFeedRepairs(trackedPodcasts, registry = new Map()) {
+    const plan = [];
+    for (const [id, row] of Object.entries(trackedPodcasts || {})) {
+        if (String(id).startsWith('rss:') || !row || typeof row !== 'object') continue;
+        const read = row.feedUrl ?? null;
+        const title = String(row.title || '').trim();
+        const entry = registry.get(String(id));
+        const known = usableHttpsFeedUrl(entry?.feedUrl);
+        if (!usableHttpsFeedUrl(read)) {
+            plan.push({ id: String(id), title, read, to: known, reason: 'fill' });
+            continue;
+        }
+        const confirmed = known && String(entry.feedSource || '').startsWith('registry:');
+        if (confirmed && entry.flags?.addressRepair === true && known !== usableHttpsFeedUrl(read)) {
+            plan.push({ id: String(id), title, read, to: known, reason: 'replace' });
+        }
+    }
+    return plan;
+}
+
+const sameValue = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/**
+ * RTDB transaction update for one `feedUrl` leaf: writes `next` only while the saved value is still
+ * `read`. The first call can see null before the server's value arrives; returning null then makes
+ * the server re-run it with the real value (or commits the same null when the leaf is empty).
+ */
+function compareAndSetFeedUrl(read, next) {
+    return (current) => {
+        if (sameValue(current, read)) return next;
+        if (current === null) return null;
+        return undefined;
+    };
+}
+
+/** Registry view for these show IDs in batches of 500; an empty map when the API can't answer. */
+async function fetchRegistryView({ ids, apiBaseUrl, serviceKey, fetchImpl = fetch }) {
+    const out = new Map();
+    if (!serviceKey || !apiBaseUrl || !ids.length) return out;
+    const endpoint = new URL('internal/notifier/shows', `${apiBaseUrl.replace(/\/?$/, '/')}`);
+    for (let i = 0; i < ids.length; i += 500) {
+        const response = await fetchImpl(endpoint, {
+            method: 'POST',
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'User-Agent': BACKFILL_USER_AGENT,
+                Authorization: `Svc ${serviceKey}`,
+            },
+            body: JSON.stringify({ ids: ids.slice(i, i + 500).map(Number) }),
+        });
+        if (!response.ok) {
+            await discardBody(response);
+            throw new Error(`registry view returned ${response.status}`);
+        }
+        const payload = await response.json();
+        for (const entry of payload?.results || []) out.set(String(entry.id), entry);
+    }
+    return out;
+}
+
+function feedHost(raw) {
+    try {
+        return new URL(String(raw)).host;
+    } catch {
+        return '(none)';
+    }
+}
+
 function normalizedTitle(raw) {
     return String(raw || '')
         .normalize('NFKC')
@@ -201,8 +280,12 @@ async function resolveTrackedPodcastFeed({
 module.exports = {
     BACKFILL_USER_AGENT,
     catalogAuthHeaders,
+    compareAndSetFeedUrl,
     exactItunesFeedUrl,
+    feedHost,
+    fetchRegistryView,
     missingTrackedPodcasts,
+    planTrackedFeedRepairs,
     resolveTrackedPodcastFeed,
     utcIsoWeekName,
     usableHttpsFeedUrl,

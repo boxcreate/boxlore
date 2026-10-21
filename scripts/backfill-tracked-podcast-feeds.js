@@ -3,7 +3,10 @@
 const admin = require('firebase-admin');
 const path = require('node:path');
 const {
-    missingTrackedPodcasts,
+    compareAndSetFeedUrl,
+    feedHost,
+    fetchRegistryView,
+    planTrackedFeedRepairs,
     resolveTrackedPodcastFeed,
     usableHttpsFeedUrl,
     writeWeeklyTrackedPodcastBackup,
@@ -39,6 +42,8 @@ async function main() {
     }
     const apiBaseUrl = String(process.env.BOXLORE_API_BASE_URL || '').trim();
     const serviceKey = String(process.env.BOXLORE_SVC_KEY || '').trim();
+    // Registry view (`notifier:read`): confirmed working addresses for shows whose old one is dead.
+    const registryKey = String(process.env.BOXLORE_SVC_NOTIFIER_KEY || '').trim();
     const appKey = String(process.env.APP_SECRET_KEY || '').trim();
     if (mode !== '--backup-only' && (!apiBaseUrl || (!serviceKey && !appKey))) {
         throw new Error('BOXLORE_API_BASE_URL and BOXLORE_SVC_KEY (or the legacy APP_SECRET_KEY) are required');
@@ -63,53 +68,66 @@ async function main() {
     }
     if (mode === '--backup-only') return;
 
-    const missing = missingTrackedPodcasts(trackedPodcasts);
-    console.log(`Found ${missing.length} tracked podcasts without a valid HTTPS feedUrl.`);
-    if (missing.length === 0) return;
+    const catalogIds = Object.keys(trackedPodcasts).filter((id) => /^[1-9][0-9]{0,15}$/.test(id));
+    let registry = new Map();
+    try {
+        registry = await fetchRegistryView({ ids: catalogIds, apiBaseUrl, serviceKey: registryKey });
+        console.log(`Registry view: ${registry.size} of ${catalogIds.length} tracked shows.`);
+    } catch (error) {
+        // Without the registry, only missing addresses are filled (the older behavior).
+        console.warn(`Registry view unavailable (${error.message}); filling missing addresses only.`);
+    }
+    const plan = planTrackedFeedRepairs(trackedPodcasts, registry);
+    const fills = plan.filter((row) => row.reason === 'fill');
+    const replacements = plan.filter((row) => row.reason === 'replace');
+    console.log(`Found ${fills.length} tracked podcasts without a valid HTTPS feedUrl and ${replacements.length} with a dead address the registry has replaced.`);
+    if (plan.length === 0) return;
 
     const resolutions =
         await mapWithConcurrency(
-            missing,
+            plan,
             LOOKUP_CONCURRENCY,
-            async (podcast) => ({
-                ...podcast,
-                feedUrl:
+            async (row) => (row.to ? row : {
+                ...row,
+                to:
                     await resolveTrackedPodcastFeed({
-                        ...podcast,
+                        ...row,
                         apiBaseUrl,
                         appKey,
                         serviceKey,
                     }),
             }),
         );
-    const resolved = resolutions.filter((result) => usableHttpsFeedUrl(result.feedUrl));
-    const unresolved = resolutions.filter((result) => !usableHttpsFeedUrl(result.feedUrl));
+    const resolved = resolutions.filter((row) => usableHttpsFeedUrl(row.to));
+    const unresolved = resolutions.filter((row) => !usableHttpsFeedUrl(row.to));
 
     let updated = 0;
-    let alreadyHealed = 0;
-    for (const result of resolved) {
+    let replaced = 0;
+    let changedSinceRead = 0;
+    for (const row of resolved) {
+        // Only while the saved address is still the one read above: a newer app write always wins.
         const transaction =
             await trackedRef
-                .child(result.id)
+                .child(row.id)
                 .child('feedUrl')
-                .transaction((current) => {
-                    if (usableHttpsFeedUrl(current)) return;
-                    return result.feedUrl;
-                });
-        if (transaction.committed) {
-            updated++;
+                .transaction(compareAndSetFeedUrl(row.read, row.to));
+        if (!transaction.committed || transaction.snapshot.val() !== row.to) {
+            changedSinceRead++;
+        } else if (row.reason === 'replace') {
+            replaced++;
+            console.log(`Replaced ${row.id} (${row.title || 'untitled'}): ${feedHost(row.read)} -> ${feedHost(row.to)}.`);
         } else {
-            alreadyHealed++;
+            updated++;
         }
     }
 
     console.log(
-        `Feed URL repair complete: updated=${updated}, already_healed=${alreadyHealed}, unresolved=${unresolved.length}.`,
+        `Feed URL repair complete: updated=${updated}, replaced=${replaced}, changed_since_read=${changedSinceRead}, unresolved=${unresolved.length}.`,
     );
-    for (const result of unresolved) {
-        console.warn(`No HTTPS feed found for ${result.id} (${result.title || 'untitled'}).`);
+    for (const row of unresolved) {
+        console.warn(`No HTTPS feed found for ${row.id} (${row.title || 'untitled'}).`);
     }
-    if (resolved.length === 0) {
+    if (fills.length > 0 && !resolved.some((row) => row.reason === 'fill')) {
         throw new Error('No missing tracked podcast feed URLs could be resolved');
     }
 }
