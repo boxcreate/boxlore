@@ -7,8 +7,11 @@ const os = require('node:os');
 const path = require('node:path');
 const {
     BACKFILL_USER_AGENT,
+    compareAndSetFeedUrl,
     exactItunesFeedUrl,
+    fetchRegistryView,
     missingTrackedPodcasts,
+    planTrackedFeedRepairs,
     resolveTrackedPodcastFeed,
     utcIsoWeekName,
     usableHttpsFeedUrl,
@@ -230,5 +233,101 @@ describe('RSS tracking backup and repair', () => {
             assert.equal(text.includes('device-b'), false);
             assert.equal(text.includes('device-c'), false);
         } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+    });
+});
+
+describe('registry-based repair', () => {
+    const registry = new Map([
+        ['1', { id: 1, feedUrl: 'https://apple.example/one.xml', feedSource: 'registry:apple', flags: { addressRepair: true } }],
+        ['2', { id: 2, feedUrl: 'https://pi.example/two.xml', feedSource: 'pidump', flags: { addressRepair: false } }],
+        ['3', { id: 3, feedUrl: 'https://apple.example/three.xml', feedSource: 'registry:apple', flags: { addressRepair: false } }],
+        ['4', { id: 4, feedUrl: 'https://same.example/four.xml', feedSource: 'registry:apple', flags: { addressRepair: true } }],
+        ['5', { id: 5, feedUrl: 'http://pi.example/five.xml', feedSource: 'pidump', flags: {} }],
+    ]);
+
+    it('fills missing addresses from the registry and replaces only proven-dead ones', () => {
+        const plan = planTrackedFeedRepairs({
+            1: { title: 'Dead', feedUrl: 'https://dead.example/one.xml' },
+            2: { title: 'Missing' },
+            3: { title: 'Confirmed but not flagged', feedUrl: 'https://other.example/three.xml' },
+            4: { title: 'Already right', feedUrl: 'https://same.example/four.xml' },
+            5: { title: 'Only http known', feedUrl: 'http://pi.example/five.xml' },
+            6: { title: 'Not in registry' },
+            7: { title: 'Healthy', feedUrl: 'https://ok.example/seven.xml' },
+            'rss:abc~device': { title: 'Private' },
+        }, registry);
+        assert.deepEqual(plan, [
+            { id: '1', title: 'Dead', read: 'https://dead.example/one.xml', to: 'https://apple.example/one.xml', reason: 'replace' },
+            { id: '2', title: 'Missing', read: null, to: 'https://pi.example/two.xml', reason: 'fill' },
+            { id: '5', title: 'Only http known', read: 'http://pi.example/five.xml', to: '', reason: 'fill' },
+            { id: '6', title: 'Not in registry', read: null, to: '', reason: 'fill' },
+        ]);
+    });
+
+    it('never replaces a saved address without the registry', () => {
+        assert.deepEqual(planTrackedFeedRepairs({ 1: { feedUrl: 'https://dead.example/one.xml' } }), []);
+    });
+
+    // RTDB runs the update first against its local cache (null when nothing is cached), then again
+    // with the server's value whenever the two differ.
+    function runTransaction(serverValue, update) {
+        let local = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            const next = update(local);
+            if (next === undefined) return { committed: false, value: serverValue };
+            if (JSON.stringify(local) === JSON.stringify(serverValue)) return { committed: true, value: next };
+            local = serverValue;
+        }
+        throw new Error('transaction did not settle');
+    }
+
+    it('writes only while the saved address is still the one read', () => {
+        const read = 'https://dead.example/one.xml';
+        const to = 'https://apple.example/one.xml';
+        assert.deepEqual(runTransaction(read, compareAndSetFeedUrl(read, to)), { committed: true, value: to });
+        assert.deepEqual(runTransaction(null, compareAndSetFeedUrl(null, to)), { committed: true, value: to });
+        assert.deepEqual(
+            runTransaction('https://app.example/new.xml', compareAndSetFeedUrl(read, to)),
+            { committed: false, value: 'https://app.example/new.xml' },
+            'an app write since the read wins',
+        );
+        assert.deepEqual(
+            runTransaction('https://app.example/new.xml', compareAndSetFeedUrl(null, to)),
+            { committed: false, value: 'https://app.example/new.xml' },
+            'a fill never overwrites an address saved since the read',
+        );
+        assert.deepEqual(
+            runTransaction(null, compareAndSetFeedUrl(read, to)),
+            { committed: true, value: null },
+            'a removed address stays removed',
+        );
+    });
+
+    it('asks the registry in batches of 500 with the scoped key', async () => {
+        const calls = [];
+        const ids = Array.from({ length: 501 }, (_, i) => String(i + 1));
+        const view = await fetchRegistryView({
+            ids,
+            apiBaseUrl: 'https://api.example',
+            serviceKey: 'gh-notifier.secret',
+            fetchImpl: async (url, options) => {
+                const body = JSON.parse(options.body);
+                calls.push({ url: url.toString(), auth: options.headers.Authorization, size: body.ids.length });
+                return { ok: true, json: async () => ({ results: body.ids.map((id) => ({ id, feedUrl: `https://f.example/${id}` })) }) };
+            },
+        });
+        assert.deepEqual(calls.map((c) => c.size), [500, 1]);
+        assert.equal(calls[0].url, 'https://api.example/internal/notifier/shows');
+        assert.equal(calls[0].auth, 'Svc gh-notifier.secret');
+        assert.equal(view.get('501').feedUrl, 'https://f.example/501');
+    });
+
+    it('fails loudly when the registry refuses, and skips it without a key', async () => {
+        await assert.rejects(
+            fetchRegistryView({ ids: ['1'], apiBaseUrl: 'https://api.example', serviceKey: 'k', fetchImpl: async () => ({ ok: false, status: 503, body: null }) }),
+            /503/,
+        );
+        const view = await fetchRegistryView({ ids: ['1'], apiBaseUrl: 'https://api.example', serviceKey: '', fetchImpl: async () => assert.fail('no key, no call') });
+        assert.equal(view.size, 0);
     });
 });

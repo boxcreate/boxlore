@@ -69,6 +69,8 @@ jobs:
         env:
           # Scoped read-only catalog key (`gh-backfill.<secret>`); APP_SECRET_KEY is the fallback until it's set.
           BOXLORE_SVC_KEY: ${{ secrets.BOXLORE_SVC_BACKFILL_KEY }}
+          # Read-only registry view: confirmed working addresses for shows whose old one is dead.
+          BOXLORE_SVC_NOTIFIER_KEY: ${{ secrets.BOXLORE_SVC_NOTIFIER_KEY }}
           APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
           BOXLORE_API_BASE_URL: https://api.aswin.cx
 
