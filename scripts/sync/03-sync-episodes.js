@@ -307,7 +307,8 @@ async function main() {
         // Persist tip ids soon after successful UPDATEs so a crash does not re-flag.
         if (tipUpdatedThisBatch || (i / CONCURRENCY) % 20 === 0) state.save(st);
         if (piPaused) {
-            checkedBeforePause = i + batch.length;
+            // Exact: shows whose check finished (the paused ones stay due).
+            checkedBeforePause = updated + unchanged + empty + errors;
             log.warn(`[PI] ${piPaused.message}: ${log.fmt(due.length - checkedBeforePause)} checks wait for the next run`);
             break;
         }

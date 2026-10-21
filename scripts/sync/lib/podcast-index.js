@@ -143,6 +143,8 @@ function createClient(opts = {}) {
 
     function suspend(reason) {
         const prev = readPause();
+        // Several workers can fail at once: one pause per trouble episode, never one level each.
+        if (prev && prev.until > now()) return new PiSuspendedError(prev.until, prev.reason || reason);
         const level = prev ? Number(prev.level || 0) + 1 : 0;
         const until = now() + Math.min(conf.pauseBaseMs * 2 ** level, conf.pauseCapMs);
         writePause({ until, level, reason, since: prev?.since || now() });
@@ -225,8 +227,10 @@ function createClient(opts = {}) {
     }
 
     async function apiGet(p) {
-        await gate();
         for (let n = 1; n <= conf.maxAttempts; n++) {
+            // Before every attempt: another worker may have paused PI, or a pause may have just ended
+            // (then the probe runs first).
+            await gate();
             const r = await attempt(p);
             if (r.data) {
                 clean();

@@ -130,4 +130,27 @@ describe('podcast-index client: lenient rate, cooling off, suspension', () => {
         assert.deepEqual((await c.episodesByFeedId(1, 1)).map((x) => x.id), [7]);
         assert.equal(fs.existsSync(h.pauseFile), false, 'pause cleared');
     });
+
+    it('five workers failing at once start one pause, not five levels', async () => {
+        h = harness(() => ({ status: 503 }), { suspendAfter: 3 });
+        const c = h.make();
+        const results = await Promise.allSettled([1, 2, 3, 4, 5].map((id) => c.episodesByFeedId(id, 1)));
+        assert.ok(results.every((r) => r.status === 'rejected' && pi.isSuspended(r.reason)));
+        const pause = JSON.parse(fs.readFileSync(h.pauseFile, 'utf8'));
+        assert.equal(pause.level, 0, 'still the first pause');
+        assert.equal(pause.until - h.now() <= 30 * 60_000, true);
+    });
+
+    it('a pause that ends during a retry runs the probe before the request resumes', async () => {
+        let up = false;
+        h = harness((url) => (url.includes('/stats/current') ? { body: { status: 'true' } } : up ? { body: { status: 'true', items: [{ id: 3 }] } } : { status: 503 }), { suspendAfter: 2 });
+        const c = h.make();
+        await assert.rejects(c.episodesByFeedId(1, 1), (e) => pi.isSuspended(e));
+        h.advance(31 * 60_000);
+        up = true;
+        assert.deepEqual((await c.episodesByFeedId(1, 1)).map((x) => x.id), [3]);
+        const urls = h.calls.map((x) => x.url);
+        assert.equal(urls.at(-2), '/stats/current', 'probe first');
+        assert.equal(fs.existsSync(h.pauseFile), false);
+    });
 });
