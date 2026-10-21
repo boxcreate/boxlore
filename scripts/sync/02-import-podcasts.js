@@ -26,6 +26,7 @@ const { parseCSVLine, parseCSVRecords } = require('./lib/csv');
 const { CHARTS_ITUNES_FIRST_CURSOR } = require('./lib/chart-countries');
 const {
     existingItunesAmong,
+    lookupItunesIds,
     reuseMissingIdsFile,
 } = require('./lib/import-missing');
 const attribution = require('./lib/attribution');
@@ -58,8 +59,24 @@ function sortCategories(rawCats) {
         .join(', ');
 }
 
+/** When the shared dump store was last built (PI_DUMP_DB, set by the runner), else null. */
+function dumpBuiltAtMs() {
+    const file = process.env.PI_DUMP_DB;
+    if (!file) return null;
+    try {
+        return fs.statSync(file).mtimeMs;
+    } catch {
+        return null;
+    }
+}
+
 function loadDenylist() {
     const doc = piUnavailable.load();
+    const released = piUnavailable.releaseDumpMisses(doc, dumpBuiltAtMs());
+    if (released > 0) {
+        log.info(`PI-unavailable denylist: released ${log.fmt(released)} dump miss(es) recorded before the current dump`);
+        piUnavailable.save(doc);
+    }
     const pruned = piUnavailable.pruneExpired(doc);
     if (pruned > 0) {
         log.info(`PI-unavailable denylist: pruned ${log.fmt(pruned)} expired entr(y/ies)`);
@@ -228,7 +245,9 @@ async function importFromCSV() {
 
 /**
  * @param {string[]|null} itunesIds  If set, import these; else actionable missing from Turso.
- * @returns {{ count: number, ids: string[], foundItunesIds: string[], notFoundIds: string[] }}
+ * @returns {{ count: number, ids: string[], foundItunesIds: string[], notFoundIds: string[], failedIds: string[] }}
+ *   `notFoundIds`: Podcast Index answered without a feed. `failedIds`: the lookup itself failed
+ *   (outage, rate limit); those are retried next run, never denylisted.
  */
 async function importFromAPI(itunesIds = null) {
     pi.assertEnv();
@@ -240,7 +259,7 @@ async function importFromAPI(itunesIds = null) {
     }
     if (missing.length === 0) {
         log.info('All chart shows already present - nothing to import');
-        return { count: 0, ids: [], foundItunesIds: [], notFoundIds: [] };
+        return { count: 0, ids: [], foundItunesIds: [], notFoundIds: [], failedIds: [] };
     }
 
     const toImport = missing.slice(0, cfg.API_IMPORT_CAP);
@@ -254,23 +273,14 @@ async function importFromAPI(itunesIds = null) {
     let imported = 0;
     const ids = [];
     const foundItunesIds = [];
-    const notFoundIds = [];
     const statements = [];
     const prog = log.progress(toImport.length, 'api-import');
+    const { found, notFoundIds, failedIds } = await lookupItunesIds(toImport, (id) => pi.podcastByItunesId(id), {
+        onError: (id, e) => log.warn(`PI lookup failed for itunes_id=${id}: ${e.message} (retried next run)`),
+        onEach: () => prog.tick(),
+    });
 
-    for (const itunesId of toImport) {
-        let feed = null;
-        try {
-            feed = await pi.podcastByItunesId(itunesId);
-        } catch (e) {
-            log.warn(`PI lookup failed for itunes_id=${itunesId}: ${e.message}`);
-        }
-        prog.tick();
-        if (!feed) {
-            notFoundIds.push(String(itunesId));
-            continue;
-        }
-
+    for (const { itunesId, feed } of found) {
         ids.push(String(feed.id));
         foundItunesIds.push(String(itunesId));
         const categoriesStr = sortCategories(categoryList(feed.categories));
@@ -289,8 +299,8 @@ async function importFromAPI(itunesIds = null) {
     }
     if (statements.length > 0) await turso.batch(statements);
 
-    log.info(`API import done: ${imported} imported, ${notFoundIds.length} not found on PI`);
-    return { count: imported, ids, foundItunesIds, notFoundIds };
+    log.info(`API import done: ${imported} imported, ${notFoundIds.length} not found on PI, ${failedIds.length} lookups failed`);
+    return { count: imported, ids, foundItunesIds, notFoundIds, failedIds };
 }
 
 /**
@@ -314,6 +324,11 @@ async function handleDumpUnmatched(unmatched) {
     }
     if (apiResult.notFoundIds.length > 0) {
         piUnavailable.add(doc, apiResult.notFoundIds, 'api_not_found');
+    }
+    // A failed lookup says nothing about the show: let the next run try again.
+    if (apiResult.failedIds.length > 0) {
+        piUnavailable.remove(doc, apiResult.failedIds);
+        log.info(`${log.fmt(apiResult.failedIds.length)} lookup(s) failed; not denylisted, retried next run`);
     }
     // Over-cap dump-misses stay as not_in_dump (already added above).
     piUnavailable.save(doc);

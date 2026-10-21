@@ -4,6 +4,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
     existingItunesAmong,
+    lookupItunesIds,
     reuseMissingIdsFile,
     EXISTENCE_IN_CHUNK,
 } = require('./import-missing');
@@ -44,5 +45,22 @@ describe('existingItunesAmong', () => {
         assert.equal(calls.length, 2);
         assert.ok(set.has('1'));
         assert.equal(typeof calls[0][0], 'number');
+    });
+});
+
+describe('lookupItunesIds', () => {
+    it('separates found feeds, "no such feed" and failed lookups', async () => {
+        const errors = [];
+        let ticks = 0;
+        const out = await lookupItunesIds(['1', '2', '3'], async (id) => {
+            if (id === '1') return { id: 501, title: 'Found' };
+            if (id === '2') return null;
+            throw new Error('PI API status=521');
+        }, { onError: (id, e) => errors.push([id, e.message]), onEach: () => ticks++ });
+        assert.deepEqual(out.found.map((f) => [f.itunesId, f.feed.id]), [['1', 501]]);
+        assert.deepEqual(out.notFoundIds, ['2']);
+        assert.deepEqual(out.failedIds, ['3'], 'an outage is retried, never treated as not found');
+        assert.deepEqual(errors, [['3', 'PI API status=521']]);
+        assert.equal(ticks, 3);
     });
 });

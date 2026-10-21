@@ -75,3 +75,25 @@ describe('pi-unavailable denylist', () => {
         assert.deepEqual(missing, ['1', '2']);
     });
 });
+
+describe('releaseDumpMisses', () => {
+    it('drops dump misses recorded before the dump was built; keeps newer ones and API not-founds', () => {
+        const dumpAt = 1_000_000;
+        const doc = { ids: {
+            1: { reason: 'not_in_dump', seenAt: dumpAt - 1 },
+            2: { reason: 'not_in_dump', seenAt: dumpAt + 1 },
+            3: { reason: 'api_not_found', seenAt: dumpAt - 1 },
+            4: { reason: 'not_in_dump' },
+        } };
+        assert.equal(piUnavailable.releaseDumpMisses(doc, dumpAt), 2);
+        assert.deepEqual(Object.keys(doc.ids).sort(), ['2', '3']);
+        assert.equal(piUnavailable.releaseDumpMisses(doc, dumpAt), 0, 'idempotent');
+    });
+
+    it('does nothing without a dump time', () => {
+        const doc = { ids: { 1: { reason: 'not_in_dump', seenAt: 1 } } };
+        assert.equal(piUnavailable.releaseDumpMisses(doc, null), 0);
+        assert.equal(piUnavailable.releaseDumpMisses(doc, NaN), 0);
+        assert.deepEqual(Object.keys(doc.ids), ['1']);
+    });
+});
