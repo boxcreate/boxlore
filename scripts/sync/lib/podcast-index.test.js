@@ -35,7 +35,11 @@ function harness(responses, config = {}) {
         key: 'k',
         secret: 's',
         now: () => t,
-        sleep: async (ms) => { t += ms; },
+        // Time moves when a wait ends, after whatever else is ready runs (like a real clock).
+        sleep: (ms) => {
+            const wake = t + ms;
+            return new Promise((r) => setImmediate(() => { t = Math.max(t, wake); r(); }));
+        },
         fetchImpl: async (url) => {
             calls.push({ url: String(url).replace('https://api.podcastindex.org/api/1.0', ''), at: t });
             const r = typeof responses === 'function' ? responses(String(url), calls.length) : responses.shift();
@@ -152,5 +156,24 @@ describe('podcast-index client: lenient rate, cooling off, suspension', () => {
         const urls = h.calls.map((x) => x.url);
         assert.equal(urls.at(-2), '/stats/current', 'probe first');
         assert.equal(fs.existsSync(h.pauseFile), false);
+    });
+
+    it('a pause that ends while another call waits to retry: that call probes first, then resumes', async () => {
+        // A and B fail together; B's failure pauses PI for 10 s while A cools off for 15 s, so A's
+        // retry finds the pause over and must probe before its request.
+        let n = 0;
+        h = harness((url) => {
+            if (url.includes('/stats/current')) return { body: { status: 'true' } };
+            n++;
+            return n <= 2 ? { status: 503 } : { body: { status: 'true', items: [{ id: 5 }] } };
+        }, { suspendAfter: 2, pauseBaseMs: 10_000, coolBaseMs: 15_000 });
+        const c = h.make();
+        const [a, b] = await Promise.allSettled([c.episodesByFeedId(1, 1), c.episodesByFeedId(2, 1)]);
+        assert.ok(b.status === 'rejected' && pi.isSuspended(b.reason), 'B started the pause');
+        assert.equal(a.status, 'fulfilled');
+        assert.deepEqual(a.value.map((x) => x.id), [5]);
+        const urls = h.calls.map((x) => x.url);
+        assert.equal(urls.at(-2), '/stats/current', 'probe before the retry');
+        assert.equal(fs.existsSync(h.pauseFile), false, 'the probe cleared the pause');
     });
 });

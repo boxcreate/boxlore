@@ -182,9 +182,14 @@ function createClient(opts = {}) {
         }
     }
 
-    /** One HTTP attempt. Returns { data } or { trouble: string, retryAfter? }; throws on a hard error. */
-    async function attempt(p) {
+    /**
+     * One HTTP attempt. Returns { data } or { trouble: string, retryAfter? }; throws on a hard error.
+     * The pause is checked after waiting for the slot, right before the request: another worker may
+     * have paused PI meanwhile, or a pause may have ended (then the probe runs first).
+     */
+    async function attempt(p, { probe = false } = {}) {
         await acquireSlot();
+        if (!probe) await gate();
         s.calls++;
         let res;
         try {
@@ -215,7 +220,7 @@ function createClient(opts = {}) {
         if (p.until > now()) throw new PiSuspendedError(p.until, p.reason || 'paused');
         if (s.probe) return s.probe;
         s.probe = (async () => {
-            const r = await attempt('/stats/current');
+            const r = await attempt('/stats/current', { probe: true });
             if (r.data) {
                 log.info(`Podcast Index answers again; pause (level ${p.level}) cleared`);
                 writePause(null);
@@ -228,10 +233,7 @@ function createClient(opts = {}) {
 
     async function apiGet(p) {
         for (let n = 1; n <= conf.maxAttempts; n++) {
-            // Before every attempt: another worker may have paused PI, or a pause may have just ended
-            // (then the probe runs first).
-            await gate();
-            const r = await attempt(p);
+            const r = await attempt(p); // checks the pause before every request
             if (r.data) {
                 clean();
                 return r.data;
