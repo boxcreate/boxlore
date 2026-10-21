@@ -6,6 +6,8 @@ Development guidance for catalog synchronization, notification checks, feed repa
 
 Catalog sync refreshes charts, imports podcasts, syncs episodes, and vectorizes content. It runs outside GitHub Actions; the former `sync-pi-data` workflow has been removed. Adding a replacement GitHub sync workflow requires explicit maintainer approval.
 
+Scripts need Node.js 22.5 or newer (`engines` in `scripts/package.json`): stage 3 reads the feed-address registry with `node:sqlite`. The runner uses Node 22, and so do the workflows that install `scripts/`.
+
 A Git push does not deploy this pipeline. Changes to `scripts/sync/` or `scripts/package.json` require a separate deployment and verification that the active runner uses the updated code and configuration. Read the production runbook in root `AGENTS.internal.md` before deployment. If it is unavailable, obtain it from the maintainer before performing production operations.
 
 ## Catalog components

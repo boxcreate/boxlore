@@ -36,7 +36,7 @@ const TIP_SQL = `
     WHERE id = ?
 `;
 
-/** Show IDs the published registry flags `episode_stale`. Throws when it can't be read. */
+/** Show IDs the published registry flags `episode_stale`. Throws when it can't be read (needs Node 22.5+ for node:sqlite). */
 function staleShowIds(registryPath) {
     const { DatabaseSync } = require('node:sqlite');
     const db = new DatabaseSync(registryPath, { readOnly: true });
@@ -119,7 +119,14 @@ async function runStaleTips(opts) {
     out.stale = ids.length;
     if (!ids.length) return out;
 
-    const tips = await currentTips(db, ids);
+    let tips;
+    try {
+        tips = await currentTips(db, ids);
+    } catch (e) {
+        out.error = `tip read failed: ${e.message}`;
+        warn(`[R5] ${out.error}; stale tips skipped this run`);
+        return out;
+    }
     for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = ids.slice(i, i + CHUNK);
         let results;

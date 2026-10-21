@@ -103,6 +103,14 @@ describe('stale tips (R5)', () => {
         assert.match(warnings[0], /HTTP 503/);
     });
 
+    it('a failed tip read skips R5 for the run without failing the stage', async () => {
+        const db = { execute: async () => { throw new Error('sqld HTTP 500'); }, rows: (r) => r.rows };
+        const warnings = [];
+        const r = await runStaleTips({ ...base, mode: 'on', due: [7], db, staleIds: () => new Set([7]), fetchImpl: () => assert.fail('no call'), warn: (m) => warnings.push(m) });
+        assert.match(r.error, /tip read failed: sqld HTTP 500/);
+        assert.match(warnings[0], /skipped this run/);
+    });
+
     it('a registry it cannot read skips R5 for the run without failing it', async () => {
         const db = fakeDb({});
         const r = await runStaleTips({ ...base, mode: 'on', due: [7], db, registryPath: '/nonexistent/registry.db', fetchImpl: () => assert.fail('no call') });
