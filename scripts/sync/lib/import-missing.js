@@ -73,7 +73,8 @@ async function lookupItunesIds(itunesIds, lookup, hooks = {}) {
     const found = [];
     const notFoundIds = [];
     const failedIds = [];
-    for (const itunesId of itunesIds) {
+    for (let i = 0; i < itunesIds.length; i++) {
+        const itunesId = itunesIds[i];
         let feed;
         try {
             feed = await lookup(itunesId);
@@ -81,6 +82,11 @@ async function lookupItunesIds(itunesIds, lookup, hooks = {}) {
             failedIds.push(String(itunesId));
             hooks.onError?.(String(itunesId), e);
             hooks.onEach?.();
+            // Podcast Index paused (lib/podcast-index.js): the rest wait for the next run too.
+            if (e?.code === 'PI_SUSPENDED') {
+                failedIds.push(...itunesIds.slice(i + 1).map(String));
+                break;
+            }
             continue;
         }
         hooks.onEach?.();

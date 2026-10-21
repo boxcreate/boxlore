@@ -213,6 +213,7 @@ async function main() {
     let renamedEps = 0;
     let deferredEps = 0;
     const windowStats = { used: 0, compared: 0, same: 0, differ: 0, missing: 0, failed: 0 };
+    let waitingForPi = 0;
     const windowSummary = () => (cfg.WINDOWS_MODE === 'on'
         ? `saved windows used ${windowStats.used} (unreadable ${windowStats.failed})`
         : `saved windows compared ${windowStats.compared}: same ${windowStats.same}, differ ${windowStats.differ}, none ${windowStats.missing}`);
@@ -328,6 +329,12 @@ async function main() {
                 episodes = await pi.episodesByFeedId(pod.id, window.cap);
                 piFetches++;
             } catch (e) {
+                if (pi.isSuspended(e)) {
+                    // Podcast Index paused: shows without a saved window wait for the next run.
+                    waitingForPi++;
+                    reportBacklogIfDue();
+                    continue;
+                }
                 errors++;
                 log.warn(`Show ${pod.id} (${pod.title.substring(0, 40)}): episode fetch failed: ${e.message}`);
                 reportBacklogIfDue();
@@ -618,6 +625,7 @@ async function main() {
             `${showsCompleted} done, partial ${partialShows}, skip ${showsFullySkipped}, ` +
             `handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors` +
             (cfg.WINDOWS_MODE !== 'off' ? `, ${windowSummary()}` : '') +
+            `, ${pi.summary()}` + (waitingForPi ? `, ${waitingForPi} shows wait for PI` : '') +
             (reasons ? `, ${reasons}` : ''),
     }]);
 
