@@ -11,6 +11,8 @@
  *   (±25% jitter). Show on both core+relaxed → 24h. News always 8h.
  * - Fetches max=per-show cap (us/gb 50, else 20) once; items[0] updates Turso;
  *   full items[] written to PI handoff for stage 4 (no second PI call same run).
+ * - R5 (R5_MODE, lib/stale-tips.js): afterwards, checked shows the registry flags stale take the
+ *   live feed's newest episode as their tip when it is newer than Podcast Index's.
  */
 
 const log = require('./lib/log');
@@ -31,6 +33,7 @@ const {
     mergePodcastRowsWithCountries,
 } = require('./lib/chart-countries');
 const staleness = require('./lib/staleness');
+const staleTips = require('./lib/stale-tips');
 
 const CANDIDATE_CACHE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
 const CONCURRENCY = 5;
@@ -135,6 +138,7 @@ async function main() {
         'Handoff file': handoff.handoffPath(),
         'Tip queue': tipQueue.TABLE,
         'Concurrency': String(CONCURRENCY),
+        'Stale tips (R5)': cfg.R5_MODE,
     });
 
     const cacheAge = Date.now() - (st.candidatesRefreshedAt || 0);
@@ -273,6 +277,19 @@ async function main() {
 
     state.save(st);
     await handoff.flush();
+
+    const r5 = await staleTips.runStaleTips({
+        mode: cfg.R5_MODE,
+        due,
+        db: turso,
+        feedsUrl: cfg.FEEDS_URL,
+        registryPath: cfg.REGISTRY_DB,
+        mediumOf: (id) => st.shows[id]?.m || 'podcast',
+        warn: (msg) => log.warn(msg),
+    });
+    const r5Line = staleTips.summary(r5);
+    if (cfg.R5_MODE !== 'off') log.info(`[R5] ${r5Line}`);
+    turso.flushStats();
     const stats = turso.getStats();
     log.costFooter('Stage 3 · Sync Episodes', {
         reads: stats.reads,
@@ -291,7 +308,8 @@ async function main() {
         apiCalls: pi.getApiCallCount(),
         detail:
             `${due.length} checked (${deferred} deferred): ${updated} new (tip_reflags=${tipReflags}), ${unchanged} unchanged, ` +
-            `${empty} empty, ${errors} errors · due news=${staleNews} core=${staleCore} relaxed=${staleRelaxed}`,
+            `${empty} empty, ${errors} errors · due news=${staleNews} core=${staleCore} relaxed=${staleRelaxed}` +
+            (cfg.R5_MODE !== 'off' ? ` · ${r5Line}` : ''),
     }]);
 
     if (due.length > 20 && errors > due.length / 2) {

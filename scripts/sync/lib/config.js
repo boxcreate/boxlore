@@ -149,6 +149,12 @@ module.exports = {
     // the working directory, so every run replays from the folder the last one spooled into.
     VECTOR_SPOOL_DIR: process.env.SYNC_SPOOL_DIR || path.resolve(__dirname, '../../data/vector-spool'),
 
+    // --- Stale-show tips from the live feed (R5; own-episode-IDs P1b, plan section 6) ---
+    // off | shadow (counts only, never writes or issues an ID) | on. See lib/stale-tips.js.
+    R5_MODE: ['off', 'shadow', 'on'].includes(process.env.R5_MODE) ? process.env.R5_MODE : 'off',
+    FEEDS_URL: process.env.FEEDS_URL || 'http://127.0.0.1:8098',
+    REGISTRY_DB: process.env.REGISTRY_DB || '/var/lib/boxlore-registry/published/registry.db',
+
     // --- Cleanup ---
     CLEANUP_GRACE_DAYS: 7,
     CLEANUP_SAFETY_MIN_CHARTS: 500,
