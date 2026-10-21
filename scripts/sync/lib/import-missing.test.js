@@ -64,3 +64,14 @@ describe('lookupItunesIds', () => {
         assert.equal(ticks, 3);
     });
 });
+
+describe('lookupItunesIds onFound', () => {
+    it('hands each feed over as it arrives, before the pass ends', async () => {
+        const order = [];
+        await lookupItunesIds(['1', '2', '3'], async (id) => {
+            order.push(`lookup ${id}`);
+            return id === '2' ? null : { id: Number(id) };
+        }, { onFound: async ({ itunesId }) => { order.push(`write ${itunesId}`); } });
+        assert.deepEqual(order, ['lookup 1', 'write 1', 'lookup 2', 'lookup 3', 'write 3']);
+    });
+});

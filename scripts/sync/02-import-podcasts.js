@@ -275,28 +275,29 @@ async function importFromAPI(itunesIds = null) {
     const foundItunesIds = [];
     const statements = [];
     const prog = log.progress(toImport.length, 'api-import');
-    const { found, notFoundIds, failedIds } = await lookupItunesIds(toImport, (id) => pi.podcastByItunesId(id), {
+    // Each found feed is queued as it arrives and written every 50, so an interrupted pass keeps
+    // what it already found.
+    const { notFoundIds, failedIds } = await lookupItunesIds(toImport, (id) => pi.podcastByItunesId(id), {
         onError: (id, e) => log.warn(`PI lookup failed for itunes_id=${id}: ${e.message} (retried next run)`),
         onEach: () => prog.tick(),
+        onFound: async ({ itunesId, feed }) => {
+            ids.push(String(feed.id));
+            foundItunesIds.push(String(itunesId));
+            const categoriesStr = sortCategories(categoryList(feed.categories));
+            statements.push({
+                sql: `INSERT INTO podcasts (${cols.join(',')}, qdrant_vectorized, qdrant_podcast_vectorized)
+                      VALUES (${placeholders}, 0, 0)
+                      ON CONFLICT(id) DO UPDATE SET itunes_id = excluded.itunes_id
+                      WHERE itunes_id IS NULL OR itunes_id != excluded.itunes_id`,
+                args: apiImportArgs(feed, itunesId, categoriesStr),
+            });
+            imported++;
+
+            if (statements.length >= 50) {
+                await turso.batch(statements.splice(0));
+            }
+        },
     });
-
-    for (const { itunesId, feed } of found) {
-        ids.push(String(feed.id));
-        foundItunesIds.push(String(itunesId));
-        const categoriesStr = sortCategories(categoryList(feed.categories));
-        statements.push({
-            sql: `INSERT INTO podcasts (${cols.join(',')}, qdrant_vectorized, qdrant_podcast_vectorized)
-                  VALUES (${placeholders}, 0, 0)
-                  ON CONFLICT(id) DO UPDATE SET itunes_id = excluded.itunes_id
-                  WHERE itunes_id IS NULL OR itunes_id != excluded.itunes_id`,
-            args: apiImportArgs(feed, itunesId, categoriesStr),
-        });
-        imported++;
-
-        if (statements.length >= 50) {
-            await turso.batch(statements.splice(0));
-        }
-    }
     if (statements.length > 0) await turso.batch(statements);
 
     log.info(`API import done: ${imported} imported, ${notFoundIds.length} not found on PI, ${failedIds.length} lookups failed`);

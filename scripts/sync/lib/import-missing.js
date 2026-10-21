@@ -65,7 +65,9 @@ function reuseMissingIdsFile(fromFile, opts = {}) {
  * or rate limit; retried next run, never denylisted).
  * @param {string[]} itunesIds
  * @param {(itunesId: string) => Promise<object|null>} lookup
- * @param {{ onError?: (itunesId: string, e: Error) => void, onEach?: () => void }} [hooks]
+ * `onFound` runs for each feed as it arrives, so callers can write in batches before the pass ends.
+ * @param {{ onError?: (itunesId: string, e: Error) => void, onEach?: () => void,
+ *   onFound?: (hit: { itunesId: string, feed: object }) => Promise<void>|void }} [hooks]
  */
 async function lookupItunesIds(itunesIds, lookup, hooks = {}) {
     const found = [];
@@ -82,8 +84,13 @@ async function lookupItunesIds(itunesIds, lookup, hooks = {}) {
             continue;
         }
         hooks.onEach?.();
-        if (feed) found.push({ itunesId: String(itunesId), feed });
-        else notFoundIds.push(String(itunesId));
+        if (feed) {
+            const hit = { itunesId: String(itunesId), feed };
+            found.push(hit);
+            await hooks.onFound?.(hit);
+        } else {
+            notFoundIds.push(String(itunesId));
+        }
     }
     return { found, notFoundIds, failedIds };
 }
