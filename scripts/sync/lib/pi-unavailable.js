@@ -101,6 +101,25 @@ function remove(doc, itunesIds) {
     return removed;
 }
 
+/**
+ * Re-check after a newer dump (own-episode-IDs P1b, plan section 10b item 8): `not_in_dump` entries
+ * recorded before the dump was built are dropped, so the next precheck looks them up in the new
+ * dump. `api_not_found` entries keep their TTL (Podcast Index itself had no such feed).
+ * @returns {number} count released
+ */
+function releaseDumpMisses(doc, dumpBuiltAtMs) {
+    if (!Number.isFinite(dumpBuiltAtMs) || dumpBuiltAtMs <= 0) return 0;
+    let released = 0;
+    for (const [id, rec] of Object.entries(doc.ids || {})) {
+        if (rec?.reason === 'not_in_dump' && (typeof rec.seenAt === 'number' ? rec.seenAt : 0) < dumpBuiltAtMs) {
+            delete doc.ids[id];
+            released++;
+        }
+    }
+    if (released > 0) doc.updatedAt = Date.now();
+    return released;
+}
+
 module.exports = {
     load,
     save,
@@ -108,5 +127,6 @@ module.exports = {
     activeIdSet,
     add,
     remove,
+    releaseDumpMisses,
     emptyDoc,
 };

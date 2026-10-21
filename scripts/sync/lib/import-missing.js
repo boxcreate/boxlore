@@ -59,7 +59,44 @@ function reuseMissingIdsFile(fromFile, opts = {}) {
     return list;
 }
 
+/**
+ * Looks each iTunes ID up and sorts the answers (own-episode-IDs P1b): a feed, "Podcast Index has
+ * no such feed" (`notFoundIds`, denylisted by the caller), or a failed lookup (`failedIds`: outage
+ * or rate limit; retried next run, never denylisted).
+ * @param {string[]} itunesIds
+ * @param {(itunesId: string) => Promise<object|null>} lookup
+ * `onFound` runs for each feed as it arrives, so callers can write in batches before the pass ends.
+ * @param {{ onError?: (itunesId: string, e: Error) => void, onEach?: () => void,
+ *   onFound?: (hit: { itunesId: string, feed: object }) => Promise<void>|void }} [hooks]
+ */
+async function lookupItunesIds(itunesIds, lookup, hooks = {}) {
+    const found = [];
+    const notFoundIds = [];
+    const failedIds = [];
+    for (const itunesId of itunesIds) {
+        let feed;
+        try {
+            feed = await lookup(itunesId);
+        } catch (e) {
+            failedIds.push(String(itunesId));
+            hooks.onError?.(String(itunesId), e);
+            hooks.onEach?.();
+            continue;
+        }
+        hooks.onEach?.();
+        if (feed) {
+            const hit = { itunesId: String(itunesId), feed };
+            found.push(hit);
+            await hooks.onFound?.(hit);
+        } else {
+            notFoundIds.push(String(itunesId));
+        }
+    }
+    return { found, notFoundIds, failedIds };
+}
+
 module.exports = {
+    lookupItunesIds,
     EXISTENCE_IN_CHUNK,
     existingItunesAmong,
     reuseMissingIdsFile,
