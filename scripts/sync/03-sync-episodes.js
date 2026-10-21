@@ -20,13 +20,13 @@ const turso = require('./lib/turso');
 const pi = require('./lib/podcast-index');
 const state = require('./lib/state');
 const { tipUpdateArgs } = require('./lib/catalog-rows');
-const { bookDb } = require('./lib/episode-book');
+const { bookDb, ensureBookSchema } = require('./lib/episode-book');
 const { tipIdentity } = require('./lib/episode-identity');
 const cfg = require('./lib/config');
 const { handoffList } = require('./lib/vector-window');
 const handoff = require('./lib/pi-handoff');
 const tipQueue = require('./lib/tip-queue');
-const { loadCapsByPodcastId } = require('./lib/episode-caps');
+const { loadCapsByPodcastId, effectiveCap } = require('./lib/episode-caps');
 const {
     CHARTS_MATCH_PODCAST,
     loadCountriesByItunesId,
@@ -34,6 +34,7 @@ const {
 } = require('./lib/chart-countries');
 const staleness = require('./lib/staleness');
 const staleTips = require('./lib/stale-tips');
+const showWindow = require('./lib/show-window');
 
 const CANDIDATE_CACHE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
 const CONCURRENCY = 5;
@@ -126,6 +127,8 @@ async function main() {
     // Same-run episode payloads only — durable tip lane lives in Turso tip_queue.
     handoff.clear();
     await tipQueue.ensureTable(turso);
+    // Book tables and the tip queue's generation column (stage 4 also runs this).
+    await ensureBookSchema(book);
 
     const policy = staleness.policySummary();
 
@@ -139,6 +142,7 @@ async function main() {
         'Tip queue': tipQueue.TABLE,
         'Concurrency': String(CONCURRENCY),
         'Stale tips (R5)': cfg.R5_MODE,
+        'Saved windows': cfg.WINDOWS_MODE,
     });
 
     const cacheAge = Date.now() - (st.candidatesRefreshedAt || 0);
@@ -206,6 +210,24 @@ async function main() {
     log.endGroup();
 
     let updated = 0, unchanged = 0, empty = 0, errors = 0, tipReflags = 0;
+    const windows = { usable: 0, unusable: 0, failed: 0, feed: 0 };
+
+    /** Saves a fetched list as the show's window (WINDOWS_MODE shadow/on). Never fails the show. */
+    async function saveWindow(podId, list, cap, source) {
+        if (cfg.WINDOWS_MODE === 'off' || !list || !list.length) return false;
+        try {
+            const r = await showWindow.recordWindow(book, Number(podId), list, {
+                cap, gen: Date.now(), now: Math.floor(Date.now() / 1000), source,
+            });
+            if (r.usable) windows.usable++;
+            else windows.unusable++;
+            return r.usable;
+        } catch (e) {
+            windows.failed++;
+            log.warn(`Show ${podId}: window not saved (${e.message})`);
+            return false;
+        }
+    }
     const prog = log.progress(due.length, 'episode-sync', 5);
 
     for (let i = 0; i < due.length; i += CONCURRENCY) {
@@ -213,7 +235,8 @@ async function main() {
         let tipUpdatedThisBatch = false;
         await Promise.all(batch.map(async (podId) => {
             const rec = st.shows[podId] || {};
-            const maxEps = caps.get(podId) || cfg.EPISODE_CAP_DEFAULT;
+            // The same cap stage 4 enforces (chart or earned), so the list fills its window.
+            const maxEps = effectiveCap(podId, caps, st);
             try {
                 // Fast path: most shows are unchanged — probe latest only (max=1).
                 // Full cap fetch + handoff only when the tip episode changed.
@@ -234,7 +257,10 @@ async function main() {
                 const full = maxEps > 1 ? await pi.episodesByFeedId(podId, maxEps) : null;
                 // Hand stage 4 only a complete list, never the one-item tip (handoffList).
                 const window = handoffList(full, maxEps);
-                if (window) handoff.put(podId, window);
+                if (window) {
+                    handoff.put(podId, window);
+                    await saveWindow(podId, window, maxEps, 'pi');
+                }
                 const episodes = window || tip;
                 const latest = episodes[0] || latestTip;
                 // Prefer cached medium from import/prior sync; never spend a PI call on it.
@@ -289,6 +315,43 @@ async function main() {
     });
     const r5Line = staleTips.summary(r5);
     if (cfg.R5_MODE !== 'off') log.info(`[R5] ${r5Line}`);
+
+    // R5 shows whose tip came from the feed also save the feed's merged list as their window, so
+    // stage 4 embeds the feed-only episodes (WINDOWS_MODE on flags them; shadow only records).
+    if (cfg.WINDOWS_MODE !== 'off' && r5.updatedIds?.length) {
+        const flagged = [];
+        for (let i = 0; i < r5.updatedIds.length; i += 4) {
+            await Promise.all(r5.updatedIds.slice(i, i + 4).map(async (id) => {
+                const cap = effectiveCap(id, caps, st);
+                let list;
+                try {
+                    list = await staleTips.feedWindow({ baseUrl: cfg.FEEDS_URL, sid: id, cap });
+                } catch (e) {
+                    windows.failed++;
+                    log.warn(`Show ${id}: feed window not read (${e.message})`);
+                    return;
+                }
+                if (!(await saveWindow(id, list, cap, 'pi'))) return;
+                windows.feed++;
+                if (cfg.WINDOWS_MODE !== 'on') return;
+                try {
+                    await turso.execute('UPDATE podcasts SET qdrant_vectorized = 0 WHERE id = ?', [id]);
+                    await tipQueue.upsert(turso, id, list[0]?.id ?? null);
+                    flagged.push(id);
+                } catch (e) {
+                    log.warn(`Show ${id}: not flagged for vectors (${e.message})`);
+                }
+            }));
+        }
+        // Stage 4 must read the merged window, not this run's Podcast Index list.
+        if (flagged.length) {
+            handoff.removeMany(flagged);
+            await handoff.flush();
+        }
+    }
+    const windowLine = cfg.WINDOWS_MODE === 'off' ? '' :
+        `windows ${cfg.WINDOWS_MODE}: ${windows.usable} saved (${windows.feed} from feeds), ${windows.unusable} unusable, ${windows.failed} failed`;
+    if (windowLine) log.info(`[WINDOWS] ${windowLine}`);
     turso.flushStats();
     const stats = turso.getStats();
     log.costFooter('Stage 3 · Sync Episodes', {
@@ -309,7 +372,8 @@ async function main() {
         detail:
             `${due.length} checked (${deferred} deferred): ${updated} new (tip_reflags=${tipReflags}), ${unchanged} unchanged, ` +
             `${empty} empty, ${errors} errors · due news=${staleNews} core=${staleCore} relaxed=${staleRelaxed}` +
-            (cfg.R5_MODE !== 'off' ? ` · ${r5Line}` : ''),
+            (cfg.R5_MODE !== 'off' ? ` · ${r5Line}` : '') +
+            (windowLine ? ` · ${windowLine}` : ''),
     }]);
 
     if (due.length > 20 && errors > due.length / 2) {

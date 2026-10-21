@@ -25,13 +25,17 @@ async function ensureTable(turso) {
  * @param {string|number} podcastId
  * @param {string|number|null} tipEpId
  */
-async function upsert(turso, podcastId, tipEpId) {
+async function upsert(turso, podcastId, tipEpId, { gen = Date.now() } = {}) {
     const id = parseInt(String(podcastId), 10);
     if (!Number.isFinite(id) || id <= 0) return;
+    // `gen` (own-episode-IDs P1b): stage 4 clears only rows enqueued before it started, so a change
+    // that lands while it runs stays queued. Needs the column ensureBookSchema adds.
     await turso.execute(
-        `INSERT OR REPLACE INTO ${TABLE} (podcast_id, tip_ep_id, enqueued_at)
-         VALUES (?, ?, ?)`,
-        [id, tipEpId != null ? String(tipEpId) : null, Date.now()],
+        `INSERT INTO ${TABLE} (podcast_id, tip_ep_id, enqueued_at, gen)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT (podcast_id) DO UPDATE SET
+           tip_ep_id = excluded.tip_ep_id, enqueued_at = excluded.enqueued_at, gen = excluded.gen`,
+        [id, tipEpId != null ? String(tipEpId) : null, Date.now(), gen],
     );
 }
 
@@ -52,8 +56,9 @@ async function remove(turso, podcastId) {
 /**
  * @param {object} turso
  * @param {Array<string|number>} podcastIds
+ * @param {{ upToGen?: number }} [opts] clear only rows enqueued at or before this gen
  */
-async function removeMany(turso, podcastIds) {
+async function removeMany(turso, podcastIds, { upToGen = null } = {}) {
     const ids = [...new Set(
         (podcastIds || [])
             .map((x) => parseInt(String(x), 10))
@@ -63,7 +68,11 @@ async function removeMany(turso, podcastIds) {
     for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = ids.slice(i, i + CHUNK);
         const ph = chunk.map(() => '?').join(',');
-        await turso.execute(`DELETE FROM ${TABLE} WHERE podcast_id IN (${ph})`, chunk);
+        if (upToGen == null) {
+            await turso.execute(`DELETE FROM ${TABLE} WHERE podcast_id IN (${ph})`, chunk);
+        } else {
+            await turso.execute(`DELETE FROM ${TABLE} WHERE podcast_id IN (${ph}) AND gen <= ?`, [...chunk, upToGen]);
+        }
     }
 }
 

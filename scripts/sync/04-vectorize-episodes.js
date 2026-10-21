@@ -10,7 +10,8 @@
  *   2) Remaining ep=0 ∧ show=1 (incremental)
  *   3) Cold both=0, oldest last_ep_sync first, leftover budget only
  *
- * Prefers PI handoff from stage 3 (same-run); falls back to PI fetch.
+ * Prefers PI handoff from stage 3 (same-run), then (WINDOWS_MODE on) the window stage 3 saved in the
+ * book (lib/show-window.js), else a PI fetch. WINDOWS_MODE shadow fetches and compares.
  * Prune-before-insert keeps every show at its cap, but only against a full window.
  * Caps are retention-aware (the larger of today's chart cap and the cap a show earned).
  * Shows with no vectors get their newest episodes first and the rest after a few days.
@@ -45,6 +46,7 @@ const {
     itunesInCountries,
 } = require('./lib/chart-countries');
 const scalars = require('./lib/scalars');
+const showWindow = require('./lib/show-window');
 const attribution = require('./lib/attribution');
 
 const UPSERT_BATCH = 100;
@@ -75,6 +77,8 @@ async function main() {
     const st = state.load();
     stateRef = st;
     const nowMs = Date.now();
+    // Tip-queue rows enqueued after this moment (a change during this run) are never cleared by it.
+    const runGen = nowMs;
     const storedPids = new Set();
 
     // Vectors from an upload that failed in an earlier run go up first, so the existence
@@ -154,7 +158,7 @@ async function main() {
     } = orderPendingForVectorize(pending, tipQueueIds);
 
     if (orphanTipIds.length > 0) {
-        await tipQueue.removeMany(turso, orphanTipIds);
+        await tipQueue.removeMany(turso, orphanTipIds, { upToGen: runGen });
         handoff.removeMany(orphanTipIds);
         log.info(
             `Tip queue: dropped ${log.fmt(orphanTipIds.length)} off-chart / already-done id(s)`,
@@ -175,6 +179,7 @@ async function main() {
             : 'full window',
         'Embed provider': cfg.EMBED_PROVIDER,
         'Handoff': handoff.handoffPath(),
+        'Saved windows': cfg.WINDOWS_MODE,
         'Collection': cfg.EPISODES_COLLECTION,
     });
     if (drainOrder.length === 0) {
@@ -207,6 +212,10 @@ async function main() {
     let bookErrors = 0;
     let renamedEps = 0;
     let deferredEps = 0;
+    const windowStats = { used: 0, compared: 0, same: 0, differ: 0, missing: 0, failed: 0 };
+    const windowSummary = () => (cfg.WINDOWS_MODE === 'on'
+        ? `saved windows used ${windowStats.used} (unreadable ${windowStats.failed})`
+        : `saved windows compared ${windowStats.compared}: same ${windowStats.same}, differ ${windowStats.differ}, none ${windowStats.missing}`);
 
     // Points buffered for batch upsert; flag + tip-queue clears follow durable writes.
     let pointsQueue = [];
@@ -235,7 +244,7 @@ async function main() {
             );
             const tipClear = completeQueue.filter((c) => c.clearTip).map((c) => c.id);
             if (tipClear.length > 0) {
-                await tipQueue.removeMany(turso, tipClear);
+                await tipQueue.removeMany(turso, tipClear, { upToGen: runGen });
                 handoff.removeMany(tipClear);
             }
             completeQueue = [];
@@ -299,9 +308,22 @@ async function main() {
         else if (pod.qdrant_podcast_vectorized === 1) queue = 'inc';
 
         let episodes = handoff.take(pod.id);
+        let saved = null;
         if (episodes) {
             handoffHits++;
-        } else {
+        } else if (cfg.WINDOWS_MODE === 'on') {
+            try {
+                saved = await showWindow.loadWindow(book, Number(pod.id), window.cap);
+            } catch (e) {
+                windowStats.failed++;
+                log.warn(`Show ${pod.id}: saved window unreadable (${e.message}); fetching`);
+            }
+            if (saved) {
+                windowStats.used++;
+                episodes = saved.items.map((it) => it.raw);
+            }
+        }
+        if (!episodes) {
             try {
                 episodes = await pi.episodesByFeedId(pod.id, window.cap);
                 piFetches++;
@@ -325,23 +347,43 @@ async function main() {
         // today's naming for this run, unstamped, and the bootstrap's catch-up pass records it later.
         const windowEps = episodes.slice(0, window.cap);
         let ident = null;
-        try {
-            const sid = Number(pod.id);
-            const keys = [...new Set(windowEps.map((ep) => catalogKey(ep.guid, ep.enclosureUrl)).filter(Boolean))];
-            const piIds = windowEps.map((ep) => Number(ep.id)).filter((n) => Number.isSafeInteger(n) && n > 0);
-            ident = resolveIdentities(sid, windowEps, await loadServedIds(book, sid, keys), await loadServedOwners(book, piIds));
-            const writes = [...ident.newRows, ...ident.aliases.map((a) => ({ key: a.key, eid: a.eid, piId: a.piId, servedId: null }))];
-            if (writes.length) {
-                const res = await bootstrapShow(book, sid, writes, { now: Math.floor(Date.now() / 1000), source: 'pi' });
-                if (!res.ok) throw new Error(res.error || 'book write failed');
-                bookRows += ident.newRows.length;
+        if (saved) {
+            // The saved window is book rows already: served IDs, keys and recipe IDs, no writes.
+            ident = { items: saved.items, newRows: [], aliases: [], renamed: 0, deferred: 0 };
+        } else {
+            try {
+                const sid = Number(pod.id);
+                const keys = [...new Set(windowEps.map((ep) => catalogKey(ep.guid, ep.enclosureUrl)).filter(Boolean))];
+                const piIds = windowEps.map((ep) => Number(ep.id)).filter((n) => Number.isSafeInteger(n) && n > 0);
+                ident = resolveIdentities(sid, windowEps, await loadServedIds(book, sid, keys), await loadServedOwners(book, piIds));
+                const writes = [...ident.newRows, ...ident.aliases.map((a) => ({ key: a.key, eid: a.eid, piId: a.piId, servedId: null }))];
+                if (writes.length) {
+                    const res = await bootstrapShow(book, sid, writes, { now: Math.floor(Date.now() / 1000), source: 'pi' });
+                    if (!res.ok) throw new Error(res.error || 'book write failed');
+                    bookRows += ident.newRows.length;
+                }
+                renamedEps += ident.renamed;
+                deferredEps += ident.deferred;
+            } catch (e) {
+                bookErrors++;
+                ident = null;
+                log.warn(`Book identity failed for show ${pod.id}: ${e.message} - unstamped this run`);
             }
-            renamedEps += ident.renamed;
-            deferredEps += ident.deferred;
-        } catch (e) {
-            bookErrors++;
-            ident = null;
-            log.warn(`Book identity failed for show ${pod.id}: ${e.message} - unstamped this run`);
+            if (ident && cfg.WINDOWS_MODE === 'shadow') {
+                // Would the saved window have named the same points? Read-only; this run still fetched.
+                try {
+                    const savedNow = await showWindow.loadWindow(book, Number(pod.id), window.cap);
+                    const same = showWindow.sameWindow(savedNow, ident.items);
+                    if (same == null) windowStats.missing++;
+                    else {
+                        windowStats.compared++;
+                        if (same) windowStats.same++;
+                        else windowStats.differ++;
+                    }
+                } catch {
+                    windowStats.failed++;
+                }
+            }
         }
         const eps = ident
             ? ident.items
@@ -561,6 +603,7 @@ async function main() {
             `${partialShows} partial · skip ${showsFullySkipped} · ` +
             `handoff ${handoffHits} · PI ${piFetches} · backlog ${log.fmt(backlog)} · ${errors} errors · ` +
             `book ${bookRows} rows · renamed ${renamedEps} · deferred ${deferredEps} · book errors ${bookErrors}` +
+            (cfg.WINDOWS_MODE !== 'off' ? ` · ${windowSummary()}` : '') +
             (reasons ? `\n  ${reasons}` : ''),
     });
     log.summaryTable('Stage 4: Vectorize Episodes', [{
@@ -574,6 +617,7 @@ async function main() {
             `depth ${depthDue.length}, spooled ${spooledPoints}, replayed ${replayed.points}, ` +
             `${showsCompleted} done, partial ${partialShows}, skip ${showsFullySkipped}, ` +
             `handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors` +
+            (cfg.WINDOWS_MODE !== 'off' ? `, ${windowSummary()}` : '') +
             (reasons ? `, ${reasons}` : ''),
     }]);
 

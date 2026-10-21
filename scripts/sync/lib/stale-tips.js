@@ -104,7 +104,7 @@ async function runStaleTips(opts) {
     const { mode, due, db, feedsUrl, registryPath, fetchImpl = fetch, warn = () => {} } = opts;
     const mediumOf = opts.mediumOf || (() => 'podcast');
     const now = opts.now || Date.now;
-    const out = { mode, stale: 0, answered: 0, newer: 0, updated: 0, noItem: 0, failedChunks: 0, error: null };
+    const out = { mode, stale: 0, answered: 0, newer: 0, updated: 0, noItem: 0, failedChunks: 0, error: null, updatedIds: [] };
     if (mode !== 'shadow' && mode !== 'on') return out;
 
     let flagged;
@@ -155,12 +155,29 @@ async function runStaleTips(opts) {
             try {
                 await db.execute(TIP_SQL, tipUpdateArgs(r.item, mediumOf(showId), now(), showId, feedIdentity(showId, r.item)));
                 out.updated++;
+                out.updatedIds.push(showId);
             } catch (e) {
                 warn(`[R5] show ${showId}: tip write failed (${e.message})`);
             }
         }
     }
     return out;
+}
+
+/**
+ * A stale show's merged episode list from boxlore-feeds (`GET /feeds/episodes`, live: episodes
+ * that need one get their served ID), newest first, for its saved window.
+ */
+async function feedWindow({ baseUrl, sid, cap, fetchImpl = fetch, timeoutMs = 60_000 }) {
+    const q = new URLSearchParams({ id: String(sid), limit: String(cap), offset: '0', sort: 'newest', mode: 'live' });
+    const res = await fetchImpl(`${baseUrl.replace(/\/+$/, '')}/feeds/episodes?${q}`, {
+        headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) throw new Error(`boxlore-feeds HTTP ${res.status}`);
+    const body = await res.json();
+    if (!Array.isArray(body?.items)) throw new Error('boxlore-feeds: no items');
+    return body.items;
 }
 
 /** One line for the run report. */
@@ -172,4 +189,4 @@ function summary(r) {
         : `R5 on: ${r.stale} stale due, ${r.answered} answered, ${r.updated} tips from the feed, ${r.noItem} without a served ID yet, ${r.failedChunks} failed chunks`;
 }
 
-module.exports = { runStaleTips, staleShowIds, shouldReplace, feedIdentity, summary, TIP_SQL, CHUNK };
+module.exports = { runStaleTips, staleShowIds, shouldReplace, feedIdentity, feedWindow, summary, TIP_SQL, CHUNK };
