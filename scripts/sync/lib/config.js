@@ -153,6 +153,9 @@ module.exports = {
     // off | shadow (counts only, never writes or issues an ID) | on. See lib/stale-tips.js.
     R5_MODE: ['off', 'shadow', 'on'].includes(process.env.R5_MODE) ? process.env.R5_MODE : 'off',
     FEEDS_URL: process.env.FEEDS_URL || 'http://127.0.0.1:8098',
+    // Saved episode windows (own-episode-IDs P1b, lib/show-window.js): off | shadow (stage 3
+    // records, stage 4 compares) | on (stage 4 reads the saved list instead of fetching it again).
+    WINDOWS_MODE: ['off', 'shadow', 'on'].includes(process.env.WINDOWS_MODE) ? process.env.WINDOWS_MODE : 'off',
     REGISTRY_DB: process.env.REGISTRY_DB || '/var/lib/boxlore-registry/published/registry.db',
 
     // --- Cleanup ---

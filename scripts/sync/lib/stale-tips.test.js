@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { runStaleTips, staleShowIds, shouldReplace, summary, CHUNK } = require('./stale-tips');
+const { runStaleTips, staleShowIds, shouldReplace, summary, feedWindow, CHUNK } = require('./stale-tips');
 const { catalogKey, recipeId } = require('./episode-recipe-id');
 
 const OLD = 1_750_000_000;
@@ -78,6 +78,7 @@ describe('stale tips (R5)', () => {
         assert.equal(args[15], recipeId(7, key));
         assert.equal(args[16], 7);
         assert.match(summary(r), /R5 on: 3 stale due, 3 answered, 1 tips from the feed, 1 without a served ID yet/);
+        assert.deepEqual(r.updatedIds, [7], 'stage 3 saves these shows\' feed windows');
     });
 
     it('shadow: counts newer feed episodes from the date summary, never asks for IDs, never writes', async () => {
@@ -141,5 +142,18 @@ describe('stale tips (R5)', () => {
         } finally {
             fs.rmSync(dir, { recursive: true, force: true });
         }
+    });
+});
+
+describe('feedWindow', () => {
+    it('reads the merged list newest first, live, at the cap', async () => {
+        const calls = [];
+        const items = await feedWindow({ baseUrl: 'http://127.0.0.1:8098/', sid: 7, cap: 50, fetchImpl: async (url) => {
+            calls.push(url);
+            return json({ items: [item(1, NEW)] });
+        } });
+        assert.equal(items.length, 1);
+        assert.equal(calls[0], 'http://127.0.0.1:8098/feeds/episodes?id=7&limit=50&offset=0&sort=newest&mode=live');
+        await assert.rejects(feedWindow({ baseUrl: 'http://x', sid: 7, cap: 5, fetchImpl: async () => json({}, 503) }), /HTTP 503/);
     });
 });
