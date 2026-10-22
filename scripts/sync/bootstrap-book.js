@@ -8,11 +8,15 @@
  * `catalog_key` on each point (`eid_missing` when unmapped, `eid_shared` when a duplicate feed
  * already holds its PI ID as a served ID). Point IDs and vectors never change.
  *
- *   node sync/bootstrap-book.js [--minutes N] [--dry] [--limit-shows N] [--catch-up]
+ *   node sync/bootstrap-book.js [--minutes N] [--dry] [--limit-shows N] [--catch-up | --retry-missing]
  *
  * --catch-up only takes shows that still have points with none of `eid`, `eid_missing` and `eid_shared` (added
  * between the main pass and stage 4 writing identities itself, or by a run whose book write failed).
  * It keeps its own state file, and can be run again any time.
+ *
+ * --retry-missing (own-episode-IDs P3, monthly) only takes shows with `eid_missing` points and runs the
+ * same pass again: Podcast Index or the book may know those episodes by now. A point mapped this time
+ * gets its stamp and loses the mark; the rest keep it. Own state file; a finished pass starts over.
  *
  * Progress lives in SYNC_BOOTSTRAP_STATE (default scripts/data/book-bootstrap.json); a show is
  * checkpointed once both writes finished, so a stopped run repeats at most one show (idempotent).
@@ -37,10 +41,11 @@ const opt = (name, def) => {
 };
 const DRY = args.includes('--dry');
 const CATCH_UP = args.includes('--catch-up');
+const RETRY = args.includes('--retry-missing');
 const MINUTES = Number(opt('--minutes', '20'));
 const LIMIT = Number(opt('--limit-shows', '0'));
 const STATE = process.env.SYNC_BOOTSTRAP_STATE || path.resolve(__dirname, '../data/book-bootstrap.json');
-const STATE_FILE = STATE.replace(/\.json$/, `${CATCH_UP ? '.catchup' : ''}${DRY ? '.dry' : ''}.json`);
+const STATE_FILE = STATE.replace(/\.json$/, `${CATCH_UP ? '.catchup' : ''}${RETRY ? '.retry' : ''}${DRY ? '.dry' : ''}.json`);
 const PI_MAX = 1000;
 
 function loadState() {
@@ -60,9 +65,11 @@ function saveState(st) {
 }
 
 const UNSTAMPED = { must: [{ is_empty: { key: 'eid' } }, { is_empty: { key: 'eid_missing' } }, { is_empty: { key: 'eid_shared' } }] };
+const MISSING = { must: [{ key: 'eid_missing', match: { value: true } }] };
 
 async function listShows() {
-    const points = await qdrant.scrollAll(cfg.EPISODES_COLLECTION, CATCH_UP ? UNSTAMPED : null, ['podcast_id'], 5000);
+    const filter = CATCH_UP ? UNSTAMPED : RETRY ? MISSING : null;
+    const points = await qdrant.scrollAll(cfg.EPISODES_COLLECTION, filter, ['podcast_id'], 5000);
     return [...new Set(points.map((p) => Number(p.payload?.podcast_id)).filter((n) => Number.isSafeInteger(n) && n > 0))]
         .sort((a, b) => a - b);
 }
@@ -76,8 +83,8 @@ async function main() {
     const deadline = Date.now() + MINUTES * 60_000;
 
     let st = loadState();
-    // A finished catch-up pass is history: list the unstamped shows again.
-    if (st && CATCH_UP && st.idx >= st.shows.length) st = null;
+    // A finished catch-up or retry pass is history: list its shows again.
+    if (st && (CATCH_UP || RETRY) && st.idx >= st.shows.length) st = null;
     if (!st) {
         if (!DRY) await ensureBookSchema(db);
         const shows = await listShows();
@@ -87,7 +94,8 @@ async function main() {
             shared: 0, piErrors: 0, bookErrors: 0, failedShows: [],
         };
         saveState(st);
-        log.info(`Bootstrap${CATCH_UP ? ' catch-up' : ''}: ${shows.length} shows ${CATCH_UP ? 'with unstamped points' : 'with episode points'}`);
+        const what = CATCH_UP ? 'with unstamped points' : RETRY ? 'with eid_missing points' : 'with episode points';
+        log.info(`Bootstrap${CATCH_UP ? ' catch-up' : RETRY ? ' retry' : ''}: ${shows.length} shows ${what}`);
     }
     if (!DRY) await qdrant.ensurePayloadIndex(cfg.EPISODES_COLLECTION, 'eid', 'integer');
 
@@ -149,7 +157,7 @@ async function main() {
         `${st.points} points, ${st.stamped} mapped (${pct}%), ${st.missing} missing, ${st.duplicates} duplicates, ` +
         `${st.shared || 0} shared with a duplicate feed, ` +
         `${st.rows} rows, PI errors ${st.piErrors}, book errors ${st.bookErrors}, PI calls ${pi.getApiCallCount()}`);
-    if (st.idx >= st.shows.length) log.info(CATCH_UP ? 'Bootstrap catch-up complete' : 'Bootstrap complete');
+    if (st.idx >= st.shows.length) log.info(CATCH_UP ? 'Bootstrap catch-up complete' : RETRY ? 'Bootstrap retry complete' : 'Bootstrap complete');
 }
 
 main().catch((e) => {
