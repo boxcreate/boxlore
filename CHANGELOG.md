@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The weekly tracked-podcast repair fills missing feed addresses from the feed-address registry and replaces addresses the registry has proven dead, only when the saved value is unchanged since it was read. ([#1153](https://github.com/boxcreate/boxlore/pull/1153)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync calls Podcast Index faster, cools off and slows down when it pushes back, and pauses Podcast Index for the run when trouble continues instead of failing. ([#1157](https://github.com/boxcreate/boxlore/pull/1157)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 ### Fixed
+- Feed-episode baselines read up to 1,000 newest episodes from `GET episodes/match` (match fields only) instead of the oldest 100, with the old page as fallback and a PostHog kill switch (`feed-fix-match-baseline-off`); a matched newest tip fills empty fields from the feed. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- `LocalEpisodeCollisionGuard` keeps a local catalog row from replacing another show's episode: a clashing row gets a reserved negative ID, and the legacy RSS upgrade stays on RSS instead. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
+- `PodcastDao.setFeedUrl` marks the row dirty, so a corrected feed address syncs. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - RSS notification cleanup removes only the RTDB `feedUrl` child instead of the whole `tracked_podcasts` row, which the rules refuse. A refused delete for a row that does not exist still unsubscribes the FCM topic and clears the journal entry, so `RssNotificationSyncWorker` no longer retries indefinitely. ([#1140](https://github.com/boxcreate/boxlore/pull/1140)) <!-- impact:user-impact-medium --> <!-- copy:locked -->
 - New-episode notifications carry a working feed address for shows that moved, use stable episode IDs, and are never sent twice after a partly failed check. ([#1150](https://github.com/boxcreate/boxlore/pull/1150)) <!-- impact:user-impact-medium+backend-change --> <!-- copy:locked -->
 - The catalog sync no longer deletes vectors it later re-embeds: the nightly trim fails closed, shows keep the highest cap they earned, partial episode lists never cause pruning, and vectors from a failed upload are spooled and uploaded by the next run. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -50,6 +53,13 @@ readme-copy:end pr=1150 -->
 ### Improvements
 - New-episode notifications arrive sooner after a release.
 readme-copy:end pr=1151 -->
+
+<!-- readme-copy:start pr=1159
+### Fixes
+- Shows with more than 100 episodes keep progress, history and downloads on their newer episodes, and stop listing some twice.
+- An episode of one show no longer replaces an episode of another show that uses the same feed.
+- A feed address boxlore fixes on one device now reaches your other devices through sync.
+readme-copy:end pr=1159 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added

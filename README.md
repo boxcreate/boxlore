@@ -70,6 +70,9 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Shows with more than 100 episodes keep progress, history and downloads on their newer episodes, and stop listing some twice. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
+<li>An episode of one show no longer replaces an episode of another show that uses the same feed. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
+<li>A feed address boxlore fixes on one device now reaches your other devices through sync. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
 <li>Turning off episode notifications for an RSS feed now stops sharing its feed link from your device. Links already shared stay in earlier public backups. <a href="https://github.com/boxcreate/boxlore/pull/1140"><img src="https://img.shields.io/badge/PR-1140-6750A4?style=flat-square" alt="PR #1140" height="18"/></a></li>
 </ul>
 <!-- release-upcoming:end -->
