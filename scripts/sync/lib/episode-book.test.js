@@ -109,6 +109,24 @@ describe('episode book', () => {
         assert.deepEqual(await db.query('SELECT sid FROM served_show ORDER BY sid'), [[9], [11]], 'PI listed it twice');
     });
 
+    it('checks the overlay marker through the alias index, never a scan of every alias', async () => {
+        // 22 Oct 2026: with no index on rid, each check scanned the whole alias table (1M rows, ~3 s)
+        // inside a write transaction, and the catalog sync's stage 3 stalled.
+        for (let i = 0; i < 50; i++) {
+            await book.bootstrapShow(db, 100 + i, [ep(`k${i}`, { piId: 1000 + i, servedId: 1000 + i })], { now: 1 });
+        }
+        const { sql, args } = book.servedShowStatement(120, 5);
+        const plan = (analyzed) => {
+            if (analyzed) db.raw.exec('ANALYZE');
+            return db.raw.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args).map((r) => r.detail);
+        };
+        for (const analyzed of [false, true]) {
+            const steps = plan(analyzed);
+            assert.ok(steps.some((d) => /SEARCH a USING (COVERING )?INDEX episode_pi_alias_rid \(rid=\?\)/.test(d)), steps.join(' | '));
+            assert.ok(!steps.some((d) => /^SCAN a\b/.test(d)), `no full alias scan: ${steps.join(' | ')}`);
+        }
+    });
+
     it('bootstraps a show in one transaction, or not at all', async () => {
         const items = [ep('a', { piId: 61, servedId: 61, extraPiIds: [70] }), ep('b', { piId: 62, servedId: 62 })];
         assert.deepEqual(await book.bootstrapShow(db, 9, items, { now: 5 }), { ok: true, error: null });
