@@ -231,6 +231,8 @@ class PodcastRepositoryEpisodeSupplementTest {
 
     @Test
     fun `loadPiEpisodesForBaseline throws on HTTP failure`() = runTest(testDispatcher) {
+        // Both sources fail: /episodes/match, then the page path it falls back to.
+        server.enqueue(MockResponse().setResponseCode(500))
         server.enqueue(MockResponse().setResponseCode(500))
         val thrown =
             runCatching { repository.loadPiEpisodesForBaseline("900041", limit = 1000) }.exceptionOrNull()

@@ -130,6 +130,30 @@ data class EpisodesPaginatedResponse(
     val limit: Int = 20
 )
 
+/**
+ * `GET /episodes/match`: a show's newest episodes (up to 1,000) with only the fields a baseline
+ * match needs. Full pages keep [EpisodesPaginatedResponse], which the app caps at 100 items.
+ */
+@Serializable
+data class EpisodeMatchResponse(
+    @SerialName("items")
+    val items: List<EpisodeMatchItem> = emptyList(),
+)
+
+@Serializable
+data class EpisodeMatchItem(
+    @SerialName("id")
+    val id: Long? = null,
+    @SerialName("guid")
+    val guid: String? = null,
+    @SerialName("title")
+    val title: String? = null,
+    @SerialName("enclosureUrl")
+    val enclosureUrl: String? = null,
+    @SerialName("datePublished")
+    val datePublished: Long? = null,
+)
+
 @Serializable
 data class SingleEpisodeResponse(
     @SerialName("status")

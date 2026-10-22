@@ -282,6 +282,60 @@ class PodcastRepositoryCatalogTest {
         )
     }
 
+    @Test
+    fun `match baseline reads up to 1000 newest episodes from episodes-match`() = runTest(testDispatcher) {
+        // The page path is capped at the oldest 100, so newer episodes of a big show went unmatched.
+        val items = (1..150).joinToString(",") { i ->
+            """{"id":$i,"guid":"g$i","title":"Ep $i","enclosureUrl":"https://cdn.example/$i.mp3","datePublished":${1_700_000_000 + i}}"""
+        }
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[$items,{"id":0,"enclosureUrl":"https://x/0.mp3"},{"id":7,"title":"no audio"}]}"""))
+
+        val baseline = repository.loadPiEpisodesForBaseline("90001", limit = 5000)
+
+        assertEquals(150, baseline.size, "items without an ID or audio are skipped")
+        assertEquals(Episode(id = "150", title = "Ep 150", description = "", audioUrl = "https://cdn.example/150.mp3", podcastId = "90001", publishedDate = 1_700_000_150), baseline.last())
+        val recorded = server.takeRequest()
+        assertEquals("/episodes/match?id=90001&max=1000", recorded.path)
+        assertEquals(APP_KEY, recorded.getHeader("X-App-Key"))
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun `match baseline falls back to the page path when the route fails`() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("""{"items":[{"id":11,"title":"Old","enclosureUrl":"https://cdn.example/11.mp3","datePublished":1}],"hasMore":false}"""),
+        )
+
+        val baseline = repository.loadPiEpisodesForBaseline("90001", limit = 1000)
+
+        assertEquals(listOf("11"), baseline.map { it.id })
+        assertTrue(server.takeRequest().path!!.startsWith("/episodes/match"))
+        val page = server.takeRequest().path!!
+        assertTrue(page.startsWith("/episodes?") && page.contains("limit=100") && page.contains("sort=oldest"), page)
+    }
+
+    @Test
+    fun `match baseline off switch keeps the page path`() = runTest(testDispatcher) {
+        val off =
+            PodcastRepository(
+                baseUrl = server.url("/").toString(),
+                publicKey = APP_KEY,
+                context = fakeContext(),
+                rssRepository = RssPodcastRepository.createForTests(context = fakeContext(), database = fakeDatabase()),
+                ioDispatcher = testDispatcher,
+                boxLoreApi = NetworkModule.createBoxLoreApi(server.url("/").toString(), OkHttpClient()),
+                useEpisodeMatchBaseline = { false },
+            )
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[],"hasMore":false}"""))
+
+        off.loadPiEpisodesForBaseline("90001", limit = 1000)
+
+        assertTrue(server.takeRequest().path!!.startsWith("/episodes?"))
+        assertEquals(1, server.requestCount)
+    }
+
     private fun fixtureBody(resourcePath: String): MockResponse {
         val json =
             requireNotNull(javaClass.classLoader?.getResource(resourcePath)) {

@@ -22,7 +22,9 @@ internal object EpisodeSupplementTipLogic {
     ): Episode {
         val matched = EpisodeSupplementMatcher.findMatchingBaseline(newestFeedEpisode, knownEpisodes)
         if (matched != null) {
-            return matched.copy(
+            // A match baseline carries only the ID and match fields: the feed fills the rest.
+            val feed = newestFeedEpisode.toEpisode()
+            return matched.withBlanksFrom(feed).copy(
                 podcastId = podcastIndexId,
                 podcastTitle = podcastTitle?.takeIf(String::isNotBlank) ?: matched.podcastTitle,
                 podcastImageUrl = podcastImageUrl?.takeIf(String::isNotBlank) ?: matched.podcastImageUrl,
@@ -40,3 +42,25 @@ internal object EpisodeSupplementTipLogic {
             )
     }
 }
+
+/**
+ * This episode with every empty field taken from [other], so a match-only baseline row (ID, title,
+ * audio, date) still yields a tip with description, artwork, length and Podcast 2.0 links. A field
+ * this episode has always wins, so a full Podcast Index row is unchanged.
+ */
+internal fun Episode.withBlanksFrom(other: Episode): Episode = copy(
+    title = title.ifBlank { other.title },
+    description = description.ifBlank { other.description },
+    audioUrl = audioUrl.ifBlank { other.audioUrl },
+    imageUrl = imageUrl?.takeIf(String::isNotBlank) ?: other.imageUrl,
+    duration = duration.takeIf { it > 0 } ?: other.duration,
+    publishedDate = publishedDate.takeIf { it > 0L } ?: other.publishedDate,
+    chaptersUrl = chaptersUrl ?: other.chaptersUrl,
+    transcriptUrl = transcriptUrl ?: other.transcriptUrl,
+    transcripts = transcripts ?: other.transcripts,
+    persons = persons ?: other.persons,
+    seasonNumber = seasonNumber ?: other.seasonNumber,
+    episodeNumber = episodeNumber ?: other.episodeNumber,
+    episodeType = episodeType ?: other.episodeType,
+    enclosureType = enclosureType ?: other.enclosureType,
+)

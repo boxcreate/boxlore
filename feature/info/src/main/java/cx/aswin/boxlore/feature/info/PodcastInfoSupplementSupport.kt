@@ -49,16 +49,8 @@ internal class PodcastInfoSupplementSupport(
         { id, limit, offset, sort ->
             repository.getEpisodesPaginated(id, limit, offset, sort)
         },
-        { id ->
-            repository
-                .getEpisodesPaginated(
-                    feedId = id,
-                    limit = SUPPLEMENT_BASELINE_LIMIT,
-                    offset = 0,
-                    sort = "oldest",
-                    mergeSupplements = false,
-                ).episodes
-        },
+        // The strict match baseline (up to 1,000, PI rows only); a page is capped at 100.
+        { id -> repository.loadPiEpisodesForBaseline(id, SUPPLEMENT_BASELINE_LIMIT) },
         { id -> repository.localEpisodeCatalog?.isReady(id) == true },
     )
 

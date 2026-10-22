@@ -74,3 +74,6 @@ data class LocalEpisodeEntity(
 
 /** Lightweight identity map for sticky upserts (no payload). */
 data class LocalEpisodeIdentity(val episodeId: String, val guid: String, val audioUrl: String,)
+
+/** Which (show, catalog key) holds a local episode ID; [guid] stores the catalog key. */
+data class LocalEpisodeOwner(val episodeId: String, val podcastId: String, val guid: String,)

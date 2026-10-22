@@ -50,6 +50,20 @@ object StickyEpisodeIdentity {
         )
     }
 
+    /**
+     * A local ID for a row whose usual ID another (show, key) already holds
+     * ([LocalEpisodeCollisionGuard]). Negative like every minted ID, and the same for the same
+     * (namespace, show, key, attempt), so a refresh that hits the same clash picks the same ID.
+     */
+    fun reservedEpisodeId(rssNamespaceId: String, podcastId: String, catalogKey: String, attempt: Int,): String =
+        RssIdGenerator.episodeIdForPodcast(
+            podcastId = rssNamespaceId,
+            guid = "$catalogKey\u0000reserved:$podcastId:$attempt",
+            enclosureUrl = null,
+            publishedDate = 0L,
+            title = "",
+        )
+
     fun firstWinsExisting(seenKeys: MutableSet<String>, key: String,): Boolean {
         if (key in seenKeys) return false
         seenKeys += key

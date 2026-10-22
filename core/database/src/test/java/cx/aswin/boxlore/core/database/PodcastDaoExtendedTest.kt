@@ -210,6 +210,22 @@ class PodcastDaoExtendedTest {
     }
 
     @Test
+    fun setFeedUrlMarksACorrectedAddressForTheNextPush() = runTest {
+        // A corrected address used to stay on the device: the row was never marked dirty.
+        dao.upsert(podcast("1258562").copy(feedUrl = "https://old.example/feed.xml", isDirty = false, syncedAt = 500L))
+        assertTrue(dao.getDirtyPodcasts().isEmpty())
+
+        dao.setFeedUrl("1258562", "https://new.example/feed.xml")
+        val dirty = dao.getDirtyPodcasts().single()
+        assertEquals("https://new.example/feed.xml", dirty.feedUrl)
+
+        dao.markPodcastsSynced(listOf("1258562"), timestamp = 900L)
+        dao.setFeedUrl("1258562", "https://new.example/feed.xml")
+        assertTrue("an unchanged address is not pushed again", dao.getDirtyPodcasts().isEmpty())
+        assertEquals(900L, dao.getPodcast("1258562")!!.syncedAt)
+    }
+
+    @Test
     fun updateCustomGenreUpdatesAndClearsOverrides() = runTest {
         dao.upsert(podcast("1"))
         dao.updateCustomGenre("1", "Custom Tech", "code")

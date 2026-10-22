@@ -1,6 +1,12 @@
 package cx.aswin.boxlore.core.catalog
 
 internal const val MAX_SAFE_PAGE_LIMIT = 100
+
+/**
+ * Most items a match baseline asks for (`/episodes/match`). Safe above [MAX_SAFE_PAGE_LIMIT]: match
+ * items carry no description or full text (about 200 KB for 1,000).
+ */
+internal const val MAX_MATCH_BASELINE = 1000
 internal const val DEFAULT_EPISODE_CACHE_TTL_MS = 300_000L // 5 minutes
 internal const val DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS = 900_000L // 15 minutes
 
