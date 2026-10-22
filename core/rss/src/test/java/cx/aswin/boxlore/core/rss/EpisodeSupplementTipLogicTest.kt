@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.testing.TestFixtures
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -129,6 +130,41 @@ class EpisodeSupplementTipLogicTest {
         assertEquals("https://kept", tip.podcastImageUrl)
         assertEquals("News", tip.podcastGenre)
         assertEquals("Host", tip.podcastArtist)
+    }
+
+    @Test
+    fun `a match-only baseline row keeps its id and takes the rest from the feed`() {
+        // /episodes/match rows carry only the ID, title, audio and date.
+        val feed =
+            rssEpisode(episodeId = "-99", title = "Fresh", audioUrl = "https://cdn.example/fresh.mp3", publishedDate = 200L)
+                .copy(description = "From the feed", imageUrl = "https://img/ep.jpg", chaptersUrl = "https://c/ch.json", episodeNumber = 12)
+        val lean = Episode(id = "42", title = "Fresh", description = "", audioUrl = "https://cdn.example/fresh.mp3", podcastId = "pi-1", publishedDate = 200L)
+
+        val tip = EpisodeSupplementTipLogic.resolveNewestTip(feed, "pi-1", listOf(lean), "Show", "https://img", "News", "Host")
+
+        assertEquals("42", tip.id)
+        assertEquals("From the feed", tip.description)
+        assertEquals("https://img/ep.jpg", tip.imageUrl)
+        assertEquals(60, tip.duration)
+        assertEquals("https://c/ch.json", tip.chaptersUrl)
+        assertEquals(12, tip.episodeNumber)
+        assertEquals("Show", tip.podcastTitle)
+    }
+
+    @Test
+    fun `a full baseline row keeps its own fields`() {
+        val feed =
+            rssEpisode(episodeId = "-99", title = "Fresh", audioUrl = "https://cdn.example/fresh.mp3", publishedDate = 200L)
+                .copy(description = "From the feed", imageUrl = "https://img/feed.jpg")
+        val full =
+            Episode(
+                id = "42", title = "Fresh", description = "From Podcast Index", audioUrl = "https://cdn.example/fresh.mp3",
+                imageUrl = "https://img/pi.jpg", duration = 1800, podcastId = "pi-1", publishedDate = 200L,
+            )
+
+        val tip = EpisodeSupplementTipLogic.resolveNewestTip(feed, "pi-1", listOf(full), null, null, null, null)
+
+        assertEquals(full.copy(podcastId = "pi-1"), tip)
     }
 
     private fun rssEpisode(episodeId: String, title: String, audioUrl: String, publishedDate: Long,): RssEpisodeEntity = RssEpisodeEntity(

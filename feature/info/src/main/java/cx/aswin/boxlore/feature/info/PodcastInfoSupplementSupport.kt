@@ -49,16 +49,7 @@ internal class PodcastInfoSupplementSupport(
         { id, limit, offset, sort ->
             repository.getEpisodesPaginated(id, limit, offset, sort)
         },
-        { id ->
-            repository
-                .getEpisodesPaginated(
-                    feedId = id,
-                    limit = SUPPLEMENT_BASELINE_LIMIT,
-                    offset = 0,
-                    sort = "oldest",
-                    mergeSupplements = false,
-                ).episodes
-        },
+        repositoryBaseline { id, limit -> repository.loadPiEpisodesForBaseline(id, limit) },
         { id -> repository.localEpisodeCatalog?.isReady(id) == true },
     )
 
@@ -273,6 +264,14 @@ internal class PodcastInfoSupplementSupport(
          */
         const val SUPPLEMENT_BASELINE_LIMIT = 1000
         private const val DISPLAY_PAGE_SIZE = 20
+
+        /**
+         * The repository-backed baseline: [PodcastRepository.loadPiEpisodesForBaseline] for up to
+         * [SUPPLEMENT_BASELINE_LIMIT] PI rows (a page is capped at 100). It throws on failure, so
+         * [refreshMissingEpisodes] stops before matching the feed against an empty list.
+         */
+        internal fun repositoryBaseline(load: suspend (podcastId: String, limit: Int) -> List<Episode>): suspend (String) -> List<Episode> =
+            { id -> load(id, SUPPLEMENT_BASELINE_LIMIT) }
         private const val OLDEST_PAGE_SIZE = 50
     }
 }

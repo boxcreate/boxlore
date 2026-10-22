@@ -41,6 +41,11 @@ class PodcastRepository(
      * [NetworkModule.createBoxLoreApi] builds the cached OkHttp client from [context].
      */
     boxLoreApi: BoxLoreApi? = null,
+    /**
+     * Off switch for the 1,000-item match baseline ([loadPiEpisodesForBaseline]). The app passes
+     * a PostHog kill switch; false means the old 100-item page path.
+     */
+    private val useEpisodeMatchBaseline: () -> Boolean = { true },
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     val api: BoxLoreApi = boxLoreApi ?: NetworkModule.createBoxLoreApi(baseUrl, context)
     internal val contentCatalogPreferences =
@@ -278,18 +283,50 @@ class PodcastRepository(
     }
 
     /**
-     * Strict PI page for feed-extra matching. Throws on HTTP/network failure so
+     * Strict PI baseline for feed-episode matching (sync, restore, Info): the episodes whose IDs
+     * history, progress and downloads already use. Throws on HTTP/network failure so
      * [EpisodeSupplementPort.refreshFromFeed] does not persist extras against an
      * empty baseline (which would treat every feed item as feed-only).
+     *
+     * Reads up to [limit] (at most 1,000) newest episodes from `/episodes/match`, match fields only.
+     * The full-page path is capped at 100 for memory and returns the oldest 100, so a show with more
+     * episodes left its newer ones unmatched: they got negative IDs, detached from history and
+     * downloads, and showed twice on Info. Falls back to that page when the route fails or the
+     * switch is off.
      */
     suspend fun loadPiEpisodesForBaseline(feedId: String, limit: Int,): List<Episode> = withContext(Dispatchers.IO) {
         val resolvedId = resolvePodcastIndexFeedId(feedId)
+        if (useEpisodeMatchBaseline()) {
+            loadMatchBaseline(resolvedId, limit)?.let { return@withContext it }
+        }
         val safeLimit = clampPageLimit(limit)
         val response = api.getEpisodesPaginated(publicKey, resolvedId, safeLimit, 0, "oldest").execute()
         check(response.isSuccessful && response.body() != null) {
             "PI baseline HTTP ${response.code()}"
         }
         response.body()!!.items.mapNotNull { mapToEpisode(it) }
+    }
+
+    /**
+     * `/episodes/match` as baseline episodes, or null to use the page path: an HTTP or network
+     * error, or an empty list (the page path confirms a show with no episodes, so a misbehaving
+     * route can never leave a feed matched against nothing).
+     */
+    private fun loadMatchBaseline(resolvedId: String, limit: Int): List<Episode>? = try {
+        val response = api.getEpisodeMatchList(publicKey, resolvedId, limit.coerceIn(1, MAX_MATCH_BASELINE)).execute()
+        val body = response.body()
+        if (response.isSuccessful && body != null) {
+            body.items.mapNotNull { it.toBaselineEpisode(resolvedId) }.takeIf { it.isNotEmpty() }
+        } else {
+            null
+        }
+    } catch (e: java.io.IOException) {
+        android.util.Log.w("PodcastRepository", "match baseline failed for $resolvedId; using the page path", e)
+        null
+    } catch (e: IllegalArgumentException) {
+        // An unreadable body (the JSON converter's SerializationException is one).
+        android.util.Log.w("PodcastRepository", "match baseline unreadable for $resolvedId; using the page path", e)
+        null
     }
 
     private suspend fun getRssEpisodesPaginated(feedId: String, limit: Int, offset: Int, sort: String,): EpisodePage = try {

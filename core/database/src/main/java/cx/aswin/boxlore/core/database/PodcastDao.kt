@@ -129,8 +129,18 @@ interface PodcastDao {
     @Query("UPDATE podcasts SET rssHasNewEpisodes = 1 WHERE podcastId = :id")
     suspend fun markHasNewEpisodes(id: String)
 
-    /** Publisher HTTPS URL for PI shows opted into Missing episodes? (library restore). */
-    @Query("UPDATE podcasts SET feedUrl = :feedUrl WHERE podcastId = :id")
+    /**
+     * Saves a publisher HTTPS feed URL found on this device (address recovery, auto-download,
+     * library restore) and marks the row dirty so the next sync push sends it, like the other
+     * single-field edits. Before, the corrected address stayed on this device only. An unchanged
+     * address writes nothing, so repeated recovery passes don't re-push.
+     */
+    @Query(
+        """
+        UPDATE podcasts SET feedUrl = :feedUrl, isDirty = 1
+        WHERE podcastId = :id AND (feedUrl IS NULL OR feedUrl != :feedUrl)
+        """,
+    )
     suspend fun setFeedUrl(id: String, feedUrl: String,)
 
     @Query("UPDATE podcasts SET customGenre = :customGenre, customGenreIcon = :customGenreIcon, isDirty = 1 WHERE podcastId = :id")

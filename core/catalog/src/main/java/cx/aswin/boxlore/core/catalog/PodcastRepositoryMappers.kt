@@ -62,6 +62,24 @@ internal fun mapFeedsToPodcasts(feeds: List<cx.aswin.boxlore.core.network.model.
     )
 }
 
+/**
+ * A `/episodes/match` item as a baseline [Episode]: its ID plus the fields matching uses (audio URL,
+ * title, date). Description, artwork and length stay empty; a matched newest tip takes them from
+ * the feed. Skipped like [mapToEpisode] without an audio URL or a positive ID.
+ */
+internal fun cx.aswin.boxlore.core.network.model.EpisodeMatchItem.toBaselineEpisode(podcastId: String): Episode? {
+    val episodeId = id?.takeIf { it > 0L } ?: return null
+    val audioUrl = enclosureUrl ?: return null
+    return Episode(
+        id = episodeId.toString(),
+        title = title.orEmpty(),
+        description = "",
+        audioUrl = audioUrl,
+        podcastId = podcastId,
+        publishedDate = datePublished ?: 0L,
+    )
+}
+
 internal fun mapToEpisode(item: cx.aswin.boxlore.core.network.model.EpisodeItem): Episode? {
     val audioUrl = item.enclosureUrl ?: return null
     android.util.Log.d(

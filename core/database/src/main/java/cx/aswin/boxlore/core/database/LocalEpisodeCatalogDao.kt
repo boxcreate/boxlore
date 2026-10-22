@@ -47,6 +47,13 @@ interface LocalEpisodeCatalogDao {
     )
     suspend fun listIdentities(podcastId: String): List<LocalEpisodeIdentity>
 
+    /**
+     * Owners of these episode IDs across every show, so a write can check before [upsertEpisodes]
+     * replaces a row (docs/EPISODE_IDS.md §4). Callers pass at most 500 IDs per call.
+     */
+    @Query("SELECT episodeId, podcastId, guid FROM local_episodes WHERE episodeId IN (:episodeIds)")
+    suspend fun findOwners(episodeIds: List<String>): List<LocalEpisodeOwner>
+
     @Query(
         """
         SELECT * FROM local_episodes

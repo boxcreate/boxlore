@@ -48,6 +48,7 @@ import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import cx.aswin.boxlore.sync.CloudSyncTriggerCoordinator
+import cx.aswin.boxlore.sync.FeedFixSwitches
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -186,6 +187,7 @@ class AppContainer(
             rssRepository = rssPodcastRepository,
             episodeSupplementRepository = episodeSupplementRepository,
             localEpisodeCatalog = subscribedEpisodeCatalog,
+            useEpisodeMatchBaseline = { FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) },
         )
     }
 

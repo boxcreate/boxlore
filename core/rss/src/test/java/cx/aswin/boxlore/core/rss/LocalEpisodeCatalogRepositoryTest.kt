@@ -4,6 +4,8 @@ import cx.aswin.boxlore.core.database.LocalEpisodeCatalogDao
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
+import cx.aswin.boxlore.core.database.LocalEpisodeOwner
+import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -331,6 +333,63 @@ class LocalEpisodeCatalogRepositoryTest {
         assertEquals(0, fetches)
     }
 
+    @Test
+    fun twoShowsReadingTheSameFeedKeepTheirOwnEpisodes() = runTest {
+        // A feed listed twice in Podcast Index: both shows mint the same IDs from one feed namespace,
+        // and the second refresh used to replace the first show's row (wrong show, title and audio).
+        val dao = FakeCatalogDao()
+        val repo = catalogRepo(dao = dao, feedClient = SharedFeedClient())
+        val idsAfter = mutableListOf<Set<String>>()
+        for (show in listOf("100", "200", "200", "100")) {
+            val outcome =
+                repo.refresh(
+                    LocalEpisodeCatalogPort.RefreshRequest(
+                        podcastIndexId = show,
+                        feedUrl = "https://feeds.example/shared.xml",
+                        reason = LocalEpisodeCatalogPort.RefreshReason.MANUAL,
+                    ),
+                )
+            assertTrue(outcome is RefreshOutcome.Success)
+            idsAfter += dao.episodes.map { it.episodeId }.toSet()
+        }
+
+        assertEquals(listOf("100", "200"), dao.episodes.map { it.podcastId }.sorted())
+        val first = dao.episodes.single { it.podcastId == "100" }
+        val second = dao.episodes.single { it.podcastId == "200" }
+        assertEquals(SharedFeedClient.mintedId(), first.episodeId)
+        assertTrue(second.episodeId != first.episodeId && second.episodeId.toLong() < 0L)
+        assertEquals(first.guid, second.guid, "both keep the episode itself")
+        assertEquals(idsAfter[1], idsAfter[3], "IDs stay put on later refreshes")
+    }
+
+    @Test
+    fun aRowWithNoFreeIdFailsTheRefreshAndWritesNothing() = runTest {
+        // Every ID the second show could take already belongs to a third show.
+        val dao = FakeCatalogDao()
+        val namespace = RssIdGenerator.podcastId("https://feeds.example/shared.xml")
+        val taken =
+            listOf(SharedFeedClient.mintedId()) +
+                (1..LocalEpisodeCollisionGuard.MAX_RESERVE_ATTEMPTS).map {
+                    StickyEpisodeIdentity.reservedEpisodeId(namespace, "200", SharedFeedClient.GUID, it)
+                }
+        dao.episodes += taken.map { localEpisode(it).copy(podcastId = "300", guid = "other-$it") }
+        val repo = catalogRepo(dao = dao, feedClient = SharedFeedClient())
+
+        val outcome =
+            repo.refresh(
+                LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastIndexId = "200",
+                    feedUrl = "https://feeds.example/shared.xml",
+                    reason = LocalEpisodeCatalogPort.RefreshReason.MANUAL,
+                ),
+            )
+
+        assertTrue(outcome is RefreshOutcome.Failure)
+        assertTrue(dao.episodes.none { it.podcastId == "200" })
+        assertEquals(taken.size, dao.episodes.count { it.podcastId == "300" })
+        assertNull(dao.feeds["200"], "no catalog row marked complete")
+    }
+
     private fun catalogRepo(
         dao: FakeCatalogDao = FakeCatalogDao(),
         isFeedUnchanged: suspend (String, String?, String?) -> Boolean = { _, _, _ -> false },
@@ -366,6 +425,56 @@ class LocalEpisodeCatalogRepositoryTest {
         )
     }
 
+    /** One episode in one feed, read by every show that points at it. */
+    private class SharedFeedClient : RssFeedClient() {
+        override suspend fun fetch(url: String) = RssFetchResult(finalUrl = url, etag = null, lastModified = null, body = ByteArray(1))
+
+        override suspend fun parse(feedUrl: String, bytes: ByteArray, podcastId: String,) = ParsedRssFeed(
+            title = "Shared",
+            author = "",
+            description = null,
+            imageUrl = null,
+            genre = null,
+            podcastType = "episodic",
+            podcastGuid = null,
+            declaredUpdatedAt = null,
+            episodes =
+            listOf(
+                RssEpisodeEntity(
+                    episodeId = mintedId(),
+                    podcastId = podcastId,
+                    guid = GUID,
+                    title = "Shared episode",
+                    description = "",
+                    audioUrl = "https://cdn.example/shared.mp3",
+                    imageUrl = null,
+                    duration = 60,
+                    publishedDate = 10L,
+                    chaptersUrl = null,
+                    transcriptUrl = null,
+                    transcripts = null,
+                    persons = null,
+                    seasonNumber = null,
+                    episodeNumber = null,
+                    episodeType = null,
+                    enclosureType = null,
+                ),
+            ),
+        )
+
+        companion object {
+            const val GUID = "shared-guid"
+
+            fun mintedId(): String = RssIdGenerator.episodeIdForPodcast(
+                podcastId = RssIdGenerator.podcastId("https://feeds.example/shared.xml"),
+                guid = GUID,
+                enclosureUrl = "https://cdn.example/shared.mp3",
+                publishedDate = 10L,
+                title = "Shared episode",
+            )
+        }
+    }
+
     private class FakeCatalogDao : LocalEpisodeCatalogDao {
         val feeds = mutableMapOf<String, LocalEpisodeFeedEntity>()
         val episodes = mutableListOf<LocalEpisodeEntity>()
@@ -391,6 +500,10 @@ class LocalEpisodeCatalogRepositoryTest {
         override suspend fun listIdentities(podcastId: String): List<LocalEpisodeIdentity> = episodes.filter { it.podcastId == podcastId }.map {
             LocalEpisodeIdentity(it.episodeId, it.guid, it.audioUrl)
         }
+
+        override suspend fun findOwners(episodeIds: List<String>): List<LocalEpisodeOwner> = episodes
+            .filter { it.episodeId in episodeIds }
+            .map { LocalEpisodeOwner(it.episodeId, it.podcastId, it.guid) }
 
         override suspend fun getNewestPage(podcastId: String, limit: Int, offset: Int,): List<LocalEpisodeEntity> = episodes
             .filter { it.podcastId == podcastId }

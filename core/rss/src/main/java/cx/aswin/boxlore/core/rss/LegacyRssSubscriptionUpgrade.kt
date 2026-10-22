@@ -219,6 +219,12 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
         if (localRows.isEmpty() || !snapshot.finalFeedUrl.startsWith("https://", ignoreCase = true)) {
             return null
         }
+        // The upgrade keeps the RSS IDs (listener state rides on them), so it can't re-mint around
+        // another show that already holds one (the same feed listed twice). It stays on RSS instead.
+        val catalogDao = database.localEpisodeCatalogDao()
+        if (LocalEpisodeCollisionGuard.takesAnotherShowsId(localRows, target.id) { ids -> catalogDao.findOwners(ids) }) {
+            return null
+        }
         val listenerIds =
             (
                 database.listeningHistoryDao().getHistoryForPodcast(source.podcastId).map { it.episodeId } +
