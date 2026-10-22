@@ -43,6 +43,10 @@ const BOOK_TABLES = [
     `CREATE TABLE IF NOT EXISTS episode_pi_alias (
         pi_id INTEGER PRIMARY KEY, rid INTEGER NOT NULL, seen_at INTEGER NOT NULL
     )`,
+    // A show's aliases, through its book rows: servedShowStatement joins on rid with no PI ID to
+    // look up. Without it, every marker check scanned the whole alias table (1M rows, ~3 s inside
+    // a write transaction), which stalled stage 3 on 22 Oct 2026.
+    'CREATE INDEX IF NOT EXISTS episode_pi_alias_rid ON episode_pi_alias(rid)',
     // Shows where some episode's served ID differs from a Podcast Index ID listed for it: served
     // under a recipe ID, or PI renumbered or duplicated it. Drives the Worker's v1 overlay, which
     // translates those PI IDs back to the served ID.
@@ -224,6 +228,7 @@ module.exports = {
     upsertEpisodes,
     upsertStatements,
     bootstrapShow,
+    servedShowStatement,
     recordLegacyServedId,
     issueServedId,
     servedIdOf,
