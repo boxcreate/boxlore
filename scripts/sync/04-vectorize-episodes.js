@@ -48,6 +48,7 @@ const {
 const scalars = require('./lib/scalars');
 const showWindow = require('./lib/show-window');
 const attribution = require('./lib/attribution');
+const chartedAt = require('./lib/charted-at');
 
 const UPSERT_BATCH = 100;
 
@@ -508,6 +509,8 @@ async function main() {
                     continue;
                 }
                 if (item.stamps) Object.assign(prepared.payload, item.stamps);
+                // Embedded shows chart today (lib/charted-at.js); the cleanup moves the date on.
+                prepared.payload[chartedAt.FIELD] = chartedAt.dayStartSec(Date.now());
                 if (prepared.scrubbed.length) {
                     log.warn(
                         `Scrubbed optional ep fields for show ${pod.id}: ${prepared.scrubbed.join(',')}`,

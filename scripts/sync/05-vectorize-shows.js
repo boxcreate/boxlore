@@ -16,6 +16,7 @@ const text = require('./lib/text');
 const cfg = require('./lib/config');
 const scalars = require('./lib/scalars');
 const attribution = require('./lib/attribution');
+const chartedAt = require('./lib/charted-at');
 const {
     loadCountriesByItunesId,
     itunesInCountries,
@@ -212,6 +213,8 @@ async function main() {
                     `Scrubbed optional show fields for ${pod.id}: ${prepared.scrubbed.join(',')}`,
                 );
             }
+            // Embedded shows chart today (lib/charted-at.js); the cleanup moves the date on.
+            prepared.payload[chartedAt.FIELD] = chartedAt.dayStartSec(Date.now());
             pointsQueue.push({
                 id: uuid,
                 vector,

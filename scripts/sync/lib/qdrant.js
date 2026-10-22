@@ -231,6 +231,14 @@ async function deleteByFilter(collection, filter, wait = false) {
     });
 }
 
+/** Set payload fields on every point matching a filter (wait=true: durable before it returns). */
+async function setPayloadByFilter(collection, payload, filter, wait = true) {
+    await request(`/collections/${collection}/points/payload?wait=${wait}`, {
+        method: 'POST',
+        body: JSON.stringify({ payload, filter }),
+    });
+}
+
 /**
  * Scroll all points matching a filter. Returns array of {id, payload}.
  * Payload selector defaults to false (ids only) to keep responses small.
@@ -270,6 +278,6 @@ async function enableQuantization(collection) {
 module.exports = {
     assertEnv, stableUUID, request, collectionInfo, ensureCollection, dropCollection,
     payloadSchema, ensurePayloadIndex, ensureEpisodesCollection, ensurePodcastsCollection,
-    existingIds, payloadsByIds, facetCounts, countPoints, upsert, deleteByIds, deleteByFilter, scrollAll,
+    existingIds, payloadsByIds, facetCounts, countPoints, upsert, deleteByIds, deleteByFilter, setPayloadByFilter, scrollAll,
     enableQuantization,
 };
