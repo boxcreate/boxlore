@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The episode book bootstrap no longer fails a show whose episodes a duplicate Podcast Index feed already holds; those episodes are marked with the show that holds them. ([#1148](https://github.com/boxcreate/boxlore/pull/1148)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - Episodes that Podcast Index renumbers or lists twice keep their original ID for older app builds. ([#1149](https://github.com/boxcreate/boxlore/pull/1149)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog import retries chart shows whose Podcast Index lookup failed instead of skipping them for 30 days, and re-checks dump misses after each new dump. ([#1155](https://github.com/boxcreate/boxlore/pull/1155)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
+- Catalog sync: index `episode_pi_alias` by `rid`, so the episode book's `served_show` marker check no longer scans every alias inside each book write. ([#1158](https://github.com/boxcreate/boxlore/pull/1158)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 
 <!-- readme-copy:start pr=1140
 ### Fixes
