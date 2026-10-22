@@ -178,6 +178,48 @@ class LocalEpisodeCatalogRepositoryTest {
                 ),
             )
         assertTrue(outcome is RefreshOutcome.Failure)
+        assertTrue((outcome as RefreshOutcome.Failure).addressGone, "an address with no episodes is worth re-checking")
+    }
+
+    @Test
+    fun refreshReportsAPermanentMoveOnlyWhenAskedAndTheShowMatches() = runTest {
+        val moved =
+            object : RssFeedClient() {
+                private val shared = SharedFeedClient()
+
+                override suspend fun fetch(url: String) = shared.fetch(url).copy(finalUrl = "https://new.example/shared.xml", movedTo = "https://new.example/shared.xml")
+
+                override suspend fun parse(feedUrl: String, bytes: ByteArray, podcastId: String,) = shared.parse(feedUrl, bytes, podcastId)
+            }
+        suspend fun movedTo(detectMove: Boolean, title: String) =
+            (
+                catalogRepo(feedClient = moved).refresh(
+                    LocalEpisodeCatalogPort.RefreshRequest(
+                        podcastIndexId = "100",
+                        feedUrl = "https://feeds.example/shared.xml",
+                        meta = LocalEpisodeCatalogPort.PodcastMeta(title = title),
+                        reason = LocalEpisodeCatalogPort.RefreshReason.MANUAL,
+                        detectMove = detectMove,
+                    ),
+                ) as RefreshOutcome.Success
+                ).movedTo
+        assertEquals("https://new.example/shared.xml", movedTo(detectMove = true, title = "Shared"))
+        assertNull(movedTo(detectMove = false, title = "Shared"))
+        assertNull(movedTo(detectMove = true, title = "Another show"))
+    }
+
+    @Test
+    fun refreshFailureSaysWhetherTheSavedAddressLooksGone() = runTest {
+        val outcomes =
+            listOf<Exception>(FeedHttpException(410), FeedHttpException(503), java.net.SocketTimeoutException("slow")).map { error ->
+                catalogRepo(
+                    feedClient =
+                    object : RssFeedClient() {
+                        override suspend fun fetch(url: String): RssFetchResult = throw error
+                    },
+                ).refresh(LocalEpisodeCatalogPort.RefreshRequest(podcastIndexId = "100", feedUrl = "https://feeds.example/show.xml"))
+            }
+        assertEquals(listOf(true, false, false), outcomes.map { (it as RefreshOutcome.Failure).addressGone })
     }
 
     @Test

@@ -250,6 +250,7 @@ class SubscriptionForegroundSync(
             initialDelayMs: Long = DEFAULT_INITIAL_DELAY_MS,
             feedNetworkDelayMs: Long = DEFAULT_FEED_NETWORK_DELAY_MS,
             chunkSize: Int = DEFAULT_CHUNK_SIZE,
+            feedFixes: FeedFixToggles = FeedFixToggles(),
         ): SubscriptionForegroundSync {
             val preferred = AtomicReference<String?>(null)
             val refreshed =
@@ -279,6 +280,7 @@ class SubscriptionForegroundSync(
                     refreshed = refreshed,
                     feedNetworkDelayMs = feedNetworkDelayMs,
                     chunkSize = chunkSize,
+                    feedFixes = feedFixes,
                 ),
             )
         }
@@ -293,6 +295,7 @@ class SubscriptionForegroundSync(
             refreshed: MutableSharedFlow<String>,
             feedNetworkDelayMs: Long,
             chunkSize: Int,
+            feedFixes: FeedFixToggles,
         ): suspend () -> Unit {
             val refreshBatch = DirectFeedRefreshBatch()
             return {
@@ -354,6 +357,8 @@ class SubscriptionForegroundSync(
                             localEpisodeCatalog = localEpisodeCatalog,
                             episodeSupplementPort = episodeSupplementPort,
                             podcastRepository = podcastRepository,
+                            followMoves = feedFixes.movedFeed(),
+                            adoptMovedFeed = { url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
                         )
                     },
                     saveDirectFeedLatest = { id, episode ->
@@ -374,6 +379,8 @@ class SubscriptionForegroundSync(
                         }
                     },
                     onFeedRefreshed = { refreshed.tryEmit(it) },
+                    recheckAddress = DirectFeedRecovery.addressRecheck(feedFixes, subscriptionRepository, podcastRepository, localEpisodeCatalog),
+                    syncFallbackEnabled = feedFixes.syncFallback,
                 ),
             )
             syncTrackedFeedUrlsForHttpsNotifications(
@@ -383,25 +390,36 @@ class SubscriptionForegroundSync(
             }
         }
 
+        @Suppress("LongParameterList")
         private suspend fun resolveLocalCatalogTip(
             podcastId: String,
             meta: DirectFeedTipMeta,
             localEpisodeCatalog: LocalEpisodeCatalogPort?,
             episodeSupplementPort: EpisodeSupplementPort,
             podcastRepository: PodcastRepository,
+            followMoves: Boolean,
+            adoptMovedFeed: suspend (String) -> Unit,
         ): DirectFeedResolveResult {
             val catalog = localEpisodeCatalog
             if (catalog != null) {
-                return resolveCatalogRefresh(podcastId, meta, catalog, podcastRepository)
+                return resolveCatalogRefresh(podcastId, meta, catalog, podcastRepository, followMoves, adoptMovedFeed)
             }
             return resolveLegacySupplementTip(podcastId, meta, episodeSupplementPort, podcastRepository)
         }
 
+        /**
+         * With [followMoves], a feed that moved for good ([LocalEpisodeCatalogPort.RefreshOutcome.Success.movedTo])
+         * has its new address saved through [adoptMovedFeed] (P4a); never for `rss:` shows, whose
+         * address is their identity and notification consent.
+         */
+        @Suppress("LongParameterList")
         internal suspend fun resolveCatalogRefresh(
             podcastId: String,
             meta: DirectFeedTipMeta,
             catalog: LocalEpisodeCatalogPort,
             podcastRepository: PodcastRepository,
+            followMoves: Boolean = false,
+            adoptMovedFeed: suspend (String) -> Unit = {},
         ): DirectFeedResolveResult {
             val podcastMeta = catalogMeta(meta)
             if (catalog.isPublisherFeedUnchanged(podcastId, meta.feedUrl.orEmpty())) {
@@ -429,16 +447,22 @@ class SubscriptionForegroundSync(
                             } else {
                                 null
                             },
+                            detectMove = followMoves && !podcastId.startsWith("rss:"),
                         ),
                     )
             ) {
-                is LocalEpisodeCatalogPort.RefreshOutcome.Success ->
+                is LocalEpisodeCatalogPort.RefreshOutcome.Success -> {
+                    outcome.movedTo?.takeIf { followMoves && !podcastId.startsWith("rss:") }?.let { moved ->
+                        Log.i(TAG, "Feed for $podcastId moved; saving its new address")
+                        adoptMovedFeed(moved)
+                    }
                     DirectFeedResolveResult(tip = outcome.newest, persisted = true)
+                }
                 is LocalEpisodeCatalogPort.RefreshOutcome.Unchanged ->
                     DirectFeedResolveResult(tip = outcome.newest, persisted = false)
                 is LocalEpisodeCatalogPort.RefreshOutcome.Failure -> {
-                    Log.w(TAG, "Local catalog refresh failed for $podcastId: ${outcome.message}")
-                    DirectFeedResolveResult(tip = null, persisted = false)
+                    Log.w(TAG, "Local catalog refresh failed for $podcastId: ${outcome.message} (gone=${outcome.addressGone})")
+                    DirectFeedResolveResult(tip = null, persisted = false, failed = true, addressGone = outcome.addressGone)
                 }
             }
         }
@@ -480,7 +504,7 @@ class SubscriptionForegroundSync(
                 is EpisodeSupplementOutcome.Success ->
                     DirectFeedResolveResult(tip = outcome.newestFeedEpisode, persisted = true)
                 is EpisodeSupplementOutcome.Failure ->
-                    DirectFeedResolveResult(tip = null, persisted = false)
+                    DirectFeedResolveResult(tip = null, persisted = false, failed = true)
                 EpisodeSupplementOutcome.NoDisconnect ->
                     DirectFeedResolveResult(tip = null, persisted = false)
             }
@@ -564,7 +588,12 @@ class SubscriptionForegroundSync(
                 delay(directFeed.feedNetworkDelayMs)
             }
 
-            syncDirectFeedNetwork(feedTipIds, loadPodcastMeta, saveFeed, directFeed)
+            DirectFeedRecovery.recover(
+                failed = syncDirectFeedNetwork(feedTipIds, loadPodcastMeta, saveFeed, directFeed),
+                directFeed = directFeed,
+                readAgain = { id -> syncOneDirectFeedTip(id, loadPodcastMeta, directFeed.resolveFeedTip, saveFeed, directFeed.onFeedRefreshed) },
+                syncFromServer = { ids -> syncPiChunks(ids, chunkSize, syncChunk, saveLatest) },
+            )
             Log.d(TAG, "Finished background sync for all ${currentSubs.size} subs")
         }
 
@@ -587,31 +616,35 @@ class SubscriptionForegroundSync(
             }
         }
 
+        /** Reads each due show's own feed; returns the shows whose read failed, with their results. */
         private suspend fun syncDirectFeedNetwork(
             feedTipIds: List<String>,
             loadPodcastMeta: suspend (String) -> DirectFeedTipMeta?,
             saveFeed: suspend (String, Episode) -> Unit,
             directFeed: DirectFeedSyncSeams,
-        ) {
-            if (feedTipIds.isEmpty()) return
+        ): Map<String, DirectFeedResolveResult> {
+            if (feedTipIds.isEmpty()) return emptyMap()
             val ordered =
                 directFeed.selectRefreshBatch(DirectFeedSyncOrder.prioritize(feedTipIds, directFeed.preferredPodcastId()))
             val gate = Semaphore(directFeed.feedConcurrency.coerceAtLeast(1))
-            coroutineScope {
+            return coroutineScope {
                 ordered
                     .map { id ->
                         async {
                             gate.withPermit {
-                                syncOneDirectFeedTip(
-                                    podcastId = id,
-                                    loadPodcastMeta = loadPodcastMeta,
-                                    resolveFeedTip = directFeed.resolveFeedTip,
-                                    saveLatest = saveFeed,
-                                    onFeedRefreshed = directFeed.onFeedRefreshed,
-                                )
+                                id to
+                                    syncOneDirectFeedTip(
+                                        podcastId = id,
+                                        loadPodcastMeta = loadPodcastMeta,
+                                        resolveFeedTip = directFeed.resolveFeedTip,
+                                        saveLatest = saveFeed,
+                                        onFeedRefreshed = directFeed.onFeedRefreshed,
+                                    )
                             }
                         }
                     }.awaitAll()
+                    .mapNotNull { (id, result) -> result?.takeIf { it.failed }?.let { id to it } }
+                    .toMap()
             }
         }
 
@@ -724,18 +757,19 @@ class SubscriptionForegroundSync(
             }
         }
 
+        /** Reads one show's own feed and saves its tip; null when there was nothing to read. */
         private suspend fun syncOneDirectFeedTip(
             podcastId: String,
             loadPodcastMeta: suspend (String) -> DirectFeedTipMeta?,
             resolveFeedTip: suspend (String, DirectFeedTipMeta) -> DirectFeedResolveResult,
             saveLatest: suspend (String, Episode) -> Unit,
             onFeedRefreshed: (String) -> Unit,
-        ) {
+        ): DirectFeedResolveResult? {
             try {
                 val meta = loadPodcastMeta(podcastId)
                 if (meta == null) {
                     Log.w(TAG, "No Room row for opted-in $podcastId; skipping feed tip")
-                    return
+                    return null
                 }
                 val storedUrl = meta.feedUrl?.trim().orEmpty()
                 if (storedUrl.isEmpty()) {
@@ -753,17 +787,19 @@ class SubscriptionForegroundSync(
                     val known = meta.knownTip
                     if (known != null && known.id == tip.id && known.publishedDate == tip.publishedDate) {
                         Log.d(TAG, "Network tip unchanged for $podcastId")
-                        return
+                        return resolved
                     }
                     saveLatest(podcastId, tip)
                     Log.d(TAG, "Saved direct-feed tip for $podcastId")
                 } else {
                     Log.w(TAG, "Direct-feed tip empty for $podcastId")
                 }
+                return resolved
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Direct-feed tip sync failed for $podcastId", e)
+                return DirectFeedResolveResult(tip = null, persisted = false, failed = true)
             }
         }
 
@@ -797,8 +833,29 @@ internal data class DirectFeedTipMeta(
     val knownTip: Episode?,
 )
 
-/** Result of an opted-in publisher-feed resolve (tip plus whether extras were persisted). */
-internal data class DirectFeedResolveResult(val tip: Episode?, val persisted: Boolean,)
+/**
+ * Result of an opted-in publisher-feed resolve (tip plus whether extras were persisted).
+ * [failed]: the feed couldn't be read this pass; [addressGone]: and its saved address looks dead
+ * ([LocalEpisodeCatalogPort.RefreshOutcome.Failure.addressGone]).
+ */
+internal data class DirectFeedResolveResult(
+    val tip: Episode?,
+    val persisted: Boolean,
+    val failed: Boolean = false,
+    val addressGone: Boolean = false,
+)
+
+/**
+ * Off switches for the feed fixes in this sync, from the app's PostHog kill switches (each fix
+ * stays on without an answer). [addressRecheck]: re-check a dead saved address; [syncFallback]:
+ * ask `/sync` for shows whose own feed failed; [movedFeed]: follow a feed that moved for good.
+ */
+data class FeedFixToggles(
+    val addressRecheck: () -> Boolean = { true },
+    val syncFallback: () -> Boolean = { true },
+    /** Adopt a feed's confirmed new address (permanent redirects, `itunes:new-feed-url`). */
+    val movedFeed: () -> Boolean = { true },
+)
 
 /** Direct-feed callbacks grouped so [SubscriptionForegroundSync.syncSubscribedLatestEpisodes] stays under the param limit. */
 internal data class DirectFeedSyncSeams(
@@ -813,4 +870,8 @@ internal data class DirectFeedSyncSeams(
     val preferredPodcastId: () -> String? = { null },
     val onFeedRefreshed: (String) -> Unit = {},
     val selectRefreshBatch: suspend (List<String>) -> List<String> = { it },
+    /** Re-checks a show's dead saved address; true when a new one was saved (read it again now). */
+    val recheckAddress: suspend (String) -> Boolean = { false },
+    /** Whether shows whose own feed failed this pass get their latest episode from `/sync`. */
+    val syncFallbackEnabled: () -> Boolean = { true },
 )

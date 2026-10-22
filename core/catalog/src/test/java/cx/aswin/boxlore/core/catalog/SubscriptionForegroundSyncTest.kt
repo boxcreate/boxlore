@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.catalog
 
+import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
@@ -501,6 +502,132 @@ class SubscriptionForegroundSyncTest {
         sync.setForeground(false)
         runCurrent()
         assertTrue(cancelled)
+    }
+
+    @Test
+    fun `a failed own feed falls back to sync, and a dead address is re-checked and read again`() = runTest {
+        // Before, a show with a saved HTTPS address never went to /sync and its address was never re-checked.
+        val urls =
+            mutableMapOf(
+                "moved" to "https://old.example/moved.xml",
+                "flaky" to "https://feeds.example/flaky.xml",
+                "dead" to "https://feeds.example/dead.xml",
+                "rss:own" to "https://feeds.example/own.xml",
+            )
+        val piSynced = mutableListOf<String>()
+        val saved = mutableMapOf<String, String>()
+        val rechecked = mutableListOf<String>()
+        val reads = mutableMapOf<String, Int>()
+        SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+            loadIds = { urls.keys.toSet() },
+            loadPodcastMeta = { id -> DirectFeedTipMeta(urls[id], id, null, null, null, null) },
+            syncChunk = { chunk ->
+                piSynced += chunk
+                chunk.associateWith { episode(id = "pi_$it", podcastId = it) }
+            },
+            saveLatest = { id, ep -> saved[id] = ep.id },
+            directFeed =
+            DirectFeedSyncSeams(
+                loadOptedInIds = { urls.keys.toSet() },
+                resolveFeedTip = { id, meta ->
+                    reads[id] = (reads[id] ?: 0) + 1
+                    when {
+                        id == "moved" && meta.feedUrl == "https://new.example/moved.xml" ->
+                            DirectFeedResolveResult(tip = episode(id = "-7", podcastId = id), persisted = true)
+                        id == "flaky" -> DirectFeedResolveResult(tip = null, persisted = false, failed = true)
+                        else -> DirectFeedResolveResult(tip = null, persisted = false, failed = true, addressGone = true)
+                    }
+                },
+                recheckAddress = { id ->
+                    rechecked += id
+                    (id == "moved").also { if (it) urls[id] = "https://new.example/moved.xml" }
+                },
+            ),
+        )
+        assertEquals(setOf("moved", "dead"), rechecked.toSet(), "only dead addresses, never rss: shows")
+        assertEquals(2, reads["moved"], "read again at the new address")
+        assertEquals("-7", saved["moved"])
+        assertEquals(setOf("flaky", "dead"), piSynced.toSet())
+        assertEquals("pi_flaky", saved["flaky"])
+        assertEquals("pi_dead", saved["dead"])
+        assertFalse(saved.containsKey("rss:own"))
+    }
+
+    @Test
+    fun `with the sync fallback switched off a failed own feed stays off sync`() = runTest {
+        val piSynced = mutableListOf<String>()
+        SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
+            loadIds = { setOf("down") },
+            loadPodcastMeta = { id -> DirectFeedTipMeta("https://feeds.example/$id.xml", id, null, null, null, null) },
+            syncChunk = { chunk ->
+                piSynced += chunk
+                emptyMap()
+            },
+            saveLatest = { _, _ -> },
+            directFeed =
+            DirectFeedSyncSeams(
+                loadOptedInIds = { setOf("down") },
+                resolveFeedTip = { _, _ -> DirectFeedResolveResult(tip = null, persisted = false, failed = true) },
+                syncFallbackEnabled = { false },
+            ),
+        )
+        assertTrue(piSynced.isEmpty())
+    }
+
+    @Test
+    fun `a dead address is re-checked once a day, and only once the server answers`() = runTest {
+        val day = LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS
+        var stamped: Long? = null
+        var savedUrl: String? = null
+        suspend fun check(now: Long, last: Long, confirmed: String?, saved: String? = "https://old.example/f.xml", id: String = "123") =
+            DirectFeedRecovery.recheckGoneFeedAddress(
+                id = id,
+                now = now,
+                savedFeedUrl = saved,
+                lastLookupAt = { last },
+                markLookup = { stamped = it },
+                lookupFeedUrl = { confirmed },
+                saveFeedUrl = { savedUrl = it },
+            )
+
+        assertTrue(check(now = 2 * day, last = 0L, confirmed = "https://new.example/f.xml"))
+        assertEquals("https://new.example/f.xml", savedUrl)
+        assertEquals(2 * day, stamped)
+
+        stamped = null
+        savedUrl = null
+        assertFalse(check(now = 2 * day, last = 2 * day - 1_000L, confirmed = "https://new.example/f.xml"), "within a day")
+        assertFalse(check(now = 3 * day, last = 0L, confirmed = null), "no answer")
+        assertEquals(null, stamped, "an offline pass doesn't use up the day")
+        assertFalse(check(now = 3 * day, last = 0L, confirmed = "https://old.example/f.xml"), "same address")
+        assertEquals(3 * day, stamped)
+        assertFalse(check(now = 3 * day, last = 0L, confirmed = "http://new.example/f.xml"), "http only")
+        assertFalse(check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", id = "rss:abc"), "rss: shows keep theirs")
+        assertFalse(check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", saved = null), "no saved address: recovery owns it")
+        assertEquals(null, savedUrl)
+    }
+
+    @Test
+    fun `a feed that moved for good gets its new address saved, only with the switch on and never for rss shows`() = runTest {
+        val meta = DirectFeedTipMeta("https://old.example/feed.xml", "Moving Show", null, null, null, null)
+        val repository = org.mockito.Mockito.mock(PodcastRepository::class.java)
+        suspend fun resolve(id: String, followMoves: Boolean): Pair<List<String>, Boolean?> {
+            val catalog =
+                cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(readyIds = setOf(id)).apply {
+                    publisherFeedUnchanged = false
+                    refreshOutcome =
+                        cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome.Success(
+                            newest = null, itemCount = 1, ready = true, movedTo = "https://new.example/feed.xml",
+                        )
+                }
+            val adopted = mutableListOf<String>()
+            SubscriptionForegroundSync.resolveCatalogRefresh(id, meta, catalog, repository, followMoves) { adopted += it }
+            return adopted to catalog.lastRefreshRequest?.detectMove
+        }
+
+        assertEquals(listOf("https://new.example/feed.xml") to true, resolve("123", followMoves = true))
+        assertEquals(emptyList<String>() to false, resolve("123", followMoves = false))
+        assertEquals(emptyList<String>() to false, resolve("rss:abc", followMoves = true))
     }
 
     private fun episode(id: String, podcastId: String,) = cx.aswin.boxlore.core.model.Episode(

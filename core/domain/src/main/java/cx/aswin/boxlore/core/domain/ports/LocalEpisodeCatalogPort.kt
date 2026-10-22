@@ -30,14 +30,26 @@ interface LocalEpisodeCatalogPort {
         val canProceed: suspend () -> Boolean = { true },
         /** Background callers own gated release admission rather than the ordinary ingest callback. */
         val runPostPersistCallback: Boolean = true,
+        /**
+         * Check whether the feed moved for good ([RefreshOutcome.Success.movedTo]): every redirect
+         * permanent, or a declared `itunes:new-feed-url` that serves the same show. Needs
+         * [PodcastMeta.title] to compare with.
+         */
+        val detectMove: Boolean = false,
     )
 
     sealed interface RefreshOutcome {
-        data class Success(val newest: Episode?, val itemCount: Int, val ready: Boolean,) : RefreshOutcome
+        /** [movedTo]: the feed's confirmed new HTTPS address, when [RefreshRequest.detectMove] found one. */
+        data class Success(val newest: Episode?, val itemCount: Int, val ready: Boolean, val movedTo: String? = null,) : RefreshOutcome
 
         data class Unchanged(val newest: Episode?,) : RefreshOutcome
 
-        data class Failure(val message: String,) : RefreshOutcome
+        /**
+         * [addressGone]: the publisher answered in a way that says the saved address no longer
+         * works (gone or refused, no such host, a failing certificate, or not a feed), so it is
+         * worth asking the server for a newer one. False for timeouts, server errors and offline.
+         */
+        data class Failure(val message: String, val addressGone: Boolean = false,) : RefreshOutcome
     }
 
     /** True when this show must be served from Room only (no PI ∪ extras merge). */

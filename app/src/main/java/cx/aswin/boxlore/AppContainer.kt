@@ -2,6 +2,7 @@ package cx.aswin.boxlore
 
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
+import cx.aswin.boxlore.core.catalog.FeedFixToggles
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
 import cx.aswin.boxlore.core.catalog.LegacyRssRepair
@@ -280,6 +281,12 @@ class AppContainer(
             episodeSupplementPort = episodeSupplementRepository,
             localEpisodeCatalog = subscribedEpisodeCatalog,
             scope = syncScope,
+            feedFixes =
+            FeedFixToggles(
+                addressRecheck = { FeedFixSwitches.isOn(FeedFixSwitches.ADDRESS_RECHECK_OFF) },
+                syncFallback = { FeedFixSwitches.isOn(FeedFixSwitches.SYNC_FALLBACK_OFF) },
+                movedFeed = { FeedFixSwitches.isOn(FeedFixSwitches.MOVED_FEED_OFF) },
+            ),
         )
     }
 
