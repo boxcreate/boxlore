@@ -317,6 +317,21 @@ class PodcastRepositoryCatalogTest {
     }
 
     @Test
+    fun `an empty match list is confirmed by the page path`() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[]}"""))
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("""{"items":[{"id":11,"title":"Old","enclosureUrl":"https://cdn.example/11.mp3","datePublished":1}],"hasMore":false}"""),
+        )
+
+        val baseline = repository.loadPiEpisodesForBaseline("90001", limit = 1000)
+
+        assertEquals(listOf("11"), baseline.map { it.id })
+        assertTrue(server.takeRequest().path!!.startsWith("/episodes/match"))
+        assertTrue(server.takeRequest().path!!.startsWith("/episodes?"))
+    }
+
+    @Test
     fun `match baseline off switch keeps the page path`() = runTest(testDispatcher) {
         val off =
             PodcastRepository(

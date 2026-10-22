@@ -307,11 +307,19 @@ class PodcastRepository(
         response.body()!!.items.mapNotNull { mapToEpisode(it) }
     }
 
-    /** `/episodes/match` as baseline episodes, or null to use the page path (HTTP or network error). */
+    /**
+     * `/episodes/match` as baseline episodes, or null to use the page path: an HTTP or network
+     * error, or an empty list (the page path confirms a show with no episodes, so a misbehaving
+     * route can never leave a feed matched against nothing).
+     */
     private fun loadMatchBaseline(resolvedId: String, limit: Int): List<Episode>? = try {
         val response = api.getEpisodeMatchList(publicKey, resolvedId, limit.coerceIn(1, MAX_MATCH_BASELINE)).execute()
         val body = response.body()
-        if (response.isSuccessful && body != null) body.items.mapNotNull { it.toBaselineEpisode(resolvedId) } else null
+        if (response.isSuccessful && body != null) {
+            body.items.mapNotNull { it.toBaselineEpisode(resolvedId) }.takeIf { it.isNotEmpty() }
+        } else {
+            null
+        }
     } catch (e: java.io.IOException) {
         android.util.Log.w("PodcastRepository", "match baseline failed for $resolvedId; using the page path", e)
         null
