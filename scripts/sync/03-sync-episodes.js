@@ -4,7 +4,8 @@
 /**
  * Stage 3: Sync latest-episode metadata for chart shows from the PI API.
  *
- * - Candidate list cached in sync state; re-queried after charts refresh or 20h.
+ * - Candidate list cached in sync state; re-queried after charts refresh, after 20h, or when the
+ *   core countries differ from those its relaxed tags were computed with (lib/staleness.js).
  *   Countries come from a one-shot charts pre-agg (see lib/chart-countries.js),
  *   not a per-podcast correlated subquery.
  * - Staleness: News 8h · core countries 24h · relaxed (secondary) countries 48h
@@ -39,11 +40,10 @@ const staleTips = require('./lib/stale-tips');
 const showWindow = require('./lib/show-window');
 const cadence = require('./lib/cadence');
 
-const CANDIDATE_CACHE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
 const CONCURRENCY = 5;
 
-async function refreshCandidates(st) {
-    log.info('[CANDIDATES] Refreshing candidate list from Turso');
+async function refreshCandidates(st, reason) {
+    log.info(`[CANDIDATES] Refreshing candidate list from Turso (${reason})`);
     // Pre-aggregate charts once (~one linear scan). Never use a correlated
     // CAST(c.itunes_id AS INTEGER) subquery — that was multi-billion rows_read.
     const countriesByItunes = await loadCountriesByItunesId(turso);
@@ -84,6 +84,7 @@ async function refreshCandidates(st) {
     }
     st.candidateIds = ids;
     st.candidatesRefreshedAt = Date.now();
+    st.relaxedTagsCore = staleness.relaxedTagsKey();
     const coreRegular = ids.length - newsCount - relaxedCount;
     log.info(
         `[CANDIDATES] ${log.fmt(ids.length)} chart shows cached · ` +
@@ -151,33 +152,10 @@ async function main() {
     });
 
     const cacheAge = Date.now() - (st.candidatesRefreshedAt || 0);
-    const chartsNewerThanCache = (st.chartsRefreshedAt || 0) > (st.candidatesRefreshedAt || 0);
-    let needRefresh = !st.candidateIds || chartsNewerThanCache || cacheAge > CANDIDATE_CACHE_MAX_AGE_MS;
-    if (!needRefresh && st.candidateIds && cfg.RELAXED_CHECK_COUNTRIES.length > 0) {
-        let missingX = 0;
-        for (const id of st.candidateIds) {
-            const rec = st.shows[id];
-            if (rec && rec.x === undefined && rec.n !== 1) missingX++;
-        }
-        // One-shot: apply relaxed(48h) tags without waiting for charts / 20h cache expiry
-        if (missingX > Math.max(50, st.candidateIds.length * 0.05)) {
-            log.info(
-                `[CANDIDATES] Refreshing to apply relaxed(48h) tags ` +
-                `(${log.fmt(missingX)} non-news shows untagged)`,
-            );
-            needRefresh = true;
-        }
-    }
-    if (!needRefresh && st.candidateIds && cfg.CADENCE_MODE !== 'off') {
-        // One-shot: the cadence reads Apple's dates by iTunes ID, which only a refresh records.
-        const missingI = st.candidateIds.filter((id) => !st.shows[id]?.i).length;
-        if (missingI > Math.max(50, st.candidateIds.length * 0.05)) {
-            log.info(`[CANDIDATES] Refreshing to record iTunes IDs (${log.fmt(missingI)} shows without one)`);
-            needRefresh = true;
-        }
-    }
+    const refreshReason = staleness.candidateRefreshReason(st, { cadence: cfg.CADENCE_MODE !== 'off' });
+    const needRefresh = refreshReason !== null;
     if (needRefresh) {
-        await refreshCandidates(st);
+        await refreshCandidates(st, refreshReason);
     } else {
         log.info(`[CANDIDATES] Using cached list (${log.fmt(st.candidateIds.length)} shows, age ${Math.round(cacheAge / 3600000)}h) - 0 Turso reads`);
     }
@@ -187,7 +165,7 @@ async function main() {
     let shadow = null;
     let appleError = null;
     if (cfg.CADENCE_MODE === 'shadow') {
-        if (needRefresh || Date.now() - (st.cadenceSeededAt || 0) > CANDIDATE_CACHE_MAX_AGE_MS) {
+        if (needRefresh || Date.now() - (st.cadenceSeededAt || 0) > staleness.CANDIDATE_CACHE_MAX_AGE_MS) {
             try {
                 const seeded = await cadence.seedFromBook(book, st.shows, st.candidateIds);
                 st.cadenceSeededAt = Date.now();
