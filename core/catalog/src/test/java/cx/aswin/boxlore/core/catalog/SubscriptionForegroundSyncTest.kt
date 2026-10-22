@@ -510,6 +510,7 @@ class SubscriptionForegroundSyncTest {
         val urls =
             mutableMapOf(
                 "moved" to "https://old.example/moved.xml",
+                "badnew" to "https://old.example/badnew.xml",
                 "flaky" to "https://feeds.example/flaky.xml",
                 "dead" to "https://feeds.example/dead.xml",
                 "rss:own" to "https://feeds.example/own.xml",
@@ -518,6 +519,7 @@ class SubscriptionForegroundSyncTest {
         val saved = mutableMapOf<String, String>()
         val rechecked = mutableListOf<String>()
         val reads = mutableMapOf<String, Int>()
+        val savedAddresses = mutableMapOf<String, String>()
         SubscriptionForegroundSync.syncSubscribedLatestEpisodes(
             loadIds = { urls.keys.toSet() },
             loadPodcastMeta = { id -> DirectFeedTipMeta(urls[id], id, null, null, null, null) },
@@ -540,14 +542,21 @@ class SubscriptionForegroundSyncTest {
                 },
                 recheckAddress = { id ->
                     rechecked += id
-                    (id == "moved").also { if (it) urls[id] = "https://new.example/moved.xml" }
+                    when (id) {
+                        "moved" -> "https://new.example/moved.xml"
+                        "badnew" -> "https://new.example/badnew.xml"
+                        else -> null
+                    }
                 },
+                saveAddress = { id, url -> savedAddresses[id] = url },
             ),
         )
-        assertEquals(setOf("moved", "dead"), rechecked.toSet(), "only dead addresses, never rss: shows")
+        assertEquals(setOf("moved", "badnew", "dead"), rechecked.toSet(), "only dead addresses, never rss: shows")
         assertEquals(2, reads["moved"], "read again at the new address")
         assertEquals("-7", saved["moved"])
-        assertEquals(setOf("flaky", "dead"), piSynced.toSet())
+        assertEquals(mapOf("moved" to "https://new.example/moved.xml"), savedAddresses, "an offered address that also fails is never saved")
+        assertEquals(2, reads["badnew"])
+        assertEquals(setOf("flaky", "badnew", "dead"), piSynced.toSet())
         assertEquals("pi_flaky", saved["flaky"])
         assertEquals("pi_dead", saved["dead"])
         assertFalse(saved.containsKey("rss:own"))
@@ -578,7 +587,6 @@ class SubscriptionForegroundSyncTest {
     fun `a dead address is re-checked once a day, and only once the server answers`() = runTest {
         val day = LocalEpisodeCatalogRepository.FEED_URL_LOOKUP_INTERVAL_MS
         var stamped: Long? = null
-        var savedUrl: String? = null
         suspend fun check(now: Long, last: Long, confirmed: String?, saved: String? = "https://old.example/f.xml", id: String = "123") =
             DirectFeedRecovery.recheckGoneFeedAddress(
                 id = id,
@@ -587,24 +595,20 @@ class SubscriptionForegroundSyncTest {
                 lastLookupAt = { last },
                 markLookup = { stamped = it },
                 lookupFeedUrl = { confirmed },
-                saveFeedUrl = { savedUrl = it },
             )
 
-        assertTrue(check(now = 2 * day, last = 0L, confirmed = "https://new.example/f.xml"))
-        assertEquals("https://new.example/f.xml", savedUrl)
+        assertEquals("https://new.example/f.xml", check(now = 2 * day, last = 0L, confirmed = "https://new.example/f.xml"))
         assertEquals(2 * day, stamped)
 
         stamped = null
-        savedUrl = null
-        assertFalse(check(now = 2 * day, last = 2 * day - 1_000L, confirmed = "https://new.example/f.xml"), "within a day")
-        assertFalse(check(now = 3 * day, last = 0L, confirmed = null), "no answer")
+        assertEquals(null, check(now = 2 * day, last = 2 * day - 1_000L, confirmed = "https://new.example/f.xml"), "within a day")
+        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = null), "no answer")
         assertEquals(null, stamped, "an offline pass doesn't use up the day")
-        assertFalse(check(now = 3 * day, last = 0L, confirmed = "https://old.example/f.xml"), "same address")
+        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "https://old.example/f.xml"), "same address")
         assertEquals(3 * day, stamped)
-        assertFalse(check(now = 3 * day, last = 0L, confirmed = "http://new.example/f.xml"), "http only")
-        assertFalse(check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", id = "rss:abc"), "rss: shows keep theirs")
-        assertFalse(check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", saved = null), "no saved address: recovery owns it")
-        assertEquals(null, savedUrl)
+        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "http://new.example/f.xml"), "http only")
+        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", id = "rss:abc"), "rss: shows keep theirs")
+        assertEquals(null, check(now = 3 * day, last = 0L, confirmed = "https://new.example/f.xml", saved = null), "no saved address: recovery owns it")
     }
 
     @Test

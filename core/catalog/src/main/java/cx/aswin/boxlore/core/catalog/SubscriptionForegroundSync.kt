@@ -380,6 +380,7 @@ class SubscriptionForegroundSync(
                     },
                     onFeedRefreshed = { refreshed.tryEmit(it) },
                     recheckAddress = DirectFeedRecovery.addressRecheck(feedFixes, subscriptionRepository, podcastRepository, localEpisodeCatalog),
+                    saveAddress = { id, url -> subscriptionRepository.ensureHttpsFeedUrl(id, url) },
                     syncFallbackEnabled = feedFixes.syncFallback,
                 ),
             )
@@ -591,7 +592,9 @@ class SubscriptionForegroundSync(
             DirectFeedRecovery.recover(
                 failed = syncDirectFeedNetwork(feedTipIds, loadPodcastMeta, saveFeed, directFeed),
                 directFeed = directFeed,
-                readAgain = { id -> syncOneDirectFeedTip(id, loadPodcastMeta, directFeed.resolveFeedTip, saveFeed, directFeed.onFeedRefreshed) },
+                readAgain = { id, url ->
+                    syncOneDirectFeedTip(id, { loadPodcastMeta(it)?.copy(feedUrl = url) }, directFeed.resolveFeedTip, saveFeed, directFeed.onFeedRefreshed)
+                },
                 syncFromServer = { ids -> syncPiChunks(ids, chunkSize, syncChunk, saveLatest) },
             )
             Log.d(TAG, "Finished background sync for all ${currentSubs.size} subs")
@@ -870,8 +873,10 @@ internal data class DirectFeedSyncSeams(
     val preferredPodcastId: () -> String? = { null },
     val onFeedRefreshed: (String) -> Unit = {},
     val selectRefreshBatch: suspend (List<String>) -> List<String> = { it },
-    /** Re-checks a show's dead saved address; true when a new one was saved (read it again now). */
-    val recheckAddress: suspend (String) -> Boolean = { false },
+    /** Re-checks a show's dead saved address: a different address to try, or null. */
+    val recheckAddress: suspend (String) -> String? = { null },
+    /** Saves an address that [recheckAddress] offered and that then read successfully. */
+    val saveAddress: suspend (id: String, feedUrl: String) -> Unit = { _, _ -> },
     /** Whether shows whose own feed failed this pass get their latest episode from `/sync`. */
     val syncFallbackEnabled: () -> Boolean = { true },
 )
