@@ -16,7 +16,9 @@
  *       "x": 1 (present only when show is on relaxed-check countries only — 48h),
  *       "s": <lastSeenInChartsMs>,
  *       "k": <earned episode cap: the highest cap the show had while its vectors were kept>,
- *       "d": <ms epoch when a newest-first show gets its full window (removed once flagged)>
+ *       "d": <ms epoch when a newest-first show gets its full window (removed once flagged)>,
+ *       "g": <typical hours between episodes>, "p": <newest episode date, epoch s>, "i": <iTunes ID>
+ *            (check cadence, lib/cadence.js)
  *     }
  *   }
  * }

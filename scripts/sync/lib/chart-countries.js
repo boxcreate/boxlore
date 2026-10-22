@@ -133,6 +133,7 @@ function mergePodcastRowsWithCountries(podcastRows, countriesByItunes) {
             latestEpId,
             categories,
             medium,
+            itunesId: Number(itunesId),
             countryCsv,
         });
     }

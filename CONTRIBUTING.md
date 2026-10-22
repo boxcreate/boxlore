@@ -47,7 +47,7 @@ In accordance with the [PolyForm Strict License 1.0.0](LICENSE), you are welcome
 | Java | JDK 17; set `JAVA_HOME` and the Android Studio Gradle JDK to this installation |
 | Android SDK | Platform 36, Platform-Tools, and the Build-Tools version requested by the Android Gradle plugin |
 | Gradle | Use the checked-in `./gradlew` wrapper; no separate Gradle installation is needed |
-| Node.js | Version 20 and npm for scripts; not needed for ordinary Android builds |
+| Node.js | Version 22.13 or newer and npm for scripts; not needed for ordinary Android builds |
 | Python | Python 3 for local configuration and release-tooling tests |
 | Device | Android 12 / API 31 or newer when running the app |
 

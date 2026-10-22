@@ -157,6 +157,10 @@ module.exports = {
     // records, stage 4 compares) | on (stage 4 reads the saved list instead of fetching it again).
     WINDOWS_MODE: ['off', 'shadow', 'on'].includes(process.env.WINDOWS_MODE) ? process.env.WINDOWS_MODE : 'off',
     REGISTRY_DB: process.env.REGISTRY_DB || '/var/lib/boxlore-registry/published/registry.db',
+    // Per-show check cadence (own-episode-IDs P1b, lib/cadence.js): off | shadow (stage 3 reports
+    // what the cadence would check; checks still follow the tiers above). P3b switches it on.
+    CADENCE_MODE: process.env.CADENCE_MODE === 'off' ? 'off' : 'shadow',
+    APPLE_LATEST_DB: process.env.APPLE_LATEST_DB || '/var/lib/boxlore-applefeeds/published/apple_latest.db',
 
     // --- Cleanup ---
     CLEANUP_GRACE_DAYS: 7,
