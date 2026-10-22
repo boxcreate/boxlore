@@ -63,6 +63,10 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 ### Upcoming
 
 <!-- release-upcoming:start -->
+<b>🚨 Critical:</b>
+<ul align="left">
+<li>Shows whose feed stopped working get new episodes again. <a href="https://github.com/boxcreate/boxlore/pull/1160"><img src="https://img.shields.io/badge/PR-1160-6750A4?style=flat-square" alt="PR #1160" height="18"/></a></li>
+</ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
 <li>New-episode notifications keep working for shows that moved to a new feed address. <a href="https://github.com/boxcreate/boxlore/pull/1150"><img src="https://img.shields.io/badge/PR-1150-6750A4?style=flat-square" alt="PR #1150" height="18"/></a></li>
@@ -70,6 +74,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>🐛 Fixes:</b>
 <ul align="left">
+<li>Shows that moved to a new feed address now follow it. <a href="https://github.com/boxcreate/boxlore/pull/1160"><img src="https://img.shields.io/badge/PR-1160-6750A4?style=flat-square" alt="PR #1160" height="18"/></a></li>
 <li>Shows with more than 100 episodes keep progress, history and downloads on their newer episodes, and stop listing some twice. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
 <li>An episode of one show no longer replaces an episode of another show that uses the same feed. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>
 <li>A feed address boxlore fixes on one device now reaches your other devices through sync. <a href="https://github.com/boxcreate/boxlore/pull/1159"><img src="https://img.shields.io/badge/PR-1159-6750A4?style=flat-square" alt="PR #1159" height="18"/></a></li>

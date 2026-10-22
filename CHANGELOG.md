@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The weekly tracked-podcast repair fills missing feed addresses from the feed-address registry and replaces addresses the registry has proven dead, only when the saved value is unchanged since it was read. ([#1153](https://github.com/boxcreate/boxlore/pull/1153)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync calls Podcast Index faster, cools off and slows down when it pushes back, and pauses Podcast Index for the run when trouble continues instead of failing. ([#1157](https://github.com/boxcreate/boxlore/pull/1157)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 ### Fixed
+- Subscription sync re-checks a dead saved feed address against `GET /podcast` once a day per show and reads a new address at once; shows whose own feed failed get their latest episode from `/sync`. ([#1160](https://github.com/boxcreate/boxlore/pull/1160)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- A feed that moved for good (301/308 redirects or `itunes:new-feed-url`, same show title) has its new HTTPS address saved; temporary redirects and `rss:` shows are never moved. ([#1160](https://github.com/boxcreate/boxlore/pull/1160)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
+- Feed read errors are typed (`FeedHttpException`, `NotAFeedException`) and classified by `FeedReadFailure`; PostHog kill switches `feed-fix-address-recheck-off`, `feed-fix-sync-fallback-off`, `feed-fix-moved-feed-off`. ([#1160](https://github.com/boxcreate/boxlore/pull/1160)) <!-- impact:user-impact-critical --> <!-- copy:locked -->
 - Feed-episode baselines read up to 1,000 newest episodes from `GET episodes/match` (match fields only) instead of the oldest 100, with the old page as fallback and a PostHog kill switch (`feed-fix-match-baseline-off`); a matched newest tip fills empty fields from the feed. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - `LocalEpisodeCollisionGuard` keeps a local catalog row from replacing another show's episode: a clashing row gets a reserved negative ID, and the legacy RSS upgrade stays on RSS instead. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
 - `PodcastDao.setFeedUrl` marks the row dirty, so a corrected feed address syncs. ([#1159](https://github.com/boxcreate/boxlore/pull/1159)) <!-- impact:user-impact-high+backend-change --> <!-- copy:locked -->
@@ -60,6 +63,13 @@ readme-copy:end pr=1151 -->
 - An episode of one show no longer replaces an episode of another show that uses the same feed.
 - A feed address boxlore fixes on one device now reaches your other devices through sync.
 readme-copy:end pr=1159 -->
+
+<!-- readme-copy:start pr=1160
+### Critical
+- Shows whose feed stopped working get new episodes again.
+### Fixes
+- Shows that moved to a new feed address now follow it.
+readme-copy:end pr=1160 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
