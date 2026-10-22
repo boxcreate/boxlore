@@ -18,6 +18,9 @@
  * - Episode-cap trim is best-effort: failure is logged but does not roll
  *   back a successful non-chart cleanup.
  *
+ * Last-charted dates (lib/charted-at.js, P3b): before deleting, every kept show's Qdrant points
+ * get the day it was last seen on a chart. Best-effort: a failure never blocks the cleanup.
+ *
  * FTS safety: the podcasts_ad delete trigger does a full FTS-content scan
  * PER ROW, so we drop it, bulk-delete, clean FTS orphans in one scan, and
  * recreate it.
@@ -33,6 +36,7 @@ const handoff = require('./lib/pi-handoff');
 const { trimEpisodeCaps } = require('./lib/trim-episode-caps');
 const { CHARTS_ITUNES_FIRST_CURSOR } = require('./lib/chart-countries');
 const attribution = require('./lib/attribution');
+const chartedAt = require('./lib/charted-at');
 
 const QDRANT_CHUNK = 500;
 const DELETE_CHUNK = 200;
@@ -47,6 +51,24 @@ async function runCapTrim() {
     } catch (e) {
         log.error(`Episode cap trim failed (non-fatal): ${e.message}`);
         return { showsScanned: 0, trimmedShows: 0, deletedPoints: 0, failed: true };
+    }
+}
+
+/** Stamps kept shows' points with their last chart day. Never throws; returns the report line. */
+async function stampChartedAt(pods, shows) {
+    try {
+        for (const c of chartedAt.COLLECTIONS) await qdrant.ensurePayloadIndex(c.name, chartedAt.FIELD, 'integer');
+        const r = await chartedAt.stamp(qdrant, chartedAt.planBatches(pods, shows), {
+            collections: chartedAt.COLLECTIONS,
+            refreshSec: cfg.CHARTED_AT_REFRESH_DAYS * chartedAt.DAY_S,
+            warn: (m) => log.warn(m),
+        });
+        const line = chartedAt.summary(r);
+        log.info(`[CHARTED_AT] ${line}`);
+        return line;
+    } catch (e) {
+        log.warn(`[CHARTED_AT] skipped: ${e.message}`);
+        return 'charted_at skipped';
     }
 }
 
@@ -149,6 +171,10 @@ async function main() {
     // Persist grace clocks even when nothing is deleted yet.
     state.save(st);
 
+    // Last-charted dates for the shows that stay (points of shows deleted below go anyway).
+    const deleting = new Set(toDelete.map(p => p.id));
+    const chartedLine = await stampChartedAt(allPods.filter(p => !deleting.has(p.id)), st.shows);
+
     if (toDelete.length === 0) {
         log.info('Nothing past the grace period - done');
         const trim = await runCapTrim();
@@ -156,7 +182,7 @@ async function main() {
             stage: 'cleanup-non-chart',
             reads: turso.getStats().reads,
             writes: turso.getStats().writes,
-            detail: `0 deleted, ${inGrace} in grace, cap-trim ${trim.deletedPoints} pts${trim.failed ? ' (trim failed)' : ''}`,
+            detail: `0 deleted, ${inGrace} in grace, cap-trim ${trim.deletedPoints} pts${trim.failed ? ' (trim failed)' : ''} · ${chartedLine}`,
         }]);
         if (trim.failed) process.exitCode = 1;
         return;
@@ -206,7 +232,7 @@ async function main() {
             stage: 'cleanup-non-chart',
             reads: turso.getStats().reads,
             writes: turso.getStats().writes,
-            detail: `0 turso deleted (${toDelete.length} pending qdrant), cap-trim ${trim.deletedPoints} pts`,
+            detail: `0 turso deleted (${toDelete.length} pending qdrant), cap-trim ${trim.deletedPoints} pts · ${chartedLine}`,
         }]);
         process.exitCode = 1;
         return;
@@ -276,7 +302,7 @@ async function main() {
         stage: 'cleanup-non-chart',
         reads: stats.reads,
         writes: stats.writes,
-        detail: `${qdrantOk.length}/${toDelete.length} shows deleted, ${inGrace} in grace, ${pruned} state pruned, cap-trim ${trim.deletedPoints} pts${trim.failed || qdrantFailedChunks ? ' (partial/errors)' : ''}`,
+        detail: `${qdrantOk.length}/${toDelete.length} shows deleted, ${inGrace} in grace, ${pruned} state pruned, cap-trim ${trim.deletedPoints} pts${trim.failed || qdrantFailedChunks ? ' (partial/errors)' : ''} · ${chartedLine}`,
     }]);
 
     if (trim.failed || qdrantFailedChunks > 0) process.exitCode = 1;

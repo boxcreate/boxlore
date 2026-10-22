@@ -164,6 +164,9 @@ module.exports = {
 
     // --- Cleanup ---
     CLEANUP_GRACE_DAYS: 7,
+    // Last-charted dates on Qdrant points (lib/charted-at.js, P3b): a point's date is rewritten
+    // only when it is more than this many days older than its show's last chart sighting.
+    CHARTED_AT_REFRESH_DAYS: Math.max(0, parseInt(process.env.CHARTED_AT_REFRESH_DAYS || '7', 10) || 0),
     CLEANUP_SAFETY_MIN_CHARTS: 500,
 
     // --- State / files ---
