@@ -104,7 +104,7 @@ async function runStaleTips(opts) {
     const { mode, due, db, feedsUrl, registryPath, fetchImpl = fetch, warn = () => {} } = opts;
     const mediumOf = opts.mediumOf || (() => 'podcast');
     const now = opts.now || Date.now;
-    const out = { mode, stale: 0, answered: 0, newer: 0, updated: 0, noItem: 0, failedChunks: 0, error: null, updatedIds: [] };
+    const out = { mode, stale: 0, answered: 0, newer: 0, updated: 0, noItem: 0, failedChunks: 0, error: null, updatedIds: [], tipDates: {} };
     if (mode !== 'shadow' && mode !== 'on') return out;
 
     let flagged;
@@ -156,6 +156,7 @@ async function runStaleTips(opts) {
                 await db.execute(TIP_SQL, tipUpdateArgs(r.item, mediumOf(showId), now(), showId, feedIdentity(showId, r.item)));
                 out.updated++;
                 out.updatedIds.push(showId);
+                out.tipDates[showId] = Number(r.item.datePublished) || 0;
             } catch (e) {
                 warn(`[R5] show ${showId}: tip write failed (${e.message})`);
             }

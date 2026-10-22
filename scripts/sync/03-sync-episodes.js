@@ -13,6 +13,8 @@
  *   full items[] written to PI handoff for stage 4 (no second PI call same run).
  * - R5 (R5_MODE, lib/stale-tips.js): afterwards, checked shows the registry flags stale take the
  *   live feed's newest episode as their tip when it is newer than Podcast Index's.
+ * - Check cadence (CADENCE_MODE, lib/cadence.js): in shadow, reports what a per-show schedule would
+ *   have checked; checks still follow the tiers above.
  */
 
 const log = require('./lib/log');
@@ -35,6 +37,7 @@ const {
 const staleness = require('./lib/staleness');
 const staleTips = require('./lib/stale-tips');
 const showWindow = require('./lib/show-window');
+const cadence = require('./lib/cadence');
 
 const CANDIDATE_CACHE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
 const CONCURRENCY = 5;
@@ -63,9 +66,10 @@ async function refreshCandidates(st) {
     const ids = [];
     let newsCount = 0;
     let relaxedCount = 0;
-    for (const { id: podId, latestEpId, categories, medium, countryCsv } of chartShows) {
+    for (const { id: podId, latestEpId, categories, medium, itunesId, countryCsv } of chartShows) {
         ids.push(podId);
         const rec = st.shows[podId] || {};
+        if (itunesId) rec.i = itunesId;
         if (rec.e === undefined && latestEpId) rec.e = String(latestEpId);
         if ((categories || '').includes('News')) {
             rec.n = 1;
@@ -143,6 +147,7 @@ async function main() {
         'Concurrency': String(CONCURRENCY),
         'Stale tips (R5)': cfg.R5_MODE,
         'Saved windows': cfg.WINDOWS_MODE,
+        'Check cadence': cfg.CADENCE_MODE,
     });
 
     const cacheAge = Date.now() - (st.candidatesRefreshedAt || 0);
@@ -163,11 +168,46 @@ async function main() {
             needRefresh = true;
         }
     }
+    if (!needRefresh && st.candidateIds && cfg.CADENCE_MODE !== 'off') {
+        // One-shot: the cadence reads Apple's dates by iTunes ID, which only a refresh records.
+        const missingI = st.candidateIds.filter((id) => !st.shows[id]?.i).length;
+        if (missingI > Math.max(50, st.candidateIds.length * 0.05)) {
+            log.info(`[CANDIDATES] Refreshing to record iTunes IDs (${log.fmt(missingI)} shows without one)`);
+            needRefresh = true;
+        }
+    }
     if (needRefresh) {
         await refreshCandidates(st);
     } else {
         log.info(`[CANDIDATES] Using cached list (${log.fmt(st.candidateIds.length)} shows, age ${Math.round(cacheAge / 3600000)}h) - 0 Turso reads`);
     }
+
+    // Cadence shadow: pace from the book about daily, then the plan from the state as it was before
+    // this run's checks. Never fails the stage.
+    let shadow = null;
+    let appleError = null;
+    if (cfg.CADENCE_MODE === 'shadow') {
+        if (needRefresh || Date.now() - (st.cadenceSeededAt || 0) > CANDIDATE_CACHE_MAX_AGE_MS) {
+            try {
+                const seeded = await cadence.seedFromBook(book, st.shows, st.candidateIds);
+                st.cadenceSeededAt = Date.now();
+                log.info(`[CADENCE] pace seeded from the book for ${log.fmt(seeded)} shows`);
+            } catch (e) {
+                log.warn(`[CADENCE] pace seed skipped: ${e.message}`);
+            }
+        }
+        const apple = cadence.openApple(cfg.APPLE_LATEST_DB);
+        appleError = apple.error;
+        if (appleError) log.warn(`[CADENCE] Apple snapshot unread: ${appleError}`);
+        try {
+            shadow = cadence.shadowPlan(st.candidateIds, st.shows, { appleOf: apple.lookup });
+        } catch (e) {
+            log.warn(`[CADENCE] shadow plan skipped: ${e.message}`);
+        } finally {
+            apple.close();
+        }
+    }
+    const newTipIds = [];
 
     const plan = staleness.planDue(st.candidateIds, st.shows);
     const { allDue, neverChecked, staleNews, staleCore, staleRelaxed,
@@ -252,7 +292,8 @@ async function main() {
                 const latestTip = tip[0];
                 if (rec.e && String(latestTip.id) === String(rec.e)) {
                     unchanged++;
-                    state.recordCheck(st, podId);
+                    const checked = state.recordCheck(st, podId);
+                    if (shadow) cadence.noteNewest(checked, latestTip.datePublished);
                     return;
                 }
 
@@ -292,7 +333,12 @@ async function main() {
                 updated++;
                 tipReflags++;
                 tipUpdatedThisBatch = true;
-                state.recordCheck(st, podId, { latestEpId: latest.id }).m = medium;
+                const checked = state.recordCheck(st, podId, { latestEpId: latest.id });
+                checked.m = medium;
+                if (shadow) {
+                    cadence.notePace(checked, (full || tip).map((ep) => ep.datePublished));
+                    newTipIds.push(podId);
+                }
             } catch (e) {
                 if (pi.isSuspended(e)) {
                     piPaused = piPaused || e;
@@ -328,6 +374,20 @@ async function main() {
     });
     const r5Line = staleTips.summary(r5);
     if (cfg.R5_MODE !== 'off') log.info(`[R5] ${r5Line}`);
+
+    let cadenceLine = '';
+    if (shadow) {
+        for (const [id, date] of Object.entries(r5.tipDates || {})) {
+            cadence.noteNewest(st.shows[id] || (st.shows[id] = {}), date);
+            newTipIds.push(id);
+        }
+        state.save(st);
+        const paceShows = st.candidateIds.filter((id) => st.shows[id]?.g != null).length;
+        cadenceLine = cadence.summary(cfg.CADENCE_MODE, shadow, cadence.compare(shadow, allDue, newTipIds), {
+            appleError, paceShows, candidates: st.candidateIds.length,
+        });
+        log.info(`[CADENCE] ${cadenceLine}`);
+    }
 
     // R5 shows whose tip came from the feed also save the feed's merged list as their window, so
     // stage 4 embeds the feed-only episodes (WINDOWS_MODE on flags them; shadow only records).
@@ -388,7 +448,8 @@ async function main() {
             ` · ${pi.summary()}` +
             (piPaused ? ` · ${due.length - checkedBeforePause} checks left for the next run` : '') +
             (cfg.R5_MODE !== 'off' ? ` · ${r5Line}` : '') +
-            (windowLine ? ` · ${windowLine}` : ''),
+            (windowLine ? ` · ${windowLine}` : '') +
+            (cadenceLine ? ` · ${cadenceLine}` : ''),
     }]);
 
     // A pause is "try later", not a failure; only real errors over half the checks fail the stage.

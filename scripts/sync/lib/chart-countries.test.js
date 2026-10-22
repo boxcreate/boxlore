@@ -34,6 +34,7 @@ describe('chart-countries', () => {
                 latestEpId: 'e1',
                 categories: 'News',
                 medium: 'podcast',
+                itunesId: 111,
                 countryCsv: 'us,gb',
             },
             {
@@ -41,6 +42,7 @@ describe('chart-countries', () => {
                 latestEpId: null,
                 categories: '',
                 medium: 'podcast',
+                itunesId: 222,
                 countryCsv: 'de',
             },
         ]);

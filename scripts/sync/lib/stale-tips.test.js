@@ -79,6 +79,7 @@ describe('stale tips (R5)', () => {
         assert.equal(args[16], 7);
         assert.match(summary(r), /R5 on: 3 stale due, 3 answered, 1 tips from the feed, 1 without a served ID yet/);
         assert.deepEqual(r.updatedIds, [7], 'stage 3 saves these shows\' feed windows');
+        assert.deepEqual(r.tipDates, { 7: NEW }, 'the check cadence keeps the new tip\'s date');
     });
 
     it('shadow: counts newer feed episodes from the date summary, never asks for IDs, never writes', async () => {
