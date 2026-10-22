@@ -31,7 +31,7 @@ internal object LocalEpisodeCollisionGuard {
     /**
      * The rows to write: unchanged when their IDs are free or already theirs, otherwise with a
      * reserved ID. A row with no free ID after [MAX_RESERVE_ATTEMPTS] is left out rather than
-     * written over another episode.
+     * written over another episode; the refresh then writes nothing and fails.
      */
     suspend fun resolve(
         rows: List<LocalEpisodeEntity>,

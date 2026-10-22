@@ -149,9 +149,15 @@ private suspend fun persistParsed(
     var written = rows
     var storedCount = rows.size
     var ready = false
+    var incomplete = false
     deps.runInTransaction {
         // Another show reading the same feed may already hold these IDs: never replace its rows.
         written = LocalEpisodeCollisionGuard.resolve(rows, rssNamespaceId) { ids -> deps.dao.findOwners(ids) }
+        if (written.size < rows.size) {
+            // A row found no free ID: write nothing rather than mark a partial catalog complete.
+            incomplete = true
+            return@runInTransaction
+        }
         deps.dao.upsertEpisodes(written)
         deps.reconcileListenerState(request.podcastIndexId, written)
         storedCount = maxOf(deps.dao.count(request.podcastIndexId), written.size)
@@ -173,6 +179,7 @@ private suspend fun persistParsed(
             ),
         )
     }
+    if (incomplete) return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
     val newestRow = written.maxByOrNull { it.publishedDate }
     return RefreshOutcome.Success(
         newest = newestRow?.toCatalogEpisode(request.meta),

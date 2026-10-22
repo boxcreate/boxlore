@@ -362,6 +362,34 @@ class LocalEpisodeCatalogRepositoryTest {
         assertEquals(idsAfter[1], idsAfter[3], "IDs stay put on later refreshes")
     }
 
+    @Test
+    fun aRowWithNoFreeIdFailsTheRefreshAndWritesNothing() = runTest {
+        // Every ID the second show could take already belongs to a third show.
+        val dao = FakeCatalogDao()
+        val namespace = RssIdGenerator.podcastId("https://feeds.example/shared.xml")
+        val taken =
+            listOf(SharedFeedClient.mintedId()) +
+                (1..LocalEpisodeCollisionGuard.MAX_RESERVE_ATTEMPTS).map {
+                    StickyEpisodeIdentity.reservedEpisodeId(namespace, "200", SharedFeedClient.GUID, it)
+                }
+        dao.episodes += taken.map { localEpisode(it).copy(podcastId = "300", guid = "other-$it") }
+        val repo = catalogRepo(dao = dao, feedClient = SharedFeedClient())
+
+        val outcome =
+            repo.refresh(
+                LocalEpisodeCatalogPort.RefreshRequest(
+                    podcastIndexId = "200",
+                    feedUrl = "https://feeds.example/shared.xml",
+                    reason = LocalEpisodeCatalogPort.RefreshReason.MANUAL,
+                ),
+            )
+
+        assertTrue(outcome is RefreshOutcome.Failure)
+        assertTrue(dao.episodes.none { it.podcastId == "200" })
+        assertEquals(taken.size, dao.episodes.count { it.podcastId == "300" })
+        assertNull(dao.feeds["200"], "no catalog row marked complete")
+    }
+
     private fun catalogRepo(
         dao: FakeCatalogDao = FakeCatalogDao(),
         isFeedUnchanged: suspend (String, String?, String?) -> Boolean = { _, _, _ -> false },
