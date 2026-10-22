@@ -43,7 +43,16 @@ describe('planShow', () => {
         const plan = planShow(SID, [point('u1', 61), point('u3', 99)], [item(61, 'g')]);
         assert.deepEqual(stampOperations(plan), [
             { set_payload: { payload: { eid: recipeId(SID, 'g'), catalog_key: 'g' }, points: ['u1'] } },
+            { delete_payload: { keys: ['eid_missing'], points: ['u1'] } },
             { set_payload: { payload: { eid_missing: true }, points: ['u3'] } },
+        ]);
+    });
+
+    it('a point mapped on a retry loses its eid_missing mark', () => {
+        const plan = planShow(SID, [point('u3', 99)], [item(99, 'late-guid')]);
+        assert.deepEqual(stampOperations(plan), [
+            { set_payload: { payload: { eid: recipeId(SID, 'late-guid'), catalog_key: 'late-guid' }, points: ['u3'] } },
+            { delete_payload: { keys: ['eid_missing'], points: ['u3'] } },
         ]);
     });
 
@@ -61,5 +70,14 @@ describe('planShow', () => {
         assert.deepEqual(plan.shared, [{ pointId: 'u1', ownerSid: 7650363 }]);
         assert.deepEqual(plan.items.map((x) => x.key), ['g-62', 'g-63'], 'its own episodes are still recorded');
         assert.deepEqual(stampOperations(plan).at(-1), { set_payload: { payload: { eid_shared: 7650363 }, points: ['u1'] } });
+    });
+
+    it('a point found to belong to a duplicate feed on a retry loses its eid_missing mark too', () => {
+        const owners = new Map([[61, '7650363\u0000g']]);
+        const plan = planShow(SID, [point('u1', 61)], [item(61, 'g')], owners);
+        assert.deepEqual(stampOperations(plan), [
+            { delete_payload: { keys: ['eid_missing'], points: ['u1'] } },
+            { set_payload: { payload: { eid_shared: 7650363 }, points: ['u1'] } },
+        ]);
     });
 });
