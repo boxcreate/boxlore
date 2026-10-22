@@ -8,7 +8,7 @@ const path = require('node:path');
 const staleness = require('./staleness');
 const {
     paceFromDates, paceFromSpan, notePace, noteNewest, intervalFor, appleForces,
-    shadowPlan, compare, seedFromBook, openApple, summary, HOUR_MS,
+    shadowPlan, compare, seedFromBook, openApple, summary, BOOK_CHUNK, HOUR_MS,
 } = require('./cadence');
 
 const NOW = 1_792_700_000_000;
@@ -99,14 +99,25 @@ test('compare: skipped, earlier, and new tips the cadence would have found later
     assert.deepEqual(compare(plan, [], [], NOW), { wouldCheck: 3, current: 0, skipped: 0, earlier: 3, late: 0, lateMedianH: 0, lateMaxH: 0 });
 });
 
-test('seed from the book: candidate shows get pace and newest date; others are left alone', async () => {
-    const book = { query: async (sql) => {
+test('seed from the book: candidate shows get pace and newest date, read in bounded chunks', async () => {
+    const rows = { 1: ['1', '11', String(NOW_S - 10 * DAY_S), String(NOW_S)], 2: ['2', '2', '100', '200'] };
+    const calls = [];
+    const book = { query: async (sql, args) => {
         assert.match(sql, /ROW_NUMBER\(\) OVER \(PARTITION BY sid ORDER BY published_at DESC\)/);
-        return [['1', '11', String(NOW_S - 10 * DAY_S), String(NOW_S)], ['2', '2', '100', '200'], ['3', '11', '0', '1']];
+        assert.equal((sql.match(/\?/g) || []).length, args.length, 'one placeholder per show');
+        calls.push(args);
+        return args.filter((id) => rows[id]).map((id) => rows[id]);
     } };
     const shows = { 2: { p: 500, g: 7 } };
-    assert.equal(await seedFromBook(book, shows, ['1', '2']), 2);
+    assert.equal(await seedFromBook(book, shows, ['1', '2', '2', 'x']), 2);
+    assert.deepEqual(calls, [[1, 2]], 'deduplicated numeric IDs');
     assert.deepEqual(shows, { 1: { g: 24, p: NOW_S }, 2: { p: 500, g: 7 } }, 'too few episodes keep the old pace; dates never go back');
+
+    calls.length = 0;
+    const many = Array.from({ length: BOOK_CHUNK * 2 + 5 }, (_, i) => String(i + 1));
+    await seedFromBook(book, {}, many);
+    assert.deepEqual(calls.map((c) => c.length), [BOOK_CHUNK, BOOK_CHUNK, 5]);
+    assert.equal(await seedFromBook(book, {}, []), 0);
 });
 
 test('Apple snapshot: read-only lookups; a missing file means no Apple, not a failure', () => {

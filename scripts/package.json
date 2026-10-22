@@ -29,6 +29,6 @@
     "test:check-new-episodes": "node --test check-new-episodes-lib.test.js"
   },
   "engines": {
-    "node": ">=22.5"
+    "node": ">=22.13"
   }
 }

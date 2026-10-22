@@ -164,14 +164,19 @@ function compare(plan, currentDue, newTipIds, now = Date.now()) {
     };
 }
 
-/** Pace per show from the book's newest 11 dated episodes (one aggregate read, ~2 s for 52k shows). */
-const BOOK_PACE_SQL = `
+/** Shows per book read: each answer is at most this many rows (sqld's RESPONSE_TOO_LARGE). */
+const BOOK_CHUNK = 400;
+
+/** Pace for a chunk of shows from their newest 11 dated book episodes (index `episode_book_sid_date`). */
+function bookPaceSql(n) {
+    return `
     SELECT sid, COUNT(*), MIN(published_at), MAX(published_at)
     FROM (SELECT sid, published_at,
                  ROW_NUMBER() OVER (PARTITION BY sid ORDER BY published_at DESC) AS rn
-          FROM episode_book WHERE published_at > 0)
+          FROM episode_book WHERE sid IN (${Array(n).fill('?').join(',')}) AND published_at > 0)
     WHERE rn <= ${PACE_DATES}
     GROUP BY sid`;
+}
 
 /**
  * Seeds g and p for candidate shows from the book (stage 3's saved windows and the bootstrap), so
@@ -179,16 +184,17 @@ const BOOK_PACE_SQL = `
  * @returns {number} shows seeded
  */
 async function seedFromBook(book, shows, candidateIds) {
-    const wanted = new Set((candidateIds || []).map(String));
+    const ids = [...new Set((candidateIds || []).map(String))].filter((id) => /^[1-9][0-9]*$/.test(id));
     let seeded = 0;
-    for (const [sid, count, oldest, newest] of await book.query(BOOK_PACE_SQL)) {
-        const id = String(sid);
-        if (!wanted.has(id)) continue;
-        const rec = shows[id] || (shows[id] = {});
-        const g = paceFromSpan(count, oldest, newest);
-        if (g != null) rec.g = g;
-        noteNewest(rec, newest);
-        seeded++;
+    for (let i = 0; i < ids.length; i += BOOK_CHUNK) {
+        const chunk = ids.slice(i, i + BOOK_CHUNK);
+        for (const [sid, count, oldest, newest] of await book.query(bookPaceSql(chunk.length), chunk.map(Number))) {
+            const rec = shows[String(sid)] || (shows[String(sid)] = {});
+            const g = paceFromSpan(count, oldest, newest);
+            if (g != null) rec.g = g;
+            noteNewest(rec, newest);
+            seeded++;
+        }
     }
     return seeded;
 }
@@ -241,6 +247,6 @@ module.exports = {
     seedFromBook,
     openApple,
     summary,
-    BOOK_PACE_SQL,
+    BOOK_CHUNK,
     HOUR_MS,
 };
