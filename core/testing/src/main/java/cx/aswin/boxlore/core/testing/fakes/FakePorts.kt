@@ -46,6 +46,11 @@ class FakeLocalCatalogPort(
 class FakeLocalEpisodeCatalogPort(var readyIds: Set<String> = emptySet(), var episodes: MutableMap<String, Episode> = mutableMapOf(),) : LocalEpisodeCatalogPort {
     var refreshCalls: Int = 0
     var refreshError: Throwable? = null
+
+    /** What [refresh] returns; null keeps the default `Unchanged` with the newest stored episode. */
+    var refreshOutcome: LocalEpisodeCatalogPort.RefreshOutcome? = null
+    var lastRefreshRequest: LocalEpisodeCatalogPort.RefreshRequest? = null
+    var publisherFeedUnchanged: Boolean = true
     var sweepCalls: Int = 0
     var sweepError: Throwable? = null
     var lastSweepNowMs: Long? = null
@@ -119,11 +124,12 @@ class FakeLocalEpisodeCatalogPort(var readyIds: Set<String> = emptySet(), var ep
 
     override suspend fun refresh(request: LocalEpisodeCatalogPort.RefreshRequest): LocalEpisodeCatalogPort.RefreshOutcome {
         refreshCalls += 1
+        lastRefreshRequest = request
         refreshError?.let { throw it }
-        return LocalEpisodeCatalogPort.RefreshOutcome.Unchanged(newest(request.podcastIndexId))
+        return refreshOutcome ?: LocalEpisodeCatalogPort.RefreshOutcome.Unchanged(newest(request.podcastIndexId))
     }
 
-    override suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String,): Boolean = true
+    override suspend fun isPublisherFeedUnchanged(podcastId: String, feedUrl: String,): Boolean = publisherFeedUnchanged
 
     override suspend fun markFeedUrlLookup(podcastId: String, atMillis: Long,) = Unit
 

@@ -33,9 +33,18 @@ data class ParsedRssFeed(
     val podcastGuid: String?,
     val declaredUpdatedAt: Long?,
     val episodes: List<RssEpisodeEntity>,
+    /** The channel's `<itunes:new-feed-url>`: where the publisher says the feed moved. */
+    val newFeedUrl: String? = null,
 )
 
-data class RssFetchResult(val finalUrl: String, val etag: String?, val lastModified: String?, val body: ByteArray,)
+/** [movedTo]: the final address when every redirect on the way was permanent (301, 308). */
+data class RssFetchResult(
+    val finalUrl: String,
+    val etag: String?,
+    val lastModified: String?,
+    val body: ByteArray,
+    val movedTo: String? = null,
+)
 
 sealed interface RssFreshnessResult {
     data class Unchanged(val etag: String?, val lastModified: String?,) : RssFreshnessResult
@@ -61,9 +70,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 .build()
 
         return execute(request) { response ->
-            require(response.isSuccessful) {
-                "Feed returned HTTP ${response.code}"
-            }
+            if (!response.isSuccessful) throw FeedHttpException(response.code)
             validateContentType(response)
             val body = response.body
             val declaredLength = body.contentLength()
@@ -75,6 +82,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 etag = response.header("ETag"),
                 lastModified = response.header(LAST_MODIFIED_HEADER),
                 body = readBounded(body.byteStream()),
+                movedTo = permanentMoveTarget(response),
             )
         }
     }
@@ -83,7 +91,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
     open suspend fun fetchConditional(url: String, etag: String?, lastModified: String?): RssFetchResult? =
         execute(conditionalGetRequest(url, etag, lastModified)) { response ->
             if (response.code == HTTP_NOT_MODIFIED) return@execute null
-            require(response.isSuccessful) { "Feed returned HTTP ${response.code}" }
+            if (!response.isSuccessful) throw FeedHttpException(response.code)
             validateContentType(response)
             val body = response.body
             val declaredLength = body.contentLength()
@@ -93,6 +101,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 etag = response.header("ETag"),
                 lastModified = response.header(LAST_MODIFIED_HEADER),
                 body = readBounded(body.byteStream()),
+                movedTo = permanentMoveTarget(response),
             )
         }
 
@@ -193,7 +202,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 null
             }
         return mergeParsedFeeds(libraryFeed, customFeed)
-            ?: throw IllegalArgumentException(
+            ?: throw NotAFeedException(
                 customError?.message
                     ?: libraryError?.message
                     ?: "Unable to parse this RSS feed",
@@ -293,6 +302,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 ?: "episodic",
             podcastGuid = null,
             declaredUpdatedAt = parseDate(channel.lastBuildDate.orEmpty()),
+            newFeedUrl = itunes?.newsFeedUrl?.trim()?.takeIf(String::isNotBlank),
             episodes =
             episodes
                 .distinctBy(RssEpisodeEntity::episodeId)
@@ -356,6 +366,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             podcastType = feed.podcastType,
             podcastGuid = feed.podcastGuid,
             declaredUpdatedAt = feed.declaredUpdatedAt,
+            newFeedUrl = feed.newFeedUrl,
             episodes =
             feed.episodes
                 .distinctBy(RssEpisodeEntity::episodeId)
@@ -433,6 +444,9 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             qualifiedName == "podcast:guid" -> {
                 feed.podcastGuid = readSimpleText(parser).takeIf(String::isNotBlank)
             }
+            qualifiedName == "itunes:new-feed-url" -> {
+                feed.newFeedUrl = readSimpleText(parser).trim().takeIf(String::isNotBlank)
+            }
             name == "type" -> {
                 val type = readSimpleText(parser).lowercase(Locale.ROOT)
                 if (type == "serial" || type == "episodic") feed.podcastType = type
@@ -499,6 +513,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             declaredUpdatedAt =
             customFeed.declaredUpdatedAt
                 ?: libraryFeed.declaredUpdatedAt,
+            newFeedUrl = customFeed.newFeedUrl ?: libraryFeed.newFeedUrl,
             episodes =
             mergedEpisodes
                 .distinctBy(RssEpisodeEntity::episodeId)
@@ -680,15 +695,13 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 ?.trim()
                 ?.lowercase(Locale.ROOT)
                 ?: return
-        require(
+        val feedLike =
             contentType.contains("xml") ||
                 contentType.contains("rss") ||
                 contentType.contains("atom") ||
                 contentType == "text/plain" ||
-                contentType == "application/octet-stream",
-        ) {
-            "URL did not return an RSS or Atom feed"
-        }
+                contentType == "application/octet-stream"
+        if (!feedLike) throw NotAFeedException("URL did not return an RSS or Atom feed")
     }
 
     private fun validatorsMatch(
@@ -713,6 +726,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         var podcastType: String = "episodic"
         var podcastGuid: String? = null
         var declaredUpdatedAt: Long? = null
+        var newFeedUrl: String? = null
         var insideChannelImage: Boolean = false
         var insideFeedAuthor: Boolean = false
         val episodes = mutableListOf<RssEpisodeEntity>()
@@ -877,3 +891,19 @@ internal fun parseDate(value: String): Long? {
         { Instant.parse(value).epochSecond },
     ).firstNotNullOfOrNull { parser -> runCatching(parser).getOrNull() }
 }
+
+/**
+ * The final address of [response] when it came through redirects that were all permanent (301,
+ * 308); null without redirects or with any temporary one (302, 303, 307), which never moves a feed.
+ */
+internal fun permanentMoveTarget(response: Response): String? {
+    var hop = response.priorResponse ?: return null
+    while (true) {
+        if (hop.code != HTTP_MOVED_PERMANENTLY && hop.code != HTTP_PERMANENT_REDIRECT) return null
+        hop = hop.priorResponse ?: break
+    }
+    return response.request.url.toString()
+}
+
+private const val HTTP_MOVED_PERMANENTLY = 301
+private const val HTTP_PERMANENT_REDIRECT = 308

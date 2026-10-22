@@ -113,8 +113,8 @@ private suspend fun fetchAndPersist(
     }
 } catch (error: CancellationException) {
     throw error
-} catch (_: Exception) {
-    RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
+} catch (error: Exception) {
+    RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE, addressGone = FeedReadFailure.isAddressGone(error))
 }
 
 private suspend fun persistParsed(
@@ -138,7 +138,8 @@ private suspend fun persistParsed(
             showImageUrl = request.meta.imageUrl,
         )
     if (rows.isEmpty()) {
-        return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
+        // The address answered, but with nothing we can read as episodes.
+        return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE, addressGone = true)
     }
     val copied = existing?.copiedExtrasCount ?: 0
     val feedOrder =
@@ -185,5 +186,47 @@ private suspend fun persistParsed(
         newest = newestRow?.toCatalogEpisode(request.meta),
         itemCount = storedCount,
         ready = ready,
+        movedTo = if (request.detectMove) confirmedMove(deps.feedClient, request, fetched, parsed) else null,
     )
+}
+
+/**
+ * The feed's new permanent HTTPS address, or null (P4a). Before, a moved feed stayed on its old
+ * address: OkHttp followed the redirect, but the saved address never changed, so every pass
+ * downloaded the whole feed again and the address other devices and notifications use stayed old.
+ * Adopted only when the new address is HTTPS, differs from the saved one and serves the same show
+ * (same title as [RefreshRequest.meta]), as the server's address checks do: from redirects that
+ * were all permanent ([RssFetchResult.movedTo]), or from `itunes:new-feed-url`, read once to
+ * confirm. Temporary redirects (302, 307) never move a feed.
+ */
+internal suspend fun confirmedMove(feedClient: RssFeedClient, request: RefreshRequest, fetched: RssFetchResult, parsed: ParsedRssFeed,): String? {
+    val showTitle = request.meta.title?.takeIf(String::isNotBlank) ?: return null
+    val saved = request.feedUrl.trim()
+    fetched.movedTo
+        ?.takeIf { isNewHttpsAddress(it, saved) && sameShow(parsed.title, showTitle) }
+        ?.let { return it }
+    val declared =
+        parsed.newFeedUrl
+            ?.trim()
+            ?.takeIf { isNewHttpsAddress(it, saved) && isNewHttpsAddress(it, fetched.finalUrl) }
+            ?: return null
+    return try {
+        val next = feedClient.fetch(declared)
+        val nextParsed = feedClient.parse(next.finalUrl, next.body, RssIdGenerator.podcastId(next.finalUrl))
+        next.finalUrl.takeIf { isNewHttpsAddress(it, saved) && sameShow(nextParsed.title, showTitle) }
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private fun isNewHttpsAddress(candidate: String, current: String): Boolean =
+    candidate.startsWith("https://", ignoreCase = true) && !candidate.trim().equals(current.trim(), ignoreCase = true)
+
+/** Same show by title, ignoring case, spacing and punctuation. */
+internal fun sameShow(feedTitle: String, showTitle: String): Boolean {
+    val normalize = { value: String -> value.lowercase(java.util.Locale.ROOT).filter(Char::isLetterOrDigit) }
+    val a = normalize(feedTitle)
+    return a.isNotEmpty() && a == normalize(showTitle)
 }
