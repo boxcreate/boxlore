@@ -66,7 +66,7 @@ internal object LocalEpisodeCollisionGuard {
         podcastId: String,
         findOwners: suspend (List<String>) -> List<LocalEpisodeOwner>,
     ): Boolean {
-        val stored = storedOwners(rows.map { it.episodeId }, findOwners)
+        val stored: Map<String, Owner> = storedOwners(rows.map { it.episodeId }, findOwners)
         return rows.any { row -> stored[row.episodeId]?.let { it.podcastId != podcastId } == true }
     }
 
