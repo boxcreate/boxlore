@@ -90,8 +90,10 @@ function planShow(sid, points, piItems, ownerByServed = new Map()) {
 /** Qdrant batch operations that stamp a show's points (one value set per point). */
 function stampOperations(plan) {
     const ops = plan.stamps.map((s) => ({ set_payload: { payload: { eid: s.eid, catalog_key: s.key }, points: [s.pointId] } }));
-    // A point mapped now (for example by the monthly --retry-missing pass) drops its earlier mark.
-    if (plan.stamps.length) ops.push({ delete_payload: { keys: ['eid_missing'], points: plan.stamps.map((s) => s.pointId) } });
+    // A point placed now (for example by the monthly --retry-missing pass), whether stamped or found to
+    // belong to a duplicate feed, drops its earlier mark, so the next retry doesn't take it again.
+    const placed = [...plan.stamps.map((s) => s.pointId), ...(plan.shared || []).map((s) => s.pointId)];
+    if (placed.length) ops.push({ delete_payload: { keys: ['eid_missing'], points: placed } });
     if (plan.missing.length) ops.push({ set_payload: { payload: { eid_missing: true }, points: plan.missing } });
     const byOwner = new Map();
     for (const { pointId, ownerSid } of plan.shared || []) byOwner.set(ownerSid, [...(byOwner.get(ownerSid) || []), pointId]);

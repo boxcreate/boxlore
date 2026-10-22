@@ -42,6 +42,11 @@ const opt = (name, def) => {
 const DRY = args.includes('--dry');
 const CATCH_UP = args.includes('--catch-up');
 const RETRY = args.includes('--retry-missing');
+if (CATCH_UP && RETRY) {
+    // Each pass lists its own shows; together one would silently drop the other's.
+    console.error('bootstrap-book: use --catch-up or --retry-missing, not both');
+    process.exit(2);
+}
 const MINUTES = Number(opt('--minutes', '20'));
 const LIMIT = Number(opt('--limit-shows', '0'));
 const STATE = process.env.SYNC_BOOTSTRAP_STATE || path.resolve(__dirname, '../data/book-bootstrap.json');
