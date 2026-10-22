@@ -43,6 +43,15 @@ async function main() {
 
     if (!dry) {
         for (const c of chartedAt.COLLECTIONS) await qdrant.ensurePayloadIndex(c.name, chartedAt.FIELD, 'integer');
+    } else {
+        // A dry run creates nothing: without the index, counts filter unindexed, which a
+        // collection in strict mode refuses (each refused call is counted as failed).
+        for (const c of chartedAt.COLLECTIONS) {
+            const schema = await qdrant.payloadSchema(c.name);
+            if (schema && !schema[chartedAt.FIELD]) {
+                log.warn(`[CHARTED_AT] ${c.name} has no ${chartedAt.FIELD} index yet (the stamp run creates it); counting without it`);
+            }
+        }
     }
     const started = Date.now();
     const r = await chartedAt.stamp(qdrant, batches, {
