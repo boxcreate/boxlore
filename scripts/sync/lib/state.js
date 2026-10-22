@@ -8,6 +8,9 @@
  *   "version": 2,
  *   "candidatesRefreshedAt": <ms epoch of last DB candidate refresh>,
  *   "chartsRefreshedAt": <ms epoch of last charts refresh>,
+ *   "relaxedTagsCore": "<core check countries the x flags were computed with, e.g. fr,gb,in,us;
+ *                      stage 3 refreshes its candidates when this differs from the config>",
+ *   "cadenceSeededAt": <ms epoch of the last check-cadence pace seed from the episode book>,
  *   "candidateIds": ["<podId>", ...],
  *   "shows": {
  *     "<podId>": {

@@ -9,11 +9,14 @@
  *   relaxed  — only on relaxed check countries, non-News → RELAXED_STALE_MS (48h)
  *
  * State flags on show rec: n=1 (news), x=1 (relaxed-only). Core wins over relaxed.
+ *
+ * Also decides when stage 3 re-reads its cached candidate list (candidateRefreshReason).
  */
 
 const cfg = require('./config');
 
 const CORE_SET = new Set(cfg.CORE_CHECK_COUNTRIES.map((c) => String(c).toLowerCase()));
+const CANDIDATE_CACHE_MAX_AGE_MS = 20 * 60 * 60 * 1000;
 
 function hoursLabel(ms) {
     const h = ms / 3_600_000;
@@ -59,6 +62,40 @@ function applyCountryCheckFlag(rec, countryCsvOrList) {
     if (isRelaxedOnly(countryCsvOrList)) rec.x = 1;
     else delete rec.x;
     return rec;
+}
+
+/**
+ * The core-country list the x flags were computed with, stored as the state's `relaxedTagsCore`
+ * by each candidate refresh.
+ * @param {string[]} [coreCountries]
+ */
+function relaxedTagsKey(coreCountries = cfg.CORE_CHECK_COUNTRIES) {
+    return [...new Set(coreCountries.map((c) => String(c).toLowerCase()))].sort().join(',');
+}
+
+/**
+ * Why stage 3 must re-read its candidates from Turso (a charts pre-aggregate plus a paged podcasts
+ * read), or null when the cached list will do.
+ * @param {object} st sync state
+ * @param {{ now?: number, cadence?: boolean, tagsKey?: string }} [opts] cadence: the check cadence
+ *   is on, so candidates need iTunes IDs
+ * @returns {string|null}
+ */
+function candidateRefreshReason(st, { now = Date.now(), cadence = false, tagsKey = relaxedTagsKey() } = {}) {
+    if (!st.candidateIds) return 'no cached list';
+    const refreshedAt = st.candidatesRefreshedAt || 0;
+    if ((st.chartsRefreshedAt || 0) > refreshedAt) return 'charts refreshed since';
+    if (now - refreshedAt > CANDIDATE_CACHE_MAX_AGE_MS) return 'cache expired';
+    // Core shows carry no x, so a missing x can't tell "core" from "never tagged"; the key can.
+    if (st.relaxedTagsCore !== tagsKey) return 'apply relaxed(48h) tags';
+    if (cadence) {
+        // The cadence reads Apple's dates by iTunes ID, which only a refresh records.
+        const missing = st.candidateIds.filter((id) => !st.shows?.[id]?.i).length;
+        if (missing > Math.max(50, st.candidateIds.length * 0.05)) {
+            return `record iTunes IDs (${missing.toLocaleString()} shows without one)`;
+        }
+    }
+    return null;
 }
 
 /** @returns {'news'|'core'|'relaxed'} */
@@ -137,9 +174,12 @@ module.exports = {
     policySummary,
     isRelaxedOnly,
     applyCountryCheckFlag,
+    relaxedTagsKey,
+    candidateRefreshReason,
     checkTier,
     jitterFactor,
     thresholdMs,
     planDue,
     CORE_SET,
+    CANDIDATE_CACHE_MAX_AGE_MS,
 };
