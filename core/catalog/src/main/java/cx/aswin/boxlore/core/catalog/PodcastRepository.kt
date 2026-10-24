@@ -24,6 +24,7 @@ import retrofit2.awaitResponse
 /**
  * Repository for podcast data via Boxlore API (Cloudflare Worker → Podcast Index).
  */
+@Suppress("LongParameterList", "kotlin:S107")
 class PodcastRepository(
     private val baseUrl: String,
     val publicKey: String,
@@ -46,6 +47,12 @@ class PodcastRepository(
      * a PostHog kill switch; false means the old 100-item page path.
      */
     private val useEpisodeMatchBaseline: () -> Boolean = { true },
+    /**
+     * The v2 build's rollout switches (feed-first show pages, v2 discovery, address check, upgrade
+     * repair), from the app's PostHog flags. Added in P4 (plan section 11, Rollback); the code
+     * paths that read them land later.
+     */
+    val rolloutSwitches: RolloutSwitches = RolloutSwitches(),
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     val api: BoxLoreApi = boxLoreApi ?: NetworkModule.createBoxLoreApi(baseUrl, context)
     internal val contentCatalogPreferences =

@@ -4,7 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -88,5 +90,24 @@ class AppContainerSmokeTest {
         val trigger1 = container.cloudSyncTriggerCoordinator
         val trigger2 = container.cloudSyncTriggerCoordinator
         assertSame(trigger1, trigger2)
+    }
+
+    @Test
+    fun rolloutSwitchesReachCatalogWithFeedFirstOffAndKillSwitchesOnWithoutPostHog() {
+        val container =
+            AppContainer(
+                context = context,
+                apiBaseUrl = "https://example.test",
+                publicKey = "test-key",
+                sharedUserPreferences = UserPreferencesRepository(context),
+            )
+
+        val switches = container.podcastRepository.rolloutSwitches
+        assertSame(container.rolloutSwitches, switches)
+        assertSame(container.feedFirstSwitch, container.feedFirstSwitch)
+        assertFalse(switches.feedFirst())
+        assertTrue(switches.upgradeRepair())
+        assertTrue(switches.addressCheck())
+        assertTrue(switches.v2Discovery())
     }
 }

@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.catalog.LegacyRssRepairActivation
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairCatalog
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairRuntime
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.catalog.RolloutSwitches
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomFolderRepository
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
@@ -49,6 +50,7 @@ import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import cx.aswin.boxlore.sync.CloudSyncTriggerCoordinator
+import cx.aswin.boxlore.sync.FeedFirstSwitch
 import cx.aswin.boxlore.sync.FeedFixSwitches
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -189,6 +191,24 @@ class AppContainer(
             episodeSupplementRepository = episodeSupplementRepository,
             localEpisodeCatalog = subscribedEpisodeCatalog,
             useEpisodeMatchBaseline = { FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) },
+            rolloutSwitches = rolloutSwitches,
+        )
+    }
+
+    /** The `feed_first` rollout flag; one per process so its value stays fixed while the app runs. */
+    internal val feedFirstSwitch: FeedFirstSwitch by lazy { FeedFirstSwitch.create(appContext) }
+
+    /**
+     * The v2 build's rollout switches handed to :core:catalog: `feed_first` (off without an answer,
+     * fixed per process) and the fail-open kill switches for upgrade repair, the daily address
+     * check and v2 discovery. Added in P4 (own episode IDs, plan section 11, Rollback).
+     */
+    val rolloutSwitches: RolloutSwitches by lazy {
+        RolloutSwitches(
+            feedFirst = { feedFirstSwitch.isOn() },
+            upgradeRepair = { FeedFixSwitches.isOn(FeedFixSwitches.UPGRADE_REPAIR_OFF) },
+            addressCheck = { FeedFixSwitches.isOn(FeedFixSwitches.ADDRESS_CHECK_OFF) },
+            v2Discovery = { FeedFixSwitches.isOn(FeedFixSwitches.V2_DISCOVERY_OFF) },
         )
     }
 

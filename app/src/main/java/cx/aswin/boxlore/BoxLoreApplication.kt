@@ -15,6 +15,7 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.SessionTransferCallback
 import com.posthog.PostHog
+import com.posthog.PostHogOnFeatureFlags
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 import cx.aswin.boxlore.core.catalog.EngagementPromptCoordinator
@@ -203,6 +204,7 @@ class BoxLoreApplication :
                         userPrefs = userPreferencesRepository,
                         engagementCoordinator = engagementPromptCoordinator,
                     )
+                onFeatureFlags = rememberFeedFirstAnswers()
             }
         // Off the main thread: setup reads package info over binder (startup ANR). Calls made
         // before it finishes are queued by PostHogStartup and replayed in order.
@@ -366,6 +368,17 @@ class BoxLoreApplication :
             }
         }
     }
+
+    /**
+     * Saves each loaded `feed_first` answer for the next process; this process keeps the value its
+     * first read fixed. Added in P4 (own episode IDs, plan section 11, Rollback).
+     */
+    private fun rememberFeedFirstAnswers() =
+        PostHogOnFeatureFlags {
+            cx.aswin.boxlore.core.analytics.PostHogStartup.runWhenReady {
+                container.feedFirstSwitch.rememberLatest()
+            }
+        }
 
     /** Tag internal/test users so they can be filtered in PostHog settings. */
     private fun registerPostHogEnvironment() {
