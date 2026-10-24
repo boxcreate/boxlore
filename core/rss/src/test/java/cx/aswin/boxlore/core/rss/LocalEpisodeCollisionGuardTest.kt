@@ -84,13 +84,13 @@ class LocalEpisodeCollisionGuardTest {
     fun aLegacyKeyWithTrailingWhitespaceKeepsItsIdAndGetsNoSecondRow() = runTest {
         // Room migration 31→32 trimmed keys with SQLite TRIM (spaces only). The refresh re-trims the
         // stored key and reuses its ID; the guard used to compare it untrimmed and reserve a new ID.
-        for (suffix in listOf("\n", "\t", " ", "\r\n")) {
+        for (suffix in LEGACY_KEY_SUFFIXES) {
             table.clear()
             store(listOf(row("-11", show = "100", key = "guid-a$suffix")))
             val resolution = resolve(listOf(row("-11", show = "100", key = "guid-a")))
 
             store(resolution.rows)
-            assertEquals(listOf("-11"), table.map { it.episodeId }, "one row for suffix U+${suffix[0].code.toString(16)}")
+            assertEquals(listOf("-11"), table.map { it.episodeId }, "one row for suffix ${codePoints(suffix)}")
             assertEquals("guid-a", table.single().guid)
             assertEquals(KeyRepair.RETRIMMED, resolution.repaired.single().repair)
             assertEquals("guid-a$suffix", resolution.repaired.single().storedKey)
@@ -182,6 +182,54 @@ class LocalEpisodeCollisionGuardTest {
     }
 
     @Test
+    fun aLegacyRowHoldingTheItemsOwnMintIsHealedWhenTheRowArrivesWithAnotherId() = runTest {
+        // On a catalog's first read the item can arrive with a Podcast Index match instead of its
+        // own mint. The legacy row holding the own mint is still the same episode: it keeps its ID
+        // and takes the feed's key, and the other ID is not written as a second row.
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace, "guid-a")
+        val audio = "https://cdn.example/guid-a.mp3"
+        for ((legacyKey, repair) in listOf("id:$minted" to KeyRepair.SYNTHETIC_KEY, audio to KeyRepair.AUDIO_URL_KEY)) {
+            table.clear()
+            store(listOf(row(minted, show = "100", key = legacyKey, audioUrl = audio)))
+            val resolution = resolve(listOf(row("777", show = "100", key = "guid-a", audioUrl = audio)))
+
+            store(resolution.rows)
+            assertEquals(listOf(minted), table.map { it.episodeId }, "one row for $legacyKey")
+            assertEquals("guid-a", table.single().guid)
+            assertEquals(repair, resolution.repaired.single().repair)
+            assertEquals(legacyKey, resolution.repaired.single().storedKey)
+        }
+    }
+
+    @Test
+    fun anotherEpisodeHoldingTheItemsOwnMintStaysApartWhenTheRowArrivesWithAnotherId() = runTest {
+        // A same-show row under the own mint with a real, different GUID is another episode.
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace, "guid-a")
+        store(listOf(row(minted, show = "100", key = "guid-other")))
+        val resolution = resolve(listOf(row("777", show = "100", key = "guid-a")))
+
+        assertEquals("777", resolution.rows.single().episodeId)
+        assertTrue(resolution.repaired.isEmpty())
+        store(resolution.rows)
+        assertEquals("guid-other", ownerOf(minted).guid)
+    }
+
+    @Test
+    fun aLegacyRowWhoseKeyAnotherItemStillUsesIsNotHealed() = runTest {
+        // The audio-keyed legacy row is exactly the key of a GUID-less item in the batch, so that
+        // item keeps the row; the GUID item whose own mint it holds gets a row of its own.
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace, "guid-a")
+        val audio = "https://cdn.example/shared.mp3"
+        store(listOf(row(minted, show = "100", key = audio, audioUrl = audio)))
+        val resolution =
+            resolve(listOf(row(minted, show = "100", key = "guid-a", audioUrl = audio), row("-12", show = "100", key = audio, audioUrl = audio)))
+
+        assertEquals(minted, resolution.rows.single { it.guid == audio }.episodeId)
+        assertNotEquals(minted, resolution.rows.single { it.guid == "guid-a" }.episodeId)
+        assertTrue(resolution.repaired.isEmpty())
+    }
+
+    @Test
     fun anAudioAddressKeyIsKeptApartWhenTheItemHasNoGuid() = runTest {
         // Both keys are audio addresses: a different address is a different episode.
         val newAudio = "https://cdn.example/new.mp3"
@@ -245,7 +293,7 @@ class LocalEpisodeCollisionGuardTest {
         show: String,
         key: String,
         title: String = "Ep",
-        audioUrl: String = "https://cdn.example/${key.trim()}.mp3",
+        audioUrl: String = "https://cdn.example/${EpisodeRecipeId.trimKey(key) ?: key}.mp3",
     ) = LocalEpisodeEntity(
         episodeId = id,
         podcastId = show,
@@ -265,4 +313,15 @@ class LocalEpisodeCollisionGuardTest {
         episodeType = null,
         enclosureType = null,
     )
+
+    private fun codePoints(value: String): String = value.map { "U+%04X".format(it.code) }.joinToString(" ")
+
+    private companion object {
+        /**
+         * Key endings SQLite `TRIM()` (spaces only) leaves on a legacy key and the recipe trims:
+         * control characters, a space before a newline, a no-break space, a Unicode line separator,
+         * and U+180E, which the desktop JVM's `String.trim()` keeps but Android's and the recipe's trim.
+         */
+        val LEGACY_KEY_SUFFIXES = listOf("\n", "\t", "\r\n", " \n", "\u00A0", "\u2028", "\u180E")
+    }
 }

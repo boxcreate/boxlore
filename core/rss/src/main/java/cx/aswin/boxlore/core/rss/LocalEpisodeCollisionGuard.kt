@@ -20,10 +20,12 @@ import cx.aswin.boxlore.core.database.LocalEpisodeOwner
  *    keys are compared after the recipe trim ([EpisodeRecipeId.trimKey]): Room migration 31→32
  *    trimmed with SQLite `TRIM()` (spaces only), so a legacy key can still end in a newline, tab or
  *    no-break space. Such a row keeps its ID and its key is corrected ([KeyRepair.RETRIMMED]).
- * 2. **A free ID.** The incoming ID is used when no other (show, key) holds it, in the database or
+ * 2. **A legacy row holding the item's own minted ID** is the same episode: the row keeps that
+ *    ID and is healed to the feed's key ([KeyRepair.SYNTHETIC_KEY], [KeyRepair.AUDIO_URL_KEY]);
+ *    see [healLegacyRow]. This runs whatever ID the row arrives with, so it also heals on a first
+ *    read where the item carries a Podcast Index match.
+ * 3. **A free ID.** The incoming ID is used when no other (show, key) holds it, in the database or
  *    earlier in the same batch.
- * 3. **A legacy row holding the item's own ID** is the same episode and is healed to the feed's key
- *    ([KeyRepair.SYNTHETIC_KEY], [KeyRepair.AUDIO_URL_KEY]); see [healedRepair].
  * 4. **Otherwise a reserved local ID** ([StickyEpisodeIdentity.reservedEpisodeId]), stable across
  *    refreshes because the next refresh finds the stored row by its key (step 1).
  *
@@ -31,7 +33,8 @@ import cx.aswin.boxlore.core.database.LocalEpisodeOwner
  * another episode. Call inside the write's transaction.
  *
  * Added in P4a (collision guard); P4 PR 1 adds the re-trimmed comparison, the unique-key check, the
- * legacy heal and the reporting of unplaced rows. Own-IDs plan section 4 (legacy keys are re-trimmed;
+ * legacy heal (keyed on the item's own mint, so it does not depend on how new IDs are assigned) and
+ * the reporting of unplaced rows. Own-IDs plan section 4 (legacy keys are re-trimmed;
  * synthetic keys resolve when the feed is read again) and section 8 (no write replaces another
  * episode).
  *
@@ -48,8 +51,10 @@ internal object LocalEpisodeCollisionGuard {
     private const val SYNTHETIC_KEY_PREFIX = "id:"
 
     /**
-     * Where a stored key that a write corrected came from: the provenance of the old key. The v2
-     * build records it with the episode's alias; until then the refresh logs it.
+     * Where a stored key that a write corrected came from: the provenance of the old key. Today the
+     * refresh only logs it. Saving it as the provenance of the episode's alias, in the same
+     * transaction, is follow-up work for when Room v39 adds `episode_aliases` (MIGRATION.md §3);
+     * until then a healed row cannot be told apart from a native one once its key is rewritten.
      */
     enum class KeyRepair {
         /** The stored key differed only by characters SQLite `TRIM()` keeps (newline, tab, no-break space…). */
@@ -191,41 +196,46 @@ internal object LocalEpisodeCollisionGuard {
         state: BatchState,
         findOwners: suspend (List<String>) -> List<LocalEpisodeOwner>,
     ): String? {
-        if (isFree(row.episodeId, mine, stored, state.byId)) return row.episodeId
-        if (row.episodeId !in state.byId) {
-            healedRepair(row, mine, rssNamespaceId, show, stored[row.episodeId])?.let { repair ->
-                state.repaired += RepairedKey(row.episodeId, row.podcastId, show.byId.getValue(row.episodeId).guid, row.guid, repair)
-                return row.episodeId
-            }
+        healLegacyRow(row, mine, rssNamespaceId, show, state)?.let { healed ->
+            state.repaired += healed
+            return healed.episodeId
         }
+        if (isFree(row.episodeId, mine, stored, state.byId)) return row.episodeId
         return reserve(row, mine, rssNamespaceId, stored, state.byId, findOwners)
     }
 
     /**
-     * How a legacy row of the same show that holds [row]'s ID is healed, or null to keep it apart.
+     * The same-show legacy row that holds the item's own minted ID, healed to the feed's key, or
+     * null to keep any such row apart.
      *
      * Room migration 31→32 keyed rows it could not key by GUID with their audio address, or with
-     * the synthetic `id:<own ID>`. When the feed is read again and the item mints exactly the stored
-     * ID, both came from the same hash input, so the row is the same episode: it keeps its ID (and
-     * the listener state on it) and takes the feed's key, as before the collision guard. A row with
-     * any other key stays a different episode.
+     * the synthetic `id:<own ID>`. When the feed is read again and the item's own mint
+     * ([StickyEpisodeIdentity.ownMintedId]) equals the stored ID, both came from the same hash input,
+     * so the row is the same episode: it keeps its ID (and the listener state on it) and takes the
+     * feed's key. The own mint is looked up whatever ID [row] arrives with: on a catalog's first read
+     * the item carries a Podcast Index match instead, and writing that would leave the legacy row
+     * beside a second row of the same episode. A row with any other key, or whose ID an earlier
+     * row of the batch took (for example a GUID-less item still keyed by that audio address), stays
+     * a different episode.
      */
-    private fun healedRepair(
+    private fun healLegacyRow(
         row: LocalEpisodeEntity,
         mine: Owner,
         rssNamespaceId: String,
         show: ShowRows,
-        storedOwner: Owner?,
-    ): KeyRepair? {
-        if (storedOwner == null || storedOwner.podcastId != row.podcastId) return null
-        val storedRow = show.byId[row.episodeId] ?: return null
-        if (row.episodeId != StickyEpisodeIdentity.ownMintedId(rssNamespaceId, mine.key)) return null
+        state: BatchState,
+    ): RepairedKey? {
+        val ownId = StickyEpisodeIdentity.ownMintedId(rssNamespaceId, mine.key)
+        if (ownId in state.byId) return null
+        val storedRow = show.byId[ownId] ?: return null
         val itemHasGuid = mine.key != EpisodeRecipeId.trimKey(row.audioUrl)
-        return when {
-            storedRow.guid == SYNTHETIC_KEY_PREFIX + row.episodeId -> KeyRepair.SYNTHETIC_KEY
-            itemHasGuid && storedOwner.key == EpisodeRecipeId.trimKey(storedRow.audioUrl) -> KeyRepair.AUDIO_URL_KEY
-            else -> null
-        }
+        val repair =
+            when {
+                storedRow.guid == SYNTHETIC_KEY_PREFIX + ownId -> KeyRepair.SYNTHETIC_KEY
+                itemHasGuid && comparableKey(storedRow.guid) == EpisodeRecipeId.trimKey(storedRow.audioUrl) -> KeyRepair.AUDIO_URL_KEY
+                else -> return null
+            }
+        return RepairedKey(ownId, row.podcastId, storedRow.guid, row.guid, repair)
     }
 
     private suspend fun storedOwners(

@@ -208,8 +208,11 @@ private const val COLLISION_LOG_TAG = "LocalEpisodeCatalog"
  * while they kept their ID (with where the old key came from), and rows left out because every ID
  * they could take belongs to another episode. Nothing is logged for an ordinary refresh.
  *
- * Added in P4 PR 1 (own-IDs plan section 4, legacy keys); the v2 build also records the key's
- * provenance with the episode's alias.
+ * Added in P4 PR 1 (own-IDs plan section 4, legacy keys; section 8, no write replaces another
+ * episode). Until Room v39 adds `episode_aliases`, this log is the only record of a corrected key's
+ * provenance; the follow-up saves [LocalEpisodeCollisionGuard.Resolution.repaired] as alias
+ * provenance in the refresh transaction (MIGRATION.md §3) and keeps this log for unplaced rows.
+ * COMPAT(own-ids): reports corrected legacy keys and rows the guard could not place. Permanent: never remove (MIGRATION.md §5).
  */
 private fun logResolution(podcastId: String, resolution: LocalEpisodeCollisionGuard.Resolution, written: Boolean,) {
     if (resolution.repaired.isNotEmpty()) {

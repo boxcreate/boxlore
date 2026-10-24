@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.database.LocalEpisodeOwner
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
+import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Semaphore
@@ -436,14 +437,14 @@ class LocalEpisodeCatalogRepositoryTest {
     fun aLegacyKeyWithTrailingWhitespaceKeepsItsIdAndGetsNoSecondRow() = runTest {
         // Room migration 31→32 trimmed keys with SQLite TRIM (spaces only), so a stored key can keep
         // a newline, tab or no-break space. The refresh re-trims it and must update that same row.
-        for (suffix in listOf("\n", "\t", " ")) {
+        for (suffix in listOf("\n", "\t", " \n", "\u00A0", "\u2028", "\u180E")) {
             val dao = FakeCatalogDao()
             dao.episodes += localEpisode("-501").copy(guid = SharedFeedClient.GUID + suffix)
             val outcome = catalogRepo(dao = dao, feedClient = SharedFeedClient()).refresh(sharedFeedRequest("100"))
 
             assertTrue(outcome is RefreshOutcome.Success)
             val row = dao.episodes.single()
-            assertEquals("-501", row.episodeId, "the stored ID stays for key suffix U+${suffix[0].code.toString(16)}")
+            assertEquals("-501", row.episodeId, "the stored ID stays for key suffix ${suffix.map { "U+%04X".format(it.code) }}")
             assertEquals(SharedFeedClient.GUID, row.guid)
             assertEquals("Shared episode", row.title)
         }
@@ -481,6 +482,53 @@ class LocalEpisodeCatalogRepositoryTest {
     }
 
     @Test
+    fun aLegacyRowHealsOnAFirstReadThatMatchesAPodcastIndexEpisode() = runTest {
+        // A catalog that is not ready yet reads the Podcast Index list, so the item arrives with the
+        // matching PI ID. The legacy row holding the item's own mint is the same episode: it keeps its
+        // ID (and the listener state on it) instead of staying beside a second row under the PI ID.
+        val minted = SharedFeedClient.mintedId()
+        for (legacyKey in listOf("id:$minted", SharedFeedClient.AUDIO_URL)) {
+            val dao = FakeCatalogDao()
+            dao.episodes += localEpisode(minted).copy(guid = legacyKey, audioUrl = SharedFeedClient.AUDIO_URL)
+            var baselineReads = 0
+            val reconciled = mutableListOf<String>()
+            val request =
+                sharedFeedRequest("100").copy(
+                    loadPiBaseline = {
+                        baselineReads++
+                        listOf(Episode(id = "777", title = "Shared episode", description = "", audioUrl = SharedFeedClient.AUDIO_URL, publishedDate = 10L))
+                    },
+                )
+            val outcome =
+                catalogRepo(dao = dao, feedClient = SharedFeedClient(), reconcileListenerState = { _, rows -> reconciled += rows.map { it.episodeId } })
+                    .refresh(request)
+
+            assertTrue(outcome is RefreshOutcome.Success)
+            assertEquals(1, baselineReads, "the first read uses the Podcast Index list")
+            val row = dao.episodes.single()
+            assertEquals(minted, row.episodeId, "no second row under the PI ID for $legacyKey")
+            assertEquals(SharedFeedClient.GUID, row.guid)
+            assertEquals(listOf(minted), reconciled, "listener state stays on the stored ID")
+        }
+    }
+
+    @Test
+    fun aFirstReadStillUsesThePodcastIndexIdForANewEpisode() = runTest {
+        // No stored row holds the item's own mint, so the PI match is kept as before.
+        val dao = FakeCatalogDao()
+        val request =
+            sharedFeedRequest("100").copy(
+                loadPiBaseline = {
+                    listOf(Episode(id = "777", title = "Shared episode", description = "", audioUrl = SharedFeedClient.AUDIO_URL, publishedDate = 10L))
+                },
+            )
+        val outcome = catalogRepo(dao = dao, feedClient = SharedFeedClient()).refresh(request)
+
+        assertTrue(outcome is RefreshOutcome.Success)
+        assertEquals("777", dao.episodes.single().episodeId)
+    }
+
+    @Test
     fun anotherEpisodeOfTheSameShowHoldingTheIdStaysApart() = runTest {
         // Same ID and show, but a real GUID that differs: two episodes, so both rows survive.
         val minted = SharedFeedClient.mintedId()
@@ -504,12 +552,13 @@ class LocalEpisodeCatalogRepositoryTest {
         isFeedUnchanged: suspend (String, String?, String?) -> Boolean = { _, _, _ -> false },
         feedClient: RssFeedClient = RssFeedClient(),
         megaGetGate: Semaphore = Semaphore(1),
+        reconcileListenerState: suspend (String, List<LocalEpisodeEntity>) -> Unit = { _, _ -> },
     ) = LocalEpisodeCatalogRepository(
         dao = dao,
         feedClient = feedClient,
         runInTransaction = { it() },
         isFeedUnchanged = isFeedUnchanged,
-        reconcileListenerState = { _, _ -> },
+        reconcileListenerState = reconcileListenerState,
         megaGetGate = megaGetGate,
     )
 
