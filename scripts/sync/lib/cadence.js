@@ -230,10 +230,119 @@ function openApple(path) {
     }
 }
 
+// --- Drop times (shadow, 24 Oct): does a new episode land on its show's usual schedule? ---
+// Timing checks would only add checks around a show's expected drop; every show keeps its usual
+// checks too, so a bonus or off-schedule episode is still found as it is today (user, 24 Oct).
+
+const DAY_S = 86_400;
+const WEEK_S = 7 * DAY_S;
+/** Episodes a pattern is read from, and the share that must fit it. */
+const PATTERN_DATES = 10;
+const PATTERN_SHARE = 0.6;
+
+/** Seconds between a and b on a circle of `period` seconds. */
+function circularGap(a, b, period) {
+    const d = Math.abs((((a - b) % period) + period) % period);
+    return Math.min(d, period - d);
+}
+
+/**
+ * The point on a `period` cycle (hour steps) that most dates fall near, and how many do; among
+ * equally good points, the one closest to them.
+ */
+function bestSlot(dates, period, tolerance) {
+    let best = { at: 0, hits: 0, spread: Infinity };
+    for (let at = 0; at < period; at += 3600) {
+        const near = dates.map((d) => circularGap(d, at, period)).filter((g) => g <= tolerance);
+        const spread = near.reduce((a, g) => a + g, 0);
+        if (near.length > best.hits || (near.length === best.hits && near.length > 0 && spread < best.spread)) {
+            best = { at, hits: near.length, spread };
+        }
+    }
+    return { at: best.at, hits: best.hits };
+}
+
+function median(values) {
+    const s = [...values].sort((a, b) => a - b);
+    if (!s.length) return 0;
+    const mid = s.length >> 1;
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+/**
+ * A show's release pattern from its recent episode dates (epoch seconds, before the new one):
+ *   daily  — most episodes within an hour of the same time of day, about a day apart;
+ *   weekly — most within two hours of the same weekday and time, about a week apart;
+ *   gap    — most gaps within 10% of the typical gap (fortnightly, monthly);
+ *   irregular otherwise, or with under 4 dated episodes. Bonus episodes don't break a pattern
+ *   while most episodes still fit it.
+ * @returns {{ kind: 'daily'|'weekly'|'gap'|'irregular', slot?: number, gap?: number }}
+ */
+function arrivalPattern(dates) {
+    const ds = (dates || []).map(Number).filter((d) => d > 0).sort((a, b) => b - a).slice(0, PATTERN_DATES);
+    if (ds.length < 4) return { kind: 'irregular' };
+    const gaps = [];
+    for (let i = 1; i < ds.length; i++) gaps.push(ds[i - 1] - ds[i]);
+    const g = median(gaps);
+    const need = Math.ceil(ds.length * PATTERN_SHARE);
+    if (g >= 0.6 * DAY_S && g <= 1.6 * DAY_S) {
+        const s = bestSlot(ds, DAY_S, 3600);
+        if (s.hits >= need) return { kind: 'daily', slot: s.at };
+    }
+    if (g >= 4 * DAY_S && g <= 9 * DAY_S) {
+        const s = bestSlot(ds, WEEK_S, 2 * 3600);
+        if (s.hits >= need) return { kind: 'weekly', slot: s.at };
+    }
+    if (g >= DAY_S && gaps.filter((x) => Math.abs(x - g) <= 0.1 * g).length >= Math.ceil(gaps.length * PATTERN_SHARE)) {
+        return { kind: 'gap', gap: g };
+    }
+    return { kind: 'irregular' };
+}
+
+/** True when an episode dated `dateS` lands on the pattern: where timing checks would look. */
+function onSchedule(pattern, prevNewestS, dateS) {
+    const d = Number(dateS) || 0;
+    if (!d || !pattern || pattern.kind === 'irregular') return false;
+    if (pattern.kind === 'daily') return circularGap(d, pattern.slot, DAY_S) <= 1.5 * 3600;
+    if (pattern.kind === 'weekly') return circularGap(d, pattern.slot, WEEK_S) <= 3 * 3600;
+    const prev = Number(prevNewestS) || 0;
+    if (!prev || d <= prev) return false;
+    const k = Math.max(1, Math.round((d - prev) / pattern.gap));
+    return Math.abs(d - (prev + k * pattern.gap)) <= Math.max(6 * 3600, 0.1 * pattern.gap);
+}
+
+/** Tally of new episodes by pattern, and how long after release this run found them. */
+function timingTally(entries) {
+    const out = { total: 0, onSchedule: 0, byKind: { daily: 0, weekly: 0, gap: 0 }, offSchedule: 0, lagOnH: [], lagOffH: [] };
+    for (const e of entries || []) {
+        out.total++;
+        if (e.on) {
+            out.onSchedule++;
+            out.byKind[e.kind] = (out.byKind[e.kind] || 0) + 1;
+            if (e.lagH >= 0) out.lagOnH.push(e.lagH);
+        } else {
+            out.offSchedule++;
+            if (e.lagH >= 0) out.lagOffH.push(e.lagH);
+        }
+    }
+    return out;
+}
+
 const fmtH = (h) => (h >= 10 ? String(Math.round(h)) : h.toFixed(1));
 
+const lag = (hours) => (hours.length ? `${fmtH(median(hours))} h` : 'n/a');
+
+/** The timing part of the report line. */
+function timingSummary(t) {
+    if (!t || !t.total) return '';
+    const k = t.byKind;
+    return ` · timing: ${t.onSchedule} of ${t.total} new episodes on schedule (daily ${k.daily}, weekly ${k.weekly}, gap ${k.gap}), ` +
+        `${t.offSchedule} off schedule; found today ${lag(t.lagOnH)} after release on schedule, ` +
+        `${lag(t.lagOffH)} off schedule (median)`;
+}
+
 /** One line for the run report. */
-function summary(mode, plan, cmp, { appleError = null, paceShows = 0, candidates = 0 } = {}) {
+function summary(mode, plan, cmp, { appleError = null, paceShows = 0, candidates = 0, timing = null } = {}) {
     if (mode !== 'shadow' || !plan) return 'cadence off';
     const c = plan.counts;
     const pct = candidates ? Math.round((paceShows / candidates) * 100) : 0;
@@ -241,7 +350,7 @@ function summary(mode, plan, cmp, { appleError = null, paceShows = 0, candidates
         `${c.appleForced} Apple-forced, ${c.never} never checked) · ${cmp.late} new episodes not yet due` +
         (cmp.late ? ` (median ${fmtH(cmp.lateMedianH)} h, max ${fmtH(cmp.lateMaxH)} h late)` : '') +
         ` · checks/day ${plan.perDay} vs ${plan.perDayNow} · news ${c.news}, dormant ${c.dormant}, pace ${c.pace}, tier ${c.tier}` +
-        ` · pace known ${pct}%` + (appleError ? ` · Apple unread (${appleError})` : '');
+        ` · pace known ${pct}%` + (appleError ? ` · Apple unread (${appleError})` : '') + timingSummary(timing);
 }
 
 module.exports = {
@@ -250,6 +359,10 @@ module.exports = {
     notePace,
     noteNewest,
     isNewEpisode,
+    arrivalPattern,
+    onSchedule,
+    timingTally,
+    timingSummary,
     intervalFor,
     appleForces,
     shadowPlan,
