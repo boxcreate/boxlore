@@ -279,7 +279,7 @@ The gate derives contracts from pre-R8 release class files and the merged manife
 | Legacy service/provider aliases and both Room implementations | Broken upgraded-install or database initialization identities |
 | Gson backup/cache/Room model graphs | Removed/renamed nested fields; erased generic field types; lost default-value constructors or enum constants |
 | Concrete Gson TypeTokens | Lost generic superclass signatures |
-| Every Retrofit API method | Erased generic response types or lost endpoint/parameter annotations |
+| Every Retrofit API method (`BoxLoreApi` and `BoxLoreApiV2`, listed in `APIS`) | A removed API interface, erased generic response types or lost endpoint/parameter annotations |
 | Dynamic API serializers and widget snapshot models | Lost `Companion` fields or public `serializer` methods |
 | Dynamic onboarding covers, Android Auto label font and literal resource URIs | Required resource names removed from the APK resource table; named raw payloads absent or changed in APK/AAB |
 | Debug-only App Check provider and test notification receiver | Development components accidentally included in release |

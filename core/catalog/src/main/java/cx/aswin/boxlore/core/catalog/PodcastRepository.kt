@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.BoxLoreApi
+import cx.aswin.boxlore.core.network.BoxLoreApiV2
 import cx.aswin.boxlore.core.network.NetworkModule
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
@@ -24,6 +25,7 @@ import retrofit2.awaitResponse
 /**
  * Repository for podcast data via Boxlore API (Cloudflare Worker → Podcast Index).
  */
+@Suppress("LongParameterList") // The last parameters are optional test seams; production wiring passes seven.
 class PodcastRepository(
     private val baseUrl: String,
     val publicKey: String,
@@ -46,8 +48,22 @@ class PodcastRepository(
      * a PostHog kill switch; false means the old 100-item page path.
      */
     private val useEpisodeMatchBaseline: () -> Boolean = { true },
+    /**
+     * Optional `/v2` client override for hermetic JVM/MockWebServer tests. Production leaves this
+     * null so [apiV2] is built on the same cached client as [api].
+     */
+    boxLoreApiV2: BoxLoreApiV2? = null,
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
-    val api: BoxLoreApi = boxLoreApi ?: NetworkModule.createBoxLoreApi(baseUrl, context)
+    /** The one cached HTTP client both API versions share; created only when an API needs it. */
+    private val cachedClient: okhttp3.OkHttpClient by lazy { NetworkModule.createCachedClient(context) }
+
+    val api: BoxLoreApi = boxLoreApi ?: NetworkModule.createBoxLoreApi(baseUrl, cachedClient)
+
+    /**
+     * The `/v2` routes, on the same cached client and base URL as [api] (one HTTP cache per process).
+     * Built on first use. Added in P4 of the own-episode-IDs plan (plan section 9).
+     */
+    val apiV2: BoxLoreApiV2 by lazy { boxLoreApiV2 ?: NetworkModule.createBoxLoreApiV2(baseUrl, cachedClient) }
     internal val contentCatalogPreferences =
         context.applicationContext.getSharedPreferences(
             "content_catalog_cache",

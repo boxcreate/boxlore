@@ -29,6 +29,8 @@ GSON_ROOTS = {
 WORK_BASES = {"androidx/work/ListenableWorker", "androidx/work/Worker", "androidx/work/CoroutineWorker"}
 INPUT_MERGERS = {"androidx/work/OverwritingInputMerger", "androidx/work/ArrayCreatingInputMerger"}
 API = APP_PREFIX + "core/network/BoxLoreApi"
+API_V2 = APP_PREFIX + "core/network/BoxLoreApiV2"
+APIS = (API, API_V2)
 HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "HTTP")
 DEBUG_ONLY = {"com/google/firebase/appcheck/debug/DebugAppCheckProviderFactory",
               "com/google/firebase/appcheck/debug/FirebaseAppCheckDebugRegistrar",
@@ -163,20 +165,22 @@ def validate_contracts(classes: dict[str, ClassFile], dex: dict[str, DexClass],
         if item is None or item.signature != mapped_signature(classes[name].signature, mapping):
             failures.append(f"Gson TypeToken generic signature lost: {name}")
 
-    api, api_dex = classes.get(API), actual(API)
-    if api is None or api_dex is None:
-        failures.append("Retrofit API removed")
-        api_methods = []
-    else:
-        api_methods = [m for m in api.methods if m.signature and not m.access & 0x0008]
-        for member in api_methods:
+    api_methods = []
+    for api_name in APIS:
+        api, api_dex = classes.get(api_name), actual(api_name)
+        if api is None or api_dex is None:
+            failures.append(f"Retrofit API removed: {api_name}")
+            continue
+        methods = [m for m in api.methods if m.signature and not m.access & 0x0008]
+        api_methods.extend(methods)
+        for member in methods:
             if api_dex.method_signatures.get(member.name) != mapped_signature(member.signature, mapping):
-                failures.append(f"Retrofit generic response type lost: {member.name}")
+                failures.append(f"Retrofit generic response type lost: {api_name}.{member.name}")
             annotation_types = {" L" + mapping.get("retrofit2/http/" + n, "retrofit2/http/" + n) + ";" for n in HTTP_METHODS}
             if not any(any(kind in line for kind in annotation_types) for line in api_dex.annotations.get(member.name, [])):
-                failures.append(f"Retrofit endpoint annotation lost: {member.name}")
+                failures.append(f"Retrofit endpoint annotation lost: {api_name}.{member.name}")
             if "RuntimeVisibleParameterAnnotations" in member.attributes and not api_dex.parameter_annotations.get(member.name):
-                failures.append(f"Retrofit parameter annotations lost: {member.name}")
+                failures.append(f"Retrofit parameter annotations lost: {api_name}.{member.name}")
     serializer_roots = set().union(*(referenced_classes(m.signature) for m in api_methods)) if api_methods else set()
     serializers = json_graph({n for n in serializer_roots if n.startswith(APP_PREFIX)} | WIDGET_MODELS, classes)
     serializer_count = 0

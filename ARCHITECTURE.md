@@ -53,7 +53,7 @@ On disk, the folder path matches the Gradle id (`core/playback` → `:core:playb
 | `:app` | `Application`, `AppContainer`, navigation host, FCM, `WorkerFactory` | [`app/README.md`](app/README.md) |
 | `:core:model` | Shared models and enums | [`core/model/README.md`](core/model/README.md) |
 | `:core:auth` | Authentication domain, `AuthRepository`, and Firebase Auth implementation | [`core/auth/README.md`](core/auth/README.md) |
-| `:core:network` | HTTP client (`BoxLoreApi` / `NetworkModule`) and network DTOs | [`core/network/README.md`](core/network/README.md) |
+| `:core:network` | HTTP clients (`BoxLoreApi`, `BoxLoreApiV2` for `/v2` / `NetworkModule`) and network DTOs | [`core/network/README.md`](core/network/README.md) |
 | `:core:domain` | Thin ports and small result types (no Room or repositories) | [`core/domain/README.md`](core/domain/README.md) |
 | `:core:database` | Main Room database, entities, DAOs, migrations | [`core/database/README.md`](core/database/README.md) |
 | `:core:prefs` | DataStore and SharedPreferences façades (`UserPreferencesRepository`, `BoxcastPrefs`) | [`core/prefs/README.md`](core/prefs/README.md) |

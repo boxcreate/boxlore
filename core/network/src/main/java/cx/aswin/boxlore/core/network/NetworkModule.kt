@@ -95,27 +95,42 @@ object NetworkModule {
     /**
      * BoxCast API via Cloudflare Worker proxy.
      * Base URL injected from BuildConfig at runtime.
+     *
+     * Opens a new HTTP cache on [context]'s cache directory. To build [BoxLoreApi] and
+     * [BoxLoreApiV2] together, create one client with [createCachedClient] and pass it to both.
      */
-    fun createBoxLoreApi(baseUrl: String, context: android.content.Context): BoxLoreApi {
+    fun createBoxLoreApi(baseUrl: String, context: android.content.Context): BoxLoreApi = createBoxLoreApi(baseUrl, createCachedClient(context))
+
+    /**
+     * The shared API client with a 50 MiB HTTP cache in [context]'s cache directory. Create it once
+     * per process and build every API version on it: two caches must never share a directory.
+     */
+    fun createCachedClient(context: android.content.Context): OkHttpClient {
         val cacheSize = 50L * 1024L * 1024L // 50 MiB
         val cache = okhttp3.Cache(context.cacheDir, cacheSize)
 
         // Create a new client sharing the same connection pool/interceptors but with cache
-        val cacheClient = okHttpClient.newBuilder()
+        return okHttpClient.newBuilder()
             .cache(cache)
             .build()
-
-        return createBoxLoreApi(baseUrl, cacheClient)
     }
 
     /**
      * Builds [BoxLoreApi] against an arbitrary [OkHttpClient].
      * Used by production (cached client) and JVM tests (MockWebServer, no disk cache).
      */
-    fun createBoxLoreApi(baseUrl: String, client: OkHttpClient): BoxLoreApi = Retrofit.Builder()
+    fun createBoxLoreApi(baseUrl: String, client: OkHttpClient): BoxLoreApi = retrofit(baseUrl, client).create(BoxLoreApi::class.java)
+
+    /**
+     * Builds [BoxLoreApiV2] against [client]. Production passes the same cached client as
+     * [BoxLoreApi] ([createCachedClient]); JVM tests pass a MockWebServer client.
+     * Added in P4 of the own-episode-IDs plan (plan section 9).
+     */
+    fun createBoxLoreApiV2(baseUrl: String, client: OkHttpClient): BoxLoreApiV2 = retrofit(baseUrl, client).create(BoxLoreApiV2::class.java)
+
+    private fun retrofit(baseUrl: String, client: OkHttpClient): Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)
         .client(client)
         .addConverterFactory(StreamingJsonConverterFactory.create(contentType, json))
         .build()
-        .create(BoxLoreApi::class.java)
 }

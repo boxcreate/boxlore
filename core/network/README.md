@@ -7,8 +7,16 @@ Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and respon
 ## Public API
 
 - `BoxLoreApi` defines the Retrofit service surface, including additive `GET search/typeahead` (Meili show typeahead), cloud sync endpoints (`POST user/sync/push`, `POST user/sync/pull`, `DELETE user/sync/account`), `GET episodes/match` (`EpisodeMatchResponse`: up to 1,000 newest episodes with only `id`, `guid`, `title`, `enclosureUrl`, `datePublished`, for baselines), and legacy routes. Legacy `GET search` and `POST sync` are unchanged.
+- `BoxLoreApiV2` is the `/v2` surface for builds that use boxlore's own episode IDs. Paths are relative (`v2/...`) and there is no app-key parameter. It covers show details and addresses (`getPodcast`, `getShowFeeds` for the daily check of up to 500 shows, `getFeed` for an http-only show's feed document, `reportFeed`), episodes (`getEpisode`, `getEpisodes` as the last-resort list, `registerEpisode` before sharing, `getSimilarEpisodes`), search (`search`, `searchSemantic`) and discovery (trending, home bootstrap POST and GET, recommendations, because-you-like, curated vibe and curiosity, briefing metadata and `getBriefingResource`). Discovery routes answer in the v1 response shapes.
+  - On `/v2`, an episode's `id` is its recipe ID. `EpisodeItem` carries the optional `servedId` (the ID older builds were given) and `catalogKey`, both absent on v1. `EpisodeItem.v2Identity()` returns recipe ID, show ID, catalog key and served ID (as a decimal string), or null when `id` is outside the recipe range or the show is missing. Use it only on `/v2` answers.
+  - `V2EpisodeIds` holds the range checks: recipe IDs in `[2^52, 2^53 − 1]`, show IDs and namespaces in `1..2^53 − 1`, a strict `parseShowId` for stored show IDs (canonical digits only; `rss:` shows return null) and `isLookupEpisodeId` (never a negative local ID). Legacy episode IDs stay strings.
+  - Show answers (`V2PodcastResponse`, `V2ShowAddress`, `V2FeedReportResponse`, `V2EpisodeReply.NeedsFeed`) share `V2FeedAddress`: `fetchUrl` (null means keep the saved address), `fetchVia` (`direct` or `proxy`), `transportUrl` and `feedSource`. `readUrl()` is the URL to read the document from: `transportUrl` for `proxy`, else `fetchUrl`. It is never saved as the show's address. `validEpNs` and `V2EpisodeRegisterResponse.validRecipeId` return null outside their ranges.
+  - `getEpisode` decodes its 200 answer into the sealed `V2EpisodeReply`: `Found` (the episode) or `NeedsFeed` (read the show's feed and match by recipe ID). A 404 is an error response.
+  - `getFeed` streams the document. It sends `Cache-Control: no-store`, so the shared HTTP cache never stores feeds, and takes an optional `If-None-Match`. A 304 is not a successful Retrofit response, so callers check `code()`.
+  - Request models validate on construction: `V2ShowsFeedsRequest` holds 1–500 show IDs, `V2FeedReportRequest` takes a `V2FeedReportStatus` value (`http_NNN`, `timeout`, `dns`, `tls`, `parse`, `network`, `other`), and `V2EpisodeRegisterRequest` needs a show below 2^52 and a GUID or enclosure URL. A null field is left out of the JSON.
+  - `V2BriefingRoute.url(baseUrl, region, date, version)` builds `/v2/briefings/<route>/<region>` links with `d` and `v`.
 - `FirebaseAuthAuthenticator` provides an OkHttp `Authenticator` handling HTTP 401 Unauthorized responses with Kotlin `Mutex` refresh serialization to prevent token refresh stampedes (consuming `AuthRepository` from `:core:auth`).
-- `NetworkModule` creates OkHttp, Retrofit, and related network clients, with automatic header redaction for `Authorization`, `X-App-Key`, `X-Firebase-AppCheck`, `X-Boxlore-Session`, `X-Session-Renew` and `X-Session-Proof`. Every request carries `X-App-Version` and `X-App-Channel` (`play` or `github`) when the app sets `appVersion` / `appChannel`. `createSessionExchangeClient()` is the plain client for `POST /auth/session` (no session interceptor, no Firebase authenticator, no cache).
+- `NetworkModule` creates OkHttp, Retrofit, and related network clients. `createCachedClient(context)` builds the shared client with the 50 MiB HTTP cache; build `BoxLoreApi` and `BoxLoreApiV2` on that one client (`createBoxLoreApi(baseUrl, client)`, `createBoxLoreApiV2(baseUrl, client)`), because two caches must never share a directory. `createBoxLoreApi(baseUrl, context)` still opens its own cache for callers that need only v1. The clients come with automatic header redaction for `Authorization`, `X-App-Key`, `X-Firebase-AppCheck`, `X-Boxlore-Session`, `X-Session-Renew` and `X-Session-Proof`. Every request carries `X-App-Version` and `X-App-Channel` (`play` or `github`) when the app sets `appVersion` / `appChannel`. `createSessionExchangeClient()` is the plain client for `POST /auth/session` (no session interceptor, no Firebase authenticator, no cache).
 - **API sessions (`session/`, 2026-10-17).** This build authenticates with API session tickets only and **never sends the bundled app key**: `ApiSessionInterceptor` strips `X-App-Key` from every request. `NetworkModule.sessionManager` is set by the app at startup.
   - `ApiSessionManager` owns the install's session. One shared `POST /auth/session` exchange runs at a time; `start()` begins it at launch when no usable session is stored, and requests wait for it (at most 15 s) only then: a fresh install, or after the 30-day attestation window. With a stored session, requests attach it without waiting. Failed exchanges back off (2 s, 5 s, 15 s, 30 s, 1 min, then every 5 min, or the server's `Retry-After`); inside a backoff, requests go out without a session at once. There is no app-key fallback.
   - Exchanges send `{installId, platform: "android", channel, devicePublicKey}` (plus `turnstileToken` for a step-up) with `X-Firebase-AppCheck`. App Check is fetched only here, bounded to 6 s; a phone that has failed App Check gets its next session without asking App Check on the critical path.
@@ -32,10 +40,12 @@ Owns the Retrofit API boundary, OkHttp/Retrofit construction, request and respon
 src/main/java/cx/aswin/boxlore/core/network/
   FirebaseAuthAuthenticator.kt
   BoxLoreApi.kt
+  BoxLoreApiV2.kt              # /v2 routes, V2BriefingRoute
   NetworkModule.kt
   StreamingJsonConverterFactory.kt
   model/
     UserSyncModels.kt
+    V2Models.kt                # /v2 request and response models, V2EpisodeIds range checks
   session/
     ApiSessionManager.kt       # shared exchange, request headers, renewals, rejections
     ApiSessionBook.kt          # the manager's state (token, clock offset, backoffs, proof cache)
@@ -61,7 +71,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 
 - OkHttp uses its own dispatcher threads.
 - Retrofit suspend functions must be called from coroutines, normally from repository IO paths.
-- Production clients are process-scoped when created by application wiring.
+- Production clients are process-scoped when created by application wiring. `PodcastRepository` owns both API versions and builds them on one cached client.
 - `ApiSessionManager` runs on the application scope (IO). The interceptor calls it on OkHttp threads and blocks only while waiting for a missing session, a one-time recovery, or a step-up on an AI route. Persistence is asynchronous and serialized. Listener callbacks arrive off the main thread.
 
 ## Persistence & identity
@@ -71,6 +81,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 - API session state lives in the DataStore file `boxlore_api_session` (keys `session_token`, `install_id`, `clock_offset_seconds`, `app_check_failures`, `next_app_check_at_ms`). The install id is random (16 bytes, base64url) and separate from the analytics and sync device ids. The device key is the Keystore alias `boxlore_api_session_device_key`. Keep both names stable: renaming signs every install out of its session. The app's backup rules exclude the file, because a restored token could never renew without this phone's Keystore key.
 - Base URL, public key, app version, App Check tokens, and device identifiers are supplied at runtime by app or repository wiring.
 - API path and payload shape changes should be tested as contract changes.
+- `/v2` identity rules: recipe IDs are safe integers in `[2^52, 2^53 − 1]`; show IDs never change and are the same numbers as on v1; legacy episode IDs (including negative `rss:` IDs) stay opaque decimal strings and negative ones are never sent.
 
 ## Testing notes
 
@@ -79,6 +90,7 @@ src/main/java/cx/aswin/boxlore/core/network/
 - Prefer MockWebServer over live backend calls.
 - `session/ApiSessionInterceptorTest` (MockWebServer): a stored session goes out at once while an exchange hangs and no request carries `X-App-Key`; one exchange serves concurrent first requests; `X-Session-Renew` is stored and foreign or older renewals are ignored; the proof appears only from 30 s before `exp`; a missing device key sends no proof and reports it once; a refused session is replaced once; a brand-new session refused again backs off; failed exchanges back off without an app-key fallback; App Check failure gives a limited session and the next launch skips App Check; the step-up retries with a `challenge` session, a failed step-up returns the 401 and cools down, and it stays off until enabled; `daily_ai_limit` passes through; other hosts get no session.
 - `session/ApiSessionSchedulerTest` (virtual time): limited → full upgrade on the 1 min / hourly / daily schedule, nothing in the background or offline, an overdue retry when the network returns, and the pure next-step plan. `ApiSessionPolicyTest` covers token parsing, proof timing, usability, replacement and backoffs. `OkHttpSessionExchangerTest` covers the `/auth/session` body, headers and failure reasons. `FirebaseAuthAuthenticatorTest` checks shield 401s are left alone.
+- `BoxLoreApiV2ContractTest` (MockWebServer) checks every `/v2` path (also under a base URL with a path prefix) and that no request carries `X-App-Key`; the exact request JSON of shows/feeds, feed reports, registration, recommendations and bootstrap (defaults are not encoded, so only explicitly set fields go out); decoding of show addresses (including `fetchUrl: null` and proxied shows), `needsFeed` with and without an address, a known episode with its identity, the fallback list, a 404 and a 304; that feed documents never enter the HTTP cache; and briefing URLs. `model/V2ModelsTest` covers the range checks, strict show ID parsing and request validation.
 - `OnboardingGuidedContractTest` checks legacy decoding, request-specific opt-in and structured recovery action decoding, including unknown additive fields, and the finish-hint opt-in (features, country, languages omitted by default; `finish` decoded), plus show deck cards with and without a preview and opt-in reactions.
 
 ```bash
@@ -99,4 +111,4 @@ src/main/java/cx/aswin/boxlore/core/network/
 
 ### Release optimization
 
-Release keeps the Retrofit API, generic `Call`/`Response` types and JSON DTO contracts, while optimizing HTTP/runtime implementations using library consumer rules. The artifact gate verifies every API method and nested dynamic serializer after R8; JVM tests alone do not establish release reflection safety.
+Release keeps both Retrofit APIs (`BoxLoreApi`, `BoxLoreApiV2`), generic `Call`/`Response` types and JSON DTO contracts, while optimizing HTTP/runtime implementations using library consumer rules. The artifact gate verifies every API method and nested dynamic serializer after R8; JVM tests alone do not establish release reflection safety.

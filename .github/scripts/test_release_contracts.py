@@ -34,6 +34,10 @@ def fixture():
                                      {"RuntimeVisibleParameterAnnotations": b"fixture"},
                                      "()Lretrofit2/Call<L" + model + ";>;")], ""),
     }
+    source[check.API_V2] = ClassFile(check.API_V2, "java/lang/Object", 0x601, [],
+                                     [Member("getPodcast", "(J)Lretrofit2/Call;", 0x401,
+                                             {"RuntimeVisibleParameterAnnotations": b"fixture"},
+                                             "(J)Lretrofit2/Call<L" + model + ";>;")], "")
     for name in (check.APP_PREFIX + "core/database/Db_Impl", check.APP_PREFIX + "core/ranking/database/Db_Impl"):
         source[name] = ClassFile(name, "androidx/room/RoomDatabase", 1, [], [constructor()], "")
     companion = model + "$Companion"
@@ -46,6 +50,9 @@ def fixture():
     dex[check.API].method_signatures["getEpisode"] = source[check.API].methods[0].signature
     dex[check.API].annotations["getEpisode"] = ["VISIBILITY_RUNTIME Lretrofit2/http/GET; value=episode"]
     dex[check.API].parameter_annotations["getEpisode"] = ["VISIBILITY_RUNTIME Lretrofit2/http/Query;"]
+    dex[check.API_V2].method_signatures["getPodcast"] = source[check.API_V2].methods[0].signature
+    dex[check.API_V2].annotations["getPodcast"] = ["VISIBILITY_RUNTIME Lretrofit2/http/GET; value=v2/podcast"]
+    dex[check.API_V2].parameter_annotations["getPodcast"] = ["VISIBILITY_RUNTIME Lretrofit2/http/Query;"]
     return model, worker, token, source, dex
 
 
@@ -153,8 +160,17 @@ class ContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Retrofit parameter annotations lost"):
             self.validate()
 
+    def test_v2_api_interface_is_checked_like_v1(self):
+        self.dex[check.API_V2].method_signatures["getPodcast"] = "(J)Lretrofit2/Call;"
+        with self.assertRaisesRegex(ValueError, "Retrofit generic response type lost: .*BoxLoreApiV2.getPodcast"):
+            self.validate()
+        self.dex.pop(check.API_V2)
+        with self.assertRaisesRegex(ValueError, "Retrofit API removed: .*BoxLoreApiV2"):
+            self.validate()
+
     def test_obfuscated_annotation_names_are_valid(self):
         self.dex[check.API].annotations["getEpisode"] = ["VISIBILITY_RUNTIME Lab;"]
+        self.dex[check.API_V2].annotations["getPodcast"] = ["VISIBILITY_RUNTIME Lab;"]
         self.validate({"retrofit2/http/GET": "ab"})
 
     def test_dynamic_serializer_and_companion_are_both_required(self):
