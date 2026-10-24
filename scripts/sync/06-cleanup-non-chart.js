@@ -62,7 +62,10 @@ async function runCapTrim() {
     }
 }
 
-/** Stamps kept shows' points with their last chart day. Never throws; returns the report line. */
+/**
+ * Stamps kept shows' points with their last chart day. Never throws. `failed` counts failed
+ * calls: retention holds expiry back that run, so a charting show is never expired on a stale date.
+ */
 async function stampChartedAt(pods, shows) {
     try {
         for (const c of chartedAt.COLLECTIONS) await qdrant.ensurePayloadIndex(c.name, chartedAt.FIELD, 'integer');
@@ -73,10 +76,10 @@ async function stampChartedAt(pods, shows) {
         });
         const line = chartedAt.summary(r);
         log.info(`[CHARTED_AT] ${line}`);
-        return line;
+        return { line, failed: r.failed };
     } catch (e) {
         log.warn(`[CHARTED_AT] skipped: ${e.message}`);
-        return 'charted_at skipped';
+        return { line: 'charted_at skipped', failed: 1 };
     }
 }
 
@@ -87,26 +90,34 @@ function notify(args) {
     if (r.status !== 0) log.warn(`[RETENTION] notifier exited ${r.status ?? r.error?.message}`);
 }
 
-/** Expired points and the size guard. Never throws; returns the report line. */
-async function runRetention(archive) {
+/**
+ * Expired points and the size guard. Never throws; returns the report line. With `on`, a failure
+ * fails the stage (exit 1) so the runner alerts. Expiry is held back (counted only) when this
+ * run's date stamps failed.
+ */
+async function runRetention(archive, stampsFailed) {
     const mode = cfg.RETENTION_MODE;
     if (mode === 'off') return retention.summary(mode);
+    const held = mode === 'on' && stampsFailed ? `${stampsFailed} date stamp calls failed` : '';
+    if (held) log.warn(`[RETENTION] expiry held this run: ${held}`);
     try {
         const r = await retention.enforce(qdrant, {
-            mode,
+            mode: held ? 'count' : mode,
             nowSec: Math.floor(Date.now() / 1000),
             steps: retention.retentionSteps(),
             ceiling: cfg.QDRANT_POINTS_CEILING,
             alert: cfg.QDRANT_POINTS_ALERT,
             collections: [cfg.EPISODES_COLLECTION, cfg.PODCASTS_COLLECTION],
             onExpired: async (collection, filter) => {
-                if (collection !== cfg.EPISODES_COLLECTION) return;
+                if (collection !== cfg.EPISODES_COLLECTION) return undefined;
                 const perShow = await qdrant.facetCounts(collection, 'podcast_id', filter, 100_000).catch(() => null);
-                if (perShow) for (const [pid, n] of perShow) attribution.pointsExpired(pid, n);
-                attribution.flush();
+                return () => {
+                    if (perShow) for (const [pid, n] of perShow) attribution.pointsExpired(pid, n);
+                    attribution.flush();
+                };
             },
         });
-        const line = retention.summary(mode, archive, r);
+        const line = retention.summary(mode, archive, r, held);
         log.info(`[RETENTION] ${line}`);
         if (r.overAlert) {
             log.warn(`[RETENTION] ${log.fmt(r.total)} episode points: over the alert level of ${log.fmt(cfg.QDRANT_POINTS_ALERT)}`);
@@ -119,15 +130,20 @@ async function runRetention(archive) {
         }
         return line;
     } catch (e) {
-        log.warn(`[RETENTION] skipped: ${e.message}`);
+        if (mode === 'on') {
+            log.error(`[RETENTION] failed: ${e.message}`);
+            process.exitCode = 1;
+        } else {
+            log.warn(`[RETENTION] skipped: ${e.message}`);
+        }
         return 'retention skipped';
     }
 }
 
 /** The cap trim, then retention: the tail of every cleanup run. */
-async function finish(archive) {
+async function finish(archive, stampsFailed) {
     const trim = await runCapTrim();
-    const retentionLine = await runRetention(archive);
+    const retentionLine = await runRetention(archive, stampsFailed);
     return { trim, retentionLine };
 }
 
@@ -232,11 +248,11 @@ async function main() {
 
     // Last-charted dates for the shows that stay (points of shows deleted below go anyway).
     const deleting = new Set(toDelete.map(p => p.id));
-    const chartedLine = await stampChartedAt(allPods.filter(p => !deleting.has(p.id)), st.shows);
+    const { line: chartedLine, failed: stampsFailed } = await stampChartedAt(allPods.filter(p => !deleting.has(p.id)), st.shows);
 
     if (toDelete.length === 0) {
         log.info('Nothing past the grace period - done');
-        const { trim, retentionLine } = await finish({});
+        const { trim, retentionLine } = await finish({}, stampsFailed);
         log.summaryTable('Stage 6: Cleanup', [{
             stage: 'cleanup-non-chart',
             reads: turso.getStats().reads,
@@ -269,10 +285,12 @@ async function main() {
         try {
             if (archiving) {
                 const kept = await retention.archiveShows(qdrant, intIds, { keep: cfg.ARCHIVE_EPISODES });
-                // Kept points carry the exact day the show was last on a chart.
-                await chartedAt.stamp(qdrant, chartedAt.planBatches(chunk, st.shows), {
+                // Kept points carry the exact day the show was last on a chart. Until that is saved
+                // the chunk stays pending: its catalog row and chart clock are needed to retry.
+                const stamped = await chartedAt.stamp(qdrant, chartedAt.planBatches(chunk, st.shows), {
                     collections: chartedAt.COLLECTIONS, refreshSec: 0, warn: (m) => log.warn(m),
                 });
+                if (stamped.failed) throw new Error(`${stamped.failed} date stamp calls failed; kept for the next run`);
                 qdrantOk.push(...chunk);
                 for (const p of chunk) {
                     const r = kept.get(String(p.id)) || { kept: 0, dropped: [] };
@@ -309,7 +327,7 @@ async function main() {
 
     if (qdrantOk.length === 0) {
         log.error('No Qdrant deletions succeeded - skipping Turso deletes (will retry next run)');
-        const { trim, retentionLine } = await finish(archive);
+        const { trim, retentionLine } = await finish(archive, stampsFailed);
         log.summaryTable('Stage 6: Cleanup', [{
             stage: 'cleanup-non-chart',
             reads: turso.getStats().reads,
@@ -372,7 +390,7 @@ async function main() {
     state.save(st);
     log.info(`State pruned: ${pruned} dead entries removed`);
 
-    const { trim, retentionLine } = await finish(archive);
+    const { trim, retentionLine } = await finish(archive, stampsFailed);
 
     const stats = turso.getStats();
     log.costFooter('Stage 6 · Cleanup', {

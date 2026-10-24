@@ -79,7 +79,9 @@ async function archiveShows(qdrant, showIds, { keep, dry = false, collection = c
  * result says what the first step would expire.
  * @param {{ countPoints: Function, deleteByFilter: Function, facetCounts?: Function }} qdrant
  * @param {{ mode: 'count'|'on', nowSec: number, steps: number[], ceiling: number, alert: number,
- *   collections: string[], onExpired?: (collection: string, filter: object) => Promise<void> }} opts
+ *   collections: string[], onExpired?: (collection: string, filter: object) => Promise<(() => void)|void> }} opts
+ *   onExpired runs before a delete (while the points still exist); the function it returns runs
+ *   only after the delete is confirmed, so a failed delete records nothing.
  * @returns {Promise<{ mode: string, retentionDays: number, expired: Record<string, number>,
  *   total: number, overAlert: boolean, overCeiling: boolean }>}
  */
@@ -92,8 +94,9 @@ async function enforce(qdrant, { mode, nowSec, steps, ceiling, alert, collection
         for (const c of collections) {
             const n = await qdrant.countPoints(c, filter);
             if (mode === 'on' && n > 0) {
-                await onExpired(c, filter);
+                const commit = await onExpired(c, filter);
                 await qdrant.deleteByFilter(c, filter, true);
+                if (typeof commit === 'function') commit();
             }
             out.expired[c] += n;
         }
@@ -106,8 +109,8 @@ async function enforce(qdrant, { mode, nowSec, steps, ceiling, alert, collection
     return out;
 }
 
-/** One line for the run report. */
-function summary(mode, { archived = 0, kept = 0, trimmed = 0 } = {}, r = null) {
+/** One line for the run report. `held` = why expiry was held back this run (count only). */
+function summary(mode, { archived = 0, kept = 0, trimmed = 0 } = {}, r = null, held = '') {
     if (mode === 'off') return 'retention off';
     const on = mode === 'on';
     const parts = [`retention ${mode}: ${on ? 'kept' : 'would keep'} ${archived} departed shows (${kept} episodes; ${trimmed} older ones ${on ? 'deleted' : 'would go'})`];
@@ -116,7 +119,7 @@ function summary(mode, { archived = 0, kept = 0, trimmed = 0 } = {}, r = null) {
         parts.push(`${mode === 'on' ? 'expired' : 'past'} ${r.retentionDays} d: ${exp}`);
         parts.push(`${r.total} episode points${r.overCeiling ? ' (over the ceiling)' : r.overAlert ? ' (over the alert level)' : ''}`);
     }
-    return parts.join(' · ');
+    return parts.join(' · ') + (held ? ` · expiry held: ${held}` : '');
 }
 
 module.exports = { DAY_S, retentionSteps, archiveSplit, expiryFilter, archiveShows, enforce, summary };

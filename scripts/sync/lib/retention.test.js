@@ -91,3 +91,52 @@ test('summary: one report line per mode', () => {
         'retention on: kept 1 departed shows (5 episodes; 15 older ones deleted) · expired 90 d: episodes 0, podcasts 0 · 1900000 episode points (over the alert level)');
     assert.equal(summary('off'), 'retention off');
 });
+
+test('enforce records expired points only after the delete is confirmed', async () => {
+    const order = [];
+    const q = fakeQdrant({ counts: { 'episodes:90': 4 }, totals: [10] });
+    const del = q.deleteByFilter;
+    q.deleteByFilter = async (...a) => { order.push('delete'); return del(...a); };
+    await enforce(q, {
+        mode: 'on', nowSec: NOW, steps: [90], ceiling: 100, alert: 50, collections: ['episodes', 'podcasts'],
+        onExpired: async () => { order.push('count'); return () => order.push('record'); },
+    });
+    assert.deepEqual(order, ['count', 'delete', 'record']);
+
+    const failing = fakeQdrant({ counts: { 'episodes:90': 4 }, totals: [10] });
+    failing.deleteByFilter = async () => { throw new Error('qdrant down'); };
+    let recorded = false;
+    await assert.rejects(enforce(failing, {
+        mode: 'on', nowSec: NOW, steps: [90], ceiling: 100, alert: 50, collections: ['episodes'],
+        onExpired: async () => () => { recorded = true; },
+    }), /qdrant down/);
+    assert.equal(recorded, false, 'a failed delete records nothing');
+});
+
+test('summary says when expiry was held back', () => {
+    const r = { retentionDays: 90, expired: { episodes: 3 }, total: 9, overAlert: false, overCeiling: false };
+    assert.match(summary('on', {}, r, '2 date stamp calls failed'), / · expiry held: 2 date stamp calls failed$/);
+});
+
+test('retention settings accept only whole numbers; anything else keeps the default', () => {
+    const keys = ['RETENTION_DAYS', 'ARCHIVE_EPISODES', 'QDRANT_POINTS_CEILING', 'QDRANT_POINTS_ALERT', 'CHARTED_AT_REFRESH_DAYS'];
+    const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+    const fresh = () => {
+        delete require.cache[require.resolve('./config')];
+        return require('./config');
+    };
+    try {
+        Object.assign(process.env, { RETENTION_DAYS: '1e3', ARCHIVE_EPISODES: '7', QDRANT_POINTS_CEILING: '2e6', QDRANT_POINTS_ALERT: ' 1500000 ', CHARTED_AT_REFRESH_DAYS: '-3' });
+        let c = fresh();
+        assert.deepEqual([c.RETENTION_DAYS, c.ARCHIVE_EPISODES, c.QDRANT_POINTS_CEILING, c.QDRANT_POINTS_ALERT, c.CHARTED_AT_REFRESH_DAYS], [90, 7, 2_000_000, 1_500_000, 7]);
+        Object.assign(process.env, { RETENTION_DAYS: '10', ARCHIVE_EPISODES: '0' });
+        c = fresh();
+        assert.deepEqual([c.RETENTION_DAYS, c.ARCHIVE_EPISODES], [30, 1], 'minimums still apply');
+    } finally {
+        for (const k of keys) {
+            if (saved[k] === undefined) delete process.env[k];
+            else process.env[k] = saved[k];
+        }
+        fresh();
+    }
+});
