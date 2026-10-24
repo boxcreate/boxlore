@@ -1,5 +1,7 @@
 package cx.aswin.boxlore.core.rss
 
+import cx.aswin.boxlore.core.model.EpisodeRecipeId
+
 /**
  * Catalog identity for local and true-RSS episode rows.
  *

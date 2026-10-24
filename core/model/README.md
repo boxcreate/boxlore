@@ -12,6 +12,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - `Podcast.RSS_REFRESH_AUTOMATIC` describes publisher subscriptions refreshed via conditional GET or cooldown-gated GET, including feeds without HEAD validators. Legacy capability strings remain readable for in-place upgrade repair.
 
 - Podcast, episode, briefing, chapter, person, transcript, and playback-adjacent model types.
+- `EpisodeRecipeId`: boxlore's own episode IDs for numeric shows. A SHA-256 handle over (show ID, catalog key) in `[2^52, 2^53 - 1]`, so it never overlaps Podcast Index IDs or negative RSS IDs. `catalogKey` trims an explicit character set equal to Kotlin's `trim()` on Android (which, unlike the desktop JVM, also trims U+180E). `forNamespace(epNs, key)` mints with a show's stored episode namespace, which today equals its show ID. `showIdOrNull` parses a stored podcast ID exactly as the scripts copy does: ASCII digits only, no sign, leading zero or whitespace, and at most `2^53 - 1`; `rss:` IDs return null. It is a pure function with no storage of its own, kept here so `:core:database` and `:core:rss` share one copy. The full rules are in [`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md).
 - `EpisodeMediaCacheKey`: Media3 `customCacheKey` helper — briefing keys append audio URL `v=` so same-day regenerations bust the local audio cache.
 - `ContentRegion` / `ContentRegions`: 11 chart storefronts, language allowlist/normalize/expand (`id`→`id,in`), off-market soft-warn helpers, and briefing market mapping that preserves the explicit `global` briefing tab.
 - `ContentLanguageSelection`: pure language-chip toggle rules (English lock, max languages, BCP47 normalization) for settings/onboarding pickers.
@@ -40,6 +41,7 @@ src/main/java/cx/aswin/boxlore/core/model/
   CrossPromotion.kt
   Episode.kt
   EpisodeMediaCacheKey.kt
+  EpisodeRecipeId.kt
   FeedTelemetry.kt
   Podcast.kt
   PodcastGenres.kt
@@ -56,7 +58,7 @@ src/main/java/cx/aswin/boxlore/core/model/
 ## Dependencies
 
 - Project dependencies: none.
-- Libraries: Kotlinx serialization.
+- Libraries: Kotlinx serialization. `EpisodeRecipeId` uses the JDK's `java.security.MessageDigest` (SHA-256), not an Android API.
 - Reverse-edge rule: Android framework, Room, Retrofit implementation details, repositories, and Compose UI must stay out of this module.
 
 ## Threading / lifecycle
@@ -68,10 +70,12 @@ src/main/java/cx/aswin/boxlore/core/model/
 
 - This module owns no persistence files or storage keys.
 - ID schemes carried by model fields are owned by their source modules, such as RSS podcast IDs and playback media IDs.
+- The recipe ID scheme is the exception: `EpisodeRecipeId` defines it here, and it is fixed. Never change the recipe tag, trim set or hash; a new recipe needs a new tag and range ([`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md)).
 
 ## Testing notes
 
 - Unit tests live under `core/model/src/test`.
+- `EpisodeRecipeIdNamespaceTest` covers the show ID parse (it rejects `0123`, `+5`, ` 5`, `9007199254740992`, non-ASCII digits and the empty string) and the namespace entry point. The shared recipe fixture and its test stay in `core/rss/src/test` (`EpisodeRecipeIdTest`), where the scripts copy reads the same file; run `:core:rss:testDebugUnitTest` after any change to the recipe.
 - `ShareLinkBuilderTest` covers share URL invariants. Share links use `https://boxlore.in/share`; the app still opens the older `aswin.cx` share links.
 - Prefer pure JVM tests for additional formatters or value helpers.
 

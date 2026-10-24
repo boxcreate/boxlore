@@ -2,7 +2,7 @@
 
 The rules every boxlore component follows to identify an episode. Server components follow the same rules. Change them together, and never change a rule marked **fixed**.
 
-**Status:** sections 1–3 are implemented: `EpisodeRecipeId` in `:core:rss` and `scripts/sync/lib/episode-recipe-id.js` with the shared fixture, and the explicit trim in `StickyEpisodeIdentity.catalogKey`. Sections 4 and 5 bind the app code that stores or resolves recipe IDs once it adopts them.
+**Status:** sections 1–3 are implemented: `EpisodeRecipeId` in `:core:model` and `scripts/sync/lib/episode-recipe-id.js` with the shared fixture, and the explicit trim in `StickyEpisodeIdentity.catalogKey`. Sections 4 and 5 bind the app code that stores or resolves recipe IDs once it adopts them.
 
 ## 1. What an episode is
 
@@ -26,14 +26,14 @@ range     = 4,503,599,627,370,496 .. 9,007,199,254,740,991   (all safe JS intege
 - `TRIM_SET` is exactly what Kotlin's `String.trim()` removes on Android (Android treats U+180E as whitespace; JDK 17 does not). JS must use the explicit set: `String.prototype.trim()` also strips U+FEFF and keeps U+001C–U+001F and U+180E.
 - U+FEFF, U+0001 and U+200B are kept.
 - "First 8 bytes, then the low 52 bits" is the only reading. For show 3391039 and key `https://api.spreaker.com/episode/75827097` the answer is `8825297254050678`.
-- Recipe IDs are minted only for numeric show IDs in that range; implementations reject anything else. `rss:` shows (added by URL) never get recipe IDs and keep their negative IDs.
+- Recipe IDs are minted only for numeric show IDs in that range; implementations reject anything else. A show ID read as text must be canonical: `^[1-9][0-9]{0,15}$` in ASCII, then at most `2^53 − 1`. Signs, leading zeros, whitespace and other digit scripts are rejected, never normalized. `rss:` shows (added by URL) never get recipe IDs and keep their negative IDs.
 - The tag `boxlore-ep1` is never reused for a different recipe. A new recipe gets a new tag and its own range.
 
 **Shared fixture.** `episode-recipe-vectors.json` (18 cases, SHA-256 `e272d820972c4f9d7cd215c510bfdb7effa382ceb1982617419279189a5ae292`) is the source of truth. Every implementation has a test that matches every case and asserts the fixture's hash, so a changed copy fails CI.
 
 | Implementation | Where |
 | :--- | :--- |
-| Kotlin `EpisodeRecipeId` | `:core:rss` (fixture at `core/rss/src/test/resources/fixtures/`) |
+| Kotlin `EpisodeRecipeId` | `:core:model` (fixture and its test at `core/rss/src/test/resources/fixtures/` and `core/rss/src/test`) |
 | JS | `scripts/sync/lib/episode-recipe-id.js` |
 
 ## 3. Keys from stored data
