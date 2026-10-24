@@ -188,6 +188,9 @@ async function main() {
         'Collection': cfg.EPISODES_COLLECTION,
     });
     if (drainOrder.length === 0) {
+        runBudget.recordMetrics('04-vectorize-episodes', {
+            shows: 0, embedded: 0, stored: 0, backlog: 0, errors: 0, timeUp: false, ms: Date.now() - startedS * 1000,
+        });
         state.save(st);
         log.summaryTable('Stage 4: Vectorize Episodes', [{
             stage: 'vectorize-episodes', reads: turso.getStats().reads,

@@ -352,9 +352,14 @@ async function main() {
     state.save(st);
     await handoff.flush();
 
+    // Checks that ran this run. When time ran out, R5 reads feeds only for those, until the run's
+    // deadline (not stage 3's half: a checked stale show skipped here would wait a whole tier). When
+    // Podcast Index paused, R5 still covers every due show, as the feed is then the only source.
+    const attempted = piPaused ? checkedBeforePause : due.length - timeLeftOver;
     const r5 = await staleTips.runStaleTips({
         mode: cfg.R5_MODE,
-        due,
+        due: timeLeftOver ? due.slice(0, attempted) : due,
+        deadlineMs: runBudget.deadlineFrom(runBudget.RUN_DEADLINE),
         db: turso,
         feedsUrl: cfg.FEEDS_URL,
         registryPath: cfg.REGISTRY_DB,
@@ -455,8 +460,8 @@ async function main() {
     });
 
     // A pause is "try later", not a failure; only real errors over half the checks fail the stage.
-    if (due.length > 20 && errors > due.length / 2) {
-        log.error(`More than half of episode checks failed (${errors}/${due.length})`);
+    if (attempted > 20 && errors > attempted / 2) {
+        log.error(`More than half of episode checks failed (${errors}/${attempted})`);
         process.exit(1);
     }
 }
