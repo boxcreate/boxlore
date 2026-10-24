@@ -1,5 +1,11 @@
 package cx.aswin.boxlore.core.analytics
 
+import cx.aswin.boxlore.core.model.FeedFetchOutcome
+import cx.aswin.boxlore.core.model.FeedFetchReport
+import cx.aswin.boxlore.core.model.FeedFetchSource
+import cx.aswin.boxlore.core.model.FeedUrlCorrection
+import cx.aswin.boxlore.core.model.FeedUrlCorrectionReason
+import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
 import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
 import java.io.File
 import java.util.stream.Stream
@@ -325,6 +331,16 @@ class GlossaryAllEventsEmissionTest {
                 },
                 "proxy_fallback_triggered" to {
                     AnalyticsHelper.trackProxyFallbackTriggered("cdn.example.com", 320)
+                },
+                "feed_fetch_result" to {
+                    AnalyticsHelper.trackFeedFetchResult(
+                        FeedFetchReport.ShowPage("920666", FeedFetchSource.FEED, FeedFetchOutcome.OK),
+                    )
+                },
+                "feed_url_corrected" to {
+                    AnalyticsHelper.trackFeedUrlCorrected(
+                        FeedUrlCorrection("920666", FeedUrlCorrectionReason.DEAD, FeedUrlCorrectionStep.DAILY_CHECK),
+                    )
                 },
                 "support_page_viewed" to {
                     AnalyticsHelper.trackSupportPageViewed()
