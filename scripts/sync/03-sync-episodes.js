@@ -186,6 +186,8 @@ async function main() {
         }
     }
     const newTipIds = [];
+    // New episodes and whether each landed on its show's usual schedule (cadence shadow).
+    const timing = [];
 
     const plan = staleness.planDue(st.candidateIds, st.shows);
     const { allDue, neverChecked, staleNews, staleCore, staleRelaxed,
@@ -315,8 +317,18 @@ async function main() {
                 checked.m = medium;
                 if (shadow) {
                     const knewNewest = checked.p;
-                    cadence.notePace(checked, (full || tip).map((ep) => ep.datePublished));
-                    if (cadence.isNewEpisode(knewNewest, latest.datePublished)) newTipIds.push(podId);
+                    const dates = (full || tip).map((ep) => Number(ep.datePublished) || 0);
+                    cadence.notePace(checked, dates);
+                    if (cadence.isNewEpisode(knewNewest, latest.datePublished)) {
+                        newTipIds.push(podId);
+                        // The pattern as it stood before this episode: only the dates we already knew.
+                        const pattern = cadence.arrivalPattern(dates.filter((d) => d > 0 && d <= (knewNewest || 0)));
+                        timing.push({
+                            kind: pattern.kind,
+                            on: cadence.onSchedule(pattern, knewNewest, latest.datePublished),
+                            lagH: (Date.now() / 1000 - Number(latest.datePublished)) / 3600,
+                        });
+                    }
                 }
             } catch (e) {
                 if (pi.isSuspended(e)) {
@@ -365,7 +377,7 @@ async function main() {
         state.save(st);
         const paceShows = st.candidateIds.filter((id) => st.shows[id]?.g != null).length;
         cadenceLine = cadence.summary(cfg.CADENCE_MODE, shadow, cadence.compare(shadow, allDue, newTipIds), {
-            appleError, paceShows, candidates: st.candidateIds.length,
+            appleError, paceShows, candidates: st.candidateIds.length, timing: cadence.timingTally(timing),
         });
         log.info(`[CADENCE] ${cadenceLine}`);
     }
