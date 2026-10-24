@@ -59,6 +59,15 @@ function notePace(rec, dates) {
     return rec;
 }
 
+/**
+ * True when a tip is a new episode: dated after the newest one we knew. A changed tip ID with an
+ * older date (Podcast Index re-indexing an old episode) is not. An unknown newest date counts.
+ */
+function isNewEpisode(prevNewestS, dateS) {
+    const d = Number(dateS) || 0;
+    return d > 0 && d > (Number(prevNewestS) || 0);
+}
+
 /** Keeps the newest episode date we know. */
 function noteNewest(rec, dateS) {
     const d = Number(dateS) || 0;
@@ -138,7 +147,7 @@ function shadowPlan(candidateIds, shows, { now = Date.now(), appleOf = () => nul
  * Shadow against what this run did.
  * @param {ReturnType<typeof shadowPlan>} plan
  * @param {string[]} currentDue every show today's tiers made due (before the per-run cap)
- * @param {string[]} newTipIds shows whose tip changed this run
+ * @param {string[]} newTipIds shows that got a new episode this run (isNewEpisode)
  */
 function compare(plan, currentDue, newTipIds, now = Date.now()) {
     const current = new Set(currentDue.map(String));
@@ -229,7 +238,7 @@ function summary(mode, plan, cmp, { appleError = null, paceShows = 0, candidates
     const c = plan.counts;
     const pct = candidates ? Math.round((paceShows / candidates) * 100) : 0;
     return `cadence shadow: would check ${cmp.wouldCheck} (today ${cmp.current}; ${cmp.skipped} skipped, ${cmp.earlier} earlier, ` +
-        `${c.appleForced} Apple-forced, ${c.never} never checked) · ${cmp.late} new tips not yet due` +
+        `${c.appleForced} Apple-forced, ${c.never} never checked) · ${cmp.late} new episodes not yet due` +
         (cmp.late ? ` (median ${fmtH(cmp.lateMedianH)} h, max ${fmtH(cmp.lateMaxH)} h late)` : '') +
         ` · checks/day ${plan.perDay} vs ${plan.perDayNow} · news ${c.news}, dormant ${c.dormant}, pace ${c.pace}, tier ${c.tier}` +
         ` · pace known ${pct}%` + (appleError ? ` · Apple unread (${appleError})` : '');
@@ -240,6 +249,7 @@ module.exports = {
     paceFromSpan,
     notePace,
     noteNewest,
+    isNewEpisode,
     intervalFor,
     appleForces,
     shadowPlan,

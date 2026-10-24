@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const staleness = require('./staleness');
 const {
-    paceFromDates, paceFromSpan, notePace, noteNewest, intervalFor, appleForces,
+    paceFromDates, paceFromSpan, notePace, noteNewest, isNewEpisode, intervalFor, appleForces,
     shadowPlan, compare, seedFromBook, openApple, summary, BOOK_CHUNK, HOUR_MS,
 } = require('./cadence');
 
@@ -147,8 +147,16 @@ test('summary: one report line', () => {
     const cmp = { wouldCheck: 10, current: 12, skipped: 4, earlier: 2, late: 2, lateMedianH: 2.25, lateMaxH: 30.4 };
     assert.equal(summary('shadow', plan, cmp, { paceShows: 6, candidates: 24 }),
         'cadence shadow: would check 10 (today 12; 4 skipped, 2 earlier, 3 Apple-forced, 2 never checked) · ' +
-        '2 new tips not yet due (median 2.3 h, max 30 h late) · checks/day 900 vs 1000 · ' +
+        '2 new episodes not yet due (median 2.3 h, max 30 h late) · checks/day 900 vs 1000 · ' +
         'news 4, dormant 5, pace 6, tier 7 · pace known 25%');
-    assert.match(summary('shadow', plan, { ...cmp, late: 0 }, { appleError: 'gone' }), /0 new tips not yet due · .* · Apple unread \(gone\)$/);
+    assert.match(summary('shadow', plan, { ...cmp, late: 0 }, { appleError: 'gone' }), /0 new episodes not yet due · .* · Apple unread \(gone\)$/);
     assert.equal(summary('off', null, null), 'cadence off');
+});
+
+test('a changed tip counts as a new episode only when it is newer than the newest date we knew', () => {
+    assert.equal(isNewEpisode(NOW_S - DAY_S, NOW_S), true);
+    assert.equal(isNewEpisode(NOW_S, NOW_S - 200 * DAY_S), false, 'Podcast Index re-indexed an old episode');
+    assert.equal(isNewEpisode(NOW_S, NOW_S), false);
+    assert.equal(isNewEpisode(0, NOW_S), true, 'no known date');
+    assert.equal(isNewEpisode(undefined, '0'), false, 'undated tip');
 });
