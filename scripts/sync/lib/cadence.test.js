@@ -160,3 +160,50 @@ test('a changed tip counts as a new episode only when it is newer than the newes
     assert.equal(isNewEpisode(0, NOW_S), true, 'no known date');
     assert.equal(isNewEpisode(undefined, '0'), false, 'undated tip');
 });
+
+const { arrivalPattern, onSchedule, timingTally, timingSummary } = require('./cadence');
+const H = 3600;
+// Tuesday 2026-10-20 05:00 UTC.
+const TUE5 = Date.UTC(2026, 9, 20, 5) / 1000;
+
+test('drop times: weekly, daily and regular-gap shows are recognised; bonus episodes don\'t break a pattern', () => {
+    const weekly = Array.from({ length: 10 }, (_, i) => TUE5 - i * 7 * DAY_S + (i % 3) * 600);
+    assert.equal(arrivalPattern(weekly).kind, 'weekly');
+    const withBonus = [...weekly.slice(0, 8), TUE5 - 3 * DAY_S + 13 * H, TUE5 - 10 * DAY_S + 20 * H];
+    assert.equal(arrivalPattern(withBonus).kind, 'weekly', '2 bonus episodes in 10');
+    const daily = Array.from({ length: 10 }, (_, i) => TUE5 - i * DAY_S + (i % 2) * 1200);
+    assert.equal(arrivalPattern(daily).kind, 'daily');
+    const fortnightly = Array.from({ length: 8 }, (_, i) => TUE5 - i * 14 * DAY_S + (i % 2) * 5 * H);
+    assert.deepEqual(arrivalPattern(fortnightly).kind, 'gap');
+    const random = [TUE5, TUE5 - 2.3 * DAY_S, TUE5 - 9.1 * DAY_S, TUE5 - 11 * DAY_S, TUE5 - 25 * DAY_S, TUE5 - 26.5 * DAY_S];
+    assert.equal(arrivalPattern(random).kind, 'irregular');
+    assert.equal(arrivalPattern([TUE5, TUE5 - 7 * DAY_S, TUE5 - 14 * DAY_S]).kind, 'irregular', 'too few dates');
+});
+
+test('drop times: a new episode is on schedule only near the expected slot', () => {
+    const weekly = arrivalPattern(Array.from({ length: 10 }, (_, i) => TUE5 - i * 7 * DAY_S));
+    assert.equal(onSchedule(weekly, TUE5, TUE5 + 7 * DAY_S + 2 * H), true);
+    assert.equal(onSchedule(weekly, TUE5, TUE5 + 14 * DAY_S - H), true, 'a skipped week still lands on the slot');
+    assert.equal(onSchedule(weekly, TUE5, TUE5 + 3 * DAY_S), false, 'a Friday bonus is off schedule');
+    const daily = arrivalPattern(Array.from({ length: 10 }, (_, i) => TUE5 - i * DAY_S));
+    assert.equal(onSchedule(daily, TUE5, TUE5 + DAY_S + H), true);
+    assert.equal(onSchedule(daily, TUE5, TUE5 + DAY_S + 6 * H), false);
+    const gap = { kind: 'gap', gap: 14 * DAY_S };
+    assert.equal(onSchedule(gap, TUE5, TUE5 + 14 * DAY_S + 5 * H), true);
+    assert.equal(onSchedule(gap, TUE5, TUE5 + 9 * DAY_S), false);
+    assert.equal(onSchedule(gap, 0, TUE5), false, 'no known newest date');
+    assert.equal(onSchedule({ kind: 'irregular' }, TUE5, TUE5 + DAY_S), false);
+});
+
+test('drop times: tally and report wording', () => {
+    const t = timingTally([
+        { kind: 'weekly', on: true, lagH: 20 },
+        { kind: 'daily', on: true, lagH: 4 },
+        { kind: 'irregular', on: false, lagH: 30 },
+    ]);
+    assert.deepEqual([t.total, t.onSchedule, t.offSchedule, t.byKind], [3, 2, 1, { daily: 1, weekly: 1, gap: 0 }]);
+    assert.equal(timingSummary(t), ' · timing: 2 of 3 new episodes on schedule (daily 1, weekly 1, gap 0), 1 off schedule; ' +
+        'found today 12 h after release on schedule, 30 h off schedule (median)');
+    assert.equal(timingSummary(timingTally([])), '');
+    assert.match(timingSummary(timingTally([{ kind: 'irregular', on: false, lagH: 2 }])), /n\/a after release on schedule, 2\.0 h off schedule/);
+});

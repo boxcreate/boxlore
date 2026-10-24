@@ -25,7 +25,7 @@ import retrofit2.awaitResponse
 /**
  * Repository for podcast data via Boxlore API (Cloudflare Worker → Podcast Index).
  */
-@Suppress("LongParameterList") // The last parameters are optional test seams; production wiring passes seven.
+@Suppress("LongParameterList", "kotlin:S107") // The last parameters are optional test seams and rollout switches.
 class PodcastRepository(
     private val baseUrl: String,
     val publicKey: String,
@@ -53,6 +53,12 @@ class PodcastRepository(
      * null so [apiV2] is built on the same cached client as [api].
      */
     boxLoreApiV2: BoxLoreApiV2? = null,
+    /**
+     * The v2 build's rollout switches (feed-first show pages, v2 discovery, address check, upgrade
+     * repair), from the app's PostHog flags. Added in P4 (plan section 11, Rollback); the code
+     * paths that read them land later.
+     */
+    val rolloutSwitches: RolloutSwitches = RolloutSwitches(),
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     /** The one cached HTTP client both API versions share; created only when an API needs it. */
     private val cachedClient: okhttp3.OkHttpClient by lazy { NetworkModule.createCachedClient(context) }
