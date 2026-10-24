@@ -49,6 +49,7 @@ const scalars = require('./lib/scalars');
 const showWindow = require('./lib/show-window');
 const attribution = require('./lib/attribution');
 const chartedAt = require('./lib/charted-at');
+const runBudget = require('./lib/run-budget');
 
 const UPSERT_BATCH = 100;
 
@@ -59,6 +60,9 @@ async function ensureIndexes() {
 
 async function main() {
     const startedS = Math.floor(Date.now() / 1000);
+    // Hourly runs: stop starting shows at the runner's deadline (lib/run-budget.js).
+    const deadline = runBudget.deadlineFrom(runBudget.RUN_DEADLINE);
+    let timeUp = false;
     turso.assertEnv();
     qdrant.assertEnv();
     pi.assertEnv();
@@ -275,6 +279,16 @@ async function main() {
     }
 
     for (const pod of drainOrder) {
+        if (runBudget.timeUp(deadline)) {
+            timeUp = true;
+            runProg.flush();
+            reportBacklogIfDue(true);
+            log.info(
+                `[BUDGET] Time budget reached (${embedded} embedded). ` +
+                `Remaining backlog: ${drainOrder.length - processedCount} shows wait for the next run`,
+            );
+            break;
+        }
         if (budget <= 0) {
             runProg.flush();
             reportBacklogIfDue(true);
@@ -627,10 +641,21 @@ async function main() {
             `depth ${depthDue.length}, spooled ${spooledPoints}, replayed ${replayed.points}, ` +
             `${showsCompleted} done, partial ${partialShows}, skip ${showsFullySkipped}, ` +
             `handoff ${handoffHits}, PI ${piFetches}, backlog ${backlog}, ${errors} errors` +
+            (timeUp ? ', time budget reached' : '') +
             (cfg.WINDOWS_MODE !== 'off' ? `, ${windowSummary()}` : '') +
             `, ${pi.summary()}` + (waitingForPi ? `, ${waitingForPi} shows wait for PI` : '') +
             (reasons ? `, ${reasons}` : ''),
     }]);
+
+    runBudget.recordMetrics('04-vectorize-episodes', {
+        shows: processedCount,
+        embedded,
+        stored,
+        backlog,
+        errors,
+        timeUp,
+        ms: Date.now() - startedS * 1000,
+    });
 
     if (processedCount > 20 && errors > processedCount) {
         log.error('Error count exceeds processed shows - failing run for visibility');
