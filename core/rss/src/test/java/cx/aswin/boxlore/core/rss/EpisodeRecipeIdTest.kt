@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.rss
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import java.security.MessageDigest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
