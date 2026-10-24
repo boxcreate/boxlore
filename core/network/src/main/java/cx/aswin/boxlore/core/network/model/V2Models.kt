@@ -44,6 +44,13 @@ object V2EpisodeIds {
     fun isShowId(id: Long?): Boolean = id != null && id in 1..SHOW_ID_MAX
 
     /**
+     * True when [id] is a show ID the episode routes accept: `/v2/episode` (`show`), `/v2/episodes`
+     * (`id`) and `/v2/episodes/register` (`show`) answer 400 for a show at or above 2^52. Check it
+     * before calling them; a 400 is permanent and must not be retried.
+     */
+    fun isEpisodeShowId(id: Long?): Boolean = id != null && id in 1 until RECIPE_MIN
+
+    /**
      * Strict parse of a stored show ID ("920666") into the number `/v2` routes take. Same rule as the
      * server: canonical decimal digits, no sign, no leading zero, within [SHOW_ID_MAX]. `rss:` shows
      * and anything else return null.
@@ -70,11 +77,30 @@ object V2FetchVia {
 }
 
 /**
+ * How to read a show's feed document, from [V2FeedAddress.readTarget].
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 9, API contract).
+ */
+sealed interface V2FeedReadTarget {
+    /** Read [url], the publisher's address, with the app's RSS client. */
+    data class Direct(val url: String) : V2FeedReadTarget
+
+    /**
+     * The address is http-only: read the document only with
+     * [cx.aswin.boxlore.core.network.BoxLoreApiV2.getFeed] for [showId]. Its `transportUrl` is an API
+     * route that needs the API session, so the RSS client must never fetch it.
+     */
+    data class ViaApi(val showId: Long) : V2FeedReadTarget
+}
+
+/**
  * The address fields every `/v2` show answer carries.
  *
  * - [fetchUrl]: the publisher's address boxlore has for the show (null: keep the saved one).
  * - [fetchVia]: [V2FetchVia.DIRECT] for HTTPS, [V2FetchVia.PROXY] for an http-only address.
- * - [transportUrl]: `/v2/feed/<id>`, set only when [fetchVia] is [V2FetchVia.PROXY].
+ * - [transportUrl]: the absolute `/v2/feed/<id>` API URL, set only when [fetchVia] is
+ *   [V2FetchVia.PROXY]. It needs the API session: never fetch it with the RSS client and never save
+ *   it as the show's address. Use [readTarget] to decide how to read the feed.
  * - [feedSource]: where the address came from (`registry:apple`, `catalog`, …).
  */
 interface V2FeedAddress {
@@ -84,10 +110,18 @@ interface V2FeedAddress {
     val feedSource: String?
 
     /**
-     * The URL to read the feed document from: [transportUrl] when the address needs the proxy,
-     * otherwise [fetchUrl]. Null when the API has no address. Never saved as the show's address.
+     * How to read show [showId]'s feed document: [V2FeedReadTarget.ViaApi] when the address needs the
+     * proxy (the API sent a [transportUrl]), otherwise [V2FeedReadTarget.Direct] on [fetchUrl]. Null
+     * when the API has no address to read.
      */
-    fun readUrl(): String? = if (fetchVia == V2FetchVia.PROXY) transportUrl else fetchUrl
+    fun readTarget(showId: Long): V2FeedReadTarget? {
+        require(V2EpisodeIds.isShowId(showId)) { "showId must be a show ID" }
+        return if (fetchVia == V2FetchVia.PROXY) {
+            transportUrl?.let { V2FeedReadTarget.ViaApi(showId) }
+        } else {
+            fetchUrl?.let(V2FeedReadTarget::Direct)
+        }
+    }
 }
 
 /** Registry flags for one show. */
@@ -235,7 +269,7 @@ object V2FeedReportStatus {
 
 /**
  * `POST /v2/feed-report` answer: whether a re-check was queued, and the address the API has now.
- * When it differs from the one the phone read, read [V2FeedAddress.readUrl] instead.
+ * When it differs from the one the phone read, read through [V2FeedAddress.readTarget] instead.
  */
 @Serializable
 data class V2FeedReportResponse(
@@ -329,8 +363,27 @@ object V2EpisodeSort {
 }
 
 /**
+ * Query bounds of `GET /v2/episodes`, mirrored from the route: it answers 400 (permanent) for a show
+ * at or above 2^52, a `limit` outside [LIMIT_MIN]..[LIMIT_MAX] or an `offset` outside 0..[OFFSET_MAX].
+ */
+object V2EpisodesPaging {
+    const val LIMIT_MIN: Int = 1
+    const val LIMIT_MAX: Int = 1000
+    const val DEFAULT_LIMIT: Int = 100
+    const val OFFSET_MAX: Int = 10_000
+
+    /** True when the route accepts this show, [limit] and [offset]. */
+    fun isValid(showId: Long, limit: Int, offset: Int): Boolean =
+        V2EpisodeIds.isEpisodeShowId(showId) && limit in LIMIT_MIN..LIMIT_MAX && offset in 0..OFFSET_MAX
+}
+
+/**
  * `POST /v2/episodes/register` body: an episode about to be shared, as read from show [show]'s feed.
  * At least one of [guid] and [enclosureUrl] is needed; a null one is left out of the JSON.
+ *
+ * Validated like the route, which answers 400 (permanent, so never retried) otherwise: [show] below
+ * 2^52, and a catalog key (the trimmed [guid], or the trimmed [enclosureUrl] without one) of at most
+ * [MAX_CATALOG_KEY_LENGTH] characters.
  */
 @Serializable
 data class V2EpisodeRegisterRequest(
@@ -342,8 +395,19 @@ data class V2EpisodeRegisterRequest(
     val enclosureUrl: String? = null,
 ) {
     init {
-        require(show in 1 until V2EpisodeIds.RECIPE_MIN) { "show must be a show ID below 2^52" }
-        require(!guid.isNullOrBlank() || !enclosureUrl.isNullOrBlank()) { "guid or enclosureUrl is required" }
+        require(V2EpisodeIds.isEpisodeShowId(show)) { "show must be a show ID below 2^52" }
+        val key = catalogKeyOf(guid, enclosureUrl)
+        require(key != null) { "guid or enclosureUrl is required" }
+        require(key.length <= MAX_CATALOG_KEY_LENGTH) { "catalog key longer than $MAX_CATALOG_KEY_LENGTH characters" }
+    }
+
+    companion object {
+        /** The route's limit on the catalog key, in UTF-16 characters (as the API counts them). */
+        const val MAX_CATALOG_KEY_LENGTH: Int = 2048
+
+        /** The trimmed GUID, or the trimmed enclosure URL without one; null when both are blank. */
+        private fun catalogKeyOf(guid: String?, enclosureUrl: String?): String? =
+            guid?.trim()?.takeIf(String::isNotEmpty) ?: enclosureUrl?.trim()?.takeIf(String::isNotEmpty)
     }
 }
 

@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.network.model.V2EpisodeRegisterRequest
 import cx.aswin.boxlore.core.network.model.V2EpisodeReply
 import cx.aswin.boxlore.core.network.model.V2EpisodeSort
 import cx.aswin.boxlore.core.network.model.V2FeedReportRequest
+import cx.aswin.boxlore.core.network.model.V2FeedReadTarget
 import cx.aswin.boxlore.core.network.model.V2FeedReportStatus
 import cx.aswin.boxlore.core.network.model.V2FetchVia
 import cx.aswin.boxlore.core.network.model.V2ShowsFeedsRequest
@@ -81,7 +82,7 @@ class BoxLoreApiV2ContractTest {
         assertEquals("https://old.example.com/rss", body.feed?.originalUrl)
         assertEquals("https://feeds.example.com/new", body.feed?.url)
         assertEquals(V2FetchVia.DIRECT, body.fetchVia)
-        assertEquals("https://feeds.example.com/new", body.readUrl())
+        assertEquals(V2FeedReadTarget.Direct("https://feeds.example.com/new"), body.readTarget(920666L))
         assertEquals("registry:apple", body.feedSource)
         assertEquals(920666L, body.validEpNs)
         assertEquals(2400L, body.episodeCount)
@@ -122,13 +123,14 @@ class BoxLoreApiV2ContractTest {
         assertTrue(body.registryAvailable)
         assertEquals(listOf(920666L, 3391039L, 42L), body.results.map { it.id })
         val (direct, proxied, unknown) = body.results
-        assertEquals("https://feeds.example.com/a", direct.readUrl())
+        assertEquals(V2FeedReadTarget.Direct("https://feeds.example.com/a"), direct.readTarget(direct.id))
         assertTrue(direct.flags!!.episodeStale)
         assertEquals(200L, direct.verifiedAt)
         assertEquals("http://plain.example.com/rss", proxied.fetchUrl)
-        assertEquals("https://api.example.com/v2/feed/3391039", proxied.readUrl())
+        assertEquals("https://api.example.com/v2/feed/3391039", proxied.transportUrl)
+        assertEquals(V2FeedReadTarget.ViaApi(3391039L), proxied.readTarget(proxied.id))
         assertNull(unknown.fetchUrl)
-        assertNull(unknown.readUrl())
+        assertNull(unknown.readTarget(unknown.id))
         assertNull(unknown.verifiedAt)
         assertEquals(42L, unknown.validEpNs)
     }
@@ -194,6 +196,25 @@ class BoxLoreApiV2ContractTest {
     }
 
     @Test
+    fun `a proxied show is read with getFeed on the base URL, never at its transportUrl`() {
+        enqueueJson(
+            """{"registryAvailable":true,"results":[{"id":3391039,"fetchUrl":"http://plain.example.com/rss","fetchVia":"proxy","transportUrl":"https://elsewhere.example.net/v2/feed/3391039"}]}""",
+        )
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/rss+xml").setBody("<rss/>"))
+
+        val address = api.getShowFeeds(V2ShowsFeedsRequest(listOf(3391039L))).execute().body()!!.results.single()
+        server.takeRequest()
+        val target = address.readTarget(address.id) as V2FeedReadTarget.ViaApi
+        val document = api.getFeed(target.showId).execute()
+
+        assertEquals("<rss/>", document.body()!!.string())
+        val read = server.takeRequest()
+        assertEquals("/v2/feed/3391039", read.path)
+        assertEquals(server.hostName, read.requestUrl!!.host)
+        assertNoAppKey(read)
+    }
+
+    @Test
     fun `getFeed passes on the not_proxied address in the error body`() {
         enqueueJson("""{"error":"not_proxied","fetchUrl":"https://feeds.example.com/a"}""", code = 404)
 
@@ -217,7 +238,7 @@ class BoxLoreApiV2ContractTest {
         assertEquals("""{"id":920666,"status":"http_404"}""", request.body.readUtf8())
         assertNoAppKey(request)
         assertTrue(body.queued)
-        assertEquals("https://api.example.com/v2/feed/920666", body.readUrl())
+        assertEquals(V2FeedReadTarget.ViaApi(920666L), body.readTarget(920666L))
         assertEquals("registry:apple", body.feedSource)
     }
 
@@ -260,10 +281,10 @@ class BoxLoreApiV2ContractTest {
         val needsFeed = bare as V2EpisodeReply.NeedsFeed
         assertEquals(920666L, needsFeed.show)
         assertNull(needsFeed.fetchUrl)
-        assertNull(needsFeed.readUrl())
+        assertNull(needsFeed.readTarget(needsFeed.show))
         val withAddress = proxied as V2EpisodeReply.NeedsFeed
         assertEquals("http://plain.example.com/rss", withAddress.fetchUrl)
-        assertEquals("https://api.example.com/v2/feed/920666", withAddress.readUrl())
+        assertEquals(V2FeedReadTarget.ViaApi(920666L), withAddress.readTarget(withAddress.show))
     }
 
     @Test
@@ -383,6 +404,53 @@ class BoxLoreApiV2ContractTest {
         assertEquals("/v2/home/bootstrap", request.path)
         assertEquals("device-1", request.getHeader("X-Device-UUID"))
         assertEquals("""{"country":"us","vibeIds":["calm"],"include":["trending"]}""", request.body.readUtf8())
+    }
+
+    @Test
+    fun `similar episodes send the recipe ID and leave defaults out`() {
+        enqueueJson("""{"status":"true","items":[]}""")
+
+        api
+            .getSimilarEpisodes(
+                SimilarEpisodesRequest(
+                    id = "4503599627370497",
+                    podcastId = "920666",
+                    title = "T",
+                    description = "D",
+                    podcastTitle = "P",
+                    country = "in",
+                    languages = listOf("en", "hi"),
+                ),
+            ).execute()
+
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/v2/episodes/similar", request.path)
+        assertNoAppKey(request)
+        assertEquals(
+            """{"id":"4503599627370497","podcastId":"920666","title":"T","description":"D","podcastTitle":"P",""" +
+                """"country":"in","languages":["en","hi"]}""",
+            request.body.readUtf8(),
+        )
+    }
+
+    @Test
+    fun `because-you-like sends the excluded show and country only when set`() {
+        enqueueJson("""{"status":"true"}""")
+        enqueueJson("""{"status":"true"}""")
+
+        api.getBecauseYouLike(BecauseYouLikeRequest(podcastTitle = "Show", podcastDescription = "About", excludePodcastId = "920666", country = "in")).execute()
+        api.getBecauseYouLike(BecauseYouLikeRequest(podcastTitle = "Show", podcastDescription = "About")).execute()
+
+        val full = server.takeRequest()
+        assertEquals("POST", full.method)
+        assertEquals("/v2/recommendations/because-you-like", full.path)
+        assertNoAppKey(full)
+        assertEquals(
+            """{"podcastTitle":"Show","podcastDescription":"About","excludePodcastId":"920666","country":"in"}""",
+            full.body.readUtf8(),
+        )
+        assertEquals("""{"podcastTitle":"Show","podcastDescription":"About"}""", server.takeRequest().body.readUtf8())
     }
 
     @Test

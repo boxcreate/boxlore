@@ -17,6 +17,7 @@ import cx.aswin.boxlore.core.network.model.V2EpisodeRegisterResponse
 import cx.aswin.boxlore.core.network.model.V2EpisodeReply
 import cx.aswin.boxlore.core.network.model.V2EpisodeSort
 import cx.aswin.boxlore.core.network.model.V2EpisodesPageResponse
+import cx.aswin.boxlore.core.network.model.V2EpisodesPaging
 import cx.aswin.boxlore.core.network.model.V2FeedReportRequest
 import cx.aswin.boxlore.core.network.model.V2FeedReportResponse
 import cx.aswin.boxlore.core.network.model.V2PodcastResponse
@@ -62,10 +63,12 @@ interface BoxLoreApiV2 {
     fun getShowFeeds(@Body request: V2ShowsFeedsRequest): Call<V2ShowsFeedsResponse>
 
     /**
-     * The feed document of a show whose address is http-only, read for the phone (the
-     * `transportUrl` of a show answer). Pass the last `ETag` as [ifNoneMatch] to get a 304, which is
-     * not a successful Retrofit response: check `code() == 304`. The app keeps its own copy, so the
-     * HTTP cache never stores the document. A 404 body may carry `fetchUrl` (`not_proxied`).
+     * The feed document of a show whose address is http-only, read for the phone. This is the only
+     * way to read a [cx.aswin.boxlore.core.network.model.V2FeedReadTarget.ViaApi] show: its
+     * `transportUrl` needs the API session, so the RSS client never fetches it. Pass the last `ETag`
+     * as [ifNoneMatch] to get a 304, which is not a successful Retrofit response: check
+     * `code() == 304`. The app keeps its own copy, so the HTTP cache never stores the document. A 404
+     * body may carry `fetchUrl` (`not_proxied`).
      */
     @Streaming
     @Headers("Cache-Control: no-store")
@@ -83,8 +86,11 @@ interface BoxLoreApiV2 {
 
     /**
      * One episode for an ID-only link. [episodeId] is a stored ID as a decimal string (recipe, served
-     * or Podcast Index ID; never a negative `rss:` ID), [showId] its show when known. The 200 answer
-     * is the episode or [V2EpisodeReply.NeedsFeed]; 404 when nothing matches.
+     * or Podcast Index ID; never a negative `rss:` ID): check it with
+     * [cx.aswin.boxlore.core.network.model.V2EpisodeIds.isLookupEpisodeId]. [showId] is its show when
+     * known, and must pass [cx.aswin.boxlore.core.network.model.V2EpisodeIds.isEpisodeShowId] (below
+     * 2^52); otherwise leave it out. The 200 answer is the episode or [V2EpisodeReply.NeedsFeed]; 404
+     * when nothing matches, 400 (permanent) for an ID outside those rules.
      */
     @GET("v2/episode")
     fun getEpisode(
@@ -92,11 +98,15 @@ interface BoxLoreApiV2 {
         @Query("show") showId: Long? = null,
     ): Call<V2EpisodeReply>
 
-    /** The last-resort episode list of a show, keyed by recipe ID ([limit] 1–1000). */
+    /**
+     * The last-resort episode list of a show, keyed by recipe ID. The route answers 400 (permanent)
+     * unless [showId] is below 2^52, [limit] is 1–1000 and [offset] is 0–10000: check with
+     * [cx.aswin.boxlore.core.network.model.V2EpisodesPaging.isValid] first.
+     */
     @GET("v2/episodes")
     fun getEpisodes(
         @Query("id") showId: Long,
-        @Query("limit") limit: Int = 100,
+        @Query("limit") limit: Int = V2EpisodesPaging.DEFAULT_LIMIT,
         @Query("offset") offset: Int = 0,
         @Query("sort") sort: String = V2EpisodeSort.NEWEST,
     ): Call<V2EpisodesPageResponse>
@@ -105,7 +115,7 @@ interface BoxLoreApiV2 {
     @POST("v2/episodes/register")
     fun registerEpisode(@Body request: V2EpisodeRegisterRequest): Call<V2EpisodeRegisterResponse>
 
-    /** Episodes similar to one episode. */
+    /** Episodes similar to one episode. On `/v2`, [SimilarEpisodesRequest.id] is that episode's recipe ID as a decimal string. */
     @POST("v2/episodes/similar")
     fun getSimilarEpisodes(@Body request: SimilarEpisodesRequest): Call<EpisodesResponse>
 

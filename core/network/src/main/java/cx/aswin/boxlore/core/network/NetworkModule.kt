@@ -93,17 +93,10 @@ object NetworkModule {
         .build()
 
     /**
-     * BoxCast API via Cloudflare Worker proxy.
-     * Base URL injected from BuildConfig at runtime.
-     *
-     * Opens a new HTTP cache on [context]'s cache directory. To build [BoxLoreApi] and
-     * [BoxLoreApiV2] together, create one client with [createCachedClient] and pass it to both.
-     */
-    fun createBoxLoreApi(baseUrl: String, context: android.content.Context): BoxLoreApi = createBoxLoreApi(baseUrl, createCachedClient(context))
-
-    /**
      * The shared API client with a 50 MiB HTTP cache in [context]'s cache directory. Create it once
-     * per process and build every API version on it: two caches must never share a directory.
+     * per process and build every API version on it ([createBoxLoreApi], [createBoxLoreApiV2]): two
+     * caches must never share a directory. There is deliberately no `createBoxLoreApi(baseUrl, context)`
+     * shortcut, because each call would open another cache on the same directory.
      */
     fun createCachedClient(context: android.content.Context): OkHttpClient {
         val cacheSize = 50L * 1024L * 1024L // 50 MiB
@@ -116,8 +109,9 @@ object NetworkModule {
     }
 
     /**
-     * Builds [BoxLoreApi] against an arbitrary [OkHttpClient].
-     * Used by production (cached client) and JVM tests (MockWebServer, no disk cache).
+     * BoxCast API via Cloudflare Worker proxy, built on [client]. The base URL comes from BuildConfig
+     * at runtime. Production passes the one client from [createCachedClient]; JVM tests pass a
+     * MockWebServer or cache-less client.
      */
     fun createBoxLoreApi(baseUrl: String, client: OkHttpClient): BoxLoreApi = retrofit(baseUrl, client).create(BoxLoreApi::class.java)
 

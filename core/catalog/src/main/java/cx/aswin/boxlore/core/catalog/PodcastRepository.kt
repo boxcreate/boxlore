@@ -39,8 +39,8 @@ class PodcastRepository(
     val localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
     private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
     /**
-     * Optional override for hermetic JVM/MockWebServer tests. Production leaves this null so
-     * [NetworkModule.createBoxLoreApi] builds the cached OkHttp client from [context].
+     * Optional override for hermetic JVM/MockWebServer tests. Production leaves this null so [api] is
+     * built on the one cached OkHttp client from [NetworkModule.createCachedClient] (shared with [apiV2]).
      */
     boxLoreApi: BoxLoreApi? = null,
     /**

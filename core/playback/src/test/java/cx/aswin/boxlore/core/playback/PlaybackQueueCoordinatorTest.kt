@@ -65,7 +65,7 @@ class PlaybackQueueCoordinatorTest {
                 .build()
 
         val rss = RssPodcastRepository.createForTests(context = context, database = database)
-        val api = NetworkModule.createBoxLoreApi("https://api.boxlore.test", context)
+        val api = NetworkModule.createBoxLoreApi("https://api.boxlore.test", NetworkModule.createCachedClient(context))
         podcastRepository =
             PodcastRepository(
                 baseUrl = "https://api.boxlore.test",
