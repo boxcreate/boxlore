@@ -21,6 +21,11 @@
  * Last-charted dates (lib/charted-at.js, P3b): before deleting, every kept show's Qdrant points
  * get the day it was last seen on a chart. Best-effort: a failure never blocks the cleanup.
  *
+ * Retention (lib/retention.js, RETENTION_MODE, P3b): with `on`, a show past the grace keeps its
+ * newest ARCHIVE_EPISODES episode points and its show vector (its catalog row still goes), and
+ * points last charted more than RETENTION_DAYS ago are deleted, shorter while the index is over
+ * the size ceiling. `count` keeps today's deletes and reports what `on` would do.
+ *
  * FTS safety: the podcasts_ad delete trigger does a full FTS-content scan
  * PER ROW, so we drop it, bulk-delete, clean FTS orphans in one scan, and
  * recreate it.
@@ -37,6 +42,9 @@ const { trimEpisodeCaps } = require('./lib/trim-episode-caps');
 const { CHARTS_ITUNES_FIRST_CURSOR } = require('./lib/chart-countries');
 const attribution = require('./lib/attribution');
 const chartedAt = require('./lib/charted-at');
+const retention = require('./lib/retention');
+const fs = require('fs');
+const { spawnSync } = require('child_process');
 
 const QDRANT_CHUNK = 500;
 const DELETE_CHUNK = 200;
@@ -54,7 +62,10 @@ async function runCapTrim() {
     }
 }
 
-/** Stamps kept shows' points with their last chart day. Never throws; returns the report line. */
+/**
+ * Stamps kept shows' points with their last chart day. Never throws. `failed` counts failed
+ * calls: retention holds expiry back that run, so a charting show is never expired on a stale date.
+ */
 async function stampChartedAt(pods, shows) {
     try {
         for (const c of chartedAt.COLLECTIONS) await qdrant.ensurePayloadIndex(c.name, chartedAt.FIELD, 'integer');
@@ -65,11 +76,75 @@ async function stampChartedAt(pods, shows) {
         });
         const line = chartedAt.summary(r);
         log.info(`[CHARTED_AT] ${line}`);
-        return line;
+        return { line, failed: r.failed };
     } catch (e) {
         log.warn(`[CHARTED_AT] skipped: ${e.message}`);
-        return 'charted_at skipped';
+        return { line: 'charted_at skipped', failed: 1 };
     }
+}
+
+/** Urgent Telegram alert, or its all-clear; skipped when the notifier isn't installed. */
+function notify(args) {
+    if (!fs.existsSync(cfg.NOTIFY_SCRIPT)) return;
+    const r = spawnSync('python3', [cfg.NOTIFY_SCRIPT, ...args], { stdio: 'ignore', timeout: 30_000 });
+    if (r.status !== 0) log.warn(`[RETENTION] notifier exited ${r.status ?? r.error?.message}`);
+}
+
+/**
+ * Expired points and the size guard. Never throws; returns the report line. With `on`, a failure
+ * fails the stage (exit 1) so the runner alerts. Expiry is held back (counted only) when this
+ * run's date stamps failed.
+ */
+async function runRetention(archive, stampsFailed) {
+    const mode = cfg.RETENTION_MODE;
+    if (mode === 'off') return retention.summary(mode);
+    const held = mode === 'on' && stampsFailed ? `${stampsFailed} date stamp calls failed` : '';
+    if (held) log.warn(`[RETENTION] expiry held this run: ${held}`);
+    try {
+        const r = await retention.enforce(qdrant, {
+            mode: held ? 'count' : mode,
+            nowSec: Math.floor(Date.now() / 1000),
+            steps: retention.retentionSteps(),
+            ceiling: cfg.QDRANT_POINTS_CEILING,
+            alert: cfg.QDRANT_POINTS_ALERT,
+            collections: [cfg.EPISODES_COLLECTION, cfg.PODCASTS_COLLECTION],
+            onExpired: async (collection, filter) => {
+                if (collection !== cfg.EPISODES_COLLECTION) return undefined;
+                const perShow = await qdrant.facetCounts(collection, 'podcast_id', filter, 100_000).catch(() => null);
+                return () => {
+                    if (perShow) for (const [pid, n] of perShow) attribution.pointsExpired(pid, n);
+                    attribution.flush();
+                };
+            },
+        });
+        const line = retention.summary(mode, archive, r, held);
+        log.info(`[RETENTION] ${line}`);
+        if (r.overAlert) {
+            log.warn(`[RETENTION] ${log.fmt(r.total)} episode points: over the alert level of ${log.fmt(cfg.QDRANT_POINTS_ALERT)}`);
+        }
+        if (r.overCeiling) {
+            notify(['--alert', 'qdrant-size', 'Qdrant is over its size ceiling',
+                `${r.total} episode points (ceiling ${cfg.QDRANT_POINTS_CEILING}) after retention ${r.retentionDays} days`]);
+        } else {
+            notify(['--resolve', 'qdrant-size', `Qdrant back under its size ceiling (${r.total} episode points)`]);
+        }
+        return line;
+    } catch (e) {
+        if (mode === 'on') {
+            log.error(`[RETENTION] failed: ${e.message}`);
+            process.exitCode = 1;
+        } else {
+            log.warn(`[RETENTION] skipped: ${e.message}`);
+        }
+        return 'retention skipped';
+    }
+}
+
+/** The cap trim, then retention: the tail of every cleanup run. */
+async function finish(archive, stampsFailed) {
+    const trim = await runCapTrim();
+    const retentionLine = await runRetention(archive, stampsFailed);
+    return { trim, retentionLine };
 }
 
 async function main() {
@@ -173,25 +248,28 @@ async function main() {
 
     // Last-charted dates for the shows that stay (points of shows deleted below go anyway).
     const deleting = new Set(toDelete.map(p => p.id));
-    const chartedLine = await stampChartedAt(allPods.filter(p => !deleting.has(p.id)), st.shows);
+    const { line: chartedLine, failed: stampsFailed } = await stampChartedAt(allPods.filter(p => !deleting.has(p.id)), st.shows);
 
     if (toDelete.length === 0) {
         log.info('Nothing past the grace period - done');
-        const trim = await runCapTrim();
+        const { trim, retentionLine } = await finish({}, stampsFailed);
         log.summaryTable('Stage 6: Cleanup', [{
             stage: 'cleanup-non-chart',
             reads: turso.getStats().reads,
             writes: turso.getStats().writes,
-            detail: `0 deleted, ${inGrace} in grace, cap-trim ${trim.deletedPoints} pts${trim.failed ? ' (trim failed)' : ''} · ${chartedLine}`,
+            detail: `0 deleted, ${inGrace} in grace, cap-trim ${trim.deletedPoints} pts${trim.failed ? ' (trim failed)' : ''} · ${chartedLine} · ${retentionLine}`,
         }]);
         if (trim.failed) process.exitCode = 1;
         return;
     }
 
     // --- Qdrant deletion first (wait=true); only successful chunks go to Turso ---
-    log.group('Qdrant vector deletion');
+    const archiving = cfg.RETENTION_MODE === 'on';
+    log.group(archiving ? `Qdrant: keep each show's newest ${cfg.ARCHIVE_EPISODES} episodes` : 'Qdrant vector deletion');
     const qdrantOk = [];
     let qdrantFailedChunks = 0;
+    // Departed shows kept (on) or that would be kept (count), and their episodes kept and deleted.
+    const archive = { archived: 0, kept: 0, trimmed: 0 };
     for (let i = 0; i < toDelete.length; i += QDRANT_CHUNK) {
         const chunk = toDelete.slice(i, i + QDRANT_CHUNK);
         const intIds = chunk.map(p => parseInt(p.id, 10)).filter(n => !isNaN(n));
@@ -205,18 +283,40 @@ async function main() {
             pointCounts = null;
         }
         try {
-            await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, chunkFilter, true);
-            await qdrant.deleteByIds(cfg.PODCASTS_COLLECTION, uuids, true);
-            qdrantOk.push(...chunk);
-            for (const p of chunk) {
-                attribution.showDeleted(p.id, {
-                    points: pointCounts ? (pointCounts.get(String(p.id)) || 0) : undefined,
-                    lastSeen: st.shows[p.id]?.s,
-                    itunesId: p.itunesId,
+            if (archiving) {
+                const kept = await retention.archiveShows(qdrant, intIds, { keep: cfg.ARCHIVE_EPISODES });
+                // Kept points carry the exact day the show was last on a chart. Until that is saved
+                // the chunk stays pending: its catalog row and chart clock are needed to retry.
+                const stamped = await chartedAt.stamp(qdrant, chartedAt.planBatches(chunk, st.shows), {
+                    collections: chartedAt.COLLECTIONS, refreshSec: 0, warn: (m) => log.warn(m),
                 });
+                if (stamped.failed) throw new Error(`${stamped.failed} date stamp calls failed; kept for the next run`);
+                qdrantOk.push(...chunk);
+                for (const p of chunk) {
+                    const r = kept.get(String(p.id)) || { kept: 0, dropped: [] };
+                    archive.archived++;
+                    archive.kept += r.kept;
+                    archive.trimmed += r.dropped.length;
+                    attribution.showDeleted(p.id, {
+                        points: r.dropped.length, kept: r.kept, lastSeen: st.shows[p.id]?.s, itunesId: p.itunesId,
+                    });
+                }
+            } else {
+                await qdrant.deleteByFilter(cfg.EPISODES_COLLECTION, chunkFilter, true);
+                await qdrant.deleteByIds(cfg.PODCASTS_COLLECTION, uuids, true);
+                qdrantOk.push(...chunk);
+                for (const p of chunk) {
+                    const n = pointCounts ? (pointCounts.get(String(p.id)) || 0) : undefined;
+                    if (n !== undefined) {
+                        archive.archived++;
+                        archive.kept += Math.min(n, cfg.ARCHIVE_EPISODES);
+                        archive.trimmed += Math.max(0, n - cfg.ARCHIVE_EPISODES);
+                    }
+                    attribution.showDeleted(p.id, { points: n, lastSeen: st.shows[p.id]?.s, itunesId: p.itunesId });
+                }
             }
             attribution.flush();
-            log.info(`Deleted vectors for shows ${i + 1}-${Math.min(i + QDRANT_CHUNK, toDelete.length)} of ${toDelete.length}`);
+            log.info(`${archiving ? 'Kept newest episodes' : 'Deleted vectors'} for shows ${i + 1}-${Math.min(i + QDRANT_CHUNK, toDelete.length)} of ${toDelete.length}`);
         } catch (e) {
             qdrantFailedChunks++;
             log.error(`Qdrant deletion failed for chunk at ${i}: ${e.message}`);
@@ -227,12 +327,12 @@ async function main() {
 
     if (qdrantOk.length === 0) {
         log.error('No Qdrant deletions succeeded - skipping Turso deletes (will retry next run)');
-        const trim = await runCapTrim();
+        const { trim, retentionLine } = await finish(archive, stampsFailed);
         log.summaryTable('Stage 6: Cleanup', [{
             stage: 'cleanup-non-chart',
             reads: turso.getStats().reads,
             writes: turso.getStats().writes,
-            detail: `0 turso deleted (${toDelete.length} pending qdrant), cap-trim ${trim.deletedPoints} pts · ${chartedLine}`,
+            detail: `0 turso deleted (${toDelete.length} pending qdrant), cap-trim ${trim.deletedPoints} pts · ${chartedLine} · ${retentionLine}`,
         }]);
         process.exitCode = 1;
         return;
@@ -290,7 +390,7 @@ async function main() {
     state.save(st);
     log.info(`State pruned: ${pruned} dead entries removed`);
 
-    const trim = await runCapTrim();
+    const { trim, retentionLine } = await finish(archive, stampsFailed);
 
     const stats = turso.getStats();
     log.costFooter('Stage 6 · Cleanup', {
@@ -302,7 +402,7 @@ async function main() {
         stage: 'cleanup-non-chart',
         reads: stats.reads,
         writes: stats.writes,
-        detail: `${qdrantOk.length}/${toDelete.length} shows deleted, ${inGrace} in grace, ${pruned} state pruned, cap-trim ${trim.deletedPoints} pts${trim.failed || qdrantFailedChunks ? ' (partial/errors)' : ''} · ${chartedLine}`,
+        detail: `${qdrantOk.length}/${toDelete.length} shows deleted, ${inGrace} in grace, ${pruned} state pruned, cap-trim ${trim.deletedPoints} pts${trim.failed || qdrantFailedChunks ? ' (partial/errors)' : ''} · ${chartedLine} · ${retentionLine}`,
     }]);
 
     if (trim.failed || qdrantFailedChunks > 0) process.exitCode = 1;

@@ -17,6 +17,16 @@
  */
 const path = require('node:path');
 
+/**
+ * A whole-number setting: the default when unset or not plain digits (so `1e3` or `2e6` can't be
+ * half-read as 1 or 2), and never under `min`.
+ */
+function intEnv(name, fallback, min = 0) {
+    const raw = (process.env[name] ?? '').trim();
+    const n = /^[0-9]+$/.test(raw) ? Number(raw) : fallback;
+    return Math.max(min, Number.isSafeInteger(n) ? n : fallback);
+}
+
 const COUNTRIES = [
     { code: 'us', tier: 'full', check: 'core' },
     { code: 'in', tier: 'full', check: 'core' },
@@ -166,7 +176,17 @@ module.exports = {
     CLEANUP_GRACE_DAYS: 7,
     // Last-charted dates on Qdrant points (lib/charted-at.js, P3b): a point's date is rewritten
     // only when it is more than this many days older than its show's last chart sighting.
-    CHARTED_AT_REFRESH_DAYS: Math.max(0, parseInt(process.env.CHARTED_AT_REFRESH_DAYS || '7', 10) || 0),
+    CHARTED_AT_REFRESH_DAYS: intEnv('CHARTED_AT_REFRESH_DAYS', 7, 0),
+    // Vector retention after a show leaves the charts (lib/retention.js, P3b; decided 24 Oct):
+    // off | count (today's deletes, plus a report of what `on` would do) | on.
+    RETENTION_MODE: ['off', 'count', 'on'].includes(process.env.RETENTION_MODE) ? process.env.RETENTION_MODE : 'count',
+    RETENTION_DAYS: intEnv('RETENTION_DAYS', 90, 30),
+    ARCHIVE_EPISODES: intEnv('ARCHIVE_EPISODES', 5, 1),
+    // Size guard on episode points (Qdrant has 6 GB; about 2.7 KB per point).
+    QDRANT_POINTS_ALERT: intEnv('QDRANT_POINTS_ALERT', 1_800_000, 1),
+    QDRANT_POINTS_CEILING: intEnv('QDRANT_POINTS_CEILING', 2_000_000, 1),
+    // Urgent Telegram alerts (netcup-panel boxlore-sync/notify-telegram.py); skipped when missing.
+    NOTIFY_SCRIPT: process.env.SYNC_NOTIFY_SCRIPT || '/opt/boxlore-sync/notify-telegram.py',
     CLEANUP_SAFETY_MIN_CHARTS: 500,
 
     // --- State / files ---
