@@ -52,6 +52,8 @@ import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 import cx.aswin.boxlore.sync.CloudSyncTriggerCoordinator
 import cx.aswin.boxlore.sync.FeedFirstSwitch
 import cx.aswin.boxlore.sync.FeedFixSwitches
+import cx.aswin.boxlore.sync.RolloutFlagMemory
+import cx.aswin.boxlore.sync.SavedKillSwitch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -195,20 +197,66 @@ class AppContainer(
         )
     }
 
-    /** The `feed_first` rollout flag; one per process so its value stays fixed while the app runs. */
+    /**
+     * The `feed_first` rollout flag; one per process so its value stays fixed while the app runs.
+     * Added in P4 (own episode IDs, plan section 11 "P4: App v2 build", Rollback).
+     *
+     * LEGACY(own-ids): staged feed-first rollout. Remove at sunset step S7 (MIGRATION.md §6) once
+     * `feed_first` has been at 100% for 30 days.
+     */
     internal val feedFirstSwitch: FeedFirstSwitch by lazy { FeedFirstSwitch.create(appContext) }
+
+    /** Fail-open kill switch for the one-time upgrade repair; uses the saved answer before PostHog is ready. */
+    internal val upgradeRepairSwitch: SavedKillSwitch by lazy {
+        SavedKillSwitch.create(appContext, FeedFixSwitches.UPGRADE_REPAIR_OFF)
+    }
+
+    /** Fail-open kill switch for the daily address check; uses the saved answer before PostHog is ready. */
+    internal val addressCheckSwitch: SavedKillSwitch by lazy {
+        SavedKillSwitch.create(appContext, FeedFixSwitches.ADDRESS_CHECK_OFF)
+    }
+
+    /**
+     * Fail-open kill switch for the v2 discovery routes; uses the saved answer before PostHog is ready.
+     *
+     * LEGACY(own-ids): fallback to the v1 discovery routes. Remove at sunset step S7
+     * (MIGRATION.md §6) once the v1 API client methods are removed.
+     */
+    internal val v2DiscoverySwitch: SavedKillSwitch by lazy {
+        SavedKillSwitch.create(appContext, FeedFixSwitches.V2_DISCOVERY_OFF)
+    }
+
+    /**
+     * Saves each loaded answer of the switches above for the next process; called from
+     * `PostHogAndroidConfig.onFeatureFlags`. Added in P4 (own episode IDs, plan section 11, Rollback).
+     *
+     * LEGACY(own-ids): staged feed-first rollout. Remove at sunset step S7 (MIGRATION.md §6) once
+     * `feed_first` has been at 100% for 30 days.
+     */
+    internal val rolloutFlagMemory: RolloutFlagMemory by lazy {
+        RolloutFlagMemory(
+            feedFirst = feedFirstSwitch,
+            killSwitches = listOf(upgradeRepairSwitch, addressCheckSwitch, v2DiscoverySwitch),
+        )
+    }
 
     /**
      * The v2 build's rollout switches handed to :core:catalog: `feed_first` (off without an answer,
      * fixed per process) and the fail-open kill switches for upgrade repair, the daily address
      * check and v2 discovery. Added in P4 (own episode IDs, plan section 11, Rollback).
+     *
+     * LEGACY(own-ids): the `feedFirst` and `v2Discovery` wiring is the staged rollout and the v1
+     * discovery fallback. Remove both at sunset step S7 (MIGRATION.md §6) once `feed_first` has been
+     * at 100% for 30 days and the v1 API client methods are removed.
      */
     val rolloutSwitches: RolloutSwitches by lazy {
         RolloutSwitches(
+            // LEGACY(own-ids): staged feed-first rollout; remove at S7.
             feedFirst = { feedFirstSwitch.isOn() },
-            upgradeRepair = { FeedFixSwitches.isOn(FeedFixSwitches.UPGRADE_REPAIR_OFF) },
-            addressCheck = { FeedFixSwitches.isOn(FeedFixSwitches.ADDRESS_CHECK_OFF) },
-            v2Discovery = { FeedFixSwitches.isOn(FeedFixSwitches.V2_DISCOVERY_OFF) },
+            upgradeRepair = { upgradeRepairSwitch.isOn() },
+            addressCheck = { addressCheckSwitch.isOn() },
+            // LEGACY(own-ids): v1 discovery fallback; remove at S7.
+            v2Discovery = { v2DiscoverySwitch.isOn() },
         )
     }
 

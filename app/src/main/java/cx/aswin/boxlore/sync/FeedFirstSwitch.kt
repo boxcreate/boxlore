@@ -12,12 +12,18 @@ import java.io.File
  *   error) the last known answer is used, and without one the switch is off.
  * - **Last known answer.** Every boolean answer PostHog gives is saved in [lastKnown], which lives
  *   in `noBackupFilesDir` so a restore or device transfer never carries another phone's answer.
- * - **Fixed for the process.** The first [isOn] decides the value; a later flag reload (PostHog
- *   reloads flags mid-session) only updates [lastKnown] for the next process, so a page's episode
- *   source never switches while the app runs.
+ * - **Fixed for the process.** The first [isOn] decides the value. Answers loaded later (see
+ *   [remember]) only update [lastKnown] for the next process, so a page's episode source never
+ *   switches while the app runs.
  * - **Exposure only when known.** PostHog's `$feature_flag_called` is recorded once, when the
- *   process value comes from a live PostHog answer. A value from [lastKnown] or the default
- *   records nothing, so devices that never get an answer don't count toward the rollout.
+ *   process value comes from a live PostHog answer, and the process uses the value that exposure
+ *   read returned. A value from [lastKnown] or the default records nothing, so devices that never
+ *   get an answer don't count toward the rollout.
+ *
+ * **Rolling back.** Keep `feed_first` active and set its release condition to 0%, so PostHog
+ * answers `false` and each phone saves it. Never disable or delete the flag before sunset step S7:
+ * PostHog leaves a disabled or deleted flag out of its answer, which counts as no answer here, so
+ * a phone that saved `true` would stay on the feed-first source in every later process.
  *
  * Added in P4 (own episode IDs, plan section 11 "P4: App v2 build", Rollback).
  *
@@ -25,7 +31,7 @@ import java.io.File
  * `feed_first` has been at 100% for 30 days.
  *
  * @param readFlag PostHog's raw flag value, recording an exposure when `sendExposure` is true;
- *   replaced in tests.
+ *   null while PostHog is still starting. Replaced in tests.
  */
 internal class FeedFirstSwitch(
     private val readFlag: (sendExposure: Boolean) -> Any?,
@@ -45,18 +51,21 @@ internal class FeedFirstSwitch(
     }
 
     /**
-     * Saves PostHog's current answer for the next process, without changing this process's value
-     * or recording an exposure. Called when PostHog finishes loading flags.
+     * Saves a freshly loaded [answer] (PostHog's raw `feed_first` value) for the next process,
+     * without changing this process's value or recording an exposure. A non-boolean answer keeps
+     * the saved one. Called by [RolloutFlagMemory] when PostHog finishes loading flags.
      */
-    fun rememberLatest() {
-        readLive(sendExposure = false)?.let(lastKnown::write)
+    fun remember(answer: Any?) {
+        knownValue(answer)?.let(lastKnown::write)
     }
 
     private fun decide(): Boolean {
-        val live = readLive(sendExposure = false) ?: return lastKnown.read() ?: false
+        val first = readLive(sendExposure = false) ?: return lastKnown.read() ?: false
+        // The exposure read is the value this process uses, so the recorded response matches it
+        // even when a flag load lands between the two reads. If that read has no boolean answer
+        // (the flag vanished in between, or recording threw), the first answer is used.
+        val live = readLive(sendExposure = true) ?: first
         lastKnown.write(live)
-        // The exposure belongs to the value this process uses, so it is sent only for a live answer.
-        readLive(sendExposure = true)
         return live
     }
 

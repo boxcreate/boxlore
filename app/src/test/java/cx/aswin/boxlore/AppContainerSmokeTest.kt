@@ -110,4 +110,32 @@ class AppContainerSmokeTest {
         assertTrue(switches.addressCheck())
         assertTrue(switches.v2Discovery())
     }
+
+    @Test
+    fun loadedFlagAnswersReachTheNextProcessBeforePostHogIsReady() {
+        fun newContainer() =
+            AppContainer(
+                context = context,
+                apiBaseUrl = "https://example.test",
+                publicKey = "test-key",
+                sharedUserPreferences = UserPreferencesRepository(context),
+            )
+        val first = newContainer()
+        assertFalse(first.rolloutSwitches.feedFirst())
+
+        val answers = mapOf("feed_first" to true, "upgrade-repair-off" to true, "address-check-off" to false)
+        first.rolloutFlagMemory.onFlagsLoaded { answers[it] }
+
+        // This process keeps its feed_first value; the kill switch pauses the job at once.
+        assertFalse(first.rolloutSwitches.feedFirst())
+        assertFalse(first.rolloutSwitches.upgradeRepair())
+        assertTrue(first.rolloutSwitches.addressCheck())
+
+        // The next process (PostHog still starting in tests) starts from the saved answers.
+        val next = newContainer().rolloutSwitches
+        assertTrue(next.feedFirst())
+        assertFalse(next.upgradeRepair())
+        assertTrue(next.addressCheck())
+        assertTrue(next.v2Discovery())
+    }
 }

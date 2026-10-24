@@ -21,17 +21,19 @@ data class RolloutSwitches(
     val feedFirst: () -> Boolean = { false },
     /**
      * Whether the one-time upgrade repair of saved feed addresses may run. False pauses it without
-     * marking it done. The app's value stays on without a PostHog answer.
+     * marking it done. The app's value uses the last saved answer while PostHog is starting, and
+     * stays on without one.
      */
     val upgradeRepair: () -> Boolean = { true },
     /**
      * Whether followed shows get the daily address check. False pauses it without marking the day
-     * done. The app's value stays on without a PostHog answer.
+     * done. The app's value uses the last saved answer while PostHog is starting, and stays on
+     * without one.
      */
     val addressCheck: () -> Boolean = { true },
     /**
      * Whether discovery uses the `/v2` routes. False sends discovery back to the v1 routes.
-     * The app's value stays on without a PostHog answer.
+     * The app's value uses the last saved answer while PostHog is starting, and stays on without one.
      *
      * LEGACY(own-ids): fallback to the v1 discovery routes. Remove at sunset step S7
      * (MIGRATION.md §6) once the v1 API client methods are removed.

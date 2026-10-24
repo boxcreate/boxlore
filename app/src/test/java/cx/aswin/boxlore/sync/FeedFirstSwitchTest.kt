@@ -114,15 +114,16 @@ class FeedFirstSwitchTest {
     }
 
     @Test
-    fun valueIsFixedForTheProcessAcrossFlagReloads() {
+    fun valueIsFixedForTheProcessAcrossFlagLoads() {
         val flag = FakeFlag(answer = true)
         val saved = MemoryFlag()
         val feedFirst = switch(flag, saved)
         assertTrue(feedFirst.isOn())
 
-        // PostHog reloads flags mid-session and the rollout now says off.
+        // PostHog loads flags again mid-session and the rollout now says off; the loaded-flags
+        // callback hands the new answer to remember (RolloutFlagMemoryTest covers that wiring).
         flag.answer = false
-        feedFirst.rememberLatest()
+        feedFirst.remember(false)
 
         assertTrue(feedFirst.isOn())
         assertEquals(1, flag.exposures)
@@ -139,7 +140,7 @@ class FeedFirstSwitchTest {
         assertFalse(feedFirst.isOn())
 
         flag.answer = true
-        feedFirst.rememberLatest()
+        feedFirst.remember(true)
 
         assertFalse(feedFirst.isOn())
         assertEquals(true, saved.value)
@@ -147,18 +148,65 @@ class FeedFirstSwitchTest {
     }
 
     @Test
-    fun rememberLatestNeverExposesAndKeepsTheSavedAnswerWithoutOne() {
+    fun rememberNeverExposesAndKeepsTheSavedAnswerWithoutABooleanOne() {
         val flag = FakeFlag(answer = null)
         val saved = MemoryFlag(value = true)
         val feedFirst = switch(flag, saved)
 
-        feedFirst.rememberLatest()
-        flag.throwing = true
-        feedFirst.rememberLatest()
+        feedFirst.remember(null)
+        feedFirst.remember("test")
 
         assertEquals(true, saved.value)
         assertEquals(0, saved.writes)
+        assertEquals(0, flag.reads)
         assertEquals(0, flag.exposures)
+    }
+
+    @Test
+    fun exposureReadDecidesWhenAFlagLoadLandsBetweenTheTwoReads() {
+        // The first read says on, then a flag load flips the answer before the exposure read.
+        var answer = true
+        val exposed = mutableListOf<Any?>()
+        val saved = MemoryFlag()
+        val feedFirst =
+            FeedFirstSwitch(
+                readFlag = { sendExposure ->
+                    val value = answer
+                    if (sendExposure) exposed += value else answer = false
+                    value
+                },
+                lastKnown = saved,
+            )
+
+        // The recorded exposure response (false) is the value this process uses.
+        assertFalse(feedFirst.isOn())
+        assertEquals(listOf<Any?>(false), exposed)
+        assertEquals(false, saved.value)
+    }
+
+    @Test
+    fun flagVanishingBeforeTheExposureReadKeepsTheFirstAnswer() {
+        val saved = MemoryFlag()
+        val feedFirst = FeedFirstSwitch(readFlag = { sendExposure -> if (sendExposure) null else true }, lastKnown = saved)
+
+        assertTrue(feedFirst.isOn())
+        assertEquals(true, saved.value)
+    }
+
+    @Test
+    fun rollbackNeedsALiveOffBecauseADisabledFlagCountsAsNoAnswer() {
+        val saved = MemoryFlag(value = true)
+
+        // A disabled or deleted flag is missing from PostHog's answer: a phone that saved `on` stays on.
+        val disabled = FakeFlag(answer = null)
+        assertTrue(switch(disabled, saved).isOn())
+        switch(disabled, saved).remember(null)
+        assertEquals(true, saved.value)
+
+        // An active flag at a 0% release condition answers false: off from this process on, and saved.
+        assertFalse(switch(FakeFlag(answer = false), saved).isOn())
+        assertEquals(false, saved.value)
+        assertFalse(switch(FakeFlag(answer = null), saved).isOn())
     }
 
     @Test

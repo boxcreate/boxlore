@@ -7,7 +7,9 @@ import cx.aswin.boxlore.core.analytics.PostHogStartup
  * PostHog off switches for the feed and episode fixes and the v2 episode-ID build's jobs, so one
  * can be turned off without an app update. Each one runs unless its flag is on: with no answer
  * (PostHog not ready, the flag missing or inactive, an error) it stays on. To turn one off, enable
- * its flag for everyone. The `feed_first` rollout works the other way round: see [FeedFirstSwitch].
+ * its flag for everyone. The v2 build's switches ([UPGRADE_REPAIR_OFF], [ADDRESS_CHECK_OFF],
+ * [V2_DISCOVERY_OFF]) are read through [SavedKillSwitch], which uses the last saved answer while
+ * PostHog is still starting. The `feed_first` rollout works the other way round: see [FeedFirstSwitch].
  */
 internal object FeedFixSwitches {
     /** Baselines read up to 1,000 episodes from `/episodes/match` instead of the 100-item page. */
