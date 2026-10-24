@@ -252,6 +252,18 @@ data class EpisodeItem(
 
     @SerialName("algorithmVersion")
     val algorithmVersion: String? = null,
+
+    /**
+     * `/v2` only: the ID older builds were given for this episode, while [id] is its recipe ID.
+     * Absent on v1. Added in P4 of the own-episode-IDs plan (plan section 9).
+     * COMPAT(own-ids): lets the app recognise IDs that older builds stored. Permanent: never remove (MIGRATION.md §5).
+     */
+    @SerialName("servedId")
+    val servedId: Long? = null,
+
+    /** `/v2` only: the trimmed GUID, or the trimmed enclosure URL without one. Absent on v1. */
+    @SerialName("catalogKey")
+    val catalogKey: String? = null,
 )
 
 // ============== SINGLE PODCAST ==============
@@ -323,7 +335,11 @@ data class PodcastFeed(
     val license: String? = null,
 
     @SerialName("location")
-    val location: String? = null
+    val location: String? = null,
+
+    /** Podcast Index's own address when `/v2/podcast` replaced [url] with boxlore's; null otherwise. */
+    @SerialName("originalUrl")
+    val originalUrl: String? = null,
 )
 
 // ============== METADATA ==============
