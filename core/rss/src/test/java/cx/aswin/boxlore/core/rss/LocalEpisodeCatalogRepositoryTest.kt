@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.database.LocalEpisodeOwner
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
+import cx.aswin.boxlore.core.model.Episode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Semaphore
@@ -432,17 +433,132 @@ class LocalEpisodeCatalogRepositoryTest {
         assertNull(dao.feeds["200"], "no catalog row marked complete")
     }
 
+    @Test
+    fun aLegacyKeyWithTrailingWhitespaceKeepsItsIdAndGetsNoSecondRow() = runTest {
+        // Room migration 31→32 trimmed keys with SQLite TRIM (spaces only), so a stored key can keep
+        // a newline, tab or no-break space. The refresh re-trims it and must update that same row.
+        for (suffix in listOf("\n", "\t", " \n", "\u00A0", "\u2028", "\u180E")) {
+            val dao = FakeCatalogDao()
+            dao.episodes += localEpisode("-501").copy(guid = SharedFeedClient.GUID + suffix)
+            val outcome = catalogRepo(dao = dao, feedClient = SharedFeedClient()).refresh(sharedFeedRequest("100"))
+
+            assertTrue(outcome is RefreshOutcome.Success)
+            val row = dao.episodes.single()
+            assertEquals("-501", row.episodeId, "the stored ID stays for key suffix ${suffix.map { "U+%04X".format(it.code) }}")
+            assertEquals(SharedFeedClient.GUID, row.guid)
+            assertEquals("Shared episode", row.title)
+        }
+    }
+
+    @Test
+    fun aStoredKeyIsNeverDeletedThroughTheUniqueIndex() = runTest {
+        // Two rows of one show whose keys trim to the same value: the refresh may update either, but
+        // it must never write another ID under the exact key and so delete the row stored there.
+        val dao = FakeCatalogDao()
+        dao.episodes += localEpisode("-601").copy(guid = SharedFeedClient.GUID + "\n")
+        dao.episodes += localEpisode("-602").copy(guid = SharedFeedClient.GUID)
+        val outcome = catalogRepo(dao = dao, feedClient = SharedFeedClient()).refresh(sharedFeedRequest("100"))
+
+        assertTrue(outcome is RefreshOutcome.Success)
+        assertEquals(setOf("-601", "-602"), dao.episodes.map { it.episodeId }.toSet())
+        assertEquals("Shared episode", dao.episodes.single { it.guid == SharedFeedClient.GUID }.title)
+    }
+
+    @Test
+    fun aLegacyRowHoldingTheItemsOwnIdHealsToTheRealKey() = runTest {
+        // Legacy rows keyed `id:<ownId>`, or by audio address while the item has a GUID: when the
+        // feed's item mints exactly the stored ID, it is the same episode and its key is corrected.
+        val minted = SharedFeedClient.mintedId()
+        for (legacyKey in listOf("id:$minted", SharedFeedClient.AUDIO_URL)) {
+            val dao = FakeCatalogDao()
+            dao.episodes += localEpisode(minted).copy(guid = legacyKey, audioUrl = SharedFeedClient.AUDIO_URL)
+            val outcome = catalogRepo(dao = dao, feedClient = SharedFeedClient()).refresh(sharedFeedRequest("100"))
+
+            assertTrue(outcome is RefreshOutcome.Success)
+            val row = dao.episodes.single()
+            assertEquals(minted, row.episodeId, "no second row for $legacyKey")
+            assertEquals(SharedFeedClient.GUID, row.guid)
+        }
+    }
+
+    @Test
+    fun aLegacyRowHealsOnAFirstReadThatMatchesAPodcastIndexEpisode() = runTest {
+        // A catalog that is not ready yet reads the Podcast Index list, so the item arrives with the
+        // matching PI ID. The legacy row holding the item's own mint is the same episode: it keeps its
+        // ID (and the listener state on it) instead of staying beside a second row under the PI ID.
+        val minted = SharedFeedClient.mintedId()
+        for (legacyKey in listOf("id:$minted", SharedFeedClient.AUDIO_URL)) {
+            val dao = FakeCatalogDao()
+            dao.episodes += localEpisode(minted).copy(guid = legacyKey, audioUrl = SharedFeedClient.AUDIO_URL)
+            var baselineReads = 0
+            val reconciled = mutableListOf<String>()
+            val request =
+                sharedFeedRequest("100").copy(
+                    loadPiBaseline = {
+                        baselineReads++
+                        listOf(Episode(id = "777", title = "Shared episode", description = "", audioUrl = SharedFeedClient.AUDIO_URL, publishedDate = 10L))
+                    },
+                )
+            val outcome =
+                catalogRepo(dao = dao, feedClient = SharedFeedClient(), reconcileListenerState = { _, rows -> reconciled += rows.map { it.episodeId } })
+                    .refresh(request)
+
+            assertTrue(outcome is RefreshOutcome.Success)
+            assertEquals(1, baselineReads, "the first read uses the Podcast Index list")
+            val row = dao.episodes.single()
+            assertEquals(minted, row.episodeId, "no second row under the PI ID for $legacyKey")
+            assertEquals(SharedFeedClient.GUID, row.guid)
+            assertEquals(listOf(minted), reconciled, "listener state stays on the stored ID")
+        }
+    }
+
+    @Test
+    fun aFirstReadStillUsesThePodcastIndexIdForANewEpisode() = runTest {
+        // No stored row holds the item's own mint, so the PI match is kept as before.
+        val dao = FakeCatalogDao()
+        val request =
+            sharedFeedRequest("100").copy(
+                loadPiBaseline = {
+                    listOf(Episode(id = "777", title = "Shared episode", description = "", audioUrl = SharedFeedClient.AUDIO_URL, publishedDate = 10L))
+                },
+            )
+        val outcome = catalogRepo(dao = dao, feedClient = SharedFeedClient()).refresh(request)
+
+        assertTrue(outcome is RefreshOutcome.Success)
+        assertEquals("777", dao.episodes.single().episodeId)
+    }
+
+    @Test
+    fun anotherEpisodeOfTheSameShowHoldingTheIdStaysApart() = runTest {
+        // Same ID and show, but a real GUID that differs: two episodes, so both rows survive.
+        val minted = SharedFeedClient.mintedId()
+        val dao = FakeCatalogDao()
+        dao.episodes += localEpisode(minted).copy(guid = "another-guid")
+        val outcome = catalogRepo(dao = dao, feedClient = SharedFeedClient()).refresh(sharedFeedRequest("100"))
+
+        assertTrue(outcome is RefreshOutcome.Success)
+        assertEquals("another-guid", dao.episodes.single { it.episodeId == minted }.guid)
+        assertEquals(2, dao.episodes.size)
+    }
+
+    private fun sharedFeedRequest(show: String) = LocalEpisodeCatalogPort.RefreshRequest(
+        podcastIndexId = show,
+        feedUrl = "https://feeds.example/shared.xml",
+        reason = LocalEpisodeCatalogPort.RefreshReason.MANUAL,
+    )
+
     private fun catalogRepo(
         dao: FakeCatalogDao = FakeCatalogDao(),
         isFeedUnchanged: suspend (String, String?, String?) -> Boolean = { _, _, _ -> false },
         feedClient: RssFeedClient = RssFeedClient(),
         megaGetGate: Semaphore = Semaphore(1),
+        reconcileListenerState: suspend (String, List<LocalEpisodeEntity>) -> Unit = { _, _ -> },
     ) = LocalEpisodeCatalogRepository(
         dao = dao,
         feedClient = feedClient,
         runInTransaction = { it() },
         isFeedUnchanged = isFeedUnchanged,
-        reconcileListenerState = { _, _ -> },
+        reconcileListenerState = reconcileListenerState,
         megaGetGate = megaGetGate,
     )
 
@@ -488,7 +604,7 @@ class LocalEpisodeCatalogRepositoryTest {
                     guid = GUID,
                     title = "Shared episode",
                     description = "",
-                    audioUrl = "https://cdn.example/shared.mp3",
+                    audioUrl = AUDIO_URL,
                     imageUrl = null,
                     duration = 60,
                     publishedDate = 10L,
@@ -506,11 +622,12 @@ class LocalEpisodeCatalogRepositoryTest {
 
         companion object {
             const val GUID = "shared-guid"
+            const val AUDIO_URL = "https://cdn.example/shared.mp3"
 
             fun mintedId(): String = RssIdGenerator.episodeIdForPodcast(
                 podcastId = RssIdGenerator.podcastId("https://feeds.example/shared.xml"),
                 guid = GUID,
-                enclosureUrl = "https://cdn.example/shared.mp3",
+                enclosureUrl = AUDIO_URL,
                 publishedDate = 10L,
                 title = "Shared episode",
             )
@@ -524,9 +641,14 @@ class LocalEpisodeCatalogRepositoryTest {
 
         override suspend fun upsertFeed(feed: LocalEpisodeFeedEntity): Unit = feeds.set(feed.podcastId, feed)
 
+        /** Room's REPLACE: a stored row is deleted when it shares the primary key or the unique (podcastId, guid) index. */
         override suspend fun upsertEpisodes(episodes: List<LocalEpisodeEntity>) {
-            this.episodes.removeAll { stored -> episodes.any { it.episodeId == stored.episodeId } }
-            this.episodes += episodes
+            for (row in episodes) {
+                this.episodes.removeAll { stored ->
+                    stored.episodeId == row.episodeId || (stored.podcastId == row.podcastId && stored.guid == row.guid)
+                }
+                this.episodes += row
+            }
         }
 
         override suspend fun getFeed(podcastId: String): LocalEpisodeFeedEntity? = feeds[podcastId]

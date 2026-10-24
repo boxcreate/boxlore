@@ -148,13 +148,23 @@ private suspend fun persistParsed(
             ?.takeIf { it != LocalFeedOrder.MIXED }
             ?: FeedOrderLogic.classify(parsed.episodes.map { it.publishedDate })
     var written = rows
+    var resolution: LocalEpisodeCollisionGuard.Resolution? = null
     var storedCount = rows.size
     var ready = false
     var incomplete = false
     deps.runInTransaction {
-        // Another show reading the same feed may already hold these IDs: never replace its rows.
-        written = LocalEpisodeCollisionGuard.resolve(rows, rssNamespaceId) { ids -> deps.dao.findOwners(ids) }
-        if (written.size < rows.size) {
+        // Another show reading the same feed may already hold these IDs, and a stored row of this
+        // show may hold the key: never replace either.
+        val resolved =
+            LocalEpisodeCollisionGuard.resolve(
+                rows = rows,
+                rssNamespaceId = rssNamespaceId,
+                findOwners = { ids -> deps.dao.findOwners(ids) },
+                listShowRows = { podcastId -> deps.dao.listIdentities(podcastId) },
+            )
+        resolution = resolved
+        written = resolved.rows
+        if (resolved.unplaced.isNotEmpty()) {
             // A row found no free ID: write nothing rather than mark a partial catalog complete.
             incomplete = true
             return@runInTransaction
@@ -180,6 +190,7 @@ private suspend fun persistParsed(
             ),
         )
     }
+    resolution?.let { logResolution(request.podcastIndexId, it, written = !incomplete) }
     if (incomplete) return RefreshOutcome.Failure(LocalEpisodeCatalogRepository.FEED_LOAD_FAILED_MESSAGE)
     val newestRow = written.maxByOrNull { it.publishedDate }
     return RefreshOutcome.Success(
@@ -188,6 +199,37 @@ private suspend fun persistParsed(
         ready = ready,
         movedTo = if (request.detectMove) confirmedMove(deps.feedClient, request, fetched, parsed) else null,
     )
+}
+
+private const val COLLISION_LOG_TAG = "LocalEpisodeCatalog"
+
+/**
+ * Logs what [LocalEpisodeCollisionGuard] changed in one refresh: stored rows whose key was corrected
+ * while they kept their ID (with where the old key came from), and rows left out because every ID
+ * they could take belongs to another episode. Nothing is logged for an ordinary refresh.
+ *
+ * Added in P4 PR 1 (own-IDs plan section 4, legacy keys; section 8, no write replaces another
+ * episode). Until Room v39 adds `episode_aliases`, this log is the only record of a corrected key's
+ * provenance; the follow-up saves [LocalEpisodeCollisionGuard.Resolution.repaired] as alias
+ * provenance in the refresh transaction (MIGRATION.md §3) and keeps this log for unplaced rows.
+ * COMPAT(own-ids): reports corrected legacy keys and rows the guard could not place. Permanent: never remove (MIGRATION.md §5).
+ */
+private fun logResolution(podcastId: String, resolution: LocalEpisodeCollisionGuard.Resolution, written: Boolean,) {
+    if (resolution.repaired.isNotEmpty()) {
+        val byKind = resolution.repaired.groupingBy { it.repair }.eachCount()
+        val state = if (written) "corrected" else "not written"
+        android.util.Log.i(COLLISION_LOG_TAG, "Show $podcastId: stored keys $state, IDs kept: $byKind")
+        for (repaired in resolution.repaired) {
+            android.util.Log.d(COLLISION_LOG_TAG, "Show $podcastId: episode ${repaired.episodeId} key ${repaired.repair}")
+        }
+    }
+    for (row in resolution.unplaced) {
+        android.util.Log.w(
+            COLLISION_LOG_TAG,
+            "Show $podcastId: no free local ID for episode ${row.episodeId} after " +
+                "${LocalEpisodeCollisionGuard.MAX_RESERVE_ATTEMPTS} reserved IDs; catalog not written",
+        )
+    }
 }
 
 /**
