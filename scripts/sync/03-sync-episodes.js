@@ -39,6 +39,7 @@ const staleness = require('./lib/staleness');
 const staleTips = require('./lib/stale-tips');
 const showWindow = require('./lib/show-window');
 const cadence = require('./lib/cadence');
+const runBudget = require('./lib/run-budget');
 
 const CONCURRENCY = 5;
 
@@ -122,6 +123,9 @@ async function countDueByCountry(ids) {
 }
 
 async function main() {
+    const startedMs = Date.now();
+    // Hourly runs: stop starting checks at the runner's deadline (lib/run-budget.js).
+    const deadline = runBudget.stageDeadline(runBudget.STAGE3_DEADLINE);
     turso.assertEnv();
     const book = bookDb(turso);
     pi.assertEnv();
@@ -251,7 +255,13 @@ async function main() {
     }
     const prog = log.progress(due.length, 'episode-sync', 5);
 
+    let timeLeftOver = 0;
     for (let i = 0; i < due.length; i += CONCURRENCY) {
+        if (runBudget.timeUp(deadline)) {
+            timeLeftOver = due.length - i;
+            log.warn(`[BUDGET] Time budget reached: ${log.fmt(timeLeftOver)} checks wait for the next run`);
+            break;
+        }
         const batch = due.slice(i, i + CONCURRENCY);
         let tipUpdatedThisBatch = false;
         await Promise.all(batch.map(async (podId) => {
@@ -342,9 +352,14 @@ async function main() {
     state.save(st);
     await handoff.flush();
 
+    // Checks that ran this run. When time ran out, R5 reads feeds only for those, until the run's
+    // deadline (not stage 3's half: a checked stale show skipped here would wait a whole tier). When
+    // Podcast Index paused, R5 still covers every due show, as the feed is then the only source.
+    const attempted = piPaused ? checkedBeforePause : due.length - timeLeftOver;
     const r5 = await staleTips.runStaleTips({
         mode: cfg.R5_MODE,
-        due,
+        due: timeLeftOver ? due.slice(0, attempted) : due,
+        deadlineMs: runBudget.deadlineFrom(runBudget.RUN_DEADLINE),
         db: turso,
         feedsUrl: cfg.FEEDS_URL,
         registryPath: cfg.REGISTRY_DB,
@@ -428,14 +443,25 @@ async function main() {
             `${empty} empty, ${errors} errors · due news=${staleNews} core=${staleCore} relaxed=${staleRelaxed}` +
             ` · ${pi.summary()}` +
             (piPaused ? ` · ${due.length - checkedBeforePause} checks left for the next run` : '') +
+            (timeLeftOver ? ` · time budget: ${timeLeftOver} checks left for the next run` : '') +
             (cfg.R5_MODE !== 'off' ? ` · ${r5Line}` : '') +
             (windowLine ? ` · ${windowLine}` : '') +
             (cadenceLine ? ` · ${cadenceLine}` : ''),
     }]);
 
+    runBudget.recordMetrics('03-sync-episodes', {
+        due: allDue.length,
+        checked: updated + unchanged + empty + errors,
+        newTips: updated,
+        errors,
+        leftForNextRun: deferred + timeLeftOver + (piPaused ? due.length - checkedBeforePause : 0),
+        timeUp: timeLeftOver > 0,
+        ms: Date.now() - startedMs,
+    });
+
     // A pause is "try later", not a failure; only real errors over half the checks fail the stage.
-    if (due.length > 20 && errors > due.length / 2) {
-        log.error(`More than half of episode checks failed (${errors}/${due.length})`);
+    if (attempted > 20 && errors > attempted / 2) {
+        log.error(`More than half of episode checks failed (${errors}/${attempted})`);
         process.exit(1);
     }
 }

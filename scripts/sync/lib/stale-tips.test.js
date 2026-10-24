@@ -158,3 +158,21 @@ describe('feedWindow', () => {
         await assert.rejects(feedWindow({ baseUrl: 'http://x', sid: 7, cap: 5, fetchImpl: async () => json({}, 503) }), /HTTP 503/);
     });
 });
+
+describe('stale tips and the run deadline', () => {
+    it('no chunk starts after the deadline; the rest is counted for the next run', async () => {
+        const calls = [];
+        const fetchImpl = async (url, init) => {
+            calls.push(JSON.parse(init.body).ids.length);
+            return { ok: true, status: 200, json: async () => ({ results: [] }) };
+        };
+        const ids = Array.from({ length: 90 }, (_, i) => i + 1);
+        const db = { execute: async () => ({ rows: [] }), rows: () => [] };
+        const base = { mode: 'on', db, feedsUrl: 'http://feeds.test', registryPath: '/nope', fetchImpl, staleIds: () => new Set(ids) };
+        const late = await runStaleTips({ ...base, due: ids, deadlineMs: Date.now() - 1 });
+        assert.deepEqual([calls.length, late.timeLeft], [0, 90]);
+        assert.match(summary(late), /, 90 left for the next run$/);
+        const open = await runStaleTips({ ...base, due: ids });
+        assert.deepEqual([calls.length, open.timeLeft], [3, 0], 'no deadline: every chunk of 40');
+    });
+});

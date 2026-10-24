@@ -98,13 +98,15 @@ function feedIdentity(showId, item) {
  * couldn't be read (R5 skipped).
  * @param {{ mode: 'off'|'shadow'|'on', due: (string|number)[], db: { execute: Function, rows: Function },
  *   feedsUrl: string, registryPath: string, mediumOf?: (id: number) => string, now?: () => number,
- *   fetchImpl?: Function, staleIds?: () => Set<number>, warn?: (msg: string) => void }} opts
+ *   fetchImpl?: Function, staleIds?: () => Set<number>, warn?: (msg: string) => void, deadlineMs?: number }} opts
+ *   deadlineMs: no new chunk starts after it (hourly runs, lib/run-budget.js); the rest waits.
  */
 async function runStaleTips(opts) {
     const { mode, due, db, feedsUrl, registryPath, fetchImpl = fetch, warn = () => {} } = opts;
     const mediumOf = opts.mediumOf || (() => 'podcast');
     const now = opts.now || Date.now;
-    const out = { mode, stale: 0, answered: 0, newer: 0, updated: 0, noItem: 0, failedChunks: 0, error: null, updatedIds: [], tipDates: {} };
+    const out = { mode, stale: 0, answered: 0, newer: 0, updated: 0, noItem: 0, failedChunks: 0, error: null, updatedIds: [], tipDates: {}, timeLeft: 0 };
+    const deadlineMs = opts.deadlineMs ?? Infinity;
     if (mode !== 'shadow' && mode !== 'on') return out;
 
     let flagged;
@@ -128,6 +130,11 @@ async function runStaleTips(opts) {
         return out;
     }
     for (let i = 0; i < ids.length; i += CHUNK) {
+        if (Date.now() >= deadlineMs) {
+            out.timeLeft = ids.length - i;
+            warn(`[R5] time budget reached: ${out.timeLeft} stale shows wait for the next run`);
+            break;
+        }
         const chunk = ids.slice(i, i + CHUNK);
         let results;
         try {
@@ -187,7 +194,8 @@ function summary(r) {
     if (r.error) return `R5 ${r.mode}: skipped (${r.error})`;
     return r.mode === 'shadow'
         ? `R5 shadow: ${r.stale} stale due, ${r.answered} answered, ${r.newer} with a newer feed episode, ${r.failedChunks} failed chunks`
-        : `R5 on: ${r.stale} stale due, ${r.answered} answered, ${r.updated} tips from the feed, ${r.noItem} without a served ID yet, ${r.failedChunks} failed chunks`;
+        : `R5 on: ${r.stale} stale due, ${r.answered} answered, ${r.updated} tips from the feed, ${r.noItem} without a served ID yet, ${r.failedChunks} failed chunks` +
+            (r.timeLeft ? `, ${r.timeLeft} left for the next run` : '');
 }
 
 module.exports = { runStaleTips, staleShowIds, shouldReplace, feedIdentity, feedWindow, summary, TIP_SQL, CHUNK };
