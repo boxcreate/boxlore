@@ -21,6 +21,8 @@ Owns shared domain models, enums, and pure value helpers used across network, da
   (Brief audio play synthesizes glossary `entry_point=briefing` for `playback_*`).
 - `AutoTranscriptState`.
 - `PodcastGenres` and `RankingAggregateTelemetry`.
+- `Episode.recipeId` (boxlore's own episode ID) and `Episode.catalogKey` (trimmed GUID, else enclosure URL) are optional and null until a source fills them; `id` stays the local ID. Unset values are not written to JSON, and JSON without them still decodes (`EpisodeIdentityFieldsTest`).
+- `FeedTelemetry.kt`: values for the feed analytics events. `FeedFetchReport.ShowPage` (one show-page read) and `FeedFetchReport.BackgroundPass` (one summary per pass and source, with `showsCount` and `passResult`), `FeedFetchSource`, `FeedFetchOutcome`, `FeedFetchCompleteness`, `FeedPassResult`, and `FeedUrlCorrection` with its `FeedUrlCorrectionReason` and `FeedUrlCorrectionStep`. Each enum's `wireName` is its glossary value. None of them holds an address (`FeedTelemetryTest`).
 - Cross-promotion model types: `CrossPromotionResult` / `ResolvedCrossPromotion`, `CrossPromotionConfidence` and `CrossPromotionIndicator`, whose `DISTINCT_ARTWORK` marks an episode whose own cover differs from its show's (evidence `:core:catalog`'s detector uses for trailers of another show). Indicators live only in UI state.
 - `ShowNotes`, `EpisodeLink`, and `EpisodeLinkKind` carry locally parsed plain text, publisher HTML, chapters, resource purpose, destination, and publisher labels without UI or parser-library dependencies.
 - `Podcast.isLatestEpisodeNew`: shared NEW badge. Room `rssHasNewEpisodes` is true for true-RSS freshness **and** for Podcast Index direct-feed tip promotions (`updateLatestEpisode(..., markAsNew = true)`). Opening the show clears the flag. Otherwise the 48h window / last-seen id rules apply.
@@ -40,6 +42,7 @@ src/main/java/cx/aswin/boxlore/core/model/
   Episode.kt
   EpisodeMediaCacheKey.kt
   EpisodeRecipeId.kt
+  FeedTelemetry.kt
   Podcast.kt
   PodcastGenres.kt
   RankingAggregateTelemetry.kt

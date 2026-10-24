@@ -452,19 +452,25 @@ class PodcastInfoViewModel(
         }
     }
 
-    internal suspend fun loadEpisodeSelectionWindow(): PodcastEpisodeSelectionWindow {
+    /**
+     * Loads up to [MAX_SELECTION_EPISODES] episodes for range selection and for looking a saved
+     * selection up again after recreation. [sort] is the order the selection was made in; null
+     * uses the page's current sort. A recreated page passes the saved sort, because the reloaded
+     * page may open in a different order than the one the listener selected in.
+     */
+    internal suspend fun loadEpisodeSelectionWindow(sort: EpisodeSort? = null): PodcastEpisodeSelectionWindow {
         val currentState = _uiState.value as? PodcastInfoUiState.Success
-        val newestFirst = currentState?.currentSort != EpisodeSort.OLDEST
+        val newestFirst = (sort ?: currentState?.currentSort) != EpisodeSort.OLDEST
         if (currentState == null) {
             return PodcastEpisodeSelectionWindow(emptyList(), newestFirst, isTruncated = false)
         }
-        val sort = if (newestFirst) "newest" else "oldest"
+        val sortParam = if (newestFirst) "newest" else "oldest"
         val page =
             repository.getEpisodesPaginated(
                 feedId = currentPodcastId,
                 limit = MAX_SELECTION_EPISODES,
                 offset = 0,
-                sort = sort,
+                sort = sortParam,
             )
         val episodes =
             (page.episodes + currentState.episodes)
@@ -563,11 +569,19 @@ class PodcastInfoViewModel(
         val podcastId = requestedPodcastId ?: return
         if (_uiState.value !is PodcastInfoUiState.Error) return
         currentPodcastId = ""
+        requestedPodcastId = null
         loadPodcast(podcastId)
     }
 
     fun loadPodcast(podcastId: String) {
-        if (currentPodcastId == podcastId && (_uiState.value is PodcastInfoUiState.Success || _uiState.value is PodcastInfoUiState.Error)) {
+        if (
+            cx.aswin.boxlore.feature.info.logic.PodcastInfoLoadGuard.shouldSkipLoad(
+                routePodcastId = podcastId,
+                requestedPodcastId = requestedPodcastId,
+                currentPodcastId = currentPodcastId,
+                state = _uiState.value,
+            )
+        ) {
             return
         }
 

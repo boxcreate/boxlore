@@ -42,6 +42,8 @@ internal data class EpisodeSelectionToolbarState(
     val canAddToQueue: Boolean,
     val hasRangeAnchor: Boolean,
     val isLoadingFullSelection: Boolean,
+    /** False while a recreated page is still looking its selected episodes up again. */
+    val actionsEnabled: Boolean = true,
 )
 
 internal data class EpisodeSelectionToolbarActions(
@@ -84,7 +86,7 @@ internal fun EpisodeSelectionToolbar(
             )
             IconButton(
                 onClick = actions.onDownload,
-                enabled = state.canDownload,
+                enabled = state.actionsEnabled && state.canDownload,
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Download,
@@ -93,6 +95,7 @@ internal fun EpisodeSelectionToolbar(
             }
             IconButton(
                 onClick = actions.onToggleCompletion,
+                enabled = state.actionsEnabled,
             ) {
                 Icon(
                     imageVector =
@@ -111,7 +114,7 @@ internal fun EpisodeSelectionToolbar(
                     ),
                 )
             }
-            FilledIconButton(onClick = actions.onPlay) {
+            FilledIconButton(onClick = actions.onPlay, enabled = state.actionsEnabled) {
                 Icon(
                     imageVector = Icons.Rounded.PlayArrow,
                     contentDescription = stringResource(R.string.episode_selection_play),
@@ -119,7 +122,7 @@ internal fun EpisodeSelectionToolbar(
             }
             IconButton(
                 onClick = actions.onAddToQueue,
-                enabled = state.canAddToQueue,
+                enabled = state.actionsEnabled && state.canAddToQueue,
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,

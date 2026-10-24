@@ -18,6 +18,7 @@ Owns thin domain ports and small result types used by ViewModels, repositories, 
 - `EpisodeOfflineLookupPort` and `OfflineEpisodeSnapshot` for episode-detail download/history hydration.
 - `ConnectivityStatusPort` and connectivity status types.
 - `DeviceIdentityPort` for cross-device sync attribution.
+- `FeedTelemetryPort` reports feed reads (`feedFetched`) and saved-address swaps (`feedUrlCorrected`) without a dependency on `:core:analytics`; `AppContainer` wires the analytics-backed one and `NONE` reports nothing. Implementations must not throw.
 
 - `LocalEpisodeCatalogPort.RefreshRequest.reason` defaults to `NORMAL`; automatic refresh and `AUTO_DOWNLOAD` share the persisted six-hour freshness gate. `MANUAL` and `NEW_RELEASE` bypass quiet/HEAD shortcuts. `canProceed` rechecks authorization before network/persistence, `runPostPersistCallback` prevents background metadata recovery from invoking ungated ingest callbacks, and `isRefreshDue` supports bounded foreground batches. `RefreshOutcome.Failure.addressGone` says the saved address looks dead rather than temporarily failing; with `RefreshRequest.detectMove` (and a `PodcastMeta.title` to compare), `RefreshOutcome.Success.movedTo` carries a confirmed new HTTPS address. Publisher RSS and Room remain the source of subscribed episodes.
 
@@ -30,6 +31,7 @@ src/main/java/cx/aswin/boxlore/core/domain/
     ConnectivityStatusPort.kt
     EpisodeOfflineLookupPort.kt
     EpisodeSupplementPort.kt
+    FeedTelemetryPort.kt
     HistoryRecommendationSource.kt
     LocalCatalogPort.kt
     LocalEpisodeCatalogPort.kt

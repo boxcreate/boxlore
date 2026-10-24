@@ -4,6 +4,8 @@ package cx.aswin.boxlore.core.analytics
 
 import android.content.Context
 import com.posthog.PostHog
+import cx.aswin.boxlore.core.model.FeedFetchReport
+import cx.aswin.boxlore.core.model.FeedUrlCorrection
 import cx.aswin.boxlore.core.model.RankingAggregateTelemetry
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import java.time.Instant
@@ -237,6 +239,12 @@ object AnalyticsHelper : Analytics {
     fun trackRssRefreshFailed(podcastId: String? = null, errorType: String? = null,) = PhaseCAnalyticsTracks.trackRssRefreshFailed(podcastId, errorType)
 
     fun trackProgressSyncAnomaly(anomalyType: String, episodeId: String? = null,) = PhaseCAnalyticsTracks.trackProgressSyncAnomaly(anomalyType, episodeId)
+
+    /** `feed_fetch_result`: one show-page read, or one background pass per source (P4, plan "PostHog"). */
+    fun trackFeedFetchResult(report: FeedFetchReport) = FeedAnalyticsTracks.trackFeedFetchResult(report)
+
+    /** `feed_url_corrected`: one saved address swap (P4, plan "Upgrade repair"). */
+    fun trackFeedUrlCorrected(correction: FeedUrlCorrection) = FeedAnalyticsTracks.trackFeedUrlCorrected(correction)
 
     data class SmartQueueRefillEvent(
         val triggeringEpisodeId: String,
