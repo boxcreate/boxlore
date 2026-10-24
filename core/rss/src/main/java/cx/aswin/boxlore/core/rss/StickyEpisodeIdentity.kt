@@ -51,6 +51,19 @@ object StickyEpisodeIdentity {
     }
 
     /**
+     * The negative ID [assignEpisodeId] mints for an item whose catalog key is [catalogKey], when
+     * it has no stored row and no Podcast Index match. [LocalEpisodeCollisionGuard] compares it with
+     * a legacy row's stored ID: equal means the same hash input, so the same episode.
+     */
+    fun ownMintedId(rssNamespaceId: String, catalogKey: String,): String = RssIdGenerator.episodeIdForPodcast(
+        podcastId = rssNamespaceId,
+        guid = catalogKey,
+        enclosureUrl = null,
+        publishedDate = 0L,
+        title = "",
+    )
+
+    /**
      * A local ID for a row whose usual ID another (show, key) already holds
      * ([LocalEpisodeCollisionGuard]). Negative like every minted ID, and the same for the same
      * (namespace, show, key, attempt), so a refresh that hits the same clash picks the same ID.

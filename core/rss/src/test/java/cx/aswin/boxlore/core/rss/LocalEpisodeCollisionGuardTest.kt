@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
+import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
 import cx.aswin.boxlore.core.database.LocalEpisodeOwner
+import cx.aswin.boxlore.core.rss.LocalEpisodeCollisionGuard.KeyRepair
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -10,34 +12,47 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class LocalEpisodeCollisionGuardTest {
-    private val namespace = "rss:shared-feed"
+    private val namespace = RssIdGenerator.podcastId("https://feeds.example/shared.xml")
 
-    /** A `local_episodes` stand-in: episode ID → owner, replaced like Room's REPLACE. */
-    private val table = linkedMapOf<String, LocalEpisodeOwner>()
-    private val owners: suspend (List<String>) -> List<LocalEpisodeOwner> = { ids -> ids.mapNotNull(table::get) }
-
-    private fun store(rows: List<LocalEpisodeEntity>) {
-        for (r in rows) table[r.episodeId] = LocalEpisodeOwner(r.episodeId, r.podcastId, r.guid)
+    /** A `local_episodes` stand-in, in insertion order. */
+    private val table = mutableListOf<LocalEpisodeEntity>()
+    private val owners: suspend (List<String>) -> List<LocalEpisodeOwner> = { ids ->
+        table.filter { it.episodeId in ids }.map { LocalEpisodeOwner(it.episodeId, it.podcastId, it.guid) }
     }
+    private val showRows: suspend (String) -> List<LocalEpisodeIdentity> = { podcastId ->
+        table.filter { it.podcastId == podcastId }.map { LocalEpisodeIdentity(it.episodeId, it.guid, it.audioUrl) }
+    }
+
+    /** Room's REPLACE: deletes every stored row sharing the primary key or the unique (podcastId, guid) index. */
+    private fun store(rows: List<LocalEpisodeEntity>) {
+        for (r in rows) {
+            table.removeAll { it.episodeId == r.episodeId || (it.podcastId == r.podcastId && it.guid == r.guid) }
+            table += r
+        }
+    }
+
+    private suspend fun resolve(rows: List<LocalEpisodeEntity>) = LocalEpisodeCollisionGuard.resolve(rows, namespace, owners, showRows)
+
+    private fun ownerOf(id: String) = table.single { it.episodeId == id }
 
     @Test
     fun anotherShowsIdGetsAReservedIdAndBothEpisodesSurvive() = runTest {
         store(listOf(row("-11", show = "100", key = "guid-a")))
-        val written = LocalEpisodeCollisionGuard.resolve(listOf(row("-11", show = "200", key = "guid-a")), namespace, owners)
+        val written = resolve(listOf(row("-11", show = "200", key = "guid-a"))).rows
 
         val reserved = written.single().episodeId
         assertNotEquals("-11", reserved)
         assertTrue(reserved.toLong() < 0L, "reserved IDs stay negative")
         assertEquals("200", written.single().podcastId)
         store(written)
-        assertEquals("100", table.getValue("-11").podcastId)
-        assertEquals("200", table.getValue(reserved).podcastId)
+        assertEquals("100", ownerOf("-11").podcastId)
+        assertEquals("200", ownerOf(reserved).podcastId)
     }
 
     @Test
     fun theSameShowAndKeyKeepsUpdatingItsRow() = runTest {
         store(listOf(row("-11", show = "100", key = "guid-a")))
-        val written = LocalEpisodeCollisionGuard.resolve(listOf(row("-11", show = "100", key = "guid-a", title = "Renamed")), namespace, owners)
+        val written = resolve(listOf(row("-11", show = "100", key = "guid-a", title = "Renamed"))).rows
         assertEquals("-11", written.single().episodeId)
         assertEquals("Renamed", written.single().title)
     }
@@ -45,18 +60,13 @@ class LocalEpisodeCollisionGuardTest {
     @Test
     fun theSameShowWithAnotherKeyIsAClashToo() = runTest {
         store(listOf(row("77", show = "100", key = "old-guid")))
-        val written = LocalEpisodeCollisionGuard.resolve(listOf(row("77", show = "100", key = "new-guid")), namespace, owners)
+        val written = resolve(listOf(row("77", show = "100", key = "new-guid"))).rows
         assertNotEquals("77", written.single().episodeId)
     }
 
     @Test
     fun twoRowsOfOneBatchNeverShareAnId() = runTest {
-        val written =
-            LocalEpisodeCollisionGuard.resolve(
-                listOf(row("-11", show = "100", key = "guid-a"), row("-11", show = "100", key = "guid-b")),
-                namespace,
-                owners,
-            )
+        val written = resolve(listOf(row("-11", show = "100", key = "guid-a"), row("-11", show = "100", key = "guid-b"))).rows
         assertEquals(2, written.map { it.episodeId }.toSet().size)
         assertEquals("-11", written.first().episodeId)
     }
@@ -64,21 +74,155 @@ class LocalEpisodeCollisionGuardTest {
     @Test
     fun aReservedIdIsStableAcrossRefreshes() = runTest {
         store(listOf(row("-11", show = "100", key = "guid-a")))
-        val first = LocalEpisodeCollisionGuard.resolve(listOf(row("-11", show = "200", key = "guid-a")), namespace, owners)
+        val first = resolve(listOf(row("-11", show = "200", key = "guid-a"))).rows
         store(first)
-        val again = LocalEpisodeCollisionGuard.resolve(listOf(row("-11", show = "200", key = "guid-a")), namespace, owners)
+        val again = resolve(listOf(row("-11", show = "200", key = "guid-a"))).rows
         assertEquals(first.single().episodeId, again.single().episodeId)
     }
 
     @Test
-    fun aRowWithNoFreeIdIsLeftOutInsteadOfOverwriting() = runTest {
-        store(listOf(row("-11", show = "100", key = "guid-a")))
-        for (attempt in 1..LocalEpisodeCollisionGuard.MAX_RESERVE_ATTEMPTS) {
-            val id = StickyEpisodeIdentity.reservedEpisodeId(namespace, "200", "guid-a", attempt)
-            table[id] = LocalEpisodeOwner(id, "300", "other")
+    fun aLegacyKeyWithTrailingWhitespaceKeepsItsIdAndGetsNoSecondRow() = runTest {
+        // Room migration 31→32 trimmed keys with SQLite TRIM (spaces only). The refresh re-trims the
+        // stored key and reuses its ID; the guard used to compare it untrimmed and reserve a new ID.
+        for (suffix in listOf("\n", "\t", " ", "\r\n")) {
+            table.clear()
+            store(listOf(row("-11", show = "100", key = "guid-a$suffix")))
+            val resolution = resolve(listOf(row("-11", show = "100", key = "guid-a")))
+
+            store(resolution.rows)
+            assertEquals(listOf("-11"), table.map { it.episodeId }, "one row for suffix U+${suffix[0].code.toString(16)}")
+            assertEquals("guid-a", table.single().guid)
+            assertEquals(KeyRepair.RETRIMMED, resolution.repaired.single().repair)
+            assertEquals("guid-a$suffix", resolution.repaired.single().storedKey)
         }
-        val written = LocalEpisodeCollisionGuard.resolve(listOf(row("-11", show = "200", key = "guid-a")), namespace, owners)
-        assertTrue(written.isEmpty())
+    }
+
+    @Test
+    fun anIncomingIdUnderAStoredKeyTakesTheStoredIdInsteadOfDeletingIt() = runTest {
+        // REPLACE also deletes a row sharing (show, key). An incoming row with another ID for a key
+        // the show stores must update that row, not delete it through the unique index.
+        store(listOf(row("-11", show = "100", key = "guid-a", title = "Stored")))
+        val written = resolve(listOf(row("-22", show = "100", key = "guid-a", title = "Fresh"))).rows
+
+        assertEquals("-11", written.single().episodeId)
+        store(written)
+        assertEquals(listOf("-11"), table.map { it.episodeId })
+        assertEquals("Fresh", table.single().title)
+    }
+
+    @Test
+    fun anExactStoredKeyWinsOverARetrimmedOneSoNeitherRowIsDeleted() = runTest {
+        // Two stored rows of one show whose keys trim alike: writing the re-trimmed one's ID under the
+        // exact key would delete the exact one. Both rows survive and the exact row is updated.
+        store(listOf(row("-11", show = "100", key = "guid-a\n"), row("-12", show = "100", key = "guid-a")))
+        val written = resolve(listOf(row("-11", show = "100", key = "guid-a", title = "Fresh"))).rows
+
+        assertEquals("-12", written.single().episodeId)
+        store(written)
+        assertEquals(setOf("-11", "-12"), table.map { it.episodeId }.toSet())
+        assertEquals("Fresh", ownerOf("-12").title)
+    }
+
+    @Test
+    fun aStoredKeyKeepsItsIdEvenWhenAnotherRowOfTheBatchMintedIt() = runTest {
+        // A new item whose minted ID equals a stored row's ID must not take that row from its own key.
+        store(listOf(row("-11", show = "100", key = "guid-a")))
+        val written = resolve(listOf(row("-11", show = "100", key = "guid-new"), row("-11", show = "100", key = "guid-a"))).rows
+
+        assertEquals("-11", written.single { it.guid == "guid-a" }.episodeId)
+        assertNotEquals("-11", written.single { it.guid == "guid-new" }.episodeId)
+        assertEquals(listOf("guid-new", "guid-a"), written.map { it.guid }, "input order is kept")
+    }
+
+    @Test
+    fun aSyntheticLegacyKeyHoldingTheItemsOwnIdIsHealed() = runTest {
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace, "guid-a")
+        store(listOf(row(minted, show = "100", key = "id:$minted")))
+        val resolution = resolve(listOf(row(minted, show = "100", key = "guid-a")))
+
+        store(resolution.rows)
+        assertEquals(listOf(minted), table.map { it.episodeId })
+        assertEquals("guid-a", table.single().guid)
+        assertEquals(KeyRepair.SYNTHETIC_KEY, resolution.repaired.single().repair)
+        assertEquals("id:$minted", resolution.repaired.single().storedKey)
+    }
+
+    @Test
+    fun anAudioAddressLegacyKeyHoldingTheItemsOwnIdIsHealedWhenTheItemHasAGuid() = runTest {
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace, "guid-a")
+        val audio = "https://cdn.example/guid-a.mp3"
+        store(listOf(row(minted, show = "100", key = audio, audioUrl = audio)))
+        val resolution = resolve(listOf(row(minted, show = "100", key = "guid-a")))
+
+        store(resolution.rows)
+        assertEquals(listOf(minted), table.map { it.episodeId })
+        assertEquals("guid-a", table.single().guid)
+        assertEquals(KeyRepair.AUDIO_URL_KEY, resolution.repaired.single().repair)
+    }
+
+    @Test
+    fun aLegacyKeyIsKeptApartWhenTheIdIsNotTheItemsOwnMint() = runTest {
+        // Same show and a synthetic key, but the stored ID came from elsewhere (a Podcast Index ID).
+        store(listOf(row("-11", show = "100", key = "id:-11")))
+        val resolution = resolve(listOf(row("-11", show = "100", key = "guid-a")))
+
+        assertNotEquals("-11", resolution.rows.single().episodeId)
+        assertTrue(resolution.repaired.isEmpty())
+    }
+
+    @Test
+    fun anotherShowsLegacyRowIsNeverHealed() = runTest {
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace, "guid-a")
+        store(listOf(row(minted, show = "100", key = "id:$minted")))
+        val resolution = resolve(listOf(row(minted, show = "200", key = "guid-a")))
+
+        assertNotEquals(minted, resolution.rows.single().episodeId)
+        store(resolution.rows)
+        assertEquals("id:$minted", ownerOf(minted).guid)
+    }
+
+    @Test
+    fun anAudioAddressKeyIsKeptApartWhenTheItemHasNoGuid() = runTest {
+        // Both keys are audio addresses: a different address is a different episode.
+        val newAudio = "https://cdn.example/new.mp3"
+        val minted = StickyEpisodeIdentity.ownMintedId(namespace, newAudio)
+        store(listOf(row(minted, show = "100", key = "https://cdn.example/old.mp3", audioUrl = "https://cdn.example/old.mp3")))
+        val resolution = resolve(listOf(row(minted, show = "100", key = newAudio, audioUrl = newAudio)))
+
+        assertNotEquals(minted, resolution.rows.single().episodeId)
+        assertTrue(resolution.repaired.isEmpty())
+    }
+
+    @Test
+    fun exhaustingReservedIdsKeepsAStoredRowOnItsId() = runTest {
+        // Every reserved ID is taken, but the show already stores the key (with a legacy newline):
+        // the row keeps its stored ID instead of being left out.
+        store(listOf(row("-11", show = "200", key = "guid-a\n")))
+        store(listOf(row("-99", show = "300", key = "other")))
+        takeEveryReservedId(show = "200", key = "guid-a")
+        val resolution = resolve(listOf(row("-99", show = "200", key = "guid-a")))
+
+        assertEquals("-11", resolution.rows.single().episodeId)
+        assertTrue(resolution.unplaced.isEmpty())
+        store(resolution.rows)
+        assertEquals("other", ownerOf("-99").guid, "the other show's row is untouched")
+    }
+
+    @Test
+    fun aNewRowWithNoFreeIdIsReportedInsteadOfOverwriting() = runTest {
+        store(listOf(row("-11", show = "100", key = "guid-a")))
+        takeEveryReservedId(show = "200", key = "guid-a")
+        val incoming = row("-11", show = "200", key = "guid-a")
+        val resolution = resolve(listOf(incoming))
+
+        assertTrue(resolution.rows.isEmpty())
+        assertEquals(listOf(incoming), resolution.unplaced)
+    }
+
+    @Test
+    fun aRepeatedKeyInOneBatchIsWrittenOnce() = runTest {
+        val written = resolve(listOf(row("-11", show = "100", key = "guid-a", title = "First"), row("-12", show = "100", key = "guid-a"))).rows
+        assertEquals("First", written.single().title)
     }
 
     @Test
@@ -89,13 +233,26 @@ class LocalEpisodeCollisionGuardTest {
         assertFalse(LocalEpisodeCollisionGuard.takesAnotherShowsId(listOf(row("-12", show = "200", key = "guid-b")), "200", owners))
     }
 
-    private fun row(id: String, show: String, key: String, title: String = "Ep",) = LocalEpisodeEntity(
+    private fun takeEveryReservedId(show: String, key: String) {
+        for (attempt in 1..LocalEpisodeCollisionGuard.MAX_RESERVE_ATTEMPTS) {
+            val id = StickyEpisodeIdentity.reservedEpisodeId(namespace, show, key, attempt)
+            store(listOf(row(id, show = "300", key = "taken-$attempt")))
+        }
+    }
+
+    private fun row(
+        id: String,
+        show: String,
+        key: String,
+        title: String = "Ep",
+        audioUrl: String = "https://cdn.example/${key.trim()}.mp3",
+    ) = LocalEpisodeEntity(
         episodeId = id,
         podcastId = show,
         guid = key,
         title = title,
         description = "",
-        audioUrl = "https://cdn.example/$key.mp3",
+        audioUrl = audioUrl,
         imageUrl = null,
         duration = 60,
         publishedDate = 10L,
