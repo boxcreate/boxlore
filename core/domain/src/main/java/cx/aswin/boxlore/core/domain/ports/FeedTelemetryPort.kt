@@ -9,7 +9,6 @@ import cx.aswin.boxlore.core.model.FeedUrlCorrection
  * default for tests and callers built without it. Implementations must not throw.
  *
  * Phase P4, plan section "PostHog" (`feed_fetch_result`, `feed_url_corrected`).
- * COMPAT(own-ids): reporting seam for feed reads. Permanent: never remove (MIGRATION.md §5).
  */
 interface FeedTelemetryPort {
     /** One show-page read, or one background pass per source as an aggregate. */

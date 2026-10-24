@@ -116,7 +116,6 @@ object AnalyticsGlossary {
      * join on one value across devices. Optional: sent only when the episode's recipe ID is known.
      *
      * Phase P4, plan section "Identity at every boundary" (analytics).
-     * COMPAT(own-ids): permanent (MIGRATION.md §5).
      */
     const val RECIPE_ID_PROPERTY = "recipe_id"
 

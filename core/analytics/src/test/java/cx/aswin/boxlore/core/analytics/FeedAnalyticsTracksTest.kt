@@ -4,9 +4,11 @@ import cx.aswin.boxlore.core.model.FeedFetchCompleteness
 import cx.aswin.boxlore.core.model.FeedFetchOutcome
 import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedFetchSource
+import cx.aswin.boxlore.core.model.FeedPassResult
 import cx.aswin.boxlore.core.model.FeedUrlCorrection
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionReason
 import cx.aswin.boxlore.core.model.FeedUrlCorrectionStep
+import java.io.File
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -73,6 +75,31 @@ class FeedAnalyticsTracksTest {
         assertEquals(503, props["http_status"])
         assertEquals("rss:ab12", props["show_id"])
         assertFalse("completeness" in props)
+    }
+
+    @Test
+    fun `a successful or unchanged read never carries an http status`() {
+        AnalyticsHelper.trackFeedFetchResult(
+            FeedFetchReport.ShowPage("1", FeedFetchSource.FEED, FeedFetchOutcome.OK, httpStatus = 200),
+        )
+        AnalyticsHelper.trackFeedFetchResult(
+            FeedFetchReport.ShowPage("1", FeedFetchSource.FEED, FeedFetchOutcome.NOT_MODIFIED, httpStatus = 304),
+        )
+        AnalyticsHelper.trackFeedFetchResult(
+            FeedFetchReport.ShowPage("1", FeedFetchSource.FEED, FeedFetchOutcome.TIMEOUT, httpStatus = 200),
+        )
+
+        assertEquals(3, recorder.size)
+        recorder.forEach { (_, props) -> assertFalse("http_status" in props) }
+    }
+
+    @Test
+    fun `a gone read reports its status`() {
+        AnalyticsHelper.trackFeedFetchResult(
+            FeedFetchReport.ShowPage("1", FeedFetchSource.FEED, FeedFetchOutcome.GONE, httpStatus = 410),
+        )
+
+        assertEquals(410, recorder.single().second["http_status"])
     }
 
     @Test
@@ -167,5 +194,29 @@ class FeedAnalyticsTracksTest {
             listOf("upgrade_repair", "daily_check", "feed_refresh", "feed_report"),
             FeedUrlCorrectionStep.entries.map { it.wireName },
         )
+    }
+
+    @Test
+    fun `the CSV glossary notes list the values the code sends`() {
+        val root =
+            generateSequence(File(".").canonicalFile) { it.parentFile }
+                .first { File(it, "docs/analytics/event_glossary.csv").isFile }
+        val rows = File(root, "docs/analytics/event_glossary.csv").readLines()
+        val fetchNote = rows.single { it.startsWith("feed_fetch_result,") }.substringAfterLast(",none,")
+        val swapNote = rows.single { it.startsWith("feed_url_corrected,") }.substringAfterLast(",none,")
+
+        val contexts = listOf(FeedAnalyticsTracks.CONTEXT_SHOW_PAGE, FeedAnalyticsTracks.CONTEXT_BACKGROUND_PASS)
+        assertTrue("context: ${contexts.joinToString("|")};" in fetchNote, fetchNote)
+        assertTrue("source: ${FeedFetchSource.entries.joinToString("|") { it.wireName }};" in fetchNote, fetchNote)
+        assertTrue(
+            "result on show_page: ${FeedFetchOutcome.entries.joinToString("|") { it.wireName }};" in fetchNote,
+            fetchNote,
+        )
+        assertTrue(
+            "result on background_pass: ${FeedPassResult.entries.joinToString("|") { it.wireName }};" in fetchNote,
+            fetchNote,
+        )
+        assertTrue("reason: ${FeedUrlCorrectionReason.entries.joinToString("|") { it.wireName }};" in swapNote, swapNote)
+        assertTrue("step: ${FeedUrlCorrectionStep.entries.joinToString("|") { it.wireName }};" in swapNote, swapNote)
     }
 }

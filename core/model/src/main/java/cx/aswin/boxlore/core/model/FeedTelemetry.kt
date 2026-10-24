@@ -4,7 +4,6 @@ package cx.aswin.boxlore.core.model
  * Where a feed read got its episodes, reported as `source` on `feed_fetch_result`.
  *
  * Phase P4 (feed-first show pages and address repair), plan section "PostHog".
- * COMPAT(own-ids): analytics vocabulary for feed reads. Permanent: never remove (MIGRATION.md §5).
  */
 enum class FeedFetchSource(val wireName: String) {
     /** The show's own feed at its publisher address. */
@@ -23,7 +22,7 @@ enum class FeedFetchSource(val wireName: String) {
 /**
  * How one feed read ended, reported as `result` on a show-page `feed_fetch_result`.
  *
- * Phase P4, plan section "PostHog". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "PostHog".
  */
 enum class FeedFetchOutcome(val wireName: String) {
     OK("ok"),
@@ -51,7 +50,7 @@ enum class FeedFetchOutcome(val wireName: String) {
 /**
  * Whether a successful read covered the newest items only or the whole feed (`completeness`).
  *
- * Phase P4, plan section "Feed-first show page". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "Feed-first show page".
  */
 enum class FeedFetchCompleteness(val wireName: String) {
     PARTIAL("partial"),
@@ -61,7 +60,7 @@ enum class FeedFetchCompleteness(val wireName: String) {
 /**
  * Summary `result` of a background pass: every read worked, some failed, or all failed.
  *
- * Phase P4, plan section "PostHog". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "PostHog".
  */
 enum class FeedPassResult(val wireName: String) {
     OK("ok"),
@@ -74,7 +73,7 @@ enum class FeedPassResult(val wireName: String) {
  * pass and source as an aggregate ([BackgroundPass]), never once per show per pass. Carries
  * no addresses.
  *
- * Phase P4, plan section "PostHog". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "PostHog".
  */
 sealed interface FeedFetchReport {
     val source: FeedFetchSource
@@ -112,7 +111,7 @@ sealed interface FeedFetchReport {
 /**
  * Why a followed show's saved address was replaced (`reason` on `feed_url_corrected`).
  *
- * Phase P4, plan section "Upgrade repair". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "Upgrade repair".
  */
 enum class FeedUrlCorrectionReason(val wireName: String) {
     /** The saved address stopped answering. */
@@ -128,7 +127,7 @@ enum class FeedUrlCorrectionReason(val wireName: String) {
 /**
  * Which path replaced the address (`step` on `feed_url_corrected`).
  *
- * Phase P4, plan section "Upgrade repair". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "Upgrade repair".
  */
 enum class FeedUrlCorrectionStep(val wireName: String) {
     /** The one-time repair after the update. */
@@ -147,7 +146,7 @@ enum class FeedUrlCorrectionStep(val wireName: String) {
 /**
  * One `feed_url_corrected` event, sent once per address swap. Carries no addresses.
  *
- * Phase P4, plan section "Upgrade repair". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "Upgrade repair".
  */
 data class FeedUrlCorrection(
     val showId: String,

@@ -152,6 +152,7 @@ Reports: `build/reports/kover/`.
 | :--- | :--- |
 | `ArchitectureGuardTest` | No feature→feature Gradle deps or imports; catalog↛designsystem; catalog↛playback; catalog must not `api` analytics/ranking; module READMEs; `getInstance` allowlist; package=module (+ `core.data` stubs); no Hilt/Koin/Dagger/MockK; new `*ViewModel`/`*Repository` need matching `*Test.kt` |
 | `GlossaryCoverageGuardTest` | `event_glossary.csv` ↔ `AnalyticsGlossary` allowlist; every event has `glossary_emission_coverage.csv` mode (`emission` / `sdk_backed` / `person_props_only`); no dual open/install volume |
+| `GlossaryRecipeIdTest` (`:core:analytics`) | Events carrying `episode_id` in `event_glossary.csv` ↔ `AnalyticsGlossary.EPISODE_ID_EVENTS`; each declares `recipe_id:string:N` in the CSV and optional `recipe_id:string` in `ANALYTICS_EVENT_GLOSSARY.md`; `home_surface_impression` declares `recipe_ids:list:N` |
 | `GlossaryAllEventsEmissionTest` (`:core:analytics`) | Every `emission:` inventory row captures via façade; lifecycle helpers never emit `app_open` / `app_background` / `install_attributed` |
 | `scripts/ci/check-feature-no-posthog.sh` | Features never import/capture via PostHog |
 | `scripts/ci/check-feature-no-boxlore-database.sh` | Home/Info VMs/assemblers do not take `BoxLoreDatabase` |

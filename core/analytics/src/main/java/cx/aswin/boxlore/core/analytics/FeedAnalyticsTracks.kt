@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.analytics
 
+import cx.aswin.boxlore.core.model.FeedFetchOutcome
 import cx.aswin.boxlore.core.model.FeedFetchReport
 import cx.aswin.boxlore.core.model.FeedUrlCorrection
 
@@ -7,7 +8,7 @@ import cx.aswin.boxlore.core.model.FeedUrlCorrection
  * Feed reliability events: `feed_fetch_result` and `feed_url_corrected`. Properties are IDs,
  * categories and counts only; a show ID that looks like an address is left out rather than sent.
  *
- * Phase P4, plan section "PostHog". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "PostHog".
  */
 internal object FeedAnalyticsTracks {
     const val FEED_FETCH_RESULT = "feed_fetch_result"
@@ -49,7 +50,9 @@ internal object FeedAnalyticsTracks {
         if (!report.outcome.isFailure) {
             report.completeness?.let { put("completeness", it.wireName) }
         }
-        report.httpStatus?.takeIf { it in HTTP_STATUS_RANGE }?.let { put("http_status", it) }
+        if (report.outcome in HTTP_STATUS_OUTCOMES) {
+            report.httpStatus?.takeIf { it in HTTP_STATUS_RANGE }?.let { put("http_status", it) }
+        }
     }
 
     private fun backgroundPassProperties(report: FeedFetchReport.BackgroundPass): Map<String, Any> = mapOf(
@@ -66,4 +69,7 @@ internal object FeedAnalyticsTracks {
     private fun safeShowId(showId: String): String? = showId.trim().takeIf { it.isNotEmpty() && "/" !in it && "." !in it }
 
     private val HTTP_STATUS_RANGE = 100..599
+
+    /** `http_status` is sent only with these results, so ok and not_modified rows never carry 200 or 304. */
+    private val HTTP_STATUS_OUTCOMES = setOf(FeedFetchOutcome.HTTP_ERROR, FeedFetchOutcome.GONE)
 }

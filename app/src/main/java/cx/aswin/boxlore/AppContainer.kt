@@ -197,7 +197,7 @@ class AppContainer(
     /**
      * Feed-read and address-swap reporting for catalog code (`feed_fetch_result`,
      * `feed_url_corrected`), handed in like [FeedFixToggles] so catalog never depends on analytics.
-     * Phase P4, plan section "PostHog". COMPAT(own-ids): permanent (MIGRATION.md §5).
+     * Phase P4, plan section "PostHog".
      */
     val feedTelemetry: FeedTelemetryPort by lazy { AnalyticsFeedTelemetry() }
 

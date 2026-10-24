@@ -10,7 +10,7 @@ import cx.aswin.boxlore.core.model.FeedUrlCorrection
  * reads and address swaps reach `feed_fetch_result` and `feed_url_corrected` without catalog
  * depending on analytics. A reporting failure never reaches the caller.
  *
- * Phase P4, plan section "PostHog". COMPAT(own-ids): permanent (MIGRATION.md §5).
+ * Phase P4, plan section "PostHog".
  */
 internal class AnalyticsFeedTelemetry(
     private val fetched: (FeedFetchReport) -> Unit = AnalyticsHelper::trackFeedFetchResult,
