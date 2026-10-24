@@ -2,6 +2,8 @@ package cx.aswin.boxlore.feature.info.logic
 
 import cx.aswin.boxlore.core.model.Episode
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PodcastEpisodeSelectionLogicTest {
@@ -132,6 +134,28 @@ class PodcastEpisodeSelectionLogicTest {
 
         assertEquals(listOf(loaded, episode("c")), restored.pool)
         assertEquals(listOf("a", "c"), restored.selectedIds)
+    }
+
+    @Test
+    fun `restored selection keeps the window order the selection was made in`() {
+        val restored =
+            PodcastEpisodeSelectionLogic.restoreSelection(
+                selectedIds = listOf("c", "b", "a", "x"),
+                available = listOf(episode("a"), episode("b"), episode("x")),
+                window = listOf(episode("c"), episode("b"), episode("a")),
+            )
+
+        assertEquals(listOf("c", "b", "a", "x"), restored.pool.map(Episode::id))
+        assertEquals(listOf("c", "b", "a", "x"), restored.selectedIds)
+    }
+
+    @Test
+    fun `selection restore waits for the loaded page, a running range lookup and a new page state after a failure`() {
+        assertTrue(PodcastEpisodeSelectionLogic.canRestoreSelection(true, pageLoading = false, rangeLoading = false, failedOnCurrentState = false))
+        assertFalse(PodcastEpisodeSelectionLogic.canRestoreSelection(false, pageLoading = false, rangeLoading = false, failedOnCurrentState = false))
+        assertFalse(PodcastEpisodeSelectionLogic.canRestoreSelection(true, pageLoading = true, rangeLoading = false, failedOnCurrentState = false))
+        assertFalse(PodcastEpisodeSelectionLogic.canRestoreSelection(true, pageLoading = false, rangeLoading = true, failedOnCurrentState = false))
+        assertFalse(PodcastEpisodeSelectionLogic.canRestoreSelection(true, pageLoading = false, rangeLoading = false, failedOnCurrentState = true))
     }
 
     @Test

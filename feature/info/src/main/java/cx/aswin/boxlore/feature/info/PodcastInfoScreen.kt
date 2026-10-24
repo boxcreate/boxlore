@@ -137,14 +137,19 @@ fun PodcastInfoScreen(
     val searchFocusRequester = remember { FocusRequester() }
     val isMiniPlayerVisible = bottomContentPadding > appBottomChromeContentPadding(isMiniPlayerVisible = false)
 
-    // Search State. Open search survives activity recreation (fold density changes, process death);
-    // the query itself lives in the ViewModel.
+    // Search State. Open search survives activity recreation (fold density changes, process death)
+    // and a return from the back stack. The live query lives in the ViewModel; a saved copy runs the
+    // search again when a new ViewModel (process death) comes back with an empty query.
     var isSearchActive by rememberSaveable { mutableStateOf(false) }
+    var savedSearchQuery by rememberSaveable { mutableStateOf("") }
+    var searchQueryRestorePending by remember { mutableStateOf(isSearchActive && savedSearchQuery.isNotBlank()) }
     // Not saved: a recreated page restores open search without jumping the list or reopening the keyboard.
     var searchOpenRequest by remember { mutableIntStateOf(0) }
     val closeSearch = {
         focusManager.clearFocus()
         isSearchActive = false
+        savedSearchQuery = ""
+        searchQueryRestorePending = false
         viewModel.searchEpisodes("")
     }
     LaunchedEffect(searchOpenRequest) {
@@ -170,11 +175,15 @@ fun PodcastInfoScreen(
     // looks its selected episodes up again (see the selection restore below).
     var selectedEpisodeIds by rememberSaveable(podcastId, stateSaver = EpisodeIdListSaver) { mutableStateOf(emptyList<String>()) }
     var selectionAnchorEpisodeId by rememberSaveable(podcastId) { mutableStateOf<String?>(null) }
+    // The sort the selection was made in: a reloaded page can open in another order.
+    var selectionSortName by rememberSaveable(podcastId) { mutableStateOf<String?>(null) }
     var selectionEpisodePool by remember(podcastId) { mutableStateOf(emptyList<Episode>()) }
     var isLoadingFullSelection by remember(podcastId) { mutableStateOf(false) }
     var selectionRequestGeneration by remember(podcastId) { mutableStateOf(0) }
     var selectionRestorePending by remember(podcastId) { mutableStateOf(selectedEpisodeIds.isNotEmpty()) }
     var isRestoringSelection by remember(podcastId) { mutableStateOf(false) }
+    // The page state a lookup failed on; the restore tries again once the page state changes.
+    var selectionRestoreFailedOn by remember(podcastId) { mutableStateOf<PodcastInfoUiState?>(null) }
     val selectedEpisodeIdSet = selectedEpisodeIds.toSet()
     val selectionActive = selectedEpisodeIds.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -267,8 +276,11 @@ fun PodcastInfoScreen(
         selectionRequestGeneration += 1
         selectedEpisodeIds = emptyList()
         selectionAnchorEpisodeId = null
+        selectionSortName = null
         selectionEpisodePool = emptyList()
         isLoadingFullSelection = false
+        selectionRestorePending = false
+        selectionRestoreFailedOn = null
     }
 
     TrackScreenSession(
@@ -373,7 +385,7 @@ fun PodcastInfoScreen(
         when (val state = uiState) {
             is PodcastInfoUiState.Loading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().testTag(PODCAST_INFO_LOADING_TAG),
                     contentAlignment = Alignment.Center,
                 ) {
                     BoxLoreLoader.Expressive(size = 80.dp)
@@ -429,8 +441,15 @@ fun PodcastInfoScreen(
                     selectionRequestGeneration += 1
                     selectedEpisodeIds = emptyList()
                     selectionAnchorEpisodeId = null
+                    selectionSortName = null
                     selectionEpisodePool = emptyList()
                     isLoadingFullSelection = false
+                    selectionRestorePending = false
+                    selectionRestoreFailedOn = null
+                }
+                // Records the order a new selection is made in, for the restore after recreation.
+                val noteSelectionSort = {
+                    if (selectedEpisodeIds.isEmpty()) selectionSortName = state.currentSort.name
                 }
                 val subscribeToEditGenreMessage = stringResource(R.string.subscribe_to_edit_genre)
                 val handleEditGenreClick = {
@@ -444,11 +463,15 @@ fun PodcastInfoScreen(
                 val selectFullRange: (EpisodeSelectionRange) -> Unit = { range ->
                     selectionRequestGeneration += 1
                     val requestGeneration = selectionRequestGeneration
+                    val rangeSort = state.currentSort
                     isLoadingFullSelection = true
                     coroutineScope.launch {
                         try {
-                            val window = viewModel.loadEpisodeSelectionWindow()
+                            val window = viewModel.loadEpisodeSelectionWindow(rangeSort)
                             if (requestGeneration != selectionRequestGeneration) return@launch
+                            selectionSortName = rangeSort.name
+                            // A loaded window can also settle a restore that failed earlier.
+                            selectionRestoreFailedOn = null
                             val eligibleEpisodes =
                                 if (hideCompleted) {
                                     window.episodes.filter { it.id !in completedEpisodeIds }
@@ -478,9 +501,20 @@ fun PodcastInfoScreen(
                 }
 
                 // After recreation, look up selected episodes the loaded list no longer has (P4,
-                // adaptive show page). A cancelled lookup retries when the page shows content again.
-                if (selectionRestorePending) {
+                // adaptive show page). The lookup waits for the first page to finish loading, so
+                // the sort and episodes are real, and reads the window in the sort the selection
+                // was made in. A cancelled lookup runs again when the page settles; a failed one
+                // keeps every ID and tries again when the page state next changes.
+                val canRestoreSelection =
+                    PodcastEpisodeSelectionLogic.canRestoreSelection(
+                        restorePending = selectionRestorePending,
+                        pageLoading = state.isLoadingMore,
+                        rangeLoading = isLoadingFullSelection,
+                        failedOnCurrentState = selectionRestoreFailedOn === state,
+                    )
+                if (canRestoreSelection) {
                     val loadedEpisodes by rememberUpdatedState(state.episodes + displayEpisodes)
+                    val latestState by rememberUpdatedState(state)
                     LaunchedEffect(Unit) {
                         val unresolved =
                             PodcastEpisodeSelectionLogic.unresolvedIds(selectedEpisodeIds, selectionEpisodePool + loadedEpisodes)
@@ -490,23 +524,39 @@ fun PodcastInfoScreen(
                         }
                         selectionRequestGeneration += 1
                         val requestGeneration = selectionRequestGeneration
+                        val restoreSort = selectionSortName?.let(EpisodeSort::valueOf) ?: latestState.currentSort
                         isRestoringSelection = true
                         try {
-                            val window = viewModel.selectionWindowOrNull()
-                            if (requestGeneration == selectionRequestGeneration) {
-                                val restored =
-                                    PodcastEpisodeSelectionLogic.restoreSelection(
-                                        selectedIds = selectedEpisodeIds,
-                                        available = selectionEpisodePool + loadedEpisodes,
-                                        window = window?.episodes.orEmpty(),
-                                    )
-                                selectionEpisodePool = restored.pool
-                                selectedEpisodeIds = restored.selectedIds
+                            val window = viewModel.selectionWindowOrNull(restoreSort)
+                            if (requestGeneration != selectionRequestGeneration) return@LaunchedEffect
+                            if (window == null) {
+                                selectionRestoreFailedOn = latestState
+                                return@LaunchedEffect
                             }
+                            val restored =
+                                PodcastEpisodeSelectionLogic.restoreSelection(
+                                    selectedIds = selectedEpisodeIds,
+                                    available = selectionEpisodePool + loadedEpisodes,
+                                    window = window.episodes,
+                                )
+                            selectionEpisodePool = restored.pool
+                            selectedEpisodeIds = restored.selectedIds
                             selectionRestorePending = false
+                            selectionRestoreFailedOn = null
                         } finally {
                             isRestoringSelection = false
                         }
+                    }
+                }
+                // After process death the new ViewModel starts with an empty query: run the saved
+                // search again once the first page has loaded, so a later reload cannot clear it.
+                LaunchedEffect(state.searchQuery, state.isLoadingMore, isSearchActive) {
+                    if (searchQueryRestorePending) {
+                        if (state.isLoadingMore) return@LaunchedEffect
+                        searchQueryRestorePending = false
+                        if (state.searchQuery.isBlank() && isSearchActive) viewModel.searchEpisodes(savedSearchQuery)
+                    } else if (isSearchActive) {
+                        savedSearchQuery = state.searchQuery
                     }
                 }
 
@@ -672,6 +722,7 @@ fun PodcastInfoScreen(
                         if (isSearchActive) closeSearch()
                     },
                     onToggleSelection = { episode ->
+                        noteSelectionSort()
                         val updated = PodcastEpisodeSelectionLogic.toggle(
                             selectedIds = selectedEpisodeIdSet,
                             episodeId = episode.id,
@@ -681,6 +732,7 @@ fun PodcastInfoScreen(
                     },
                     onLongPressSelection = { episode ->
                         focusManager.clearFocus()
+                        noteSelectionSort()
                         selectedEpisodeIds = PodcastEpisodeSelectionLogic.toggle(
                             selectedIds = selectedEpisodeIdSet,
                             episodeId = episode.id,
@@ -702,7 +754,8 @@ fun PodcastInfoScreen(
                             modifier =
                             Modifier
                                 .align(Alignment.TopCenter)
-                                .padding(top = collapsedHeaderHeight),
+                                .padding(top = collapsedHeaderHeight)
+                                .testTag(PODCAST_INFO_REFRESH_INDICATOR_TAG),
                         )
                     },
                 ) {
@@ -777,7 +830,8 @@ fun PodcastInfoScreen(
                                     it.id == selectionAnchorEpisodeId
                                 },
                             isLoadingFullSelection = isLoadingFullSelection || isRestoringSelection,
-                            actionsEnabled = !isRestoringSelection,
+                            // Also off after a failed lookup, until the selection is whole again.
+                            actionsEnabled = !selectionRestorePending,
                         ),
                         actions =
                         EpisodeSelectionToolbarActions(
@@ -811,6 +865,7 @@ fun PodcastInfoScreen(
                                     PodcastEpisodeSelectionLogic
                                         .visibleEpisodes(feedItems, visibleItemKeys)
                                         .filterNot { hideCompleted && it.id in completedEpisodeIds }
+                                noteSelectionSort()
                                 selectionEpisodePool =
                                     (selectionEpisodePool + visibleEpisodes).distinctBy(Episode::id)
                                 selectedEpisodeIds =
@@ -829,7 +884,12 @@ fun PodcastInfoScreen(
                     )
                 }
 
-                if (showMissingEpisodesConfirm) {
+                // A restored dialog waits for the reloaded page to offer the feed check again, and
+                // is dropped once the check has run, so a confirm always has something to start.
+                LaunchedEffect(state.directFeedChip) {
+                    if (state.directFeedChip == DirectFeedChipState.Updated) showMissingEpisodesConfirm = false
+                }
+                if (showMissingEpisodesConfirm && state.directFeedChip == DirectFeedChipState.Offer) {
                     MissingEpisodesConfirmDialog(
                         onDismissRequest = { showMissingEpisodesConfirm = false },
                         onConfirm = { viewModel.loadMissingEpisodes() },
@@ -990,6 +1050,12 @@ fun PodcastInfoScreen(
 /** Test tag on the show page episode list, used by the adaptive transition tests. */
 internal const val PODCAST_INFO_EPISODE_LIST_TAG = "podcast_info_episode_list"
 
+/** Test tag on the full-page loading state. */
+internal const val PODCAST_INFO_LOADING_TAG = "podcast_info_loading"
+
+/** Test tag on the pull-to-refresh indicator. */
+internal const val PODCAST_INFO_REFRESH_INDICATOR_TAG = "podcast_info_refresh_indicator"
+
 /** Saves selected episode IDs as a bundle-safe list. */
 private val EpisodeIdListSaver = Saver<List<String>, ArrayList<String>>(
     save = { ArrayList(it) },
@@ -997,12 +1063,12 @@ private val EpisodeIdListSaver = Saver<List<String>, ArrayList<String>>(
 )
 
 /**
- * The selection window used to look selected episodes up again after the page is recreated, or
- * null when it cannot be loaded; the restore then keeps only the episodes the page still has.
+ * The selection window, in [sort], used to look selected episodes up again after the page is
+ * recreated, or null when it cannot be loaded; the restore then keeps every ID and tries again.
  */
-@Suppress("TooGenericExceptionCaught") // Any load failure leaves the restore with the loaded list.
-private suspend fun PodcastInfoViewModel.selectionWindowOrNull(): PodcastEpisodeSelectionWindow? = try {
-    loadEpisodeSelectionWindow()
+@Suppress("TooGenericExceptionCaught") // Any load failure leaves the restore pending.
+private suspend fun PodcastInfoViewModel.selectionWindowOrNull(sort: EpisodeSort): PodcastEpisodeSelectionWindow? = try {
+    loadEpisodeSelectionWindow(sort)
 } catch (cancelled: CancellationException) {
     throw cancelled
 } catch (failure: Exception) {
