@@ -104,9 +104,59 @@ object AnalyticsGlossary {
             "progress_sync_anomaly",
             "late_night_safeguard_decision",
             "proxy_fallback_triggered",
+            // Feed reliability (own episode IDs, P4)
+            "feed_fetch_result",
+            "feed_url_corrected",
         )
 
     val PHASE_A_UNION_B_UNION_C: Set<String> = PHASE_A_UNION_B + PHASE_C
+
+    /**
+     * boxlore's own episode ID beside the local `episode_id`, so impression, tap and play rows
+     * join on one value across devices. Optional: sent only when the episode's recipe ID is known.
+     *
+     * Phase P4, plan section "Identity at every boundary" (analytics).
+     * COMPAT(own-ids): permanent (MIGRATION.md §5).
+     */
+    const val RECIPE_ID_PROPERTY = "recipe_id"
+
+    /** Recipe IDs of the episodes on an episode surface, on `home_surface_impression` (P4). */
+    const val RECIPE_IDS_PROPERTY = "recipe_ids"
+
+    /**
+     * Events that carry `episode_id` and therefore declare the optional [RECIPE_ID_PROPERTY].
+     * `GlossaryRecipeIdTest` keeps this set, the CSV and the Markdown glossary in step.
+     *
+     * Phase P4, plan section "Identity at every boundary" (analytics).
+     */
+    val EPISODE_ID_EVENTS: Set<String> =
+        setOf(
+            "deep_link_opened",
+            "playback_started",
+            "playback_heartbeat",
+            "playback_paused",
+            "playback_completed",
+            "playback_error",
+            "playback_buffering",
+            "playback_seeked",
+            "session_restore_prompt",
+            "notification_tapped",
+            "notification_received",
+            "first_episode_played",
+            "home_surface_tapped",
+            "search_result_tapped",
+            "learn_card_action",
+            "queue_modified",
+            "episode_liked_toggled",
+            "episode_mark_played",
+            "download_requested",
+            "download_completed",
+            "download_failed",
+            "share_content",
+            "episode_detail_viewed",
+            "daily_briefing_action",
+            "progress_sync_anomaly",
+        )
 
     /** Support development and donation tier tracking events. */
     val SUPPORT_EVENTS: Set<String> =

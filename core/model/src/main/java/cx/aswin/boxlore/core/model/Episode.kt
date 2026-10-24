@@ -34,4 +34,16 @@ data class Episode(
     val serverRank: Int? = null,
     val recommendationAlgorithmVersion: String? = null,
     val language: String? = null,
+    /**
+     * boxlore's own ID for this episode, from its show and [catalogKey], when known. [id] stays
+     * the local ID. Phase P4, plan section "Identity at every boundary".
+     * COMPAT(own-ids): permanent (MIGRATION.md §5).
+     */
+    val recipeId: Long? = null,
+    /**
+     * The episode's trimmed GUID, or its enclosure URL when it has none, when known.
+     * Phase P4, plan section "Identity at every boundary".
+     * COMPAT(own-ids): permanent (MIGRATION.md §5).
+     */
+    val catalogKey: String? = null,
 )
