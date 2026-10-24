@@ -111,6 +111,42 @@ class PodcastEpisodeSelectionLogicTest {
         )
     }
 
+    @Test
+    fun `unresolved ids keep selection order and ignore ids the page already has`() {
+        assertEquals(
+            listOf("c", "a"),
+            PodcastEpisodeSelectionLogic.unresolvedIds(listOf("c", "b", "a"), listOf(episode("b"))),
+        )
+        assertEquals(emptyList<String>(), PodcastEpisodeSelectionLogic.unresolvedIds(emptyList(), emptyList()))
+    }
+
+    @Test
+    fun `restored selection takes loaded episodes first and the fetched window for the rest`() {
+        val loaded = episode("a").copy(title = "loaded")
+        val restored =
+            PodcastEpisodeSelectionLogic.restoreSelection(
+                selectedIds = listOf("a", "c"),
+                available = listOf(loaded, episode("b")),
+                window = listOf(episode("a"), episode("c"), episode("d")),
+            )
+
+        assertEquals(listOf(loaded, episode("c")), restored.pool)
+        assertEquals(listOf("a", "c"), restored.selectedIds)
+    }
+
+    @Test
+    fun `restored selection drops ids that neither the page nor the window can supply`() {
+        val restored =
+            PodcastEpisodeSelectionLogic.restoreSelection(
+                selectedIds = listOf("gone", "a", "a"),
+                available = listOf(episode("a")),
+                window = emptyList(),
+            )
+
+        assertEquals(listOf(episode("a")), restored.pool)
+        assertEquals(listOf("a"), restored.selectedIds)
+    }
+
     private fun episode(id: String): Episode = Episode(
         id = id,
         title = id,

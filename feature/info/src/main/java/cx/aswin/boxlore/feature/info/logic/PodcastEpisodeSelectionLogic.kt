@@ -8,6 +8,12 @@ internal enum class EpisodeSelectionRange {
     NEWER,
 }
 
+/** A selection rebuilt from saved IDs: the episodes found and the IDs that are still selected. */
+internal data class RestoredEpisodeSelection(
+    val pool: List<Episode>,
+    val selectedIds: List<String>,
+)
+
 internal object PodcastEpisodeSelectionLogic {
     fun toggle(
         selectedIds: Set<String>,
@@ -73,6 +79,35 @@ internal object PodcastEpisodeSelectionLogic {
         episodes: List<Episode>,
         selectedIds: Set<String>,
     ): List<Episode> = episodes.filter { it.id in selectedIds }.distinctBy(Episode::id)
+
+    /** Selected IDs that none of [available] carries, in selection order. */
+    fun unresolvedIds(
+        selectedIds: List<String>,
+        available: List<Episode>,
+    ): List<String> {
+        val availableIds = available.mapTo(HashSet(), Episode::id)
+        return selectedIds.filterNot { it in availableIds }
+    }
+
+    /**
+     * Rebuilds a selection whose episode pool was lost when the show page was recreated (P4,
+     * adaptive show page). Selected episodes come from [available] first, then from the freshly
+     * loaded [window]. IDs that neither supplies are dropped, so the selected count always matches
+     * the episodes the toolbar actions receive.
+     */
+    fun restoreSelection(
+        selectedIds: List<String>,
+        available: List<Episode>,
+        window: List<Episode>,
+    ): RestoredEpisodeSelection {
+        val wanted = selectedIds.toSet()
+        val pool = (available + window).filter { it.id in wanted }.distinctBy(Episode::id)
+        val resolvedIds = pool.mapTo(HashSet(), Episode::id)
+        return RestoredEpisodeSelection(
+            pool = pool,
+            selectedIds = selectedIds.filter { it in resolvedIds }.distinct(),
+        )
+    }
 
     fun shouldMarkUnplayed(
         selectedEpisodes: List<Episode>,

@@ -45,9 +45,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +62,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -96,6 +101,7 @@ import cx.aswin.boxlore.feature.info.logic.ToolbarWarning
 import cx.aswin.boxlore.feature.info.logic.groupEpisodes
 import cx.aswin.boxlore.feature.info.logic.podcastSearchDisplayEpisodes
 import cx.aswin.boxlore.feature.info.logic.resolveAutoScrollTarget
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -131,15 +137,18 @@ fun PodcastInfoScreen(
     val searchFocusRequester = remember { FocusRequester() }
     val isMiniPlayerVisible = bottomContentPadding > appBottomChromeContentPadding(isMiniPlayerVisible = false)
 
-    // Search State
-    var isSearchActive by remember { mutableStateOf(false) }
+    // Search State. Open search survives activity recreation (fold density changes, process death);
+    // the query itself lives in the ViewModel.
+    var isSearchActive by rememberSaveable { mutableStateOf(false) }
+    // Not saved: a recreated page restores open search without jumping the list or reopening the keyboard.
+    var searchOpenRequest by remember { mutableIntStateOf(0) }
     val closeSearch = {
         focusManager.clearFocus()
         isSearchActive = false
         viewModel.searchEpisodes("")
     }
-    LaunchedEffect(isSearchActive) {
-        if (isSearchActive) {
+    LaunchedEffect(searchOpenRequest) {
+        if (searchOpenRequest > 0) {
             listState.animateScrollToItem(1)
             searchFocusRequester.requestFocus()
         }
@@ -150,17 +159,22 @@ fun PodcastInfoScreen(
             toolbarWarning = ToolbarWarning.NONE
         }
     }
-    var showMarkAllPlayedDialog by remember { mutableStateOf(false) }
-    var showMarkAllUnplayedDialog by remember { mutableStateOf(false) }
-    var showPodcastPlaybackSettings by remember { mutableStateOf(false) }
-    var showPodcastGenreEdit by remember { mutableStateOf(false) }
-    var showMissingEpisodesConfirm by remember { mutableStateOf(false) }
+    // Open dialogs and sheets survive activity recreation as well as live window changes.
+    var showMarkAllPlayedDialog by rememberSaveable { mutableStateOf(false) }
+    var showMarkAllUnplayedDialog by rememberSaveable { mutableStateOf(false) }
+    var showPodcastPlaybackSettings by rememberSaveable { mutableStateOf(false) }
+    var showPodcastGenreEdit by rememberSaveable { mutableStateOf(false) }
+    var showMissingEpisodesConfirm by rememberSaveable { mutableStateOf(false) }
     var pendingRssNotificationAction by remember(podcastId) { mutableStateOf<(() -> Unit)?>(null) }
-    var selectedEpisodeIds by remember(podcastId) { mutableStateOf(emptyList<String>()) }
-    var selectionAnchorEpisodeId by remember(podcastId) { mutableStateOf<String?>(null) }
+    // Selection is saved as episode IDs. The episode pool cannot be saved, so a recreated page
+    // looks its selected episodes up again (see the selection restore below).
+    var selectedEpisodeIds by rememberSaveable(podcastId, stateSaver = EpisodeIdListSaver) { mutableStateOf(emptyList<String>()) }
+    var selectionAnchorEpisodeId by rememberSaveable(podcastId) { mutableStateOf<String?>(null) }
     var selectionEpisodePool by remember(podcastId) { mutableStateOf(emptyList<Episode>()) }
     var isLoadingFullSelection by remember(podcastId) { mutableStateOf(false) }
     var selectionRequestGeneration by remember(podcastId) { mutableStateOf(0) }
+    var selectionRestorePending by remember(podcastId) { mutableStateOf(selectedEpisodeIds.isNotEmpty()) }
+    var isRestoringSelection by remember(podcastId) { mutableStateOf(false) }
     val selectedEpisodeIdSet = selectedEpisodeIds.toSet()
     val selectionActive = selectedEpisodeIds.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -463,6 +477,39 @@ fun PodcastInfoScreen(
                     }
                 }
 
+                // After recreation, look up selected episodes the loaded list no longer has (P4,
+                // adaptive show page). A cancelled lookup retries when the page shows content again.
+                if (selectionRestorePending) {
+                    val loadedEpisodes by rememberUpdatedState(state.episodes + displayEpisodes)
+                    LaunchedEffect(Unit) {
+                        val unresolved =
+                            PodcastEpisodeSelectionLogic.unresolvedIds(selectedEpisodeIds, selectionEpisodePool + loadedEpisodes)
+                        if (unresolved.isEmpty()) {
+                            selectionRestorePending = false
+                            return@LaunchedEffect
+                        }
+                        selectionRequestGeneration += 1
+                        val requestGeneration = selectionRequestGeneration
+                        isRestoringSelection = true
+                        try {
+                            val window = viewModel.selectionWindowOrNull()
+                            if (requestGeneration == selectionRequestGeneration) {
+                                val restored =
+                                    PodcastEpisodeSelectionLogic.restoreSelection(
+                                        selectedIds = selectedEpisodeIds,
+                                        available = selectionEpisodePool + loadedEpisodes,
+                                        window = window?.episodes.orEmpty(),
+                                    )
+                                selectionEpisodePool = restored.pool
+                                selectedEpisodeIds = restored.selectedIds
+                            }
+                            selectionRestorePending = false
+                        } finally {
+                            isRestoringSelection = false
+                        }
+                    }
+                }
+
                 LaunchedEffect(state, completedEpisodeIds, feedItems, ongoingEpisodeIds) {
                     if (!isSearchActive && state.currentSort == EpisodeSort.OLDEST && feedItems.isNotEmpty()) {
                         val target = resolveAutoScrollTarget(feedItems, completedEpisodeIds, ongoingEpisodeIds)
@@ -502,6 +549,7 @@ fun PodcastInfoScreen(
                 val episodeListModifier =
                     Modifier
                         .fillMaxSize()
+                        .testTag(PODCAST_INFO_EPISODE_LIST_TAG)
                         .then(if (isSearchActive) Modifier.imePadding() else Modifier)
                         .pointerInput(Unit) {
                             detectTapGestures(onTap = { focusManager.clearFocus() })
@@ -584,6 +632,7 @@ fun PodcastInfoScreen(
                     onSearchFocused = {
                         clearEpisodeSelection()
                         isSearchActive = true
+                        searchOpenRequest += 1
                     },
                     onSearchClose = closeSearch,
                     onDismissWarning = { toolbarWarning = ToolbarWarning.NONE },
@@ -727,7 +776,8 @@ fun PodcastInfoScreen(
                                 (selectionEpisodePool + state.episodes + displayEpisodes).any {
                                     it.id == selectionAnchorEpisodeId
                                 },
-                            isLoadingFullSelection = isLoadingFullSelection,
+                            isLoadingFullSelection = isLoadingFullSelection || isRestoringSelection,
+                            actionsEnabled = !isRestoringSelection,
                         ),
                         actions =
                         EpisodeSelectionToolbarActions(
@@ -935,4 +985,27 @@ fun PodcastInfoScreen(
         )
     }
     }
+}
+
+/** Test tag on the show page episode list, used by the adaptive transition tests. */
+internal const val PODCAST_INFO_EPISODE_LIST_TAG = "podcast_info_episode_list"
+
+/** Saves selected episode IDs as a bundle-safe list. */
+private val EpisodeIdListSaver = Saver<List<String>, ArrayList<String>>(
+    save = { ArrayList(it) },
+    restore = { it },
+)
+
+/**
+ * The selection window used to look selected episodes up again after the page is recreated, or
+ * null when it cannot be loaded; the restore then keeps only the episodes the page still has.
+ */
+@Suppress("TooGenericExceptionCaught") // Any load failure leaves the restore with the loaded list.
+private suspend fun PodcastInfoViewModel.selectionWindowOrNull(): PodcastEpisodeSelectionWindow? = try {
+    loadEpisodeSelectionWindow()
+} catch (cancelled: CancellationException) {
+    throw cancelled
+} catch (failure: Exception) {
+    android.util.Log.w("PodcastInfoScreen", "Could not restore the episode selection", failure)
+    null
 }
