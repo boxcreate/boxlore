@@ -167,6 +167,16 @@ module.exports = {
     // Last-charted dates on Qdrant points (lib/charted-at.js, P3b): a point's date is rewritten
     // only when it is more than this many days older than its show's last chart sighting.
     CHARTED_AT_REFRESH_DAYS: Math.max(0, parseInt(process.env.CHARTED_AT_REFRESH_DAYS || '7', 10) || 0),
+    // Vector retention after a show leaves the charts (lib/retention.js, P3b; decided 24 Oct):
+    // off | count (today's deletes, plus a report of what `on` would do) | on.
+    RETENTION_MODE: ['off', 'count', 'on'].includes(process.env.RETENTION_MODE) ? process.env.RETENTION_MODE : 'count',
+    RETENTION_DAYS: Math.max(30, parseInt(process.env.RETENTION_DAYS || '90', 10) || 90),
+    ARCHIVE_EPISODES: Math.max(1, parseInt(process.env.ARCHIVE_EPISODES || '5', 10) || 5),
+    // Size guard on episode points (Qdrant has 6 GB; about 2.7 KB per point).
+    QDRANT_POINTS_ALERT: Math.max(1, parseInt(process.env.QDRANT_POINTS_ALERT || '1800000', 10) || 1800000),
+    QDRANT_POINTS_CEILING: Math.max(1, parseInt(process.env.QDRANT_POINTS_CEILING || '2000000', 10) || 2000000),
+    // Urgent Telegram alerts (netcup-panel boxlore-sync/notify-telegram.py); skipped when missing.
+    NOTIFY_SCRIPT: process.env.SYNC_NOTIFY_SCRIPT || '/opt/boxlore-sync/notify-telegram.py',
     CLEANUP_SAFETY_MIN_CHARTS: 500,
 
     // --- State / files ---

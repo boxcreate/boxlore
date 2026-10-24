@@ -121,15 +121,25 @@ function showImported(pid, { itunesId, via } = {}) {
     record({ st: '2', ev: 'show+', pid: posInt(pid), it: posInt(itunesId), via });
 }
 
-function showDeleted(pid, { points, lastSeen, itunesId } = {}) {
+/**
+ * A show left the catalog. `points` = its episode points deleted; `kept` = points kept for the
+ * retention window (lib/retention.js, RETENTION_MODE=on).
+ */
+function showDeleted(pid, { points, lastSeen, itunesId, kept } = {}) {
     record({
         st: '6',
         ev: 'show-',
         pid: posInt(pid),
         n: Number.isSafeInteger(points) ? points : undefined,
+        kept: Number.isSafeInteger(kept) && kept > 0 ? kept : undefined,
         seen: posInt(lastSeen),
         it: posInt(itunesId),
     });
+}
+
+/** Episode points of a show deleted because it was last on a chart too long ago (retention). */
+function pointsExpired(pid, n) {
+    record({ st: '6', ev: 'exp', pid: posInt(pid), n: Number.isSafeInteger(n) ? n : undefined });
 }
 
 function utcDay(tSeconds) {
@@ -233,7 +243,7 @@ function classify(events, { from = 0, to = Infinity } = {}) {
 
     const stored = Object.fromEntries(REASONS.map((r) => [r, 0]));
     const byDay = {};
-    const deleted = { prune: 0, cap: 0, cleanup: 0 };
+    const deleted = { prune: 0, cap: 0, cleanup: 0, retention: 0 };
     const shows = { imported: 0, returning: 0, deleted: 0, staysDays: [] };
     let showVectors = 0;
 
@@ -276,6 +286,8 @@ function classify(events, { from = 0, to = Infinity } = {}) {
                 if (showDeletedAt.has(e.pid)) shows.returning++;
             }
             showImportedAt.set(e.pid, e.t);
+        } else if (e.ev === 'exp' && inWindow) {
+            deleted.retention += e.n || 0;
         } else if (e.ev === 'sv+' && inWindow) {
             showVectors++;
         }
@@ -313,6 +325,7 @@ module.exports = {
     showVectorStored,
     showImported,
     showDeleted,
+    pointsExpired,
     flush,
     readAll,
     classify,

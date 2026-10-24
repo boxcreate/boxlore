@@ -110,7 +110,7 @@ describe('attribution classify', () => {
         });
         assert.equal(shows.imported, 1);
         assert.equal(shows.returning, 1);
-        assert.deepEqual(deleted, { prune: 0, cap: 0, cleanup: 0 }, 'deletions before the window are history only');
+        assert.deepEqual(deleted, { prune: 0, cap: 0, cleanup: 0, retention: 0 }, 'deletions before the window are history only');
     });
 
     it('matches ID changes by audio before publish time', () => {
@@ -143,6 +143,16 @@ describe('attribution classify', () => {
         assert.deepEqual(shows.staysDays, [10]);
         assert.equal(shows.returning, 1);
         assert.equal(deleted.cleanup, 16);
+    });
+
+    it('counts a kept show\'s deleted episodes as cleanup and expired points as retention', () => {
+        const events = [
+            { t: t0, ev: 'show-', pid: 7, n: 15, kept: 5 },
+            { t: t0 + 90 * DAY, ev: 'exp', pid: 7, n: 5 },
+            { t: t0 + 91 * DAY, ev: 'show+', pid: 7 },
+        ];
+        const { shows, deleted } = attribution.classify(events);
+        assert.deepEqual([deleted.cleanup, deleted.retention, shows.deleted, shows.returning], [15, 5, 1, 1]);
     });
 
     it('formats run reasons the way the ops panel reads them', () => {
