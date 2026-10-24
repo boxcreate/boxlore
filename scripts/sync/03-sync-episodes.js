@@ -314,8 +314,9 @@ async function main() {
                 const checked = state.recordCheck(st, podId, { latestEpId: latest.id });
                 checked.m = medium;
                 if (shadow) {
+                    const knewNewest = checked.p;
                     cadence.notePace(checked, (full || tip).map((ep) => ep.datePublished));
-                    newTipIds.push(podId);
+                    if (cadence.isNewEpisode(knewNewest, latest.datePublished)) newTipIds.push(podId);
                 }
             } catch (e) {
                 if (pi.isSuspended(e)) {
@@ -356,8 +357,10 @@ async function main() {
     let cadenceLine = '';
     if (shadow) {
         for (const [id, date] of Object.entries(r5.tipDates || {})) {
-            cadence.noteNewest(st.shows[id] || (st.shows[id] = {}), date);
-            newTipIds.push(id);
+            const rec = st.shows[id] || (st.shows[id] = {});
+            const knewNewest = rec.p;
+            cadence.noteNewest(rec, date);
+            if (cadence.isNewEpisode(knewNewest, date)) newTipIds.push(id);
         }
         state.save(st);
         const paceShows = st.candidateIds.filter((id) => st.shows[id]?.g != null).length;
