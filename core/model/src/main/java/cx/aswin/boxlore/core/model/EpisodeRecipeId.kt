@@ -89,7 +89,7 @@ object EpisodeRecipeId {
      * so callers that mint for a show pass the stored namespace, not a fresh lookup.
      *
      * Added in P4 of the own-episode-IDs plan (plan section 4, recipe spec).
-     * COMPAT(own-ids): the entry point new episode IDs are minted through. Permanent.
+     * COMPAT(own-ids): the entry point new episode IDs are minted through. Permanent: never remove (MIGRATION.md §5).
      *
      * @throws IllegalArgumentException when [epNs] is outside 1..[SHOW_ID_MAX] or the key isn't canonical
      */
@@ -103,7 +103,7 @@ object EpisodeRecipeId {
      * `rss:` show IDs, `0123`, `+5`, ` 5` and `9007199254740992` all return null.
      *
      * Added in P4 of the own-episode-IDs plan (plan section 4, recipe spec).
-     * COMPAT(own-ids): the one parse from a stored podcast ID to a recipe namespace. Permanent.
+     * COMPAT(own-ids): the one parse from a stored podcast ID to a recipe namespace. Permanent: never remove (MIGRATION.md §5).
      */
     fun showIdOrNull(podcastId: String): Long? {
         val canonical = podcastId.length in 1..MAX_SHOW_ID_DIGITS &&

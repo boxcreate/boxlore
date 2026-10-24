@@ -67,6 +67,13 @@ describe('episode-recipe-id', () => {
             assert.equal(recipe.episodeNamespace(bad), null, String(bad));
             assert.throws(() => recipe.recipeId(bad, 'a'), String(bad));
         }
+        // Same rejected strings as the Kotlin EpisodeRecipeIdNamespaceTest, so the copies can't drift.
+        for (const bad of ['', '+5', ' 5', '5 ', '5\n', ' 5', '9007199254740992', '10000000000000000', '١٢', '１']) {
+            assert.equal(recipe.episodeNamespace(bad), null, JSON.stringify(bad));
+            assert.throws(() => recipe.recipeId(bad, 'a'), JSON.stringify(bad));
+        }
+        assert.equal(recipe.episodeNamespace('9007199254740991'), '9007199254740991');
+        assert.equal(recipe.recipeId('9007199254740991', 'a'), recipe.recipeId(Number.MAX_SAFE_INTEGER, 'a'));
         assert.equal(recipe.episodeNamespace(75075), '75075');
         assert.equal(recipe.episodeNamespace(75075n), '75075');
         assert.equal(recipe.recipeId(75075, 'a'), recipe.recipeId('75075', 'a'));
