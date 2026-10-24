@@ -27,6 +27,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
+import cx.aswin.boxlore.core.domain.ports.FeedTelemetryPort
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.downloads.DownloadRepository
@@ -49,6 +50,7 @@ import cx.aswin.boxlore.core.rss.EpisodeSupplementRepository
 import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
+import cx.aswin.boxlore.sync.AnalyticsFeedTelemetry
 import cx.aswin.boxlore.sync.CloudSyncTriggerCoordinator
 import cx.aswin.boxlore.sync.FeedFirstSwitch
 import cx.aswin.boxlore.sync.FeedFixSwitches
@@ -259,6 +261,13 @@ class AppContainer(
             v2Discovery = { v2DiscoverySwitch.isOn() },
         )
     }
+
+    /**
+     * Feed-read and address-swap reporting for catalog code (`feed_fetch_result`,
+     * `feed_url_corrected`), handed in like [FeedFixToggles] so catalog never depends on analytics.
+     * Phase P4, plan section "PostHog".
+     */
+    val feedTelemetry: FeedTelemetryPort by lazy { AnalyticsFeedTelemetry() }
 
     val boxcastPrefs: BoxcastPrefs by lazy { BoxcastPrefs(appContext) }
 

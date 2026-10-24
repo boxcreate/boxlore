@@ -124,7 +124,7 @@ class QueueRepositoryTest {
                 .allowMainThreadQueries()
                 .build()
         val rss = RssPodcastRepository.createForTests(context = context, database = database)
-        val api = NetworkModule.createBoxLoreApi("http://localhost/", context)
+        val api = NetworkModule.createBoxLoreApi("http://localhost/", NetworkModule.createCachedClient(context))
         podcastRepository =
             PodcastRepository(
                 baseUrl = "http://localhost/",

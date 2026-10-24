@@ -40,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,8 +69,9 @@ internal fun PodcastGenreEditSheet(
     onSave: (customGenre: String?, customGenreIcon: String?) -> Unit,
     folderNames: List<String> = emptyList(),
 ) {
-    var genreText by remember(customGenre) { mutableStateOf(customGenre ?: "") }
-    var selectedIconKey by remember(customGenreIcon) { mutableStateOf(customGenreIcon) }
+    // The unsaved draft survives activity recreation while the sheet stays open.
+    var genreText by rememberSaveable(customGenre) { mutableStateOf(customGenre ?: "") }
+    var selectedIconKey by rememberSaveable(customGenreIcon) { mutableStateOf(customGenreIcon) }
     val focusManager = LocalFocusManager.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 

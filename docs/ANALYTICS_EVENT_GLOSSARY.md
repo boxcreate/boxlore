@@ -37,6 +37,18 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 
 `section` on `recommendation_section_toggled`: `brief` (The Brief), `picked_for_you` (Home's Picked for you and Explore's For you tab), `because_you_like`, `time_of_day_picks` (the greeting and its curated rows) and `more_like_this` (Try these episodes on episode pages). `source`: `settings` (Settings › Library › LeaveMeAlone) or `brief_card` (the Brief card's Always hide, which is the same choice as turning The Brief off). `sections_off`: how many of the five are off after the change. A section that is off is hidden and makes no requests.
 
+### Episode identity
+
+`episode_id` is always the episode's ID on this phone. Events that carry it may also carry `recipe_id`, boxlore's own ID for the same episode (a decimal string), when the app knows it. `home_surface_impression` may carry `recipe_ids` for episode surfaces. Join impressions, taps and plays across devices on `recipe_id`; it is absent for episodes without one (shows added by feed address, and episodes not yet matched).
+
+### Feed reads and addresses
+
+`feed_fetch_result` fires once per show-page read (`context=show_page`, with `show_id`) and once per background pass and source as a summary (`context=background_pass`, with `shows_count`, `ok_count`, `not_modified_count` and `failed_count`); a pass that read no feeds sends nothing. `source`: `feed` (the publisher address), `transport` (boxlore's copy of the same feed), `v2_episodes` (the server's episode list, used when the feed can't be read) or `cache` (the copy on the phone). `result` on a show page: `ok`, `not_modified`, `network_error`, `timeout`, `http_error` (with `http_status`), `gone` (404 or 410, with `http_status`) or `parse_error`; `http_status` is never sent with any other result; on a background pass: `ok` (nothing failed), `mixed` or `failed` (every read failed). `completeness` (`partial` for the newest items, `complete` for the whole feed) is sent only for successful show-page reads.
+
+`feed_url_corrected` fires once per saved-address swap of a followed show. `reason`: `dead` (the saved address stopped answering), `moved` (a permanent redirect or `itunes:new-feed-url`) or `registry` (the server's show registry holds a different confirmed address). `step`: `upgrade_repair`, `daily_check`, `feed_refresh` or `feed_report`.
+
+Neither event carries an address. `show_id` is the Podcast Index ID or the hashed `rss:` ID; a value that looks like an address is left out (and `feed_url_corrected` is then not sent).
+
 ### content_type
 
 `podcast`, `episode`, `briefing`, `mixtape`, `announcement`, `unknown`
@@ -59,7 +71,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `app_open` | DAU volume via SDK **Application Opened** (glossary alias; not custom-emitted) | — (SDK) | person props for enrichment | none |
 | `app_background` | Session end via SDK **Application Backgrounded** (not custom-emitted) | — (SDK) | — | none |
 | `install_attributed` | Channel attribution only (`$set_once` install_channel); volume is **Application Installed** | install_channel on person | referrer_raw; utm_source; share_token | none |
-| `deep_link_opened` | Inbound deep/share link handled | link_scheme:string; is_first_open:bool; cold_start:bool | link_host:string; content_type:enum; podcast_id:string; episode_id:string | none |
+| `deep_link_opened` | Inbound deep/share link handled | link_scheme:string; is_first_open:bool; cold_start:bool | link_host:string; content_type:enum; podcast_id:string; episode_id:string; recipe_id:string | none |
 | `onboarding_started` | User entered onboarding | entry_point:string | is_reentry:bool | none |
 | `onboarding_flow_selected` | User chose AI/genre/search/import | flow_type:string; entry_point:string | — | none |
 | `onboarding_step_viewed` | A discrete onboarding step became visible | step_name:string; flow_type:string | step_index:int | none |
@@ -75,45 +87,45 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `onboarding_import_sheet_opened` | OPML/import sheet shown | — | entry_point:string | none |
 | `onboarding_import_failed` | OPML/library import failed | import_type:string | error_message:string | none |
 | `onboarding_manual_step_completed` | Genre/manual onboarding step finished | step_name:string; selections_count:int | selections_list:list; time_spent_seconds:float | none |
-| `playback_started` | Audio playback started | episode_id:string; podcast_id:string; entry_point:enum; is_resume:bool; playback_mode:enum; client_surface:enum; speed:float; is_subscribed:bool | position_seconds:float; duration_seconds:float | none |
-| `playback_heartbeat` | Periodic progress while playing | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; playback_mode:enum; client_surface:enum | duration_seconds:float; percent_complete:float; milestone:int; speed:float; is_subscribed:bool | none |
-| `playback_paused` | Playback paused | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; listened_delta_seconds:float; pause_reason:enum; playback_mode:enum; client_surface:enum | duration_seconds:float; percent_complete:float; is_subscribed:bool | none |
-| `playback_completed` | Episode reached completion | episode_id:string; podcast_id:string; entry_point:enum; listened_delta_seconds:float; playback_mode:enum; client_surface:enum | duration_seconds:float; is_subscribed:bool; speed:float | none |
-| `playback_error` | Playback failed | error_type:string; entry_point:enum | episode_id:string; podcast_id:string; error_message:string; playback_mode:enum; client_surface:enum | none |
-| `playback_buffering` | Buffering stall observed | entry_point:enum | episode_id:string; podcast_id:string; buffer_duration_ms:int; playback_mode:enum; client_surface:enum | none |
-| `playback_seeked` | User seeked in episode | episode_id:string; podcast_id:string; entry_point:enum; from_seconds:float; to_seconds:float | seek_source:string; client_surface:enum | none |
-| `session_restore_prompt` | Resume previous session prompt shown/acted | action:string | episode_id:string; podcast_id:string; position_seconds:float | none |
+| `playback_started` | Audio playback started | episode_id:string; podcast_id:string; entry_point:enum; is_resume:bool; playback_mode:enum; client_surface:enum; speed:float; is_subscribed:bool | recipe_id:string; position_seconds:float; duration_seconds:float | none |
+| `playback_heartbeat` | Periodic progress while playing | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; percent_complete:float; milestone:int; speed:float; is_subscribed:bool | none |
+| `playback_paused` | Playback paused | episode_id:string; podcast_id:string; entry_point:enum; position_seconds:float; listened_delta_seconds:float; pause_reason:enum; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; percent_complete:float; is_subscribed:bool | none |
+| `playback_completed` | Episode reached completion | episode_id:string; podcast_id:string; entry_point:enum; listened_delta_seconds:float; playback_mode:enum; client_surface:enum | recipe_id:string; duration_seconds:float; is_subscribed:bool; speed:float | none |
+| `playback_error` | Playback failed | error_type:string; entry_point:enum | episode_id:string; recipe_id:string; podcast_id:string; error_message:string; playback_mode:enum; client_surface:enum | none |
+| `playback_buffering` | Buffering stall observed | entry_point:enum | episode_id:string; recipe_id:string; podcast_id:string; buffer_duration_ms:int; playback_mode:enum; client_surface:enum | none |
+| `playback_seeked` | User seeked in episode | episode_id:string; podcast_id:string; entry_point:enum; from_seconds:float; to_seconds:float | recipe_id:string; seek_source:string; client_surface:enum | none |
+| `session_restore_prompt` | Resume previous session prompt shown/acted | action:string | episode_id:string; recipe_id:string; podcast_id:string; position_seconds:float | none |
 | `podcast_subscription_toggled` | User subscribed or unsubscribed | podcast_id:string; is_subscribed:bool | surface:string; source:string | none |
 | `notification_permission_requested` | System permission prompt requested | — | surface:string | none |
 | `notification_permission_decided` | User granted/denied notifications | granted:bool | — | none |
-| `notification_tapped` | User opened a push/local notification | notification_type:string | podcast_id:string; episode_id:string; target_route:string | none |
-| `notification_received` | Push/local notification delivered | notification_type:string | podcast_id:string; episode_id:string | none |
+| `notification_tapped` | User opened a push/local notification | notification_type:string | podcast_id:string; episode_id:string; recipe_id:string; target_route:string | none |
+| `notification_received` | Push/local notification delivered | notification_type:string | podcast_id:string; episode_id:string; recipe_id:string | none |
 | `identity_reset` | Analytics identity cleared/reset | — | reason:string | none |
 | `app_check_status` | App Check token attempt result, once per API session exchange that asks App Check (App Check is no longer fetched per launch or per request) | token_obtained:bool; provider:string | reason:string (`play_integrity_<code>`, `http_<status>`, `too_many_attempts`, `network`, `other`) | none |
 | `api_session_status` | API session result: a `/auth/session` exchange (`kind=exchange`), the first silent renewal of a token or a renewal problem (`kind=renew`), or a Turnstile step-up (`kind=step_up`). Categories only, never tokens or ids | kind:enum; success:bool | trigger:enum (`launch`, `expired`, `rejected`, `refresh`, `upgrade`, `step_up`, `retry`); attestation:enum (`appcheck`, `challenge`, `none`); limited:bool; duration_ms:int; app_check_attempted:bool; renew_outcome:enum (`renewed`, `proof_unavailable`, `rejected`); step_up_outcome:enum (`passed`, `challenge_failed`, `not_accepted`); failure_reason:string; server_reason:string | none |
-| `first_episode_played` | First-ever play milestone | — | episode_id:string; podcast_id:string; entry_point:enum; hours_since_install:float | none |
-| `home_surface_tapped` | First-class Home component tap | surface_component:string | rail_intent:string; content_id:string; position_index:int; items_count:int; mix_mode:string; podcast_id:string; podcast_name:string; episode_id:string; episode_title:string; click_target:string | none |
-| `home_surface_impression` | Home rail/block became visible | surface_component:string | items_count:int; podcast_ids:list | none |
+| `first_episode_played` | First-ever play milestone | — | episode_id:string; recipe_id:string; podcast_id:string; entry_point:enum; hours_since_install:float | none |
+| `home_surface_tapped` | First-class Home component tap | surface_component:string | rail_intent:string; content_id:string; position_index:int; items_count:int; mix_mode:string; podcast_id:string; podcast_name:string; episode_id:string; recipe_id:string; episode_title:string; click_target:string | none |
+| `home_surface_impression` | Home rail/block became visible | surface_component:string | items_count:int; podcast_ids:list; recipe_ids:list | none |
 | `search_performed` | User ran show or episode search | surface:string; search_mode:enum; search_query:string; results_count:int | result_quality:enum; query_length:int | logged_by_policy |
-| `search_result_tapped` | User tapped a search result | surface:string; result_type:enum | search_mode:enum; podcast_id:string; episode_id:string; position_index:int; search_query:string | logged_by_policy |
-| `learn_card_action` | User acted on a Learn card | action:string; episode_id:string; podcast_id:string | position_index:int | none |
+| `search_result_tapped` | User tapped a search result | surface:string; result_type:enum | search_mode:enum; podcast_id:string; episode_id:string; recipe_id:string; position_index:int; search_query:string | logged_by_policy |
+| `learn_card_action` | User acted on a Learn card | action:string; episode_id:string; podcast_id:string | recipe_id:string; position_index:int | none |
 | `learn_screen_viewed` | Learn tab/screen opened | — | cards_available:int | none |
 | `explore_screen_viewed` | Explore opened | — | tab:string | none |
 | `explore_recommendation_tapped` | For You/trending card tapped | — | podcast_id:string; position_index:int; rail:string | none |
-| `queue_modified` | Queue add/remove/reorder/clear | action:string | episode_id:string; podcast_id:string; queue_size:int; source:string | none |
-| `episode_liked_toggled` | Like/unlike episode | episode_id:string; podcast_id:string; is_liked:bool | surface:string | none |
-| `episode_mark_played` | User marked episode played/unplayed | episode_id:string; podcast_id:string; is_played:bool | surface:string | none |
-| `download_requested` | User or Smart Downloads requested download | episode_id:string; podcast_id:string; source:string | wifi_only:bool | none |
-| `download_completed` | Episode finished downloading | episode_id:string; podcast_id:string | source:string; bytes:long; duration_ms:long | none |
-| `download_failed` | Download failed | error_type:string | episode_id:string; podcast_id:string; source:string; error_message:string | none |
+| `queue_modified` | Queue add/remove/reorder/clear | action:string | episode_id:string; recipe_id:string; podcast_id:string; queue_size:int; source:string | none |
+| `episode_liked_toggled` | Like/unlike episode | episode_id:string; podcast_id:string; is_liked:bool | recipe_id:string; surface:string | none |
+| `episode_mark_played` | User marked episode played/unplayed | episode_id:string; podcast_id:string; is_played:bool | recipe_id:string; surface:string | none |
+| `download_requested` | User or Smart Downloads requested download | episode_id:string; podcast_id:string; source:string | recipe_id:string; wifi_only:bool | none |
+| `download_completed` | Episode finished downloading | episode_id:string; podcast_id:string | recipe_id:string; source:string; bytes:long; duration_ms:long | none |
+| `download_failed` | Download failed | error_type:string | episode_id:string; recipe_id:string; podcast_id:string; source:string; error_message:string | none |
 | `smart_download_sync` | Smart Downloads sync ran | — | requested_count:int; completed_count:int; failed_count:int; cleaned_count:int; trigger:string | none |
 | `show_notification_toggled` | Per-show notification preference changed | podcast_id:string; enabled:bool | — | none |
-| `share_content` | User shared podcast/episode/app | content_type:enum | podcast_id:string; episode_id:string; channel:string; surface:string | none |
+| `share_content` | User shared podcast/episode/app | content_type:enum | podcast_id:string; episode_id:string; recipe_id:string; channel:string; surface:string | none |
 | `backup_restore_result` | Library backup or restore finished | action:string; success:bool | item_count:int; format:string; error_message:string | none |
 | `feedback_submitted` | In-app feedback/NPS/review handoff | feedback_type:string | score:int; source:string | none |
 | `library_destination_viewed` | Library hub or sub-destination opened | destination:string | item_count:int | none |
 | `podcast_detail_viewed` | Podcast info screen opened | podcast_id:string | is_subscribed:bool | none |
-| `episode_detail_viewed` | Episode info screen opened | episode_id:string; podcast_id:string | — | none |
+| `episode_detail_viewed` | Episode info screen opened | episode_id:string; podcast_id:string | recipe_id:string | none |
 | `nav_tab_clicked` | Bottom nav tab selected | tab:string | previous_tab:string | none |
 | `settings_interaction` | Settings screen view or control | action:string | setting_key:string | none |
 | `custom_theme_editor_opened` | Custom theme editor becomes visible | entry_point:string | — | none |
@@ -123,7 +135,7 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `feature_announcement_action` | In-app/feature announcement viewed/dismissed/acted | action:string | feature_id:string; category:string | none |
 | `offline_mode_entered` | App detected offline / offline UI | — | reason:string | none |
 | `player_chrome_interaction` | Mini/full player, control bar, or playback-route action | surface:string; action:string | screen:string; volume_control_available:bool | none |
-| `daily_briefing_action` | Briefing impression or interaction | action:string; region:string; date:string | content_id:string; source:string; chapter_index:int; chapter_title:string; method:string; playback_status:string; previous_region:string; episode_id:string; episode_title:string; podcast_id:string; podcast_title:string | none |
+| `daily_briefing_action` | Briefing impression or interaction | action:string; region:string; date:string | content_id:string; source:string; chapter_index:int; chapter_title:string; method:string; playback_status:string; previous_region:string; episode_id:string; recipe_id:string; episode_title:string; podcast_id:string; podcast_title:string | none |
 | `home_import_banner_action` | Import banner shown/clicked/dismissed | action:string | — | none |
 | `android_auto_connected` | Auto session began | — | session_id:string | none |
 | `android_auto_disconnected` | Auto session ended | — | session_id:string; duration_seconds:int | none |
@@ -132,9 +144,11 @@ Aliases (normalized in app; do not add as new enum values): `learn_history` → 
 | `learn_caught_up` | User reached Learn caught-up state | — | cards_remaining:int | none |
 | `catalog_miss` | Catalog/lookup miss | lookup_type:string | key:string | none |
 | `rss_refresh_failed` | RSS feed refresh failed | — | podcast_id:string; error_type:string | none |
-| `progress_sync_anomaly` | Progress sync inconsistency detected | anomaly_type:string | episode_id:string | none |
+| `progress_sync_anomaly` | Progress sync inconsistency detected | anomaly_type:string | episode_id:string; recipe_id:string | none |
 | `late_night_safeguard_decision` | Late-night listening safeguard fired | decision:string | — | none |
 | `proxy_fallback_triggered` | Image load fell back to proxy | — | reason:string | none |
+| `feed_fetch_result` | A show page read its episodes, or a background pass read followed feeds | context:enum; source:enum; result:enum | show_id:string; completeness:enum; http_status:int; shows_count:int; ok_count:int; not_modified_count:int; failed_count:int | none |
+| `feed_url_corrected` | A followed show's saved feed address was replaced (one event per swap) | show_id:string; reason:enum; step:enum | — | none |
 | `support_page_viewed` | Support boxlore development screen opened (one per visit; the `support-world` experiment exposure) | — | support_world:enum; assignment_source:enum; entry_point:string; local_hour:int; weekday:int | none |
 | `support_tier_toggled` | Support tier artifact swiped, picked or lore inspected | tier_title:string; codename:string; amount:string | is_lore_inspect:bool; support_world:enum; assignment_source:enum; tier_index:int | none |
 | `support_donate_clicked` | User tapped donate CTA button for a support tier | tier_title:string; codename:string; amount:string | support_world:enum; assignment_source:enum; tier_index:int; amount_usd:float; payments_live:bool | none |

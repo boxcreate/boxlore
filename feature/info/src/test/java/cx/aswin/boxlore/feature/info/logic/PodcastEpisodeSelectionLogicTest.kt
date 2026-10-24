@@ -2,6 +2,8 @@ package cx.aswin.boxlore.feature.info.logic
 
 import cx.aswin.boxlore.core.model.Episode
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PodcastEpisodeSelectionLogicTest {
@@ -109,6 +111,64 @@ class PodcastEpisodeSelectionLogicTest {
             false,
             PodcastEpisodeSelectionLogic.shouldMarkUnplayed(emptyList(), setOf("a")),
         )
+    }
+
+    @Test
+    fun `unresolved ids keep selection order and ignore ids the page already has`() {
+        assertEquals(
+            listOf("c", "a"),
+            PodcastEpisodeSelectionLogic.unresolvedIds(listOf("c", "b", "a"), listOf(episode("b"))),
+        )
+        assertEquals(emptyList<String>(), PodcastEpisodeSelectionLogic.unresolvedIds(emptyList(), emptyList()))
+    }
+
+    @Test
+    fun `restored selection takes loaded episodes first and the fetched window for the rest`() {
+        val loaded = episode("a").copy(title = "loaded")
+        val restored =
+            PodcastEpisodeSelectionLogic.restoreSelection(
+                selectedIds = listOf("a", "c"),
+                available = listOf(loaded, episode("b")),
+                window = listOf(episode("a"), episode("c"), episode("d")),
+            )
+
+        assertEquals(listOf(loaded, episode("c")), restored.pool)
+        assertEquals(listOf("a", "c"), restored.selectedIds)
+    }
+
+    @Test
+    fun `restored selection keeps the window order the selection was made in`() {
+        val restored =
+            PodcastEpisodeSelectionLogic.restoreSelection(
+                selectedIds = listOf("c", "b", "a", "x"),
+                available = listOf(episode("a"), episode("b"), episode("x")),
+                window = listOf(episode("c"), episode("b"), episode("a")),
+            )
+
+        assertEquals(listOf("c", "b", "a", "x"), restored.pool.map(Episode::id))
+        assertEquals(listOf("c", "b", "a", "x"), restored.selectedIds)
+    }
+
+    @Test
+    fun `selection restore waits for the loaded page, a running range lookup and a new page state after a failure`() {
+        assertTrue(PodcastEpisodeSelectionLogic.canRestoreSelection(true, pageLoading = false, rangeLoading = false, failedOnCurrentState = false))
+        assertFalse(PodcastEpisodeSelectionLogic.canRestoreSelection(false, pageLoading = false, rangeLoading = false, failedOnCurrentState = false))
+        assertFalse(PodcastEpisodeSelectionLogic.canRestoreSelection(true, pageLoading = true, rangeLoading = false, failedOnCurrentState = false))
+        assertFalse(PodcastEpisodeSelectionLogic.canRestoreSelection(true, pageLoading = false, rangeLoading = true, failedOnCurrentState = false))
+        assertFalse(PodcastEpisodeSelectionLogic.canRestoreSelection(true, pageLoading = false, rangeLoading = false, failedOnCurrentState = true))
+    }
+
+    @Test
+    fun `restored selection drops ids that neither the page nor the window can supply`() {
+        val restored =
+            PodcastEpisodeSelectionLogic.restoreSelection(
+                selectedIds = listOf("gone", "a", "a"),
+                available = listOf(episode("a")),
+                window = emptyList(),
+            )
+
+        assertEquals(listOf(episode("a")), restored.pool)
+        assertEquals(listOf("a"), restored.selectedIds)
     }
 
     private fun episode(id: String): Episode = Episode(

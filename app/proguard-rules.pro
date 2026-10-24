@@ -4,8 +4,9 @@
 -keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault
 -keepattributes SourceFile,LineNumberTable
 
-# Retrofit constructs this interface through Proxy and reads its generic types.
+# Retrofit constructs these interfaces through Proxy and reads their generic types.
 -keep,allowoptimization interface cx.aswin.boxlore.core.network.BoxLoreApi { *; }
+-keep,allowoptimization interface cx.aswin.boxlore.core.network.BoxLoreApiV2 { *; }
 # Retrofit 2.9's consumer rules predate full-mode generic return-type protection.
 # Keep the signature endpoints, not every class in Retrofit or Kotlin coroutines.
 -keep,allowoptimization,allowobfuscation interface retrofit2.Call
