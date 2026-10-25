@@ -14,7 +14,8 @@ import androidx.room.PrimaryKey
  * `local_episodes`: `LocalEpisodeCatalogDao.deleteCatalog` leaves these rows in place.
  *
  * @property aliasId the stored local episode ID, exactly as history, queue and downloads hold it
- * @property podcastId the show the ID belongs to
+ * @property podcastId the show the ID belongs to. An [EpisodeAliasProvenance.RSS_SOURCE_LINK] alias names the
+ *   Podcast Index show whose episode the ID points at, while the RSS show it was switched to holds the ID.
  * @property catalogKey the episode's recipe-trimmed catalog key; null while the key is unknown
  *   ([EpisodeAliasState.UNRESOLVED])
  * @property recipeId the recipe ID of ([podcastId], [catalogKey]) in the show's namespace; null
@@ -84,6 +85,40 @@ object EpisodeAliasProvenance {
 
     /** Seeded by the v39 upgrade from an ID found only in history, the queue or downloads. */
     const val UPGRADE_LISTENER_ROW = "upgrade_listener_row"
+
+    /**
+     * A legacy phone-minted ID whose listener state the orphan rematch moved onto a catalog row after
+     * a feed read; the ID joins that row's episode so a later copy of it (a cloud pull, a restore)
+     * counts as the same episode. Added in P4 (plan section 8, re-key paths narrowed).
+     */
+    const val ORPHAN_REMATCH = "orphan_rematch"
+
+    /**
+     * A catalog row whose (show, key) a trusted alias already holds under another stored ID: the
+     * episode's catalog row was evicted and the feed read again gave the same key a new ID. The
+     * row's ID joins that episode so both IDs read as one and no state moves. Added in P4 (plan
+     * section 8, re-key paths narrowed).
+     */
+    const val CATALOG_KEY_MATCH = "catalog_key_match"
+
+    /**
+     * An RSS episode ID of the feed a Podcast Index show was switched to, recorded under the Podcast
+     * Index show instead of moving its listener state onto the RSS show's IDs. Trusted when an old
+     * ID's trusted key is the RSS episode's key and no other RSS episode has it, or an old ID's exact
+     * audio address names it alone, so the RSS episode reads the old IDs' state; ambiguous for any
+     * weaker match, until a later link finds exact evidence. Recorded as a non-owner; ownership then
+     * follows the owner rule like any trusted ID. Added in P4 (plan section 8, re-key paths
+     * narrowed; decision D8).
+     */
+    const val RSS_SOURCE_LINK = "rss_source_link"
+
+    /**
+     * An old ID of a Podcast Index show with no usable key (no alias, or an unresolved one), settled
+     * when the show was linked to its RSS feed: exactly one feed episode has the audio address of the
+     * ID's rows, that episode has a GUID and no other old ID points at it, so the ID takes that key
+     * under the Podcast Index show. Added in P4 (plan section 8, re-key paths narrowed; decision D8).
+     */
+    const val RSS_SOURCE_AUDIO_MATCH = "rss_source_audio_match"
 
     /**
      * Recorded by a catalog read for a new episode that took its recipe ID.

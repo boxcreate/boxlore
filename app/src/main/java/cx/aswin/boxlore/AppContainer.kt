@@ -24,6 +24,7 @@ import cx.aswin.boxlore.core.catalog.sync.QueueSyncResolver
 import cx.aswin.boxlore.core.catalog.sync.SubscriptionSyncResolver
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
@@ -176,8 +177,12 @@ class AppContainer(
 
     override val adaptiveCandidateScorer: AdaptiveCandidateScorer by lazy {
         AdaptiveCandidateScorer
-            .create(adaptiveRankingRepository, rankingRuntimeControls)
-            .also(AdaptiveCandidateScorer::install)
+            .create(
+                adaptiveRankingRepository,
+                rankingRuntimeControls,
+                // Count an episode stored under several IDs once (own-episode-IDs P4).
+                episodeTokens = { ids -> database.episodeListenerStore().groupTokens(ids) },
+            ).also(AdaptiveCandidateScorer::install)
     }
 
     init {
@@ -307,15 +312,7 @@ class AppContainer(
             context = appContext,
             database = database,
             rankingFeedbackRepository = rankingFeedbackRepository,
-        ).also { _ ->
-            // Wire the DownloadCacheRelinker into RssPodcastRepository so the RSS module
-            // does not need a compile-time dependency on :core:downloads.
-            rssPodcastRepository.setDownloadCacheRelinker(
-                DownloadCacheRelinker { oldId, newId ->
-                    DownloadRepository.relinkDownloadCache(appContext, oldId, newId)
-                },
-            )
-        }
+        )
     }
 
     override val autoDownloadCoordinator: cx.aswin.boxlore.core.downloads.AutoDownloadCoordinator by lazy {
@@ -521,6 +518,8 @@ class AppContainer(
         val historyResolver = HistorySyncResolver(
             listeningHistoryDao = database.listeningHistoryDao(),
             activePlaybackSyncPort = playbackRepository,
+            // The playing episode is protected under every stored ID (own-episode-IDs P4).
+            episodeIds = { episodeId -> database.episodeListenerStore().memberIds(episodeId) },
         )
         val queueResolver = QueueSyncResolver(
             queueSyncPort = queuePort,
@@ -548,6 +547,7 @@ class AppContainer(
             listeningSessionDao = database.listeningSessionDao(),
             listeningRollupDao = database.listeningRollupDao(),
             userPreferencesRepository = userPreferencesRepository,
+            episodeIdentityDao = database.episodeIdentityDao(),
         )
     }
 

@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback
 
 import android.content.Context
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.database.EpisodeListenerStore
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
 import cx.aswin.boxlore.core.database.ListeningRollupDao
@@ -27,4 +28,6 @@ internal data class PlaybackHistoryDataDeps(
     val listeningInsightsMaintenance: ListeningInsightsMaintenance,
     val podcastRepository: PodcastRepository,
     val rankingFeedbackRepository: RankingFeedbackRepository,
+    /** Listener state across an episode's IDs; null opens it from the app database ([PlaybackHistoryStore.listenerStore]). */
+    val listenerStore: EpisodeListenerStore? = null,
 )

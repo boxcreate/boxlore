@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.downloads
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.database.listenerShowIds
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 
@@ -63,9 +64,10 @@ internal object SmartDownloadCandidateLogic {
         subIds: Set<String>,
         nowMs: Long,
     ): List<MixtapeCandidate> {
+        // One candidate per followed show, also for rows a show switched to its feed reads from its old show.
         val inProgressCandidates = allHistory.filter { history ->
             history.podcastId in subIds && !history.isCompleted && history.progressMs > 0L
-        }.groupBy { it.podcastId }
+        }.groupBy { subsMap[it.podcastId]?.podcastId ?: it.podcastId }
             .mapValues { (_, eps) -> eps.maxByOrNull { it.lastPlayedAt } }
             .values.filterNotNull()
 
@@ -232,8 +234,11 @@ internal object SmartDownloadCandidateLogic {
         nowMs: Long,
     ): List<MixtapeCandidate> {
         val eligibleSubs = subs.filter { !it.autoDownloadEnabled }
-        val subsMap = eligibleSubs.associateBy { it.podcastId }
-        val subIds = eligibleSubs.map { it.podcastId }.toSet()
+        // A show switched to its feed owns the rows its old Podcast Index show keeps (`listenerShowIds`),
+        // unless the listener follows that show too.
+        val subsMap = eligibleSubs.associateByTo(LinkedHashMap()) { it.podcastId }
+        eligibleSubs.forEach { sub -> sub.listenerShowIds.forEach { subsMap.putIfAbsent(it, sub) } }
+        val subIds = subsMap.keys
 
         val inProgress = buildInProgressMixtapeCandidates(subsMap, allHistory, subIds, nowMs)
         val unplayed = buildUnplayedDropsMixtapeCandidates(eligibleSubs, resolvedSerial, historyByEpisode, podScoresMap, nowMs)

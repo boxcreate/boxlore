@@ -3,6 +3,7 @@ package cx.aswin.boxlore.core.playback
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.EpisodeIdentityDao
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import kotlinx.coroutines.CompletableDeferred
@@ -65,6 +66,8 @@ class PlaybackIntroOutroControllerTest {
         val dao = mock(ListeningHistoryDao::class.java)
         val db = mock(BoxLoreDatabase::class.java)
         `when`(db.listeningHistoryDao()).thenReturn(dao)
+        // No alias: the episode is stored under one ID and its row is read as it is.
+        `when`(db.episodeIdentityDao()).thenReturn(mock(EpisodeIdentityDao::class.java))
         `when`(dao.getHistoryItem("123")).thenReturn(saved)
         val player = mock(Player::class.java)
         `when`(player.currentPosition).thenReturn(positionMs)

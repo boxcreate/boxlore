@@ -111,7 +111,7 @@ class LibraryBackupManager(
 
     suspend fun exportLibraryAsJson(): String {
         val subscriptions = subscriptionRepository.getAllSubscribedPodcasts().first()
-        val allHistory = listeningHistory.getAllHistory().first()
+        val allHistory = listeningHistory.getStoredHistory().first()
 
         val globalPrefs =
             if (userPrefs != null) {
@@ -231,6 +231,7 @@ class LibraryBackupManager(
             folderRepo.syncLinkedGenres()
         }
         restoreImportedHistory(backup.history, importedIds)
+        relinkImportedSwitchedShows(importedIds)
         backup.adaptiveRanking?.let { rankingBackup ->
             adaptiveRankingRepository.restoreBackup(rankingBackup)
         }
@@ -451,6 +452,19 @@ class LibraryBackupManager(
             }
             val safeEntity = LibraryBackupHistoryRestore.sanitize(entity)
             listeningHistory.upsertHistoryEntity(safeEntity)
+        }
+    }
+
+    /**
+     * Links each imported RSS show that replaced a Podcast Index show with the episodes the restored
+     * history holds under that show (`RssPodcastRepository.relinkSwitchedShow`). The backup carries
+     * the show's link but not the aliases, so they are written again here, once the history is in.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+     */
+    private suspend fun relinkImportedSwitchedShows(importedIds: List<String>) {
+        for (id in importedIds.filter { it.startsWith("rss:") }) {
+            rssPodcastRepository.relinkSwitchedShow(id)
         }
     }
 

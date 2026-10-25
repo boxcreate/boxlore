@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.playback.service
 
 import androidx.media3.common.MediaItem
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.playback.CastMediaMetadata
 import cx.aswin.boxlore.core.playback.PlaybackHistorySeedPolicy
@@ -38,7 +39,12 @@ internal fun BoxLorePlaybackService.persistNaturalCompletionFromLifecycle(episod
     return persistenceJob
 }
 
-// This completion implementation was moved unchanged from the service's existing baseline.
+/**
+ * Writes a natural completion of [episodeId] to its episode's owner row (seeded from the queue or
+ * player metadata when missing), then records it for the episode's other IDs
+ * ([cx.aswin.boxlore.core.database.EpisodeListenerStore.recordCompletion]). Metadata is still
+ * looked up by the playing ID.
+ */
 @Suppress("CyclomaticComplexMethod")
 private suspend fun BoxLorePlaybackService.persistNaturalCompletionOnce(
     episodeId: String,
@@ -49,7 +55,9 @@ private suspend fun BoxLorePlaybackService.persistNaturalCompletionOnce(
     fallbackMediaItem: MediaItem?,
 ) {
     val dao = database.listeningHistoryDao()
-    val existing = dao.getHistoryItem(episodeId)
+    val listenerStore = database.episodeListenerStore()
+    val historyId = listenerStore.historyId(episodeId)
+    val existing = dao.getHistoryItem(historyId)
     val resolvedDurationMs =
         existing?.let { durationMs.takeIf { it > 0L } ?: it.durationMs }
             ?: durationMs.coerceAtLeast(0L)
@@ -77,42 +85,48 @@ private suspend fun BoxLorePlaybackService.persistNaturalCompletionOnce(
             )
             return
         }
+        // A seeded owner row of an episode stored under several IDs carries the owner's show.
         dao.insertIfAbsent(
-            cx.aswin.boxlore.core.database.ListeningHistoryEntity(
-                episodeId = episodeId,
-                podcastId = podcastId,
-                episodeTitle = episodeTitle,
-                episodeImageUrl =
-                persistableArtworkUrl(queueItem?.imageUrl)
-                    ?: cx.aswin.boxlore.core.playback.PlaybackArtworkMetadata.savedArtworkUrl(fallbackMediaItem?.mediaMetadata),
-                podcastImageUrl = persistableArtworkUrl(queueItem?.podcastImageUrl) ?: persistableArtworkUrl(podcast?.imageUrl),
-                episodeAudioUrl =
-                queueItem?.audioUrl
-                    ?: fallbackMediaItem?.localConfiguration?.uri?.toString(),
-                podcastName =
-                queueItem?.podcastTitle
-                    ?: podcast?.title
-                    ?: fallbackPodcastName
-                    ?: fallbackMediaItem?.mediaMetadata?.artist?.toString()
-                    ?: "",
-                progressMs = 0L,
-                durationMs = resolvedDurationMs,
-                isCompleted = false,
-                lastPlayedAt = System.currentTimeMillis(),
-                enclosureType = queueItem?.enclosureType,
-                isManualCompletion = false,
-                episodeDescription = queueItem?.description,
+            listenerStore.ownerRow(
+                cx.aswin.boxlore.core.database.ListeningHistoryEntity(
+                    episodeId = historyId,
+                    podcastId = podcastId,
+                    episodeTitle = episodeTitle,
+                    episodeImageUrl =
+                    persistableArtworkUrl(queueItem?.imageUrl)
+                        ?: cx.aswin.boxlore.core.playback.PlaybackArtworkMetadata.savedArtworkUrl(fallbackMediaItem?.mediaMetadata),
+                    podcastImageUrl = persistableArtworkUrl(queueItem?.podcastImageUrl) ?: persistableArtworkUrl(podcast?.imageUrl),
+                    episodeAudioUrl =
+                    queueItem?.audioUrl
+                        ?: fallbackMediaItem?.localConfiguration?.uri?.toString(),
+                    podcastName =
+                    queueItem?.podcastTitle
+                        ?: podcast?.title
+                        ?: fallbackPodcastName
+                        ?: fallbackMediaItem?.mediaMetadata?.artist?.toString()
+                        ?: "",
+                    progressMs = 0L,
+                    durationMs = resolvedDurationMs,
+                    isCompleted = false,
+                    lastPlayedAt = System.currentTimeMillis(),
+                    enclosureType = queueItem?.enclosureType,
+                    isManualCompletion = false,
+                    episodeDescription = queueItem?.description,
+                ),
+                episodeId,
             ),
         )
     }
-    val persisted = existing ?: dao.getHistoryItem(episodeId) ?: return
+    val persisted = existing ?: dao.getHistoryItem(historyId) ?: return
     val completionDurationMs = durationMs.takeIf { it > 0L } ?: persisted.durationMs
+    val completedAt = System.currentTimeMillis()
     dao.completeFromPlayback(
-        episodeId = episodeId,
+        episodeId = historyId,
         durationMs = completionDurationMs,
-        lastPlayedAt = System.currentTimeMillis(),
+        lastPlayedAt = completedAt,
         isManualCompletion = false,
     )
+    listenerStore.recordCompletion(historyId, completed = true, nowMs = completedAt)
     mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_CONTINUE_ID, 20, null)
     mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_HISTORY_ID, 50, null)
     // Resume / Home collage tiles must track completed episodes, not stay on a stale PNG.
@@ -194,18 +208,26 @@ private fun BoxLorePlaybackService.telemetryHistorySeedSource(snapshot: Playback
     )
 }
 
+/**
+ * Marks the playing [episodeId] completed on its episode's owner row (seeded when missing), then
+ * records it for the episode's other IDs.
+ */
 internal suspend fun BoxLorePlaybackService.persistManualCompletion(episodeId: String, playerDurationMs: Long, progressSnapshot: PlaybackProgressSnapshot?,) {
     try {
-        val existing = loadOrSeedManualCompletionHistory(episodeId, progressSnapshot) ?: return
+        val listenerStore = database.episodeListenerStore()
+        val historyId = listenerStore.historyId(episodeId)
+        val existing = loadOrSeedManualCompletionHistory(historyId, progressSnapshot) ?: return
         val completionDurationMs =
             playerDurationMs.takeIf { it > 0L }
                 ?: existing.durationMs
+        val completedAt = System.currentTimeMillis()
         database.listeningHistoryDao().completeFromPlayback(
-            episodeId = episodeId,
+            episodeId = historyId,
             durationMs = completionDurationMs,
-            lastPlayedAt = System.currentTimeMillis(),
+            lastPlayedAt = completedAt,
             isManualCompletion = true,
         )
+        listenerStore.recordCompletion(historyId, completed = true, nowMs = completedAt)
         android.util.Log.d("BoxLorePlaybackService", "Marked current episode completed: $episodeId")
         requestAutoCollageRefresh(force = true)
         telemetrySession.trackManualCompletion(
@@ -223,13 +245,16 @@ internal suspend fun BoxLorePlaybackService.persistManualCompletion(episodeId: S
     }
 }
 
+/** The owner row [historyId], seeded from the playing item's metadata when it doesn't exist yet. */
 private suspend fun BoxLorePlaybackService.loadOrSeedManualCompletionHistory(
-    episodeId: String,
+    historyId: String,
     progressSnapshot: PlaybackProgressSnapshot?,
 ): cx.aswin.boxlore.core.database.ListeningHistoryEntity? {
     val dao = database.listeningHistoryDao()
-    dao.getHistoryItem(episodeId)?.let { return it }
-    val seed = progressSnapshot?.let { buildMissingProgressHistory(it) } ?: return null
+    dao.getHistoryItem(historyId)?.let { return it }
+    val built = progressSnapshot?.let { buildMissingProgressHistory(it) } ?: return null
+    // A seeded owner row of an episode stored under several IDs carries the owner's show.
+    val seed = database.episodeListenerStore().ownerRow(built.copy(episodeId = historyId), built.episodeId)
     dao.insertIfAbsent(seed)
     dao.enrichMetadataIfMissing(
         episodeId = seed.episodeId,
@@ -243,5 +268,5 @@ private suspend fun BoxLorePlaybackService.loadOrSeedManualCompletionHistory(
         enclosureType = seed.enclosureType,
         episodeDescription = seed.episodeDescription,
     )
-    return dao.getHistoryItem(episodeId)
+    return dao.getHistoryItem(historyId)
 }

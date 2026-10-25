@@ -327,6 +327,32 @@ class SmartDownloadCandidateLogicTest {
         assertTrue(candidateIds.contains("drop-normal"))
     }
 
+    @Test
+    fun `a show switched to its feed offers the episode its old show was playing once`() {
+        // "rss:feed" replaced Podcast Index show "pi-show", whose rows stay under that show.
+        val feedShow = podcastEntity("rss:feed").copy(sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = "pi-show")
+        val historyList =
+            listOf(
+                history("old-ep", "pi-show", progressMs = 30_000, lastPlayedAt = nowMs - 1_000),
+                history("older-ep", "pi-show", progressMs = 10_000, lastPlayedAt = nowMs - 5_000),
+                history("feed-ep", "rss:feed", progressMs = 10_000, lastPlayedAt = nowMs - 3_000),
+            )
+
+        val candidates =
+            SmartDownloadCandidateLogic.generateMixtapeCandidates(
+                subs = listOf(feedShow),
+                allHistory = historyList,
+                historyByEpisode = historyList.associateBy { it.episodeId },
+                resolvedSerial = emptyMap(),
+                podScoresMap = emptyMap(),
+                nowMs = nowMs,
+            )
+
+        val inProgress = candidates.filter { it.isProgress }
+        assertEquals(listOf("old-ep"), inProgress.map { it.episodeId })
+        assertEquals("rss:feed", inProgress.single().podcast.id)
+    }
+
     private fun podcastEntity(
         id: String,
         subscribedAt: Long = nowMs - 7L * 24 * 60 * 60 * 1000,

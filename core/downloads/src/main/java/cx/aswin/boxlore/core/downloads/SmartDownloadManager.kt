@@ -14,6 +14,8 @@ import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.PodcastScoring
+import cx.aswin.boxlore.core.database.episodeListenerStore
+import cx.aswin.boxlore.core.database.listenerShowIds
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.downloads.SmartDownloadCandidateLogic.MixtapeCandidate
@@ -136,6 +138,12 @@ class SmartDownloadManager(
         return subs
     }
 
+    /**
+     * The next episode of the serial show [pod] after its latest unfinished, else latest finished,
+     * episode. A show the listener switched to its feed reads the listening its old Podcast Index
+     * show holds (`PodcastEntity.listenerShowIds`), and an episode is found in the show's list under
+     * any of its stored IDs (own-episode-IDs P4, plan section 8; decision D8).
+     */
     private suspend fun resolveOldestSerialNextEpisode(
         pod: PodcastEntity,
         allHistory: List<ListeningHistoryEntity>,
@@ -143,39 +151,28 @@ class SmartDownloadManager(
         inProgressEpIdsForResolve: Set<String>,
     ): Episode? {
         try {
+            val showIds = pod.listenerShowIds
             val ongoingId =
                 allHistory
                     .filter { h ->
-                        h.podcastId == pod.podcastId && !h.isCompleted && h.progressMs > 0L
+                        h.podcastId in showIds && !h.isCompleted && h.progressMs > 0L
                     }.maxByOrNull { it.lastPlayedAt }
                     ?.episodeId
             val lastCompletedId =
                 allHistory
                     .filter { h ->
-                        h.podcastId == pod.podcastId && h.isCompleted
+                        h.podcastId in showIds && h.isCompleted
                     }.maxByOrNull { it.lastPlayedAt }
                     ?.episodeId
 
             val page = podcastRepository.getEpisodesPaginated(pod.podcastId, limit = 100, offset = 0, sort = "oldest")
             val allEpisodes = page.episodes
+            val tokens = database.episodeListenerStore().groupTokens(allEpisodes.map { it.id } + listOfNotNull(ongoingId, lastCompletedId))
+            val tokenOf = { id: String -> tokens[id] ?: id }
 
             return when {
-                ongoingId != null -> {
-                    val ongoingIndex = allEpisodes.indexOfFirst { it.id == ongoingId }
-                    if (ongoingIndex != -1 && ongoingIndex < allEpisodes.lastIndex) {
-                        allEpisodes[ongoingIndex + 1]
-                    } else {
-                        null
-                    }
-                }
-                lastCompletedId != null -> {
-                    val completedIndex = allEpisodes.indexOfFirst { it.id == lastCompletedId }
-                    if (completedIndex != -1 && completedIndex < allEpisodes.lastIndex) {
-                        allEpisodes[completedIndex + 1]
-                    } else {
-                        null
-                    }
-                }
+                ongoingId != null -> episodeAfter(allEpisodes, ongoingId, tokenOf)
+                lastCompletedId != null -> episodeAfter(allEpisodes, lastCompletedId, tokenOf)
                 else -> allEpisodes.firstOrNull()
             } ?: allEpisodes.firstOrNull { ep ->
                 ep.id !in completedEpIdsForResolve && ep.id !in inProgressEpIdsForResolve
@@ -186,13 +183,23 @@ class SmartDownloadManager(
         return null
     }
 
-    private suspend fun resolveOldestSerialNextEpisodes(
+    /** The episode after [episodeId]'s episode in [episodes], found under any of its IDs ([tokenOf]); null when it is last or missing. */
+    private fun episodeAfter(episodes: List<Episode>, episodeId: String, tokenOf: (String) -> String,): Episode? {
+        val index = episodes.indexOfFirst { tokenOf(it.id) == tokenOf(episodeId) }
+        return if (index != -1 && index < episodes.lastIndex) episodes[index + 1] else null
+    }
+
+    /** The next episode of each oldest-first show in [subs], by show ID ([resolveOldestSerialNextEpisode]). */
+    @androidx.annotation.VisibleForTesting
+    internal suspend fun resolveOldestSerialNextEpisodes(
         subs: List<PodcastEntity>,
         allHistory: List<ListeningHistoryEntity>,
         completedEpisodeIds: List<String>,
     ): Map<String, Episode> {
         val completedEpIdsForResolve = allHistory.filter { it.isCompleted }.map { it.episodeId }.toSet() + completedEpisodeIds
-        val inProgressEpIdsForResolve = allHistory.filter { !it.isCompleted && it.progressMs > 0L }.map { it.episodeId }.toSet()
+        // An unfinished episode is unfinished under every one of its stored IDs.
+        val inProgressEpIdsForResolve =
+            database.episodeListenerStore().withAllAliases(allHistory.filter { !it.isCompleted && it.progressMs > 0L }.map { it.episodeId })
         val resolvedSerial = mutableMapOf<String, Episode>()
 
         for (pod in subs) {
@@ -229,7 +236,7 @@ class SmartDownloadManager(
                         languages = languages,
                     )
 
-                val completedEpisodeIds = database.listeningHistoryDao().getCompletedEpisodeIds().toSet()
+                val completedEpisodeIds = projectedCompletedEpisodeIds()
 
                 val filteredRecs =
                     recs
@@ -248,6 +255,10 @@ class SmartDownloadManager(
         return chosenRecs
     }
 
+    /** Completed episode IDs, where an episode stored under several IDs is completed under all of them or none. */
+    private suspend fun projectedCompletedEpisodeIds(): Set<String> =
+        database.episodeListenerStore().projectCompletedIds(database.listeningHistoryDao().getCompletedEpisodeIds())
+
     private suspend fun fetchTrendingEpisodes(chosenSubsIds: Set<String>, chosenRecsIds: Set<String>, targetSize: Int,): List<Episode> {
         val chosenTrends = mutableListOf<Episode>()
         if (targetSize > 0) {
@@ -257,7 +268,7 @@ class SmartDownloadManager(
 
                 val trendingEpisodes = trendingPods.mapNotNull { it.latestEpisode }
 
-                val completedEpisodeIds = database.listeningHistoryDao().getCompletedEpisodeIds().toSet()
+                val completedEpisodeIds = projectedCompletedEpisodeIds()
 
                 val filteredTrends =
                     trendingEpisodes
@@ -297,7 +308,7 @@ class SmartDownloadManager(
                         context,
                         "Recycling/deleting old smart-downloaded episode: '${download.episodeTitle}' (ID: ${download.episodeId})",
                     )
-                    downloadRepository.removeDownload(download.episodeId, isForeground = false).join()
+                    downloadRepository.removeDownload(download.episodeId, isForeground = false, acrossAliases = false).join()
                     currentDownloadedBytes -= estSize
                     cleanedCount++
                 }
@@ -319,9 +330,12 @@ class SmartDownloadManager(
         var currentDownloadedBytes = budget.startingDownloadedBytes
         val startTime = currentTimeMillis()
 
+        val listenerStore = database.episodeListenerStore()
         for (episode in combinedEpisodes) {
             val currentInDb = database.downloadedEpisodeDao().getDownload(episode.id)
-            if (isEpisodeActiveOrDone(currentInDb, episode, existingDownloads)) {
+            if (isEpisodeActiveOrDone(currentInDb, episode, existingDownloads) ||
+                isHeldByAnotherId(episode, listenerStore.memberIds(episode.id), existingDownloads)
+            ) {
                 Log.d("SmartDownloadManager", "Episode ${episode.title} already downloaded or downloading. Skipping.")
                 continue
             }
@@ -427,7 +441,7 @@ class SmartDownloadManager(
         return if (completedInDb) {
             true to estimatedSize
         } else {
-            downloadRepository.removeDownload(episode.id, isForeground = false).join()
+            downloadRepository.removeDownload(episode.id, isForeground = false, acrossAliases = false).join()
             false to 0L
         }
     }
@@ -464,11 +478,15 @@ class SmartDownloadManager(
                 return false
             }
 
-            val allHistory = database.listeningHistoryDao().getRecentHistoryList(limit = 200)
-            val completedEpisodeIds = database.listeningHistoryDao().getCompletedEpisodeIds()
+            // Each episode once, with its state across its stored IDs (own-episode-IDs P4, plan section 8).
+            val listenerStore = database.episodeListenerStore()
+            val recentHistory = database.listeningHistoryDao().getRecentHistoryList(limit = 200)
+            val allHistory = listenerStore.projectRows(recentHistory)
+            val completedEpisodeIds = projectedCompletedEpisodeIds().toList()
             val resolvedSerial = resolveOldestSerialNextEpisodes(subs, allHistory, completedEpisodeIds)
 
-            val historyByEpisode = allHistory.associateBy { it.episodeId }
+            // Looked up by a candidate's ID: an episode stored under several IDs is found under any of them.
+            val historyByEpisode = listenerStore.projectRowsByMember(recentHistory).associateBy { it.episodeId }
             val podScoresMap =
                 try {
                     adaptiveScorer.scorePodcasts(
@@ -573,7 +591,9 @@ class SmartDownloadManager(
 
             downloadRepository.reconcileStaleDownloads()
             val existingDownloads = database.downloadedEpisodeDao().getAllDownloadsSync()
-            val (currentDownloadedBytes, cleanedCount) = recycleOldDownloads(candidateEpisodeIds, existingDownloads)
+            // A download held under another ID of a candidate episode is that candidate's download: keep it.
+            val keptEpisodeIds = listenerStore.withAllAliases(candidateEpisodeIds)
+            val (currentDownloadedBytes, cleanedCount) = recycleOldDownloads(keptEpisodeIds, existingDownloads)
 
             val countDownloaded =
                 existingDownloads.count {
@@ -582,7 +602,7 @@ class SmartDownloadManager(
                             it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING
                         ) &&
                         it.isSmartDownloaded &&
-                        it.episodeId in candidateEpisodeIds
+                        it.episodeId in keptEpisodeIds
                 }
 
             writeLogToFile(
@@ -606,7 +626,7 @@ class SmartDownloadManager(
                 database.downloadedEpisodeDao().getAllDownloadsSync().count {
                     it.status == DownloadedEpisodeEntity.STATUS_COMPLETED &&
                         it.isSmartDownloaded &&
-                        it.episodeId in candidateEpisodeIds
+                        it.episodeId in keptEpisodeIds
                 }
 
             userPrefs.setSmartDownloadsLastSyncTime(System.currentTimeMillis())
@@ -753,6 +773,28 @@ class SmartDownloadManager(
                 Log.e("SmartDownloadManager", "Failed to write log to file", e)
             }
         }
+    }
+}
+
+/**
+ * True when another stored ID of [episode]'s episode ([memberIds]) already holds a completed,
+ * downloading or queued download, so the episode isn't downloaded twice (own-episode-IDs P4, plan
+ * section 8). Always false for an episode stored under one ID.
+ */
+private fun isHeldByAnotherId(
+    episode: Episode,
+    memberIds: List<String>,
+    existingDownloads: List<DownloadedEpisodeEntity>,
+): Boolean {
+    val others = memberIds.filter { it != episode.id }.toSet()
+    if (others.isEmpty()) return false
+    return existingDownloads.any {
+        it.episodeId in others &&
+            (
+                it.status == DownloadedEpisodeEntity.STATUS_COMPLETED ||
+                    it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING ||
+                    it.status == DownloadedEpisodeEntity.STATUS_QUEUED
+                )
     }
 }
 

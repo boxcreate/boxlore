@@ -9,6 +9,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import cx.aswin.boxlore.core.catalog.content.CuratedMoods
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.PlaybackActivationRequest
 import cx.aswin.boxlore.core.playback.PlaybackIntroOutroController
 import cx.aswin.boxlore.core.playback.PlaybackPowerPolicy
@@ -565,7 +566,9 @@ open class BoxLorePlaybackService :
             ) {
                 return@launch
             }
-            database.listeningHistoryDao().updateLastPlayedAt(episodeId, System.currentTimeMillis())
+            // The listen time goes to the episode's owner row, where its progress lives.
+            val historyId = database.episodeListenerStore().historyId(episodeId)
+            database.listeningHistoryDao().updateLastPlayedAt(historyId, System.currentTimeMillis())
         }
     }
 

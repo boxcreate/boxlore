@@ -2,6 +2,7 @@ package cx.aswin.boxlore.feature.home.logic
 
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.listenerShowIds
 import cx.aswin.boxlore.feature.home.HomeListeningHistoryItem
 import cx.aswin.boxlore.feature.home.SelectedPodcastSignal
 
@@ -13,11 +14,13 @@ internal object HomeSelectedPodcastLogic {
         rssRefreshVersion: Long,
     ): SelectedPodcastSignal? {
         if (podcastId == null) return null
+        val podcast = subs.find { it.id == podcastId }
+        // A show switched to its feed reads the listening its old Podcast Index show keeps.
+        val showIds = podcast?.listenerShowIds ?: setOf(podcastId)
         val lastPlayed =
             allHistory
-                .filter { it.podcastId == podcastId }
+                .filter { it.podcastId in showIds }
                 .maxByOrNull { it.lastPlayedAt }
-        val podcast = subs.find { it.id == podcastId }
         val preferredSort = podcast?.preferredSort ?: "newest"
         return SelectedPodcastSignal(
             podcastId = podcastId,

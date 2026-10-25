@@ -182,6 +182,72 @@ class AdaptiveCandidateScorerTest {
         assertTrue(RankingShadowDiagnostics.snapshots().isNotEmpty())
     }
 
+    /** One episode stored under two IDs: show scores count it once and find it under either ID. */
+    @Test
+    fun anEpisodeStoredUnderTwoIdsCountsOnceInShowScores() = runTest {
+        val episodeToken = "pod-1\u0000guid-a"
+        val withAliases =
+            AdaptiveCandidateScorer.create(repository, controls) { ids ->
+                ids.associateWith { if (it == "ep-1" || it == "ep-1-alias") episodeToken else it }
+            }
+        val listened = history(episodeId = "ep-1", progressMs = 10 * 60 * 1000L, isLiked = true)
+        for ((objective, surface) in listOf(RankingObjective.YOUR_SHOWS to RankingSurface.HOME, RankingObjective.CONTINUATION to RankingSurface.EXPLORE)) {
+            val once =
+                scorer.scorePodcasts(
+                    podcasts = listOf(scorable(id = "pod-1", latest = episode(id = "ep-1")), scorable(id = "pod-2")),
+                    history = listOf(listened),
+                    objective = objective,
+                    surface = surface,
+                    nowMs = nowMs,
+                )
+            val twice =
+                withAliases.scorePodcasts(
+                    podcasts = listOf(scorable(id = "pod-1", latest = episode(id = "ep-1-alias")), scorable(id = "pod-2")),
+                    history = listOf(listened, listened.copy(episodeId = "ep-1-alias", lastPlayedAt = nowMs - 120_000L)),
+                    objective = objective,
+                    surface = surface,
+                    nowMs = nowMs,
+                )
+            assertEquals(objective.name, once, twice)
+        }
+    }
+
+    /**
+     * A show switched to its feed keeps its listening under the Podcast Index show's IDs: its scores
+     * read that listening (its latest episode, finished under the old ID, is not unplayed) exactly as
+     * if the rows had moved to the feed show.
+     */
+    @Test
+    fun aSwitchedShowReadsItsOldShowsListeningForItsLatestEpisode() = runTest {
+        // The adaptive features read the latest episode's history.
+        controls.setSurfaceEnabled(RankingSurface.EXPLORE, true)
+        val withAliases =
+            AdaptiveCandidateScorer.create(repository, controls) { ids ->
+                ids.associateWith { if (it == "old-1" || it == "feed-1") "pod-pi\u0000guid-a" else it }
+            }
+        val switched = scorable(id = "rss:feed", latest = episode(id = "feed-1", podcastId = "rss:feed")).copy(listenerShowIds = setOf("rss:feed", "pod-pi"))
+        val finished = history(episodeId = "old-1", podcastId = "pod-pi", progressMs = 0L, isCompleted = true, isLiked = true)
+        for ((objective, surface) in listOf(RankingObjective.YOUR_SHOWS to RankingSurface.HOME, RankingObjective.CONTINUATION to RankingSurface.EXPLORE)) {
+            val linked =
+                withAliases.scorePodcasts(
+                    podcasts = listOf(switched, scorable(id = "pod-2")),
+                    history = listOf(finished),
+                    objective = objective,
+                    surface = surface,
+                    nowMs = nowMs,
+                )
+            val moved =
+                scorer.scorePodcasts(
+                    podcasts = listOf(switched.copy(listenerShowIds = setOf("rss:feed")), scorable(id = "pod-2")),
+                    history = listOf(finished.copy(episodeId = "feed-1", podcastId = "rss:feed")),
+                    objective = objective,
+                    surface = surface,
+                    nowMs = nowMs,
+                )
+            assertEquals(objective.name, moved, linked)
+        }
+    }
+
     @Test
     fun scoreEpisodesEmptyReturnsEmpty() = runTest {
         val result =
@@ -256,6 +322,36 @@ class AdaptiveCandidateScorerTest {
             )
         assertEquals(setOf("ep-1", "ep-2"), result.keys)
         assertTrue(result.values.all { it.isFinite() })
+    }
+
+    /** A candidate listed under one ID of an episode finds the history stored under its other ID. */
+    @Test
+    fun anEpisodeCandidateFindsItsHistoryUnderItsOtherId() = runTest {
+        val token = "pod-1\u0000guid-a"
+        val withAliases =
+            AdaptiveCandidateScorer.create(repository, controls) { ids ->
+                ids.associateWith { if (it == "ep-1" || it == "ep-1-alias") token else it }
+            }
+        repository.updateFacet(PreferenceFacetType.GENRE, "Technology", reward = 1.0, now = nowMs)
+        fun inputs(id: String) = listOf(
+            EpisodeRankingInput(episode = episode(id = id), podcast = podcast(), priorScore = 5.0, source = CandidateSource.LOCAL_HISTORY),
+            EpisodeRankingInput(episode = episode(id = "ep-2", podcastId = "pod-2"), podcast = podcast(id = "pod-2", genre = "News"), priorScore = 2.0, source = CandidateSource.TRENDING),
+        )
+        val listened = history(episodeId = "ep-1", progressMs = 15 * 60 * 1000L)
+
+        val ownId = scorer.scoreEpisodes(inputs("ep-1"), listOf(listened), RankingObjective.DISCOVERY, RankingSurface.HOME, nowMs = nowMs)
+        // The same history stored under both IDs counts once.
+        val otherId = withAliases.scoreEpisodes(
+            inputs("ep-1-alias"),
+            listOf(listened, listened.copy(episodeId = "ep-1-alias", lastPlayedAt = nowMs - 120_000L)),
+            RankingObjective.DISCOVERY,
+            RankingSurface.HOME,
+            nowMs = nowMs,
+        )
+
+        assertEquals(setOf("ep-1-alias", "ep-2"), otherId.keys)
+        assertEquals(ownId.getValue("ep-1"), otherId.getValue("ep-1-alias"), 1e-9)
+        assertEquals(ownId.getValue("ep-2"), otherId.getValue("ep-2"), 1e-9)
     }
 
     @Test

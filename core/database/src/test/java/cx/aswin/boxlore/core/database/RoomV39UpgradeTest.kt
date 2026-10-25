@@ -509,6 +509,8 @@ class RoomV39UpgradeTest {
             assertEquals(key, 2, aliases.size)
             assertTrue(key, aliases.all { it.state == EpisodeAliasState.TRUSTED })
             assertEquals(key, listOf(owner), aliases.filter { it.owner }.map { it.aliasId })
+            // The runtime owner rule reads the same order the upgrade seeded with.
+            assertEquals(key, owner, dao.chooseOwner(SHOW, key))
         }
     }
 

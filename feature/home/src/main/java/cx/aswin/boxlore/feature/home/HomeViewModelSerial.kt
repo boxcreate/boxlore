@@ -2,7 +2,9 @@ package cx.aswin.boxlore.feature.home
 
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.listenerShowIds
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.episodeGroupTokens
 import cx.aswin.boxlore.feature.home.logic.HomeSerialLogic
 import cx.aswin.boxlore.feature.home.logic.resolveNextSerialEpisode
 import kotlinx.coroutines.CancellationException
@@ -40,10 +42,11 @@ internal fun HomeViewModel.startOldestSortResolution() {
                                 async {
                                     resolutionLimiter.resolve {
                                         try {
+                                            // A show switched to its feed reads its old show's listening.
                                             val ongoingId =
-                                                HomeSerialLogic.ongoingEpisodeId(allHistory, pod.id)
+                                                HomeSerialLogic.ongoingEpisodeId(allHistory, pod.listenerShowIds)
                                             val lastCompletedId =
-                                                HomeSerialLogic.lastCompletedEpisodeId(allHistory, pod.id)
+                                                HomeSerialLogic.lastCompletedEpisodeId(allHistory, pod.listenerShowIds)
 
                                             android.util.Log.d(
                                                 "HomeViewModelResolve",
@@ -57,13 +60,18 @@ internal fun HomeViewModel.startOldestSortResolution() {
                                                     offset = 0,
                                                     sort = "oldest",
                                                 )
+                                            // History keeps an episode under its owner ID; find it under the ID the list uses.
+                                            val tokens =
+                                                playbackRepository.episodeGroupTokens(
+                                                    page.episodes.map { it.id } + listOfNotNull(ongoingId, lastCompletedId) + progress.inProgress,
+                                                )
                                             val nextEp =
                                                 resolveNextSerialEpisode(
                                                     allEpisodes = page.episodes,
-                                                    ongoingId = ongoingId,
-                                                    lastCompletedId = lastCompletedId,
+                                                    ongoingId = HomeSerialLogic.idInList(ongoingId, page.episodes, tokens),
+                                                    lastCompletedId = HomeSerialLogic.idInList(lastCompletedId, page.episodes, tokens),
                                                     completedEpIdsForResolve = progress.completed,
-                                                    inProgressEpIdsForResolve = progress.inProgress,
+                                                    inProgressEpIdsForResolve = HomeSerialLogic.idsInList(progress.inProgress, page.episodes, tokens),
                                                 )
                                             if (nextEp != null) pod.id to nextEp else null
                                         } catch (e: CancellationException) {

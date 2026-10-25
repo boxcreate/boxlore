@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog.sync
 
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
+import cx.aswin.boxlore.core.database.EpisodeIdentityDao
 import cx.aswin.boxlore.core.database.FolderDao
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
@@ -55,6 +56,8 @@ open class UserSyncCoordinator(
     private val listeningRollupDao: ListeningRollupDao? = null,
     private val userPreferencesRepository: UserPreferencesRepository? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    /** Shared like and completion settings of episodes stored under several IDs; cleared with history on an account switch. */
+    private val episodeIdentityDao: EpisodeIdentityDao? = null,
 ) {
     private val syncMutex = Mutex()
 
@@ -179,6 +182,8 @@ open class UserSyncCoordinator(
         requireListeningHistoryDao.deleteAll()
         listeningSessionDao?.deleteAllSessions()
         listeningRollupDao?.deleteAllRollups()
+        // The previous account's like and completion settings must not decide the new account's episodes.
+        episodeIdentityDao?.deleteAllGroupStates()
     }
 
     private suspend fun purgeQueue() {

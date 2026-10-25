@@ -11,13 +11,15 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.addToQueue
 import cx.aswin.boxlore.core.playback.addToQueueNext
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
-import cx.aswin.boxlore.core.playback.likedEpisodes
+import cx.aswin.boxlore.core.playback.historyForEpisodeLookup
+import cx.aswin.boxlore.core.playback.likedEpisodeIds
 import cx.aswin.boxlore.core.playback.markAllEpisodesUncompleted
 import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.removeFromQueue
 import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.togglePlayPause
+import cx.aswin.boxlore.core.playback.withEpisodeAliases
 import cx.aswin.boxlore.core.prefs.HomePinnedShows
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoAsyncResultLogic
 import cx.aswin.boxlore.feature.info.logic.PodcastInfoFolderSyncLogic
@@ -105,10 +107,9 @@ class PodcastInfoViewModel(
     private val clickedEpisodes = mutableSetOf<String>()
     private var hasTrackedExit = false
 
-    // Observe liked episodes
+    // Observe liked episodes: every stored ID of a liked episode, so a row reads the episode's like whichever ID it lists
     private val likedEpisodeIds =
-        playbackRepository.likedEpisodes
-            .map { historyList -> historyList.map { it.episodeId }.toSet() }
+        playbackRepository.likedEpisodeIds
             .stateIn(
                 scope = viewModelScope,
                 started =
@@ -1599,7 +1600,8 @@ class PodcastInfoViewModel(
         kotlinx.coroutines.flow
             .combine(
                 playbackRepository.playerState,
-                playbackRepository.getAllHistory().map { history ->
+                // Looked up by the IDs this page lists: an episode stored under several IDs shows its progress under each.
+                playbackRepository.historyForEpisodeLookup.map { history ->
                     history.map { it.toInfoListeningProgressItem() }
                 },
                 _currentPodcastIdFlow,
@@ -1718,12 +1720,15 @@ class PodcastInfoViewModel(
         }
     }
 
-    // Track queued episodes
+    // Track queued episodes, under every stored ID of each queued episode: a show switched to its
+    // feed lists an episode under its feed ID while the queue may hold it under the old one.
     val queuedEpisodeIds: StateFlow<Set<String>> =
-        playbackRepository.playerState
-            .map { state -> state.queue.map { it.id }.toSet() }
-            .distinctUntilChanged()
-            .stateIn(
+        playbackRepository
+            .withEpisodeAliases(
+                playbackRepository.playerState
+                    .map { state -> state.queue.map { it.id }.toSet() }
+                    .distinctUntilChanged(),
+            ).stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptySet(),

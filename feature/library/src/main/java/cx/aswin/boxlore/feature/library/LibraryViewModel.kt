@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.sortedByListening
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -15,6 +16,7 @@ import cx.aswin.boxlore.core.model.SubscriptionFolder
 import cx.aswin.boxlore.core.playback.PlaybackRepository
 import cx.aswin.boxlore.core.playback.addToQueue
 import cx.aswin.boxlore.core.playback.addToQueueNext
+import cx.aswin.boxlore.core.playback.historyForEpisodeLookup
 import cx.aswin.boxlore.core.playback.likedEpisodes
 import cx.aswin.boxlore.core.playback.playEpisode
 import cx.aswin.boxlore.core.playback.playQueue
@@ -417,20 +419,23 @@ class LibraryViewModel(
         subscriptionRepository.subscribedPodcasts,
         playbackRepository.likedEpisodes,
         downloadRepository.downloads,
-        playbackRepository.getAllHistory(),
+        // Lists count an episode once; the lookup finds an episode stored under several IDs by any of them.
+        combine(playbackRepository.getAllHistory(), playbackRepository.historyForEpisodeLookup) { list, lookup -> list to lookup },
         sortAndManualOrder,
     ) {
             podcasts: List<Podcast>,
             liked: List<ListeningHistoryEntity>,
             downloads: List<cx.aswin.boxlore.core.database.DownloadedEpisodeEntity>,
-            allHistory: List<ListeningHistoryEntity>,
+            histories: Pair<List<ListeningHistoryEntity>, List<ListeningHistoryEntity>>,
             sortAndOrder,
         ->
+        val (allHistory, historyLookup) = histories
         val (sort, manualOrder) = sortAndOrder
         // Enrich podcasts with episode status from listening history
+        val historyById = historyLookup.associateBy { it.episodeId }
         val enrichedPodcasts = podcasts.map { podcast ->
             val episode = podcast.latestEpisode ?: return@map podcast
-            val history = allHistory.find { it.episodeId == episode.id }
+            val history = historyById[episode.id]
 
             when {
                 // Never touched → UNPLAYED
@@ -487,10 +492,7 @@ class LibraryViewModel(
             SubscriptionSort.Alphabetical -> {
                 enrichedPodcasts.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
             }
-            SubscriptionSort.MostListened -> {
-                val historyCounts = allHistory.groupBy { it.podcastId }.mapValues { it.value.size }
-                enrichedPodcasts.sortedByDescending { historyCounts[it.id] ?: 0 }
-            }
+            SubscriptionSort.MostListened -> enrichedPodcasts.sortedByListening(allHistory)
             SubscriptionSort.Manual -> {
                 SubscriptionManualOrderLogic.apply(manualOrder, enrichedPodcasts)
             }

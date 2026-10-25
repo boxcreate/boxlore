@@ -60,6 +60,24 @@ class HomeCatchUpLogicTest {
         )
     }
 
+    @Test
+    fun `a switched show's latest episode played under its old id reads as played`() {
+        // The feed show lists the episode as "-1"; history keeps it under the old show's ID "pi-1".
+        val latest = TestFixtures.episode(id = "-1", podcastId = "rss:feed")
+        val subs = listOf(TestFixtures.podcast(id = "rss:feed", title = "Feed").copy(latestEpisode = latest))
+        val history = listOf(history(episodeId = "pi-1", podcastId = "pi-show", progressMs = 100_000L, durationMs = 100_000L, completed = true))
+        val aliases = mapOf("pi-1" to setOf("pi-1", "-1"), "-1" to setOf("pi-1", "-1"))
+
+        val lookup = HomeCatchUpLogic.underEveryId(history, aliases)
+        val buckets = HomeCatchUpLogic.buildCatchUpBuckets(subs, lookup, resolvedSerial = emptyMap())
+
+        assertEquals(listOf("pi-1", "-1"), lookup.map { it.episodeId })
+        assertEquals(listOf("rss:feed"), buckets.completed.map { it.first.id })
+        assertEquals(emptyList<String>(), buckets.unplayed.map { it.id })
+        // Without aliases the list is the same list.
+        assertEquals(history, HomeCatchUpLogic.underEveryId(history, emptyMap()))
+    }
+
     private fun history(
         episodeId: String,
         podcastId: String,

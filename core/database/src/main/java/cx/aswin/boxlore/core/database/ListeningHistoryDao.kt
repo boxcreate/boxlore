@@ -99,6 +99,43 @@ interface ListeningHistoryDao {
     @Query("SELECT * FROM listening_history WHERE episodeId = :episodeId LIMIT 1")
     suspend fun getHistoryItem(episodeId: String): ListeningHistoryEntity?
 
+    /**
+     * History rows of these IDs, in no particular order; callers pass at most 500 IDs per call.
+     * Used to read every stored ID of one episode ([EpisodeListenerStore]).
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, projected listener state).
+     */
+    @Query("SELECT * FROM listening_history WHERE episodeId IN (:episodeIds)")
+    suspend fun getHistoryItems(episodeIds: List<String>): List<ListeningHistoryEntity>
+
+    /**
+     * Writes one like decision to the rows of these IDs (an episode's trusted IDs), marking them for
+     * sync. [now] is the decision time, the same for every row. Returns the rows written.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, absolute like writes).
+     */
+    @Query("UPDATE listening_history SET isLiked = :isLiked, likedAt = :now, isDirty = 1 WHERE episodeId IN (:episodeIds)")
+    suspend fun setLikeStatusForIds(episodeIds: List<String>, isLiked: Boolean, now: Long,): Int
+
+    /**
+     * Sets the completion of the rows of these IDs (an episode's IDs other than the one playback
+     * wrote) and marks changed rows for sync. Clearing also clears how the episode was completed.
+     * Progress is left alone: it is read from the episode's owner only. Returns the rows changed.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, absolute completion writes).
+     */
+    @Query(
+        """
+        UPDATE listening_history
+        SET isCompleted = :isCompleted,
+            isManualCompletion = CASE WHEN :isCompleted THEN isManualCompletion ELSE 0 END,
+            isBulkCompletion = CASE WHEN :isCompleted THEN isBulkCompletion ELSE 0 END,
+            isDirty = 1
+        WHERE episodeId IN (:episodeIds) AND isCompleted != :isCompleted
+        """,
+    )
+    suspend fun setCompletionForIds(episodeIds: List<String>, isCompleted: Boolean,): Int
+
     @Query("SELECT * FROM listening_history WHERE podcastId = :podcastId")
     suspend fun getHistoryForPodcast(podcastId: String): List<ListeningHistoryEntity>
 

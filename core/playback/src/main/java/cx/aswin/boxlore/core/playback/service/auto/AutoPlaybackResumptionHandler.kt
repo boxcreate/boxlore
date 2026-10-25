@@ -7,7 +7,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import com.google.common.util.concurrent.ListenableFuture
-import cx.aswin.boxlore.core.database.ListeningHistoryDao
+import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.PlaybackActivationRequest
 import cx.aswin.boxlore.core.playback.QueueRepository
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
@@ -15,7 +16,7 @@ import kotlinx.coroutines.guava.future
 
 /**
  * Coordinates playback resumption requests from Android Auto or media button events.
- * Bridges [ListeningHistoryDao], [QueueRepository], SharedPreferences (`boxlore_player`),
+ * Bridges listening history (projected through `EpisodeListenerStore`), [QueueRepository], SharedPreferences (`boxlore_player`),
  * and [AutoMediaResolver].
  */
 @OptIn(UnstableApi::class)
@@ -23,7 +24,7 @@ internal class AutoPlaybackResumptionHandler(
     private val host: AutoBrowseLibraryHost,
     private val mediaResolver: AutoMediaResolver,
     customPrefs: SharedPreferences? = null,
-    customListeningHistoryDao: ListeningHistoryDao? = null,
+    customLastSession: (suspend (unfinishedOnly: Boolean) -> ListeningHistoryEntity?)? = null,
     customQueueRepository: QueueRepository? = null,
 ) {
     private val prefs by lazy {
@@ -33,9 +34,12 @@ internal class AutoPlaybackResumptionHandler(
             oldName = PrefsFileMigrator.LegacyFiles.PLAYER,
         )
     }
-    private val listeningHistoryDao by lazy {
-        customListeningHistoryDao ?: host.database.listeningHistoryDao()
-    }
+    /**
+     * The last played episode as its projected state, so an episode stored under several IDs
+     * resumes from its shared progress (own-episode-IDs P4, plan section 8).
+     */
+    private val lastSession: suspend (Boolean) -> ListeningHistoryEntity? =
+        customLastSession ?: { unfinishedOnly -> host.database.episodeListenerStore().lastPlayedSession(unfinishedOnly) }
     private val queueRepository by lazy {
         customQueueRepository ?: host.queueRepository
     }
@@ -133,11 +137,7 @@ internal class AutoPlaybackResumptionHandler(
     }
 
     private suspend fun resolveCandidate(isPlayerDismissed: Boolean): AutoResumptionCandidate? {
-        val candidateEntity = if (!isPlayerDismissed) {
-            listeningHistoryDao.getLastPlayedSessionAny()
-        } else {
-            listeningHistoryDao.getLastPlayedSession()
-        }
+        val candidateEntity = lastSession(isPlayerDismissed)
 
         if (candidateEntity != null) {
             return AutoResumptionCandidate.from(candidateEntity)

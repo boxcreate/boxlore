@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback.service.auto
 
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import kotlinx.coroutines.async
 import kotlinx.coroutines.selects.select
 
@@ -17,9 +18,10 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         if (normalized.isBlank()) return emptyList()
         val results = mutableListOf<Pair<Int, MediaItem>>()
 
+        // Each episode once, with its projected state (own-episode-IDs P4, plan section 8).
         host.database
-            .listeningHistoryDao()
-            .getRecentHistoryList(100)
+            .episodeListenerStore()
+            .projectRows(host.database.listeningHistoryDao().getRecentHistoryList(100))
             .mapNotNull { history ->
                 val score = searchScore(history.episodeTitle, history.podcastName, normalized)
                 if (score == 0) return@mapNotNull null
@@ -122,7 +124,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         handleVoiceQuerySubscriptionMatch(normalizedQuery)?.let { return it }
         handleVoiceQueryRemoteSearch(normalizedQuery)?.let { return it }
 
-        val fallback = host.database.listeningHistoryDao().getLastPlayedSession()
+        val fallback = host.database.episodeListenerStore().lastPlayedSession(unfinishedOnly = true)
         if (fallback != null) {
             android.util.Log.d("AutoBrowse", "Voice fallback: ${fallback.episodeTitle}")
             return mutableListOf(voiceHistoryItem(fallback))
@@ -160,7 +162,7 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
 
     private suspend fun handleVoiceQueryHistoryResume(rawQuery: String): MutableList<MediaItem>? {
         if (rawQuery.contains("subscription") || rawQuery.contains("resume")) {
-            val lastSession = host.database.listeningHistoryDao().getLastPlayedSession()
+            val lastSession = host.database.episodeListenerStore().lastPlayedSession(unfinishedOnly = true)
             if (lastSession != null) {
                 android.util.Log.d(
                     "AutoBrowse",
@@ -358,9 +360,10 @@ internal class AutoVoiceSearchHandler(private val host: AutoBrowseLibraryHost, p
         cx.aswin.boxlore.core.analytics.PendingEntryPoint.set(
             mapOf("entry_point" to "android_auto_liked"),
         )
+        // Each liked episode once, even when its like is stored under several IDs.
         return host.database
-            .listeningHistoryDao()
-            .getLikedEpisodesList(50)
+            .episodeListenerStore()
+            .projectRows(host.database.listeningHistoryDao().getLikedEpisodesList(50)) { it.isLiked }
             .map { history ->
                 AutoMediaItemFactory.fromHistory(
                     history = history,

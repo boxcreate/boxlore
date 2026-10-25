@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.catalog.ports.QueueSyncPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastDao
@@ -136,6 +137,7 @@ class UserSyncCoordinatorTest {
             queueSyncResolver = queueSyncResolver,
             boxcastPrefs = prefs,
             ioDispatcher = testDispatcher,
+            episodeIdentityDao = database.episodeIdentityDao(),
         )
     }
 
@@ -600,6 +602,8 @@ class UserSyncCoordinatorTest {
             ),
         )
         fakeQueueSyncPort.metadata = QueueMetadataEntity(id = 1, queueSequence = 5L, isDirty = true)
+        // User A's like and completion settings for an episode stored under several IDs.
+        database.episodeIdentityDao().upsertGroupState(EpisodeGroupStateEntity("user-a-pod", "guid-a", likedAt = 10L, completedAt = 20L))
 
         // Now User B is logged in
         currentUserId = "user-B"
@@ -646,6 +650,8 @@ class UserSyncCoordinatorTest {
         // User A's history must be completely purged
         val historyA = listeningHistoryDao.getHistoryItem("user-a-ep")
         org.junit.Assert.assertNull(historyA)
+        // ...with its shared like and completion settings, so they can't decide User B's episodes.
+        org.junit.Assert.assertNull(database.episodeIdentityDao().getGroupState("user-a-pod", "guid-a"))
 
         // User A's podcast subscription must be reset
         val podA = podcastDao.getPodcast("user-a-pod")

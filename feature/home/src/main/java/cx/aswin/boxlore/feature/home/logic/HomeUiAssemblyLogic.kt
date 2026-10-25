@@ -106,12 +106,15 @@ internal object HomeUiAssemblyLogic {
         nowMs: Long = System.currentTimeMillis(),
         pinnedPodcastIds: List<String> = emptyList(),
         refreshShowsOrderFromScores: Boolean = false,
+        episodeAliases: Map<String, Set<String>> = emptyMap(),
     ): HomeUiAssemblyResult {
         val completedCount = allHistory.count { it.isCompleted }
+        // Looked up by the IDs the shows list: an episode stored under several IDs under each of them.
+        val historyByEveryId = HomeCatchUpLogic.underEveryId(allHistory, episodeAliases)
         val catchUp =
             HomeCatchUpLogic.buildCatchUpBuckets(
                 subs = subs,
-                allHistory = allHistory,
+                allHistory = historyByEveryId,
                 resolvedSerial = resolvedSerial,
             )
 
@@ -171,7 +174,7 @@ internal object HomeUiAssemblyLogic {
 
         val episodePlaybackState =
             HomePlaybackStateLogic.buildEpisodePlaybackState(
-                allHistory = allHistory,
+                allHistory = historyByEveryId,
                 completedEpisodeIds = completedEpisodeIds,
             )
 

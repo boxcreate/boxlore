@@ -1,12 +1,15 @@
 package cx.aswin.boxlore.core.ranking
 
 import android.content.Context
+import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastScoring
 import cx.aswin.boxlore.core.database.ScorablePodcast
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.PodcastGenres
+import cx.aswin.boxlore.core.model.listenerShowIds
 import kotlin.math.ln
 
 data class EpisodeRankingInput(
@@ -29,7 +32,16 @@ data class PodcastRankingInput(
 class AdaptiveCandidateScorer private constructor(
     private val rankingRepository: AdaptiveRankingRepository,
     private val runtimeControls: RankingRuntimeControls,
+    /**
+     * Maps episode IDs to a token shared by every stored ID of one episode, so history counts an
+     * episode once and a candidate finds its history under any of its IDs ([RankingHistory]).
+     * IDs it leaves out are their own episode (own-episode-IDs P4, plan section 8).
+     */
+    private val episodeTokens: suspend (Collection<String>) -> Map<String, String> = { emptyMap() },
 ) {
+    private suspend fun countOnce(history: List<ListeningHistoryEntity>, candidateIds: Collection<String>,): RankingHistory =
+        RankingHistory.of(history, episodeTokens((history.map { it.episodeId } + candidateIds).distinct()))
+
     suspend fun scorePodcasts(
         podcasts: List<ScorablePodcast>,
         history: List<ListeningHistoryEntity>,
@@ -39,23 +51,25 @@ class AdaptiveCandidateScorer private constructor(
         nowMs: Long = System.currentTimeMillis(),
     ): Map<String, Double> {
         if (podcasts.isEmpty()) return emptyMap()
+        val once = countOnce(history, podcasts.mapNotNull { it.latestEpisode?.id })
         if (objective == RankingObjective.YOUR_SHOWS) {
             return YourShowsScorer.score(
                 podcasts = podcasts,
-                history = history,
+                history = once.rows,
                 includeAutoDownloadBoost = includeAutoDownloadBoost,
                 nowMs = nowMs,
+                episodeKey = once::keyOf,
             )
         }
         val legacy = PodcastScoring.calculateScores(
             podcasts = podcasts,
-            allHistory = history,
+            allHistory = once.rows,
             includeAutoDownloadBoost = includeAutoDownloadBoost,
             nowMs = nowMs,
+            episodeKey = once::keyOf,
         )
         if (!runtimeControls.isAdaptiveEnabled(objective, surface)) return legacy
         val normalizedPriors = normalizePriors(legacy)
-        val historyByPodcast = history.groupBy(ListeningHistoryEntity::podcastId)
         val affinities = rankingRepository.facetAffinities(
             podcasts.mapTo(mutableSetOf()) { podcast ->
                 PreferenceFacetKey(PreferenceFacetType.SHOW, podcast.id)
@@ -63,9 +77,8 @@ class AdaptiveCandidateScorer private constructor(
             nowMs,
         )
         val featuresByPodcast = podcasts.associate { podcast ->
-            val podcastHistory = historyByPodcast[podcast.id].orEmpty()
             val latestHistory = podcast.latestEpisode?.let { latest ->
-                podcastHistory.firstOrNull { it.episodeId == latest.id }
+                once.forShowEpisode(latest.id, podcast.listenerShowIds)
             }
             val showAffinity =
                 affinities[PreferenceFacetKey(PreferenceFacetType.SHOW, podcast.id)] ?: 0.0
@@ -116,7 +129,7 @@ class AdaptiveCandidateScorer private constructor(
         if (inputs.isEmpty()) return emptyMap()
         val normalizedPriors = normalizePriors(inputs.associate { it.episode.id to it.priorScore })
         if (!runtimeControls.isAdaptiveEnabled(objective, surface)) return normalizedPriors
-        val historyByEpisode = history.associateBy(ListeningHistoryEntity::episodeId)
+        val once = countOnce(history, inputs.map { it.episode.id })
         val facetKeys = buildSet {
             inputs.forEach { input ->
                 add(PreferenceFacetKey(PreferenceFacetType.SHOW, input.podcast.id))
@@ -128,7 +141,7 @@ class AdaptiveCandidateScorer private constructor(
         }
         val affinities = rankingRepository.facetAffinities(facetKeys, nowMs)
         val featuresByEpisode = inputs.associate { input ->
-            val episodeHistory = historyByEpisode[input.episode.id]
+            val episodeHistory = once.forEpisode(input.episode.id)
             val showAffinity =
                 affinities[PreferenceFacetKey(PreferenceFacetType.SHOW, input.podcast.id)] ?: 0.0
             val genreAffinity = input.podcast.rankingGenres()
@@ -230,7 +243,7 @@ class AdaptiveCandidateScorer private constructor(
     ): List<Podcast> {
         if (inputs.isEmpty()) return emptyList()
         val normalizedPriors = normalizePriors(inputs.associate { it.podcast.id to it.priorScore })
-        val historyByPodcast = history.groupBy(ListeningHistoryEntity::podcastId)
+        val once = countOnce(history, inputs.mapNotNull { it.podcast.latestEpisode?.id })
         val adaptiveEnabled = runtimeControls.isAdaptiveEnabled(objective, surface)
         val facetKeys = if (adaptiveEnabled) {
             buildSet {
@@ -249,7 +262,7 @@ class AdaptiveCandidateScorer private constructor(
         val features = inputs.map { input ->
             val podcast = input.podcast
             val latestHistory = podcast.latestEpisode?.let { episode ->
-                historyByPodcast[podcast.id].orEmpty().firstOrNull { it.episodeId == episode.id }
+                once.forShowEpisode(episode.id, podcast.listenerShowIds)
             }
             val showAffinity =
                 affinities[PreferenceFacetKey(PreferenceFacetType.SHOW, podcast.id)] ?: 0.0
@@ -366,7 +379,12 @@ class AdaptiveCandidateScorer private constructor(
         @Volatile
         private var instance: AdaptiveCandidateScorer? = null
 
-        fun create(rankingRepository: AdaptiveRankingRepository, runtimeControls: RankingRuntimeControls,): AdaptiveCandidateScorer = AdaptiveCandidateScorer(rankingRepository, runtimeControls)
+        /** [episodeTokens]: see the constructor; production passes `EpisodeListenerStore.groupTokens`. */
+        fun create(
+            rankingRepository: AdaptiveRankingRepository,
+            runtimeControls: RankingRuntimeControls,
+            episodeTokens: suspend (Collection<String>) -> Map<String, String> = { emptyMap() },
+        ): AdaptiveCandidateScorer = AdaptiveCandidateScorer(rankingRepository, runtimeControls, episodeTokens)
 
         fun install(value: AdaptiveCandidateScorer) {
             instance = value
@@ -377,6 +395,9 @@ class AdaptiveCandidateScorer private constructor(
             instance ?: create(
                 AdaptiveRankingRepository.getInstance(context.applicationContext),
                 RankingRuntimeControls.getInstance(context.applicationContext),
+                episodeTokens = { ids ->
+                    BoxLoreDatabase.getDatabase(context.applicationContext).episodeListenerStore().groupTokens(ids)
+                },
             ).also { instance = it }
         }
     }

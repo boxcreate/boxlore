@@ -16,6 +16,7 @@ import androidx.media3.exoplayer.offline.DownloadService
 import androidx.room.withTransaction
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
 import cx.aswin.boxlore.core.model.Podcast
@@ -26,8 +27,11 @@ import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
@@ -40,6 +44,9 @@ open class DownloadRepository(
     private val rankingFeedbackRepository: RankingFeedbackRepository,
 ) {
     private val downloadManager: DownloadManager = getDownloadManager(context)
+
+    /** An episode's other stored IDs (own-episode-IDs P4, plan section 8; decision D8). */
+    private val listenerStore = database.episodeListenerStore()
 
     init {
         downloadManager.postOnApplicationThread { manager ->
@@ -110,7 +117,7 @@ open class DownloadRepository(
         val audioUri = DownloadAudioUri.parseOrNull(episode) ?: return false
         val dao = database.downloadedEpisodeDao()
         val admitted = database.withTransaction {
-            if (database.autoDownloadDao().getRelease(episode.id)?.state == cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity.REMOVED) return@withTransaction false
+            if (autoDownloadRefused(episode.id)) return@withTransaction false
             val old = dao.getDownload(episode.id)
             if (old != null && !old.isSmartDownloaded && old.downloadOrigin != DownloadedEpisodeEntity.ORIGIN_AUTO) return@withTransaction false
             dao.insert(
@@ -205,53 +212,92 @@ open class DownloadRepository(
         android.util.Log.d("DownloadRepo", "Optimistically adding download: ${episode.id}")
         // Optimistically insert into DB as "Downloading"
         CoroutineScope(Dispatchers.IO).launch {
+            // Another stored ID of the episode already holds its download: never a second copy.
+            if (heldByAnotherId(episode.id)) {
+                android.util.Log.d("DownloadRepo", "Skipping download of ${episode.id}: another ID of the episode holds it")
+                return@launch
+            }
             DownloadChaptersTranscriptsHelper.insertOptimisticDownload(context, database, rankingFeedbackRepository, episode, podcast, isSmartDownloaded) {
                 dispatchAddDownload(context, mediaDownloadServiceClass(), downloadRequest, isForeground)
             }
         }
     }
 
-    /** [isForeground] is kept for callers; removal never starts the download service. */
+    /**
+     * Removes [episodeId]'s download, and the download of every other stored ID of its episode that
+     * holds one (docs/EPISODE_IDS.md §5), so an episode a show page lists under one ID while another
+     * ID holds the file can be removed from there. [isForeground] is kept for callers; removal never
+     * starts the download service.
+     *
+     * @param acrossAliases false removes only [episodeId]'s own download: automatic clean-ups
+     *   (Smart Downloads recycling, auto-download limits, a failed attempt, a purge) remove the row
+     *   they picked and never a download another ID of the episode holds, such as a manual one.
+     */
     @Suppress("UNUSED_PARAMETER")
-    open fun removeDownload(episodeId: String, isForeground: Boolean = true): Job {
+    open fun removeDownload(episodeId: String, isForeground: Boolean = true, acrossAliases: Boolean = true,): Job = CoroutineScope(Dispatchers.IO).launch {
+        val others = if (acrossAliases) listenerStore.memberIds(episodeId).filter { it != episodeId } else emptyList()
+        val heldOthers = if (others.isEmpty()) emptyList() else database.downloadedEpisodeDao().getDownloads(others).map { it.episodeId }
+        for (id in listOf(episodeId) + heldOthers) removeOne(id)
+    }
+
+    private suspend fun removeOne(episodeId: String) {
         // Capture artwork paths BEFORE triggering removal to avoid a race with
         // the DownloadManager listener (which deletes the DB row on STATE_REMOVING).
-        return CoroutineScope(Dispatchers.IO).launch {
-            database.autoDownloadDao().markRemoved(episodeId)
-            val existing = try {
-                database.downloadedEpisodeDao().getDownload(episodeId)
-            } catch (e: Exception) {
-                Log.e("DownloadRepo", "Failed to read artwork paths for $episodeId", e)
-                null
-            }
-
-            val customCacheKey = try {
-                getDownloadManager(context).downloadIndex.getDownload(episodeId)?.request?.customCacheKey
-            } catch (_: Exception) {
-                null
-            } ?: try {
-                database.localEpisodeCatalogDao().getEpisode(episodeId)?.audioUrl?.let {
-                    EpisodeMediaCacheKey.of(episodeId, it)
-                }
-            } catch (_: Exception) {
-                null
-            }
-
-            // Removal goes straight to DownloadManager (evictFromCaches). Starting the download
-            // service here crashed with ForegroundServiceStartNotAllowedException whenever a
-            // download was running while the app was in the background (e.g. after playback ended).
-            evictFromCaches(context, episodeId, customCacheKey)
-            cleanupArtwork(
-                database = database,
-                episodeId = episodeId,
-                podcastId = existing?.podcastId,
-                episodeImgPath = existing?.episodeImageUrl,
-                podcastImgPath = existing?.podcastImageUrl,
-            )
-            DownloadChaptersTranscriptsHelper.cleanupChaptersAndTranscripts(context, episodeId)
-
-            database.downloadedEpisodeDao().delete(episodeId)
+        database.autoDownloadDao().markRemoved(episodeId)
+        val existing = try {
+            database.downloadedEpisodeDao().getDownload(episodeId)
+        } catch (e: Exception) {
+            Log.e("DownloadRepo", "Failed to read artwork paths for $episodeId", e)
+            null
         }
+
+        val customCacheKey = try {
+            getDownloadManager(context).downloadIndex.getDownload(episodeId)?.request?.customCacheKey
+        } catch (_: Exception) {
+            null
+        } ?: try {
+            database.localEpisodeCatalogDao().getEpisode(episodeId)?.audioUrl?.let {
+                EpisodeMediaCacheKey.of(episodeId, it)
+            }
+        } catch (_: Exception) {
+            null
+        }
+
+        // Removal goes straight to DownloadManager (evictFromCaches). Starting the download
+        // service here crashed with ForegroundServiceStartNotAllowedException whenever a
+        // download was running while the app was in the background (e.g. after playback ended).
+        evictFromCaches(context, episodeId, customCacheKey)
+        cleanupArtwork(
+            database = database,
+            episodeId = episodeId,
+            podcastId = existing?.podcastId,
+            episodeImgPath = existing?.episodeImageUrl,
+            podcastImgPath = existing?.podcastImageUrl,
+        )
+        DownloadChaptersTranscriptsHelper.cleanupChaptersAndTranscripts(context, episodeId)
+
+        database.downloadedEpisodeDao().delete(episodeId)
+    }
+
+    /**
+     * True when an auto-download of [episodeId] must not start: the listener removed it, or another
+     * stored ID of its episode already holds its download (a show switched to its feed).
+     */
+    private suspend fun autoDownloadRefused(episodeId: String): Boolean =
+        database.autoDownloadDao().getRelease(episodeId)?.state == cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity.REMOVED ||
+            heldByAnotherId(episodeId)
+
+    /**
+     * True when another stored ID of [episodeId]'s episode already holds a completed, running or
+     * queued download, so creating one checks every alias first (docs/EPISODE_IDS.md §5). Always
+     * false for an episode stored under one ID.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, downloads across aliases; decision D8).
+     */
+    private suspend fun heldByAnotherId(episodeId: String): Boolean {
+        val others = listenerStore.memberIds(episodeId).filter { it != episodeId }
+        if (others.isEmpty()) return false
+        return database.downloadedEpisodeDao().getDownloads(others).any { it.status in HELD_STATUSES }
     }
 
     open suspend fun removeDownloadSuspend(episodeId: String, isForeground: Boolean = true) {
@@ -436,27 +482,48 @@ open class DownloadRepository(
     val completedDownloadItems: Flow<List<CompletedDownloadItem>> =
         downloads.map(CompletedDownloadItems::from)
 
-    /** Completed download episode ids — prefer over filtering [downloads] by Room status in features. */
+    /**
+     * Completed download episode ids — prefer over filtering [downloads] by Room status in features.
+     * Every stored ID of an episode is in the set when any of them holds the completed download
+     * (own-episode-IDs P4, plan section 8; decision D8): a show page that lists the episode under
+     * another ID reads it as downloaded.
+     */
     val completedDownloadIds: Flow<Set<String>> =
-        downloads.map { list ->
-            list
-                .filter { it.status == DownloadedEpisodeEntity.STATUS_COMPLETED }
-                .map { it.episodeId }
-                .toSet()
-        }
+        listenerStore.withAllAliasesFlow(
+            downloads.map { list ->
+                list
+                    .filter { it.status == DownloadedEpisodeEntity.STATUS_COMPLETED }
+                    .map { it.episodeId }
+                    .toSet()
+            },
+        )
 
-    /** Actively downloading episode ids — prefer over filtering [downloads] by Room status in features. */
+    /** Actively downloading episode ids, under every stored ID of their episodes as [completedDownloadIds]. */
     val downloadingEpisodeIds: Flow<Set<String>> =
-        downloads.map { list ->
-            list
-                .filter { it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING }
-                .map { it.episodeId }
-                .toSet()
-        }
+        listenerStore.withAllAliasesFlow(
+            downloads.map { list ->
+                list
+                    .filter { it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING }
+                    .map { it.episodeId }
+                    .toSet()
+            },
+        )
 
-    fun isDownloaded(episodeId: String): Flow<Boolean> = database.downloadedEpisodeDao().isDownloadedFlow(episodeId).map { it > 0 }
+    /** True while any stored ID of [episodeId]'s episode holds a completed download. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun isDownloaded(episodeId: String): Flow<Boolean> =
+        listenerStore.memberIdsFlow(episodeId)
+            .flatMapLatest { ids -> database.downloadedEpisodeDao().countCompletedFlow(ids.toList()) }
+            .map { it > 0 }
+            .distinctUntilChanged()
 
-    fun isDownloading(episodeId: String): Flow<Boolean> = database.downloadedEpisodeDao().isDownloadingFlow(episodeId).map { it > 0 }
+    /** True while any stored ID of [episodeId]'s episode holds a queued or running download. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun isDownloading(episodeId: String): Flow<Boolean> =
+        listenerStore.memberIdsFlow(episodeId)
+            .flatMapLatest { ids -> database.downloadedEpisodeDao().countActiveFlow(ids.toList()) }
+            .map { it > 0 }
+            .distinctUntilChanged()
 
     private suspend fun withUsableArtwork(rows: List<DownloadedEpisodeEntity>): List<DownloadedEpisodeEntity> {
         if (rows.isEmpty()) return rows
@@ -699,6 +766,10 @@ open class DownloadRepository(
         }
     }
 }
+
+/** Download states that mean an ID already holds (or is getting) an episode's file. */
+private val HELD_STATUSES =
+    setOf(DownloadedEpisodeEntity.STATUS_COMPLETED, DownloadedEpisodeEntity.STATUS_DOWNLOADING, DownloadedEpisodeEntity.STATUS_QUEUED)
 
 private fun dispatchAddDownload(
     context: Context,

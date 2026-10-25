@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
+import cx.aswin.boxlore.core.database.entities.QueueRemovalIdentity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -130,6 +131,24 @@ class QueueDaoInMemoryTest {
         val metadata = dao.getQueueMetadata()
         val parsed = QueueDao.parseRecentRemovedEpisodeIds(metadata?.recentRemovedEpisodeIds)
         assertEquals(listOf(commaId), parsed)
+    }
+
+    @Test
+    fun bumpQueueVersionKeepsTheRichRemovalListInStepWithThePlainOne() = runTest {
+        val identity = QueueRemovalIdentity("A", 4_503_599_627_370_500L, "100", "guid-a")
+        dao.bumpQueueVersion(removedEpisodeIds = listOf("A", "-7"), removedIdentities = listOf(identity))
+
+        val removed = dao.getQueueMetadata()!!
+        assertEquals(listOf("A", "-7"), QueueDao.parseRecentRemovedEpisodeIds(removed.recentRemovedEpisodeIds))
+        assertEquals(listOf(identity, QueueRemovalIdentity("-7")), QueueRemovalIdentity.parseList(removed.recentRemovedEpisodes))
+
+        // Re-adding the episode under another of its IDs clears its rich removal; the plain list keeps "A".
+        dao.bumpQueueVersion(restoredEpisodeIds = listOf("B"), restoredIdentities = listOf(identity.copy(id = "B")))
+
+        val restored = dao.getQueueMetadata()!!
+        assertEquals(listOf("A", "-7"), QueueDao.parseRecentRemovedEpisodeIds(restored.recentRemovedEpisodeIds))
+        assertEquals(listOf(QueueRemovalIdentity("-7")), QueueRemovalIdentity.parseList(restored.recentRemovedEpisodes))
+        assertEquals(removed.queueSequence + 1L, restored.queueSequence)
     }
 
     @Test

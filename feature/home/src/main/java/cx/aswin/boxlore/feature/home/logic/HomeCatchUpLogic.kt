@@ -24,6 +24,23 @@ internal object HomeCatchUpLogic {
         }
     }
 
+    /**
+     * [allHistory] (one row per episode, under its owner's ID) with a copy of each row under every
+     * other ID of its episode ([episodeAliases]), for lookups by the ID a show lists: a show switched
+     * to its feed lists an episode under its feed ID while history keeps it under the old one. Not for
+     * counting. Unchanged when no episode has several IDs.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8; decision D8).
+     */
+    fun underEveryId(allHistory: List<HomeListeningHistoryItem>, episodeAliases: Map<String, Set<String>>,): List<HomeListeningHistoryItem> {
+        if (episodeAliases.isEmpty()) return allHistory
+        val stored = allHistory.mapTo(HashSet()) { it.episodeId }
+        val copies = allHistory.flatMap { row ->
+            episodeAliases[row.episodeId].orEmpty().filter { it !in stored }.map { row.copy(episodeId = it) }
+        }
+        return if (copies.isEmpty()) allHistory else allHistory + copies
+    }
+
     fun buildCatchUpBuckets(
         subs: List<Podcast>,
         allHistory: List<HomeListeningHistoryItem>,

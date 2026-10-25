@@ -2,6 +2,7 @@ package cx.aswin.boxlore.widgets
 
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.sortedByListening
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.EpisodeStatus
 import cx.aswin.boxlore.core.model.Podcast
@@ -154,10 +155,7 @@ class WidgetLibrarySourceAdapter(
             podcasts.sortedByDescending { it.latestEpisode?.publishedDate ?: 0L }
         ShowSort.Alphabetical ->
             podcasts.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
-        ShowSort.MostListened -> {
-            val counts = history.groupBy { it.podcastId }.mapValues { it.value.size }
-            podcasts.sortedByDescending { counts[it.id] ?: 0 }
-        }
+        ShowSort.MostListened -> podcasts.sortedByListening(history)
     }
 
     private suspend fun sortLatest(podcasts: List<Podcast>, history: List<ListeningHistoryEntity>, useSmart: Boolean,): List<Podcast> {
