@@ -201,4 +201,15 @@ object EpisodeAliasProvenance {
      * Added in P4 PR 9 of the own-episode-IDs plan (plan section 4, legacy keys).
      */
     const val HEAL_AUDIO_URL_KEY = "heal_audio_url_key"
+
+    /**
+     * Recorded by a cloud sync pull for a history or queue row whose ID this phone had no alias
+     * for. Trusted when the row named, by catalog key (else by a recipe ID exactly one key of the
+     * show has), an episode this phone already holds under a trusted ID; unresolved otherwise, so the
+     * ID is never a new owner and the show's next feed read can still attribute it. An unresolved
+     * alias of the same show that such a row names is settled the same way.
+     *
+     * Added in P4 PR 11 of the own-episode-IDs plan (plan section 8, cloud sync identity).
+     */
+    const val CLOUD_SYNC = "cloud_sync"
 }

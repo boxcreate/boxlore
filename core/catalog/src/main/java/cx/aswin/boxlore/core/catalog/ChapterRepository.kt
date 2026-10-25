@@ -2,7 +2,7 @@ package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.model.Chapter
 import cx.aswin.boxlore.core.model.Episode
-import java.net.URL
+import java.net.URI
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,7 +23,7 @@ object ChapterRepository {
 
     /** Reads a remote chapters link; tests replace it to serve recorded answers over the https links the app uses. */
     @Volatile
-    internal var readRemote: (String) -> String = { URL(it).readText() }
+    internal var readRemote: (String) -> String = { URI(it).toURL().readText() }
 
     private fun normalizeUrl(url: String): String {
         try {

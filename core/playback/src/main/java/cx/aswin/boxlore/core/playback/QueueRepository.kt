@@ -150,7 +150,8 @@ class QueueRepository(
         android.util.Log.d(TAG, "clearQueue: Clearing all queue items")
         val localDeviceId = deviceIdentityPort?.getDeviceId()
         database.withTransaction {
-            val removedIds = queueDao.getAllQueueItemsSync().map { it.episodeId }
+            // Every ID of each cleared episode, so a copy the cloud holds under another ID goes too.
+            val removedIds = listenerStore.queueRemovalIds(queueDao.getAllQueueItemsSync().map { it.episodeId })
             queueDao.clearQueue()
             queueDao.bumpQueueVersion(
                 updatedAt = System.currentTimeMillis(),
@@ -209,7 +210,8 @@ class QueueRepository(
         database.withTransaction {
             val oldIds = queueDao.getAllQueueItemsSync().map { it.episodeId }
             val newIds = uniqueEpisodes.map { it.id }.toSet()
-            val removedIds = oldIds.filter { it !in newIds }
+            // Every ID of each episode that leaves the queue, so a copy the cloud holds under another ID goes too.
+            val removedIds = listenerStore.queueRemovalIds(oldIds.filter { it !in newIds }, keptIds = newIds)
             replaceQueueItems(uniqueEpisodes)
             // A queued episode clears the removals of every one of its IDs (an Undo restores it under one).
             val restoredIds = listenerStore.withAllAliases(newIds)
@@ -370,16 +372,21 @@ class QueueRepository(
     /**
      * Removes [episodeId]'s episode from the queue (docs/EPISODE_IDS.md §5): [episodeId]'s row, and
      * the row of each other trusted ID of the episode that is queued, except [playingId], which
-     * stays queued while it plays. Only removed IDs join the plain removal list; the rich list
-     * records each with the episode's show, catalog key and recipe ID so devices that queued the
-     * episode under another ID remove it too. An episode stored under one ID removes its row as before.
+     * stays queued while it plays. The removal lists record every ID of the episode
+     * (`EpisodeListenerStore.queueRemovalIds`), including IDs not queued here, because a cloud sync
+     * pull folds the cloud's copy of a queued episode into this phone's entry and only a removal by
+     * ID reaches a copy an older build pushed; the rich list records each with the episode's show,
+     * catalog key and recipe ID. While the episode stays queued under [playingId], only the removed
+     * rows are recorded. An episode stored under one ID removes its row as before.
      */
     suspend fun removeFromQueue(episodeId: String, playingId: String? = null,) {
         val localDeviceId = deviceIdentityPort?.getDeviceId()
         database.withTransaction {
             val others = listenerStore.memberIds(episodeId).filter { it != episodeId && it != playingId && queueDao.countEpisode(it) > 0 }
-            val removedIds = listOf(episodeId) + others
-            removedIds.forEach { queueDao.deleteQueueItemByEpisodeId(it) }
+            val deletedIds = listOf(episodeId) + others
+            deletedIds.forEach { queueDao.deleteQueueItemByEpisodeId(it) }
+            val playingKept = playingId?.takeIf { it != episodeId && queueDao.countEpisode(it) > 0 }
+            val removedIds = listenerStore.queueRemovalIds(deletedIds, keptIds = listOfNotNull(playingKept))
             queueDao.bumpQueueVersion(
                 updatedAt = System.currentTimeMillis(),
                 deviceId = localDeviceId,

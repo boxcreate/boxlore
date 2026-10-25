@@ -25,6 +25,7 @@ import cx.aswin.boxlore.core.catalog.privacy.ConsentManager
 import cx.aswin.boxlore.core.catalog.sync.HistorySyncResolver
 import cx.aswin.boxlore.core.catalog.sync.QueueSyncResolver
 import cx.aswin.boxlore.core.catalog.sync.SubscriptionSyncResolver
+import cx.aswin.boxlore.core.catalog.sync.SyncEpisodeIdentity
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.episodeListenerStore
@@ -525,6 +526,8 @@ class AppContainer(
 
     override val userSyncCoordinator: UserSyncCoordinator by lazy {
         val queuePort = queueRepository
+        // Episode identity on the sync wire: recipe IDs and catalog keys out, aliases for pulled rows in (own-episode-IDs P4).
+        val episodeIdentity = SyncEpisodeIdentity(database)
         val subResolver = SubscriptionSyncResolver(
             podcastDao = database.podcastDao(),
             folderRepository = folderRepository,
@@ -543,6 +546,7 @@ class AppContainer(
             database = database,
             activePlaybackSyncPort = playbackRepository,
             podcastRepository = podcastRepository,
+            episodeIdentity = episodeIdentity,
         )
         UserSyncCoordinator(
             boxLoreApi = podcastRepository.api,
@@ -565,6 +569,7 @@ class AppContainer(
             listeningRollupDao = database.listeningRollupDao(),
             userPreferencesRepository = userPreferencesRepository,
             episodeIdentityDao = database.episodeIdentityDao(),
+            episodeIdentity = episodeIdentity,
         )
     }
 

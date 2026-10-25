@@ -28,9 +28,7 @@ internal fun PodcastRepository.trendingPodcastsStream(
     var lastGood = if (v2) v2LastGood.podcasts[lastGoodKey] else null
     try {
         android.util.Log.d("BoxCastRepo", "Stream: Requesting trending country=$country, limit=$limit, category=$category, offset=$offset")
-        val call =
-            if (v2) apiV2.getTrendingStream(country, limit, category, offset) else api.getTrendingStream(publicKey, country, limit, category, offset)
-        val response = call.execute()
+        val response = trendingStreamCall(v2, country, limit, category, offset).execute()
 
         response.raw().use {
             android.util.Log.d("BoxCastRepo", "Stream: Response code=${response.code()}, isSuccessful=${response.isSuccessful}")
@@ -45,7 +43,7 @@ internal fun PodcastRepository.trendingPodcastsStream(
             }
 
             readTrendingPodcasts(responseBody, podcasts, v2) { emit(it) }
-            if (v2) v2LastGood.podcasts[lastGoodKey] = podcasts.toList()
+            rememberLastGoodTrending(v2, lastGoodKey, podcasts)
 
             android.util.Log.d("BoxCastRepo", "Stream: Parsed ${podcasts.size} podcasts for category=$category")
 
@@ -61,6 +59,14 @@ internal fun PodcastRepository.trendingPodcastsStream(
         (podcasts.takeIf { it.isNotEmpty() } ?: lastGood)?.let { emit(it) }
     }
 }.flowOn(Dispatchers.IO)
+
+private fun PodcastRepository.trendingStreamCall(v2: Boolean, country: String, limit: Int, category: String?, offset: Int,) =
+    if (v2) apiV2.getTrendingStream(country, limit, category, offset) else api.getTrendingStream(publicKey, country, limit, category, offset)
+
+/** Only `/v2` keeps a last good trending list. */
+private fun PodcastRepository.rememberLastGoodTrending(v2: Boolean, key: String, podcasts: List<Podcast>) {
+    if (v2) v2LastGood.podcasts[key] = podcasts.toList()
+}
 
 private suspend fun PodcastRepository.readTrendingPodcasts(
     responseBody: ResponseBody,

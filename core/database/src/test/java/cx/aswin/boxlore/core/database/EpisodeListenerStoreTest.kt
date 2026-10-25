@@ -377,6 +377,20 @@ class EpisodeListenerStoreTest {
         )
     }
 
+    @Test
+    fun aQueueRemovalRecordsEveryIdOfTheEpisodeUnlessItStaysQueued() = runTest {
+        twoAliases()
+        identity.insertAliasesIfAbsent(listOf(alias("U", key = null, state = EpisodeAliasState.UNRESOLVED)))
+
+        // B is another trusted ID of A's episode; IDs without a shared alias stay alone, as before.
+        assertEquals(listOf("A", "B"), store.queueRemovalIds(listOf("A")))
+        assertEquals(listOf("U", "-5"), store.queueRemovalIds(listOf("U", "-5", "", "U")))
+        // While the episode stays queued (or plays) under B, only the removed ID is recorded.
+        assertEquals(listOf("A"), store.queueRemovalIds(listOf("A"), keptIds = listOf("B")))
+        assertEquals(listOf("A", "B"), store.queueRemovalIds(listOf("A"), keptIds = listOf("-5")))
+        assertTrue(store.queueRemovalIds(emptyList(), keptIds = listOf("B")).isEmpty())
+    }
+
     private suspend fun twoAliases() {
         identity.insertAliasesIfAbsent(listOf(alias("A", owner = true, createdAt = 1L), alias("B", createdAt = 2L)))
     }

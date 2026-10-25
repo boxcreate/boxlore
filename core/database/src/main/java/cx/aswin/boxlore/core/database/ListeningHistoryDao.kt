@@ -296,6 +296,28 @@ interface ListeningHistoryDao {
     @Query("UPDATE listening_history SET isDirty = 1 WHERE episodeTitle IS NOT NULL AND episodeTitle != ''")
     suspend fun markAllHistoryWithTitlesDirty(): Int
 
+    /**
+     * One cloud push batch: up to [limit] rows waiting for the push, the most recently played
+     * first, without the episode description (the push never sends it). A first sync or a bulk
+     * "mark all played" can leave tens of thousands of rows waiting; each push reads only its own
+     * batch, so the read never holds them all, nor their descriptions, in one cursor.
+     *
+     * Added in P4 PR 11 of the own-episode-IDs plan (plan section 8, cloud sync identity).
+     */
+    @Query(
+        """
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+               isManualCompletion, isBulkCompletion, NULL AS episodeDescription
+        FROM listening_history
+        WHERE isDirty = 1
+        ORDER BY lastPlayedAt DESC
+        LIMIT :limit
+        """,
+    )
+    suspend fun getDirtyListeningHistoryBatch(limit: Int): List<ListeningHistoryEntity>
+
     @Query("SELECT EXISTS(SELECT 1 FROM listening_history WHERE episodeTitle = '' OR episodeTitle IS NULL LIMIT 1)")
     suspend fun hasAnyHistoryWithBlankTitle(): Boolean
 
