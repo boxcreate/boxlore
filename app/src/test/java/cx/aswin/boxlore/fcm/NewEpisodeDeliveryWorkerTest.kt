@@ -134,6 +134,27 @@ class NewEpisodeDeliveryWorkerTest {
         )
     }
 
+    @Test
+    fun pushesThatDifferOnlyInRecipeIdOrCatalogKeyUseIndependentDeliveryWork() {
+        val show = mapOf("showId" to "920666")
+        val first = show + mapOf("recipeId" to "4503599627370500", "catalogKey" to "guid-1")
+        val names = setOf(
+            NewEpisodeDeliveryWorker.workName(first),
+            NewEpisodeDeliveryWorker.workName(first + ("recipeId" to "4503599627370501")),
+            NewEpisodeDeliveryWorker.workName(first + ("catalogKey" to "guid-2")),
+            NewEpisodeDeliveryWorker.workName(show),
+        )
+        assertEquals(4, names.size)
+    }
+
+    @Test
+    fun pushesWithoutRecipeIdOrCatalogKeyKeepTheirWorkName() {
+        val data = mapOf("podcastId" to "920666", "guid" to "guid-1", "enclosureUrl" to "https://cdn.example/1.mp3", "episode_id" to "5001")
+        val key = listOf("920666", null, "guid-1", "https://cdn.example/1.mp3", "5001").joinToString("|")
+        val hash = java.security.MessageDigest.getInstance("SHA-256").digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
+        assertEquals("new-episode-delivery-$hash", NewEpisodeDeliveryWorker.workName(data))
+    }
+
     private fun worker(deps: FakeDependencies, attempt: Int = 0, data: Map<String, String> = payload): NewEpisodeDeliveryWorker =
         TestListenableWorkerBuilder<NewEpisodeDeliveryWorker>(context)
             .setInputData(Data.Builder().apply { data.forEach { (key, value) -> putString(key, value) } }.build())

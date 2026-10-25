@@ -60,6 +60,8 @@ fun ShareBottomSheet(
     durationMs: Long = 0L,
     currentPositionMs: Long = 0L,
     showTimestampOption: Boolean = false,
+    /** The episode being shared; its copied link then names it the way [ShareManager] shares do. */
+    episode: cx.aswin.boxlore.core.model.Episode? = null,
     onShare: (
         id: String,
         type: String,
@@ -266,29 +268,7 @@ fun ShareBottomSheet(
                     title = "Copy link",
                     subtitle = "Link only",
                     onClick = {
-                        val finalLink =
-                            ShareLinkBuilder.build(
-                                id = id,
-                                type = type,
-                                timestampMs =
-                                currentPositionMs.takeIf {
-                                    includeTimestamp && showTimestampOption
-                                },
-                            )
-                        val clipboard =
-                            context.getSystemService(
-                                android.content.Context.CLIPBOARD_SERVICE,
-                            ) as android.content.ClipboardManager
-                        clipboard.setPrimaryClip(
-                            android.content.ClipData.newPlainText("boxlore link", finalLink),
-                        )
-                        val toast =
-                            android.widget.Toast.makeText(
-                                context,
-                                "Link copied",
-                                android.widget.Toast.LENGTH_SHORT,
-                            )
-                        toast.show()
+                        copyShareLink(context, id, type, episode, currentPositionMs.takeIf { includeTimestamp && showTimestampOption })
                         onDismissRequest()
                     },
                     modifier = Modifier.weight(1f),
@@ -312,6 +292,21 @@ fun ShareBottomSheet(
             }
         }
     }
+}
+
+/**
+ * Copies the link for [id]. An episode's link may first need its aliases and a registration, so
+ * [cx.aswin.boxlore.core.designsystem.share.ShareManager] copies it in the background; any other link is copied at once.
+ */
+private fun copyShareLink(context: android.content.Context, id: String, type: String, episode: cx.aswin.boxlore.core.model.Episode?, timestampMs: Long?,) {
+    if (episode != null && type == "episode") {
+        cx.aswin.boxlore.core.designsystem.share.ShareManager.copyEpisodeLink(context, episode, timestampMs)
+        return
+    }
+    val finalLink = ShareLinkBuilder.build(id = id, type = type, timestampMs = timestampMs)
+    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("boxlore link", finalLink))
+    android.widget.Toast.makeText(context, "Link copied", android.widget.Toast.LENGTH_SHORT).show()
 }
 
 @Composable

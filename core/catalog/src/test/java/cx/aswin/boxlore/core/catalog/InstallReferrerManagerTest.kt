@@ -78,11 +78,30 @@ class InstallReferrerManagerTest {
     }
 
     @Test
+    fun aShareLinkReferrerKeepsItsShow() {
+        val intent = parse("type=episode&id=4503599627370500&show=920666&t=30")
+        assertEquals("4503599627370500", intent.id)
+        assertEquals("920666", intent.showId)
+        assertEquals(30L, intent.timestamp)
+        assertEquals("920666", parse("type_episode_id_4503599627370500_show_920666").showId)
+    }
+
+    @Test
+    fun aReferrerWithoutAValidShowHasNone() {
+        assertNull(parse("type=episode&id=67890").showId)
+        assertNull(parse("type=episode&id=67890&show=rss:abc").showId)
+        assertNull(parse("type=episode&id=67890&show=0920666").showId)
+        // Show IDs at or above 2^52 are not Podcast Index shows.
+        assertNull(parse("type=episode&id=67890&show=4503599627370496").showId)
+    }
+
+    @Test
     fun referralIntentDefaultsAreNull() {
         val intent = ReferralIntent(type = "podcast", id = "1")
         assertNull(intent.timestamp)
         assertNull(intent.start)
         assertNull(intent.end)
+        assertNull(intent.showId)
     }
 
     @Test

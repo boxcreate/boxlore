@@ -30,6 +30,31 @@ class NewEpisodeFcmLogicTest {
     }
 
     @Test
+    fun aPushWithOnlyARecipeIdOpensThatEpisodeWithItsShow() {
+        val details = NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("recipeId" to "4503599627370500", "podcastTitle" to "Show"), null)
+        assertEquals("4503599627370500", details.episodeId)
+        assertEquals("boxlore://episode/4503599627370500?autoplay=false&podcastId=920666&podcastTitle=Show", details.route)
+
+        // The phone's own row wins over the recipe ID.
+        val local = Episode("-9", "Episode", "", "https://audio/9")
+        assertEquals("-9", NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("recipeId" to "4503599627370500"), local).episodeId)
+    }
+
+    @Test
+    fun withNoLocalRowTheRecipeIdWinsOverThePushsServedId() {
+        // The served ID of a Podcast Index episode is the ID older builds use; this build stores the
+        // episode under its recipe ID, so opening it by the served ID would split its history.
+        val withBoth = NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("episode_id" to "5001", "recipeId" to "4503599627370500"), null)
+        assertEquals("4503599627370500", withBoth.episodeId)
+        assertTrue(withBoth.route.startsWith("boxlore://episode/4503599627370500?"))
+        assertTrue(withBoth.route.contains("podcastId=920666"))
+
+        // A push without a valid recipe ID keeps its own episode ID.
+        assertEquals("5001", NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("episode_id" to "5001"), null).episodeId)
+        assertEquals("5001", NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("episode_id" to "5001", "recipeId" to "42"), null).episodeId)
+    }
+
+    @Test
     fun usableEpisodeIdDropsBlankAndZero() {
         assertNull(NewEpisodeFcmLogic.usableEpisodeId(null))
         assertNull(NewEpisodeFcmLogic.usableEpisodeId(" "))

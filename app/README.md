@@ -175,11 +175,20 @@ Unacknowledged tablet launches first show an opaque alpha notice with the Home f
 - UI composition, navigation, OPML import state, surveys, and player overlay state are Activity-scoped.
 - `BoxLoreAppRoot` stacks the mini player using designsystem's `appMiniPlayerTopOffset`, including Android's bottom system inset for both navigation styles. Classic's internally padded navbar and Floating's externally padded navbar both retain the matching player gap under gesture or three-button navigation. Compact Floating docking uses the same bottom inset. Routes remain Home / Explore / Library / Lore (`learn`) for both presentations.
 
+## Episode links, pushes and shares
+
+- Episode deep links live in `navigation/EpisodeShowLinks.kt` (`episodeDeepLinks`): the older `boxlore://` and `boxcast://` patterns, `boxlore://episode/{id}?show={podcastId}` with its `t`, `start`, `end` and `autoplay` variants (what the share page opens), and every HTTPS share pattern with `&show=` (`WebAppLinks.episodeShareDeepLinks`). The show fills the route's existing `podcastId` argument; patterns are only added. Deep-link autoplay matches the page by the ID it was opened with.
+- New-episode pushes: `FcmPayloadParser` reads `recipeId`, `showId` and `catalogKey` when valid (the show stands in for a missing podcast ID). `NewEpisodePushHydration` matches by GUID or enclosure first, then by catalog key, then by (show, recipe ID) through `PodcastRepository.localEpisodeForRecipe` (a catalog key matches a stored GUID or, for an episode without one, its enclosure). A notification with no local row opens the push's recipe ID (the ID this build stores the episode under), else its episode ID, with the show in the route. The delivery work name adds the push's catalog key and recipe ID only when it carries them, so older pushes keep their names.
+- A Play install referrer from a share link keeps its `show`: `installReferralRoute` (`ui/BoxLoreAppRoot.kt`) puts it in the episode route's `podcastId`, so a fresh install finds an episode only its show's feed lists.
+- Deep-link autoplay (`deepLinkAutoplayPlan` in `navigation/NavGraphWiring.kt`) acts only on the page loaded for that link and compares the player with the page's episode, which may carry the phone's own ID.
+- Share links: `AppContainer.episodeSharePreparer` (alias reads plus `/v2/episodes/register`) is installed as `ShareManager.episodeShareTargets` at startup. A registration that misses its short wait is retried by `share/EpisodeShareRegistrationWorker`: unique work `episode-share-registration-<hash>` per (show, key), KEEP, network-gated, exponential backoff from 30 s, at most 8 runs.
+
 ## Persistence & identity
 
 - `applicationId` is `cx.aswin.boxlore`.
 - Manifest service, receiver, activity, and worker class names are system-facing identities.
 - `LegacyWorkerFactory` preserves WorkManager upgrades from legacy worker class names.
+- The unique work names `episode-share-registration-<hash of show and catalog key>` (`EpisodeShareRegistrationWorker`) are permanent.
 - Build config reads `BOXLORE_API_BASE_URL`, `BOXLORE_PUBLIC_KEY`, and the public `BOXLORE_CAST_RECEIVER_ID`, with legacy API/key local-property names still accepted for existing developer environments.
 - Core modules own Room filenames, DataStore names, SharedPreferences names, ranking identity, RSS IDs, and playback media IDs.
 - The last known `feed_first` answer lives in `noBackupFilesDir/feed_first_flag` (`1` or `0`), and the v2 kill switches' answers in `noBackupFilesDir/kill_switch_upgrade_repair_off`, `kill_switch_address_check_off` and `kill_switch_v2_discovery_off`, so a restore or device transfer never brings another phone's answers.
@@ -189,6 +198,8 @@ Unacknowledged tablet launches first show an opaque alpha notice with the Home f
 Episode push artwork keeps its six-second total deadline and uses 700ms per route, allowing later episode/show candidates within that budget.
 
 ## Testing notes
+
+- `EpisodeShowLinksTest` opens every episode link on the real route and arguments: `?show=` from the share page and `&show=` share links on each share address, with and without `t`, a clip or `autoplay`, links the app builds, older links without a show, and the notifier's route. `WebAppLinksManifestTest` also checks every episode share pattern, with and without the show, is on a claimed host and path. `FcmPayloadParserTest`, `NewEpisodePushHydrationTest` and `NewEpisodeFcmLogicTest` cover the push fields, GUID/enclosure before catalog key and recipe ID, and the recipe-ID route. `EpisodeShareRegistrationWorkerTest` covers the unique name (unchanged by the audio address a GUID request carries), constraints, backoff, the attempt cap and invalid input. `NewEpisodeDeliveryWorkerTest` covers delivery names with and without a recipe ID or catalog key. `EpisodeShowLinksTest` also opens install-referrer routes with and without a show, and `DeepLinkAutoplayPlanTest` covers autoplay and seek for a link that resolves to the phone's own ID and a stale page for another link.
 
 - Tablet context details use their native Back toolbar and keep docked playback in the browsing pane. The context player can be minimized independently. Fullscreen media requests share an app-owned window host across docked/context presentations, restoring the originating presentation when closed.
 

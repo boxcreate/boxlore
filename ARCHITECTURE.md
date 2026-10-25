@@ -26,7 +26,8 @@ These values are part of the shipping product. Renames or recreations break upgr
 | Room (main) | Database filename and tables stay stable. Shipped migrations and exported schemas are never edited; an upgrade with no migration path fails to open instead of erasing data ([`core/database/README.md`](core/database/README.md)) |
 | Room (ranking) | Separate adaptive database owned by `:core:ranking` |
 | WorkManager | `LegacyWorkerFactory` plus permanent `core.data.*` stubs resolve historical FQCNs |
-| Deep links | `boxlore://` and `boxcast://`, plus both HTTPS share-path prefixes |
+| Deep links | `boxlore://` and `boxcast://`, plus both HTTPS share-path prefixes. Patterns are only added: episode links may also carry `show=<show ID>`, which fills the route's `podcastId` |
+| Episode share registration | Unique work names `episode-share-registration-<hash of show and catalog key>` (`EpisodeShareRegistrationWorker`); never renamed |
 | BuildConfig | Prefer `BOXLORE_*`; Gradle still dual-reads `BOXCAST_*` fallbacks |
 | Episode / media IDs | `rss:` prefixes, negative RSS IDs, mediaId prefixes, and `customCacheKey` schemes stay as implemented. PI **episode supplements** also use negative episode IDs (generated under an `rss:` feed namespace) but keep `Episode.podcastId` as the Podcast Index show id — they are not `rss:` library rows. Episode identity (show ID, catalog key), recipe IDs, collisions and aliases follow [`docs/EPISODE_IDS.md`](docs/EPISODE_IDS.md) |
 | Playback instance | One UI-scoped `PlaybackRepository`; routes and workers must not construct a second one |

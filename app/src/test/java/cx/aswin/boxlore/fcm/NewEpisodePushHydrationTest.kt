@@ -452,6 +452,92 @@ class NewEpisodePushHydrationTest {
         assertNull(result)
     }
 
+    @Test
+    fun pushMatchesGuidOrEnclosureBeforeItsRecipeId() = runBlocking {
+        subscribeShow()
+        val catalog = cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+            readyIds = setOf("123"),
+            episodes = mutableMapOf("-8" to episode("-8", audioUrl = "https://cdn.example.com/ep.mp3")),
+        )
+        var recipeLookups = 0
+        val result = NewEpisodePushHydration.resolveLocalEpisode(
+            podcastId = "123",
+            payloadFeedUrl = "https://feeds.example/show.xml",
+            payloadEnclosureUrl = "https://cdn.example.com/ep.mp3",
+            sources = NewEpisodePushHydration.Sources(
+                subscriptionRepository = subscriptionRepository,
+                localEpisodeCatalog = catalog,
+                findByRecipeId = { _, _ ->
+                    recipeLookups++
+                    episode("-99")
+                },
+            ),
+            payloadRecipeId = RECIPE,
+        )
+        assertEquals("-8", result?.id)
+        assertEquals(0, recipeLookups)
+        assertEquals(0, catalog.refreshCalls)
+    }
+
+    @Test
+    fun pushWithOnlyItsRecipeIdMatchesByShowAndRecipeAfterTheFeedIsRead() = runBlocking {
+        subscribeShow()
+        val catalog = cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(readyIds = setOf("123"))
+        val asked = mutableListOf<Pair<String, Long>>()
+        val result = NewEpisodePushHydration.resolveLocalEpisode(
+            podcastId = "123",
+            payloadFeedUrl = "https://feeds.example/show.xml",
+            payloadEnclosureUrl = null,
+            sources = NewEpisodePushHydration.Sources(
+                subscriptionRepository = subscriptionRepository,
+                localEpisodeCatalog = catalog,
+                // The episode's row exists only once the refresh has read the feed.
+                findByRecipeId = { show, recipeId ->
+                    asked += show to recipeId
+                    if (catalog.refreshCalls > 0) episode("-7") else null
+                },
+            ),
+            payloadRecipeId = RECIPE,
+        )
+        assertEquals("-7", result?.id)
+        assertEquals(listOf("123" to RECIPE, "123" to RECIPE), asked)
+        assertEquals(1, catalog.refreshCalls)
+        assertEquals("-7", subscriptionRepository.getPodcastEntity("123")?.latestEpisode?.id)
+    }
+
+    @Test
+    fun pushCatalogKeyMatchesTheStoredKeyWithoutGuidOrEnclosure() = runBlocking {
+        subscribeShow()
+        // The fake catalog looks a key up by row ID.
+        val catalog = cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(
+            readyIds = setOf("123"),
+            episodes = mutableMapOf("guid-key" to episode("guid-key")),
+        )
+        val result = NewEpisodePushHydration.resolveLocalEpisode(
+            podcastId = "123",
+            payloadFeedUrl = null,
+            payloadEnclosureUrl = null,
+            sources = NewEpisodePushHydration.Sources(subscriptionRepository = subscriptionRepository, localEpisodeCatalog = catalog),
+            payloadCatalogKey = "guid-key",
+        )
+        assertEquals("guid-key", result?.id)
+        assertEquals(0, catalog.refreshCalls)
+    }
+
+    private suspend fun subscribeShow() {
+        subscriptionRepository.subscribe(
+            Podcast(
+                id = "123",
+                title = "Show",
+                artist = "A",
+                imageUrl = "https://img",
+                description = "d",
+                genre = "News",
+                feedUrl = "https://feeds.example/show.xml",
+            ),
+        )
+    }
+
     @Test fun pureRssPushRefreshesSavedFeedAndHydratesCanonicalNegativeIdWithoutCatalogLookup() = runBlocking {
         val id = "rss:private-show"
         val savedUrl = "https://publisher.example/feed?token=private"
@@ -650,5 +736,9 @@ class NewEpisodePushHydrationTest {
             podcastGenre: String?,
             podcastArtist: String?,
         ): List<Episode> = emptyList()
+    }
+
+    private companion object {
+        const val RECIPE = 4_503_599_627_370_500L
     }
 }

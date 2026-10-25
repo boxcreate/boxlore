@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.catalog.EpisodeLinkResult
+import cx.aswin.boxlore.core.catalog.resolveEpisodeLink
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
 import cx.aswin.boxlore.core.domain.ports.LocalCatalogPort
 import cx.aswin.boxlore.core.model.Episode
@@ -54,9 +56,27 @@ sealed interface EpisodeInfoUiState {
         val crossPromoLoading: Boolean = false,
         val showNotes: cx.aswin.boxlore.core.model.ShowNotes? = null,
         val chapters: List<cx.aswin.boxlore.core.model.Chapter> = emptyList(),
+        /**
+         * The ID the page was opened with. [episode] keeps the phone's own ID when a link named the
+         * episode by another of its IDs (P4 PR 13), so callers match the page by this one.
+         */
+        val requestedEpisodeId: String = episode.id,
     ) : EpisodeInfoUiState
 
     data object Error : EpisodeInfoUiState
+
+    /**
+     * The episode is only in its show's feed, so the page is reading that feed once to find it.
+     * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, episode page).
+     */
+    data object ReadingFeed : EpisodeInfoUiState
+
+    /**
+     * Nothing lists the episode the page was opened for: no row on the phone, the API doesn't know
+     * it, or its show's feed no longer has it. [podcastId] is its show when the link named one, else
+     * empty. Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, episode page).
+     */
+    data class NotFound(val podcastId: String) : EpisodeInfoUiState
 }
 
 @Suppress("LargeClass")
@@ -80,6 +100,10 @@ class EpisodeInfoViewModel(
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     private var similarEpisodesJob: Job? = null
+
+    /** The running page load and what it was asked for, so the route and the screen don't load the page twice. */
+    private var loadJob: Job? = null
+    private var loadRequest: EpisodeLoadRequests.Request? = null
     private val crossPromotionResolver = cx.aswin.boxlore.core.catalog.crosspromo.CrossPromotionResolver(podcastRepository)
     private val notesLoader = cx.aswin.boxlore.feature.info.logic.EpisodeInfoNotesLoader(
         scope = viewModelScope,
@@ -219,16 +243,15 @@ class EpisodeInfoViewModel(
         podcastTitle: String = "",
         entryPointContext: android.os.Bundle? = null,
     ) {
-        val currentState = _uiState.value
-        // If we already have this episode loaded, don't reload
-        if (currentState is EpisodeInfoUiState.Success && currentState.episode.id == episodeId) {
-            return
-        }
+        // If we already have this episode loaded (or are loading it with at least as much to go on), don't reload.
+        if (EpisodeLoadRequests.isCovered(loadRequest, loadJob?.isActive == true, _uiState.value, episodeId, podcastId)) return
+        loadJob?.cancel()
+        loadRequest = EpisodeLoadRequests.Request(episodeId, podcastId)
         // A new episode stops the previous one's Try these episodes request straight away.
         similarEpisodesJob?.cancel()
 
         notesLoader.cancel()
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             _uiState.value = EpisodeInfoUiState.Loading
             try {
                 var seed =
@@ -264,8 +287,18 @@ class EpisodeInfoViewModel(
                 var finalEpisodeAudioUrl = seed.episodeAudioUrl
                 var finalEpisodeDuration = seed.episodeDurationSec
 
+                // A link, push or Android Auto item with only an ID: resolve it by show (P4 PR 13).
+                var resolved: Episode? = null
                 if (finalPodcastId.isEmpty() || finalEpisodeTitle.isEmpty() || finalEpisodeAudioUrl.isEmpty()) {
-                    val fullEpisode = podcastRepository.getEpisode(episodeId)
+                    val link = podcastRepository.resolveEpisodeLink(episodeId, finalPodcastId.takeIf(String::isNotEmpty)) {
+                        _uiState.value = EpisodeInfoUiState.ReadingFeed
+                    }
+                    resolved = (link as? EpisodeLinkResult.Found)?.episode
+                    EpisodeLoadRequests.unresolvedState(link, finalPodcastId, finalEpisodeTitle, finalEpisodeAudioUrl)?.let { unresolved ->
+                        _uiState.value = unresolved
+                        return@launch
+                    }
+                    val fullEpisode = resolved
                     if (fullEpisode != null) {
                         currentEpisode = fullEpisode
                         if (finalPodcastId.isEmpty()) finalPodcastId = fullEpisode.podcastId ?: "unknown"
@@ -292,11 +325,14 @@ class EpisodeInfoViewModel(
                             audioUrl = finalEpisodeAudioUrl,
                             duration = finalEpisodeDuration,
                             publishedDate = 0L,
+                            podcastId = EpisodeLoadRequests.knownShow(finalPodcastId),
                         )
                 }
 
+                // The page's episode keeps the phone's own ID when the link named it by another one.
+                val pageEpisodeId = currentEpisode.id
                 // Check for resume position immediately
-                val resumeSession = playbackRepository.getSession(episodeId)
+                val resumeSession = playbackRepository.getSession(pageEpisodeId)
                 val resumeMs = resumeSession?.positionMs ?: 0L
                 val durationMs = resumeSession?.durationMs ?: (finalEpisodeDuration * 1000L)
 
@@ -331,6 +367,7 @@ class EpisodeInfoViewModel(
                         durationMs = durationMs,
                         location = initialLocation,
                         license = initialLicense,
+                        requestedEpisodeId = episodeId,
                     )
 
                 // Detect immediately on partial title (triggers search request concurrently)
@@ -341,7 +378,7 @@ class EpisodeInfoViewModel(
                     mutableMapOf<String, Any>().apply {
                         put("podcast_id", finalPodcastId)
                         put("podcast_name", finalPodcastTitle)
-                        put("episode_id", episodeId)
+                        put("episode_id", pageEpisodeId)
                         put("episode_name", finalEpisodeTitle)
                         put("is_partially_played", resumeMs > 0)
                         if (entryPointContext != null) {
@@ -356,7 +393,7 @@ class EpisodeInfoViewModel(
 
                 // 2. Fetch full details if we haven't already
                 if (finalEpisodeDescription.isEmpty()) {
-                    val fullEpisode = podcastRepository.getEpisode(episodeId)
+                    val fullEpisode = resolved ?: podcastRepository.getEpisode(pageEpisodeId, finalPodcastId.takeIf(String::isNotEmpty))
                     if (fullEpisode != null) {
                         val netImage = fullEpisode.imageUrl
                         currentEpisode =
@@ -377,11 +414,12 @@ class EpisodeInfoViewModel(
                             durationMs = durationMs,
                             location = initialLocation,
                             license = initialLicense,
+                            requestedEpisodeId = episodeId,
                         )
                     }
                 } else {
                     // Fetch network episode anyway to ensure we have any extra metadata
-                    val fullEpisode = podcastRepository.getEpisode(episodeId)
+                    val fullEpisode = resolved ?: podcastRepository.getEpisode(pageEpisodeId, finalPodcastId.takeIf(String::isNotEmpty))
                     if (fullEpisode != null) {
                         val netImage = fullEpisode.imageUrl
                         currentEpisode =
@@ -397,16 +435,20 @@ class EpisodeInfoViewModel(
                             durationMs = durationMs,
                             location = existingState?.location ?: initialLocation,
                             license = existingState?.license ?: initialLicense,
+                            requestedEpisodeId = episodeId,
                         )
                     }
                 }
 
                 detectCrossPromotion(currentEpisode, finalPodcastTitle)
-                loadRelatedAndSimilar(episodeId, finalPodcastId, finalEpisodeTitle, finalPodcastTitle, finalEpisodeDescription)
+                loadRelatedAndSimilar(pageEpisodeId, finalPodcastId, finalEpisodeTitle, finalPodcastTitle, finalEpisodeDescription)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // A newer load of this page replaced this one; it owns the page state now.
+                throw e
             } catch (e: Exception) {
                 e.printStackTrace()
                 // Keep showing partial data if success was already emitted?
-                if (_uiState.value is EpisodeInfoUiState.Loading) {
+                if (_uiState.value is EpisodeInfoUiState.Loading || _uiState.value is EpisodeInfoUiState.ReadingFeed) {
                     _uiState.value = EpisodeInfoUiState.Error
                 }
             }

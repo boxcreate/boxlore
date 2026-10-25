@@ -2,6 +2,9 @@ package cx.aswin.boxlore
 
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
+import cx.aswin.boxlore.core.catalog.EpisodeAliasReads
+import cx.aswin.boxlore.core.catalog.EpisodeSharePreparer
+import cx.aswin.boxlore.core.catalog.EpisodeShareRegistrar
 import cx.aswin.boxlore.core.catalog.DiscoveryEpisodeIds
 import cx.aswin.boxlore.core.catalog.DiscoveryRouting
 import cx.aswin.boxlore.core.catalog.FeedFixToggles
@@ -13,6 +16,7 @@ import cx.aswin.boxlore.core.catalog.LegacyRssRepairCatalog
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairRuntime
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RolloutSwitches
+import cx.aswin.boxlore.core.catalog.RoomEpisodeAliasReads
 import cx.aswin.boxlore.core.catalog.RoomDiscoveryEpisodeIds
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomFolderRepository
@@ -55,6 +59,7 @@ import cx.aswin.boxlore.core.rss.EpisodeSupplementRepository
 import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
+import cx.aswin.boxlore.share.EpisodeShareRegistrationWorker
 import cx.aswin.boxlore.sync.AnalyticsFeedTelemetry
 import cx.aswin.boxlore.sync.CloudSyncTriggerCoordinator
 import cx.aswin.boxlore.sync.FeedFirstSwitch
@@ -205,7 +210,24 @@ class AppContainer(
             localEpisodeCatalog = subscribedEpisodeCatalog,
             useEpisodeMatchBaseline = { FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) },
             rolloutSwitches = rolloutSwitches,
+            episodeAliases = episodeAliasReads,
             discoveryEpisodeIds = discoveryEpisodeIds,
+        )
+    }
+
+    /** Trusted alias reads for links, pushes, shares and Android Auto (own-IDs plan section 9; P4 PR 13). */
+    val episodeAliasReads: EpisodeAliasReads by lazy { RoomEpisodeAliasReads { database } }
+
+    /**
+     * Names the ID an episode share link carries and registers the episode first; a registration
+     * that can't reach the API in time is retried by [EpisodeShareRegistrationWorker].
+     * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, links).
+     */
+    val episodeSharePreparer: EpisodeSharePreparer by lazy {
+        EpisodeSharePreparer(
+            aliases = episodeAliasReads,
+            register = { request -> EpisodeShareRegistrar.registerOnce(podcastRepository.apiV2, request) },
+            scheduleRetry = { request -> EpisodeShareRegistrationWorker.enqueue(appContext, request) },
         )
     }
 

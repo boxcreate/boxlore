@@ -581,9 +581,15 @@ internal suspend fun autoplayDeepLinkEpisodeIfNeeded(
     start: Long?,
     success: cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success,
 ) {
-    if (success.episode.id != episodeId) return
-    val playerState = playbackRepository.playerState.value
-    if (autoplay == "true" && playerState.currentEpisode?.id != episodeId) {
+    val plan = deepLinkAutoplayPlan(
+        episodeId = episodeId,
+        autoplay = autoplay,
+        t = t,
+        start = start,
+        success = success,
+        currentEpisodeId = playbackRepository.playerState.value.currentEpisode?.id,
+    ) ?: return
+    if (plan.startEpisode) {
         val podcast = resolveLocalOrFallbackPodcast(
             localCatalog = localCatalog,
             podcastId = success.podcastId,
@@ -592,8 +598,34 @@ internal suspend fun autoplayDeepLinkEpisodeIfNeeded(
         )
         queueManager.playEpisode(success.episode, podcast)
     }
-    when {
-        t != null && t > 0L -> playbackRepository.seekTo(t * 1000L, play = autoplay == "true")
-        start != null && start > 0L -> playbackRepository.seekTo(start * 1000L, play = autoplay == "true")
+    plan.seekToMs?.let { playbackRepository.seekTo(it, play = plan.playAfterSeek) }
+}
+
+/**
+ * What a deep link's `autoplay`, `t` and `start` do once its episode page has loaded: start the
+ * page's episode unless the player already has it, then seek.
+ */
+internal data class DeepLinkAutoplayPlan(val startEpisode: Boolean, val seekToMs: Long?, val playAfterSeek: Boolean)
+
+/**
+ * The [DeepLinkAutoplayPlan] for the link to [episodeId], or null when [success] belongs to another
+ * request. The page may show the episode under the phone's own ID when the link named another of its
+ * IDs, so the player is compared with the page's episode, not the link's ID (P4 PR 13).
+ */
+internal fun deepLinkAutoplayPlan(
+    episodeId: String,
+    autoplay: String,
+    t: Long?,
+    start: Long?,
+    success: cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success,
+    currentEpisodeId: String?,
+): DeepLinkAutoplayPlan? {
+    if (success.requestedEpisodeId != episodeId) return null
+    val play = autoplay == "true"
+    val seekToMs = when {
+        t != null && t > 0L -> t * 1000L
+        start != null && start > 0L -> start * 1000L
+        else -> null
     }
+    return DeepLinkAutoplayPlan(startEpisode = play && currentEpisodeId != success.episode.id, seekToMs = seekToMs, playAfterSeek = play)
 }

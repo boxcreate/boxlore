@@ -114,4 +114,25 @@ class FcmPayloadParserTest {
         assertEquals("guid-new", parsed.guid)
         assertEquals("https://cdn.example.com/ep.mp3", parsed.enclosureUrl)
     }
+
+    @Test
+    fun newEpisodePushIdentityFieldsAreReadOnlyWhenValid() {
+        val parsed = FcmPayloadParser.parse(
+            mapOf("type" to "new_episode", "recipeId" to "4503599627370500", "showId" to "920666", "catalogKey" to " guid-1\n"),
+        )
+        assertEquals(4_503_599_627_370_500L, parsed.recipeId)
+        assertEquals("guid-1", parsed.catalogKey)
+        assertEquals("920666", parsed.podcastId, "the show ID stands in for a missing podcast ID")
+        assertEquals("777", FcmPayloadParser.podcastId(mapOf("podcastId" to "777", "showId" to "920666")))
+        assertEquals(4_503_599_627_370_500L, FcmPayloadParser.recipeId(mapOf("recipe_id" to "4503599627370500")))
+
+        // A Podcast Index ID, a sign, a leading zero or text is not a recipe ID; a recipe-range or
+        // non-canonical show is not a show.
+        listOf("5001", "-4503599627370500", "04503599627370500", "x", "9007199254740992").forEach {
+            assertNull(FcmPayloadParser.recipeId(mapOf("recipeId" to it)), it)
+        }
+        listOf("0920666", "rss:abc", "4503599627370500", "").forEach { assertNull(FcmPayloadParser.showId(mapOf("showId" to it)), it) }
+        assertNull(FcmPayloadParser.catalogKey(mapOf("catalogKey" to "  ")))
+        assertNull(FcmPayloadParser.parse(emptyMap()).recipeId)
+    }
 }

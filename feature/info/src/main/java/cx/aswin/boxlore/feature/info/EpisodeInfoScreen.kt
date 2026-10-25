@@ -75,7 +75,9 @@ fun EpisodeInfoScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val moreLikeThisOn by viewModel.moreLikeThisOn.collectAsState()
-    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf((uiState as? EpisodeInfoUiState.Success)?.episode?.takeIf { it.id == episodeId }?.imageUrl ?: episodeImageUrl, (uiState as? EpisodeInfoUiState.Success)?.episode?.takeIf { it.id == episodeId }?.podcastImageUrl), isLoading = uiState is EpisodeInfoUiState.Loading) {
+    val pageEpisode = EpisodeLoadRequests.pageEpisode(uiState, episodeId)
+    val isLoadingPage = uiState is EpisodeInfoUiState.Loading || uiState is EpisodeInfoUiState.ReadingFeed
+    cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf(pageEpisode?.imageUrl ?: episodeImageUrl, pageEpisode?.podcastImageUrl), isLoading = isLoadingPage) {
     val likedEpisodeIds by viewModel.likedEpisodeIds.collectAsState()
     val completedEpisodeIds by viewModel.completedEpisodeIds.collectAsState()
     val queuedEpisodeIds by viewModel.queuedEpisodeIds.collectAsState()
@@ -127,9 +129,10 @@ fun EpisodeInfoScreen(
         )
     }
 
-    // Download State
-    val isDownloaded by viewModel.isDownloaded(episodeId).collectAsState(initial = false)
-    val isDownloading by viewModel.isDownloading(episodeId).collectAsState(initial = false)
+    // Download state of the page's episode: the phone's own ID when the link named another one.
+    val downloadEpisodeId = pageEpisode?.id ?: episodeId
+    val isDownloaded by remember(downloadEpisodeId) { viewModel.isDownloaded(downloadEpisodeId) }.collectAsState(initial = false)
+    val isDownloading by remember(downloadEpisodeId) { viewModel.isDownloading(downloadEpisodeId) }.collectAsState(initial = false)
     val showRemoveDownloadDialog by viewModel.showRemoveDownloadDialog.collectAsState()
 
     // Scroll-driven animation state
@@ -204,6 +207,10 @@ fun EpisodeInfoScreen(
                     Text(androidx.compose.ui.res.stringResource(R.string.episode_info_load_error), color = MaterialTheme.colorScheme.error)
                 }
             }
+            is EpisodeInfoUiState.ReadingFeed ->
+                cx.aswin.boxlore.feature.info.components.EpisodeLinkStatus(true, "", onPodcastClick, onBack, modifier)
+            is EpisodeInfoUiState.NotFound ->
+                cx.aswin.boxlore.feature.info.components.EpisodeLinkStatus(false, state.podcastId, onPodcastClick, onBack, modifier)
             is EpisodeInfoUiState.Success -> {
                 Box(modifier = modifier.fillMaxSize()) {
                     cx.aswin.boxlore.feature.info.components.InfoArtworkBackground(
@@ -344,13 +351,14 @@ fun EpisodeInfoScreen(
                     if (showShareSheet) {
                         val currentSuccessState = uiState as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
                         val shareEpisode =
-                            currentSuccessState?.episode ?: cx.aswin.boxlore.core.model.Episode(
+                            currentSuccessState?.let(EpisodeLoadRequests::shareEpisode) ?: cx.aswin.boxlore.core.model.Episode(
                                 id = episodeId,
                                 title = episodeTitle,
                                 description = episodeDescription,
                                 audioUrl = episodeAudioUrl,
                                 imageUrl = episodeImageUrl,
                                 duration = episodeDuration,
+                                podcastId = podcastId.takeIf(String::isNotBlank),
                             )
                         cx.aswin.boxlore.core.designsystem.components.ShareBottomSheet(
                             id = shareEpisode.id,
@@ -362,6 +370,7 @@ fun EpisodeInfoScreen(
                             durationMs = shareEpisode.duration * 1000L,
                             currentPositionMs = currentSuccessState?.resumePositionMs ?: 0L,
                             showTimestampOption = false,
+                            episode = shareEpisode,
                             onShare = { _, _, timestamp, target ->
                                 cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
                                     context = context,

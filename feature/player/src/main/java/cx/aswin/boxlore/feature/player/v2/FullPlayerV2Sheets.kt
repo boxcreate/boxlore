@@ -231,6 +231,7 @@ internal fun PlayerShareSheet(
         durationMs = model.episode.duration * 1000L,
         currentPositionMs = currentPosition,
         showTimestampOption = true,
+        episode = model.episode,
         onShare = { _, _, timestamp, target ->
             cx.aswin.boxlore.core.designsystem.share.ShareManager.shareEpisode(
                 context = context,
