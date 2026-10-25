@@ -50,7 +50,9 @@ object EpisodeShareIds {
         // A canonical show ID reads back as the same text, so the link carries it exactly as stored.
         val show = podcastId?.let(EpisodeRecipeId::showIdOrNull)?.takeIf { it < EpisodeRecipeId.MIN }?.toString()
             ?: return EpisodeShareTarget.Episode(localId, null)
-        val shared = recipeId?.takeIf(EpisodeRecipeId::isRecipeId) ?: EpisodeRecipeId.showIdOrNull(localId)
-        return if (shared != null) EpisodeShareTarget.Episode(shared.toString(), show) else EpisodeShareTarget.Show(show)
+        return when (val shared = recipeId?.takeIf(EpisodeRecipeId::isRecipeId) ?: EpisodeRecipeId.showIdOrNull(localId)) {
+            null -> EpisodeShareTarget.Show(show)
+            else -> EpisodeShareTarget.Episode(shared.toString(), show)
+        }
     }
 }

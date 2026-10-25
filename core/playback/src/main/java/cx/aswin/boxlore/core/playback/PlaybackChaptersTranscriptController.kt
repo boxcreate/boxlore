@@ -1,6 +1,6 @@
 package cx.aswin.boxlore.core.playback
 
-import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.BriefingLinks
 import cx.aswin.boxlore.core.catalog.ChapterOfflineStorage
 import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
@@ -84,7 +84,6 @@ internal class PlaybackChaptersTranscriptController(
                                             val date = parts[2]
                                             val audioUri = android.net.Uri.parse(episode?.audioUrl ?: "")
                                             val version = audioUri.getQueryParameter("v")
-                                            val versionParam = if (version != null) "&v=$version" else ""
                                             val mappedRegion = mapRegionForBriefing(region)
                                             android.util.Log.d(
                                                 "PlaybackRepo",
@@ -93,8 +92,8 @@ internal class PlaybackChaptersTranscriptController(
 
                                             val updatedEpisode =
                                                 episode?.copy(
-                                                    chaptersUrl = "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/$mappedRegion?d=$date$versionParam",
-                                                    transcriptUrl = "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/$mappedRegion?d=$date$versionParam",
+                                                    chaptersUrl = BriefingLinks.chaptersUrl(mappedRegion, date, version),
+                                                    transcriptUrl = BriefingLinks.transcriptUrl(mappedRegion, date, version),
                                                 )
                                             android.util.Log.d(
                                                 "PlaybackRepo",

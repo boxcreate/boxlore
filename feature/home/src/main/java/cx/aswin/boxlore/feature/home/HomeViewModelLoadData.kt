@@ -68,8 +68,9 @@ internal fun HomeViewModel.loadData() {
                                 country = region,
                             )
 
-                        // Brief editions load independently of the discovery country.
-                        trendingState.value = bootstrapData.trending
+                        // Brief editions load independently of the discovery country. A failed
+                        // request with nothing to fall back on keeps the trending Home shows.
+                        if (!bootstrapData.failed) trendingState.value = bootstrapData.trending
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {

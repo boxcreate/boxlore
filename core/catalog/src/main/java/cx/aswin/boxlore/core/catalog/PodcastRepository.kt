@@ -59,14 +59,21 @@ class PodcastRepository(
     boxLoreApiV2: BoxLoreApiV2? = null,
     /**
      * The v2 build's rollout switches (feed-first show pages, v2 discovery, address check, upgrade
-     * repair), from the app's PostHog flags. Added in P4 (plan section 11, Rollback); the code
-     * paths that read them land later.
+     * repair), from the app's PostHog flags. Added in P4 (plan section 11, Rollback). Discovery
+     * reads [RolloutSwitches.v2Discovery] per request ([usesV2Discovery]); the other code paths
+     * that read them land later.
      */
     val rolloutSwitches: RolloutSwitches = RolloutSwitches(),
     /** Trusted alias reads for links, pushes, shares and Android Auto (P4 PR 13); none in older tests. */
     val episodeAliases: EpisodeAliasReads = EpisodeAliasReads.NONE,
     /** Test seam for the feed read of an episode only its feed lists ([resolveEpisodeLink]). */
     feedReader: EpisodeFeedReader? = null,
+    /**
+     * Translates episode IDs between the phone's stored IDs and the recipe IDs of the `/v2`
+     * discovery routes. Production passes [RoomDiscoveryEpisodeIds]; the default translates nothing.
+     * Added in P4 PR 12 (own-IDs plan section 9, v2 discovery routes).
+     */
+    internal val discoveryEpisodeIds: DiscoveryEpisodeIds = DiscoveryEpisodeIds.Unmapped,
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
     internal val episodeFeedReader: EpisodeFeedReader by lazy { feedReader ?: RssEpisodeFeedReader(cx.aswin.boxlore.core.rss.RssFeedClient()) { apiV2 } }
 
@@ -80,6 +87,23 @@ class PodcastRepository(
      * Built on first use. Added in P4 of the own-episode-IDs plan (plan section 9).
      */
     val apiV2: BoxLoreApiV2 by lazy { boxLoreApiV2 ?: NetworkModule.createBoxLoreApiV2(baseUrl, cachedClient) }
+
+    /** Last good `/v2` discovery answers of this process (P4 PR 12, plan section 9). */
+    internal val v2LastGood = V2DiscoveryLastGood()
+
+    /** Last good `/v2` personal picks, kept across restarts (P4 PR 12, plan section 9; decision D15). */
+    internal val recommendationsLastGood =
+        RecommendationsLastGood {
+            context.applicationContext.getSharedPreferences(RecommendationsLastGood.FILE, android.content.Context.MODE_PRIVATE)
+        }
+
+    /**
+     * True while discovery uses the `/v2` routes ([RolloutSwitches.v2Discovery]), read per request.
+     *
+     * LEGACY(own-ids): the v1 discovery fallback. Remove at sunset step S7 (MIGRATION.md §6) once the
+     * v1 API client methods are removed.
+     */
+    internal fun usesV2Discovery(): Boolean = rolloutSwitches.v2Discovery()
     internal val contentCatalogPreferences =
         context.applicationContext.getSharedPreferences(
             "content_catalog_cache",
@@ -87,6 +111,7 @@ class PodcastRepository(
         )
 
     suspend fun getTrendingPodcasts(country: String = "us", limit: Int = 50, category: String? = null, offset: Int = 0,): List<Podcast> = withContext(Dispatchers.IO) {
+        if (usesV2Discovery()) return@withContext v2TrendingPodcasts(country, limit, category, offset)
         // Fallback or non-streaming implementation
         try {
             val response = api.getTrending(publicKey, country, limit, category, offset).execute()
@@ -110,6 +135,7 @@ class PodcastRepository(
             val queryLanguages =
                 resolveContentLanguagesForQuery(languages, resolvedCountry ?: "us")
                     .joinToString(",")
+            if (usesV2Discovery()) return@withContext v2CuratedPodcasts(vibeId, resolvedCountry, queryLanguages).orEmpty()
             val response =
                 api
                     .getCuratedVibe(
@@ -136,6 +162,11 @@ class PodcastRepository(
         offset: Int = 0,
     ): kotlinx.coroutines.flow.Flow<List<Podcast>> = trendingPodcastsStream(country, limit, category, offset)
 
+    /**
+     * Show search on v1 `/search` (catalog, Apple and Podcast Index results) whatever the v2
+     * discovery switch says: shows carry no episode IDs, and `/v2/search` has no Apple or Podcast
+     * Index results, so listeners could no longer find shows outside the catalog.
+     */
     suspend fun searchPodcastsWithCorrection(query: String): SearchResult = withContext(Dispatchers.IO) {
         try {
             val response = api.search(publicKey, query).execute()
@@ -202,7 +233,7 @@ class PodcastRepository(
         mergeShowSearchResults(typeahead, hybrid.podcasts)
     }
 
-    private fun mapSearchFeedToPodcast(feed: cx.aswin.boxlore.core.network.model.SearchFeed): Podcast? {
+    internal fun mapSearchFeedToPodcast(feed: cx.aswin.boxlore.core.network.model.SearchFeed): Podcast? {
         val podcastId =
             when {
                 feed.id != 0L -> feed.id.toString()
@@ -231,6 +262,7 @@ class PodcastRepository(
      * [SemanticSearchGroupedResult.podcasts] may be empty on older Worker builds.
      */
     suspend fun searchSemanticGrouped(query: String, country: String,): SemanticSearchGroupedResult = withContext(Dispatchers.IO) {
+        if (usesV2Discovery()) return@withContext v2SemanticGrouped(query, country)
         try {
             val response = api.searchSemantic(publicKey, query, country).execute()
             if (response.isSuccessful && response.body() != null) {
@@ -529,24 +561,6 @@ class PodcastRepository(
         }
     }
 
-    /**
-     * The recommendations/bootstrap endpoints only understand Podcast Index-sourced history
-     * and subscriptions, so both callers need to strip RSS entries the same way before
-     * building a request — shared here to avoid two copies of the same filter drifting apart.
-     */
-    private fun filterToPodcastIndexScope(
-        history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
-        subscribedPodcastIds: List<String>,
-    ): PodcastIndexScopedInputs {
-        val podcastIndexHistory =
-            history.filter { item ->
-                item.podcastId?.startsWith("rss:") != true &&
-                    item.episodeId?.toLongOrNull()?.let { it > 0L } != false
-            }
-        val podcastIndexSubscriptionIds = subscribedPodcastIds.filterNot { it.startsWith("rss:") }
-        return PodcastIndexScopedInputs(podcastIndexHistory, podcastIndexSubscriptionIds)
-    }
-
     suspend fun getContentCatalog(forceRefresh: Boolean = false): cx.aswin.boxlore.core.catalog.content.ContentCatalogSnapshot? = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val cached = readCachedContentCatalog(now)
@@ -586,74 +600,13 @@ class PodcastRepository(
         subscribedGenres: List<String> = emptyList(),
         languages: List<String>? = null,
     ): List<Episode> = withContext(Dispatchers.IO) {
-        val (podcastIndexHistory, podcastIndexSubscriptionIds) =
-            filterToPodcastIndexScope(history, subscribedPodcastIds)
-        // Normalise once, so blank-only interests count as none and both request paths agree.
-        val boundedInterests = boundedRecommendationInterests(interests)
-        if (podcastIndexHistory.isEmpty() && boundedInterests.isEmpty() && podcastIndexSubscriptionIds.isEmpty()) {
-            // Nothing Podcast Index-scoped to base recommendations on — skip the network call.
-            return@withContext emptyList()
+        if (usesV2Discovery()) {
+            val resolvedCountry = country?.let(cx.aswin.boxlore.core.model.ContentRegions::canonicalize) ?: "us"
+            // The `/v2` body takes at most four languages and expands `id` itself.
+            val bodyLanguages = cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(languages.orEmpty(), resolvedCountry)
+            return@withContext v2PersonalizedRecommendations(history, interests, resolvedCountry, subscribedPodcastIds, bodyLanguages)
         }
-        val resolvedCountry =
-            country?.let {
-                cx.aswin.boxlore.core.model.ContentRegions
-                    .canonicalize(it)
-            } ?: "us"
-        val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)
-        val cacheKey =
-            buildString {
-                append(resolvedCountry)
-                append("|")
-                append(queryLanguages.joinToString(","))
-                append("|")
-                append(boundedInterests.sorted().joinToString(","))
-                append("|")
-                append(podcastIndexSubscriptionIds.sorted().joinToString(","))
-                append("|")
-                append(subscribedGenres.sorted().joinToString(","))
-                append("|")
-                append(podcastIndexHistory.joinToString(",") { "${it.episodeId}:${it.progressMs}" })
-            }
-
-        val cached = recommendationsCache[cacheKey]
-        if (cached != null) {
-            android.util.Log.d("PodcastRepository", "Cache HIT for getPersonalizedRecommendations: key=$cacheKey")
-            return@withContext cached
-        }
-        android.util.Log.d("PodcastRepository", "Recommendation cache miss; fetching candidates")
-
-        try {
-            val v2Results =
-                try {
-                    fetchRecommendationV2(
-                        history = podcastIndexHistory,
-                        interests = boundedInterests,
-                        country = resolvedCountry,
-                        subscribedPodcastIds = podcastIndexSubscriptionIds,
-                        languages = queryLanguages,
-                    )
-                } catch (error: kotlinx.coroutines.CancellationException) {
-                    throw error
-                } catch (error: Exception) {
-                    android.util.Log.w("BoxCastRepo", "Recommendation v2 failed; using legacy", error)
-                    null
-                }
-            val results =
-                v2Results ?: fetchLegacyRecommendations(
-                    history = podcastIndexHistory,
-                    interests = boundedInterests,
-                    country = resolvedCountry,
-                    subscribedPodcastIds = podcastIndexSubscriptionIds,
-                    subscribedGenres = subscribedGenres,
-                )
-            recommendationsCache[cacheKey] = results
-            results
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            android.util.Log.e("BoxCastRepo", "Personalized Recommendations Error", e)
-            emptyList()
-        }
+        v1PersonalizedRecommendations(history, interests, country, subscribedPodcastIds, subscribedGenres, languages)
     }
 
     suspend fun getBecauseYouLikeRecommendations(
@@ -662,7 +615,10 @@ class PodcastRepository(
         excludePodcastId: String? = null,
         country: String? = null,
     ): BecauseYouLikeData = withContext(Dispatchers.IO) {
-        val cacheKey = "byl|$podcastTitle|$excludePodcastId|$country"
+        // `/v2` answers carry recipe IDs, so they never share a cached answer with v1. The switch is
+        // read once, so the key and the route always agree.
+        val v2 = usesV2Discovery()
+        val cacheKey = (if (v2) "v2|" else "") + "byl|$podcastTitle|$excludePodcastId|$country"
         val cached = becauseYouLikeCache[cacheKey]
         if (cached != null) {
             android.util.Log.d("PodcastRepository", "Cache HIT for getBecauseYouLikeRecommendations: key=$cacheKey")
@@ -677,6 +633,7 @@ class PodcastRepository(
                     excludePodcastId = excludePodcastId,
                     country = country,
                 )
+            if (v2) return@withContext v2BecauseYouLike(request, cacheKey)
             val response = api.getBecauseYouLikeRecommendations(publicKey, request).execute()
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
@@ -704,6 +661,7 @@ class PodcastRepository(
                     ?: "us"
             val queryLanguages =
                 resolveContentLanguagesForQuery(query.languages, resolvedCountry)
+            if (usesV2Discovery()) return@withContext v2SimilarEpisodes(query, resolvedCountry, queryLanguages)
             val request =
                 cx.aswin.boxlore.core.network.model.SimilarEpisodesRequest(
                     id =
@@ -806,6 +764,7 @@ class PodcastRepository(
 
     suspend fun getBriefingMetadata(region: String): Briefing? = withContext(Dispatchers.IO) {
         val mappedRegion = mapRegionForBriefing(region)
+        if (usesV2Discovery()) return@withContext v2BriefingMetadata(mappedRegion)
         try {
             val response = api.getBriefingMetadata(publicKey, mappedRegion).execute()
             if (response.isSuccessful) {
@@ -820,6 +779,7 @@ class PodcastRepository(
     }
 
     suspend fun getHomeBootstrapDataFast(country: String): HomeBootstrapData = withContext(Dispatchers.IO) {
+        if (usesV2Discovery()) return@withContext v2HomeBootstrapFast(country)
         try {
             val response = api.getHomeBootstrapGet(publicKey, country).execute()
             if (response.isSuccessful && response.body() != null) {
@@ -859,6 +819,11 @@ class PodcastRepository(
             val resolvedCountry =
                 cx.aswin.boxlore.core.model.ContentRegions
                     .canonicalize(country)
+            if (usesV2Discovery()) {
+                // The `/v2` recommendation body takes at most four languages and expands `id` itself.
+                val bodyLanguages = cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(languages.orEmpty(), resolvedCountry)
+                return@withContext v2HomeRecommendations(resolvedCountry, history, interests, subscribedPodcastIds, bodyLanguages)
+            }
             val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)
             val (podcastIndexHistory, podcastIndexSubscriptionIds) =
                 filterToPodcastIndexScope(history, subscribedPodcastIds)
@@ -914,9 +879,14 @@ class PodcastRepository(
                 .canonicalize(country)
         val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry).joinToString(",")
         val result = java.util.concurrent.ConcurrentHashMap<String, List<Podcast>>()
+        val v2 = usesV2Discovery()
         vibeIds
             .map { vibeId ->
                 async {
+                    if (v2) {
+                        v2CuratedPodcasts(vibeId, resolvedCountry, queryLanguages)?.let { result[vibeId] = it }
+                        return@async
+                    }
                     try {
                         val resp = api.getCuratedVibe(publicKey, vibeId, resolvedCountry, queryLanguages).execute()
                         if (resp.isSuccessful && resp.body() != null) {
@@ -934,6 +904,7 @@ class PodcastRepository(
     suspend fun getCuratedCuriosity(page: Int = 1, bypassCache: Boolean = false,): CuratedCuriosityResponseDto? = withContext(Dispatchers.IO) {
         try {
             val cbVal = if (bypassCache) System.currentTimeMillis().toString() else null
+            if (usesV2Discovery()) return@withContext v2CuratedCuriosity(page, cbVal)
             val resp = api.getCuratedCuriosity(publicKey, page, cbVal).execute()
             if (resp.isSuccessful) {
                 resp.body()
@@ -978,7 +949,7 @@ class PodcastRepository(
         // suppress the v3 fetch and then invalidate grouped v3 section responses.
 
         private val episodesCache = TimedLruCache<String, EpisodePage>(maxEntries = 30, ttlMillis = DEFAULT_EPISODE_CACHE_TTL_MS)
-        private val recommendationsCache = TimedLruCache<String, List<Episode>>(maxEntries = 20, ttlMillis = DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS)
-        private val becauseYouLikeCache = TimedLruCache<String, BecauseYouLikeData>(maxEntries = 20, ttlMillis = DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS)
+        internal val recommendationsCache = TimedLruCache<String, List<Episode>>(maxEntries = 20, ttlMillis = DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS)
+        internal val becauseYouLikeCache = TimedLruCache<String, BecauseYouLikeData>(maxEntries = 20, ttlMillis = DEFAULT_RECOMMENDATIONS_CACHE_TTL_MS)
     }
 }

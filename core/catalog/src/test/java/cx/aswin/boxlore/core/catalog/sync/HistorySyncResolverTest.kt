@@ -17,6 +17,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -50,6 +51,22 @@ class HistorySyncResolverTest {
     @After
     fun tearDown() {
         database.close()
+    }
+
+    @Test
+    fun resolveHistoryItem_aRowAnEarlierPullDeliveredAndThisDeviceRemovedIsNotStoredAgain() = runTest {
+        fun remote(id: String, updatedAt: Long) =
+            ListeningHistorySyncDto(episodeId = id, podcastId = "pod-1", episodeTitle = "Cloud $id", progressMs = 500L, lastPlayedAt = 900L, updatedAt = updatedAt)
+
+        // Earlier pulls delivered everything stored up to 5,000; "removed" was removed here since.
+        resolver.resolveHistoryItem(remote("removed", updatedAt = 5_000L), syncedAt = 8_000L, deliveredUntil = 5_000L)
+        resolver.resolveHistoryItem(remote("new", updatedAt = 5_001L), syncedAt = 8_000L, deliveredUntil = 5_000L)
+        // A device that never synced (or a delta pull) stores every missing row, as before.
+        resolver.resolveHistoryItem(remote("first-sync", updatedAt = 10L), syncedAt = 8_000L)
+
+        assertNull(listeningHistoryDao.getHistoryItem("removed"))
+        assertEquals("Cloud new", listeningHistoryDao.getHistoryItem("new")!!.episodeTitle)
+        assertNotNull(listeningHistoryDao.getHistoryItem("first-sync"))
     }
 
     @Test

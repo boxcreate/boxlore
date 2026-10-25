@@ -3,7 +3,7 @@ package cx.aswin.boxlore.feature.briefing
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.BriefingLinks
 import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.designsystem.R
@@ -53,7 +53,7 @@ class BriefingViewModel(
         fetchChapters = { briefing ->
             val version = android.net.Uri.parse(briefing.audioUrl).getQueryParameter("v")
             val url = briefing.chaptersUrl
-                ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}${version?.let { "&v=$it" }.orEmpty()}"
+                ?: BriefingLinks.chaptersUrl(briefing.region, briefing.date, version)
             ChapterRepository.getChapters(url)
         },
         fetchSession = { playbackRepository.getSession(getBriefingEpisodeId(it)) },
@@ -176,7 +176,6 @@ class BriefingViewModel(
 
             val audioUri = android.net.Uri.parse(briefing.audioUrl)
             val version = audioUri.getQueryParameter("v")
-            val versionParam = if (version != null) "&v=$version" else ""
 
             val descriptionHtml = buildString {
                 append("<p>Your daily AI-generated news briefing for ${briefing.region.uppercase()}.</p>")
@@ -209,9 +208,9 @@ class BriefingViewModel(
                 duration = 0,
                 publishedDate = publishedDate,
                 transcriptUrl = briefing.transcriptUrl
-                    ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
+                    ?: BriefingLinks.transcriptUrl(briefing.region, briefing.date, version),
                 chaptersUrl = briefing.chaptersUrl
-                    ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam"
+                    ?: BriefingLinks.chaptersUrl(briefing.region, briefing.date, version)
             )
 
             queueManager.playEpisode(

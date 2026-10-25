@@ -186,13 +186,8 @@ class PlaybackRepository internal constructor(
         }
 
         repositoryScope.launch {
-            val currentLocalLastPlayed = currentId?.let {
-                historyStore.listenerStore.projectedHistory(it)?.lastPlayedAt
-            } ?: 0L
-
-            if (lastPlayedAt <= currentLocalLastPlayed) {
-                return@launch
-            }
+            // Only a newer session of another episode; the same episode under another of its IDs stays as it is.
+            if (!IdleSessionHandoff.shouldHandOver(currentId, episodeId, lastPlayedAt, historyStore.listenerStore)) return@launch
 
             val savedQueue = queueRepository.getQueueEpisodeSnapshot()
             val restored = PlaybackSessionRestoreHelper.resolveRestoredSession(

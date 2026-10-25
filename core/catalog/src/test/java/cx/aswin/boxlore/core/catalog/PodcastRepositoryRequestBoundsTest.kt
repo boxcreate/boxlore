@@ -41,6 +41,10 @@ class PodcastRepositoryRequestBoundsTest {
     private val maxInFlight = AtomicInteger()
     private val bodiesByPath = CopyOnWriteArrayList<Pair<String, String>>()
 
+    /** The v1 cases pin the v1 discovery routes; the `/v2` cases switch it on. */
+    @Volatile
+    private var v2Discovery = false
+
     @BeforeEach
     fun setUp() {
         server = MockWebServer()
@@ -64,6 +68,8 @@ class PodcastRepositoryRequestBoundsTest {
             context = fakeContext(),
             rssRepository = RssPodcastRepository.createForTests(context = fakeContext(), database = fakeDatabase()),
             boxLoreApi = NetworkModule.createBoxLoreApi(server.url("/").toString(), client),
+            boxLoreApiV2 = NetworkModule.createBoxLoreApiV2(server.url("/").toString(), client),
+            rolloutSwitches = RolloutSwitches(v2Discovery = { v2Discovery }),
         )
     }
 
@@ -124,10 +130,10 @@ class PodcastRepositoryRequestBoundsTest {
 
         repository.getPersonalizedRecommendations(history = emptyList(), interests = interests, country = "us")
 
-        val legacy = parse(bodiesByPath.first { it.first == "/recommendations" }.second)
+        val legacy = parse(bodiesByPath.single { it.first == "/recommendations" }.second)
         assertEquals((1..12).map { "Interest $it" }, legacy.interests())
-        val v2 = parse(bodiesByPath.first { it.first == "/recommendations/v2" }.second)
-        assertEquals(12, v2.interests().size)
+        // The v1 path asks contract 1 only, as shipped builds do.
+        assertTrue(bodiesByPath.none { it.first == "/recommendations/v2" })
     }
 
     @Test
@@ -138,7 +144,6 @@ class PodcastRepositoryRequestBoundsTest {
 
         val expected = listOf("Topic A", "Topic B") + (1..10).map { "Interest $it" }
         assertEquals(expected, parse(bodiesByPath.first { it.first == "/recommendations" }.second).interests())
-        assertEquals(expected, parse(bodiesByPath.first { it.first == "/recommendations/v2" }.second).interests())
     }
 
     @Test
@@ -155,6 +160,46 @@ class PodcastRepositoryRequestBoundsTest {
 
         val bootstrap = parse(bodiesByPath.first { it.first == "/home/bootstrap" }.second)
         assertEquals((1..12).map { "Topic $it" }, bootstrap.getAsJsonObject("recommendationsRequest").interests())
+    }
+
+    @Test
+    fun `v2 recommendations send the contract version and at most 12 interests, never the v1 routes`() = runTest {
+        v2Discovery = true
+        val interests = (1..20).map { "Interest $it" }
+
+        repository.getPersonalizedRecommendations(history = emptyList(), interests = interests, country = "us")
+
+        val v2 = parse(bodiesByPath.single { it.first == "/v2/recommendations" }.second)
+        assertEquals(2, v2.get("contractVersion").asInt)
+        assertEquals((1..12).map { "Interest $it" }, v2.interests())
+        assertTrue(bodiesByPath.none { it.first == "/recommendations" || it.first == "/recommendations/v2" })
+    }
+
+    @Test
+    fun `v2 Home recommendations send the current recommendation body in the bootstrap request`() = runTest {
+        v2Discovery = true
+
+        repository.getHomeRecommendations(country = "us", interests = (1..30).map { "Topic $it" })
+
+        val bootstrap = parse(bodiesByPath.single { it.first == "/v2/home/bootstrap" }.second)
+        val recommendations = bootstrap.getAsJsonObject("recommendationsRequest")
+        assertEquals(2, recommendations.get("contractVersion").asInt)
+        assertEquals((1..12).map { "Topic $it" }, recommendations.interests())
+        assertEquals(listOf("recommendations"), bootstrap.getAsJsonArray("include").map { it.asString })
+    }
+
+    @Test
+    fun `v2 Home recommendations without a seed or an interest ask for the country's default interests`() = runTest {
+        v2Discovery = true
+
+        val picks = repository.getHomeRecommendations(country = "gb")
+
+        val recommendations = parse(bodiesByPath.single { it.first == "/v2/home/bootstrap" }.second).getAsJsonObject("recommendationsRequest")
+        assertEquals(listOf("Football", "News", "Comedy", "History"), recommendations.interests())
+        assertEquals(2, recommendations.get("contractVersion").asInt)
+        // This answer has no picks and there are none to keep: Home keeps what it shows.
+        assertTrue(picks.items.isEmpty())
+        assertTrue(picks.failed)
     }
 
     private fun parse(body: String): JsonObject = JsonParser.parseString(body).asJsonObject

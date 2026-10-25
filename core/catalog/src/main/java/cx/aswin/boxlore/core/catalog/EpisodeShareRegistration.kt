@@ -99,7 +99,8 @@ class EpisodeSharePreparer(
             ?.takeIf { it is EpisodeShareTarget.Episode && it.showId != null }
             ?: EpisodeShareIds.choose(episode.id, episode.podcastId, episode.recipeId)
         val showId = chosen.showIdOrNull() ?: return chosen
-        val catalogKey = alias?.takeIf { it.podcastId == showId }?.catalogKey ?: episode.catalogKey ?: return chosen
+        val catalogKey = alias?.takeIf { it.podcastId == showId }?.catalogKey ?: episode.catalogKey
+        if (catalogKey == null) return chosen
         val target = if (chosen is EpisodeShareTarget.Show) recipeTarget(showId, catalogKey) ?: return chosen else chosen
         val request = EpisodeShareRegistrar.requestFor(showId, catalogKey, episode.audioUrl) ?: return target
         val outcome = withTimeoutOrNull(timeoutMs) { register(request) } ?: EpisodeShareRegistrationOutcome.RETRY

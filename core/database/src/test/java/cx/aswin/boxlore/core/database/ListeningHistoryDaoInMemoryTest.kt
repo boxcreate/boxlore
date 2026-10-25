@@ -505,4 +505,21 @@ class ListeningHistoryDaoInMemoryTest {
         assertFalse(untouched.isDirty)
         assertEquals(0, dao.repairPlaybackArtworkLinks())
     }
+
+    @Test
+    fun aPushBatchReadsOnlyItsOwnRowsTheNewestFirstWithoutDescriptions() = runTest {
+        dao.upsertAll(
+            (1..5).map { history("ep-$it", lastPlayedAt = it * 100L).copy(episodeDescription = "A long description of ep-$it") } +
+                history("clean", lastPlayedAt = 900L, isDirty = false),
+        )
+
+        val batch = dao.getDirtyListeningHistoryBatch(limit = 3)
+
+        assertEquals(listOf("ep-5", "ep-4", "ep-3"), batch.map { it.episodeId })
+        assertTrue(batch.all { it.episodeDescription == null })
+        // Every field the push sends and compares when it marks a row synced is read.
+        val stored = dao.getHistoryItem("ep-5")!!
+        assertEquals(stored.copy(episodeDescription = null), batch.first())
+        assertEquals(5, dao.getDirtyListeningHistoryBatch(limit = 100).size)
+    }
 }

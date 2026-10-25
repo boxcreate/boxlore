@@ -1,0 +1,88 @@
+{
+  "status": "true",
+  "vibe": "morning_news",
+  "feeds": [
+    {
+      "id": 55810,
+      "itunesId": null,
+      "title": "NPR News Now",
+      "author": "NPR",
+      "image": "https://media.npr.org/assets/img/2023/01/24/npr-news-now_tile_sq-2334a5fd44563fa94cdcdb27384b0f05987c2d15.jpg?s=1400&c=66&f=jpg",
+      "artwork": "https://media.npr.org/assets/img/2023/01/24/npr-news-now_tile_sq-2334a5fd44563fa94cdcdb27384b0f05987c2d15.jpg?s=1400&c=66&f=jpg",
+      "language": "en-us",
+      "categories": {
+        "1": "daily",
+        "2": "news"
+      },
+      "latestEpisode": {
+        "id": 8729163079552997,
+        "title": "3am ET, October 25 | The latest headlines from NPR",
+        "datePublished": 1792912192,
+        "duration": 280,
+        "enclosureUrl": "https://prfx.byspotify.com/e/play.podtrac.com/npr-500005/npr.simplecastaudio.com/368f8510-314e-46f1-8d26-5b87ed6ab6eb/episodes/2d73f747-866f-4a0f-b090-0f63ef7a0c60/audio/128/default.mp3?awCollectionId=368f8510-314e-46f1-8d26-5b87ed6ab6eb&awEpisodeId=2d73f747-866f-4a0f-b090-0f63ef7a0c60&feed=O9WlY7a5&t=podcast&e=nx-s1-20261025-0300-long&p=500005&d=280&size=4586728",
+        "image": "https://media.npr.org/assets/img/2023/01/24/npr-news-now_tile_sq-2334a5fd44563fa94cdcdb27384b0f05987c2d15.jpg?s=1400&c=66&f=jpg",
+        "feedImage": "https://media.npr.org/assets/img/2023/01/24/npr-news-now_tile_sq-2334a5fd44563fa94cdcdb27384b0f05987c2d15.jpg?s=1400&c=66&f=jpg",
+        "feedId": 55810,
+        "feedTitle": "NPR News Now",
+        "description": "The latest headlines from NPR at the top of this hour. The stories you hear are written, r..."
+      },
+      "matchScore": 0.539562,
+      "penalizedScore": 0.5146710429787185,
+      "description": null
+    },
+    {
+      "id": 3709813,
+      "itunesId": null,
+      "title": "DW News Brief",
+      "author": "DW",
+      "image": "https://static.dw.com/image/55134716_7.png",
+      "artwork": "https://static.dw.com/image/55134716_7.png",
+      "language": "en",
+      "categories": {
+        "1": "news"
+      },
+      "latestEpisode": {
+        "id": 7923003907073562,
+        "title": "The world news at 21:00 UTC on 10/24/2026",
+        "datePublished": 1792875600,
+        "duration": 90,
+        "enclosureUrl": "https://dts.podtrac.com/redirect.mp3/radiodownloaddw-a.akamaihd.net/Events/podcasts/en/33191_podcast_en_newsbrief/2026_10_24_Top_Stories___Saturday_21_00_UTC_984518-128KB-podcast-33191-984518.mp3",
+        "image": "https://static.dw.com/image/55134716_7.png",
+        "feedImage": "https://static.dw.com/image/55134716_7.png",
+        "feedId": 3709813,
+        "feedTitle": "DW News Brief",
+        "description": "Up-to-the-minute news from around the world."
+      },
+      "matchScore": 0.51475525,
+      "penalizedScore": 0.4629549331796911,
+      "description": null
+    },
+    {
+      "id": 728899,
+      "itunesId": null,
+      "title": "The World This Hour",
+      "author": "CBC",
+      "image": "https://www.cbc.ca/radio/podcasts/images/theworldthishour-3000x3000.jpg",
+      "artwork": "https://www.cbc.ca/radio/podcasts/images/theworldthishour-3000x3000.jpg",
+      "language": "en-ca",
+      "categories": {
+        "1": "news"
+      },
+      "latestEpisode": {
+        "id": 7608367381335411,
+        "title": "The latest news in 5 minutes",
+        "datePublished": 1792843200,
+        "duration": 270,
+        "enclosureUrl": "https://mgln.ai/e/12/cbc.mc.tritondigital.com/CBC_HOURLYNEWS_P/media/hourlynews/hourlynews-OpUowxcL-20261024.mp3",
+        "image": "https://www.cbc.ca/radio/podcasts/images/theworldthishour-3000x3000.jpg",
+        "feedImage": "https://www.cbc.ca/radio/podcasts/images/theworldthishour-3000x3000.jpg",
+        "feedId": 728899,
+        "feedTitle": "The World This Hour",
+        "description": "Updated: 2026/10/24 at 08:00 EDT"
+      },
+      "matchScore": 0.4491043,
+      "penalizedScore": 0.3844608178060754,
+      "description": null
+    }
+  ]
+}

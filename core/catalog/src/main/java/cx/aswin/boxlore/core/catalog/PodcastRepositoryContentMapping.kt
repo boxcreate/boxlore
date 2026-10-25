@@ -145,10 +145,21 @@ data class HomeBootstrapData(
     val trending: List<Podcast>,
     val curatedVibes: Map<String, List<Podcast>>,
     val recommendations: List<Episode>,
-    val isRecommendationsFallback: Boolean = true
+    val isRecommendationsFallback: Boolean = true,
+    /**
+     * True when the request failed and there was no last good answer, so the lists are empty for
+     * that reason, not because there is nothing: Home keeps the trending it shows. Set on the `/v2`
+     * path only (P4 PR 12, own-IDs plan section 9).
+     */
+    val failed: Boolean = false,
 )
 
-/** Personal picks from the bootstrap request; [isFallback] marks popular-in-region picks. */
-data class HomeRecommendations(val items: List<Episode> = emptyList(), val isFallback: Boolean = true)
+/**
+ * Personal picks from the bootstrap request; [isFallback] marks popular-in-region picks. [failed]
+ * is true when the request failed and there were no last good picks: Home and Explore keep the
+ * picks they show and don't save the empty list. Set on the `/v2` path only (P4 PR 12, own-IDs plan
+ * section 9).
+ */
+data class HomeRecommendations(val items: List<Episode> = emptyList(), val isFallback: Boolean = true, val failed: Boolean = false,)
 
 data class BecauseYouLikeData(val podcasts: List<Podcast> = emptyList(), val episodes: List<Episode> = emptyList())

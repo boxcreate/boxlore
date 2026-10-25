@@ -21,6 +21,7 @@ Owns the Daily Briefing presentation flow: region-aware briefing content, story 
 - Playback uses a thin 3 dp wavy seek track with a small round handle and remaining time on the same row. The wave moves only during playback; native Slider tap, drag, RTL and accessibility seeking remain available with a full touch target. Unknown duration hides the seek row.
 - `BriefingUiState` models screen state.
 - `BriefingIdentity` contains pure identity helpers for tests and UI mapping.
+- When a briefing answer carries no chapters or transcript link, `BriefingViewModel` builds it with `:core:catalog` `BriefingLinks`: chapters on `/v2/briefings/chapters/<region>` while v2 discovery is on (related episodes come back under the IDs this phone holds), transcript on `/briefings/transcript/<region>`. The answer's own signed links are always preferred. No layout or state changes, so phone, tablet, foldable and resized windows behave as before.
 - Episode id stays `briefing_{region}_{date}` for session continuity; Media3 audio cache keys include the signed URL `v=` hash (see `EpisodeMediaCacheKey`) so same-day regenerations do not replay stale bytes.
 - Briefing markets: `us`, `in`, `gb`, `global` (ISO `gb` for the UK; legacy API path `/uk` still aliases to `gb` on the Worker).
 - `BriefingPlaybackLogic` resolves whether a briefing interaction pauses, resumes, starts, or seeks; choosing another story seeks directly instead of pausing.

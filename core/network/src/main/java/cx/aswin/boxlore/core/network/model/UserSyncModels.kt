@@ -5,6 +5,10 @@ import kotlinx.serialization.Serializable
 
 /**
  * Cloud Sync DTOs for multi-tenant data synchronization across devices in boxlore.
+ *
+ * The client JSON has `encodeDefaults` off: a field equal to its default is not sent. The episode
+ * identity fields (`recipeId`, `catalogKey`, the rich queue removals) are therefore left out
+ * whenever they are unknown, which is exactly what the server treats as "keep what is stored".
  */
 
 @Serializable
@@ -36,6 +40,14 @@ data class ListeningHistorySyncDto(
     @SerialName("likedAt") val likedAt: Long = 0L,
     @SerialName("lastPlayedAt") val lastPlayedAt: Long = 0L,
     @SerialName("updatedAt") val updatedAt: Long,
+    /**
+     * The episode's recipe ID when this device has a trusted identity for the row, else null (read
+     * it through [SyncEpisodeIdentityFields]). Added in P4 of the own-episode-IDs plan (plan
+     * section 8, cloud sync identity).
+     */
+    @SerialName("recipeId") val recipeId: Long? = null,
+    /** The episode's recipe-trimmed catalog key, under the same rule as [recipeId]. */
+    @SerialName("catalogKey") val catalogKey: String? = null,
 )
 
 @Serializable
@@ -55,6 +67,35 @@ data class QueueItemSyncDto(
     @SerialName("contextType") val contextType: String? = "MANUAL",
     @SerialName("contextSourceId") val contextSourceId: String? = null,
     @SerialName("updatedAt") val updatedAt: Long = 0L,
+    /**
+     * The episode's recipe ID when this device has a trusted identity for the row, else null (read
+     * it through [SyncEpisodeIdentityFields]). Added in P4 of the own-episode-IDs plan (plan
+     * section 8, cloud sync identity).
+     */
+    @SerialName("recipeId") val recipeId: Long? = null,
+    /** The episode's recipe-trimmed catalog key, under the same rule as [recipeId]. */
+    @SerialName("catalogKey") val catalogKey: String? = null,
+)
+
+/**
+ * One recent queue removal with the episode's identity (`queue.recentRemovedEpisodes`). With the
+ * show and the recipe ID or catalog key, the server removes every stored queue row of that
+ * episode, and other devices remove it under their own IDs.
+ *
+ * @property id the removed queue row's episode ID
+ * @property recipeId the episode's recipe ID, when known
+ * @property show the episode's show ID, when the episode has an identity
+ * @property catalogKey the episode's catalog key, when known
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, rich queue tombstones).
+ * COMPAT(own-ids): queue removals across an episode's IDs on the sync wire. Permanent: never remove (MIGRATION.md §5).
+ */
+@Serializable
+data class QueueRemovalSyncDto(
+    @SerialName("id") val id: String,
+    @SerialName("recipeId") val recipeId: Long? = null,
+    @SerialName("show") val show: String? = null,
+    @SerialName("catalogKey") val catalogKey: String? = null,
 )
 
 @Serializable
@@ -64,6 +105,15 @@ data class QueueSyncDto(
     @SerialName("queueSequence") val queueSequence: Long = 0L,
     @SerialName("lastModifiedDeviceId") val lastModifiedDeviceId: String? = null,
     @SerialName("recentRemovedEpisodeIds") val recentRemovedEpisodeIds: List<String> = emptyList(),
+    /**
+     * Recent removals with the episode's identity. A push sends the device's whole list, even when
+     * empty, because the server replaces its list with the one sent and keeps it only when the
+     * field is absent (older builds). A pull carries it only when the request asked for it
+     * ([SyncPullRequest.richRemovals]); null means the server didn't send it.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, rich queue tombstones).
+     */
+    @SerialName("recentRemovedEpisodes") val recentRemovedEpisodes: List<QueueRemovalSyncDto>? = null,
 )
 
 @Serializable
@@ -83,6 +133,14 @@ data class SyncPushResponse(
 @Serializable
 data class SyncPullRequest(
     @SerialName("since") val since: Long = 0L,
+    /**
+     * Asks for the queue's rich removals (`queue.recentRemovedEpisodes`). Callers set it to true
+     * explicitly: with `encodeDefaults` off a false value is never sent, and the server then
+     * leaves the rich list out (the answer older builds get).
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, rich queue tombstones).
+     */
+    @SerialName("richRemovals") val richRemovals: Boolean = false,
 )
 
 @Serializable
@@ -97,3 +155,24 @@ data class SyncPullResponse(
 data class SyncDeleteAccountResponse(
     @SerialName("status") val status: String = "ok",
 )
+
+/**
+ * The episode identity fields cloud sync carries on history and queue rows, read safely from the
+ * wire: a recipe ID outside `[2^52, 2^53 − 1]` and a blank catalog key count as unknown.
+ *
+ * Legacy episode IDs stay opaque strings; only these optional fields are numbers.
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, cloud sync identity).
+ * COMPAT(own-ids): episode identity on the sync wire. Permanent: never remove (MIGRATION.md §5).
+ */
+object SyncEpisodeIdentityFields {
+    /** [recipeId] when it is in the recipe range, else null. */
+    fun recipeIdOrNull(recipeId: Long?): Long? = recipeId?.takeIf(V2EpisodeIds::isRecipeId)
+
+    /** [catalogKey] when it is a usable key (not blank, at most [MAX_CATALOG_KEY_LENGTH] characters), else null. */
+    fun catalogKeyOrNull(catalogKey: String?): String? =
+        catalogKey?.takeIf { it.isNotBlank() && it.length <= MAX_CATALOG_KEY_LENGTH }
+
+    /** The longest catalog key the server stores. */
+    const val MAX_CATALOG_KEY_LENGTH = 2048
+}

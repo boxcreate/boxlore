@@ -1,0 +1,205 @@
+{
+  "briefing": {
+    "date": "2026-10-25",
+    "region": "us",
+    "title": "State Attorneys General Tackle AI Beauty Filters And Midterm Shifts",
+    "script": "State attorneys general face a difficult legal deadline to define extreme beauty filters following Meta settlements. Hig...",
+    "audioUrl": "https://api.aswin.cx/briefings/audio/us?d=2026-10-25&v=25f44a9c&exp=0&sig=redacted",
+    "coverUrl": "https://api.aswin.cx/briefings/image/us?d=2026-10-25&v=2a8b36b1&exp=0&sig=redacted",
+    "chaptersUrl": "https://api.aswin.cx/v2/briefings/chapters/us?d=2026-10-25&v=25f44a9c&exp=0&sig=redacted",
+    "transcriptUrl": "https://api.aswin.cx/briefings/transcript/us?d=2026-10-25&v=25f44a9c&exp=0&sig=redacted",
+    "sources": [
+      {
+        "title": "When a teen posts a selfie, how much filter is 'too much' filter?",
+        "url": "https://www.npr.org/2026/10/25/nx-s1-6011190/meta-facebook-settlement-beauty-filters-ai"
+      },
+      {
+        "title": "More dads taking paid family leave for a new baby, sometimes as much as moms are",
+        "url": "https://www.npr.org/2026/10/25/nx-s1-5977810/paid-family-bonding-leave-dads-moms-california-colorado-washington-states"
+      }
+    ],
+    "chapterTitles": [
+      "Regulating AI Beauty Filters for Minors",
+      "Fathers Taking Parental Leave in California",
+      "Midterm Campaign Strategies in Arkansas",
+      "Independent Senate Candidates in Western States",
+      "Youth Protests and Military Response in Italy",
+      "Continental European Unrest and Pension Protests"
+    ]
+  },
+  "briefingChapters": [
+    {
+      "startTime": 55,
+      "title": "Regulating AI Beauty Filters for Minors",
+      "summary": "State attorneys general face a difficult legal deadline to define extreme beauty filters f...",
+      "img": null,
+      "url": null,
+      "relatedEpisodes": [
+        {
+          "id": "7504489678679256",
+          "title": "Mark Zuckerberg on Muse, Meta's biggest AI bet yet",
+          "description": "As Meta releases Muse, Mark Zuckerberg tells me why he thinks a personal AI agent that wor...",
+          "audioUrl": "https://pscrb.fm/rss/p/prfx.byspotify.com/e/api.substack.com/feed/podcast/214752912/fad7d63c4351e72ce1e5f08e5a5b5bab.mp3",
+          "imageUrl": "https://substackcdn.com/feed/podcast/3525780/post/214752912/67ea42da9c72a92194189c27d1d91c4d.jpg",
+          "podcastImageUrl": "https://substackcdn.com/feed/podcast/3525780/78fe03419583b3376865cdce9621c080.jpg",
+          "podcastTitle": "Sources with Alex Heath",
+          "podcastId": "7488327",
+          "podcastGenre": "business, technology",
+          "podcastArtist": "Alex Heath",
+          "duration": 4210,
+          "publishedDate": 1788904952
+        },
+        {
+          "id": "5260337418277736",
+          "title": "The Social Reckoning That Wasn't",
+          "description": "Last month Meta agreed to pay up to $18 billion dollars to settle claims that it knowingly...",
+          "audioUrl": "https://traffic.megaphone.fm/APO9640190228.mp3",
+          "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/42184536/48d3d010465c2cda.jpg",
+          "podcastImageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/42184536/48d3d010465c2cda.jpg",
+          "podcastTitle": "Patrick Boyle On Finance",
+          "podcastId": "1366755",
+          "podcastGenre": "business, investing",
+          "podcastArtist": "Patrick Boyle",
+          "duration": 2060,
+          "publishedDate": 1788642600
+        }
+      ]
+    },
+    {
+      "startTime": 284,
+      "title": "Fathers Taking Parental Leave in California",
+      "summary": "Men accounted for 51 percent of all bonding claims in California due to programs replacing...",
+      "img": null,
+      "url": null,
+      "relatedEpisodes": [
+        {
+          "id": "5326309014219373",
+          "title": "How Does Parental Leave Work?",
+          "description": "Be honest. How much do you know about parental leave? Because for many of our listeners, i...",
+          "audioUrl": "https://mgln.ai/e/187/traffic.omny.fm/d/clips/fa326977-3de5-4283-9b8b-af3500c58607/0c6189e6-78f6-4f47-b25d-af4600179991/adc2100c-6a66-42c0-bfc4-b4c7005bc223/audio.mp3?utm_source=Podcast&in_playlist=1dc0ac03-61e1-486c-b9be-af460017999b",
+          "imageUrl": "https://www.omnycontent.com/d/clips/fa326977-3de5-4283-9b8b-af3500c58607/0c6189e6-78f6-4f47-b25d-af4600179991/adc2100c-6a66-42c0-bfc4-b4c7005bc223/image.jpg?t=1789540192&size=Large",
+          "podcastImageUrl": "https://www.omnycontent.com/d/playlist/fa326977-3de5-4283-9b8b-af3500c58607/0c6189e6-78f6-4f47-b25d-af4600179991/1dc0ac03-61e1-486c-b9be-af460017999b/image.jpg?t=1759356024&size=Large",
+          "podcastTitle": "She's On The Money",
+          "podcastId": "983576",
+          "podcastGenre": "business",
+          "podcastArtist": "Victoria Devine",
+          "duration": 1257,
+          "publishedDate": 1791309600
+        },
+        {
+          "id": "8605856724921500",
+          "title": "Motherhood vs Fatherhood: Bridging the Gap in Family Responsibilities | The Forties Formula In Focus",
+          "description": "Motherhood isn't just physically demanding, it's mentally exhausting. Beyond caring for ch...",
+          "audioUrl": "https://content.rss.com/episodes/228145/3050292/thefortiesformula/2026_08_06_02_28_56_3e7ac923-000e-4dc8-97d6-6f66333ac4bf.mp3",
+          "imageUrl": "https://media.rss.com/thefortiesformula/ep_cover_20260806_022847_ed9f74b4342b393e24b04b72a663860d.png",
+          "podcastImageUrl": "https://media.rss.com/thefortiesformula/20250610_020615_074943f9f58ef07f70b1f1235051de91.png",
+          "podcastTitle": "The Forties Formula | Perimenopause, Lifestyle & Health for Women Over 40",
+          "podcastId": "6742555",
+          "podcastGenre": "education, self improvement",
+          "podcastArtist": "Amanda Lim & Jasmin Dhillon",
+          "duration": 556,
+          "publishedDate": 1791158546
+        }
+      ]
+    }
+  ],
+  "trending": [
+    {
+      "id": 743229,
+      "itunesId": 1200361736,
+      "title": "The Daily",
+      "author": "The New York Times",
+      "image": "https://image.simplecastcdn.com/images/7f2f4c05-9c2f-4deb-82b7-b538062bc22d/73549bf1-94b3-40ff-8aeb-b4054848ec1b/3000x3000/the-daily-album-art-original.jpg?aid=rss_feed",
+      "artwork": "https://image.simplecastcdn.com/images/7f2f4c05-9c2f-4deb-82b7-b538062bc22d/73549bf1-94b3-40ff-8aeb-b4054848ec1b/3000x3000/the-daily-album-art-original.jpg?aid=rss_feed",
+      "description": "This is what the news should sound like. The biggest stories of our time, told by the best...",
+      "language": "en",
+      "categories": {
+        "0": "daily",
+        "1": "news"
+      },
+      "newestItemPublishTime": 1792836000,
+      "medium": "podcast",
+      "latestEpisode": {
+        "id": 6477972780914663,
+        "title": "Gina Hinojosa Believes She’s the One Who Can Finally Flip Texas",
+        "datePublished": 1792836000,
+        "duration": 2517,
+        "enclosureType": "audio/mpeg",
+        "enclosureUrl": "https://dts.podtrac.com/redirect.mp3/pdst.fm/e/pfx.vpixl.com/6qj4J/pscrb.fm/rss/p/tracking.swap.fm/track/4jdbJYYRKqK96EGqOzQb/nyt.simplecastaudio.com/03d8b493-87fc-4bd1-931f-8a8e9b945d8a/episodes/4acc7176-fbf5-4698-90ff-3abe39dc677f/audio/128/default.mp3?aid=rss_feed&awCollectionId=03d8b493-87fc-4bd1-931f-8a8e9b945d8a&awEpisodeId=4acc7176-fbf5-4698-90ff-3abe39dc677f&feed=54nAGcIl",
+        "image": "https://image.simplecastcdn.com/images/082bdd7f-2cfd-41ac-b245-e50a79e0e871/c3b85bcc-8cd7-42e9-b4f8-ffa969421d04/3000x3000/cropped_1792808736136.jpg?aid=rss_feed",
+        "chaptersUrl": null,
+        "transcriptUrl": null,
+        "persons": null,
+        "transcripts": null,
+        "feedId": 743229,
+        "feedTitle": "The Daily",
+        "feedImage": "https://image.simplecastcdn.com/images/7f2f4c05-9c2f-4deb-82b7-b538062bc22d/73549bf1-94b3-40ff-8aeb-b4054848ec1b/3000x3000/the-daily-album-art-original.jpg?aid=rss_feed"
+      }
+    },
+    {
+      "id": 743411,
+      "itunesId": 1322200189,
+      "title": "Crime Junkie",
+      "author": "Audiochuck",
+      "image": "https://image.simplecastcdn.com/images/a1a87b67-2865-4234-a087-b342aa30c358/ae42d51b-df99-4b19-bb3f-09f25598bcdd/3000x3000/crimejunkie-logo-registered.jpg?aid=rss_feed",
+      "artwork": "https://image.simplecastcdn.com/images/a1a87b67-2865-4234-a087-b342aa30c358/ae42d51b-df99-4b19-bb3f-09f25598bcdd/3000x3000/crimejunkie-logo-registered.jpg?aid=rss_feed",
+      "description": "Does hearing about a true crime case always leave you scouring the internet for the truth...",
+      "language": "en",
+      "categories": {
+        "0": "true crime"
+      },
+      "newestItemPublishTime": 1792393200,
+      "medium": "podcast",
+      "latestEpisode": {
+        "id": 7741011523762723,
+        "title": "MURDERED: Nori Amaya",
+        "datePublished": 1792393200,
+        "duration": 3247,
+        "enclosureType": "audio/mpeg",
+        "enclosureUrl": "https://tracking.swap.fm/track/fxUKVg2nSMaPSHLeKNKH/pscrb.fm/rss/p/dts.podtrac.com/redirect.mp3/rsv.simplecastaudio.com/ec74d48c-cbf1-4764-923e-7d584dce50fa/episodes/9cb3f776-7e8c-4303-8104-b87ed79b4bf2/audio/128/default.mp3?aid=rss_feed&awCollectionId=ec74d48c-cbf1-4764-923e-7d584dce50fa&awEpisodeId=9cb3f776-7e8c-4303-8104-b87ed79b4bf2&feed=qm_9xx0g",
+        "image": "https://image.simplecastcdn.com/images/a2c06945-9e6f-4f67-af63-6487de3bffa4/1f269751-3d7e-4202-868d-2ba648833b9f/3000x3000/cropped_1791986887034.jpg?aid=rss_feed",
+        "chaptersUrl": null,
+        "transcriptUrl": null,
+        "persons": null,
+        "transcripts": null,
+        "feedId": 743411,
+        "feedTitle": "Crime Junkie",
+        "feedImage": "https://image.simplecastcdn.com/images/a1a87b67-2865-4234-a087-b342aa30c358/ae42d51b-df99-4b19-bb3f-09f25598bcdd/3000x3000/crimejunkie-logo-registered.jpg?aid=rss_feed"
+      }
+    },
+    {
+      "id": 550168,
+      "itunesId": 360084272,
+      "title": "The Joe Rogan Experience",
+      "author": "Joe Rogan",
+      "image": "https://megaphone.imgix.net/podcasts/8e5bcebc-ca16-11ee-89f0-0fa0b9bdfc7c/image/7190613c58bad86913afb6991d842e2f.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+      "artwork": "https://megaphone.imgix.net/podcasts/8e5bcebc-ca16-11ee-89f0-0fa0b9bdfc7c/image/7190613c58bad86913afb6991d842e2f.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+      "description": "The official podcast of comedian Joe Rogan.",
+      "language": "en",
+      "categories": {
+        "0": "comedy"
+      },
+      "newestItemPublishTime": 1792774800,
+      "medium": "podcast",
+      "latestEpisode": {
+        "id": 7324311966180110,
+        "title": "#2570 - Mystery Boys",
+        "datePublished": 1792774800,
+        "duration": 10181,
+        "enclosureType": "audio/mpeg",
+        "enclosureUrl": "https://traffic.megaphone.fm/GLT2538626371.mp3",
+        "image": "https://megaphone.imgix.net/podcasts/ec46995e-ce9a-11f1-9c7e-fbbdba278d52/image/e1a75a1d1caff6a9d53338962b2d8b7d.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+        "chaptersUrl": null,
+        "transcriptUrl": null,
+        "persons": null,
+        "transcripts": null,
+        "feedId": 550168,
+        "feedTitle": "The Joe Rogan Experience",
+        "feedImage": "https://megaphone.imgix.net/podcasts/8e5bcebc-ca16-11ee-89f0-0fa0b9bdfc7c/image/7190613c58bad86913afb6991d842e2f.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress"
+      }
+    }
+  ],
+  "curatedVibes": {},
+  "recommendations": [],
+  "isRecommendationsFallback": false
+}

@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.feature.explore.logic
 
+import cx.aswin.boxlore.core.catalog.HomeRecommendations
 import cx.aswin.boxlore.core.model.Episode
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -31,6 +33,16 @@ class ExploreSharedRecommendationsLogicTest {
         assertTrue(ExploreSharedRecommendationsLogic.decodeCachedRecommendationsJson(null).isEmpty())
         assertTrue(ExploreSharedRecommendationsLogic.decodeCachedRecommendationsJson("").isEmpty())
         assertTrue(ExploreSharedRecommendationsLogic.decodeCachedRecommendationsJson("{not-json}").isEmpty())
+    }
+
+    @Test
+    fun `a failed request with no last good picks keeps the shown picks while an empty answer clears them`() {
+        assertNull(ExploreSharedRecommendationsLogic.freshRecommendations(HomeRecommendations(failed = true)))
+        assertEquals(emptyList<Episode>(), ExploreSharedRecommendationsLogic.freshRecommendations(HomeRecommendations()))
+
+        val a = episode(id = "1", title = "Hello")
+        val fresh = ExploreSharedRecommendationsLogic.freshRecommendations(HomeRecommendations(listOf(a, a.copy(title = "Again")), isFallback = false))
+        assertEquals(listOf(a), fresh)
     }
 
     private fun episode(

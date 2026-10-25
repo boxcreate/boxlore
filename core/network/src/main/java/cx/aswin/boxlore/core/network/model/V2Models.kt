@@ -462,3 +462,24 @@ fun EpisodeItem.v2Identity(): V2EpisodeIdentity? {
         servedId = servedId?.takeIf { it > 0L }?.toString(),
     )
 }
+
+/**
+ * Body of `POST /v2/home/bootstrap`.
+ *
+ * Like [BootstrapRequest], except that [recommendationsRequest] is the current recommendation body
+ * ([RecommendationsV2Request]): on `/v2` the Worker forwards it to the current recommendation
+ * algorithm, which reads seeds and exclusions as recipe IDs and refuses the older `history` body.
+ * [country] and [vibeIds] have no default, so they are always sent.
+ *
+ * Added in P4 PR 12 of the own-episode-IDs plan (plan section 9, v2 discovery routes).
+ */
+@Serializable
+data class V2BootstrapRequest(
+    val country: String,
+    val vibeIds: List<String>,
+    val deviceUuid: String? = null,
+    val recommendationsRequest: RecommendationsV2Request? = null,
+    val languages: List<String> = emptyList(),
+    /** Parts of the reply the app uses (the [BootstrapRequest] `INCLUDE_` names); null asks for every part. */
+    val include: List<String>? = null,
+)
