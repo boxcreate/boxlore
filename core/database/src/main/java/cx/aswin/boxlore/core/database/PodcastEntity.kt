@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -68,6 +69,20 @@ data class PodcastEntity(
     val linkedPodcastIndexId: String? = null,
     val customGenre: String? = null,
     val customGenreIcon: String? = null,
+
+    // Feed identity and address bookkeeping (Room v39). Whole-row writers must carry these from
+    // the stored row once something reads them; until then they are written but not read.
+    /** Episode namespace recipe IDs are minted in; seeded as the show ID at the v39 upgrade and never changed once IDs exist. */
+    val epNs: Long? = null,
+    /** Where [feedUrl] came from (for example the registry or the publisher); null when unrecorded. */
+    val feedUrlSource: String? = null,
+    /** When [feedUrl] was last confirmed against the address registry (epoch ms); 0 when never. */
+    @ColumnInfo(defaultValue = "0")
+    val feedUrlCheckedAt: Long = 0L,
+    /** Address to fetch the feed through when the publisher's can't be read directly; null when not needed. */
+    val transportUrl: String? = null,
+    /** The address [feedUrl] replaced in its last automatic correction, kept so it can be undone. */
+    val previousFeedUrl: String? = null,
 ) {
     val isRss: Boolean
         get() = sourceType == SOURCE_RSS

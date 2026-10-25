@@ -2,7 +2,7 @@
 
 The rules every boxlore component follows to identify an episode. Server components follow the same rules. Change them together, and never change a rule marked **fixed**.
 
-**Status:** sections 1–3 are implemented: `EpisodeRecipeId` in `:core:model` and `scripts/sync/lib/episode-recipe-id.js` with the shared fixture, and the explicit trim in `StickyEpisodeIdentity.catalogKey`. Sections 4 and 5 bind the app code that stores or resolves recipe IDs once it adopts them.
+**Status:** sections 1–3 are implemented: `EpisodeRecipeId` in `:core:model` and `scripts/sync/lib/episode-recipe-id.js` with the shared fixture, and the explicit trim in `StickyEpisodeIdentity.catalogKey`. Sections 4 and 5 bind the app code that stores or resolves recipe IDs once it adopts them. Room v39 creates the section 5 tables and, on upgrade, records an alias for every stored episode ID of a Podcast Index show ([`core/database/README.md`](../core/database/README.md)); nothing reads them yet.
 
 ## 1. What an episode is
 
@@ -56,7 +56,7 @@ Collision tests force clashes with a test-only hash override, both cross-show an
 
 ## 5. Aliases on the phone
 
-`episode_aliases(aliasId PK, podcastId, catalogKey, recipeId, state, owner, provenance)` keeps every stored ID of an episode. The key and provenance survive catalog eviction.
+`episode_aliases(aliasId PK, podcastId, catalogKey, recipeId, state, owner, provenance, createdAt)` keeps every stored ID of an episode. `owner` marks the one ID per (show, key) that holds listener state. The key and provenance survive catalog eviction.
 
 | State | When | Reads | Writes |
 | :--- | :--- | :--- | :--- |

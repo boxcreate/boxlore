@@ -13,4 +13,10 @@ data class QueueMetadataEntity(
     val isDirty: Boolean = false,
     val syncedAt: Long = 0L,
     val recentRemovedEpisodeIds: String? = null,
+    /**
+     * Recent queue removals with their episode identity (JSON list of ID, recipe ID, show and
+     * catalog key), so a removal also reaches devices that store the episode under another ID.
+     * Added in Room v39 beside [recentRemovedEpisodeIds], which stays for older builds.
+     */
+    val recentRemovedEpisodes: String? = null,
 )

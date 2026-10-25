@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -42,6 +43,16 @@ data class LocalEpisodeEntity(
     val episodeNumber: Int?,
     val episodeType: String?,
     val enclosureType: String?,
+    /**
+     * The row existed when Room v39 added episode aliases. For legacy rows only, a [guid] equal to
+     * `"id:"` plus the row's own [episodeId] is a synthetic key, not a real one. A write that
+     * replaces the row from a feed read clears the mark, because its key now comes from the feed.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 4, synthetic keys).
+     * COMPAT(own-ids): tells synthetic legacy keys from real ones. Permanent: never remove (MIGRATION.md §5).
+     */
+    @ColumnInfo(defaultValue = "0")
+    val legacy: Boolean = false,
 ) {
     fun toEpisode(
         podcastTitle: String? = null,
