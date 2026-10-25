@@ -156,8 +156,12 @@ class PodcastRepository(
         offset: Int = 0,
     ): kotlinx.coroutines.flow.Flow<List<Podcast>> = trendingPodcastsStream(country, limit, category, offset)
 
+    /**
+     * Show search on v1 `/search` (catalog, Apple and Podcast Index results) whatever the v2
+     * discovery switch says: shows carry no episode IDs, and `/v2/search` has no Apple or Podcast
+     * Index results, so listeners could no longer find shows outside the catalog.
+     */
     suspend fun searchPodcastsWithCorrection(query: String): SearchResult = withContext(Dispatchers.IO) {
-        if (usesV2Discovery()) return@withContext v2SearchPodcasts(query)
         try {
             val response = api.search(publicKey, query).execute()
             if (response.isSuccessful && response.body() != null) {
@@ -592,8 +596,9 @@ class PodcastRepository(
     ): List<Episode> = withContext(Dispatchers.IO) {
         if (usesV2Discovery()) {
             val resolvedCountry = country?.let(cx.aswin.boxlore.core.model.ContentRegions::canonicalize) ?: "us"
-            val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)
-            return@withContext v2PersonalizedRecommendations(history, interests, resolvedCountry, subscribedPodcastIds, queryLanguages)
+            // The `/v2` body takes at most four languages and expands `id` itself.
+            val bodyLanguages = cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(languages.orEmpty(), resolvedCountry)
+            return@withContext v2PersonalizedRecommendations(history, interests, resolvedCountry, subscribedPodcastIds, bodyLanguages)
         }
         v1PersonalizedRecommendations(history, interests, country, subscribedPodcastIds, subscribedGenres, languages)
     }
@@ -604,8 +609,10 @@ class PodcastRepository(
         excludePodcastId: String? = null,
         country: String? = null,
     ): BecauseYouLikeData = withContext(Dispatchers.IO) {
-        // `/v2` answers carry recipe IDs, so they never share a cached answer with v1.
-        val cacheKey = (if (usesV2Discovery()) "v2|" else "") + "byl|$podcastTitle|$excludePodcastId|$country"
+        // `/v2` answers carry recipe IDs, so they never share a cached answer with v1. The switch is
+        // read once, so the key and the route always agree.
+        val v2 = usesV2Discovery()
+        val cacheKey = (if (v2) "v2|" else "") + "byl|$podcastTitle|$excludePodcastId|$country"
         val cached = becauseYouLikeCache[cacheKey]
         if (cached != null) {
             android.util.Log.d("PodcastRepository", "Cache HIT for getBecauseYouLikeRecommendations: key=$cacheKey")
@@ -620,7 +627,7 @@ class PodcastRepository(
                     excludePodcastId = excludePodcastId,
                     country = country,
                 )
-            if (usesV2Discovery()) return@withContext v2BecauseYouLike(request, cacheKey)
+            if (v2) return@withContext v2BecauseYouLike(request, cacheKey)
             val response = api.getBecauseYouLikeRecommendations(publicKey, request).execute()
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
@@ -806,10 +813,12 @@ class PodcastRepository(
             val resolvedCountry =
                 cx.aswin.boxlore.core.model.ContentRegions
                     .canonicalize(country)
-            val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)
             if (usesV2Discovery()) {
-                return@withContext v2HomeRecommendations(resolvedCountry, history, interests, subscribedPodcastIds, queryLanguages)
+                // The `/v2` recommendation body takes at most four languages and expands `id` itself.
+                val bodyLanguages = cx.aswin.boxlore.core.model.ContentRegions.normalizeLanguages(languages.orEmpty(), resolvedCountry)
+                return@withContext v2HomeRecommendations(resolvedCountry, history, interests, subscribedPodcastIds, bodyLanguages)
             }
+            val queryLanguages = resolveContentLanguagesForQuery(languages, resolvedCountry)
             val (podcastIndexHistory, podcastIndexSubscriptionIds) =
                 filterToPodcastIndexScope(history, subscribedPodcastIds)
             val boundedInterests = boundedRecommendationInterests(interests)

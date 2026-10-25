@@ -48,12 +48,12 @@ class BriefingLinksTest {
 
     @Test
     fun `briefing related episodes show under the IDs this phone holds`() = runTest {
-        val owners = mapOf(DiscoveryEpisodeRef("920666", RECIPE_A) to "7777")
+        val owners = mapOf(DiscoveryEpisodeRef("920666", RECIPE_A) to DiscoveryEpisodeOwner("7777", "920666"))
         val ids =
             object : DiscoveryEpisodeIds {
                 override suspend fun recipeIds(episodeIds: Collection<String>): Map<String, Long> = emptyMap()
 
-                override suspend fun localOwners(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, String> =
+                override suspend fun localOwners(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, DiscoveryEpisodeOwner> =
                     refs.mapNotNull { ref -> owners[ref]?.let { ref to it } }.toMap()
             }
         DiscoveryRouting.install({ true }, ids)
@@ -66,9 +66,12 @@ class BriefingLinksTest {
         val mapped = DiscoveryRouting.episodeIds.relatedToLocalOwners(chapters)
 
         assertEquals(listOf("7777", RECIPE_E.toString()), mapped.first().relatedEpisodes!!.map { it.id })
+        assertEquals(listOf(RECIPE_A, RECIPE_E), mapped.first().relatedEpisodes!!.map { it.recipeId })
         assertEquals(chapters[1], mapped[1])
-        // Nothing to place: the same list comes back.
-        assertSame(chapters, DiscoveryEpisodeIds.Unmapped.relatedToLocalOwners(chapters))
+        // Nothing to place: the IDs stay, each keeping the recipe ID it named; a list with no related episodes comes back as it is.
+        assertEquals(chapters.first().relatedEpisodes!!.map { it.id }, DiscoveryEpisodeIds.Unmapped.relatedToLocalOwners(chapters).first().relatedEpisodes!!.map { it.id })
+        val noRelated = listOf(Chapter(0.0, "Weather"))
+        assertSame(noRelated, DiscoveryEpisodeIds.Unmapped.relatedToLocalOwners(noRelated))
     }
 
     @Test
@@ -77,11 +80,11 @@ class BriefingLinksTest {
             object : DiscoveryEpisodeIds {
                 override suspend fun recipeIds(episodeIds: Collection<String>): Map<String, Long> = error("database closed")
 
-                override suspend fun localOwners(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, String> = error("database closed")
+                override suspend fun localOwners(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, DiscoveryEpisodeOwner> = error("database closed")
             }
         val episodes = listOf(episode(RECIPE_A.toString(), "920666"))
 
-        assertEquals(episodes, failing.toLocalOwners(episodes))
+        assertEquals(episodes.map { it.id }, failing.toLocalOwners(episodes).map { it.id })
         assertEquals(mapOf(RECIPE_A.toString() to RECIPE_A), failing.recipeIdsOrOwn(listOf(RECIPE_A.toString(), "7777")))
     }
 

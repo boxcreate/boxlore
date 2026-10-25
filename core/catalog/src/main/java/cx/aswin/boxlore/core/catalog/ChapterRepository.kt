@@ -21,6 +21,10 @@ object ChapterRepository {
     private const val HTTPS_PREFIX = "https:"
     private const val HTTP_PREFIX = "http:"
 
+    /** Reads a remote chapters link; tests replace it to serve recorded answers over the https links the app uses. */
+    @Volatile
+    internal var readRemote: (String) -> String = { URL(it).readText() }
+
     private fun normalizeUrl(url: String): String {
         try {
             var decoded = url
@@ -55,12 +59,11 @@ object ChapterRepository {
                 chaptersUrl.startsWith("/") -> java.io.File(chaptersUrl).readText()
                 chaptersUrl.startsWith("file://") -> java.io.File(chaptersUrl.removePrefix("file://")).readText()
                 chaptersUrl.startsWith("file:") -> java.io.File(chaptersUrl.removePrefix("file:")).readText()
-                else -> URL(normalizedUrl).readText()
+                else -> readRemote(normalizedUrl)
             }
-            val parsed = parseChaptersFromJson(json)
-            val isRemote = !chaptersUrl.startsWith("/") && !chaptersUrl.startsWith("file:")
-            // Briefing related episodes come under recipe IDs; show the ones this phone holds under their own IDs.
-            val chapters = if (isRemote) DiscoveryRouting.episodeIds.relatedToLocalOwners(parsed) else parsed
+            // Briefing related episodes come under recipe IDs, including in a downloaded briefing's
+            // saved chapters file; show the ones this phone holds under their own IDs.
+            val chapters = DiscoveryRouting.episodeIds.relatedToLocalOwners(parseChaptersFromJson(json))
             if (chapters.isNotEmpty()) {
                 cache[normalizedUrl] = chapters
             }

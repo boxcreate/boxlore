@@ -9,12 +9,23 @@ import cx.aswin.boxlore.core.network.model.DailyCuriosityDto
 import kotlinx.coroutines.CancellationException
 
 /**
- * An episode as a `/v2` discovery answer names it: its show ([podcastId], a Podcast Index show ID)
- * and its recipe ID.
+ * An episode as a `/v2` discovery answer names it: its show ([podcastId], a Podcast Index show ID),
+ * its recipe ID, and its audio address ([audioUrl], when the answer has one), which matches a
+ * stored row the alias table can't place yet.
  *
  * Added in P4 PR 12 of the own-episode-IDs plan (plan section 9, v2 discovery routes).
  */
-data class DiscoveryEpisodeRef(val podcastId: String, val recipeId: Long,)
+data class DiscoveryEpisodeRef(val podcastId: String, val recipeId: Long, val audioUrl: String? = null,)
+
+/**
+ * The stored ID that owns an episode on this phone ([id]) and the show its listener state is stored
+ * under ([podcastId], with that show's [podcastTitle] when known). The show differs from the answer's
+ * show when the owner is an episode of the show's own feed (an `rss_source_link` alias of a show the
+ * listener switched to its feed); the episode then moves to that show with its ID.
+ *
+ * Added in P4 PR 12 of the own-episode-IDs plan (plan section 9, v2 discovery routes).
+ */
+data class DiscoveryEpisodeOwner(val id: String, val podcastId: String, val podcastTitle: String? = null,)
 
 /**
  * Translates episode IDs between the IDs this phone stores and the recipe IDs the `/v2` discovery
@@ -39,8 +50,8 @@ interface DiscoveryEpisodeIds {
     /** The recipe ID `/v2` knows each stored ID by, for the IDs the phone can place; others are left out. */
     suspend fun recipeIds(episodeIds: Collection<String>): Map<String, Long>
 
-    /** The stored ID that owns each referenced episode on this phone, for the episodes the phone can place. */
-    suspend fun localOwners(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, String>
+    /** The stored ID (and its show) that owns each referenced episode on this phone, for the episodes the phone can place. */
+    suspend fun localOwners(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, DiscoveryEpisodeOwner>
 
     companion object {
         /**
@@ -51,7 +62,7 @@ interface DiscoveryEpisodeIds {
             object : DiscoveryEpisodeIds {
                 override suspend fun recipeIds(episodeIds: Collection<String>): Map<String, Long> = ownRecipeIds(episodeIds)
 
-                override suspend fun localOwners(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, String> = emptyMap()
+                override suspend fun localOwners(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, DiscoveryEpisodeOwner> = emptyMap()
             }
 
         /** Each stored ID that is itself a recipe-range ID, mapped to itself. */
@@ -65,7 +76,7 @@ interface DiscoveryEpisodeIds {
  * [DiscoveryEpisodeIds.localOwners], or none when the alias table can't be read: the answer then
  * keeps its recipe IDs, which still resolve, instead of failing the surface.
  */
-internal suspend fun DiscoveryEpisodeIds.ownersOrNone(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, String> {
+internal suspend fun DiscoveryEpisodeIds.ownersOrNone(refs: Collection<DiscoveryEpisodeRef>): Map<DiscoveryEpisodeRef, DiscoveryEpisodeOwner> {
     if (refs.isEmpty()) return emptyMap()
     return try {
         localOwners(refs)
@@ -96,7 +107,24 @@ private const val DISCOVERY_IDS_TAG = "DiscoveryEpisodeIds"
 internal fun Episode.discoveryRef(): DiscoveryEpisodeRef? {
     val recipeId = id.toLongOrNull()?.takeIf(EpisodeRecipeId::isRecipeId) ?: return null
     val show = podcastId?.takeIf { EpisodeRecipeId.showIdOrNull(it) != null } ?: return null
-    return DiscoveryEpisodeRef(show, recipeId)
+    return DiscoveryEpisodeRef(show, recipeId, audioUrl.takeIf(String::isNotBlank))
+}
+
+/**
+ * This episode as the phone holds it: under [owner]'s ID and show when the phone can place it, with
+ * the recipe ID the answer named kept in [Episode.recipeId] either way. An episode that names no
+ * recipe ID ([ref] null) is returned as it is.
+ */
+private fun Episode.withDiscoveryOwner(ref: DiscoveryEpisodeRef?, owner: DiscoveryEpisodeOwner?,): Episode {
+    ref ?: return this
+    owner ?: return copy(recipeId = ref.recipeId)
+    if (owner.podcastId == podcastId) return copy(id = owner.id, recipeId = ref.recipeId)
+    return copy(id = owner.id, recipeId = ref.recipeId, podcastId = owner.podcastId, podcastTitle = owner.podcastTitle ?: podcastTitle)
+}
+
+private fun Episode.toLocalOwner(owners: Map<DiscoveryEpisodeRef, DiscoveryEpisodeOwner>): Episode {
+    val ref = discoveryRef()
+    return withDiscoveryOwner(ref, ref?.let(owners::get))
 }
 
 /**
@@ -106,10 +134,7 @@ internal fun Episode.discoveryRef(): DiscoveryEpisodeRef? {
 internal suspend fun DiscoveryEpisodeIds.toLocalOwners(episodes: List<Episode>): List<Episode> {
     if (episodes.isEmpty()) return episodes
     val owners = ownersOrNone(episodes.mapNotNull { it.discoveryRef() }.distinct())
-    if (owners.isEmpty()) return episodes
-    return episodes
-        .map { episode -> episode.discoveryRef()?.let(owners::get)?.let { episode.copy(id = it) } ?: episode }
-        .distinctBy { it.id }
+    return episodes.map { it.toLocalOwner(owners) }.distinctBy { it.id }
 }
 
 /** [podcasts] with each latest episode's recipe ID replaced by its local owner. */
@@ -117,29 +142,30 @@ internal suspend fun DiscoveryEpisodeIds.latestToLocalOwners(podcasts: List<Podc
     val latest = podcasts.mapNotNull { it.latestEpisode }
     if (latest.isEmpty()) return podcasts
     val owners = ownersOrNone(latest.mapNotNull { it.discoveryRef() }.distinct())
-    if (owners.isEmpty()) return podcasts
     return podcasts.map { podcast ->
         val episode = podcast.latestEpisode ?: return@map podcast
-        val owner = episode.discoveryRef()?.let(owners::get) ?: return@map podcast
-        podcast.copy(latestEpisode = episode.copy(id = owner))
+        podcast.copy(latestEpisode = episode.toLocalOwner(owners))
     }
 }
 
-/** [chapters] with each related episode's recipe ID replaced by its local owner (briefing chapters). */
+/**
+ * [chapters] with each related episode's recipe ID replaced by its local owner (briefing chapters).
+ * IDs that are not recipe IDs (a v1 answer, a briefing saved by an older build) stay as they are.
+ */
 internal suspend fun DiscoveryEpisodeIds.relatedToLocalOwners(chapters: List<Chapter>): List<Chapter> {
     val related = chapters.flatMap { it.relatedEpisodes.orEmpty() }
     if (related.isEmpty()) return chapters
     val owners = ownersOrNone(related.mapNotNull { it.discoveryRef() }.distinct())
-    if (owners.isEmpty()) return chapters
     return chapters.map { chapter ->
         val episodes = chapter.relatedEpisodes ?: return@map chapter
-        chapter.copy(
-            relatedEpisodes = episodes.map { episode -> episode.discoveryRef()?.let(owners::get)?.let { episode.copy(id = it) } ?: episode },
-        )
+        chapter.copy(relatedEpisodes = episodes.map { it.toLocalOwner(owners) })
     }
 }
 
-/** A curiosity deck with each card's recipe ID replaced by its local owner. */
+/**
+ * A curiosity deck with each card's recipe ID replaced by its local owner. A card names its show by
+ * number, so an owner stored under another show (a show's own feed) leaves the card as it is.
+ */
 internal suspend fun DiscoveryEpisodeIds.curiosityToLocalOwners(deck: CuratedCuriosityResponseDto): CuratedCuriosityResponseDto {
     val cards = listOfNotNull(deck.questionOfTheDay) + deck.questionsStack
     val refs = cards.mapNotNull { it.discoveryRef() }.distinct()
@@ -148,8 +174,9 @@ internal suspend fun DiscoveryEpisodeIds.curiosityToLocalOwners(deck: CuratedCur
     if (owners.isEmpty()) return deck
 
     fun DailyCuriosityDto.mapped(): DailyCuriosityDto {
-        val owner = discoveryRef()?.let(owners::get)?.toLongOrNull() ?: return this
-        return copy(episode = episode.copy(id = owner))
+        val ref = discoveryRef() ?: return this
+        val ownerId = owners[ref]?.takeIf { it.podcastId == ref.podcastId }?.id?.toLongOrNull() ?: return this
+        return copy(episode = episode.copy(id = ownerId))
     }
     return deck.copy(questionOfTheDay = deck.questionOfTheDay?.mapped(), questionsStack = deck.questionsStack.map { it.mapped() })
 }
@@ -157,5 +184,5 @@ internal suspend fun DiscoveryEpisodeIds.curiosityToLocalOwners(deck: CuratedCur
 private fun DailyCuriosityDto.discoveryRef(): DiscoveryEpisodeRef? {
     val recipeId = episode.id.takeIf(EpisodeRecipeId::isRecipeId) ?: return null
     val show = episode.feedId?.takeIf { it in 1..EpisodeRecipeId.SHOW_ID_MAX } ?: return null
-    return DiscoveryEpisodeRef(show.toString(), recipeId)
+    return DiscoveryEpisodeRef(show.toString(), recipeId, episode.enclosureUrl?.takeIf(String::isNotBlank))
 }

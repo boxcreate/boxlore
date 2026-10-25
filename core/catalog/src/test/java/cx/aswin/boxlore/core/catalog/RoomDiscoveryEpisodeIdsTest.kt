@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.entities.QueueItem
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -78,7 +79,7 @@ class RoomDiscoveryEpisodeIdsTest {
         database.listeningHistoryDao().upsertAll(listOf(history("7777", playedAt = 500L)))
         val ref = DiscoveryEpisodeRef(SHOW, RECIPE_A)
 
-        assertEquals(mapOf(ref to "7777"), ids.localOwners(listOf(ref)))
+        assertEquals(mapOf(ref to DiscoveryEpisodeOwner("7777", SHOW)), ids.localOwners(listOf(ref)))
     }
 
     @Test
@@ -86,7 +87,7 @@ class RoomDiscoveryEpisodeIdsTest {
         identity.insertAliasesIfAbsent(listOf(alias(RECIPE_B.toString(), key = "guid-b", recipe = RECIPE_C)))
         val ref = DiscoveryEpisodeRef(SHOW, RECIPE_B)
 
-        assertEquals(mapOf(ref to RECIPE_B.toString()), ids.localOwners(listOf(ref)))
+        assertEquals(mapOf(ref to DiscoveryEpisodeOwner(RECIPE_B.toString(), SHOW)), ids.localOwners(listOf(ref)))
     }
 
     @Test
@@ -108,8 +109,53 @@ class RoomDiscoveryEpisodeIdsTest {
                 DiscoveryEpisodeRef(SHOW, RECIPE_D),
             )
 
-        assertEquals(emptyMap<DiscoveryEpisodeRef, String>(), ids.localOwners(refs))
-        assertEquals(emptyMap<DiscoveryEpisodeRef, String>(), ids.localOwners(emptyList()))
+        assertEquals(emptyMap<DiscoveryEpisodeRef, DiscoveryEpisodeOwner>(), ids.localOwners(refs))
+        assertEquals(emptyMap<DiscoveryEpisodeRef, DiscoveryEpisodeOwner>(), ids.localOwners(emptyList()))
+    }
+
+    @Test
+    fun anOwnerStoredUnderTheShowsOwnFeedComesBackWithThatShow() = runTest {
+        // The listener switched the show to its feed: the episode's only trusted member is the feed's
+        // negative ID, linked under the Podcast Index show, and its listening is stored under the feed's show.
+        identity.insertAliasesIfAbsent(listOf(alias("-77", key = "guid-a", recipe = RECIPE_A, provenance = EpisodeAliasProvenance.RSS_SOURCE_LINK)))
+        database.listeningHistoryDao().upsertAll(listOf(history("-77", playedAt = 500L, show = "rss:abc")))
+        val ref = DiscoveryEpisodeRef(SHOW, RECIPE_A)
+
+        assertEquals(mapOf(ref to DiscoveryEpisodeOwner("-77", "rss:abc")), ids.localOwners(listOf(ref)))
+
+        val mapped = ids.toLocalOwners(listOf(episode(RECIPE_A.toString()).copy(podcastTitle = "The Show")))
+        assertEquals("-77", mapped.single().id)
+        assertEquals("rss:abc", mapped.single().podcastId)
+        assertEquals(RECIPE_A, mapped.single().recipeId)
+    }
+
+    @Test
+    fun aPodcastIndexRowWithNoAliasIsMatchedByItsShowAndAudioAddress() = runTest {
+        // History from discovery on an older build: no alias until the show's feed is read.
+        database.listeningHistoryDao().upsertAll(listOf(history("5555", playedAt = 500L, audio = AUDIO_A)))
+        database.queueDao().insertQueueItem(queued("4444", AUDIO_B))
+        val played = DiscoveryEpisodeRef(SHOW, RECIPE_A, AUDIO_A)
+        val queued = DiscoveryEpisodeRef(SHOW, RECIPE_B, AUDIO_B)
+        val otherShow = DiscoveryEpisodeRef("555", RECIPE_C, AUDIO_A)
+        val noAudio = DiscoveryEpisodeRef(SHOW, RECIPE_D)
+
+        assertEquals(
+            mapOf(played to DiscoveryEpisodeOwner("5555", SHOW), queued to DiscoveryEpisodeOwner("4444", SHOW)),
+            ids.localOwners(listOf(played, queued, otherShow, noAudio)),
+        )
+        // Out: the row still has no recipe ID to send.
+        assertEquals(emptyMap<String, Long>(), ids.recipeIds(listOf("5555")))
+    }
+
+    @Test
+    fun anAudioAddressSeveralRowsShareOrARowAnAliasPlacesIsNotEvidence() = runTest {
+        database.listeningHistoryDao().upsertAll(listOf(history("5555", playedAt = 500L, audio = AUDIO_A), history("5556", playedAt = 400L, audio = AUDIO_A)))
+        database.listeningHistoryDao().upsertAll(listOf(history("6666", playedAt = 300L, audio = AUDIO_B)))
+        identity.insertAliasesIfAbsent(listOf(alias("6666", key = "guid-other", recipe = RECIPE_C)))
+
+        val refs = listOf(DiscoveryEpisodeRef(SHOW, RECIPE_A, AUDIO_A), DiscoveryEpisodeRef(SHOW, RECIPE_B, AUDIO_B))
+
+        assertEquals(emptyMap<DiscoveryEpisodeRef, DiscoveryEpisodeOwner>(), ids.localOwners(refs))
     }
 
     @Test
@@ -126,6 +172,8 @@ class RoomDiscoveryEpisodeIdsTest {
         val mapped = ids.toLocalOwners(episodes)
 
         assertEquals(listOf("7777", RECIPE_B.toString()), mapped.map { it.id })
+        // Each answer keeps the recipe ID it named, translated or not.
+        assertEquals(listOf(RECIPE_A, RECIPE_B), mapped.map { it.recipeId })
         assertEquals(mapOf("7777" to RECIPE_A), ids.recipeIdsOrOwn(listOf("7777")))
     }
 
@@ -147,18 +195,31 @@ class RoomDiscoveryEpisodeIdsTest {
         createdAt = createdAt,
     )
 
-    private fun history(id: String, playedAt: Long) = ListeningHistoryEntity(
+    private fun history(id: String, playedAt: Long, show: String = SHOW, audio: String = "https://cdn.example/$id.mp3",) = ListeningHistoryEntity(
         episodeId = id,
-        podcastId = SHOW,
+        podcastId = show,
         episodeTitle = "Episode $id",
         episodeImageUrl = null,
         podcastImageUrl = null,
-        episodeAudioUrl = "https://cdn.example/$id.mp3",
+        episodeAudioUrl = audio,
         podcastName = "Show",
         progressMs = 100L,
         durationMs = 1_000L,
         isCompleted = false,
         lastPlayedAt = playedAt,
+    )
+
+    private fun queued(id: String, audio: String) = QueueItem(
+        episodeId = id,
+        title = "Queued",
+        podcastId = SHOW,
+        podcastTitle = "Show",
+        imageUrl = null,
+        audioUrl = audio,
+        duration = 60,
+        pubDate = 0L,
+        description = null,
+        position = 0,
     )
 
     private fun episode(id: String) = cx.aswin.boxlore.core.model.Episode(id = id, title = "Episode", description = "", audioUrl = "", podcastId = SHOW)
@@ -169,5 +230,7 @@ class RoomDiscoveryEpisodeIdsTest {
         const val RECIPE_B = 4_503_599_627_370_498L
         const val RECIPE_C = 4_503_599_627_370_499L
         const val RECIPE_D = 4_503_599_627_370_500L
+        const val AUDIO_A = "https://cdn.example/played.mp3"
+        const val AUDIO_B = "https://cdn.example/queued.mp3"
     }
 }

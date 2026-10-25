@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.catalog.logic.SemanticSearchGroupedResult
 import cx.aswin.boxlore.core.model.Briefing
+import cx.aswin.boxlore.core.model.ContentRegions
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.BecauseYouLikeRequest
@@ -14,14 +15,16 @@ import retrofit2.Response
 import retrofit2.awaitResponse
 
 /*
- * Discovery on the `/v2` routes (Home, Explore, Search, recommendations, Smart Queue and Android
- * Auto sources, briefings). The answers have the v1 shapes; episodes in them carry recipe IDs,
- * which are translated to the phone's own stored IDs ([DiscoveryEpisodeIds]) before callers rank,
- * dedupe or show them. A failed request keeps the last good answer of the same request in this
+ * Discovery on the `/v2` routes (Home, Explore, semantic search, recommendations, Smart Queue and
+ * Android Auto sources, briefings). The answers have the v1 shapes; episodes in them carry recipe
+ * IDs, which are translated to the phone's own stored IDs ([DiscoveryEpisodeIds]) before callers
+ * rank, dedupe or show them. A failed request keeps the last good answer of the same request in this
  * process, and recommendations keep the last good picks across restarts ([RecommendationsLastGood]);
- * with neither, the answer is what v1 gives on failure (empty). Discovery never falls back to the
- * v1 routes on a failure; only the app's `v2Discovery` switch ([RolloutSwitches.v2Discovery]) sends
- * it back to them.
+ * with neither, the answer is empty and, for Home's bootstrap and picks, marked failed so Home and
+ * Explore keep what they show. Discovery never falls back to the v1 routes on a failure; only the
+ * app's `v2Discovery` switch ([RolloutSwitches.v2Discovery]) sends it back to them. Show search
+ * stays on v1 `/search`: shows carry no episode IDs, and `/v2/search` has no Apple or Podcast Index
+ * results.
  *
  * Added in P4 PR 12 of the own-episode-IDs plan (plan section 9, v2 discovery routes).
  */
@@ -31,7 +34,6 @@ private const val V2_DISCOVERY_TAG = "V2Discovery"
 /** Last good `/v2` discovery answers of this process, by request ([LastGoodCache]). */
 internal class V2DiscoveryLastGood {
     val podcasts = LastGoodCache<List<Podcast>>(MAX_PODCAST_LISTS)
-    val search = LastGoodCache<SearchResult>()
     val semantic = LastGoodCache<SemanticSearchGroupedResult>()
     val becauseYouLike = LastGoodCache<BecauseYouLikeData>()
     val similar = LastGoodCache<List<Episode>>()
@@ -84,12 +86,6 @@ internal suspend fun PodcastRepository.v2CuratedPodcasts(vibeId: String, country
     return discoveryEpisodeIds.latestToLocalOwners(mapFeedsToPodcasts(body.feeds)).also { v2LastGood.podcasts[key] = it }
 }
 
-/** Show search; shows carry no episode IDs, so only the request moves. */
-internal fun PodcastRepository.v2SearchPodcasts(query: String): SearchResult {
-    val body = v2Body("search") { apiV2.search(query).execute() } ?: return v2LastGood.search[query] ?: SearchResult(emptyList())
-    return SearchResult(body.feeds.mapNotNull(::mapSearchFeedToPodcast), null).also { v2LastGood.search[query] = it }
-}
-
 internal suspend fun PodcastRepository.v2SemanticGrouped(query: String, country: String,): SemanticSearchGroupedResult {
     val key = "$country|$query"
     val body =
@@ -117,7 +113,8 @@ internal suspend fun PodcastRepository.v2BecauseYouLike(request: BecauseYouLikeR
 /**
  * Similar episodes. The seed episode is sent as its recipe ID ([DiscoveryEpisodeIds.recipeIds]);
  * one the phone can't place goes as `"0"`, as v1 sends a phone-minted ID, and the server matches
- * on the text alone.
+ * on the text alone. The server then can't leave the seed out, so the answer drops it here
+ * ([withoutSeed]).
  */
 internal suspend fun PodcastRepository.v2SimilarEpisodes(query: SimilarEpisodesQuery, country: String, languages: List<String>,): List<Episode> {
     val seed = discoveryEpisodeIds.recipeIdsOrOwn(listOf(query.episodeId))[query.episodeId]
@@ -137,13 +134,26 @@ internal suspend fun PodcastRepository.v2SimilarEpisodes(query: SimilarEpisodesQ
     val key = "${query.episodeId}|${query.podcastId}|${query.limit}|$country|${languages.joinToString(",")}"
     // Cancellable, so a switched-off Try these episodes or a closed page stops the request.
     val body = v2Body("episodes/similar") { apiV2.getSimilarEpisodes(request).awaitResponse() } ?: return v2LastGood.similar[key].orEmpty()
-    return discoveryEpisodeIds.toLocalOwners(body.items.mapNotNull(::mapToEpisode)).also { v2LastGood.similar[key] = it }
+    return discoveryEpisodeIds
+        .toLocalOwners(body.items.mapNotNull(::mapToEpisode))
+        .withoutSeed(query)
+        .also { v2LastGood.similar[key] = it }
+}
+
+/** These similar episodes without the episode they are similar to: its stored ID, or its show and title. */
+internal fun List<Episode>.withoutSeed(query: SimilarEpisodesQuery): List<Episode> {
+    val seedTitle = query.title.trim()
+
+    fun hasSeedTitle(episode: Episode): Boolean = seedTitle.isNotEmpty() && episode.title.trim().equals(seedTitle, ignoreCase = true)
+    return filterNot { it.id == query.episodeId || (it.podcastId == query.podcastId && hasSeedTitle(it)) }
 }
 
 /**
  * Personal picks from `/v2/recommendations` (Smart Queue, Smart Downloads, Android Auto and content
- * rows). Without a seed or an interest no request is made. A failure, or an answer without picks,
- * keeps the last good picks for [country] ([RecommendationsLastGood]), never the v1 recommendations.
+ * rows). Without a seed or an interest no request is made, as on v1. A failure, or an answer without
+ * picks, keeps the last good picks for [country] ([RecommendationsLastGood]), never the v1
+ * recommendations. Episodes [history] holds are left out ([withoutHistory]). [languages] is the
+ * normalised list (at most four).
  */
 internal suspend fun PodcastRepository.v2PersonalizedRecommendations(
     history: List<cx.aswin.boxlore.core.network.model.HistoryItem>,
@@ -163,10 +173,10 @@ internal suspend fun PodcastRepository.v2PersonalizedRecommendations(
             .orEmpty()
     if (items.isEmpty()) {
         val lastGood = recommendationsLastGood.load(RecommendationsLastGood.Surface.PERSONAL, country) ?: return emptyList()
-        return discoveryEpisodeIds.toLocalOwners(lastGood.episodes)
+        return discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history)
     }
     recommendationsLastGood.save(RecommendationsLastGood.Surface.PERSONAL, country, RecommendationsLastGood.LastGoodPicks(items, isFallback = false))
-    return discoveryEpisodeIds.toLocalOwners(items).also { PodcastRepository.recommendationsCache[cacheKey] = it }
+    return discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history).also { PodcastRepository.recommendationsCache[cacheKey] = it }
 }
 
 /** A region's briefing; its chapters link is the signed `/v2` one, so related episodes come under recipe IDs. */
@@ -175,11 +185,14 @@ internal fun PodcastRepository.v2BriefingMetadata(mappedRegion: String): Briefin
     return body.also { v2LastGood.briefings[mappedRegion] = it }
 }
 
-/** The launch bootstrap (Brief, its chapters and trending); its episodes are translated to local owners. */
+/**
+ * The launch bootstrap (Brief, its chapters and trending); its episodes are translated to local
+ * owners. A failure with no last good answer is marked [HomeBootstrapData.failed].
+ */
 internal suspend fun PodcastRepository.v2HomeBootstrapFast(country: String): HomeBootstrapData {
     val body =
         v2Body("home/bootstrap") { apiV2.getHomeBootstrapGet(country).execute() }
-            ?: return v2LastGood.bootstrap[country] ?: HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList())
+            ?: return v2LastGood.bootstrap[country] ?: HomeBootstrapData(null, emptyList(), emptyList(), emptyMap(), emptyList(), failed = true)
     return HomeBootstrapData(
         briefing = body.briefing,
         briefingChapters = discoveryEpisodeIds.relatedToLocalOwners(body.briefingChapters),
@@ -192,9 +205,15 @@ internal suspend fun PodcastRepository.v2HomeBootstrapFast(country: String): Hom
 
 /**
  * Home's Picked for you and Explore's For you through `/v2/home/bootstrap`. The request carries the
- * current recommendation body ([v2RecommendationRequest]); without a seed or an interest there is
- * nothing to ask for, so no request is made. No picks (a failure, or none found) keeps the last
- * good picks for [country], translated again ([RecommendationsLastGood]).
+ * current recommendation body ([v2RecommendationRequest]); without a seed or an interest it asks for
+ * the country's default interests ([countryDefaultRecommendationRequest]), so a new listener gets
+ * popular picks as on v1. [HomeRecommendations.isFallback] follows v1: true only for that
+ * country-default request. No picks (a failure, or none found) keeps the last good picks for
+ * [country], translated again ([RecommendationsLastGood]); with none, the answer is marked
+ * [HomeRecommendations.failed]. Episodes [history] holds are left out ([withoutHistory]).
+ *
+ * [languages] is the normalised list (at most four) the recommendation body carries; the bootstrap's
+ * own `languages` field gets the expanded list, as on v1.
  */
 internal suspend fun PodcastRepository.v2HomeRecommendations(
     country: String,
@@ -203,29 +222,27 @@ internal suspend fun PodcastRepository.v2HomeRecommendations(
     subscribedPodcastIds: List<String>,
     languages: List<String>,
 ): HomeRecommendations {
-    val recommendationsRequest = v2RecommendationRequest(history, interests, country, subscribedPodcastIds, languages)
-    val body =
-        recommendationsRequest?.let { recsRequest ->
-            val deviceUuid = getOrCreateDeviceUuid()
-            val request =
-                V2BootstrapRequest(
-                    country = country,
-                    vibeIds = emptyList(),
-                    deviceUuid = deviceUuid,
-                    recommendationsRequest = recsRequest,
-                    languages = languages,
-                    include = listOf(BootstrapRequest.INCLUDE_RECOMMENDATIONS),
-                )
-            v2Body("home/bootstrap") { apiV2.getHomeBootstrap(deviceUuid, request).execute() }
-        }
+    val personal = v2RecommendationRequest(history, interests, country, subscribedPodcastIds, languages)
+    val recsRequest = personal ?: countryDefaultRecommendationRequest(country, languages)
+    val isFallback = personal == null
+    val deviceUuid = getOrCreateDeviceUuid()
+    val request =
+        V2BootstrapRequest(
+            country = country,
+            vibeIds = emptyList(),
+            deviceUuid = deviceUuid,
+            recommendationsRequest = recsRequest,
+            languages = ContentRegions.expandLanguagesForQuery(languages),
+            include = listOf(BootstrapRequest.INCLUDE_RECOMMENDATIONS),
+        )
+    val body = v2Body("home/bootstrap") { apiV2.getHomeBootstrap(deviceUuid, request).execute() }
     val items = body?.recommendations?.mapNotNull(::mapToEpisode).orEmpty()
     if (items.isEmpty()) {
-        val lastGood = recommendationsLastGood.load(RecommendationsLastGood.Surface.HOME, country) ?: return HomeRecommendations()
-        return HomeRecommendations(discoveryEpisodeIds.toLocalOwners(lastGood.episodes), lastGood.isFallback)
+        val lastGood = recommendationsLastGood.load(RecommendationsLastGood.Surface.HOME, country) ?: return HomeRecommendations(failed = true)
+        return HomeRecommendations(discoveryEpisodeIds.toLocalOwners(lastGood.episodes).withoutHistory(history), lastGood.isFallback)
     }
-    val isFallback = body?.isRecommendationsFallback ?: true
     recommendationsLastGood.save(RecommendationsLastGood.Surface.HOME, country, RecommendationsLastGood.LastGoodPicks(items, isFallback))
-    return HomeRecommendations(discoveryEpisodeIds.toLocalOwners(items), isFallback)
+    return HomeRecommendations(discoveryEpisodeIds.toLocalOwners(items).withoutHistory(history), isFallback)
 }
 
 /** A page of the curiosity deck; each card's recipe ID is translated to its local owner. */
