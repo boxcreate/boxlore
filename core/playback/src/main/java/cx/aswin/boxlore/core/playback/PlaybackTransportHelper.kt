@@ -32,6 +32,8 @@ internal class PlaybackTransportHelper(
         initialPositionMs: Long?,
         sourceContext: android.os.Bundle?,
     ) -> Unit,
+    /** IDs whose episode's completed download is held by another of its IDs, mapped to that ID. */
+    private val downloadHolders: suspend (List<String>) -> Map<String, String> = { emptyMap() },
 ) {
     fun resume(entryPointContext: android.os.Bundle? = null) {
         val controller = mediaHandle.controller ?: return
@@ -77,6 +79,7 @@ internal class PlaybackTransportHelper(
                     )
                 cx.aswin.boxlore.core.analytics.AnalyticsHelper
                     .setSeekSource("resume")
+                val cacheIds = downloadHolders((queue.map { it.id } + currentEpisode.id).distinct())
                 if (queue.isNotEmpty() && podcast != null) {
                     // Find current episode in queue and reload from that point
                     val startIndex = queue.indexOfFirst { it.id == currentEpisode.id }.coerceAtLeast(0)
@@ -108,7 +111,7 @@ internal class PlaybackTransportHelper(
                                 .setMediaMetadata(metadata)
                                 .setMediaId(episode.id)
                                 .setCustomCacheKey(
-                                    PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                                    PlaybackMediaIdPolicy.customCacheKey(cacheIds[episode.id] ?: episode.id, episode.audioUrl),
                                 ).build()
                         }
 
@@ -120,30 +123,7 @@ internal class PlaybackTransportHelper(
                 } else {
                     // Fallback: single episode resume (no queue available)
                     Log.d("PlaybackRepo", "resume(): No queue, loading single episode")
-                    val metadata =
-                        androidx.media3.common.MediaMetadata
-                            .Builder()
-                            .setTitle(currentEpisode.title)
-                            .setArtist(podcast?.title ?: "")
-                            .setArtworkUri(
-                                PlaybackUris.parseOrNull(currentEpisode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast?.imageUrl),
-                            ).setDisplayTitle(currentEpisode.title)
-                            .setSubtitle(podcast?.title ?: "")
-                            .setGenre(currentEpisode.podcastGenre ?: podcast?.genre ?: "Podcast")
-                            .setExtras(PlaybackQueueContext.extras(currentEpisode, entryPointContext))
-                            .build()
-
-                    val mediaItem =
-                        MediaItem
-                            .Builder()
-                            .setUri(currentEpisode.audioUrl)
-                            .setMimeType(currentEpisode.enclosureType)
-                            .setMediaMetadata(metadata)
-                            .setMediaId(currentEpisode.id)
-                            .setCustomCacheKey(
-                                PlaybackMediaIdPolicy.customCacheKey(currentEpisode.id, currentEpisode.audioUrl),
-                            ).build()
-
+                    val mediaItem = singleEpisodeItem(currentEpisode, podcast, entryPointContext, cacheIds[currentEpisode.id])
                     PlaybackActivationRequest.set(currentEpisode.id, savedPosition, applyIntroTrim = savedPosition == 0L)
                     controller.setMediaItem(mediaItem, savedPosition.coerceAtLeast(0L))
                     controller.prepare()
@@ -158,6 +138,30 @@ internal class PlaybackTransportHelper(
             if (controller.playbackState == androidx.media3.common.Player.STATE_IDLE) controller.prepare()
             controller.play()
         }
+    }
+
+    /** The media item for resuming [episode] alone; [cacheId] is the ID whose downloaded bytes play it, if another. */
+    private fun singleEpisodeItem(episode: Episode, podcast: Podcast?, entryPointContext: android.os.Bundle?, cacheId: String?,): MediaItem {
+        val metadata =
+            androidx.media3.common.MediaMetadata
+                .Builder()
+                .setTitle(episode.title)
+                .setArtist(podcast?.title ?: "")
+                .setArtworkUri(
+                    PlaybackUris.parseOrNull(episode.imageUrl?.takeIf { it.isNotBlank() } ?: podcast?.imageUrl),
+                ).setDisplayTitle(episode.title)
+                .setSubtitle(podcast?.title ?: "")
+                .setGenre(episode.podcastGenre ?: podcast?.genre ?: "Podcast")
+                .setExtras(PlaybackQueueContext.extras(episode, entryPointContext))
+                .build()
+        return MediaItem
+            .Builder()
+            .setUri(episode.audioUrl)
+            .setMimeType(episode.enclosureType)
+            .setMediaMetadata(metadata)
+            .setMediaId(episode.id)
+            .setCustomCacheKey(PlaybackMediaIdPolicy.customCacheKey(cacheId ?: episode.id, episode.audioUrl))
+            .build()
     }
 
     fun reinitializePlaybackIfEmpty(

@@ -182,6 +182,36 @@ class AdaptiveCandidateScorerTest {
         assertTrue(RankingShadowDiagnostics.snapshots().isNotEmpty())
     }
 
+    /** One episode stored under two IDs: show scores count it once and find it under either ID. */
+    @Test
+    fun anEpisodeStoredUnderTwoIdsCountsOnceInShowScores() = runTest {
+        val episodeToken = "pod-1\u0000guid-a"
+        val withAliases =
+            AdaptiveCandidateScorer.create(repository, controls) { ids ->
+                ids.associateWith { if (it == "ep-1" || it == "ep-1-alias") episodeToken else it }
+            }
+        val listened = history(episodeId = "ep-1", progressMs = 10 * 60 * 1000L, isLiked = true)
+        for ((objective, surface) in listOf(RankingObjective.YOUR_SHOWS to RankingSurface.HOME, RankingObjective.CONTINUATION to RankingSurface.EXPLORE)) {
+            val once =
+                scorer.scorePodcasts(
+                    podcasts = listOf(scorable(id = "pod-1", latest = episode(id = "ep-1")), scorable(id = "pod-2")),
+                    history = listOf(listened),
+                    objective = objective,
+                    surface = surface,
+                    nowMs = nowMs,
+                )
+            val twice =
+                withAliases.scorePodcasts(
+                    podcasts = listOf(scorable(id = "pod-1", latest = episode(id = "ep-1-alias")), scorable(id = "pod-2")),
+                    history = listOf(listened, listened.copy(episodeId = "ep-1-alias", lastPlayedAt = nowMs - 120_000L)),
+                    objective = objective,
+                    surface = surface,
+                    nowMs = nowMs,
+                )
+            assertEquals(objective.name, once, twice)
+        }
+    }
+
     @Test
     fun scoreEpisodesEmptyReturnsEmpty() = runTest {
         val result =

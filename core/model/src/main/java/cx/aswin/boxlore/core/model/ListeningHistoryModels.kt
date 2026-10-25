@@ -103,10 +103,20 @@ data class ListeningRollupSnapshot(
     val nightMs: Long,
 )
 
+/**
+ * What removing one episode from history took away, so Undo can put it back.
+ *
+ * @property item the removed row the listener chose
+ * @property sessions listening sessions of every removed row
+ * @property rollups daily listening totals of every removed row
+ * @property otherItems rows of the same episode stored under its other IDs, removed with [item]
+ *   so the episode doesn't stay in history through another ID (own-episode-IDs P4, plan section 8)
+ */
 data class ListeningHistoryRemoval(
     val item: ListeningHistoryItem,
     val sessions: List<ListeningSessionSnapshot> = emptyList(),
     val rollups: List<ListeningRollupSnapshot> = emptyList(),
+    val otherItems: List<ListeningHistoryItem> = emptyList(),
 )
 
 object ListeningCompletionLogic {

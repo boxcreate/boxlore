@@ -54,6 +54,10 @@ internal class PlaybackQueueCoordinator(
     private val stopProgressTicker: () -> Unit,
     /** Called whenever a queue starts from a listener action, so stream-failure counting starts fresh. */
     private val onQueueStarted: () -> Unit = {},
+    /** Every stored ID of an episode ([QueueAliasPolicy]); just the ID when it has no other. */
+    private val episodeAliases: suspend (String) -> List<String> = { listOf(it) },
+    /** IDs whose episode's completed download is held by another of its IDs, mapped to that ID. */
+    private val downloadHolders: suspend (List<String>) -> Map<String, String> = { emptyMap() },
 ) {
     private val castQueueSnapshotPolicy = CastQueueSnapshotPolicy()
     private var castQueueRecheckJob: Job? = null
@@ -213,10 +217,15 @@ internal class PlaybackQueueCoordinator(
         )
     }
 
+    /**
+     * Media items for [episodes]. [cacheIds] maps an episode ID to the ID whose downloaded bytes
+     * play it ([downloadHolders]); an episode not in it plays from its own cache key, as before.
+     */
     fun buildMediaItems(
         episodes: List<Episode>,
         podcast: Podcast,
         entryPointContext: android.os.Bundle?,
+        cacheIds: Map<String, String> = emptyMap(),
     ): List<MediaItem> {
         val entryPoint = PlaybackMediaIdPolicy.parseEntryPointString(entryPointContext)
         val isLearn = PlaybackMediaIdPolicy.isLearnEntryPoint(entryPoint)
@@ -246,7 +255,7 @@ internal class PlaybackQueueCoordinator(
                 .setMediaMetadata(metadata)
                 .setMediaId(mediaId)
                 .setCustomCacheKey(
-                    PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                    PlaybackMediaIdPolicy.customCacheKey(cacheIds[episode.id] ?: episode.id, episode.audioUrl),
                 ).build()
         }
     }
@@ -294,7 +303,8 @@ internal class PlaybackQueueCoordinator(
                         null
                     }
             val episodesWithSource = enrichWithContextSourceId(uniqueEpisodes, entryPoint, sourceContext)
-            val mediaItems = buildMediaItems(episodesWithSource, podcast, entryPointContext)
+            val mediaItems =
+                buildMediaItems(episodesWithSource, podcast, entryPointContext, downloadHolders(episodesWithSource.map { it.id }))
 
             val startEpisodeId = episodesWithSource.getOrNull(uniqueStartIndex)?.id
             val (startPosMs, initialLikeState) = checkSavedProgress(startEpisodeId, initialPositionMs, entryPoint, entryPointContext)
@@ -379,8 +389,9 @@ internal class PlaybackQueueCoordinator(
     ): Boolean {
         Log.d("PlaybackRepo", "addToQueue called: episodeId=${episode.id}, title=${episode.title}, entryPoint=$entryPoint")
 
-        // Prevent Duplicates in active queue (by ID)
-        if (playerStateFlow.value.queue.any { it.id == episode.id }) {
+        // Prevent duplicates in the active queue, by any stored ID of the episode
+        val aliases = episodeAliases(episode.id).toSet()
+        if (playerStateFlow.value.queue.any { it.id in aliases }) {
             Log.w("PlaybackRepo", "addToQueue: Episode ${episode.title} already in active queue (ID match). Skipping.")
             return false
         }
@@ -414,6 +425,7 @@ internal class PlaybackQueueCoordinator(
 
             val isLearn = PlaybackMediaIdPolicy.isLearnEntryPoint(entryPoint)
             val mediaId = PlaybackMediaIdPolicy.encodeMediaId(episode.id, isLearn)
+            val cacheId = downloadHolders(listOf(episode.id))[episode.id] ?: episode.id
             val mediaItem =
                 MediaItem
                     .Builder()
@@ -422,7 +434,7 @@ internal class PlaybackQueueCoordinator(
                     .setMediaMetadata(metadata)
                     .setMediaId(mediaId)
                     .setCustomCacheKey(
-                        PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                        PlaybackMediaIdPolicy.customCacheKey(cacheId, episode.audioUrl),
                     ) // Match DownloadRequest custom key
                     .build()
 
@@ -462,9 +474,12 @@ internal class PlaybackQueueCoordinator(
 
         mediaHandle.controller?.let { controller ->
             val currentId = playerStateFlow.value.currentEpisode?.id
-            if (episode.id == currentId) return
+            val aliases = episodeAliases(episode.id)
+            if (currentId != null && currentId in aliases) return
             val mediaIds = (0 until controller.mediaItemCount).map { controller.getMediaItemAt(it).mediaId }
-            val existingIndex = QueueMath.mediaIndexOfEpisode(mediaIds, episode.id)
+            // An episode already queued under another of its IDs is moved, never added twice.
+            val existingIndex = QueueAliasPolicy.indexOfAny(mediaIds, aliases)
+            val queued = playerStateFlow.value.queue.firstOrNull { it.id in aliases && it.id != episode.id }
             if (existingIndex >= 0) {
                 // Already queued: move it up instead of adding a duplicate (lists key rows by id).
                 val currentIndex = controller.currentMediaItemIndex
@@ -486,6 +501,7 @@ internal class PlaybackQueueCoordinator(
                         .setExtras(PlaybackArtworkMetadata.extras(episode, podcast))
                         .build()
 
+                val cacheId = downloadHolders(listOf(episode.id))[episode.id] ?: episode.id
                 val mediaItem =
                     MediaItem
                         .Builder()
@@ -494,7 +510,7 @@ internal class PlaybackQueueCoordinator(
                         .setMediaMetadata(metadata)
                         .setMediaId(episode.id)
                         .setCustomCacheKey(
-                            PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                            PlaybackMediaIdPolicy.customCacheKey(cacheId, episode.audioUrl),
                         ) // Match DownloadRequest custom key
                         .build()
 
@@ -503,7 +519,7 @@ internal class PlaybackQueueCoordinator(
                 controller.addMediaItem(insertIndex, mediaItem)
             }
 
-            val newQueue = QueueMath.placeNext(playerStateFlow.value.queue, currentId, episode) { it.id }
+            val newQueue = QueueMath.placeNext(playerStateFlow.value.queue, currentId, queued ?: episode) { it.id }
             playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
             syncQueueToDb()
         }
@@ -522,7 +538,8 @@ internal class PlaybackQueueCoordinator(
         val uniqueCandidates =
             episodes
                 .distinctBy { it.id }
-                .filter { it.id != playingId && it.id !in existingIds }
+                // Every stored ID of the candidate's episode, itself included, must be new to the queue.
+                .filter { candidate -> episodeAliases(candidate.id).none { it == playingId || it in existingIds } }
         if (uniqueCandidates.isEmpty()) return false
 
         val spaceLeft = (queueMaxSize - currentQueue.size).coerceAtLeast(0)
@@ -547,6 +564,7 @@ internal class PlaybackQueueCoordinator(
             return false
         }
 
+        val cacheIds = downloadHolders(taggedEpisodes.map { it.id })
         val mediaItems =
             taggedEpisodes.map { ep ->
                 val resolvedUrl = PlaybackArtworkResolver.resolveEpisodeImageUrl(ep, podcast)
@@ -569,7 +587,7 @@ internal class PlaybackQueueCoordinator(
                     .setMediaMetadata(metadata)
                     .setMediaId(ep.id)
                     .setCustomCacheKey(
-                        PlaybackMediaIdPolicy.customCacheKey(ep.id, ep.audioUrl),
+                        PlaybackMediaIdPolicy.customCacheKey(cacheIds[ep.id] ?: ep.id, ep.audioUrl),
                     ).build()
             }
 
@@ -660,13 +678,19 @@ internal class PlaybackQueueCoordinator(
                 controller.removeMediaItem(mediaIndex)
                 removedFromController = true
             }
+            // The same episode queued under another of its IDs leaves too (never the playing item).
+            val remaining = (0 until controller.mediaItemCount).map { controller.getMediaItemAt(it).mediaId }
+            QueueAliasPolicy
+                .otherAliasIndices(remaining, episodeAliases(episodeId), episodeId, controller.currentMediaItemIndex)
+                .forEach(controller::removeMediaItem)
         }
 
         // Always update local state and sync to DB, even if the item wasn't in Media3 playlist
         val existsInLocalQueue = currentQueue.any { it.id == episodeId }
 
         if (existsInLocalQueue || !removedFromController) {
-            val newQueue = currentQueue.filter { it.id != episodeId }
+            val playingId = playerStateFlow.value.currentEpisode?.id
+            val newQueue = QueueAliasPolicy.withoutEpisode(currentQueue, episodeId, episodeAliases(episodeId), playingId) { it.id }
             playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
             queueRepository.removeFromQueue(episodeId)
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
@@ -749,7 +773,10 @@ internal class PlaybackQueueCoordinator(
                 .setMediaMetadata(metadata)
                 .setMediaId(mediaId)
                 .setCustomCacheKey(
-                    PlaybackMediaIdPolicy.customCacheKey(episode.id, episode.audioUrl),
+                    PlaybackMediaIdPolicy.customCacheKey(
+                        downloadHolders(listOf(episode.id))[episode.id] ?: episode.id,
+                        episode.audioUrl,
+                    ),
                 ).build()
 
         val insertMediaIndex =

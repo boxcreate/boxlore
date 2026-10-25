@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 
@@ -176,29 +177,52 @@ internal class AutoBrowseLibraryCallback(
         )
     }
 
+    /**
+     * Flips the like of [episodeId]'s episode. An episode stored under one ID toggles its row as
+     * before and records the decision in its group settings; an episode stored under several IDs
+     * gets the projected target written to every trusted ID ([EpisodeListenerStore.setLiked]).
+     */
     private suspend fun toggleEpisodeLike(episodeId: String): Boolean {
-        val existing = getOrCreateHistoryItem(episodeId) ?: return false
-        host.database.listeningHistoryDao().upsert(
-            existing.copy(
-                isLiked = !existing.isLiked,
-                isDirty = true,
-            ),
-        )
+        val listenerStore = host.database.episodeListenerStore()
+        val now = System.currentTimeMillis()
+        if (listenerStore.group(episodeId).isShared) {
+            val liked = !(listenerStore.projectedHistory(episodeId)?.isLiked ?: false)
+            if (listenerStore.setLiked(episodeId, liked, now) == 0) {
+                val created = getOrCreateHistoryItem(episodeId) ?: return false
+                host.database.listeningHistoryDao().upsert(
+                    created.copy(episodeId = listenerStore.historyId(episodeId), isLiked = liked, likedAt = now, isDirty = true),
+                )
+            }
+        } else {
+            val existing = getOrCreateHistoryItem(episodeId) ?: return false
+            host.database.listeningHistoryDao().upsert(
+                existing.copy(
+                    isLiked = !existing.isLiked,
+                    isDirty = true,
+                ),
+            )
+            listenerStore.recordLike(episodeId, !existing.isLiked, now)
+        }
         host.mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_LIKED_ID, 50, null)
         return true
     }
 
+    /** Marks [episodeId]'s episode played on its owner's row, then for the episode's other IDs. */
     private suspend fun markEpisodeComplete(episodeId: String): Boolean {
-        val existing = getOrCreateHistoryItem(episodeId) ?: return false
+        val listenerStore = host.database.episodeListenerStore()
+        val historyId = listenerStore.historyId(episodeId)
+        val existing = getOrCreateHistoryItem(historyId) ?: getOrCreateHistoryItem(episodeId)?.copy(episodeId = historyId) ?: return false
         host.observeManualCompletion(episodeId)
         val dao = host.database.listeningHistoryDao()
         dao.insertIfAbsent(existing)
+        val completedAt = System.currentTimeMillis()
         dao.completeFromPlayback(
-            episodeId = episodeId,
+            episodeId = historyId,
             durationMs = existing.durationMs,
-            lastPlayedAt = System.currentTimeMillis(),
+            lastPlayedAt = completedAt,
             isManualCompletion = true,
         )
+        listenerStore.recordCompletion(historyId, completed = true, nowMs = completedAt)
         host.mediaSession?.notifyChildrenChanged(AutoBrowseContract.HOME_CONTINUE_ID, 20, null)
         host.mediaSession?.notifyChildrenChanged(AutoBrowseContract.LIBRARY_HISTORY_ID, 50, null)
         host.requestAutoCollageRefresh(force = true)

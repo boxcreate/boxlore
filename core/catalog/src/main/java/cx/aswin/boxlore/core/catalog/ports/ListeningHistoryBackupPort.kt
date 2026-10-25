@@ -12,7 +12,16 @@ import kotlinx.coroutines.flow.Flow
  * in `:core:playback`. Keeps `:core:data` free of a dependency on `:core:playback`.
  */
 interface ListeningHistoryBackupPort {
+    /** Recent history for display and ranking; an episode stored under several IDs may appear once. */
     fun getAllHistory(): Flow<List<ListeningHistoryEntity>>
+
+    /**
+     * Recent history rows exactly as stored, one per stored episode ID, for library export: nothing
+     * is merged or dropped. Defaults to [getAllHistory] for ports that store each episode once.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, projected listener state).
+     */
+    fun getStoredHistory(): Flow<List<ListeningHistoryEntity>> = getAllHistory()
 
     suspend fun upsertHistoryEntity(entity: ListeningHistoryEntity)
 

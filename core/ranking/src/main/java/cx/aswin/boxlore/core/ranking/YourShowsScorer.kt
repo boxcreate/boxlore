@@ -18,6 +18,7 @@ internal object YourShowsScorer {
         history: List<ListeningHistoryEntity>,
         includeAutoDownloadBoost: Boolean,
         nowMs: Long,
+        episodeKey: (String) -> String = { it },
     ): Map<String, Double> {
         if (podcasts.isEmpty()) return emptyMap()
         val priors =
@@ -27,6 +28,7 @@ internal object YourShowsScorer {
                 includeAutoDownloadBoost = includeAutoDownloadBoost,
                 includeSubscriptionRecency = false,
                 nowMs = nowMs,
+                episodeKey = episodeKey,
             )
         val normalized = normalize(priors)
         return podcasts.associate { podcast ->

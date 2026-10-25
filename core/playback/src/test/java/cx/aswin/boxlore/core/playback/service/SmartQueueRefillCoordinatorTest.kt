@@ -8,7 +8,12 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
+import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.EpisodeItem
 import cx.aswin.boxlore.core.playback.PlaybackQueueContext
@@ -159,4 +164,65 @@ class SmartQueueRefillCoordinatorTest {
         assertEquals(listOf("1"), repository.getQueueEpisodeSnapshot().map { it.id })
         assertEquals(listOf("9"), playlist.items.map { it.mediaId })
     }
+
+    @Test fun `refill never queues the same episode twice across its IDs`() = runTest {
+        // 1 and 100 are one episode; 101 and 102 are another; 103 is its own.
+        aliases("guid-a" to listOf("1", "100"), "guid-b" to listOf("101", "102"))
+        val episodes = listOf(episode(1))
+        repository.replaceQueue(episodes)
+        val playlist = Playlist(episodes, 0)
+        val picks = listOf(100L, 101L, 102L, 103L).map { id ->
+            QueueEntry(EpisodeItem(id = id, title = "Pick $id", enclosureUrl = "https://example.com/$id.mp3"), podcast, SmartQueueEngine.SOURCE_RESUME)
+        }
+
+        assertTrue(coordinator { picks }.refillQueue(playlist.player))
+
+        assertEquals(setOf("1", "100"), excluded)
+        assertEquals(listOf("1", "101", "103"), playlist.items.map { it.mediaId })
+        assertEquals(listOf("1", "101", "103"), repository.getQueueEpisodeSnapshot().map { it.id })
+    }
+
+    @Test fun `a refill item's cache key is its download key so a downloaded pick plays from its file`() = runTest {
+        aliases("guid-c" to listOf("100", "200"))
+        database.downloadedEpisodeDao().insert(download("200"))
+        val episodes = listOf(episode(1))
+        repository.replaceQueue(episodes)
+        val playlist = Playlist(episodes, 0)
+        val own = QueueEntry(EpisodeItem(id = 300L, title = "Own", enclosureUrl = "https://example.com/300.mp3"), podcast, SmartQueueEngine.SOURCE_RESUME)
+
+        assertTrue(coordinator { listOf(candidate(), own) }.refillQueue(playlist.player))
+
+        val keys = playlist.items.drop(1).map { it.localConfiguration?.customCacheKey }
+        // 100's download is held by its other ID, 200; 300 plays from its own key.
+        assertEquals(listOf("200", EpisodeMediaCacheKey.of("300", "https://example.com/300.mp3")), keys)
+        assertEquals(EpisodeMediaCacheKey.of("100", "https://example.com/100.mp3"), refillMediaItem(candidate()).localConfiguration?.customCacheKey)
+        assertEquals("300", refillMediaItem(own).localConfiguration?.customCacheKey)
+    }
+
+    private suspend fun aliases(vararg episodes: Pair<String, List<String>>) {
+        database.episodeIdentityDao().insertAliasesIfAbsent(
+            episodes.flatMap { (key, ids) ->
+                ids.mapIndexed { index, id ->
+                    EpisodeAliasEntity(id, "show", key, null, EpisodeAliasState.TRUSTED, owner = index == 0, provenance = EpisodeAliasProvenance.UPGRADE_CATALOG, createdAt = index.toLong())
+                }
+            },
+        )
+    }
+
+    private fun download(id: String) = DownloadedEpisodeEntity(
+        episodeId = id,
+        podcastId = "show",
+        episodeTitle = "Episode $id",
+        episodeDescription = null,
+        episodeImageUrl = null,
+        podcastName = "Show",
+        podcastImageUrl = null,
+        durationMs = 1_000L,
+        publishedDate = 1L,
+        localFilePath = "",
+        downloadId = 0L,
+        downloadedAt = 1L,
+        sizeBytes = 1L,
+        status = DownloadedEpisodeEntity.STATUS_COMPLETED,
+    )
 }

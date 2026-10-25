@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.room.withTransaction
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.EpisodeListenerStore
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningInsightsMaintenance
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.ListeningHistoryPort
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.ListeningCompletionLogic
@@ -17,11 +19,13 @@ import cx.aswin.boxlore.core.model.ListeningPeriod
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -39,9 +43,19 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
 
     internal var likeStateObserverJob: Job? = null
 
+    /**
+     * Listener state across an episode's stored IDs: projected reads, owner writes, absolute like
+     * and completion writes (own-episode-IDs P4, plan section 8). Every episode stored under one ID
+     * reads and writes exactly as before.
+     */
+    internal val listenerStore: EpisodeListenerStore by lazy {
+        data.listenerStore ?: BoxLoreDatabase.getDatabase(player.context).episodeListenerStore()
+    }
+
+    /** Mirrors the current episode's projected like and completion into the player state. */
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun monitorLikeState() {
         val dao = data.listeningHistoryDao
-        val stateFlow = player.playerStateFlow
         player.scope.launch {
             player.playerState
                 .map { it.currentEpisode?.id }
@@ -51,30 +65,36 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
                     if (episodeId != null) {
                         likeStateObserverJob =
                             launch {
-                                dao.getHistoryItemFlow(episodeId).collect { history ->
-                                    if (history == null) {
-                                        stateFlow.value = stateFlow.value.copy(isLiked = false, isCompleted = false)
-                                    } else {
-                                        if (stateFlow.value.isLiked != history.isLiked ||
-                                            stateFlow.value.isCompleted != history.isCompleted
-                                        ) {
-                                            stateFlow.value =
-                                                stateFlow.value.copy(
-                                                    isLiked = history.isLiked,
-                                                    isCompleted = history.isCompleted,
-                                                )
-                                        }
-                                    }
-                                }
+                                dao
+                                    .getHistoryItemFlow(episodeId)
+                                    .mapLatest { row -> listenerStore.projectedHistory(episodeId, row) }
+                                    .collect { history -> applyLikeAndCompletion(history) }
                             }
                     }
                 }
         }
     }
 
-    override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = data.listeningHistoryDao.getAllHistory()
+    private fun applyLikeAndCompletion(history: ListeningHistoryEntity?) {
+        val stateFlow = player.playerStateFlow
+        if (history == null) {
+            stateFlow.value = stateFlow.value.copy(isLiked = false, isCompleted = false)
+        } else if (stateFlow.value.isLiked != history.isLiked || stateFlow.value.isCompleted != history.isCompleted) {
+            stateFlow.value =
+                stateFlow.value.copy(
+                    isLiked = history.isLiked,
+                    isCompleted = history.isCompleted,
+                )
+        }
+    }
 
-    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = data.listeningHistoryDao.getAllHistory().map { entities ->
+    /** Every episode once, with its projected state ([EpisodeListenerStore.projectedRows]). */
+    override fun getAllHistory(): Flow<List<ListeningHistoryEntity>> = listenerStore.projectedRows(data.listeningHistoryDao.getAllHistory())
+
+    /** The stored rows, one per episode ID, for library export. */
+    override fun getStoredHistory(): Flow<List<ListeningHistoryEntity>> = data.listeningHistoryDao.getAllHistory()
+
+    override fun observeHistoryTimeline(): Flow<List<ListeningHistoryItem>> = getAllHistory().map { entities ->
         entities
             .filter { !it.isManualCompletion && !it.isBulkCompletion }
             .map { it.toListeningHistoryItem() }
@@ -83,7 +103,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
     override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = combine(
         data.listeningSessionDao.observeAllSessions(),
         data.listeningRollupDao.observeAllRollups(),
-        data.listeningHistoryDao.getAllHistory(),
+        getAllHistory(),
     ) { sessions, rollups, history ->
         val timeline =
             history.filter { !it.isManualCompletion && !it.isBulkCompletion }
@@ -154,20 +174,31 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         )
     }
 
+    /**
+     * Removes [episodeId]'s episode from history: its row and the rows of the episode's other
+     * trusted IDs, with their listening sessions and daily totals, so the episode doesn't stay in
+     * history through another ID. The returned removal restores every row.
+     */
     override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? {
         val existing = data.listeningHistoryDao.getHistoryItem(episodeId) ?: return null
         val database = BoxLoreDatabase.getDatabase(player.context)
         return database.withTransaction {
-            val sessions = data.listeningSessionDao.getSessionsForEpisode(episodeId)
-            val rollups = data.listeningRollupDao.getRollupsForEpisode(episodeId)
+            val otherIds = listenerStore.memberIds(episodeId).filter { it != episodeId }
+            val others = if (otherIds.isEmpty()) emptyList() else data.listeningHistoryDao.getHistoryItems(otherIds)
+            val removedIds = listOf(episodeId) + others.map { it.episodeId }
+            val sessions = removedIds.flatMap { data.listeningSessionDao.getSessionsForEpisode(it) }
+            val rollups = removedIds.flatMap { data.listeningRollupDao.getRollupsForEpisode(it) }
             val removal =
                 ListeningHistoryRemoval(
                     item = existing.toListeningHistoryItem(),
                     sessions = sessions.map { it.toListeningSessionSnapshot() },
                     rollups = rollups.map { it.toListeningRollupSnapshot() },
+                    otherItems = others.map { it.toListeningHistoryItem() },
                 )
-            data.listeningHistoryDao.delete(episodeId)
-            data.listeningInsightsMaintenance.deleteEpisodeAnalytics(episodeId)
+            for (id in removedIds) {
+                data.listeningHistoryDao.delete(id)
+                data.listeningInsightsMaintenance.deleteEpisodeAnalytics(id)
+            }
             removal
         }
     }
@@ -177,6 +208,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         val database = BoxLoreDatabase.getDatabase(player.context)
         database.withTransaction {
             data.listeningHistoryDao.upsert(item.toListeningHistoryEntity())
+            removal.otherItems.forEach { data.listeningHistoryDao.upsert(it.toListeningHistoryEntity()) }
             if (removal.sessions.isNotEmpty()) {
                 data.listeningSessionDao.upsertSessions(removal.sessions.map { it.toListeningSessionEntity() })
             }
@@ -195,6 +227,11 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         data.rankingFeedbackRepository.reset()
     }
 
+    /**
+     * Marks [episodes] played in one transaction. Each episode's row is its owner's (an episode
+     * stored under one ID writes that ID, as before), and the completion reaches the episode's other
+     * trusted IDs and its group settings ([EpisodeListenerStore.recordCompletion]).
+     */
     override suspend fun markAllEpisodesCompleted(
         episodes: List<Episode>,
         podcastId: String,
@@ -202,18 +239,24 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         podcastImageUrl: String?,
     ) {
         val currentTime = System.currentTimeMillis()
-        val entitiesToUpsert =
-            episodes.map { episode ->
-                ListeningHistoryUpsertLogic.buildBulkCompleteEntity(
-                    episode = episode,
-                    podcastId = podcastId,
-                    podcastTitle = podcastTitle,
-                    podcastImageUrl = podcastImageUrl,
-                    existing = data.listeningHistoryDao.getHistoryItem(episode.id),
-                    nowMs = currentTime,
-                )
-            }
-        data.listeningHistoryDao.upsertAll(entitiesToUpsert)
+        val database = BoxLoreDatabase.getDatabase(player.context)
+        database.withTransaction {
+            val historyIds = episodes.map { listenerStore.historyId(it.id) }
+            val entitiesToUpsert =
+                episodes.mapIndexed { index, episode ->
+                    val historyId = historyIds[index]
+                    ListeningHistoryUpsertLogic.buildBulkCompleteEntity(
+                        episode = episode,
+                        podcastId = podcastId,
+                        podcastTitle = podcastTitle,
+                        podcastImageUrl = podcastImageUrl,
+                        existing = data.listeningHistoryDao.getHistoryItem(historyId),
+                        nowMs = currentTime,
+                    ).copy(episodeId = historyId)
+                }
+            data.listeningHistoryDao.upsertAll(entitiesToUpsert)
+            historyIds.forEach { listenerStore.recordCompletion(it, completed = true, nowMs = currentTime) }
+        }
     }
 }
 

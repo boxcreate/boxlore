@@ -10,6 +10,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
+import cx.aswin.boxlore.core.database.entities.QueueRemovalIdentity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -89,13 +90,31 @@ interface QueueDao {
         syncedAt: Long,
     ): Int
 
+    /**
+     * Records one queue change: bumps the sequence, marks the queue for sync and keeps both
+     * recent-removal lists in step.
+     * - [QueueMetadataEntity.recentRemovedEpisodeIds] (plain IDs, read by every build) gains the
+     *   removed IDs and drops the restored ones, as before.
+     * - [QueueMetadataEntity.recentRemovedEpisodes] (removals with the episode's identity) gains an
+     *   entry per removed ID, with the identity from [removedIdentities] when given. An entry is
+     *   dropped when the same episode is restored ([QueueRemovalIdentity.sameEpisodeAs]: the same ID,
+     *   or the same show and catalog key), and a removal of an episode that stays queued under
+     *   another ID is not recorded there, because the server applies a rich removal to every ID of
+     *   the episode. Both lists keep the newest [MAX_RECENT_REMOVED_EPISODES].
+     *
+     * The identity parameters were added in P4 of the own-episode-IDs plan (plan section 8, rich
+     * queue tombstones). COMPAT(own-ids): queue removals across an episode's IDs. Permanent: never remove (MIGRATION.md §5).
+     */
     @Transaction
+    @Suppress("LongParameterList")
     suspend fun bumpQueueVersion(
         updatedAt: Long = System.currentTimeMillis(),
         deviceId: String? = null,
         removedEpisodeId: String? = null,
         removedEpisodeIds: Collection<String>? = null,
         restoredEpisodeIds: Collection<String>? = null,
+        removedIdentities: Collection<QueueRemovalIdentity> = emptyList(),
+        restoredIdentities: Collection<QueueRemovalIdentity> = emptyList(),
     ) {
         val current = getQueueMetadata() ?: QueueMetadataEntity(id = 1)
         val existingList = parseRecentRemovedEpisodeIds(current.recentRemovedEpisodeIds)
@@ -123,6 +142,13 @@ interface QueueDao {
             lastModifiedDeviceId = deviceId ?: current.lastModifiedDeviceId,
             isDirty = true,
             recentRemovedEpisodeIds = updatedRemovedStr,
+            recentRemovedEpisodes = updatedRichRemovals(
+                stored = current.recentRemovedEpisodes,
+                removedIds = toRemove,
+                removedIdentities = removedIdentities,
+                restoredIds = restoredEpisodeIds.orEmpty(),
+                restoredIdentities = restoredIdentities,
+            ),
         )
         upsertQueueMetadata(updated)
     }
@@ -187,6 +213,37 @@ interface QueueDao {
         fun serializeRecentRemovedEpisodeIds(ids: List<String>): String? {
             if (ids.isEmpty()) return null
             return gson.toJson(ids)
+        }
+
+        /**
+         * The rich removal list after one queue change ([bumpQueueVersion]): restored episodes leave
+         * it, removed IDs join it (with their identity when known) unless their episode is restored
+         * in the same change, and the newest [MAX_RECENT_REMOVED_EPISODES] are kept.
+         *
+         * Added in P4 of the own-episode-IDs plan (plan section 8, rich queue tombstones).
+         */
+        fun updatedRichRemovals(
+            stored: String?,
+            removedIds: Collection<String>,
+            removedIdentities: Collection<QueueRemovalIdentity>,
+            restoredIds: Collection<String>,
+            restoredIdentities: Collection<QueueRemovalIdentity>,
+        ): String? {
+            val existing = QueueRemovalIdentity.parseList(stored)
+            if (existing.isEmpty() && removedIds.isEmpty() && removedIdentities.isEmpty()) return stored
+            val restored = withPlainIds(restoredIdentities, restoredIds)
+            val removed = withPlainIds(removedIdentities, removedIds)
+                .filter { removal -> restored.none { it.sameEpisodeAs(removal) } }
+                .distinctBy { it.id }
+            val removedIdSet = removed.mapTo(HashSet()) { it.id }
+            val kept = existing.filter { entry -> restored.none { it.sameEpisodeAs(entry) } && entry.id !in removedIdSet }
+            return QueueRemovalIdentity.serializeList((kept + removed).takeLast(MAX_RECENT_REMOVED_EPISODES))
+        }
+
+        /** [identities] plus an ID-only entry for each of [ids] they don't cover. */
+        private fun withPlainIds(identities: Collection<QueueRemovalIdentity>, ids: Collection<String>,): List<QueueRemovalIdentity> {
+            val covered = identities.mapTo(HashSet()) { it.id }
+            return identities.toList() + ids.filter { it.isNotBlank() && it !in covered }.distinct().map { QueueRemovalIdentity(it) }
         }
     }
 }

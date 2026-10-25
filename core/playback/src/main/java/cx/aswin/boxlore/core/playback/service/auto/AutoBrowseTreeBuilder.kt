@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback.service.auto
 
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.EpisodeMediaCacheKey
 import cx.aswin.boxlore.core.ranking.RankingObjective
@@ -12,6 +13,9 @@ import kotlinx.coroutines.flow.first
  * Extracted from [AutoBrowseLibraryCallback].
  */
 internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, private val mediaResolver: AutoMediaResolver,) {
+    /** Lists show an episode stored under several IDs once, with its projected state (own-episode-IDs P4). */
+    private val listenerStore get() = host.database.episodeListenerStore()
+
     @Volatile
     private var lastDrivePicks: List<MediaItem> = emptyList()
 
@@ -70,7 +74,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     )
 
     suspend fun getContinueListeningChildren(): List<MediaItem> {
-        val resumeItems = host.database.listeningHistoryDao().getResumeItemsList()
+        val resumeItems = listenerStore.projectRows(host.database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
         android.util.Log.d("AutoBrowse", "Continue Listening: ${resumeItems.size} items")
 
         return resumeItems.map { entity ->
@@ -95,7 +99,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
     suspend fun getSubscriptionsChildren(): List<MediaItem> {
         val subscriptions = host.database.podcastDao().getSubscribedPodcastsList()
         android.util.Log.d("AutoBrowse", "Subscriptions: ${subscriptions.size} podcasts")
-        val history = host.database.listeningHistoryDao().getRecentHistoryList(300)
+        val history = listenerStore.projectRows(host.database.listeningHistoryDao().getRecentHistoryList(300))
         val scores =
             host.adaptiveCandidateScorer.scorePodcasts(
                 podcasts = subscriptions.map { it.toScorable() },
@@ -317,7 +321,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         )
 
     suspend fun getLikedChildren(): List<MediaItem> {
-        val history = host.database.listeningHistoryDao().getLikedEpisodesList(50)
+        val history = listenerStore.projectRows(host.database.listeningHistoryDao().getLikedEpisodesList(50)) { it.isLiked }
         if (history.isEmpty()) return emptyList()
         val items =
             history.map {
@@ -350,7 +354,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         }
     }
 
-    suspend fun getHistoryChildren(): List<MediaItem> = host.database.listeningHistoryDao().getRecentHistoryList(50).map {
+    suspend fun getHistoryChildren(): List<MediaItem> = listenerStore.projectRows(host.database.listeningHistoryDao().getRecentHistoryList(50)).map {
         AutoMediaItemFactory.fromHistory(
             history = it,
             source = AutoBrowseContract.SOURCE_HISTORY,
@@ -375,7 +379,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         }
         val subscriptionEntities = host.database.podcastDao().getSubscribedPodcastsList()
         val subscriptions = subscriptionEntities.map { host.toAutoPodcast(it) }
-        val history = host.database.listeningHistoryDao().getRecentHistoryList(300)
+        val history = listenerStore.projectRows(host.database.listeningHistoryDao().getRecentHistoryList(300))
         var result =
             cx.aswin.boxlore.core.playback.MixtapeEngine.build(
                 subscriptions = subscriptions,
@@ -537,10 +541,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                 emptyMap()
             }
         val completedIds =
-            host.database
-                .listeningHistoryDao()
-                .getCompletedEpisodeIds()
-                .toSet()
+            listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds())
         val recentIds =
             host.database
                 .listeningHistoryDao()
@@ -617,10 +618,7 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         // Get completed episode IDs to exclude (matches phone app behavior)
         val completedIds =
             try {
-                host.database
-                    .listeningHistoryDao()
-                    .getCompletedEpisodeIds()
-                    .toSet()
+                listenerStore.projectCompletedIds(host.database.listeningHistoryDao().getCompletedEpisodeIds())
             } catch (e: Exception) {
                 emptySet()
             }

@@ -2,6 +2,9 @@ package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
+import cx.aswin.boxlore.core.database.EpisodeListenerProjection
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
@@ -20,6 +23,9 @@ internal data class LocalCatalogListenerReference(
  * episode id was restored without the old supplement/catalog identity row.
  */
 internal object LocalCatalogListenerRemapLogic {
+    /** A phone-minted (negative) episode ID: the only IDs the orphan rematch may move. */
+    fun isLegacyLocalId(episodeId: String): Boolean = episodeId.toLongOrNull()?.let { it < 0L } == true
+
     fun mappings(catalogRows: List<LocalEpisodeEntity>, references: List<LocalCatalogListenerReference>,): Map<String, LocalEpisodeEntity> {
         val catalogIds = catalogRows.mapTo(mutableSetOf(), LocalEpisodeEntity::episodeId)
         val candidates =
@@ -31,10 +37,8 @@ internal object LocalCatalogListenerRemapLogic {
             }
         return references
             .asSequence()
-            .filter { reference ->
-                reference.episodeId.toLongOrNull()?.let { it < 0L } == true &&
-                    reference.episodeId !in catalogIds
-            }.groupBy(LocalCatalogListenerReference::episodeId)
+            .filter { reference -> isLegacyLocalId(reference.episodeId) && reference.episodeId !in catalogIds }
+            .groupBy(LocalCatalogListenerReference::episodeId)
             .mapNotNull { (oldId, grouped) ->
                 val targets =
                     grouped
@@ -54,16 +58,32 @@ internal object LocalCatalogListenerRemapLogic {
     }
 }
 
-/** Best-effort, transactional listener-state re-key after a full feed persist. */
+/**
+ * Best-effort, transactional listener-state re-key after a full feed persist: the orphan rematch.
+ *
+ * Narrowed in P4 of the own-episode-IDs plan (plan section 8, re-key paths; docs/EPISODE_IDS.md §5):
+ * - It consults aliases first. Only legacy phone-minted (negative) IDs with no alias or an
+ *   unresolved one are rematched; an ID with a trusted alias already resolves through it, and an
+ *   ambiguous one is never moved.
+ * - The merged like is the latest like decision (with the episode's group settings) instead of
+ *   either row's like, so a cleared like can't come back; completion is kept from either row
+ *   unless the group settings cleared it later.
+ * - The moved ID is recorded as a trusted alias of the catalog row's episode when that row has
+ *   one, so a later copy of it (a cloud pull, a restore) counts as the same episode and isn't
+ *   rematched again.
+ *
+ * COMPAT(own-ids): the orphan rematch for unresolved legacy negative IDs. Permanent: never remove (MIGRATION.md §5).
+ */
 internal class LocalCatalogListenerStateReconciler(
     private val database: BoxLoreDatabase,
     private val downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
+    private val nowMs: () -> Long = System::currentTimeMillis,
 ) {
     suspend fun reconcile(podcastId: String, catalogRows: List<LocalEpisodeEntity>,) {
         val history = database.listeningHistoryDao().getHistoryForPodcast(podcastId)
         val downloads = database.downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
         val queue = database.queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastId }
-        val references =
+        val allReferences =
             history.map { item ->
                 LocalCatalogListenerReference(
                     episodeId = item.episodeId,
@@ -88,22 +108,41 @@ internal class LocalCatalogListenerStateReconciler(
                         publishedDate = item.pubDate,
                     )
                 }
+        val settled = settledIds(allReferences.map { it.episodeId }.filter { LocalCatalogListenerRemapLogic.isLegacyLocalId(it) })
+        val references = allReferences.filter { it.episodeId !in settled }
         val mappings = LocalCatalogListenerRemapLogic.mappings(catalogRows, references)
         for ((oldId, target) in mappings) {
-            migrateHistory(oldId, target)
+            val targetAlias = targetAlias(target)
+            migrateHistory(oldId, target, targetAlias)
             migrateDownload(oldId, target)
             migrateQueue(oldId, target)
             database.listeningSessionDao().reassignEpisodeId(oldId, target.episodeId)
             migrateRollups(oldId, target.episodeId)
+            recordMovedAlias(oldId, targetAlias)
         }
     }
 
-    private suspend fun migrateHistory(oldId: String, target: LocalEpisodeEntity,) {
+    /** IDs among [ids] whose alias is trusted or ambiguous: resolved, or deliberately never moved. */
+    private suspend fun settledIds(ids: List<String>): Set<String> = ListenerStateMoves.settledIds(
+        ids.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { database.episodeIdentityDao().getAliases(it) },
+    )
+
+    /** The catalog row's trusted alias, or null when it has none (its episode has no group yet). */
+    private suspend fun targetAlias(target: LocalEpisodeEntity): EpisodeAliasEntity? =
+        ListenerStateMoves.trustedTarget(database.episodeIdentityDao().getAlias(target.episodeId), target.podcastId)
+
+    private suspend fun migrateHistory(oldId: String, target: LocalEpisodeEntity, targetAlias: EpisodeAliasEntity?,) {
         val dao = database.listeningHistoryDao()
         val old = dao.getHistoryItem(oldId) ?: return
         val existing = dao.getHistoryItem(target.episodeId)
-        dao.upsert(mergeHistory(old, existing, target))
+        val groupState = targetAlias?.let { database.episodeIdentityDao().getGroupState(it.podcastId, it.catalogKey!!) }
+        dao.upsert(mergeHistory(old, existing, target, groupState))
         dao.delete(oldId)
+    }
+
+    /** Records [oldId] as a trusted alias of [targetAlias]'s episode; nothing when the target has no alias. */
+    private suspend fun recordMovedAlias(oldId: String, targetAlias: EpisodeAliasEntity?) {
+        ListenerStateMoves.movedAlias(oldId, targetAlias, nowMs())?.let { database.episodeIdentityDao().upsertAlias(it) }
     }
 
     private suspend fun migrateDownload(oldId: String, target: LocalEpisodeEntity,) {
@@ -161,32 +200,60 @@ internal class LocalCatalogListenerStateReconciler(
         }
         dao.deleteRollupsForEpisode(oldId)
     }
+
+    private companion object {
+        const val MAX_IDS_PER_QUERY = 500
+    }
 }
 
+/**
+ * [old]'s row merged into the catalog row [target]. Progress, length and play time keep the larger
+ * value. The like is the latest like decision across both rows and [groupState] (the episode's
+ * group settings), so an older liked row can't undo a later unlike. Completion is kept from either
+ * row unless [groupState] records a later clear (own-episode-IDs P4, plan section 8).
+ */
 internal fun mergeHistory(
     old: ListeningHistoryEntity,
     existing: ListeningHistoryEntity?,
     target: LocalEpisodeEntity,
-): ListeningHistoryEntity = old.copy(
-    episodeId = target.episodeId,
-    episodeTitle = target.title,
-    episodeImageUrl = target.imageUrl ?: existing?.episodeImageUrl ?: old.episodeImageUrl,
-    episodeAudioUrl = target.audioUrl,
-    progressMs = maxOf(old.progressMs, existing?.progressMs ?: 0L),
-    durationMs = maxOf(old.durationMs, existing?.durationMs ?: 0L),
-    isCompleted = old.isCompleted || existing?.isCompleted == true,
-    isLiked = old.isLiked || existing?.isLiked == true,
-    lastPlayedAt = maxOf(old.lastPlayedAt, existing?.lastPlayedAt ?: 0L),
-    isDirty = true,
-    syncedAt = 0L,
-    enclosureType = target.enclosureType ?: existing?.enclosureType ?: old.enclosureType,
-    isManualCompletion = old.isManualCompletion || existing?.isManualCompletion == true,
-    isBulkCompletion = old.isBulkCompletion || existing?.isBulkCompletion == true,
-    episodeDescription =
-    target.description.ifBlank {
-        existing?.episodeDescription ?: old.episodeDescription.orEmpty()
-    },
-)
+    groupState: EpisodeGroupStateEntity? = null,
+): ListeningHistoryEntity {
+    val rows = listOfNotNull(old, existing)
+    val like = EpisodeListenerProjection.likeDecision(rows, groupState)
+    val completed = mergedCompletion(rows, groupState)
+    return old.copy(
+        episodeId = target.episodeId,
+        episodeTitle = target.title,
+        episodeImageUrl = target.imageUrl ?: existing?.episodeImageUrl ?: old.episodeImageUrl,
+        episodeAudioUrl = target.audioUrl,
+        progressMs = maxOf(old.progressMs, existing?.progressMs ?: 0L),
+        durationMs = maxOf(old.durationMs, existing?.durationMs ?: 0L),
+        isCompleted = completed,
+        isLiked = like.value,
+        likedAt = maxOf(old.likedAt, existing?.likedAt ?: 0L, like.at),
+        lastPlayedAt = maxOf(old.lastPlayedAt, existing?.lastPlayedAt ?: 0L),
+        isDirty = true,
+        syncedAt = 0L,
+        enclosureType = target.enclosureType ?: existing?.enclosureType ?: old.enclosureType,
+        isManualCompletion = completed && rows.any { it.isManualCompletion },
+        isBulkCompletion = completed && rows.any { it.isBulkCompletion },
+        episodeDescription =
+        target.description.ifBlank {
+            existing?.episodeDescription ?: old.episodeDescription.orEmpty()
+        },
+    )
+}
+
+/** Completed when either row is, unless the group settings hold a decision at least as late as every completed row's. */
+private fun mergedCompletion(rows: List<ListeningHistoryEntity>, groupState: EpisodeGroupStateEntity?,): Boolean {
+    val group = listOfNotNull(
+        groupState?.completedAt?.takeIf { it > 0L }?.let { EpisodeListenerProjection.Decision(it, true) },
+        groupState?.completeClearedAt?.takeIf { it > 0L }?.let { EpisodeListenerProjection.Decision(it, false) },
+    ).maxByOrNull { it.at }
+    val latestCompletedRow = rows.filter { it.isCompleted }.maxOfOrNull { it.lastPlayedAt }
+    if (group != null && (latestCompletedRow == null || group.at >= latestCompletedRow)) return group.value
+    return latestCompletedRow != null
+}
 
 internal fun mergeDownload(
     old: DownloadedEpisodeEntity,

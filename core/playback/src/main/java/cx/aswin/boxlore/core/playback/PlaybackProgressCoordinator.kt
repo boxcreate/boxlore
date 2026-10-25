@@ -6,6 +6,7 @@ import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import cx.aswin.boxlore.core.playback.service.auto.stripEpisodePrefix
 import kotlinx.coroutines.CancellationException
@@ -51,6 +52,9 @@ internal class PlaybackProgressCoordinator(
     private val lastAppliedSequenceByEpisode = mutableMapOf<String, Long>()
     private val metadataEnrichmentAttemptCountByEpisode = mutableMapOf<String, Int>()
     private val missingSeedAttemptCountByEpisode = mutableMapOf<String, Int>()
+
+    /** Sends each snapshot's progress to its episode's owner ID (own-episode-IDs P4, plan section 8). */
+    private val listenerStore by lazy { database.episodeListenerStore() }
 
     /**
      * Periodically saves playback position and dispatches heartbeat telemetry (runs on Dispatchers.Main).
@@ -169,12 +173,14 @@ internal class PlaybackProgressCoordinator(
             snapshot.durationMs,
         )
         val dao = database.listeningHistoryDao()
-        val existing = loadOrSeedHistory(dao, snapshot)
+        // The media ID stays the one playback started with; its progress goes to the episode's owner.
+        val historyId = listenerStore.historyId(snapshot.episodeId)
+        val existing = loadOrSeedHistory(dao, snapshot, historyId)
         val canPersistPosition =
             snapshot.positionMs > 0L || snapshot.allowZeroPosition
         val didWrite =
             if (existing != null && canPersistPosition) {
-                persistExistingHistory(dao, existing, snapshot)
+                persistExistingHistory(dao, existing, snapshot, historyId)
             } else {
                 false
             }
@@ -182,11 +188,11 @@ internal class PlaybackProgressCoordinator(
         return didWrite
     }
 
-    private suspend fun loadOrSeedHistory(dao: ListeningHistoryDao, snapshot: PlaybackProgressSnapshot,): ListeningHistoryEntity? {
-        val existing = dao.getHistoryItem(snapshot.episodeId)
+    private suspend fun loadOrSeedHistory(dao: ListeningHistoryDao, snapshot: PlaybackProgressSnapshot, historyId: String,): ListeningHistoryEntity? {
+        val existing = dao.getHistoryItem(historyId)
         if (existing != null) {
             missingSeedAttemptCountByEpisode -= snapshot.episodeId
-            return retryMetadataEnrichmentIfNeeded(dao, existing, snapshot)
+            return retryMetadataEnrichmentIfNeeded(dao, existing, snapshot, historyId)
         }
 
         val attemptCount =
@@ -195,18 +201,19 @@ internal class PlaybackProgressCoordinator(
             return null
         }
         missingSeedAttemptCountByEpisode[snapshot.episodeId] = attemptCount + 1
-        val seed = missingHistorySeedProvider(snapshot) ?: return null
+        val seed = missingHistorySeedProvider(snapshot)?.copy(episodeId = historyId) ?: return null
         missingSeedAttemptCountByEpisode -= snapshot.episodeId
         dao.insertIfAbsent(seed)
         dao.enrichFromSeed(seed)
-        val inserted = dao.getHistoryItem(snapshot.episodeId) ?: return null
-        return retryMetadataEnrichmentIfNeeded(dao, inserted, snapshot)
+        val inserted = dao.getHistoryItem(historyId) ?: return null
+        return retryMetadataEnrichmentIfNeeded(dao, inserted, snapshot, historyId)
     }
 
     private suspend fun retryMetadataEnrichmentIfNeeded(
         dao: ListeningHistoryDao,
         existing: ListeningHistoryEntity,
         snapshot: PlaybackProgressSnapshot,
+        historyId: String,
     ): ListeningHistoryEntity {
         if (!existing.hasIncompletePlaybackMetadata()) {
             metadataEnrichmentAttemptCountByEpisode -= snapshot.episodeId
@@ -217,9 +224,9 @@ internal class PlaybackProgressCoordinator(
             return existing
         }
         metadataEnrichmentAttemptCountByEpisode[snapshot.episodeId] = attempts + 1
-        val richerSeed = missingHistorySeedProvider(snapshot) ?: return existing
+        val richerSeed = missingHistorySeedProvider(snapshot)?.copy(episodeId = historyId) ?: return existing
         dao.enrichFromSeed(richerSeed)
-        val refreshed = dao.getHistoryItem(snapshot.episodeId) ?: existing
+        val refreshed = dao.getHistoryItem(historyId) ?: existing
         if (!refreshed.hasIncompletePlaybackMetadata()) {
             metadataEnrichmentAttemptCountByEpisode -= snapshot.episodeId
         }
@@ -230,6 +237,7 @@ internal class PlaybackProgressCoordinator(
         dao: ListeningHistoryDao,
         existing: ListeningHistoryEntity,
         snapshot: PlaybackProgressSnapshot,
+        historyId: String,
     ): Boolean {
         val resolvedDurationMs =
             PlaybackProgressPersistencePolicy.resolveDurationMs(
@@ -251,11 +259,12 @@ internal class PlaybackProgressCoordinator(
             }
         if (checkIsPlaybackCompleted(snapshot.positionMs, resolvedDurationMs)) {
             dao.completeFromPlayback(
-                episodeId = snapshot.episodeId,
+                episodeId = historyId,
                 durationMs = resolvedDurationMs,
                 lastPlayedAt = lastPlayedAt,
                 isManualCompletion = false,
             )
+            listenerStore.recordCompletion(historyId, completed = true, nowMs = lastPlayedAt)
             Log.d("AutoProgress", "Saved completed: ${snapshot.episodeId}")
             return true
         }
@@ -269,7 +278,7 @@ internal class PlaybackProgressCoordinator(
         if (!changed) return false
         val updatedRows =
             dao.updateProgress(
-                episodeId = snapshot.episodeId,
+                episodeId = historyId,
                 progressMs = resolvedPositionMs,
                 durationMs = resolvedDurationMs,
                 lastPlayedAt = lastPlayedAt,
@@ -278,12 +287,13 @@ internal class PlaybackProgressCoordinator(
             if (existing.isCompleted) {
                 val replayUpdatedRows =
                     dao.reopenProgress(
-                        episodeId = snapshot.episodeId,
+                        episodeId = historyId,
                         progressMs = resolvedPositionMs,
                         durationMs = resolvedDurationMs,
                         lastPlayedAt = lastPlayedAt,
                     )
                 if (replayUpdatedRows == 0) return false
+                listenerStore.recordCompletion(historyId, completed = false, nowMs = lastPlayedAt)
             } else {
                 return false
             }

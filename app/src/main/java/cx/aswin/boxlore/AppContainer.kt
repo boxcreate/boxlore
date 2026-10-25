@@ -24,6 +24,7 @@ import cx.aswin.boxlore.core.catalog.sync.QueueSyncResolver
 import cx.aswin.boxlore.core.catalog.sync.SubscriptionSyncResolver
 import cx.aswin.boxlore.core.catalog.sync.UserSyncCoordinator
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.ConnectivityStatusPort
 import cx.aswin.boxlore.core.domain.ports.DeviceIdentityPort
 import cx.aswin.boxlore.core.domain.ports.EpisodeOfflineLookupPort
@@ -176,8 +177,12 @@ class AppContainer(
 
     override val adaptiveCandidateScorer: AdaptiveCandidateScorer by lazy {
         AdaptiveCandidateScorer
-            .create(adaptiveRankingRepository, rankingRuntimeControls)
-            .also(AdaptiveCandidateScorer::install)
+            .create(
+                adaptiveRankingRepository,
+                rankingRuntimeControls,
+                // Count an episode stored under several IDs once (own-episode-IDs P4).
+                episodeTokens = { ids -> database.episodeListenerStore().groupTokens(ids) },
+            ).also(AdaptiveCandidateScorer::install)
     }
 
     init {

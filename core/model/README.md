@@ -20,6 +20,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - `PlaybackEntryPoint` coarse values: `GENERIC`, `HOME_MIXTAPE`, `LEARN`, `BRIEFING`
   (Brief audio play synthesizes glossary `entry_point=briefing` for `playback_*`).
 - `AutoTranscriptState`.
+- `ListeningHistoryRemoval` holds what removing an episode from history took away, for Undo: the chosen row, its sessions and daily totals, and `otherItems`, the rows of the same episode under its other stored IDs, which are removed and restored with it.
 - `PodcastGenres` and `RankingAggregateTelemetry`.
 - `Episode.recipeId` (boxlore's own episode ID) and `Episode.catalogKey` (trimmed GUID, else enclosure URL) are optional and null until a source fills them; `id` stays the local ID. Unset values are not written to JSON, and JSON without them still decodes (`EpisodeIdentityFieldsTest`).
 - `FeedTelemetry.kt`: values for the feed analytics events. `FeedFetchReport.ShowPage` (one show-page read) and `FeedFetchReport.BackgroundPass` (one summary per pass and source, with `showsCount` and `passResult`), `FeedFetchSource`, `FeedFetchOutcome`, `FeedFetchCompleteness`, `FeedPassResult`, and `FeedUrlCorrection` with its `FeedUrlCorrectionReason` and `FeedUrlCorrectionStep`. Each enum's `wireName` is its glossary value. None of them holds an address (`FeedTelemetryTest`).

@@ -5,8 +5,12 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
+import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.dao.QueueDao
 import cx.aswin.boxlore.core.database.entities.QueueItem
+import cx.aswin.boxlore.core.database.entities.QueueRemovalIdentity
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Person
 import cx.aswin.boxlore.core.model.Podcast
@@ -485,6 +489,52 @@ class QueueRepositoryTest {
         val storedMeta = repository.getQueueMetadata()!!
         assertEquals(15L, storedMeta.queueSequence)
         assertTrue(storedMeta.isDirty)
+    }
+
+    @Test
+    fun anEpisodeQueuedUnderOneIdIsNotAddedAgainUnderAnother() = runTest {
+        sameEpisode("11", "12")
+        repository.addToQueue(episodeItem(11), podcast())
+
+        repository.addToQueue(episodeItem(12), podcast())
+
+        assertEquals(listOf("11"), repository.queue.first().map { it.id.toString() })
+    }
+
+    @Test
+    fun removingAnEpisodeRemovesItUnderEveryIdAndRecordsWhichEpisodeItWas() = runTest {
+        sameEpisode("11", "12")
+        repository.replaceQueue(listOf(domainEpisode("11"), domainEpisode("13")))
+
+        repository.removeFromQueue("12")
+
+        assertEquals(listOf("13"), repository.queue.first().map { it.id.toString() })
+        val meta = repository.getQueueMetadata()!!
+        assertEquals(listOf("12", "11"), QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
+        assertEquals(
+            listOf(QueueRemovalIdentity("12", null, "pod-1", "guid-a"), QueueRemovalIdentity("11", null, "pod-1", "guid-a")),
+            QueueRemovalIdentity.parseList(meta.recentRemovedEpisodes),
+        )
+    }
+
+    @Test
+    fun anEpisodeWithOneIdIsRemovedAndRecordedAsBefore() = runTest {
+        repository.replaceQueue(listOf(domainEpisode("21"), domainEpisode("22")))
+
+        repository.removeFromQueue("21")
+
+        assertEquals(listOf("22"), repository.queue.first().map { it.id.toString() })
+        val meta = repository.getQueueMetadata()!!
+        assertEquals(listOf("21"), QueueDao.parseRecentRemovedEpisodeIds(meta.recentRemovedEpisodeIds))
+        assertEquals(listOf(QueueRemovalIdentity("21")), QueueRemovalIdentity.parseList(meta.recentRemovedEpisodes))
+    }
+
+    private suspend fun sameEpisode(vararg ids: String) {
+        database.episodeIdentityDao().insertAliasesIfAbsent(
+            ids.mapIndexed { index, id ->
+                EpisodeAliasEntity(id, "pod-1", "guid-a", null, EpisodeAliasState.TRUSTED, owner = index == 0, provenance = EpisodeAliasProvenance.UPGRADE_CATALOG, createdAt = index.toLong())
+            },
+        )
     }
 
     private fun domainEpisode(id: String) = Episode(

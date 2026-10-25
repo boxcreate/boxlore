@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.domain.RssSubscriptionResult
@@ -338,13 +339,23 @@ class RssPodcastRepository private constructor(
         customGenreIcon = customGenreIcon?.takeIf { isSubscribed },
     )
 
+    /**
+     * Moves the listener state of a Podcast Index show onto the RSS show the listener chose to use
+     * instead. IDs whose alias is ambiguous never move state (docs/EPISODE_IDS.md §5); they stay
+     * where they are. A merged like is the latest like decision of the two rows, so an older like
+     * can't undo a later unlike (own-episode-IDs P4, plan section 8, re-key paths narrowed).
+     */
     private suspend fun migrateLinkedState(
         podcastIndexPodcast: PodcastEntity,
         rssPodcast: PodcastEntity,
         rssEpisodes: List<RssEpisodeEntity>,
     ) {
         val historyDao = database.listeningHistoryDao()
-        historyDao.getHistoryForPodcast(podcastIndexPodcast.podcastId).forEach { old ->
+        val history = historyDao.getHistoryForPodcast(podcastIndexPodcast.podcastId)
+        val queued = database.queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastIndexPodcast.podcastId }
+        val downloads = database.downloadedEpisodeDao().getDownloadsForPodcast(podcastIndexPodcast.podcastId)
+        val ambiguous = ListenerStateMoves.ambiguousIds(aliasesOf(history.map { it.episodeId } + downloads.map { it.episodeId } + queued.map { it.episodeId }))
+        history.filter { it.episodeId !in ambiguous }.forEach { old ->
             val rssEpisode =
                 RssSourceMatcher.findMatchingEpisode(
                     episodes = rssEpisodes,
@@ -353,28 +364,13 @@ class RssPodcastRepository private constructor(
                     publishedDate = null,
                 ) ?: return@forEach
             val existing = historyDao.getHistoryItem(rssEpisode.episodeId)
-            val remapped =
-                old.copy(
-                    episodeId = rssEpisode.episodeId,
-                    podcastId = rssPodcast.podcastId,
-                    episodeTitle = rssEpisode.title,
-                    episodeImageUrl = rssEpisode.imageUrl ?: old.episodeImageUrl,
-                    podcastImageUrl = rssPodcast.imageUrl,
-                    episodeAudioUrl = rssEpisode.audioUrl,
-                    podcastName = rssPodcast.title,
-                    progressMs = maxOf(old.progressMs, existing?.progressMs ?: 0L),
-                    durationMs = maxOf(old.durationMs, existing?.durationMs ?: 0L),
-                    isCompleted = old.isCompleted || existing?.isCompleted == true,
-                    isLiked = old.isLiked || existing?.isLiked == true,
-                    lastPlayedAt = maxOf(old.lastPlayedAt, existing?.lastPlayedAt ?: 0L),
-                    enclosureType = rssEpisode.enclosureType ?: old.enclosureType,
-                )
+            val remapped = ListenerStateMoves.linkedHistoryRow(old, existing, rssEpisode, rssPodcast)
             historyDao.upsert(remapped)
             if (old.episodeId != remapped.episodeId) historyDao.delete(old.episodeId)
         }
 
         val downloadDao = database.downloadedEpisodeDao()
-        downloadDao.getDownloadsForPodcast(podcastIndexPodcast.podcastId).forEach { old ->
+        downloads.filter { it.episodeId !in ambiguous }.forEach { old ->
             val rssEpisode =
                 RssSourceMatcher.findMatchingEpisode(
                     episodes = rssEpisodes,
@@ -406,9 +402,8 @@ class RssPodcastRepository private constructor(
         }
 
         val queueDao = database.queueDao()
-        queueDao
-            .getAllQueueItemsSync()
-            .filter { it.podcastId == podcastIndexPodcast.podcastId }
+        queued
+            .filter { it.episodeId !in ambiguous }
             .forEach { old ->
                 val rssEpisode =
                     RssSourceMatcher.findMatchingEpisode(
@@ -442,6 +437,11 @@ class RssPodcastRepository private constructor(
             }
         podcastDao.retireLinkedPodcastIndexSubscription(podcastIndexPodcast.podcastId)
     }
+
+    private suspend fun aliasesOf(ids: List<String>): List<EpisodeAliasEntity> = ids
+        .distinct()
+        .chunked(MAX_IDS_PER_QUERY)
+        .flatMap { database.episodeIdentityDao().getAliases(it) }
 
     private fun canRekeyDownloadedEpisode(old: DownloadedEpisodeEntity, rssEpisode: RssEpisodeEntity,): Boolean = old.status != DownloadedEpisodeEntity.STATUS_COMPLETED ||
         downloadCacheRelinker.relink(old.episodeId, rssEpisode.episodeId)
@@ -477,6 +477,7 @@ class RssPodcastRepository private constructor(
     companion object {
         private const val ERROR_RSS_SUBSCRIPTION_NOT_FOUND = "RSS subscription not found"
         private const val ERROR_NOT_RSS_SUBSCRIPTION = "Podcast is not an RSS subscription"
+        private const val MAX_IDS_PER_QUERY = 500
 
         @Volatile
         private var INSTANCE: RssPodcastRepository? = null

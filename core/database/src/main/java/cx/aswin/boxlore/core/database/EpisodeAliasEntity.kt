@@ -84,4 +84,11 @@ object EpisodeAliasProvenance {
 
     /** Seeded by the v39 upgrade from an ID found only in history, the queue or downloads. */
     const val UPGRADE_LISTENER_ROW = "upgrade_listener_row"
+
+    /**
+     * A legacy phone-minted ID whose listener state the orphan rematch moved onto a catalog row after
+     * a feed read; the ID joins that row's episode so a later copy of it (a cloud pull, a restore)
+     * counts as the same episode. Added in P4 (plan section 8, re-key paths narrowed).
+     */
+    const val ORPHAN_REMATCH = "orphan_rematch"
 }

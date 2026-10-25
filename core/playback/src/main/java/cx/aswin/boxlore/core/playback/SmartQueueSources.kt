@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -107,13 +108,21 @@ class DefaultSmartQueueSources(
 
     override suspend fun getSubscribedPodcasts(): List<Podcast> = subscriptionRepository.subscribedPodcasts.first()
 
-    override suspend fun getCompletedEpisodeIds(): Set<String> = database.listeningHistoryDao().getCompletedEpisodeIds().toSet()
+    /** Completed IDs as projected: an episode stored under several IDs is completed under all of them or none. */
+    override suspend fun getCompletedEpisodeIds(): Set<String> {
+        val completed = database.listeningHistoryDao().getCompletedEpisodeIds()
+        return database.episodeListenerStore().projectCompletedIds(completed)
+    }
 
     override suspend fun getRecentlyPlayedPodcastIds(sinceMs: Long): Set<String> = database.listeningHistoryDao().getRecentlyPlayedPodcasts(sinceMs).toSet()
 
-    override suspend fun getResumeCandidates(): List<ListeningHistoryEntity> = database.listeningHistoryDao().getResumeItemsList()
+    /** Resume candidates with each episode once and its projected state. */
+    override suspend fun getResumeCandidates(): List<ListeningHistoryEntity> =
+        database.episodeListenerStore().projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
 
-    override suspend fun getRecentHistory(limit: Int): List<ListeningHistoryEntity> = database.listeningHistoryDao().getRecentHistoryList(limit)
+    /** Recent history with each episode once and its projected state. */
+    override suspend fun getRecentHistory(limit: Int): List<ListeningHistoryEntity> =
+        database.episodeListenerStore().projectRows(database.listeningHistoryDao().getRecentHistoryList(limit))
 
     override suspend fun getRegion(): String = try {
         userPreferencesRepository.regionStream.first()
@@ -137,7 +146,7 @@ class DefaultSmartQueueSources(
      */
     override suspend fun getHistoryForRecommendations(limit: Int): List<HistoryItem> {
         val podcastDao = database.podcastDao()
-        val rawHistory = database.listeningHistoryDao().getRecentHistoryList(limit * 3)
+        val rawHistory = database.episodeListenerStore().projectRows(database.listeningHistoryDao().getRecentHistoryList(limit * 3))
         val filtered =
             rawHistory
                 .filter { entity ->

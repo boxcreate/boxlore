@@ -15,15 +15,21 @@ object PodcastScoring {
     /** Peak subscribe-recency prior. Decays as 600 / (1 + hours/24); ~150 at 72h. */
     const val SUBSCRIBE_RECENCY_PEAK = 600.0
 
+    /**
+     * @param episodeKey maps an episode ID to a key shared by every stored ID of the episode, so the
+     *   latest episode is found in history under any of its IDs; [allHistory] should then hold one
+     *   row per episode. The default keeps each ID its own episode (own-episode-IDs P4, plan section 8).
+     */
     fun calculateScores(
         podcasts: List<ScorablePodcast>,
         allHistory: List<ListeningHistoryEntity>,
         includeAutoDownloadBoost: Boolean = true,
         includeSubscriptionRecency: Boolean = true,
         nowMs: Long = System.currentTimeMillis(),
+        episodeKey: (String) -> String = { it },
     ): Map<String, Double> {
         val historyByPodcast = allHistory.groupBy { it.podcastId }
-        val historyByEpisode = allHistory.associateBy { it.episodeId }
+        val historyByEpisode = allHistory.associateBy { episodeKey(it.episodeId) }
 
         return podcasts.associate { pod ->
             val podHistory = historyByPodcast[pod.id] ?: emptyList()
@@ -44,7 +50,7 @@ object PodcastScoring {
             val latestEp = pod.latestEpisode
             val freshnessScore =
                 if (latestEp != null) {
-                    val latestEpHistory = historyByEpisode[latestEp.id]
+                    val latestEpHistory = historyByEpisode[episodeKey(latestEp.id)]
                     val isUnplayed =
                         latestEpHistory == null ||
                             (latestEpHistory.progressMs == 0L && !latestEpHistory.isCompleted)

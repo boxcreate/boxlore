@@ -187,7 +187,7 @@ class PlaybackRepository internal constructor(
 
         repositoryScope.launch {
             val currentLocalLastPlayed = currentId?.let {
-                listeningHistoryDao.getHistoryItem(it)?.lastPlayedAt
+                historyStore.listenerStore.projectedHistory(it)?.lastPlayedAt
             } ?: 0L
 
             if (lastPlayedAt <= currentLocalLastPlayed) {
@@ -342,9 +342,11 @@ class PlaybackRepository internal constructor(
             },
             onPlaybackStarted = { sleepController.onPlaybackStarted() },
             storePendingEntryPoint = ::storePendingEntryPoint,
-            ensureCurrentHistoryRow = ::ensureCurrentHistoryRow,
+            ensureCurrentHistoryRow = { historyStore.ensureCurrentHistoryRow() },
             stopProgressTicker = ::stopProgressTicker,
             onQueueStarted = { controllerBridge?.resetErrorSkips() },
+            episodeAliases = { episodeId -> historyStore.listenerStore.memberIds(episodeId) },
+            downloadHolders = { episodeIds -> historyStore.listenerStore.downloadHolders(episodeIds) },
         )
 
     internal val transportHelper =
@@ -362,7 +364,7 @@ class PlaybackRepository internal constructor(
                 ).first
             },
             resolvePersistedResumePositionMs = { episodeId, entryPointKey ->
-                listeningHistoryDao.getHistoryItem(episodeId)?.let {
+                historyStore.listenerStore.projectedHistory(episodeId)?.let {
                     checkSavedProgress(episodeId, null, PlaybackEntryPoint.GENERIC, entryPointBundle(entryPointKey)).first
                 }
             },
@@ -376,6 +378,7 @@ class PlaybackRepository internal constructor(
                     sourceContext,
                 )
             },
+            downloadHolders = { episodeIds -> historyStore.listenerStore.downloadHolders(episodeIds) },
         )
 
     internal val continuationCoordinator =
@@ -566,7 +569,7 @@ class PlaybackRepository internal constructor(
             val episodeId = playerStateFlow.value.currentEpisode?.id ?: return@runOnMainThread
 
             repositoryScope.launch {
-                val persisted = listeningHistoryDao.getHistoryItem(episodeId) ?: return@launch
+                val persisted = historyStore.listenerStore.projectedHistory(episodeId) ?: return@launch
                 val latestController = mediaHandle.controller
                 if (latestController?.isConnected == true && latestController.mediaItemCount > 0) {
                     return@launch
@@ -582,53 +585,6 @@ class PlaybackRepository internal constructor(
                     )
             }
         }
-    }
-
-    /**
-     * Creates the history row needed by the service-owned progress writer. Existing rows are never
-     * replaced from UI state, because that state intentionally stops polling in the background.
-     */
-    private suspend fun ensureCurrentHistoryRow() {
-        val state = playerStateFlow.value
-        val episode = state.currentEpisode ?: return
-        val podcast = state.currentPodcast ?: return
-        val history =
-            ListeningHistoryUpsertLogic.buildProgressSaveEntity(
-                ListeningHistoryUpsertLogic.ProgressSaveInput(
-                    podcastId = podcast.id,
-                    episodeId = episode.id,
-                    positionMs = state.position.coerceAtLeast(0L),
-                    durationMs =
-                    state.duration.takeIf { it > 0L }
-                        ?: episode.duration.toLong().coerceAtLeast(0L) * 1_000L,
-                    episodeTitle = episode.title,
-                    episodeImageUrl = episode.imageUrl,
-                    podcastImageUrl = podcast.imageUrl,
-                    episodeAudioUrl = episode.audioUrl,
-                    podcastName = podcast.title,
-                    isCompleted = false,
-                    isLiked = state.isLiked,
-                    lastPlayedAt = System.currentTimeMillis(),
-                    enclosureType = episode.enclosureType,
-                    episodeDescription = episode.description,
-                ),
-            )
-        val inserted = listeningHistoryDao.insertIfAbsent(history)
-        if (inserted == -1L) {
-            listeningHistoryDao.updateLastPlayedAt(history.episodeId, history.lastPlayedAt)
-        }
-        listeningHistoryDao.enrichMetadataIfMissing(
-            episodeId = history.episodeId,
-            podcastId = history.podcastId,
-            episodeTitle = history.episodeTitle,
-            episodeImageUrl = history.episodeImageUrl,
-            podcastImageUrl = history.podcastImageUrl,
-            episodeAudioUrl = history.episodeAudioUrl,
-            podcastName = history.podcastName,
-            durationMs = history.durationMs,
-            enclosureType = history.enclosureType,
-            episodeDescription = history.episodeDescription,
-        )
     }
 
     private fun stopProgressTicker() {
@@ -654,7 +610,7 @@ class PlaybackRepository internal constructor(
         var lastPlayedAtMs: Long? = null
         var resetRequested = false
         if (startEpisodeId != null) {
-            val saved = listeningHistoryDao.getHistoryItem(startEpisodeId)
+            val saved = historyStore.listenerStore.projectedHistory(startEpisodeId)
             if (saved != null) {
                 savedProgressMs = saved.progressMs
                 isCompleted = saved.isCompleted

@@ -21,6 +21,15 @@ interface DownloadedEpisodeDao {
     @Query("SELECT * FROM downloaded_episodes WHERE episodeId = :episodeId")
     suspend fun getDownload(episodeId: String): DownloadedEpisodeEntity?
 
+    /**
+     * Which of these IDs hold a completed download; callers pass at most 500 IDs per call. Used to
+     * play an episode from whichever of its stored IDs holds the file ([EpisodeListenerStore]).
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, downloads across aliases).
+     */
+    @Query("SELECT episodeId FROM downloaded_episodes WHERE episodeId IN (:episodeIds) AND status = 2")
+    suspend fun getCompletedDownloadIds(episodeIds: List<String>): List<String>
+
     @Query("SELECT * FROM downloaded_episodes WHERE podcastId = :podcastId")
     suspend fun getDownloadsForPodcast(podcastId: String): List<DownloadedEpisodeEntity>
 

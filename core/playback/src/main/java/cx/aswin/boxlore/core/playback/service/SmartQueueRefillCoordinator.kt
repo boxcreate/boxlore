@@ -7,8 +7,10 @@ import androidx.media3.common.Player
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.network.model.EpisodeItem
+import cx.aswin.boxlore.core.playback.PlaybackMediaIdPolicy
 import cx.aswin.boxlore.core.playback.PlaybackQueueContext
 import cx.aswin.boxlore.core.playback.PlaybackUris
 import cx.aswin.boxlore.core.playback.QueueEntry
@@ -21,6 +23,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+/**
+ * Appends Smart Queue picks after the current item. Owned by the playback service only.
+ *
+ * An episode stored under several IDs counts once (docs/EPISODE_IDS.md §5): every ID of a queued
+ * episode is excluded, picks of the same episode are kept once, and each pick plays from the cache
+ * key of whichever of its IDs holds a completed download (own-episode-IDs P4, plan section 8).
+ */
 class SmartQueueRefillCoordinator(
     private val database: BoxLoreDatabase,
     private val podcastRepository: PodcastRepository,
@@ -34,6 +43,7 @@ class SmartQueueRefillCoordinator(
     private val mediaIdPrefixStripper: (String) -> String,
 ) {
     private val refillMutex = Mutex()
+    private val listenerStore = database.episodeListenerStore()
 
     suspend fun refillQueue(
         player: Player,
@@ -58,17 +68,19 @@ class SmartQueueRefillCoordinator(
         val isCurrent = { isCurrentSession() && snapshot.matches(player) }
         val sourceId = database.queueDao().getQueueItemByEpisodeId(episodeId)?.contextSourceId
             ?: snapshot.item.mediaMetadata.extras?.getString("source_entry_point")
-        val entries = withContext(ioDispatcher) {
+        val excluded = withContext(ioDispatcher) { listenerStore.withAllAliases(snapshot.ids) }
+        val candidates = withContext(ioDispatcher) {
             smartQueueEngine.getNextEpisodes(
                 currentEpisode = currentEpisode(episodeId, snapshot.item, podcast),
                 podcast = podcast,
                 preferredSort = podcast.preferredSort,
-                excludeEpisodeIds = snapshot.ids.toSet(),
+                excludeEpisodeIds = excluded,
                 currentContextSourceId = sourceId,
             )
-        }.filter { it.episode.id.toString() !in snapshot.ids && !it.episode.enclosureUrl.isNullOrBlank() }
-            .distinctBy { it.episode.id }.take(room)
+        }.filter { it.episode.id.toString() !in excluded && !it.episode.enclosureUrl.isNullOrBlank() }
+        val entries = withContext(ioDispatcher) { oncePerEpisode(candidates, snapshot.ids) }.take(room)
         if (entries.isEmpty()) return false
+        val cacheIds = withContext(ioDispatcher) { listenerStore.downloadHolders(entries.map { it.episode.id.toString() }) }
 
         // Room rolls back the entire batch if a new transport request or queue edit wins.
         val persisted = queueRepository.addRefillEntriesIfUnchanged(entries, expectedQueueIds, episodeId) {
@@ -78,7 +90,7 @@ class SmartQueueRefillCoordinator(
         val appended = withContext(mainDispatcher) {
             if (!isCurrent()) return@withContext false
             // One mutation avoids asynchronous Cast receiver sequence-number races.
-            player.addMediaItems(entries.map(::refillMediaItem))
+            player.addMediaItems(entries.map { refillMediaItem(it, cacheIds[it.episode.id.toString()]) })
             true
         }
         if (!appended) return false
@@ -126,26 +138,14 @@ class SmartQueueRefillCoordinator(
         feedImage = podcast.imageUrl,
     )
 
-    private fun refillMediaItem(entry: QueueEntry): MediaItem {
-        val ep = entry.episode
-        val pod = entry.podcast
-        return MediaItem.Builder()
-            .setMediaId(ep.id.toString())
-            .setUri(ep.enclosureUrl)
-            .setMimeType(ep.enclosureType?.takeIf { it.isNotBlank() })
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(ep.title)
-                    .setSubtitle(pod.title)
-                    .setArtist(pod.artist)
-                    .setArtworkUri(PlaybackUris.parseOrNull(ep.image ?: ep.feedImage ?: pod.imageUrl))
-                    .setDisplayTitle(ep.title)
-                    .setGenre(pod.genre)
-                    .setIsPlayable(true)
-                    .setIsBrowsable(false)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
-                    .build(),
-            ).build()
+    /** [candidates] without picks of an episode already queued, and with each episode once. */
+    private suspend fun oncePerEpisode(candidates: List<QueueEntry>, queuedIds: List<String>): List<QueueEntry> {
+        val candidateIds = candidates.map { it.episode.id.toString() }
+        val tokens = listenerStore.groupTokens(candidateIds + queuedIds)
+        val queuedTokens = queuedIds.mapTo(HashSet()) { tokens[it] ?: it }
+        return candidates
+            .filter { (tokens[it.episode.id.toString()] ?: it.episode.id.toString()) !in queuedTokens }
+            .distinctBy { tokens[it.episode.id.toString()] ?: it.episode.id.toString() }
     }
 
     private suspend fun trackRefill(episodeId: String, podcast: Podcast, entries: List<QueueEntry>) {
@@ -168,4 +168,34 @@ class SmartQueueRefillCoordinator(
     }
 
     private data class RefillSnapshot(val item: MediaItem, val index: Int, val ids: List<String>)
+}
+
+/**
+ * The media item a Smart Queue pick plays. Its cache key follows [PlaybackMediaIdPolicy.customCacheKey],
+ * the same key downloads are stored under, so a downloaded pick plays from its file. [cacheId] is
+ * the stored ID whose download plays the pick ([cx.aswin.boxlore.core.database.EpisodeListenerStore.downloadHolders]);
+ * null plays the pick's own key.
+ */
+internal fun refillMediaItem(entry: QueueEntry, cacheId: String? = null): MediaItem {
+    val ep = entry.episode
+    val pod = entry.podcast
+    val episodeId = ep.id.toString()
+    return MediaItem.Builder()
+        .setMediaId(episodeId)
+        .setUri(ep.enclosureUrl)
+        .setCustomCacheKey(PlaybackMediaIdPolicy.customCacheKey(cacheId ?: episodeId, ep.enclosureUrl))
+        .setMimeType(ep.enclosureType?.takeIf { it.isNotBlank() })
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(ep.title)
+                .setSubtitle(pod.title)
+                .setArtist(pod.artist)
+                .setArtworkUri(PlaybackUris.parseOrNull(ep.image ?: ep.feedImage ?: pod.imageUrl))
+                .setDisplayTitle(ep.title)
+                .setGenre(pod.genre)
+                .setIsPlayable(true)
+                .setIsBrowsable(false)
+                .setMediaType(MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE)
+                .build(),
+        ).build()
 }

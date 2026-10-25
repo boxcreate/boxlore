@@ -14,6 +14,7 @@ import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.PodcastScoring
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.downloads.SmartDownloadCandidateLogic.MixtapeCandidate
@@ -229,7 +230,7 @@ class SmartDownloadManager(
                         languages = languages,
                     )
 
-                val completedEpisodeIds = database.listeningHistoryDao().getCompletedEpisodeIds().toSet()
+                val completedEpisodeIds = projectedCompletedEpisodeIds()
 
                 val filteredRecs =
                     recs
@@ -248,6 +249,10 @@ class SmartDownloadManager(
         return chosenRecs
     }
 
+    /** Completed episode IDs, where an episode stored under several IDs is completed under all of them or none. */
+    private suspend fun projectedCompletedEpisodeIds(): Set<String> =
+        database.episodeListenerStore().projectCompletedIds(database.listeningHistoryDao().getCompletedEpisodeIds())
+
     private suspend fun fetchTrendingEpisodes(chosenSubsIds: Set<String>, chosenRecsIds: Set<String>, targetSize: Int,): List<Episode> {
         val chosenTrends = mutableListOf<Episode>()
         if (targetSize > 0) {
@@ -257,7 +262,7 @@ class SmartDownloadManager(
 
                 val trendingEpisodes = trendingPods.mapNotNull { it.latestEpisode }
 
-                val completedEpisodeIds = database.listeningHistoryDao().getCompletedEpisodeIds().toSet()
+                val completedEpisodeIds = projectedCompletedEpisodeIds()
 
                 val filteredTrends =
                     trendingEpisodes
@@ -464,8 +469,9 @@ class SmartDownloadManager(
                 return false
             }
 
-            val allHistory = database.listeningHistoryDao().getRecentHistoryList(limit = 200)
-            val completedEpisodeIds = database.listeningHistoryDao().getCompletedEpisodeIds()
+            // Each episode once, with its state across its stored IDs (own-episode-IDs P4, plan section 8).
+            val allHistory = database.episodeListenerStore().projectRows(database.listeningHistoryDao().getRecentHistoryList(limit = 200))
+            val completedEpisodeIds = projectedCompletedEpisodeIds().toList()
             val resolvedSerial = resolveOldestSerialNextEpisodes(subs, allHistory, completedEpisodeIds)
 
             val historyByEpisode = allHistory.associateBy { it.episodeId }

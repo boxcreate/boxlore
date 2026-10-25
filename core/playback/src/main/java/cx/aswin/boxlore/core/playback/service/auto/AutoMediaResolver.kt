@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback.service.auto
 
 import android.net.Uri
 import androidx.media3.common.MediaItem
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.persistableArtworkUrl
 import cx.aswin.boxlore.core.playback.CastMediaEligibility
@@ -19,11 +20,15 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         val episodeId = item.mediaId.stripEpisodePrefix()
         val uri = item.localConfiguration?.uri ?: item.requestMetadata.mediaUri
 
+        // An episode stored under several IDs plays the bytes of whichever ID holds its download;
+        // the media ID (and so history, via the episode's owner) is unchanged.
+        val cacheId = host.database.episodeListenerStore().downloadHolder(episodeId) ?: episodeId
+
         if (uri != null) {
-            return resolveItemWithUri(item, episodeId, uri)
+            return resolveItemWithUri(item, episodeId, uri, cacheId)
         }
 
-        val download = host.database.downloadedEpisodeDao().getDownload(episodeId)
+        val download = host.database.downloadedEpisodeDao().getDownload(cacheId)
         val historyItem = host.database.listeningHistoryDao().getHistoryItem(episodeId)
         val queueItem = host.queueRepository.getQueueItemByEpisodeId(episodeId)
         val downloadCompleted =
@@ -32,7 +37,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         val source =
             AutoMediaResolutionPolicy.resolve(
                 downloadCompleted = downloadCompleted,
-                downloadUri = if (downloadCompleted) resolveDownloadRequestUri(episodeId) else null,
+                downloadUri = if (downloadCompleted) resolveDownloadRequestUri(cacheId) else null,
                 historyAudioUrl = historyItem?.episodeAudioUrl,
                 queueAudioUrl = queueItem?.audioUrl,
                 historyMimeType = historyItem?.enclosureType,
@@ -92,7 +97,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
             val fallbackShowCover = fallbackEpisode?.takeIf { it.imageUrl == null }?.podcastImageUrl
             return buildResolvedMediaItem(
                 item = item,
-                episodeId = episodeId,
+                cacheId = cacheId,
                 resolvedAudioUrl = resolvedAudioUrl,
                 source = source,
                 metadata = metadata,
@@ -115,6 +120,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         item: MediaItem,
         episodeId: String,
         uri: Uri,
+        cacheId: String,
     ): MediaItem {
         val existingArtist = item.mediaMetadata.artist?.toString()
         val existingAlbum = item.mediaMetadata.albumTitle?.toString()
@@ -140,7 +146,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
             .setUri(uri)
             .setMediaMetadata(metadataBuilder.build())
             .setCustomCacheKey(
-                PlaybackMediaIdPolicy.customCacheKey(episodeId, uri.toString()),
+                PlaybackMediaIdPolicy.customCacheKey(cacheId, uri.toString()),
             ).build()
     }
 
@@ -154,7 +160,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
 
     private fun buildResolvedMediaItem(
         item: MediaItem,
-        episodeId: String,
+        cacheId: String,
         resolvedAudioUrl: String,
         source: AutoMediaSource,
         metadata: AutoPlaybackMetadata,
@@ -176,7 +182,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
             .setUri(resolvedAudioUrl)
             .setMimeType(source.mimeType)
             .setCustomCacheKey(
-                PlaybackMediaIdPolicy.customCacheKey(episodeId, resolvedAudioUrl),
+                PlaybackMediaIdPolicy.customCacheKey(cacheId, resolvedAudioUrl),
             ).setMediaMetadata(
                 item.mediaMetadata
                     .buildUpon()

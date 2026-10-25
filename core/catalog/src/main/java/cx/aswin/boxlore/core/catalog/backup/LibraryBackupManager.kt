@@ -112,7 +112,7 @@ class LibraryBackupManager(
 
     suspend fun exportLibraryAsJson(): String {
         val subscriptions = subscriptionRepository.getAllSubscribedPodcasts().first()
-        val allHistory = listeningHistory.getAllHistory().first()
+        val allHistory = listeningHistory.getStoredHistory().first()
 
         val globalPrefs =
             if (userPrefs != null) {
