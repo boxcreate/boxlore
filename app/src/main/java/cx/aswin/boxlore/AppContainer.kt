@@ -2,6 +2,8 @@ package cx.aswin.boxlore
 
 import android.content.Context
 import cx.aswin.boxlore.connectivity.AndroidConnectivityObserver
+import cx.aswin.boxlore.core.catalog.DiscoveryEpisodeIds
+import cx.aswin.boxlore.core.catalog.DiscoveryRouting
 import cx.aswin.boxlore.core.catalog.FeedFixToggles
 import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.InstallReferrerManager
@@ -11,6 +13,7 @@ import cx.aswin.boxlore.core.catalog.LegacyRssRepairCatalog
 import cx.aswin.boxlore.core.catalog.LegacyRssRepairRuntime
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.RolloutSwitches
+import cx.aswin.boxlore.core.catalog.RoomDiscoveryEpisodeIds
 import cx.aswin.boxlore.core.catalog.RoomEpisodeOfflineLookup
 import cx.aswin.boxlore.core.catalog.RoomFolderRepository
 import cx.aswin.boxlore.core.catalog.RoomLocalCatalog
@@ -201,8 +204,16 @@ class AppContainer(
             localEpisodeCatalog = subscribedEpisodeCatalog,
             useEpisodeMatchBaseline = { FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) },
             rolloutSwitches = rolloutSwitches,
+            discoveryEpisodeIds = discoveryEpisodeIds,
         )
     }
+
+    /**
+     * Translates episode IDs between this phone's stored IDs and the recipe IDs of the `/v2`
+     * discovery routes, through the alias table. Opens the database on first use only.
+     * Added in P4 PR 12 (own episode IDs, plan section 9, v2 discovery routes).
+     */
+    internal val discoveryEpisodeIds: DiscoveryEpisodeIds by lazy { RoomDiscoveryEpisodeIds { database } }
 
     /**
      * The `feed_first` rollout flag; one per process so its value stays fixed while the app runs.
@@ -265,6 +276,12 @@ class AppContainer(
             // LEGACY(own-ids): v1 discovery fallback; remove at S7.
             v2Discovery = { v2DiscoverySwitch.isOn() },
         )
+    }
+
+    init {
+        // Briefing link builders and chapters run outside PodcastRepository (features, playback);
+        // they follow the same v2 discovery switch and translator. Nothing is opened here.
+        DiscoveryRouting.install(v2Discovery = { rolloutSwitches.v2Discovery() }, episodeIds = discoveryEpisodeIds)
     }
 
     /**

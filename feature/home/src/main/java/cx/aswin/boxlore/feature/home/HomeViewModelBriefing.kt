@@ -2,7 +2,7 @@ package cx.aswin.boxlore.feature.home
 
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
-import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.BriefingLinks
 import cx.aswin.boxlore.core.catalog.ChapterRepository
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.model.Chapter
@@ -33,7 +33,7 @@ internal fun HomeViewModel.loadDailyBriefing() {
             fetchChapters = { briefing ->
                 val version = Uri.parse(briefing.audioUrl).getQueryParameter("v")
                 val url = briefing.chaptersUrl
-                    ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}${version?.let { "&v=$it" }.orEmpty()}"
+                    ?: BriefingLinks.chaptersUrl(briefing.region, briefing.date, version)
                 ChapterRepository.getChapters(url)
             },
         )

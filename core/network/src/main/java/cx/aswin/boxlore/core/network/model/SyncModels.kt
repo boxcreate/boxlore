@@ -46,9 +46,16 @@ data class RecommendationSemanticFallback(
 @Serializable
 data class RecommendationSeedV2(val kind: String, val id: Long, val weight: Double, val fallback: RecommendationSemanticFallback? = null,)
 
+/**
+ * Body of `POST /recommendations/v2` and `POST /v2/recommendations`, and the recommendations part of
+ * a `/v2/home/bootstrap` request ([V2BootstrapRequest]).
+ *
+ * [contractVersion] has no default: the client JSON never encodes defaults, and the API answers 400
+ * when the field is missing. Pass [CONTRACT_VERSION].
+ */
 @Serializable
 data class RecommendationsV2Request(
-    val contractVersion: Int = 2,
+    val contractVersion: Int,
     val country: String,
     val languages: List<String> = emptyList(),
     val mode: String = "home",
@@ -58,7 +65,12 @@ data class RecommendationsV2Request(
     val subscribedPodcastIds: List<Long> = emptyList(),
     val excludedEpisodeIds: List<Long> = emptyList(),
     val excludedPodcastIds: List<Long> = emptyList(),
-)
+) {
+    companion object {
+        /** The only contract version the API accepts on this body. */
+        const val CONTRACT_VERSION = 2
+    }
+}
 
 @Serializable
 data class RecommendationsV2Response(

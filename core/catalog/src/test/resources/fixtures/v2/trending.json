@@ -1,0 +1,46 @@
+{
+  "status": "true",
+  "description": "Database Trending",
+  "feeds": [
+    {
+      "id": 920666,
+      "itunesId": 1200361736,
+      "title": "The Daily",
+      "author": "The New York Times",
+      "image": "https://cdn.example/show.jpg",
+      "artwork": "https://cdn.example/show.jpg",
+      "description": "This is what the news should sound like.",
+      "language": "en",
+      "categories": { "0": "News" },
+      "newestItemPublishTime": 1792700000,
+      "medium": "podcast",
+      "latestEpisode": {
+        "id": 4503599627370497,
+        "title": "The episode you already played",
+        "datePublished": 1792700000,
+        "duration": 1800,
+        "enclosureType": "audio/mpeg",
+        "enclosureUrl": "https://cdn.example/a.mp3",
+        "image": "https://cdn.example/a.jpg",
+        "feedId": 920666,
+        "feedTitle": "The Daily"
+      }
+    },
+    {
+      "id": 75075,
+      "itunesId": 941907967,
+      "title": "Reply All",
+      "author": "Gimlet",
+      "image": "https://cdn.example/other.jpg",
+      "artwork": "https://cdn.example/other.jpg",
+      "description": "A show about the internet.",
+      "language": "en",
+      "categories": { "0": "Technology" },
+      "newestItemPublishTime": 1792600000,
+      "medium": "podcast",
+      "latestEpisode": null
+    }
+  ],
+  "offset": 0,
+  "count": 2
+}

@@ -57,7 +57,10 @@ object ChapterRepository {
                 chaptersUrl.startsWith("file:") -> java.io.File(chaptersUrl.removePrefix("file:")).readText()
                 else -> URL(normalizedUrl).readText()
             }
-            val chapters = parseChaptersFromJson(json)
+            val parsed = parseChaptersFromJson(json)
+            val isRemote = !chaptersUrl.startsWith("/") && !chaptersUrl.startsWith("file:")
+            // Briefing related episodes come under recipe IDs; show the ones this phone holds under their own IDs.
+            val chapters = if (isRemote) DiscoveryRouting.episodeIds.relatedToLocalOwners(parsed) else parsed
             if (chapters.isNotEmpty()) {
                 cache[normalizedUrl] = chapters
             }

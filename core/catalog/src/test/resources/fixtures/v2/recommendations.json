@@ -1,0 +1,49 @@
+{
+  "status": "true",
+  "contractVersion": 2,
+  "algorithmVersion": "semantic-seed-v3",
+  "items": [
+    {
+      "id": 4503599627370497,
+      "title": "The episode you already played",
+      "description": "Under its recipe ID on /v2",
+      "enclosureUrl": "https://cdn.example/a.mp3",
+      "duration": 1800,
+      "datePublished": 1792700000,
+      "image": "https://cdn.example/a.jpg",
+      "feedImage": "https://cdn.example/show.jpg",
+      "feedId": 920666,
+      "feedTitle": "The Daily",
+      "genre": "News",
+      "language": "en",
+      "retrievalScore": 1,
+      "semanticScore": 0.82,
+      "source": "semantic_seed",
+      "reason": "matches_your_listening",
+      "serverRank": 1,
+      "algorithmVersion": "semantic-seed-v3"
+    },
+    {
+      "id": 4503599627370501,
+      "title": "A new episode",
+      "description": "Not on this phone yet",
+      "enclosureUrl": "https://cdn.example/e.mp3",
+      "duration": 1200,
+      "datePublished": 1792600000,
+      "image": "https://cdn.example/e.jpg",
+      "feedImage": "https://cdn.example/other.jpg",
+      "feedId": 75075,
+      "feedTitle": "Reply All",
+      "genre": "Technology",
+      "language": "en",
+      "retrievalScore": 0.7,
+      "semanticScore": 0.71,
+      "source": "semantic_seed",
+      "reason": "matches_your_listening",
+      "serverRank": 2,
+      "algorithmVersion": "semantic-seed-v3"
+    }
+  ],
+  "isFallback": false,
+  "candidateCount": 2
+}

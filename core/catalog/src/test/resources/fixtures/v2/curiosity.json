@@ -1,0 +1,46 @@
+{
+  "questionOfTheDay": {
+    "date": "2026-10-24",
+    "question": "Why do cats purr?",
+    "explanation": "Purring is not only contentment.",
+    "curiosityScore": 87,
+    "episode": {
+      "id": 4503599627370497,
+      "title": "The episode you already played",
+      "description": "",
+      "enclosureUrl": "https://cdn.example/a.mp3",
+      "duration": 1800,
+      "datePublished": 1792700000,
+      "feedId": 920666,
+      "feedTitle": "The Daily"
+    }
+  },
+  "questionsStack": [
+    {
+      "date": "2026-10-24",
+      "question": "Why do cats purr?",
+      "explanation": "Purring is not only contentment.",
+      "curiosityScore": 87,
+      "episode": {
+        "id": 4503599627370497,
+        "title": "The episode you already played",
+        "enclosureUrl": "https://cdn.example/a.mp3",
+        "feedId": 920666,
+        "feedTitle": "The Daily"
+      }
+    },
+    {
+      "date": "2026-10-23",
+      "question": "What is a podcast feed?",
+      "curiosityScore": 64,
+      "episode": {
+        "id": 4503599627370501,
+        "title": "A new episode",
+        "enclosureUrl": "https://cdn.example/e.mp3",
+        "feedId": 75075,
+        "feedTitle": "Reply All"
+      }
+    }
+  ],
+  "categories": []
+}

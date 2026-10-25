@@ -249,6 +249,7 @@ Historical FQCNs and preference file names remain reachable so upgrades from old
 | — | `android_auto_artwork_sources` | `AutoArtworkSourceStore` / `AutoCollageProvider` (Android Auto art URI map; do not rename) |
 | — | `boxlore_now_playing_widget` | `NowPlayingWidgetSnapshotStore` (`:feature:widgets`; last rendered Now Playing snapshot JSON; do not rename) |
 | — | `boxlore_library_widget` | `LibraryWidgetSnapshotStore` (`:feature:widgets`; last rendered Subscriptions / New Episodes snapshot JSON; do not rename) |
+| — | `boxlore_discovery_last_good` | `PodcastRepository` (`:core:catalog` `RecommendationsLastGood`; last good `/v2` picks per surface and country; do not rename) |
 | `boxcast_api_config` | `boxlore_api_config` | `BoxLoreAppRoot` |
 | `boxcast_referrer_prefs` | `boxlore_referrer_prefs` | `InstallReferrerManager` |
 

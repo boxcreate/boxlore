@@ -1,0 +1,76 @@
+{
+  "briefing": {
+    "date": "2026-10-24",
+    "region": "us",
+    "title": "Morning Brief",
+    "script": "Good morning.",
+    "audioUrl": "https://api.example/briefings/audio/us?d=2026-10-24&v=3",
+    "coverUrl": "https://cdn.example/brief.jpg",
+    "chaptersUrl": "https://api.example/v2/briefings/chapters/us?d=2026-10-24&v=3&sig=abc",
+    "transcriptUrl": "https://api.example/briefings/transcript/us?d=2026-10-24&v=3&sig=def",
+    "sources": []
+  },
+  "briefingChapters": [
+    {
+      "startTime": 0,
+      "title": "Markets",
+      "img": null,
+      "url": null,
+      "relatedEpisodes": [
+        {
+          "id": "4503599627370497",
+          "title": "The episode you already played",
+          "description": "",
+          "audioUrl": "https://cdn.example/a.mp3",
+          "imageUrl": "https://cdn.example/a.jpg",
+          "podcastImageUrl": "https://cdn.example/show.jpg",
+          "podcastTitle": "The Daily",
+          "podcastId": "920666",
+          "podcastGenre": "News",
+          "podcastArtist": "The New York Times",
+          "duration": 1800,
+          "publishedDate": 1792700000
+        },
+        {
+          "id": "4503599627370501",
+          "title": "A new episode",
+          "description": "",
+          "audioUrl": "https://cdn.example/e.mp3",
+          "imageUrl": null,
+          "podcastImageUrl": null,
+          "podcastTitle": "Reply All",
+          "podcastId": "75075",
+          "podcastGenre": null,
+          "podcastArtist": null,
+          "duration": 1200,
+          "publishedDate": 1792600000
+        }
+      ]
+    }
+  ],
+  "trending": [
+    {
+      "id": 920666,
+      "itunesId": 1200361736,
+      "title": "The Daily",
+      "author": "The New York Times",
+      "image": "https://cdn.example/show.jpg",
+      "artwork": "https://cdn.example/show.jpg",
+      "description": "This is what the news should sound like.",
+      "language": "en",
+      "categories": { "0": "News" },
+      "medium": "podcast",
+      "latestEpisode": {
+        "id": 4503599627370497,
+        "title": "The episode you already played",
+        "datePublished": 1792700000,
+        "enclosureUrl": "https://cdn.example/a.mp3",
+        "feedId": 920666,
+        "feedTitle": "The Daily"
+      }
+    }
+  ],
+  "curatedVibes": {},
+  "recommendations": [],
+  "isRecommendationsFallback": false
+}

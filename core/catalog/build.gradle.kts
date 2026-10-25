@@ -95,6 +95,8 @@ dependencies {
 
     // JSON Streaming
     implementation(libs.gson)
+    // Last good v2 recommendation answers (List<Episode> through its generated serializer).
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.jsoup)
     implementation(libs.okhttp)
     // Firebase (database and messaging — SubscriptionRepository uses firebase.database + messaging)

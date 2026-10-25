@@ -3,7 +3,6 @@ package cx.aswin.boxlore.core.network
 import cx.aswin.boxlore.core.model.Briefing
 import cx.aswin.boxlore.core.network.model.BecauseYouLikeRequest
 import cx.aswin.boxlore.core.network.model.BecauseYouLikeResponse
-import cx.aswin.boxlore.core.network.model.BootstrapRequest
 import cx.aswin.boxlore.core.network.model.BootstrapResponse
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
 import cx.aswin.boxlore.core.network.model.EpisodesResponse
@@ -12,6 +11,7 @@ import cx.aswin.boxlore.core.network.model.RecommendationsV2Response
 import cx.aswin.boxlore.core.network.model.SearchResponse
 import cx.aswin.boxlore.core.network.model.SimilarEpisodesRequest
 import cx.aswin.boxlore.core.network.model.TrendingResponse
+import cx.aswin.boxlore.core.network.model.V2BootstrapRequest
 import cx.aswin.boxlore.core.network.model.V2EpisodeRegisterRequest
 import cx.aswin.boxlore.core.network.model.V2EpisodeRegisterResponse
 import cx.aswin.boxlore.core.network.model.V2EpisodeReply
@@ -153,10 +153,11 @@ interface BoxLoreApiV2 {
         @Query("offset") offset: Int? = 0,
     ): Call<ResponseBody>
 
+    /** Home's bootstrap; its recommendations part is the current recommendation body ([V2BootstrapRequest]). */
     @POST("v2/home/bootstrap")
     fun getHomeBootstrap(
         @Header("X-Device-UUID") deviceUuid: String,
-        @Body request: BootstrapRequest,
+        @Body request: V2BootstrapRequest,
     ): Call<BootstrapResponse>
 
     @GET("v2/home/bootstrap")

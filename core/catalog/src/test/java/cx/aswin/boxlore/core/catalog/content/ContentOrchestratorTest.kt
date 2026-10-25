@@ -307,6 +307,7 @@ class ContentOrchestratorTest {
     fun `recommendation v2 request excludes raw behavioral history`() {
         val request =
             RecommendationsV2Request(
+                contractVersion = RecommendationsV2Request.CONTRACT_VERSION,
                 country = "us",
                 seeds = listOf(RecommendationSeedV2(kind = "episode", id = 42, weight = 0.8)),
                 subscribedPodcastIds = listOf(7),
