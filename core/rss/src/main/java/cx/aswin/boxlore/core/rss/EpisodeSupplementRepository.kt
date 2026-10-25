@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.database.EpisodeSupplementDao
 import cx.aswin.boxlore.core.database.EpisodeSupplementEntity
 import cx.aswin.boxlore.core.database.EpisodeSupplementItemEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
+import cx.aswin.boxlore.core.database.RssEpisodeIdentity
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
 import cx.aswin.boxlore.core.model.Episode
@@ -127,8 +128,8 @@ class EpisodeSupplementRepository internal constructor(
         try {
             val parsed = fetchParsedFeed(podcastIndexId, resolvedRefreshFeedUrl(podcastIndexId, feedUrl))
             val feedOnly =
-                parsed.episodes.filterNot { rss ->
-                    EpisodeSupplementMatcher.isPresentInBaseline(rss, baselineEpisodes)
+                parsed.items.filterNot { item ->
+                    EpisodeSupplementMatcher.isPresentInBaseline(item.episode, baselineEpisodes)
                 }
             val newestFeedPublished = parsed.episodes.firstOrNull()?.publishedDate ?: 0L
             val newestBaselinePublished =
@@ -219,11 +220,16 @@ class EpisodeSupplementRepository internal constructor(
         val resolvedUrl =
             resolveHttpsFeedUrl(request.feedUrl, existing.feedUrl) ?: return@withContext null
         val parsed = fetchParsedFeed(request.podcastIndexId, resolvedUrl)
-        val chosen =
+        val picked =
             pickMatchingFeedEpisode(
                 episodes = parsed.episodes,
                 match = request.match,
             ) ?: return@withContext null
+        // The tip keeps the ID of the supplement row already stored for it (P4 PR 8).
+        val chosen =
+            parsed.items.firstOrNull { it.episode === picked }?.let { item ->
+                SupplementIdentity.remap(listOf(item), dao.getAllNewest(request.podcastIndexId)).items.firstOrNull()?.episode
+            } ?: picked
         val meta =
             SupplementPodcastMeta(
                 title = request.podcastTitle,
@@ -339,17 +345,20 @@ class EpisodeSupplementRepository internal constructor(
             lastModified = fetched.lastModified,
             channelImageUrl = parsed.imageUrl,
             episodes = parsed.episodes,
+            items = parsed.items,
         )
     }
 
     private suspend fun persistParsedSupplement(request: PersistParsedSupplementRequest): EpisodeSupplementOutcome.Success {
         val feedOnly =
-            request.feedOnlyOverride ?: request.parsed.episodes.filterNot { rss ->
-                EpisodeSupplementMatcher.isPresentInBaseline(rss, request.baselineEpisodes)
+            request.feedOnlyOverride ?: request.parsed.items.filterNot { item ->
+                EpisodeSupplementMatcher.isPresentInBaseline(item.episode, request.baselineEpisodes)
             }
-        val previousIds = dao.getAllNewest(request.podcastIndexId).map { it.episodeId }.toSet()
+        val storedRows = dao.getAllNewest(request.podcastIndexId)
+        val previousIds = storedRows.map { it.episodeId }.toSet()
+        val sticky = SupplementIdentity.remap(feedOnly, storedRows)
         val items =
-            feedOnly.map { rss ->
+            sticky.items.map(ParsedFeedItem::episode).map { rss ->
                 rss.toSupplementItem(
                     podcastIndexId = request.podcastIndexId,
                     imageUrl =
@@ -371,10 +380,13 @@ class EpisodeSupplementRepository internal constructor(
                 feedLastModified = request.parsed.lastModified,
                 fetchedAt = System.currentTimeMillis(),
             ),
-            items = items,
+            items = items + sticky.keptRows,
         )
+        // The newest item under the ID its supplement row keeps, when it is feed-only.
+        val stickyByPosition = sticky.items.associateBy(ParsedFeedItem::documentIndex)
         val tip =
-            request.parsed.episodes.firstOrNull()?.let { newest ->
+            request.parsed.items.firstOrNull()?.let { newestItem ->
+                val newest = stickyByPosition[newestItem.documentIndex]?.episode ?: newestItem.episode
                 EpisodeSupplementTipLogic.resolveNewestTip(
                     newestFeedEpisode = newest,
                     podcastIndexId = request.podcastIndexId,
@@ -438,6 +450,8 @@ private data class ParsedSupplementFeed(
     val lastModified: String?,
     val channelImageUrl: String?,
     val episodes: List<RssEpisodeEntity>,
+    /** [episodes] with their feed positions and identity keys, in the same order. */
+    val items: List<ParsedFeedItem>,
 )
 
 private data class SupplementPodcastMeta(val title: String?, val imageUrl: String?, val genre: String?, val artist: String?,)
@@ -447,7 +461,7 @@ private data class PersistParsedSupplementRequest(
     val parsed: ParsedSupplementFeed,
     val baselineEpisodes: List<Episode>,
     val meta: SupplementPodcastMeta,
-    val feedOnlyOverride: List<RssEpisodeEntity>? = null,
+    val feedOnlyOverride: List<ParsedFeedItem>? = null,
 )
 
 private fun RssEpisodeEntity.toSupplementItem(podcastIndexId: String, imageUrl: String? = this.imageUrl,) = EpisodeSupplementItemEntity(
@@ -469,3 +483,38 @@ private fun RssEpisodeEntity.toSupplementItem(podcastIndexId: String, imageUrl: 
     episodeType = episodeType,
     enclosureType = enclosureType,
 )
+
+/**
+ * Keeps supplement episode IDs stable across refreshes, like the local catalog does.
+ *
+ * Supplement rows are replaced on every refresh. Without this, an item whose minted ID depends on
+ * which parser read the feed (a GUID-less item with several media addresses, read by both parsers
+ * under 4 MiB and by the streaming parser alone above it), or an older build's second row for one
+ * item, would be deleted and re-added under another ID, leaving history, queue and downloads on
+ * the old ID.
+ *
+ * Added in P4 PR 8 (own-IDs plan section 4: stored rows keep their IDs).
+ * COMPAT(own-ids): keeps every stored supplement episode ID when keys or duplicate handling change. Permanent: never remove (MIGRATION.md §5).
+ */
+internal object SupplementIdentity {
+    /**
+     * @property items the feed-only items, each under the ID of the stored row it matches
+     *   ([StickyRssEpisodeRemap.remapItems]: catalog key, own minted ID, then older keys).
+     * @property keptRows stored rows no item matched that hold one of an item's keys (its catalog
+     *   key or [ParsedFeedItem.legacyKeys]): an older build's second row for the same episode. They
+     *   are written back unchanged. Rows of episodes that left the feed or reached the Podcast Index
+     *   baseline are dropped, as before.
+     */
+    data class Result(val items: List<ParsedFeedItem>, val keptRows: List<EpisodeSupplementItemEntity>,)
+
+    fun remap(feedOnly: List<ParsedFeedItem>, stored: List<EpisodeSupplementItemEntity>,): Result {
+        val items = StickyRssEpisodeRemap.remapItems(feedOnly, stored.map { RssEpisodeIdentity(it.episodeId, it.guid, it.audioUrl) })
+        val ids = items.mapTo(HashSet()) { it.episode.episodeId }
+        val episodeKeys = feedOnly.flatMapTo(HashSet()) { listOfNotNull(it.catalogKey) + it.legacyKeys }
+        val keptRows =
+            stored.filter { row ->
+                row.episodeId !in ids && StickyEpisodeIdentity.catalogKey(row.guid, row.audioUrl) in episodeKeys
+            }
+        return Result(items, keptRows)
+    }
+}

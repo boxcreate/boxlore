@@ -144,7 +144,7 @@ class RssEpisodeCatalog internal constructor(
         val id = request.podcastIndexId
         val parsed = feedClient.parse(fetched.finalUrl, fetched.body, id)
         if (parsed.episodes.isEmpty()) return failure()
-        val sticky = StickyRssEpisodeRemap.prepare(parsed.episodes, episodes.listIdentities(id))
+        val sticky = StickyRssEpisodeRemap.prepare(parsed.items, episodes.listIdentities(id))
         var persisted = false
         database.withTransaction {
             // Re-read after I/O so a concurrent unsubscribe/settings change cannot be undone.

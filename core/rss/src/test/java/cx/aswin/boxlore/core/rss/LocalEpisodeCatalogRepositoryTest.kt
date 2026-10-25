@@ -541,6 +541,89 @@ class LocalEpisodeCatalogRepositoryTest {
         assertEquals(2, dao.episodes.size)
     }
 
+    @Test
+    fun aRefreshOverRowsStoredByOlderBuildsKeepsEveryIdAndKey() = runTest {
+        // Rows as older builds stored the fixture feed, read by both parsers or (over 4 MiB) by one,
+        // read again on the same side of 4 MiB and on the other side.
+        val cases =
+            listOf(
+                IdentityFixtureFeed.small() to IdentityFixtureFeed.SMALL_ROWS,
+                IdentityFixtureFeed.large() to IdentityFixtureFeed.LARGE_ROWS,
+                IdentityFixtureFeed.large() to IdentityFixtureFeed.SMALL_ROWS,
+                IdentityFixtureFeed.small() to IdentityFixtureFeed.LARGE_ROWS,
+            )
+        for ((bytes, before) in cases) {
+            val dao = FakeCatalogDao()
+            val seeded = before.map { (id, key) -> localEpisode(id).copy(podcastId = IdentityFixtureFeed.SHOW_ID, guid = key) }
+            dao.episodes += seeded
+
+            val outcome = catalogRepo(dao = dao, feedClient = BytesFeedClient(bytes)).refresh(identityFeedRequest())
+
+            assertTrue(outcome is RefreshOutcome.Success)
+            assertEquals(before.toSet(), dao.episodes.map { it.episodeId to it.guid }.toSet(), "no ID or key changes, no new ID")
+        }
+        // The small read updates one of the two rows older builds stored for ep2 and for ep0; the
+        // other stays exactly as it was, so later alias work can still join it.
+        val dao = FakeCatalogDao()
+        val seeded = IdentityFixtureFeed.SMALL_ROWS.map { (id, key) -> localEpisode(id).copy(podcastId = IdentityFixtureFeed.SHOW_ID, guid = key) }
+        dao.episodes += seeded
+        catalogRepo(dao = dao, feedClient = BytesFeedClient(IdentityFixtureFeed.small())).refresh(identityFeedRequest())
+        val orphanIds = IdentityFixtureFeed.SMALL_ORPHANS.map { it.first }.toSet()
+        assertEquals(seeded.filter { it.episodeId in orphanIds }.toSet(), dao.episodes.filter { it.episodeId in orphanIds }.toSet())
+        assertEquals("Episode Two With Two Media Elements", dao.episodes.single { it.episodeId == "-1745259125871161974" }.title)
+    }
+
+    @Test
+    fun aNewReleaseSharingACoverEnclosureNeverTakesAnotherEpisodesRow() = runTest {
+        // GUID-less items whose first enclosure is the same cover image (or the same trailer): each
+        // keeps its own row through repeated refreshes, a new release, and a read over 4 MiB.
+        val dao = FakeCatalogDao()
+        val client = BytesFeedClient(IdentityFixtureFeed.sharedEnclosure())
+        val repo = catalogRepo(dao = dao, feedClient = client)
+        assertTrue(repo.refresh(identityFeedRequest()) is RefreshOutcome.Success)
+        val first = dao.episodes.associate { it.episodeId to it.title }
+        for (letter in "ABCD") assertTrue(first.values.any { it.startsWith("Episode $letter ") }, "Episode $letter is stored")
+
+        assertTrue(repo.refresh(identityFeedRequest()) is RefreshOutcome.Success)
+        client.body = IdentityFixtureFeed.sharedEnclosureWithNewRelease()
+        assertTrue(repo.refresh(identityFeedRequest()) is RefreshOutcome.Success)
+        client.body = IdentityFixtureFeed.padded(IdentityFixtureFeed.sharedEnclosureWithNewRelease())
+        assertTrue(repo.refresh(identityFeedRequest()) is RefreshOutcome.Success)
+
+        val after = dao.episodes.associate { it.episodeId to it.title }
+        assertEquals(first, after.filterKeys { it in first }, "every stored row keeps its episode")
+        val newIds = after.keys - first.keys
+        assertEquals(listOf("Episode E With A Cover Enclosure"), newIds.map { after.getValue(it) })
+    }
+
+    @Test
+    fun aFeedCrossingFourMegabytesBetweenRefreshesKeepsItsRows() = runTest {
+        for ((first, second) in listOf(IdentityFixtureFeed.small() to IdentityFixtureFeed.large(), IdentityFixtureFeed.large() to IdentityFixtureFeed.small())) {
+            val dao = FakeCatalogDao()
+            val client = BytesFeedClient(first)
+            val repo = catalogRepo(dao = dao, feedClient = client)
+            assertTrue(repo.refresh(identityFeedRequest()) is RefreshOutcome.Success)
+            val stored = dao.episodes.map { it.episodeId to it.guid }.toSet()
+
+            client.body = second
+            assertTrue(repo.refresh(identityFeedRequest()) is RefreshOutcome.Success)
+
+            assertEquals(6, stored.size)
+            assertEquals(stored, dao.episodes.map { it.episodeId to it.guid }.toSet())
+        }
+    }
+
+    private fun identityFeedRequest() = LocalEpisodeCatalogPort.RefreshRequest(
+        podcastIndexId = IdentityFixtureFeed.SHOW_ID,
+        feedUrl = IdentityFixtureFeed.FEED_URL,
+        reason = LocalEpisodeCatalogPort.RefreshReason.MANUAL,
+    )
+
+    /** Serves [body] from every address and parses it for real. */
+    private class BytesFeedClient(var body: ByteArray,) : RssFeedClient() {
+        override suspend fun fetch(url: String) = RssFetchResult(finalUrl = url, etag = null, lastModified = null, body = body)
+    }
+
     private fun sharedFeedRequest(show: String) = LocalEpisodeCatalogPort.RefreshRequest(
         podcastIndexId = show,
         feedUrl = "https://feeds.example/shared.xml",

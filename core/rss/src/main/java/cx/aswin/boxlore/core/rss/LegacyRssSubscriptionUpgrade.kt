@@ -7,6 +7,7 @@ import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
+import cx.aswin.boxlore.core.database.RssEpisodeIdentity
 import cx.aswin.boxlore.core.model.Podcast
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
@@ -46,6 +47,53 @@ internal object LegacyRssUpgradeLogic {
             !snapshot.podcastGuid.isNullOrBlank() &&
                 snapshot.podcastGuid.equals(target.podcastGuid, ignoreCase = true)
         return sameUrl || sameGuid
+    }
+
+    /** Where [copiedLocalRows] writes: the Podcast Index show, the RSS namespace its IDs were minted in, and artwork. */
+    data class CopyTarget(val podcastIndexId: String, val rssNamespaceId: String, val channelImageUrl: String?, val showImageUrl: String?,)
+
+    /**
+     * The local catalog rows an upgrade copies: the feed's items under their stored RSS IDs
+     * ([StickyRssEpisodeRemap.remapItems]), then the stored RSS rows the feed no longer lists, so
+     * every stored ID (and the listener state on it) carries over. Feed items come first, in
+     * document order, so a key a feed item and a leftover stored row share keeps the feed item.
+     * Each row is known by its catalog key: a GUID-less feed item by its enclosure URL.
+     *
+     * Added in P4 PR 8 (own-IDs plan section 4: first in the document wins).
+     * COMPAT(own-ids): the legacy upgrade keeps every RSS episode ID. Permanent: never remove (MIGRATION.md §5).
+     */
+    fun copiedLocalRows(
+        feedItems: List<ParsedFeedItem>,
+        stored: List<RssEpisodeEntity>,
+        storedIdentities: List<RssEpisodeIdentity>,
+        target: CopyTarget,
+    ): List<LocalEpisodeEntity> {
+        val refreshed = StickyRssEpisodeRemap.remapItems(parsed = feedItems, existing = storedIdentities)
+        val refreshedIds = refreshed.mapTo(HashSet()) { it.episode.episodeId }
+        val firstStoredIndex = (refreshed.maxOfOrNull(ParsedFeedItem::documentIndex) ?: -1) + 1
+        val combined =
+            refreshed +
+                stored
+                    .filterNot { it.episodeId in refreshedIds }
+                    .distinctBy(RssEpisodeEntity::episodeId)
+                    .asParsedFeedItems(firstIndex = firstStoredIndex)
+        val identities =
+            combined.map { item ->
+                LocalEpisodeIdentity(
+                    episodeId = item.episode.episodeId,
+                    guid = item.catalogKey.orEmpty(),
+                    audioUrl = item.episode.audioUrl,
+                )
+            }
+        return LocalEpisodeCatalogPersist.toLocalEpisodes(
+            podcastIndexId = target.podcastIndexId,
+            rssNamespaceId = target.rssNamespaceId,
+            parsed = combined,
+            existing = identities,
+            piBaseline = null,
+            channelImageUrl = target.channelImageUrl,
+            showImageUrl = target.showImageUrl,
+        )
     }
 
     fun listenerIdsResolve(rows: Collection<String>, listenerIds: Collection<String>,): Boolean = listenerIds.all { it in rows || it.toLongOrNull()?.let { value -> value > 0L } == true }
@@ -191,30 +239,18 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
 
     private suspend fun copiedCatalog(source: PodcastEntity, target: Podcast, snapshot: LegacyRssFeedSnapshot,): CopiedRssCatalog? {
         val rssDao = database.rssEpisodeDao()
-        val stored = rssDao.getAllNewest(source.podcastId)
-        val refreshed =
-            StickyRssEpisodeRemap.remap(
-                parsed = snapshot.parsed.episodes,
-                existing = rssDao.listIdentities(source.podcastId),
-            )
-        val combined = (refreshed + stored).distinctBy(RssEpisodeEntity::episodeId)
-        val identities =
-            combined.map { row ->
-                LocalEpisodeIdentity(
-                    episodeId = row.episodeId,
-                    guid = row.guid.orEmpty(),
-                    audioUrl = row.audioUrl,
-                )
-            }
         val localRows =
-            LocalEpisodeCatalogPersist.toLocalEpisodes(
-                podcastIndexId = target.id,
-                rssNamespaceId = source.podcastId,
-                parsed = combined,
-                existing = identities,
-                piBaseline = null,
-                channelImageUrl = snapshot.parsed.imageUrl,
-                showImageUrl = target.imageUrl.ifBlank { source.imageUrl },
+            LegacyRssUpgradeLogic.copiedLocalRows(
+                feedItems = snapshot.parsed.items,
+                stored = rssDao.getAllNewest(source.podcastId),
+                storedIdentities = rssDao.listIdentities(source.podcastId),
+                target =
+                LegacyRssUpgradeLogic.CopyTarget(
+                    podcastIndexId = target.id,
+                    rssNamespaceId = source.podcastId,
+                    channelImageUrl = snapshot.parsed.imageUrl,
+                    showImageUrl = target.imageUrl.ifBlank { source.imageUrl },
+                ),
             )
         if (localRows.isEmpty() || !snapshot.finalFeedUrl.startsWith("https://", ignoreCase = true)) {
             return null

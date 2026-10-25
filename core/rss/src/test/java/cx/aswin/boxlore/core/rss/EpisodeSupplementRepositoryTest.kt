@@ -339,6 +339,105 @@ class EpisodeSupplementRepositoryTest {
         assertEquals(listOf("-1"), dao.items.map { it.episodeId })
     }
 
+    @Test
+    fun `supplement refreshes across 4 MiB never delete or move a stored ID`() = runTest {
+        // Older builds stored a supplement row per minted ID: on the small read, both ep2 and both
+        // ep0 IDs (one per parser) and both ep-1 copies (padded and plain GUID); on the large read, one each.
+        val paddedEp1 = RssIdGenerator.episodeIdForPodcast(IdentityFixtureFeed.namespace, IdentityFixtureFeed.EP1_PADDED_GUID, null, 0L, "")
+        val seeds =
+            listOf(
+                IdentityFixtureFeed.SMALL_ROWS.map { (id, key) -> supplementRow(id, key) } + supplementRow(paddedEp1, IdentityFixtureFeed.EP1_PADDED_GUID),
+                IdentityFixtureFeed.LARGE_ROWS.map { (id, key) -> supplementRow(id, key) },
+                emptyList(),
+            )
+        for (seed in seeds) {
+            val dao = FakeDao()
+            dao.items += seed
+            val client = BytesFeedClient(IdentityFixtureFeed.small())
+            val repo = EpisodeSupplementRepository(dao = dao, feedClient = client, runInTransaction = { it() })
+            val episodeIds = mutableListOf<Map<String, String>>()
+            for (bytes in listOf(IdentityFixtureFeed.small(), IdentityFixtureFeed.large(), IdentityFixtureFeed.small())) {
+                client.body = bytes
+                val outcome = repo.refreshFromFeed(EpisodeSupplementPort.RefreshFromFeedRequest(podcastIndexId = IdentityFixtureFeed.SHOW_ID, feedUrl = IdentityFixtureFeed.FEED_URL))
+
+                assertTrue(outcome is EpisodeSupplementOutcome.Success, "$outcome")
+                val ids = dao.items.map { it.episodeId }.toSet()
+                assertTrue(ids.containsAll(seed.map { it.episodeId }), "no stored ID is deleted: $ids")
+                assertTrue((outcome as EpisodeSupplementOutcome.Success).newestFeedEpisode?.id in ids, "the tip uses a stored ID")
+                episodeIds += dao.items.filter { it.title.startsWith("Episode") }.associate { it.title to it.episodeId }
+            }
+            assertEquals(6, episodeIds.first().size)
+            assertEquals(1, episodeIds.distinct().size, "no episode changes ID between refreshes: $episodeIds")
+            if (seed.isNotEmpty()) assertEquals(seed.map { it.episodeId }.toSet(), dao.items.map { it.episodeId }.toSet(), "no new ID")
+        }
+    }
+
+    @Test
+    fun `a GUID-less tip keeps the ID of its stored supplement row`() = runTest {
+        val ep3 = "https://cdn.example.com/ep3.mp3"
+        val dao = FakeDao()
+        dao.supplement =
+            EpisodeSupplementEntity(
+                podcastId = IdentityFixtureFeed.SHOW_ID,
+                feedUrl = IdentityFixtureFeed.FEED_URL,
+                rssNamespaceId = IdentityFixtureFeed.namespace,
+                feedEtag = null,
+                feedLastModified = null,
+                fetchedAt = 0L,
+            )
+        dao.items += supplementRow("-777", ep3)
+        val repo = EpisodeSupplementRepository(dao = dao, feedClient = BytesFeedClient(IdentityFixtureFeed.small()), runInTransaction = { it() })
+
+        val tip =
+            repo.resolveNewestTipFromFeed(
+                EpisodeSupplementPort.NewestTipRequest(
+                    podcastIndexId = IdentityFixtureFeed.SHOW_ID,
+                    feedUrl = IdentityFixtureFeed.FEED_URL,
+                    match = EpisodeSupplementPort.FeedItemMatch(enclosureUrl = ep3),
+                ),
+            )
+
+        assertEquals("-777", tip?.id)
+        assertEquals(listOf("-777"), dao.items.filter { it.audioUrl == ep3 }.map { it.episodeId })
+    }
+
+    @Test
+    fun `supplement rows of episodes that left the feed are still dropped`() {
+        val item = ParsedFeedItem(rssEpisode("-1", guid = "g-1", audioUrl = "https://cdn/1.mp3"), 0)
+        val stored = listOf(supplementRow("-1", "g-1"), supplementRow("-2", "g-gone"), supplementRow("-3", "g-1"))
+
+        val result = SupplementIdentity.remap(listOf(item), stored)
+
+        assertEquals(listOf("-1"), result.items.map { it.episode.episodeId })
+        // -3 is a second stored row for the same key: kept. -2 left the feed: dropped, as before.
+        assertEquals(listOf("-3"), result.keptRows.map { it.episodeId })
+    }
+
+    /** Serves [body] from every address and parses it for real. */
+    private class BytesFeedClient(var body: ByteArray,) : RssFeedClient() {
+        override suspend fun fetch(url: String) = RssFetchResult(finalUrl = url, etag = null, lastModified = null, body = body)
+    }
+
+    private fun supplementRow(id: String, key: String) = EpisodeSupplementItemEntity(
+        episodeId = id,
+        podcastId = IdentityFixtureFeed.SHOW_ID,
+        guid = key.takeUnless { it.startsWith("https://") },
+        title = "Stored $id",
+        description = "",
+        audioUrl = if (key.startsWith("https://")) key else "https://cdn.example.com/${key.trim()}.mp3",
+        imageUrl = null,
+        duration = 60,
+        publishedDate = 1L,
+        chaptersUrl = null,
+        transcriptUrl = null,
+        transcripts = null,
+        persons = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        episodeType = null,
+        enclosureType = null,
+    )
+
     private fun rssEpisode(episodeId: String, guid: String, audioUrl: String,) = RssEpisodeEntity(
         episodeId = episodeId,
         podcastId = "rss:show",

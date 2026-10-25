@@ -9,7 +9,7 @@ object StickyRssEpisodeRemap {
     data class Catalog(val episodes: List<RssEpisodeEntity>, val latestEpisode: Episode?,)
 
     fun prepare(
-        parsed: List<RssEpisodeEntity>,
+        parsed: List<ParsedFeedItem>,
         existing: List<RssEpisodeIdentity>,
         podcastTitle: String? = null,
         podcastImageUrl: String? = null,
@@ -29,20 +29,30 @@ object StickyRssEpisodeRemap {
         )
     }
 
-    fun remap(parsed: List<RssEpisodeEntity>, existing: List<RssEpisodeIdentity>,): List<RssEpisodeEntity> {
-        val existingByKey = linkedMapOf<String, String>()
-        for (row in existing) {
-            val key = StickyEpisodeIdentity.catalogKey(row.guid, row.audioUrl) ?: continue
-            existingByKey.putIfAbsent(key, row.episodeId)
-        }
-        val seen = mutableSetOf<String>()
-        return parsed.mapNotNull { episode ->
-            val key =
-                StickyEpisodeIdentity.requireCatalogKey(episode.guid, episode.audioUrl)
-                    ?: return@mapNotNull null
-            if (!StickyEpisodeIdentity.firstWinsExisting(seen, key)) return@mapNotNull null
-            val stickyId = existingByKey[key] ?: episode.episodeId
-            episode.copy(episodeId = stickyId)
-        }
+    /** [remapItems] as rows. */
+    fun remap(parsed: List<ParsedFeedItem>, existing: List<RssEpisodeIdentity>,): List<RssEpisodeEntity> = remapItems(parsed, existing).map(ParsedFeedItem::episode)
+
+    /**
+     * [parsed] in its order, one item per catalog key (the first in the feed document wins), each
+     * under the ID of the stored row it matches, else its minted ID. Stored rows are found by the
+     * item's catalog key, then by its own minted ID, then by the keys older builds used
+     * ([StoredRowMatch.resolve]). Two items never end up under one ID: a later one in the document
+     * is dropped. A stored row no item matches (an older build's second row for one item) is left
+     * as it is.
+     *
+     * Document order and the stored-row lookup were added in P4 PR 8 (own-IDs plan section 4).
+     * COMPAT(own-ids): keeps every stored RSS episode ID when keys or duplicate handling change. Permanent: never remove (MIGRATION.md §5).
+     */
+    fun remapItems(parsed: List<ParsedFeedItem>, existing: List<RssEpisodeIdentity>,): List<ParsedFeedItem> {
+        val stored = StoredRowMatch.StoredRows.of(existing.map { Triple(it.episodeId, it.guid, it.audioUrl) })
+        val matches = StoredRowMatch.resolve(parsed, stored)
+        val remapped =
+            parsed.mapIndexedNotNull { position, item ->
+                val match = matches[position] ?: return@mapIndexedNotNull null
+                val stickyId = match.storedId ?: item.episode.episodeId
+                if (stickyId == item.episode.episodeId) item else item.copy(episode = item.episode.copy(episodeId = stickyId))
+            }
+        val firstPerId = FeedDocumentOrder.firstInDocument(remapped).toSet()
+        return remapped.filter { it in firstPerId }
     }
 }

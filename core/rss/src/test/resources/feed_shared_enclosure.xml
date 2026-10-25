@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Shared Enclosure Fixture Podcast</title>
+    <description>GUID-less items whose first enclosure is shared: a cover image, or a trailer.</description>
+    <itunes:author>Fixture Author</itunes:author>
+    <!-- new-release -->
+    <item>
+      <title>Episode A With A Cover Enclosure</title>
+      <pubDate>Fri, 03 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/cover.jpg" type="image/jpeg" length="10"/>
+      <enclosure url="https://cdn.example.com/a.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Episode B With A Cover Enclosure</title>
+      <pubDate>Thu, 02 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/cover.jpg" type="image/jpeg" length="10"/>
+      <media:content url="https://cdn.example.com/b.mp3" type="audio/mpeg" medium="audio"/>
+    </item>
+    <item>
+      <title>Episode C After A Trailer</title>
+      <pubDate>Wed, 01 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/trailer.mp3" type="audio/mpeg" length="10"/>
+      <enclosure url="https://cdn.example.com/c.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Episode D After A Trailer</title>
+      <pubDate>Tue, 31 Dec 2019 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/trailer.mp3" type="audio/mpeg" length="10"/>
+      <enclosure url="https://cdn.example.com/d.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+  </channel>
+</rss>

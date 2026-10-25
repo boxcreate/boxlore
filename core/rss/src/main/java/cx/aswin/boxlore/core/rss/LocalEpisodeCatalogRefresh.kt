@@ -131,7 +131,7 @@ private suspend fun persistParsed(
         LocalEpisodeCatalogPersist.toLocalEpisodes(
             podcastIndexId = request.podcastIndexId,
             rssNamespaceId = rssNamespaceId,
-            parsed = parsed.episodes,
+            parsed = parsed.items,
             existing = identities,
             piBaseline = baseline,
             channelImageUrl = parsed.imageUrl,
