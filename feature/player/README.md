@@ -88,6 +88,8 @@ Main Kotlin files should remain below 1000 lines; extracted full-player content,
 
 ## Testing notes
 
+- The player's share sheet passes the playing episode to `ShareBottomSheet`, so Copy link names it the way artwork shares do (its recipe ID and show for a Podcast Index show); the sheet itself is unchanged.
+
 - `PlayerTranscriptActionTest` covers the shared transcript quick action: phone inline visibility, tablet supporting-tab toggles, empty-transcript no-op, and migration between presentations with the same UI state owner.
 
 - Tablet Standard player measures actual title/control height before allocating artwork, leaving complete utility controls above safe drawing insets. Context metadata wraps beside a smaller cover; stacked/tabletop controls and supporting tabs flow through a finite scroll layout. Up next continuation and empty recovery share the queue scroller, with banner-aware reorder indices. The shell promotes video/transcript overlays to the whole window and restores their originating context/dock/immersive owner. Transcript expansion keeps its tab/sync state; video exit restores the tablet orientation. Phone defaults and metadata geometry remain unchanged.

@@ -10,6 +10,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
+import cx.aswin.boxlore.core.catalog.localEpisodeForRecipe
 import cx.aswin.boxlore.core.downloads.DownloadsDependenciesHolder
 import java.security.MessageDigest
 import kotlinx.coroutines.CancellationException
@@ -81,7 +82,10 @@ class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : Cor
                     deps.podcastRepository.episodeSupplementRepository,
                     deps.podcastRepository.localEpisodeCatalog,
                     loadPiList = { id -> deps.podcastRepository.loadPiEpisodesForSupplement(id) },
+                    findByRecipeId = { show, recipeId -> deps.podcastRepository.localEpisodeForRecipe(show, recipeId) },
                 ),
+                payloadCatalogKey = FcmPayloadParser.catalogKey(data),
+                payloadRecipeId = FcmPayloadParser.recipeId(data),
             )
         }
 

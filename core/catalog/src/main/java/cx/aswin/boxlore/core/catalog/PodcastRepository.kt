@@ -63,7 +63,13 @@ class PodcastRepository(
      * paths that read them land later.
      */
     val rolloutSwitches: RolloutSwitches = RolloutSwitches(),
+    /** Trusted alias reads for links, pushes, shares and Android Auto (P4 PR 13); none in older tests. */
+    val episodeAliases: EpisodeAliasReads = EpisodeAliasReads.NONE,
+    /** Test seam for the feed read of an episode only its feed lists ([resolveEpisodeLink]). */
+    feedReader: EpisodeFeedReader? = null,
 ) : cx.aswin.boxlore.core.domain.ports.PodcastCatalogPort {
+    internal val episodeFeedReader: EpisodeFeedReader by lazy { feedReader ?: RssEpisodeFeedReader(cx.aswin.boxlore.core.rss.RssFeedClient()) { apiV2 } }
+
     /** The one cached HTTP client both API versions share; created only when an API needs it. */
     private val cachedClient: okhttp3.OkHttpClient by lazy { NetworkModule.createCachedClient(context) }
 

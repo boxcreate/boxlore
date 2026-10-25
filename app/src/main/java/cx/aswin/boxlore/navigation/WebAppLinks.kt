@@ -33,13 +33,19 @@ internal object WebAppLinks {
     fun podcastShareDeepLinks(): List<NavDeepLink> =
         shareBases.map { base -> navDeepLink { uriPattern = "$base?type=podcast&id={podcastId}" } }
 
+    /**
+     * Episode share links on every share address. Links with `&show=` (newer builds' shares) put the
+     * show in the route's `podcastId` argument ([EpisodeShowLinks]); the older patterns stay unchanged.
+     */
     fun episodeShareDeepLinks(): List<NavDeepLink> =
         shareBases.flatMap { base ->
-            listOf(
-                "$base?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}",
-                "$base?type=episode&id={episodeId}&t={t}&autoplay={autoplay}",
-                "$base?type=episode&id={episodeId}&autoplay={autoplay}",
-                "$base?type=episode&id={episodeId}",
-            ).map { pattern -> navDeepLink { uriPattern = pattern } }
+            (
+                listOf(
+                    "$base?type=episode&id={episodeId}&t={t}&start={start}&end={end}&autoplay={autoplay}",
+                    "$base?type=episode&id={episodeId}&t={t}&autoplay={autoplay}",
+                    "$base?type=episode&id={episodeId}&autoplay={autoplay}",
+                    "$base?type=episode&id={episodeId}",
+                ) + EpisodeShowLinks.sharePatterns(base)
+                ).map { pattern -> navDeepLink { uriPattern = pattern } }
         }
 }

@@ -581,9 +581,10 @@ internal suspend fun autoplayDeepLinkEpisodeIfNeeded(
     start: Long?,
     success: cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success,
 ) {
-    if (success.episode.id != episodeId) return
+    // The page may show the episode under the phone's own ID when the link named another of its IDs.
+    if (success.requestedEpisodeId != episodeId) return
     val playerState = playbackRepository.playerState.value
-    if (autoplay == "true" && playerState.currentEpisode?.id != episodeId) {
+    if (autoplay == "true" && playerState.currentEpisode?.id != success.episode.id) {
         val podcast = resolveLocalOrFallbackPodcast(
             localCatalog = localCatalog,
             podcastId = success.podcastId,

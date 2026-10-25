@@ -164,6 +164,9 @@ class BoxLoreApplication :
         setupCastSessionTracking()
         SharedAppDependenciesHolder.instance = container
         DownloadsDependenciesHolder.instance = container
+        // Episode share links name an ID every build can open, registered first (own-IDs P4 PR 13).
+        cx.aswin.boxlore.core.designsystem.share.ShareManager.episodeShareTargets =
+            cx.aswin.boxlore.core.model.EpisodeShareTargetSource { container.episodeSharePreparer.targetFor(it) }
         NetworkModule.authenticator =
             FirebaseAuthAuthenticator(container.authRepository)
         cx.aswin.boxlore.lifecycle.AutoDownloadLifecycle(this, container, applicationScope).start()

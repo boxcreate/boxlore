@@ -16,7 +16,8 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - `EpisodeMediaCacheKey`: Media3 `customCacheKey` helper — briefing keys append audio URL `v=` so same-day regenerations bust the local audio cache.
 - `ContentRegion` / `ContentRegions`: 11 chart storefronts, language allowlist/normalize/expand (`id`→`id,in`), off-market soft-warn helpers, and briefing market mapping that preserves the explicit `global` briefing tab.
 - `ContentLanguageSelection`: pure language-chip toggle rules (English lock, max languages, BCP47 normalization) for settings/onboarding pickers.
-- `PlaybackEntryPoint`, `ShareTarget`, and `ShareLinkBuilder`.
+- `PlaybackEntryPoint`, `ShareTarget`, and `ShareLinkBuilder`. Episode links can name their show (`episode(…, showId)` adds `&show=` before `t` or the clip range); `forTarget` builds the link for an `EpisodeShareTarget` (`Episode(id, showId)`, or `Show(showId)`, which is the show's link).
+- `EpisodeShareIds.choose(localId, podcastId, recipeId)` picks the ID a share link carries: for a Podcast Index show its recipe ID (or its own recipe-range or Podcast Index ID) with the show; never a phone-only negative or reserved ID (the show's link instead); a show added by its feed address (`rss:`) keeps the episode's own ID with no show. `EpisodeShareTargetSource` is the seam the app fills with alias reads and registration (`FROM_EPISODE` uses the episode's fields only).
 - `PlaybackEntryPoint` coarse values: `GENERIC`, `HOME_MIXTAPE`, `LEARN`, `BRIEFING`
   (Brief audio play synthesizes glossary `entry_point=briefing` for `playback_*`).
 - `AutoTranscriptState`.
@@ -49,6 +50,7 @@ src/main/java/cx/aswin/boxlore/core/model/
   PodcastGenres.kt
   RankingAggregateTelemetry.kt
   ShareLinkBuilder.kt
+  EpisodeShareTarget.kt
   ShowNotes.kt
   SleepTimerConstants.kt
   Transcript.kt
@@ -77,6 +79,7 @@ src/main/java/cx/aswin/boxlore/core/model/
 ## Testing notes
 
 - Unit tests live under `core/model/src/test`.
+- `ShareLinkBuilderTest` covers `&show=` with and without a timestamp or clip and `forTarget`; `EpisodeShareIdsTest` covers recipe, Podcast Index, phone-only, reserved and `rss:` IDs and non-canonical shows.
 - `EpisodeRecipeIdNamespaceTest` covers the show ID parse (it rejects `0123`, `+5`, ` 5`, `9007199254740992`, non-ASCII digits and the empty string) and the namespace entry point. The shared recipe fixture and its test stay in `core/rss/src/test` (`EpisodeRecipeIdTest`), where the scripts copy reads the same file; run `:core:rss:testDebugUnitTest` after any change to the recipe.
 - `Podcast.listenerShowIds` is covered with the readers that use it, in `:core:database` `SwitchedShowListeningTest`.
 - `ShareLinkBuilderTest` covers share URL invariants. Share links use `https://boxlore.in/share`; the app still opens the older `aswin.cx` share links.

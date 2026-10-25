@@ -25,7 +25,20 @@ internal object NewEpisodePushHydration {
          * catalog). Catalog refreshes never take one: new episodes get recipe IDs.
          */
         val loadPiList: (suspend (String) -> List<Episode>)? = null,
+        /**
+         * The phone's row of the episode of a show whose trusted aliases carry a recipe ID, for a
+         * push that names one. Used only after GUID and enclosure matching.
+         *
+         * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, notifications).
+         */
+        val findByRecipeId: (suspend (podcastId: String, recipeId: Long) -> Episode?)? = null,
     )
+
+    /**
+     * What a push says about its episode: GUID and enclosure (matched first, as before), then the
+     * catalog key and recipe ID newer pushes add.
+     */
+    private data class PushMatch(val guid: String?, val enclosureUrl: String?, val catalogKey: String?, val recipeId: Long?,)
 
     suspend fun resolveLocalEpisode(
         podcastId: String,
@@ -33,13 +46,14 @@ internal object NewEpisodePushHydration {
         payloadEnclosureUrl: String?,
         payloadGuid: String? = null,
         sources: Sources,
+        payloadCatalogKey: String? = null,
+        payloadRecipeId: Long? = null,
     ): Episode? {
         if (sources.localEpisodeCatalog != null) {
             return resolveFromLocalCatalog(
                 podcastId = podcastId,
                 payloadFeedUrl = payloadFeedUrl,
-                payloadEnclosureUrl = payloadEnclosureUrl,
-                payloadGuid = payloadGuid,
+                match = PushMatch(payloadGuid, payloadEnclosureUrl, payloadCatalogKey, payloadRecipeId),
                 sources = sources,
                 catalog = sources.localEpisodeCatalog,
             )
@@ -96,8 +110,7 @@ internal object NewEpisodePushHydration {
     private suspend fun resolveFromLocalCatalog(
         podcastId: String,
         payloadFeedUrl: String?,
-        payloadEnclosureUrl: String?,
-        payloadGuid: String?,
+        match: PushMatch,
         sources: Sources,
         catalog: LocalEpisodeCatalogPort,
     ): Episode? {
@@ -110,7 +123,7 @@ internal object NewEpisodePushHydration {
                 artist = entity?.author,
             )
         val feedUrl = payloadFeedUrl?.trim().orEmpty().ifEmpty { entity?.feedUrl.orEmpty() }
-        catalog.findByCatalogKey(podcastId, payloadGuid, payloadEnclosureUrl, meta)?.let { return it }
+        findStored(podcastId, match, meta, catalog, sources)?.let { return it }
         try {
             catalog.refresh(
                 LocalEpisodeCatalogPort.RefreshRequest(
@@ -125,19 +138,36 @@ internal object NewEpisodePushHydration {
         } catch (_: Exception) {
             // Match extras path: a failed refresh still tries the last-good catalog row.
         }
-        val matched =
-            catalog.findByCatalogKey(
-                podcastId = podcastId,
-                guid = payloadGuid,
-                enclosureUrl = payloadEnclosureUrl,
-                meta = meta,
-            ) ?: return null
+        val matched = findStored(podcastId, match, meta, catalog, sources) ?: return null
         sources.subscriptionRepository.updateLatestEpisode(
             podcastId = podcastId,
             episode = matched,
             markAsNew = false,
         )
         return matched
+    }
+
+    /**
+     * The stored episode a push names: by GUID or enclosure first, as before; then by the catalog key
+     * and, through the show's aliases, by (show, recipe ID) (P4 PR 13).
+     */
+    private suspend fun findStored(
+        podcastId: String,
+        match: PushMatch,
+        meta: LocalEpisodeCatalogPort.PodcastMeta,
+        catalog: LocalEpisodeCatalogPort,
+        sources: Sources,
+    ): Episode? {
+        catalog.findByCatalogKey(podcastId, match.guid, match.enclosureUrl, meta)?.let { return it }
+        match.catalogKey?.let { key -> catalog.findByCatalogKey(podcastId, key, null, meta)?.let { return it } }
+        val recipeId = match.recipeId ?: return null
+        return try {
+            sources.findByRecipeId?.invoke(podcastId, recipeId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private suspend fun runFullRefresh(

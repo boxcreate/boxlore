@@ -2,6 +2,10 @@
 <resources>
     <string name="episode_info_title">Episode</string>
     <string name="episode_info_load_error">Couldn’t load this episode</string>
+    <string name="episode_info_reading_feed_title">Finding this episode</string>
+    <string name="episode_info_reading_feed_body">Checking the show’s feed. This can take a moment.</string>
+    <string name="episode_info_not_found_title">Episode not found</string>
+    <string name="episode_info_not_found_body">It may have been removed from the show.</string>
     <string name="episode_info_back">Back</string>
     <string name="episode_info_share">Share episode</string>
     <string name="episode_info_open_show">View %1$s</string>

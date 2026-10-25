@@ -30,6 +30,19 @@ class NewEpisodeFcmLogicTest {
     }
 
     @Test
+    fun aPushWithOnlyARecipeIdOpensThatEpisodeWithItsShow() {
+        val details = NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("recipeId" to "4503599627370500", "podcastTitle" to "Show"), null)
+        assertEquals("4503599627370500", details.episodeId)
+        assertEquals("boxlore://episode/4503599627370500?autoplay=false&podcastId=920666&podcastTitle=Show", details.route)
+
+        // The phone's own row, then the push's episode ID, win over the recipe ID.
+        val withId = NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("episodeId" to "5001", "recipeId" to "4503599627370500"), null)
+        assertEquals("5001", withId.episodeId)
+        val local = Episode("-9", "Episode", "", "https://audio/9")
+        assertEquals("-9", NewEpisodeNotifications.resolveNewEpisodeDetails("920666", mapOf("recipeId" to "4503599627370500"), local).episodeId)
+    }
+
+    @Test
     fun usableEpisodeIdDropsBlankAndZero() {
         assertNull(NewEpisodeFcmLogic.usableEpisodeId(null))
         assertNull(NewEpisodeFcmLogic.usableEpisodeId(" "))

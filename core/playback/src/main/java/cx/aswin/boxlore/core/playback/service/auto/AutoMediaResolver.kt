@@ -29,8 +29,8 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         }
 
         val download = host.database.downloadedEpisodeDao().getDownload(cacheId)
-        val historyItem = host.database.listeningHistoryDao().getHistoryItem(episodeId)
-        val queueItem = host.queueRepository.getQueueItemByEpisodeId(episodeId)
+        val historyItem = historyFor(episodeId)
+        val queueItem = queueItemFor(episodeId)
         val downloadCompleted =
             download?.status ==
                 cx.aswin.boxlore.core.database.DownloadedEpisodeEntity.STATUS_COMPLETED
@@ -128,7 +128,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         val metadataBuilder = item.mediaMetadata.buildUpon()
 
         if (AutoMediaResolutionPolicy.needsItemMetadataFallback(existingArtist, existingAlbum, existingSubtitle)) {
-            val fallbackPodcastName = resolvePodcastNameFallback(episodeId)
+            val fallbackPodcastName = resolvePodcastNameFallback(episodeId, cacheId)
             val enriched =
                 AutoMediaResolutionPolicy.resolveItemMetadata(
                     existingArtist = existingArtist,
@@ -150,10 +150,10 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
             ).build()
     }
 
-    private suspend fun resolvePodcastNameFallback(episodeId: String): String? =
-        host.database.listeningHistoryDao().getHistoryItem(episodeId)?.podcastName?.takeIf(String::isNotBlank)
-            ?: host.queueRepository.getQueueItemByEpisodeId(episodeId)?.podcastTitle?.takeIf(String::isNotBlank)
-            ?: host.database.downloadedEpisodeDao().getDownload(episodeId)?.podcastName?.takeIf(String::isNotBlank)
+    private suspend fun resolvePodcastNameFallback(episodeId: String, cacheId: String,): String? =
+        historyFor(episodeId)?.podcastName?.takeIf(String::isNotBlank)
+            ?: queueItemFor(episodeId)?.podcastTitle?.takeIf(String::isNotBlank)
+            ?: host.database.downloadedEpisodeDao().getDownload(cacheId)?.podcastName?.takeIf(String::isNotBlank)
             ?: runCatching { host.podcastRepository.getEpisode(episodeId) }.getOrNull()?.let {
                 it.podcastTitle?.takeIf(String::isNotBlank) ?: it.podcastArtist?.takeIf(String::isNotBlank)
             }
@@ -266,16 +266,22 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
             ).build()
     }
 
+    /**
+     * The episode an Auto item or saved browse item names, for queueing and resumption: the queued
+     * copy under any of its stored IDs (so it lines up with the queue), else its history, else its
+     * completed download, else the catalog, which resolves old IDs through aliases.
+     *
+     * Changed in P4 PR 13 of the own-episode-IDs plan (plan section 9, Android Auto).
+     */
     suspend fun resolveDomainEpisode(episodeId: String): cx.aswin.boxlore.core.model.Episode? {
-        host.queueRepository
-            .getQueueEpisodeSnapshot()
-            .firstOrNull { it.id == episodeId }
-            ?.let { return it }
-        val history = host.database.listeningHistoryDao().getHistoryItem(episodeId)
+        val ids = memberIds(episodeId)
+        val queue = host.queueRepository.getQueueEpisodeSnapshot()
+        ids.firstNotNullOfOrNull { id -> queue.firstOrNull { it.id == id } }?.let { return it }
+        val history = historyFor(episodeId)
         val historyAudioUrl = history?.episodeAudioUrl
         if (history != null && historyAudioUrl != null) {
             return cx.aswin.boxlore.core.model.Episode(
-                id = history.episodeId,
+                id = episodeId,
                 title = history.episodeTitle,
                 description = history.episodeDescription.orEmpty(),
                 audioUrl = historyAudioUrl,
@@ -287,13 +293,14 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                 enclosureType = history.enclosureType,
             )
         }
-        val download = host.database.downloadedEpisodeDao().getDownload(episodeId)
+        val downloadId = host.database.episodeListenerStore().downloadHolder(episodeId) ?: episodeId
+        val download = host.database.downloadedEpisodeDao().getDownload(downloadId)
         if (
             download?.status ==
             cx.aswin.boxlore.core.database.DownloadedEpisodeEntity.STATUS_COMPLETED
         ) {
             val audioUrl =
-                resolveDownloadRequestUri(episodeId)
+                resolveDownloadRequestUri(downloadId)
                     ?: download.localFilePath
                         .takeIf {
                             it.isNotBlank() && it != "CACHED" && java.io.File(it).isFile
@@ -304,7 +311,7 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
                         }
             if (audioUrl != null) {
                 return cx.aswin.boxlore.core.model.Episode(
-                    id = download.episodeId,
+                    id = episodeId,
                     title = download.episodeTitle,
                     description = download.episodeDescription.orEmpty(),
                     audioUrl = audioUrl,
@@ -319,6 +326,18 @@ internal class AutoMediaResolver(private val host: AutoBrowseLibraryHost,) {
         }
         return host.podcastRepository.getEpisode(episodeId)
     }
+
+    /** Every trusted stored ID of [episodeId]'s episode, [episodeId] first; just [episodeId] without aliases. */
+    private suspend fun memberIds(episodeId: String): List<String> =
+        (listOf(episodeId) + host.database.episodeListenerStore().memberIds(episodeId)).distinct()
+
+    /** [episodeId]'s history as its episode reads it across stored IDs ([cx.aswin.boxlore.core.database.EpisodeListenerStore.projectedHistory]). */
+    private suspend fun historyFor(episodeId: String): cx.aswin.boxlore.core.database.ListeningHistoryEntity? =
+        host.database.episodeListenerStore().projectedHistory(episodeId)
+
+    /** The queue row of [episodeId]'s episode under any of its stored IDs, [episodeId]'s own first. */
+    private suspend fun queueItemFor(episodeId: String): cx.aswin.boxlore.core.database.entities.QueueItem? =
+        memberIds(episodeId).firstNotNullOfOrNull { host.queueRepository.getQueueItemByEpisodeId(it) }
 
     fun resolveDownloadRequestUri(episodeId: String): String? = runCatching {
         cx.aswin.boxlore.core.downloads.DownloadRepository

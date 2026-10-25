@@ -325,24 +325,7 @@ internal fun androidx.navigation.NavGraphBuilder.addEpisodeDeepLinkDestination(w
                 defaultValue = ""
             },
         ),
-        deepLinks = listOf(
-            navDeepLink {
-                uriPattern =
-                    "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}"
-            },
-            navDeepLink {
-                uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}&podcastId={podcastId}&podcastTitle={podcastTitle}"
-            },
-            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?podcastId={podcastId}&podcastTitle={podcastTitle}" },
-            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}" },
-            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?t={t}&autoplay={autoplay}" },
-            navDeepLink { uriPattern = "boxlore://episode/{episodeId}?autoplay={autoplay}" },
-            navDeepLink { uriPattern = "boxlore://episode/{episodeId}" },
-            navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&start={start}&end={end}&autoplay={autoplay}" },
-            navDeepLink { uriPattern = "boxcast://episode/{episodeId}?t={t}&autoplay={autoplay}" },
-            navDeepLink { uriPattern = "boxcast://episode/{episodeId}?autoplay={autoplay}" },
-            navDeepLink { uriPattern = "boxcast://episode/{episodeId}" },
-        ) + WebAppLinks.episodeShareDeepLinks(),
+        deepLinks = episodeDeepLinks(),
     ) { backStackEntry ->
         val args = backStackEntry.arguments ?: return@composable
         val episodeId = args.getString("episodeId") ?: ""

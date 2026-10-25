@@ -27,9 +27,12 @@ internal object NewEpisodeNotifications {
         data: Map<String, String>,
         local: cx.aswin.boxlore.core.model.Episode?,
     ): NewEpisodeDetails {
+        // The phone's own row first; else the push's ID, or its recipe ID, which the episode page
+        // resolves through the show the route carries (P4 PR 13).
         val episodeId =
             NewEpisodeFcmLogic.usableEpisodeId(local?.id)
                 ?: NewEpisodeFcmLogic.usableEpisodeId(FcmPayloadParser.episodeId(data))
+                ?: FcmPayloadParser.recipeId(data)?.toString()
         val podcastTitle =
             data["podcastTitle"]?.takeIf { it.isNotBlank() }
                 ?: data["podcast_title"]?.takeIf { it.isNotBlank() }
