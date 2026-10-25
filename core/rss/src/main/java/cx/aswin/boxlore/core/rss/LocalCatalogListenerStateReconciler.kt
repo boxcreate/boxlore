@@ -220,7 +220,7 @@ internal fun mergeHistory(
 ): ListeningHistoryEntity = old.copy(
     episodeId = target.episodeId,
     episodeTitle = target.title,
-    episodeImageUrl = target.imageUrl ?: existing?.episodeImageUrl ?: old.episodeImageUrl,
+    episodeImageUrl = listOfNotNull(target.imageUrl, existing?.episodeImageUrl, old.episodeImageUrl).firstOrNull(),
     episodeAudioUrl = target.audioUrl,
     progressMs = maxOf(old.progressMs, existing?.progressMs ?: 0L),
     durationMs = maxOf(old.durationMs, existing?.durationMs ?: 0L),
@@ -229,7 +229,7 @@ internal fun mergeHistory(
     lastPlayedAt = maxOf(old.lastPlayedAt, existing?.lastPlayedAt ?: 0L),
     isDirty = true,
     syncedAt = 0L,
-    enclosureType = target.enclosureType ?: existing?.enclosureType ?: old.enclosureType,
+    enclosureType = listOfNotNull(target.enclosureType, existing?.enclosureType, old.enclosureType).firstOrNull(),
     isManualCompletion = old.isManualCompletion || existing?.isManualCompletion == true,
     isBulkCompletion = old.isBulkCompletion || existing?.isBulkCompletion == true,
     episodeDescription =
