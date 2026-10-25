@@ -209,7 +209,7 @@ class PodcastInfoSupplementSupportTest {
                         sourceCount = 1,
                     )
                 },
-                loadPiBaseline = { listOf(TestFixtures.episode(id = "pi-only")) },
+                loadPiList = { listOf(TestFixtures.episode(id = "pi-only")) },
             )
         val state =
             PodcastInfoUiState.Success(
@@ -280,7 +280,7 @@ class PodcastInfoSupplementSupportTest {
             PodcastInfoSupplementSupport(
                 episodeSupplementPort = port,
                 loadPage = { _, _, _, _ -> error("unused") },
-                loadPiBaseline = { emptyList() },
+                loadPiList = { emptyList() },
                 isCatalogReady = { true },
             )
         val podcast =
@@ -301,23 +301,13 @@ class PodcastInfoSupplementSupportTest {
     }
 
     @Test
-    fun `the repository baseline asks for 1000 rows and a failure stops the feed refresh`() = runTest {
-        val asked = mutableListOf<Pair<String, Int>>()
-        val ok =
-            PodcastInfoSupplementSupport.repositoryBaseline { id, limit ->
-                asked += id to limit
-                listOf(TestFixtures.episode(id = "pi-1"))
-            }
-        assertEquals(listOf("pi-1"), ok("123").map { it.id })
-        assertEquals(listOf("123" to PodcastInfoSupplementSupport.SUPPLEMENT_BASELINE_LIMIT), asked)
-        assertEquals(1000, PodcastInfoSupplementSupport.SUPPLEMENT_BASELINE_LIMIT)
-
+    fun `a failing PI list stops the feed refresh before any extras are stored`() = runTest {
         val port = FakePort(optedIn = mutableSetOf())
         val support =
             PodcastInfoSupplementSupport(
                 episodeSupplementPort = port,
                 loadPage = { _, _, _, _ -> PodcastRepository.EpisodePage(emptyList(), hasMore = false) },
-                loadPiBaseline = PodcastInfoSupplementSupport.repositoryBaseline { _, _ -> error("PI baseline HTTP 500") },
+                loadPiList = { error("PI list HTTP 500") },
             )
         val state =
             PodcastInfoUiState.Success(
@@ -327,7 +317,7 @@ class PodcastInfoSupplementSupportTest {
             )
         val thrown = runCatching { support.refreshMissingEpisodes(state, announceResult = true) }.exceptionOrNull()
         assertTrue(thrown is IllegalStateException, "the caller shows its error state")
-        assertTrue(port.optedIn.isEmpty(), "the feed was never matched against an empty baseline")
+        assertTrue(port.optedIn.isEmpty(), "the feed was never compared with an empty list")
     }
 
     private class FakePort(

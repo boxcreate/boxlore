@@ -1,5 +1,8 @@
 package cx.aswin.boxlore.core.rss
 
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
+import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
 import cx.aswin.boxlore.core.database.LocalEpisodeOwner
@@ -24,6 +27,10 @@ class LocalEpisodeCollisionGuardTest {
         table.filter { it.podcastId == podcastId }.map { LocalEpisodeIdentity(it.episodeId, it.guid, it.audioUrl) }
     }
 
+    /** An `episode_aliases` stand-in. */
+    private val aliasTable = mutableListOf<EpisodeAliasEntity>()
+    private val aliases: suspend (List<String>) -> List<EpisodeAliasEntity> = { ids -> aliasTable.filter { it.aliasId in ids } }
+
     /** Room's REPLACE: deletes every stored row sharing the primary key or the unique (podcastId, guid) index. */
     private fun store(rows: List<LocalEpisodeEntity>) {
         for (r in rows) {
@@ -32,7 +39,7 @@ class LocalEpisodeCollisionGuardTest {
         }
     }
 
-    private suspend fun resolve(rows: List<LocalEpisodeEntity>) = LocalEpisodeCollisionGuard.resolve(rows, namespace, owners, showRows)
+    private suspend fun resolve(rows: List<LocalEpisodeEntity>) = LocalEpisodeCollisionGuard.resolve(rows, namespace, owners, showRows, aliases)
 
     private fun ownerOf(id: String) = table.single { it.episodeId == id }
 
@@ -282,9 +289,103 @@ class LocalEpisodeCollisionGuardTest {
         assertFalse(LocalEpisodeCollisionGuard.takesAnotherShowsId(listOf(row("-12", show = "200", key = "guid-b")), "200", owners))
     }
 
+    @Test
+    fun theLegacyUpgradeCheckAlsoStopsAtAnotherShowsAlias() = runTest {
+        // Show 100's catalog was evicted; its alias still holds -11 and the listener state on it.
+        aliasTable += alias("-11", show = "100", key = "guid-a")
+        val rows = listOf(row("-11", show = "200", key = "guid-a"))
+        assertFalse(LocalEpisodeCollisionGuard.takesAnotherShowsId(rows, "200", owners), "without aliases the check can't see it")
+        assertTrue(LocalEpisodeCollisionGuard.takesAnotherShowsId(rows, "200", owners, aliases))
+        assertFalse(LocalEpisodeCollisionGuard.takesAnotherShowsId(listOf(row("-11", show = "100", key = "guid-a")), "100", owners, aliases))
+    }
+
+    @Test
+    fun aTakenReusedIdTriesItsFallbacksInOrderBeforeAReservedOne() = runTest {
+        // The evicted row's ID now belongs to another show's catalog row.
+        store(listOf(row("-11", show = "300", key = "other")))
+        val incoming = row("-11", show = "100", key = "guid-a")
+        val withRecipe =
+            LocalEpisodeCollisionGuard.resolve(listOf(incoming), namespace, owners, showRows, aliases, fallbackIds = listOf(listOf("-12", RECIPE)))
+        assertEquals("-12", withRecipe.rows.single().episodeId, "the key's other alias ID first")
+        assertTrue(withRecipe.reservedIds.isEmpty())
+
+        store(listOf(row("-12", show = "300", key = "other-2")))
+        val recipe = LocalEpisodeCollisionGuard.resolve(listOf(incoming), namespace, owners, showRows, aliases, fallbackIds = listOf(listOf("-12", RECIPE)))
+        assertEquals(RECIPE, recipe.rows.single().episodeId, "then the recipe ID, never a reserved one while it is free")
+        assertTrue(recipe.reservedIds.isEmpty())
+
+        aliasTable += alias(RECIPE, show = "300", key = "other-3")
+        val reserved = LocalEpisodeCollisionGuard.resolve(listOf(incoming), namespace, owners, showRows, aliases, fallbackIds = listOf(listOf("-12", RECIPE)))
+        assertEquals(StickyEpisodeIdentity.reservedEpisodeId("100", "guid-a", 1), reserved.rows.single().episodeId)
+        assertEquals(setOf(StickyEpisodeIdentity.reservedEpisodeId("100", "guid-a", 1)), reserved.reservedIds)
+    }
+
+    @Test
+    fun aFreeIdNeverLooksAtItsFallbacks() = runTest {
+        val resolution = LocalEpisodeCollisionGuard.resolve(listOf(row("-11", show = "100", key = "guid-a")), namespace, owners, showRows, aliases, fallbackIds = listOf(listOf(RECIPE)))
+        assertEquals("-11", resolution.rows.single().episodeId)
+    }
+
+    @Test
+    fun aReservedIdIsReportedAndMintedInTheShowsNamespace() = runTest {
+        store(listOf(row("-11", show = "100", key = "guid-a")))
+        val resolution = resolve(listOf(row("-11", show = "200", key = "guid-a")))
+
+        val reserved = resolution.rows.single().episodeId
+        assertEquals(StickyEpisodeIdentity.reservedEpisodeId("200", "guid-a", 1), reserved, "the show ID, not the feed address")
+        assertEquals(setOf(reserved), resolution.reservedIds)
+    }
+
+    @Test
+    fun anotherShowsAliasBlocksAnIdNoCatalogRowHolds() = runTest {
+        // Show 100's catalog was evicted; its alias keeps the ID and the listener state on it.
+        aliasTable += alias("-11", show = "100", key = "guid-a")
+        val written = resolve(listOf(row("-11", show = "200", key = "guid-a"))).rows
+        assertNotEquals("-11", written.single().episodeId)
+    }
+
+    @Test
+    fun aTrustedAliasOfAnotherKeyOfTheSameShowBlocks() = runTest {
+        aliasTable += alias(RECIPE, show = "100", key = "guid-a")
+        val written = resolve(listOf(row(RECIPE, show = "100", key = "guid-b"))).rows
+        assertNotEquals(RECIPE, written.single().episodeId, "both episodes survive")
+    }
+
+    @Test
+    fun anAliasOfTheSameEpisodeOrAnUnsettledOneOfTheShowDoesNotBlock() = runTest {
+        aliasTable += alias(RECIPE, show = "100", key = "guid-a")
+        assertEquals(RECIPE, resolve(listOf(row(RECIPE, show = "100", key = "guid-a"))).rows.single().episodeId)
+
+        aliasTable.clear()
+        aliasTable += alias(RECIPE, show = "100", key = null, state = EpisodeAliasState.UNRESOLVED)
+        assertEquals(RECIPE, resolve(listOf(row(RECIPE, show = "100", key = "guid-a"))).rows.single().episodeId)
+
+        aliasTable.clear()
+        aliasTable += alias(RECIPE, show = "100", key = "older-key", state = EpisodeAliasState.AMBIGUOUS)
+        assertEquals(RECIPE, resolve(listOf(row(RECIPE, show = "100", key = "guid-a"))).rows.single().episodeId)
+    }
+
+    @Test
+    fun aReservedIdAnAliasHoldsIsSkipped() = runTest {
+        store(listOf(row("-11", show = "100", key = "guid-a")))
+        aliasTable += alias(StickyEpisodeIdentity.reservedEpisodeId("200", "guid-a", 1), show = "300", key = "other")
+        val written = resolve(listOf(row("-11", show = "200", key = "guid-a"))).rows
+        assertEquals(StickyEpisodeIdentity.reservedEpisodeId("200", "guid-a", 2), written.single().episodeId)
+    }
+
+    private fun alias(id: String, show: String, key: String?, state: String = EpisodeAliasState.TRUSTED) = EpisodeAliasEntity(
+        aliasId = id,
+        podcastId = show,
+        catalogKey = key,
+        recipeId = null,
+        state = state,
+        owner = state == EpisodeAliasState.TRUSTED,
+        provenance = EpisodeAliasProvenance.UPGRADE_CATALOG,
+    )
+
     private fun takeEveryReservedId(show: String, key: String) {
         for (attempt in 1..LocalEpisodeCollisionGuard.MAX_RESERVE_ATTEMPTS) {
-            val id = StickyEpisodeIdentity.reservedEpisodeId(namespace, show, key, attempt)
+            val id = StickyEpisodeIdentity.reservedEpisodeId(show, key, attempt)
             store(listOf(row(id, show = "300", key = "taken-$attempt")))
         }
     }
@@ -324,5 +425,7 @@ class LocalEpisodeCollisionGuardTest {
          * and U+180E, which the desktop JVM's `String.trim()` keeps but Android's and the recipe's trim.
          */
         val LEGACY_KEY_SUFFIXES = listOf("\n", "\t", "\r\n", " \n", "\u00A0", "\u2028", "\u180E")
+
+        const val RECIPE = "4503599627370500"
     }
 }

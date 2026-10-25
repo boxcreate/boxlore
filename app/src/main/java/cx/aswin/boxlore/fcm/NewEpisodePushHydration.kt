@@ -1,6 +1,5 @@
 package cx.aswin.boxlore.fcm
 
-import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementOutcome
 import cx.aswin.boxlore.core.domain.ports.EpisodeSupplementPort
@@ -21,7 +20,11 @@ internal object NewEpisodePushHydration {
         val subscriptionRepository: SubscriptionRepository,
         val episodeSupplementPort: EpisodeSupplementPort? = null,
         val localEpisodeCatalog: LocalEpisodeCatalogPort? = null,
-        val loadPiBaseline: (suspend (String) -> List<Episode>)? = null,
+        /**
+         * The Podcast Index list the feed-only extras are compared with (only without a local
+         * catalog). Catalog refreshes never take one: new episodes get recipe IDs.
+         */
+        val loadPiList: (suspend (String) -> List<Episode>)? = null,
     )
 
     suspend fun resolveLocalEpisode(
@@ -56,7 +59,7 @@ internal object NewEpisodePushHydration {
         val guid = payloadGuid?.trim().orEmpty()
         val enclosure = payloadEnclosureUrl?.trim().orEmpty()
 
-        val outcome = runFullRefresh(port, podcastId, meta, sources.loadPiBaseline)
+        val outcome = runFullRefresh(port, podcastId, meta, sources.loadPiList)
         if (outcome is EpisodeSupplementOutcome.Success) {
             outcome.newestFeedEpisode?.let { tip ->
                 sources.subscriptionRepository.updateLatestEpisode(
@@ -108,7 +111,6 @@ internal object NewEpisodePushHydration {
             )
         val feedUrl = payloadFeedUrl?.trim().orEmpty().ifEmpty { entity?.feedUrl.orEmpty() }
         catalog.findByCatalogKey(podcastId, payloadGuid, payloadEnclosureUrl, meta)?.let { return it }
-        val needsBaseline = !podcastId.startsWith("rss:") && !catalog.isReady(podcastId)
         try {
             catalog.refresh(
                 LocalEpisodeCatalogPort.RefreshRequest(
@@ -116,12 +118,6 @@ internal object NewEpisodePushHydration {
                     feedUrl = feedUrl,
                     meta = meta,
                     reason = LocalEpisodeCatalogPort.RefreshReason.NEW_RELEASE,
-                    loadPiBaseline =
-                    if (needsBaseline) {
-                        sources.loadPiBaseline?.let { loader -> { loader(podcastId) } }
-                    } else {
-                        null
-                    },
                 ),
             )
         } catch (e: CancellationException) {
@@ -148,13 +144,13 @@ internal object NewEpisodePushHydration {
         port: EpisodeSupplementPort,
         podcastId: String,
         meta: HydrationMeta,
-        loadPiBaseline: (suspend (String) -> List<Episode>)?,
+        loadPiList: (suspend (String) -> List<Episode>)?,
     ): EpisodeSupplementOutcome? = try {
         port.refreshFromFeed(
             EpisodeSupplementPort.RefreshFromFeedRequest(
                 podcastIndexId = podcastId,
                 feedUrl = meta.feedUrl,
-                loadBaseline = loadPiBaseline?.let { loader -> { loader(podcastId) } },
+                loadBaseline = loadPiList?.let { loader -> { loader(podcastId) } },
                 podcastTitle = meta.title,
                 podcastImageUrl = meta.imageUrl,
                 podcastGenre = meta.genre,
@@ -209,10 +205,6 @@ internal object NewEpisodePushHydration {
         throw e
     } catch (_: Exception) {
         null
-    }
-
-    internal fun piBaselineLoader(loadPage: suspend (feedId: String, limit: Int) -> List<Episode>): suspend (String) -> List<Episode> = { podcastId ->
-        loadPage(podcastId, SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT)
     }
 
     private data class HydrationMeta(

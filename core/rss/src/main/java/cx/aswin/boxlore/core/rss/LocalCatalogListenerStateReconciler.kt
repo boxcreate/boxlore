@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
@@ -54,41 +55,55 @@ internal object LocalCatalogListenerRemapLogic {
     }
 }
 
+/** Stays under SQLite's bound-parameter limit. */
+private const val KNOWN_ID_LOOKUP_CHUNK = 500
+
+/**
+ * Every history, download and queue row of [podcastId], as the references the orphan rematch reads:
+ * history carries its audio address, downloads their title and date, the queue all three.
+ *
+ * Shared by the reconciler and, since P4 PR 9, by the catalog read that lets a new item keep an ID
+ * these rows already hold ([ListenerEvidence]).
+ */
+internal suspend fun BoxLoreDatabase.listenerReferences(podcastId: String): List<LocalCatalogListenerReference> {
+    val history = listeningHistoryDao().getHistoryForPodcast(podcastId)
+    val downloads = downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
+    val queue = queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastId }
+    return history.map { item ->
+        LocalCatalogListenerReference(
+            episodeId = item.episodeId,
+            enclosureUrl = item.episodeAudioUrl,
+            title = item.episodeTitle,
+            publishedDate = null,
+        )
+    } +
+        downloads.map { item ->
+            LocalCatalogListenerReference(
+                episodeId = item.episodeId,
+                enclosureUrl = null,
+                title = item.episodeTitle,
+                publishedDate = item.publishedDate,
+            )
+        } +
+        queue.map { item ->
+            LocalCatalogListenerReference(
+                episodeId = item.episodeId,
+                enclosureUrl = item.audioUrl,
+                title = item.title,
+                publishedDate = item.pubDate,
+            )
+        }
+}
+
 /** Best-effort, transactional listener-state re-key after a full feed persist. */
 internal class LocalCatalogListenerStateReconciler(
     private val database: BoxLoreDatabase,
     private val downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
 ) {
     suspend fun reconcile(podcastId: String, catalogRows: List<LocalEpisodeEntity>,) {
-        val history = database.listeningHistoryDao().getHistoryForPodcast(podcastId)
-        val downloads = database.downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
-        val queue = database.queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastId }
-        val references =
-            history.map { item ->
-                LocalCatalogListenerReference(
-                    episodeId = item.episodeId,
-                    enclosureUrl = item.episodeAudioUrl,
-                    title = item.episodeTitle,
-                    publishedDate = null,
-                )
-            } +
-                downloads.map { item ->
-                    LocalCatalogListenerReference(
-                        episodeId = item.episodeId,
-                        enclosureUrl = null,
-                        title = item.episodeTitle,
-                        publishedDate = item.publishedDate,
-                    )
-                } +
-                queue.map { item ->
-                    LocalCatalogListenerReference(
-                        episodeId = item.episodeId,
-                        enclosureUrl = item.audioUrl,
-                        title = item.title,
-                        publishedDate = item.pubDate,
-                    )
-                }
-        val mappings = LocalCatalogListenerRemapLogic.mappings(catalogRows, references)
+        val references = database.listenerReferences(podcastId)
+        val known = knownEpisodeIds(catalogRows, references)
+        val mappings = LocalCatalogListenerRemapLogic.mappings(catalogRows, references.filterNot { it.episodeId in known })
         for ((oldId, target) in mappings) {
             migrateHistory(oldId, target)
             migrateDownload(oldId, target)
@@ -96,6 +111,41 @@ internal class LocalCatalogListenerStateReconciler(
             database.listeningSessionDao().reassignEpisodeId(oldId, target.episodeId)
             migrateRollups(oldId, target.episodeId)
         }
+    }
+
+    /**
+     * Negative listener IDs this refresh didn't write that are still known episodes, so they are not
+     * orphans: a catalog row (of any show) still holds the ID, or an alias records its key (an
+     * evicted row's ID). Such an ID is another episode (an older duplicate row, a changed GUID,
+     * an item the feed dropped), and re-keying its listener state onto a new row would merge two
+     * episodes. Only IDs with neither (restored without their identity row, or unresolved) are
+     * rematched.
+     *
+     * Added in P4 PR 9 (own-IDs plan section 4: a changed GUID is a new episode; nothing is
+     * re-keyed). New episodes now take recipe IDs, so a phone mint left by an older row no longer
+     * equals the new row's ID. An orphan the read could prove a new item owns (its own mint, or a
+     * unique listener match) is already that item's ID ([ListenerIdAdoption]) and is never re-keyed;
+     * what is left here are orphans whose item already has a stored row, or that match no item uniquely.
+     * COMPAT(own-ids): known episodes keep their listener state. Permanent: never remove (MIGRATION.md §5).
+     */
+    private suspend fun knownEpisodeIds(catalogRows: List<LocalEpisodeEntity>, references: List<LocalCatalogListenerReference>,): Set<String> {
+        val written = catalogRows.mapTo(HashSet(), LocalEpisodeEntity::episodeId)
+        val candidates =
+            references
+                .map { it.episodeId }
+                .filter { id -> id !in written && id.toLongOrNull()?.let { it < 0L } == true }
+                .distinct()
+        if (candidates.isEmpty()) return emptySet()
+        val known = HashSet<String>()
+        for (chunk in candidates.chunked(KNOWN_ID_LOOKUP_CHUNK)) {
+            database.localEpisodeCatalogDao().findOwners(chunk).mapTo(known) { it.episodeId }
+            database
+                .episodeIdentityDao()
+                .getAliases(chunk)
+                .filter { it.catalogKey != null && it.state != EpisodeAliasState.UNRESOLVED }
+                .mapTo(known) { it.aliasId }
+        }
+        return known
     }
 
     private suspend fun migrateHistory(oldId: String, target: LocalEpisodeEntity,) {
@@ -170,7 +220,7 @@ internal fun mergeHistory(
 ): ListeningHistoryEntity = old.copy(
     episodeId = target.episodeId,
     episodeTitle = target.title,
-    episodeImageUrl = target.imageUrl ?: existing?.episodeImageUrl ?: old.episodeImageUrl,
+    episodeImageUrl = listOfNotNull(target.imageUrl, existing?.episodeImageUrl, old.episodeImageUrl).firstOrNull(),
     episodeAudioUrl = target.audioUrl,
     progressMs = maxOf(old.progressMs, existing?.progressMs ?: 0L),
     durationMs = maxOf(old.durationMs, existing?.durationMs ?: 0L),
@@ -179,7 +229,7 @@ internal fun mergeHistory(
     lastPlayedAt = maxOf(old.lastPlayedAt, existing?.lastPlayedAt ?: 0L),
     isDirty = true,
     syncedAt = 0L,
-    enclosureType = target.enclosureType ?: existing?.enclosureType ?: old.enclosureType,
+    enclosureType = listOfNotNull(target.enclosureType, existing?.enclosureType, old.enclosureType).firstOrNull(),
     isManualCompletion = old.isManualCompletion || existing?.isManualCompletion == true,
     isBulkCompletion = old.isBulkCompletion || existing?.isBulkCompletion == true,
     episodeDescription =

@@ -38,7 +38,6 @@ internal object SubscriptionForegroundSyncIngest {
                         podcastId = id,
                         meta = meta,
                         catalog = localEpisodeCatalog,
-                        podcastRepository = podcastRepository,
                     )
                 }
             },

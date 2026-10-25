@@ -105,7 +105,14 @@ interface BoxLoreApi {
         @Query("sort") sort: String = "newest"
     ): retrofit2.Call<EpisodesPaginatedResponse>
 
-    /** Up to 1,000 newest episodes as match fields only, for baselines (see [EpisodeMatchResponse]). */
+    /**
+     * Up to 1,000 newest episodes as match fields only (see [EpisodeMatchResponse]). Only the
+     * feed-only extras of the show page compare with it since P4 PR 9; catalogs of followed shows
+     * never read it.
+     *
+     * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+     * (MIGRATION.md §6) once show pages read feeds for every listener.
+     */
     @GET("episodes/match")
     fun getEpisodeMatchList(
         @Header("X-App-Key") publicKey: String,

@@ -64,6 +64,23 @@ class PodcastDaoInMemoryTest {
     }
 
     @Test
+    fun aNamespaceIsSetOnlyWhereNoneIsStoredAndNeverForRssShows() = runTest {
+        dao.upsert(createPodcast("920666"))
+        dao.upsert(createPodcast("920667").copy(epNs = 555L))
+        dao.upsert(createPodcast("rss:abc").copy(sourceType = PodcastEntity.SOURCE_RSS))
+
+        dao.setEpNsIfUnset("920666", 920666L)
+        dao.setEpNsIfUnset("920667", 920667L)
+        dao.setEpNsIfUnset("rss:abc", 1L)
+
+        assertEquals(920666L, dao.getEpNs("920666"))
+        assertEquals("a stored namespace is never replaced", 555L, dao.getEpNs("920667"))
+        assertEquals(null, dao.getEpNs("rss:abc"))
+        assertEquals(null, dao.getEpNs("missing"))
+        assertEquals("the namespace is not synced", false, dao.getPodcast("920666")?.isDirty)
+    }
+
+    @Test
     fun rssNotificationMigrationIncludesDisabledAndUnsubscribedCanonicalRows() = runTest {
         dao.upsert(createPodcast("rss:disabled", isSubscribed = true, notificationsEnabled = false))
         dao.upsert(createPodcast("rss:removed", isSubscribed = false))

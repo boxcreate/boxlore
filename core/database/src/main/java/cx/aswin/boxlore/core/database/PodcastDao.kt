@@ -165,6 +165,26 @@ interface PodcastDao {
     )
     suspend fun setFeedUrl(id: String, feedUrl: String,)
 
+    /**
+     * The show's stored episode namespace (`epNs`), or null when the show has no row or none was set.
+     *
+     * Added in P4 PR 9 of the own-episode-IDs plan (plan section 4, recipe IDs; decision D12).
+     * COMPAT(own-ids): new recipe IDs are minted in the stored namespace. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query("SELECT epNs FROM podcasts WHERE podcastId = :id LIMIT 1")
+    suspend fun getEpNs(id: String): Long?
+
+    /**
+     * Sets the episode namespace of a Podcast Index show that has none. A stored value is never
+     * replaced: recipe IDs already issued depend on it. Leaves `isDirty` alone (the namespace is
+     * not synced). `rss:` shows never get one.
+     *
+     * Added in P4 PR 9 of the own-episode-IDs plan (plan section 4, recipe IDs; decision D12).
+     * COMPAT(own-ids): an issued namespace never changes. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query("UPDATE podcasts SET epNs = :epNs WHERE podcastId = :id AND epNs IS NULL AND sourceType != 'rss'")
+    suspend fun setEpNsIfUnset(id: String, epNs: Long,)
+
     @Query("UPDATE podcasts SET customGenre = :customGenre, customGenreIcon = :customGenreIcon, isDirty = 1 WHERE podcastId = :id")
     suspend fun updateCustomGenre(id: String, customGenre: String?, customGenreIcon: String?)
 

@@ -187,7 +187,7 @@ Use the root `detekt` task; individual modules do not all define one. These comm
 | `:core:downloads` | WIP | n/a | Candidate logic Done; Media3 manager Excluded |
 | `:core:prefs` | Done | n/a | DataStore + migrator |
 | `:core:database` | Done | n/a | In-memory DAOs |
-| `:core:rss` | Done | n/a | Feed fixtures + helpers |
+| `:core:rss` | Done | n/a | Feed fixtures + helpers; catalog refreshes through in-memory Room (Robolectric) |
 | `:core:analytics` | Done | n/a | Tracks + glossary + facade |
 | `:core:network` | Done | n/a | MockWebServer contracts |
 | `:core:domain` | Done | n/a | Port contracts |

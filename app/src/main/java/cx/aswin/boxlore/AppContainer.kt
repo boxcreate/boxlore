@@ -325,7 +325,6 @@ class AppContainer(
             subscribedEpisodeCatalog,
             userPreferencesRepository,
             recoverFeedUrl = { id -> cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(podcastRepository.getPodcastDetails(id)?.feedUrl) },
-            loadInitialBaseline = { id -> podcastRepository.loadPiEpisodesForBaseline(id, SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT) },
         )
     }
 

@@ -12,7 +12,13 @@ import cx.aswin.boxlore.core.analytics.PostHogStartup
  * PostHog is still starting. The `feed_first` rollout works the other way round: see [FeedFirstSwitch].
  */
 internal object FeedFixSwitches {
-    /** Baselines read up to 1,000 episodes from `/episodes/match` instead of the 100-item page. */
+    /**
+     * The Podcast Index list feed-only extras are compared with reads up to 1,000 episodes from
+     * `/episodes/match` instead of the 100-item page. Since P4 PR 9 only the extras use that list.
+     *
+     * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+     * (MIGRATION.md §6) once show pages read feeds for every listener.
+     */
     const val MATCH_BASELINE_OFF = "feed-fix-match-baseline-off"
 
     /** A dead saved feed address is re-checked against the server's confirmed one (once a day per show). */

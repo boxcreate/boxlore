@@ -229,9 +229,6 @@ class SubscriptionForegroundSync(
         const val DEFAULT_FEED_CONCURRENCY = 2
         const val DEFAULT_PI_CONCURRENCY = 6
 
-        /** Same PI page size Podcast Info uses when matching feed-only extras. */
-        const val DIRECT_FEED_BASELINE_LIMIT = 1000
-
         /** Process-wide guard — AppRoot + Home may hold distinct instances after restarts. */
         private val processSyncStarted = AtomicBoolean(false)
 
@@ -403,7 +400,7 @@ class SubscriptionForegroundSync(
         ): DirectFeedResolveResult {
             val catalog = localEpisodeCatalog
             if (catalog != null) {
-                return resolveCatalogRefresh(podcastId, meta, catalog, podcastRepository, followMoves, adoptMovedFeed)
+                return resolveCatalogRefresh(podcastId, meta, catalog, followMoves, adoptMovedFeed)
             }
             return resolveLegacySupplementTip(podcastId, meta, episodeSupplementPort, podcastRepository)
         }
@@ -413,12 +410,10 @@ class SubscriptionForegroundSync(
          * has its new address saved through [adoptMovedFeed] (P4a); never for `rss:` shows, whose
          * address is their identity and notification consent.
          */
-        @Suppress("LongParameterList")
         internal suspend fun resolveCatalogRefresh(
             podcastId: String,
             meta: DirectFeedTipMeta,
             catalog: LocalEpisodeCatalogPort,
-            podcastRepository: PodcastRepository,
             followMoves: Boolean = false,
             adoptMovedFeed: suspend (String) -> Unit = {},
         ): DirectFeedResolveResult {
@@ -429,7 +424,6 @@ class SubscriptionForegroundSync(
                     persisted = false,
                 )
             }
-            val needsBaseline = !catalog.isReady(podcastId)
             return when (
                 val outcome =
                     catalog.refresh(
@@ -437,17 +431,6 @@ class SubscriptionForegroundSync(
                             podcastIndexId = podcastId,
                             feedUrl = meta.feedUrl.orEmpty(),
                             meta = podcastMeta,
-                            loadPiBaseline =
-                            if (needsBaseline && !podcastId.startsWith("rss:")) {
-                                {
-                                    podcastRepository.loadPiEpisodesForBaseline(
-                                        feedId = podcastId,
-                                        limit = DIRECT_FEED_BASELINE_LIMIT,
-                                    )
-                                }
-                            } else {
-                                null
-                            },
                             detectMove = followMoves && !podcastId.startsWith("rss:"),
                         ),
                     )
@@ -489,12 +472,7 @@ class SubscriptionForegroundSync(
                         EpisodeSupplementPort.RefreshFromFeedRequest(
                             podcastIndexId = podcastId,
                             feedUrl = meta.feedUrl.orEmpty(),
-                            loadBaseline = {
-                                podcastRepository.loadPiEpisodesForBaseline(
-                                    feedId = podcastId,
-                                    limit = DIRECT_FEED_BASELINE_LIMIT,
-                                )
-                            },
+                            loadBaseline = { podcastRepository.loadPiEpisodesForSupplement(podcastId) },
                             podcastTitle = meta.title,
                             podcastImageUrl = meta.imageUrl,
                             podcastGenre = meta.genre,
