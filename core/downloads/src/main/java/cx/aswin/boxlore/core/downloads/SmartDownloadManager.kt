@@ -308,7 +308,7 @@ class SmartDownloadManager(
                         context,
                         "Recycling/deleting old smart-downloaded episode: '${download.episodeTitle}' (ID: ${download.episodeId})",
                     )
-                    downloadRepository.removeDownload(download.episodeId, isForeground = false).join()
+                    downloadRepository.removeDownload(download.episodeId, isForeground = false, acrossAliases = false).join()
                     currentDownloadedBytes -= estSize
                     cleanedCount++
                 }
@@ -441,7 +441,7 @@ class SmartDownloadManager(
         return if (completedInDb) {
             true to estimatedSize
         } else {
-            downloadRepository.removeDownload(episode.id, isForeground = false).join()
+            downloadRepository.removeDownload(episode.id, isForeground = false, acrossAliases = false).join()
             false to 0L
         }
     }

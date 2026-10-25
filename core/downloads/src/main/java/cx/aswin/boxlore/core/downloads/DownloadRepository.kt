@@ -228,10 +228,14 @@ open class DownloadRepository(
      * holds one (docs/EPISODE_IDS.md §5), so an episode a show page lists under one ID while another
      * ID holds the file can be removed from there. [isForeground] is kept for callers; removal never
      * starts the download service.
+     *
+     * @param acrossAliases false removes only [episodeId]'s own download: automatic clean-ups
+     *   (Smart Downloads recycling, auto-download limits, a failed attempt, a purge) remove the row
+     *   they picked and never a download another ID of the episode holds, such as a manual one.
      */
     @Suppress("UNUSED_PARAMETER")
-    open fun removeDownload(episodeId: String, isForeground: Boolean = true): Job = CoroutineScope(Dispatchers.IO).launch {
-        val others = listenerStore.memberIds(episodeId).filter { it != episodeId }
+    open fun removeDownload(episodeId: String, isForeground: Boolean = true, acrossAliases: Boolean = true,): Job = CoroutineScope(Dispatchers.IO).launch {
+        val others = if (acrossAliases) listenerStore.memberIds(episodeId).filter { it != episodeId } else emptyList()
         val heldOthers = if (others.isEmpty()) emptyList() else database.downloadedEpisodeDao().getDownloads(others).map { it.episodeId }
         for (id in listOf(episodeId) + heldOthers) removeOne(id)
     }

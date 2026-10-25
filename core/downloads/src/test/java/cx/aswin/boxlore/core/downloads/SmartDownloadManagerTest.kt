@@ -359,7 +359,7 @@ class SmartDownloadManagerTest {
             addedDownloads.add(episode.id)
         }
 
-        override fun removeDownload(episodeId: String, isForeground: Boolean): Job {
+        override fun removeDownload(episodeId: String, isForeground: Boolean, acrossAliases: Boolean,): Job {
             removedDownloads.add(episodeId)
             return CompletableDeferred(Unit)
         }

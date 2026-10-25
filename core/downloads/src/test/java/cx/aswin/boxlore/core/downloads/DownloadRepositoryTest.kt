@@ -417,6 +417,21 @@ class DownloadRepositoryTest {
         assertTrue(withDownloadTestLooper { pollUntil { dao.getDownload("pi-1") == null } })
     }
 
+    /** An automatic clean-up of one ID's download never removes the download another ID of the episode holds. */
+    @Test
+    fun `an automatic removal leaves the download another ID of the episode holds`() {
+        withDownloadTestLooper {
+            linkFeedId()
+            dao.insert(downloadEntity(episodeId = "pi-1", status = DownloadedEpisodeEntity.STATUS_COMPLETED))
+            dao.insert(downloadEntity(episodeId = "-1", status = DownloadedEpisodeEntity.STATUS_COMPLETED))
+        }
+
+        withDownloadTestLooper { repository.removeDownload("-1", isForeground = false, acrossAliases = false).join() }
+
+        assertTrue(withDownloadTestLooper { pollUntil { dao.getDownload("-1") == null } })
+        assertEquals(DownloadedEpisodeEntity.STATUS_COMPLETED, withDownloadTestLooper { dao.getDownload("pi-1")?.status })
+    }
+
     @Test
     fun `a running download under another ID reads as downloading for every ID of the episode`() {
         withDownloadTestLooper {

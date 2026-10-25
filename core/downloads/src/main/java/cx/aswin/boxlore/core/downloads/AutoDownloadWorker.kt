@@ -176,7 +176,7 @@ open class AutoDownloadWorker(context: Context, params: WorkerParameters) : Coro
         val showIds = database.podcastDao().getPodcast(podcastId)?.listenerShowIds ?: setOf(podcastId)
         val downloads = showIds.flatMap { database.downloadedEpisodeDao().getDownloadsForPodcast(it) }
         for (row in AutoDownloadRetention.excess(downloads, maximum)) {
-            repository.removeDownload(row.episodeId, isForeground = false).join()
+            repository.removeDownload(row.episodeId, isForeground = false, acrossAliases = false).join()
         }
     }
 

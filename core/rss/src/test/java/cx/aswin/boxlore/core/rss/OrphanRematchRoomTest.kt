@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.rss
 
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
@@ -101,6 +102,34 @@ class OrphanRematchRoomTest : RoomCatalogTestBase() {
     }
 
     @Test
+    fun anOrphanMergedIntoAFeedShowsOwnerRowKeepsThatRowsShow() = runBlocking {
+        follow(SHOW)
+        feed.items = listOf(Item("g1"))
+        assertTrue(refresh(SHOW) is RefreshOutcome.Success)
+        // The show was switched to its feed and the feed's episode ID now owns the episode.
+        database.episodeIdentityDao().insertAliasesIfAbsent(
+            listOf(EpisodeAliasEntity("-900", SHOW, "g1", null, EpisodeAliasState.TRUSTED, false, EpisodeAliasProvenance.RSS_SOURCE_LINK, 2L)),
+        )
+        database.episodeIdentityDao().setOwner(SHOW, "g1", "-900")
+        val feedRow =
+            listening("-900", progress = 100L, playedAt = 10L, audio = "https://feed.example/g1.mp3")
+                .copy(podcastId = FEED_SHOW, podcastName = "Feed", episodeTitle = "Feed ep")
+        history.upsert(feedRow)
+        history.upsert(listening("-55", progress = 500L, playedAt = 60L, audio = "https://cdn.example/g1.mp3"))
+        seedUnresolved("-55", SHOW, EpisodeAliasProvenance.UPGRADE_LISTENER_ROW)
+
+        assertTrue(refresh(SHOW) is RefreshOutcome.Success)
+
+        assertNull(history.getHistoryItem("-55"))
+        val merged = history.getHistoryItem("-900")!!
+        assertEquals(500L, merged.progressMs)
+        assertEquals(FEED_SHOW, merged.podcastId)
+        assertEquals("Feed", merged.podcastName)
+        assertEquals("Feed ep", merged.episodeTitle)
+        assertEquals("https://feed.example/g1.mp3", merged.episodeAudioUrl)
+    }
+
+    @Test
     fun anIdAdoptedByAListenerMatchOwnsItsEpisodeAndTakesALaterOrphan() = runBlocking {
         // Played from search before the follow: the first read keeps the Podcast Index ID.
         history.upsert(listening("5001", progress = 200L, playedAt = 20L, audio = "https://cdn.example/g1.mp3"))
@@ -138,4 +167,8 @@ class OrphanRematchRoomTest : RoomCatalogTestBase() {
         likedAt = if (liked) playedAt else 0L,
         lastPlayedAt = playedAt,
     )
+
+    private companion object {
+        const val FEED_SHOW = "rss:feed"
+    }
 }

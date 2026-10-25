@@ -212,15 +212,20 @@ internal class LocalCatalogListenerStateReconciler(
 
     /**
      * Merges [oldId]'s row into the row [target]'s episode reads: [target]'s own, or its episode's
-     * owner when the episode is stored under several IDs, so the moved progress isn't hidden.
+     * owner when the episode is stored under several IDs, so the moved progress isn't hidden. A row
+     * merged into another ID's stored row keeps that row's show and episode details, so an owner row
+     * of another show (a show switched to its feed) is never moved to this show.
      */
     private suspend fun migrateHistory(oldId: String, target: LocalEpisodeEntity, targetAlias: EpisodeAliasEntity?,) {
         val dao = database.listeningHistoryDao()
         val old = dao.getHistoryItem(oldId) ?: return
-        val intoId = if (targetAlias != null) database.episodeListenerStore().historyId(target.episodeId) else target.episodeId
+        val store = database.episodeListenerStore()
+        val intoId = if (targetAlias != null) store.historyId(target.episodeId) else target.episodeId
+        if (intoId == oldId) return
         val existing = dao.getHistoryItem(intoId)
         val groupState = targetAlias?.let { database.episodeIdentityDao().getGroupState(it.podcastId, it.catalogKey!!) }
-        dao.upsert(mergeHistory(old, existing, target, groupState).copy(episodeId = intoId))
+        val merged = mergeHistory(old, existing, target, groupState).copy(episodeId = intoId)
+        dao.upsert(if (intoId != target.episodeId) store.keepingOwnerMetadata(merged, existing) else merged)
         dao.delete(oldId)
     }
 

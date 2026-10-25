@@ -440,7 +440,7 @@ class AutoDownloadWorkerTest {
             override suspend fun pauseAutoDownload(episodeId: String) {
                 paused++
             }
-            override fun removeDownload(episodeId: String, isForeground: Boolean): kotlinx.coroutines.Job = error("Partial audio must not be removed")
+            override fun removeDownload(episodeId: String, isForeground: Boolean, acrossAliases: Boolean,): kotlinx.coroutines.Job = error("Partial audio must not be removed")
         }
         runBlocking {
             prefs.setAutoDownloadWifiOnly(false)
