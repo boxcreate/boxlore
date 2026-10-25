@@ -108,7 +108,7 @@ internal object CatalogAliasRecords {
      * @param newIds the namespace and hash new IDs were minted with; nothing is written without a namespace
      * @param storedRowProvenance the provenance of a new alias for a stored row
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "kotlin:S107")
     fun of(
         podcastId: String,
         planned: List<PlannedEpisodeRow>,

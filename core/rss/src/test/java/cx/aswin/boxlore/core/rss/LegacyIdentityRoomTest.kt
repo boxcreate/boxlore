@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshOutcome
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -287,6 +288,59 @@ class LegacyIdentityRoomTest : RoomCatalogTestBase() {
         feed.items = listOf(Item("g1"), Item("g2"))
         assertTrue(refresh(SHOW, url = RSS_FEED_URL) is RefreshOutcome.Success)
         assertEquals(mapOf("g1" to rssIds.getValue("g1"), "g2" to rssIds.getValue("g2")), rows(SHOW))
+    }
+
+    @Test
+    fun theLegacyRssUpgradeHandsOwnershipFromAnEarlierReadToTheIdsItCarries() = runBlocking {
+        // An earlier read of the Podcast Index show, since evicted, left a trusted owner for g1 under
+        // its recipe ID. The show holds no listener state, so the carried RSS ID takes the episode over.
+        val earlier = recipe(SHOW, "g1")
+        seedAlias(earlier, SHOW, "g1")
+        val rss = RssPodcastRepository.createForTests(ApplicationProvider.getApplicationContext(), database, feed)
+        feed.items = listOf(Item("g1"), Item("g2"))
+        val rssId = rss.addSubscription(RSS_FEED_URL).podcast.id
+        val rssIds = database.rssEpisodeDao().getAllNewest(rssId).associate { it.guid to it.episodeId }
+        history(rssIds.getValue("g1"), rssId)
+        val snapshot = rss.legacySubscriptionRepair.inspect(rssId).getOrThrow()
+
+        assertEquals(LegacyRssUpgradeOutcome.MIGRATED, rss.legacySubscriptionRepair.upgrade(rssId, target(), snapshot))
+
+        val carried = requireNotNull(alias(rssIds.getValue("g1")))
+        assertEquals(EpisodeAliasState.TRUSTED, carried.state)
+        assertTrue("the carried ID owns g1", carried.owner)
+        val displaced = requireNotNull(alias(earlier))
+        assertFalse("the earlier owner is demoted", displaced.owner)
+        assertEquals("the earlier ID still resolves", EpisodeAliasState.TRUSTED, displaced.state)
+        assertEquals(listOf(rssIds.getValue("g1")), database.episodeIdentityDao().aliasesForKey(SHOW, "g1").filter { it.owner }.map { it.aliasId })
+
+        // Evicted, g1 reads back under the carried ID that holds its history, not the earlier owner.
+        database.localEpisodeCatalogDao().deleteCatalog(SHOW)
+        feed.items = listOf(Item("g1"), Item("g2"))
+        assertTrue(refresh(SHOW, url = RSS_FEED_URL) is RefreshOutcome.Success)
+        assertEquals(mapOf("g1" to rssIds.getValue("g1"), "g2" to rssIds.getValue("g2")), rows(SHOW))
+        assertEquals(SHOW, database.listeningHistoryDao().getHistoryItem(rssIds.getValue("g1"))?.podcastId)
+        assertNull(database.listeningHistoryDao().getHistoryItem(earlier))
+    }
+
+    @Test
+    fun theLegacyRssUpgradeStaysOnRssWhenTheOwnerItWouldDisplaceHoldsListenerState() = runBlocking {
+        // The target show's owner of g1 holds history under another show, which the show-level
+        // in-use check can't see: ownership never moves off it, so nothing is written.
+        val earlier = recipe(SHOW, "g1")
+        seedAlias(earlier, SHOW, "g1")
+        history(earlier, OTHER_SHOW)
+        val rss = RssPodcastRepository.createForTests(ApplicationProvider.getApplicationContext(), database, feed)
+        feed.items = listOf(Item("g1"))
+        val rssId = rss.addSubscription(RSS_FEED_URL).podcast.id
+        val carried = database.rssEpisodeDao().getAllNewest(rssId).single().episodeId
+        val snapshot = rss.legacySubscriptionRepair.inspect(rssId).getOrThrow()
+
+        assertEquals(LegacyRssUpgradeOutcome.TARGET_ALREADY_IN_USE, rss.legacySubscriptionRepair.upgrade(rssId, target(), snapshot))
+
+        assertTrue(rows(SHOW).isEmpty())
+        assertTrue(requireNotNull(alias(earlier)).owner)
+        assertNull(alias(carried))
+        assertEquals(true, database.podcastDao().getPodcast(rssId)?.isSubscribed)
     }
 
     @Test

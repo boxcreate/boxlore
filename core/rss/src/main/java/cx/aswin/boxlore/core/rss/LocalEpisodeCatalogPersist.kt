@@ -110,7 +110,7 @@ object LocalEpisodeCatalogPersist {
         channelImageUrl: String?,
         showImageUrl: String?,
     ): List<PlannedEpisodeRow> {
-        val occupiedIds = existing.map { it.episodeId }.toMutableSet()
+        val occupiedIds = existing.map { it.episodeId }.toSet()
         val stored = StoredRowMatch.StoredRows.of(existing.map { Triple(it.episodeId, it.guid, it.audioUrl) })
         val matches = StoredRowMatch.resolve(parsed, stored)
         val aliasMatches = aliasMatches(parsed, matches, newIds, occupiedIds)
