@@ -16,14 +16,19 @@ import cx.aswin.boxlore.core.model.EpisodeRecipeId
  * 1. Adds the new columns, each with a default, and creates the new tables with exactly the SQL
  *    Room exports for them (`schemas/…/39.json`); Room checks both against the entities after
  *    the migration and refuses to open on any difference.
- * 2. Marks every existing `local_episodes` row `legacy`.
+ * 2. Every existing `local_episodes` row reads as `legacy` through the column's schema default
+ *    (1), so no catalog row is rewritten: rows carry long descriptions, and rewriting them all
+ *    would copy the whole table through the journal. Room binds `legacy` on every write, so rows
+ *    the app writes from now on store 0.
  * 3. Seeds each Podcast Index show's episode namespace as its show ID (`podcasts.epNs`,
  *    `local_episode_feeds.epNs`) and `local_episode_feeds.followed` from the follow state.
+ *    `PodcastDao.upsert` and `LocalEpisodeCatalogDao.upsertFeed` keep these on later writes.
  * 4. Seeds one alias per stored episode ID ([EpisodeAliasSeeding]): catalog rows first, then IDs
  *    found only in history, the queue or downloads. `rss_episodes` and the supplement tables are
- *    only read, never written.
+ *    not touched.
  * 5. Marks one owner per episode among its trusted aliases: the ID with the most recent listener
- *    activity, else one with a completed download, else the oldest catalog row.
+ *    activity, else one with a completed download, else the one that equals its recipe ID (a
+ *    served ID), else the oldest catalog row.
  * 6. Adds a pending upgrade repair row for each followed Podcast Index show.
  *
  * Never edit this migration once a phone may have run it; later schema changes go to v40.
@@ -46,7 +51,7 @@ internal object EpisodeIdentityMigration {
         "local_episode_feeds" to "epNs INTEGER",
         "local_episode_feeds" to "showMetadata TEXT",
         "local_episode_feeds" to "showMetadataAt INTEGER NOT NULL DEFAULT 0",
-        "local_episodes" to "legacy INTEGER NOT NULL DEFAULT 0",
+        "local_episodes" to "legacy INTEGER NOT NULL DEFAULT 1",
     )
 
     /** Verbatim from the exported v39 schema, so fresh and upgraded databases match. */
@@ -70,10 +75,7 @@ internal object EpisodeIdentityMigration {
     )
 
     private const val CATALOG_ROWS = """
-        SELECT le.episodeId, le.podcastId, le.guid, le.audioUrl, s.guid
-        FROM local_episodes le
-        LEFT JOIN episode_supplement_items s ON s.episodeId = le.episodeId AND s.podcastId = le.podcastId
-        ORDER BY le.rowid
+        SELECT episodeId, podcastId, guid, audioUrl FROM local_episodes ORDER BY rowid
     """
 
     private const val LISTENER_ROWS = """
@@ -107,16 +109,24 @@ internal object EpisodeIdentityMigration {
         HAVING COUNT(*) > 1
     """
 
+    /**
+     * The owner among one episode's trusted aliases (docs/EPISODE_IDS.md §5). A history row with
+     * no play or like time (0) counts as no listening, so it never beats a completed download.
+     */
     private const val CHOOSE_OWNER = """
         SELECT a.aliasId FROM episode_aliases a
         LEFT JOIN local_episodes le ON le.episodeId = a.aliasId
         WHERE a.podcastId = ? AND a.catalogKey = ? AND a.state = 'trusted'
         ORDER BY
-            (SELECT MAX(h.lastPlayedAt, h.likedAt) FROM listening_history h WHERE h.episodeId = a.aliasId) DESC,
+            (
+                SELECT NULLIF(MAX(h.lastPlayedAt, h.likedAt), 0) FROM listening_history h
+                WHERE h.episodeId = a.aliasId
+            ) DESC,
             EXISTS (
                 SELECT 1 FROM downloaded_episodes d
                 WHERE d.episodeId = a.aliasId AND d.status = ${DownloadedEpisodeEntity.STATUS_COMPLETED}
             ) DESC,
+            a.aliasId = CAST(a.recipeId AS TEXT) DESC,
             le.rowid IS NULL, le.rowid ASC, a.aliasId ASC
         LIMIT 1
     """
@@ -125,11 +135,13 @@ internal object EpisodeIdentityMigration {
     fun migrate(db: SupportSQLiteDatabase, nowMillis: Long,) {
         addColumns(db)
         NEW_TABLES.forEach(db::execSQL)
-        db.execSQL("UPDATE local_episodes SET legacy = 1")
         seedNamespaces(db)
+        val listenerRows = listenerRows(db)
         db.compileStatement(INSERT_ALIAS).use { insert ->
-            seedCatalogAliases(db, insert, nowMillis)
-            seedListenerRowAliases(db, insert, nowMillis)
+            seedCatalogAliases(db, insert, listenerShows(listenerRows), nowMillis)
+            listenerRows.forEach { (episodeId, podcastId) ->
+                EpisodeAliasSeeding.forListenerRow(episodeId, podcastId)?.let { insert.write(it, nowMillis) }
+            }
         }
         markOwners(db)
         seedUpgradeRepair(db)
@@ -185,15 +197,31 @@ internal object EpisodeIdentityMigration {
         executeUpdateDelete()
     }
 
-    private fun seedCatalogAliases(db: SupportSQLiteDatabase, insert: SupportSQLiteStatement, nowMillis: Long,) {
-        db.query(CATALOG_ROWS).use { cursor ->
-            while (cursor.moveToNext()) catalogSeed(cursor)?.let { insert.write(it, nowMillis) }
-        }
-    }
-
-    private fun seedListenerRowAliases(db: SupportSQLiteDatabase, insert: SupportSQLiteStatement, nowMillis: Long,) {
+    /** (episode ID, show) of every history, queue and download row, history first, each in table order. */
+    private fun listenerRows(db: SupportSQLiteDatabase): List<Pair<String, String>> =
         db.query(LISTENER_ROWS).use { cursor ->
-            while (cursor.moveToNext()) listenerSeed(cursor)?.let { insert.write(it, nowMillis) }
+            buildList {
+                while (cursor.moveToNext()) {
+                    if (cursor.isNull(0) || cursor.isNull(1)) continue
+                    add(cursor.getString(0) to cursor.getString(1))
+                }
+            }
+        }
+
+    /** The non-blank shows each episode ID is held under in history, the queue or downloads. */
+    private fun listenerShows(rows: List<Pair<String, String>>): Map<String, Set<String>> =
+        rows.filter { (_, podcastId) -> podcastId.isNotBlank() }
+            .groupBy(keySelector = { it.first }, valueTransform = { it.second })
+            .mapValues { (_, shows) -> shows.toSet() }
+
+    private fun seedCatalogAliases(
+        db: SupportSQLiteDatabase,
+        insert: SupportSQLiteStatement,
+        listenerShows: Map<String, Set<String>>,
+        nowMillis: Long,
+    ) {
+        db.query(CATALOG_ROWS).use { cursor ->
+            while (cursor.moveToNext()) catalogSeed(cursor, listenerShows)?.let { insert.write(it, nowMillis) }
         }
     }
 
@@ -245,22 +273,17 @@ internal object EpisodeIdentityMigration {
 }
 
 /** One `local_episodes` row's alias. The schema makes the first three columns NOT NULL; a null is skipped, never a crash. */
-private fun catalogSeed(cursor: Cursor): AliasSeed? {
+private fun catalogSeed(cursor: Cursor, listenerShows: Map<String, Set<String>>,): AliasSeed? {
     if ((0..2).any(cursor::isNull)) return null
+    val episodeId = cursor.getString(0)
+    val podcastId = cursor.getString(1)
     return EpisodeAliasSeeding.forCatalogRow(
-        episodeId = cursor.getString(0),
-        podcastId = cursor.getString(1),
+        episodeId = episodeId,
+        podcastId = podcastId,
         storedKey = cursor.getString(2),
         audioUrl = cursor.nullableString(3),
-        savedItemGuid = cursor.nullableString(4),
+        heldUnderAnotherShow = listenerShows[episodeId].orEmpty().any { it != podcastId },
     )
-}
-
-/** One history, queue or download row's alias, or null when it gets none. */
-private fun listenerSeed(cursor: Cursor): AliasSeed? {
-    val episodeId = cursor.nullableString(0) ?: return null
-    val podcastId = cursor.nullableString(1) ?: return null
-    return EpisodeAliasSeeding.forListenerRow(episodeId, podcastId)
 }
 
 private fun Cursor.nullableString(index: Int): String? = if (isNull(index)) null else getString(index)

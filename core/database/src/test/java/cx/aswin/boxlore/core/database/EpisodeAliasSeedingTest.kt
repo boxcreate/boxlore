@@ -6,8 +6,13 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class EpisodeAliasSeedingTest {
-    private fun catalog(id: String, key: String, podcastId: String = SHOW, audioUrl: String? = AUDIO, savedGuid: String? = null,) =
-        EpisodeAliasSeeding.forCatalogRow(id, podcastId, key, audioUrl, savedGuid)
+    private fun catalog(
+        id: String,
+        key: String,
+        podcastId: String = SHOW,
+        audioUrl: String? = AUDIO,
+        heldUnderAnotherShow: Boolean = false,
+    ) = EpisodeAliasSeeding.forCatalogRow(id, podcastId, key, audioUrl, heldUnderAnotherShow)
 
     @Test
     fun podcastIndexAndNegativeIdsAreTrustedUnderTheirKeysRecipe() {
@@ -50,22 +55,41 @@ class EpisodeAliasSeedingTest {
     }
 
     @Test
-    fun audioAddressKeysOfItemsThatHadAGuidAreUnresolved() {
-        val seed = catalog("-14", AUDIO, savedGuid = "repeated-guid")
-        assertEquals(EpisodeAliasState.UNRESOLVED, seed?.state)
-        assertEquals(EpisodeAliasProvenance.UPGRADE_AUDIO_URL_KEY, seed?.provenance)
-        assertNull(seed?.catalogKey)
-        assertNull(seed?.recipeId)
+    fun phoneMintedIdsKeyedByTheirOwnAudioAddressAreUnresolved() {
+        // Migration 31→32 keyed saved items by address when their GUID repeated; once Podcast Index
+        // lists the item its saved row is gone, so nothing on the phone shows whether it had a GUID.
+        for (key in listOf(AUDIO, "$AUDIO\n", " $AUDIO")) {
+            val seed = catalog("-14", key)
+            assertEquals(EpisodeAliasState.UNRESOLVED, seed?.state, key)
+            assertEquals(EpisodeAliasProvenance.UPGRADE_AUDIO_URL_KEY, seed?.provenance, key)
+            assertNull(seed?.catalogKey, key)
+            assertNull(seed?.recipeId, key)
+        }
+        assertEquals(EpisodeAliasState.UNRESOLVED, catalog("-14", AUDIO, audioUrl = "$AUDIO ")?.state)
     }
 
     @Test
-    fun audioAddressKeysAreTrustedWhenTheItemHadNoOtherGuid() {
-        assertEquals(EpisodeAliasState.TRUSTED, catalog("-15", AUDIO, savedGuid = null)?.state)
-        assertEquals(EpisodeAliasState.TRUSTED, catalog("-15", AUDIO, savedGuid = " \n")?.state)
-        // The GUID itself was the audio address.
-        assertEquals(EpisodeAliasState.TRUSTED, catalog("-15", AUDIO, savedGuid = "$AUDIO\n")?.state)
-        // A real GUID key that differs from the saved item's GUID is still a GUID key, not an address.
-        assertEquals(EpisodeAliasState.TRUSTED, catalog("-15", "new-guid", savedGuid = "old-guid")?.state)
+    fun audioAddressKeysOfOtherIdsAndOtherKeysAreTrusted() {
+        // A Podcast Index ID was matched by the feed read that wrote its key.
+        assertEquals(EpisodeAliasState.TRUSTED, catalog("5001", AUDIO)?.state)
+        assertEquals(AUDIO, catalog("5001", AUDIO)?.catalogKey)
+        // The key is another address than the row's own.
+        assertEquals(EpisodeAliasState.TRUSTED, catalog("-15", "https://cdn.example/old.mp3")?.state)
+        assertEquals(EpisodeAliasState.TRUSTED, catalog("-15", "guid-a", audioUrl = null)?.state)
+    }
+
+    @Test
+    fun anIdHeldUnderAnotherShowKeepsItsKeyButIsAmbiguous() {
+        val seed = catalog("-17", "guid-a", heldUnderAnotherShow = true)
+        assertEquals(EpisodeAliasState.AMBIGUOUS, seed?.state)
+        assertEquals("guid-a", seed?.catalogKey)
+        assertEquals(EpisodeRecipeId.forNamespace(SHOW.toLong(), "guid-a"), seed?.recipeId)
+        assertEquals(EpisodeAliasProvenance.UPGRADE_CATALOG, seed?.provenance)
+        // A served ID that matches its key is still in doubt when another show holds it.
+        val served = catalog("8825297254050678", "https://api.spreaker.com/episode/75827097", podcastId = "3391039", heldUnderAnotherShow = true)
+        assertEquals(EpisodeAliasState.AMBIGUOUS, served?.state)
+        // Rows with no usable key stay unresolved.
+        assertEquals(EpisodeAliasState.UNRESOLVED, catalog("-12", "id:-12", heldUnderAnotherShow = true)?.state)
     }
 
     @Test

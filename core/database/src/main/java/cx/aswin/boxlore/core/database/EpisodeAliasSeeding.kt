@@ -21,10 +21,16 @@ internal data class AliasSeed(
  * - A catalog row's stored key is re-trimmed with the recipe set before hashing: migration 31→32
  *   trimmed with SQLite `TRIM()`, which keeps newlines, tabs and no-break spaces.
  * - A synthetic key (`id:` plus the row's own ID) is never hashed: the alias is unresolved.
- * - So is a key that is the row's audio address while its saved item had a GUID: migration 31→32
- *   used the address only because the GUID repeated in the show.
+ * - So is a phone-minted (negative) ID whose key is its own audio address. Migration 31→32 keyed
+ *   saved items by address when their GUID repeated in the show, and the saved item that would
+ *   show the GUID is deleted once Podcast Index lists the episode, so an address key can't be told
+ *   from a real one here. The next feed read settles it: GUID-less items are looked up under both
+ *   the old and the new key.
  * - A row that already holds a recipe-range ID keeps it. When the ID equals the recipe ID of the
  *   row's (show, key), the row is that episode's alias; otherwise the alias is ambiguous.
+ * - So is a row whose ID history, the queue or downloads hold under another show. Builds before the
+ *   collision guard let a show that reads the same feed take another show's rows, so the stored
+ *   show of that ID is in doubt.
  * - IDs found only in history, the queue or downloads have no key yet, so they are unresolved.
  *
  * Added in P4 of the own-episode-IDs plan (plan section 4, legacy and synthetic keys; section 8, Room v39).
@@ -39,14 +45,14 @@ internal object EpisodeAliasSeeding {
      *
      * @param storedKey the row's `guid` column (its catalog key as stored)
      * @param audioUrl the row's audio address
-     * @param savedItemGuid the GUID of the `episode_supplement_items` row with the same ID, when one exists
+     * @param heldUnderAnotherShow history, the queue or downloads hold [episodeId] under a show other than [podcastId]
      */
     fun forCatalogRow(
         episodeId: String,
         podcastId: String,
         storedKey: String,
         audioUrl: String?,
-        savedItemGuid: String?,
+        heldUnderAnotherShow: Boolean,
     ): AliasSeed? {
         if (!isAliasable(episodeId)) return null
         val showId = EpisodeRecipeId.showIdOrNull(podcastId) ?: return null
@@ -55,19 +61,18 @@ internal object EpisodeAliasSeeding {
         }
         val key = EpisodeRecipeId.trimKey(storedKey)
             ?: return unresolved(episodeId, podcastId, EpisodeAliasProvenance.UPGRADE_CATALOG)
-        val itemGuid = EpisodeRecipeId.trimKey(savedItemGuid)
-        if (itemGuid != null && itemGuid != key && key == EpisodeRecipeId.trimKey(audioUrl)) {
+        val storedId = episodeId.toLongOrNull()
+        if (storedId != null && storedId < 0 && key == EpisodeRecipeId.trimKey(audioUrl)) {
             return unresolved(episodeId, podcastId, EpisodeAliasProvenance.UPGRADE_AUDIO_URL_KEY)
         }
         val recipeId = EpisodeRecipeId.forNamespace(showId, key)
-        val storedId = episodeId.toLongOrNull()
-        val ambiguous = storedId != null && EpisodeRecipeId.isRecipeId(storedId) && storedId != recipeId
+        val servedElsewhere = storedId != null && EpisodeRecipeId.isRecipeId(storedId) && storedId != recipeId
         return AliasSeed(
             aliasId = episodeId,
             podcastId = podcastId,
             catalogKey = key,
             recipeId = recipeId,
-            state = if (ambiguous) EpisodeAliasState.AMBIGUOUS else EpisodeAliasState.TRUSTED,
+            state = if (servedElsewhere || heldUnderAnotherShow) EpisodeAliasState.AMBIGUOUS else EpisodeAliasState.TRUSTED,
             provenance = EpisodeAliasProvenance.UPGRADE_CATALOG,
         )
     }

@@ -273,6 +273,9 @@ class RoomV39UpgradeTest {
             item("-35", "thrice", "https://cdn.example/same.mp3")
             item("-36", "thrice", "https://cdn.example/36.mp3")
             RoomSchemaFixture.runMigrations(db, from = 31, to = 38)
+            // Once Podcast Index lists an item, the supplement refresh deletes its saved row; the
+            // catalog row 31→32 keyed by address stays.
+            db.execSQL("DELETE FROM episode_supplement_items WHERE episodeId = '-33'")
             RoomSchemaFixture.insert(db, "listening_history", LegacyRows.history("-32", SHOW))
             before = RoomSchemaFixture.snapshot(db)
             schemaBefore = RoomSchemaFixture.schemaSql(db)
@@ -293,7 +296,8 @@ class RoomV39UpgradeTest {
 
         assertEquals("unique-guid", dao.getAlias("-31")?.catalogKey)
         assertEquals(EpisodeAliasState.TRUSTED, dao.getAlias("-31")?.state)
-        // Repeated GUID, so 31→32 keyed by address: the real key is unknown until the feed is read.
+        // Repeated GUID, so 31→32 keyed by address: the real key is unknown until the feed is read,
+        // also once the saved item is gone (-33).
         for (id in listOf("-32", "-33", "-36")) {
             assertEquals(id, EpisodeAliasState.UNRESOLVED, dao.getAlias(id)?.state)
             assertEquals(id, EpisodeAliasProvenance.UPGRADE_AUDIO_URL_KEY, dao.getAlias(id)?.provenance)
@@ -313,6 +317,249 @@ class RoomV39UpgradeTest {
                 "episode_supplement_items",
                 LegacyRows.supplementItem("43", SHOW, "g", "https://cdn.example/43.mp3"),
             )
+        }
+    }
+
+    /** Catalog refreshes, subscribe, restore and sync rebuild rows from scratch; the seeded columns survive them. */
+    @Test
+    fun laterWholeRowWritesKeepTheSeededColumns() = runBlocking<Unit> {
+        RoomSchemaFixture.createFromSchema(context, NAME, 38) { fillVersion38(it) }
+        val db = openWithRoom()
+        val catalog = db.localEpisodeCatalogDao()
+        db.sql.execSQL(
+            "UPDATE local_episode_feeds SET lastOpenedAt = 7, archiveComplete = 1, showMetadata = '{}', showMetadataAt = 8 " +
+                "WHERE podcastId = ?",
+            arrayOf(SHOW),
+        )
+        db.sql.execSQL(
+            "UPDATE podcasts SET feedUrlSource = 'registry', feedUrlCheckedAt = 9, transportUrl = 'https://transport.example/100', " +
+                "previousFeedUrl = 'https://old.example/100.xml' WHERE podcastId = ?",
+            arrayOf(SHOW),
+        )
+
+        catalog.upsertFeed(freshFeed(SHOW, etag = "etag-2"))
+
+        val feed = catalog.getFeed(SHOW)!!
+        assertEquals("etag-2", feed.feedEtag)
+        assertTrue(feed.followed)
+        assertEquals(100L, feed.epNs)
+        assertEquals(7L, feed.lastOpenedAt)
+        assertTrue(feed.archiveComplete)
+        assertEquals("{}", feed.showMetadata)
+        assertEquals(8L, feed.showMetadataAt)
+        // A new catalog row takes the values it is given.
+        catalog.upsertFeed(freshFeed("300", etag = "new").copy(followed = true, epNs = 300L))
+        assertEquals(300L, catalog.getFeed("300")?.epNs)
+        assertTrue(catalog.getFeed("300")!!.followed)
+
+        db.podcastDao().upsert(freshPodcast(SHOW, feedUrl = "https://feeds.example/100.xml", title = "Renamed"))
+
+        val podcast = db.podcastDao().getPodcast(SHOW)!!
+        assertEquals("Renamed", podcast.title)
+        assertEquals(100L, podcast.epNs)
+        assertEquals("registry", podcast.feedUrlSource)
+        assertEquals(9L, podcast.feedUrlCheckedAt)
+        assertEquals("https://transport.example/100", podcast.transportUrl)
+        assertEquals("https://old.example/100.xml", podcast.previousFeedUrl)
+
+        // A write that changes the address drops the old address's bookkeeping, never the namespace.
+        db.podcastDao().upsert(freshPodcast(SHOW, feedUrl = "https://moved.example/100.xml", title = "Renamed"))
+
+        val moved = db.podcastDao().getPodcast(SHOW)!!
+        assertEquals("https://moved.example/100.xml", moved.feedUrl)
+        assertEquals(100L, moved.epNs)
+        assertNull(moved.feedUrlSource)
+        assertEquals(0L, moved.feedUrlCheckedAt)
+        assertNull(moved.transportUrl)
+        assertNull(moved.previousFeedUrl)
+        // A new podcast row takes the values it is given.
+        db.podcastDao().upsert(freshPodcast("400", feedUrl = null, title = "New").copy(epNs = 400L))
+        assertEquals(400L, db.podcastDao().getPodcast("400")?.epNs)
+
+        // Rows the app writes are not legacy; rows from before the upgrade still are.
+        catalog.upsertEpisodes(listOf(freshEpisode("-61", SHOW, "guid-new")))
+        assertFalse(catalog.getEpisode("-61")!!.legacy)
+        assertTrue(catalog.getEpisode("-11")!!.legacy)
+        assertEquals(1L, RoomSchemaFixture.long(db.sql, "SELECT COUNT(*) FROM local_episodes WHERE legacy = 0"))
+    }
+
+    private fun freshFeed(podcastId: String, etag: String,) = LocalEpisodeFeedEntity(
+        podcastId = podcastId,
+        feedUrl = "https://feeds.example/$podcastId.xml",
+        feedEtag = etag,
+        feedLastModified = null,
+        fetchedAt = 50L,
+        itemCount = 9,
+        feedOrder = LocalFeedOrder.NEWEST_FIRST,
+        ttlExpiresAt = null,
+        needsFullBackfill = false,
+        copiedExtrasCount = 0,
+        ready = true,
+        feedUrlLookupAt = 0L,
+    )
+
+    private fun freshPodcast(podcastId: String, feedUrl: String?, title: String,) = PodcastEntity(
+        podcastId = podcastId,
+        title = title,
+        author = "Author",
+        imageUrl = "https://img/$podcastId.jpg",
+        description = null,
+        isSubscribed = true,
+        subscribedAt = 20L,
+        feedUrl = feedUrl,
+    )
+
+    private fun freshEpisode(id: String, podcastId: String, key: String,) = LocalEpisodeEntity(
+        episodeId = id,
+        podcastId = podcastId,
+        guid = key,
+        title = "Episode $id",
+        description = "",
+        audioUrl = "https://cdn.example/$id.mp3",
+        imageUrl = null,
+        duration = 60,
+        publishedDate = 100L,
+        chaptersUrl = null,
+        transcriptUrl = null,
+        transcripts = null,
+        persons = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        episodeType = null,
+        enclosureType = null,
+    )
+
+    /**
+     * Builds before the collision guard let a show that reads the same feed take another show's
+     * catalog rows, keeping their IDs. Such an ID's catalog show is in doubt, so it is never trusted
+     * or made owner of that show's episode.
+     */
+    @Test
+    fun anIdHeldUnderAnotherShowIsSeededAmbiguous() = runBlocking<Unit> {
+        RoomSchemaFixture.createFromSchema(context, NAME, 38) { db ->
+            val insert = { table: String, row: Map<String, Any?> -> RoomSchemaFixture.insert(db, table, row) }
+            insert("podcasts", LegacyRows.podcast(SHOW, subscribed = true))
+            insert("podcasts", LegacyRows.podcast(TWIN_SHOW, subscribed = true))
+            insert("local_episodes", LegacyRows.localEpisode("-51", TWIN_SHOW, "guid-h"))
+            insert("local_episodes", LegacyRows.localEpisode("-52", TWIN_SHOW, "guid-q"))
+            insert("local_episodes", LegacyRows.localEpisode("-53", TWIN_SHOW, "guid-d"))
+            insert("local_episodes", LegacyRows.localEpisode("-54", TWIN_SHOW, "guid-own"))
+            insert("local_episodes", LegacyRows.localEpisode("-55", TWIN_SHOW, "guid-blank"))
+            insert("listening_history", LegacyRows.history("-51", SHOW))
+            insert("queue_items", LegacyRows.queueItem("-52", SHOW, position = 0))
+            insert("downloaded_episodes", LegacyRows.download("-53", SHOW))
+            insert("listening_history", LegacyRows.history("-54", TWIN_SHOW))
+            insert("listening_history", LegacyRows.history("-55", ""))
+        }
+
+        val dao = openWithRoom().episodeIdentityDao()
+
+        for ((id, key) in listOf("-51" to "guid-h", "-52" to "guid-q", "-53" to "guid-d")) {
+            val alias = dao.getAlias(id)!!
+            assertEquals(id, EpisodeAliasState.AMBIGUOUS, alias.state)
+            assertEquals(id, TWIN_SHOW, alias.podcastId)
+            assertEquals(id, key, alias.catalogKey)
+            assertEquals(id, EpisodeRecipeId.forNamespace(TWIN_SHOW.toLong(), key), alias.recipeId)
+            assertFalse(id, alias.owner)
+        }
+        // History under the same show, or under no show, raises no doubt.
+        assertEquals(EpisodeAliasState.TRUSTED, dao.getAlias("-54")?.state)
+        assertTrue(dao.getAlias("-54")!!.owner)
+        assertEquals(EpisodeAliasState.TRUSTED, dao.getAlias("-55")?.state)
+    }
+
+    /**
+     * One episode stored under several IDs (keys that re-trim alike): the owner is the ID with the
+     * latest listening, else a completed download, else the served ID, else the oldest catalog row.
+     */
+    @Test
+    fun theOwnerFollowsListeningThenDownloadsThenTheServedIdThenAge() = runBlocking<Unit> {
+        val servedQuiet = EpisodeRecipeId.forNamespace(100, "k-served").toString()
+        val servedDownloaded = EpisodeRecipeId.forNamespace(100, "k-play").toString()
+        RoomSchemaFixture.createFromSchema(context, NAME, 38) { db ->
+            val insert = { table: String, row: Map<String, Any?> -> RoomSchemaFixture.insert(db, table, row) }
+            insert("podcasts", LegacyRows.podcast(SHOW, subscribed = true))
+            // A completed download beats an older row and an unfinished download.
+            insert("local_episodes", LegacyRows.localEpisode("-41", SHOW, "k-dl"))
+            insert("local_episodes", LegacyRows.localEpisode("-42", SHOW, "k-dl\n"))
+            insert("downloaded_episodes", LegacyRows.download("-41", SHOW, status = DownloadedEpisodeEntity.STATUS_FAILED))
+            insert("downloaded_episodes", LegacyRows.download("-42", SHOW))
+            // Nothing held: the oldest catalog row.
+            insert("local_episodes", LegacyRows.localEpisode("-43", SHOW, "k-age\t"))
+            insert("local_episodes", LegacyRows.localEpisode("-44", SHOW, "k-age"))
+            // A history row with no play or like time is no listening; the download wins.
+            insert("local_episodes", LegacyRows.localEpisode("-45", SHOW, "k-empty"))
+            insert("local_episodes", LegacyRows.localEpisode("-46", SHOW, "k-empty\n"))
+            insert("listening_history", LegacyRows.history("-45", SHOW, lastPlayedAt = 0L))
+            insert("downloaded_episodes", LegacyRows.download("-46", SHOW))
+            // Nothing held: the served ID beats an older legacy row.
+            insert("local_episodes", LegacyRows.localEpisode("-47", SHOW, "k-served\n"))
+            insert("local_episodes", LegacyRows.localEpisode(servedQuiet, SHOW, "k-served"))
+            // Listening beats a served ID that holds a completed download.
+            insert("local_episodes", LegacyRows.localEpisode(servedDownloaded, SHOW, "k-play"))
+            insert("local_episodes", LegacyRows.localEpisode("-48", SHOW, "k-play\t"))
+            insert("downloaded_episodes", LegacyRows.download(servedDownloaded, SHOW))
+            insert("listening_history", LegacyRows.history("-48", SHOW, lastPlayedAt = 0L, likedAt = 500L))
+        }
+
+        val dao = openWithRoom().episodeIdentityDao()
+
+        for ((key, owner) in listOf("k-dl" to "-42", "k-age" to "-43", "k-empty" to "-46", "k-served" to servedQuiet, "k-play" to "-48")) {
+            val aliases = dao.aliasesForKey(SHOW, key)
+            assertEquals(key, 2, aliases.size)
+            assertTrue(key, aliases.all { it.state == EpisodeAliasState.TRUSTED })
+            assertEquals(key, listOf(owner), aliases.filter { it.owner }.map { it.aliasId })
+        }
+    }
+
+    /** A failure inside the 38→39 seeding rolls the whole upgrade back; the next open runs it again. */
+    @Test
+    fun aFailedUpgradeLeavesTheVersion38FileAsItWas() = runBlocking<Unit> {
+        lateinit var before: Map<String, RoomSchemaFixture.TableRows>
+        RoomSchemaFixture.createFromSchema(context, NAME, 38) { db ->
+            fillVersion38(db)
+            before = RoomSchemaFixture.snapshot(db)
+        }
+        val failing = object : androidx.room.migration.Migration(38, 39) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                EpisodeIdentityMigration.migrate(db, nowMillis = 1L)
+                error("seeding failed")
+            }
+        }
+        val migrations = BoxLoreDatabase.ALL_MIGRATIONS.map { if (it.startVersion == 38) failing else it }.toTypedArray()
+        val broken = BoxLoreDatabase.builder(context, NAME, migrations).allowMainThreadQueries().build()
+
+        val failure = runCatching { broken.openHelper.writableDatabase }.exceptionOrNull()
+        broken.close()
+
+        assertTrue(generateSequence(failure) { it.cause }.any { it.message == "seeding failed" })
+        RoomSchemaFixture.open(context, NAME, 38).use { helper ->
+            val db = helper.readableDatabase
+            assertEquals(38, db.version)
+            assertFalse(RoomSchemaFixture.tables(db).contains("episode_aliases"))
+            assertFalse(RoomSchemaFixture.columns(db, "podcasts").contains("epNs"))
+            assertFalse(RoomSchemaFixture.columns(db, "local_episodes").contains("legacy"))
+            assertEquals(before, RoomSchemaFixture.snapshot(db))
+        }
+
+        val db = openWithRoom()
+
+        assertEquals(39, db.sql.version)
+        assertTrue(db.episodeIdentityDao().getAlias("-14")!!.owner)
+        assertTrue(db.localEpisodeCatalogDao().getEpisode("5001")!!.legacy)
+    }
+
+    /** The seeding adds only what is missing, so running it again over its own result changes nothing. */
+    @Test
+    fun runningTheSeedingTwiceChangesNothing() {
+        RoomSchemaFixture.createFromSchema(context, NAME, 38) { db ->
+            fillVersion38(db)
+            EpisodeIdentityMigration.migrate(db, nowMillis = 1L)
+            val once = RoomSchemaFixture.snapshot(db)
+
+            EpisodeIdentityMigration.migrate(db, nowMillis = 2L)
+
+            assertEquals(once, RoomSchemaFixture.snapshot(db))
         }
     }
 
@@ -398,6 +645,7 @@ class RoomV39UpgradeTest {
         const val UNFOLLOWED = "200"
         const val RSS_SHOW = "rss:abc"
         const val SPREAKER_SHOW = "3391039"
+        const val TWIN_SHOW = "101"
         const val SPREAKER_KEY = "https://api.spreaker.com/episode/75827097"
         const val SPREAKER_RECIPE = 8825297254050678L
         const val SERVED = "8825297254050678"

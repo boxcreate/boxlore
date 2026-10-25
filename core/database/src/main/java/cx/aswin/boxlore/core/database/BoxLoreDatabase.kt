@@ -305,7 +305,12 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             }
         }
 
-        /** Episode aliases and feed columns; see [EpisodeIdentityMigration]. Never edit it; later changes go to v40. */
+        /**
+         * Episode aliases and feed columns; see [EpisodeIdentityMigration]. Never edit it; later changes go to v40.
+         *
+         * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39).
+         * COMPAT(own-ids): the upgrade path from every shipped build. Permanent: never remove (MIGRATION.md §5).
+         */
         private val MIGRATION_38_39 = object : Migration(38, 39) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 EpisodeIdentityMigration.migrate(db, nowMillis = System.currentTimeMillis())

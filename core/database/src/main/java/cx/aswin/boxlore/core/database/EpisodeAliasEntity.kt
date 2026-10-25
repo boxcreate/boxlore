@@ -79,7 +79,7 @@ object EpisodeAliasProvenance {
     /** Seeded by the v39 upgrade from a row whose key was the synthetic `id:<its own ID>`. */
     const val UPGRADE_SYNTHETIC_KEY = "upgrade_synthetic_key"
 
-    /** Seeded by the v39 upgrade from a row keyed by its audio address while its saved item had a GUID. */
+    /** Seeded by the v39 upgrade from a phone-minted row keyed by its own audio address, which may hide a GUID. */
     const val UPGRADE_AUDIO_URL_KEY = "upgrade_audio_url_key"
 
     /** Seeded by the v39 upgrade from an ID found only in history, the queue or downloads. */

@@ -16,7 +16,11 @@ data class QueueMetadataEntity(
     /**
      * Recent queue removals with their episode identity (JSON list of ID, recipe ID, show and
      * catalog key), so a removal also reaches devices that store the episode under another ID.
-     * Added in Room v39 beside [recentRemovedEpisodeIds], which stays for older builds.
+     * Added in Room v39 beside [recentRemovedEpisodeIds], which stays for older builds. Nothing
+     * reads or writes it yet.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 rich queue tombstones).
+     * COMPAT(own-ids): queue removals across an episode's IDs. Permanent: never remove (MIGRATION.md §5).
      */
     val recentRemovedEpisodes: String? = null,
 )

@@ -641,6 +641,8 @@ class LocalEpisodeCatalogRepositoryTest {
 
         override suspend fun upsertFeed(feed: LocalEpisodeFeedEntity): Unit = feeds.set(feed.podcastId, feed)
 
+        override suspend fun replaceFeedRow(feed: LocalEpisodeFeedEntity): Unit = feeds.set(feed.podcastId, feed)
+
         /** Room's REPLACE: a stored row is deleted when it shares the primary key or the unique (podcastId, guid) index. */
         override suspend fun upsertEpisodes(episodes: List<LocalEpisodeEntity>) {
             for (row in episodes) {

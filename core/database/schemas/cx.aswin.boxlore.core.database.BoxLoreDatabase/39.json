@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 39,
-    "identityHash": "79a31678f833fd93abdfcf3cfefe54cc",
+    "identityHash": "b54b2b328bf5d2229691848a2aa6b4f4",
     "entities": [
       {
         "tableName": "listening_history",
@@ -1389,7 +1389,7 @@
       },
       {
         "tableName": "local_episodes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`episodeId` TEXT NOT NULL, `podcastId` TEXT NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `audioUrl` TEXT NOT NULL, `imageUrl` TEXT, `duration` INTEGER NOT NULL, `publishedDate` INTEGER NOT NULL, `chaptersUrl` TEXT, `transcriptUrl` TEXT, `transcripts` TEXT, `persons` TEXT, `seasonNumber` INTEGER, `episodeNumber` INTEGER, `episodeType` TEXT, `enclosureType` TEXT, `legacy` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`episodeId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`episodeId` TEXT NOT NULL, `podcastId` TEXT NOT NULL, `guid` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `audioUrl` TEXT NOT NULL, `imageUrl` TEXT, `duration` INTEGER NOT NULL, `publishedDate` INTEGER NOT NULL, `chaptersUrl` TEXT, `transcriptUrl` TEXT, `transcripts` TEXT, `persons` TEXT, `seasonNumber` INTEGER, `episodeNumber` INTEGER, `episodeType` TEXT, `enclosureType` TEXT, `legacy` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`episodeId`))",
         "fields": [
           {
             "fieldPath": "episodeId",
@@ -1489,7 +1489,7 @@
             "columnName": "legacy",
             "affinity": "INTEGER",
             "notNull": true,
-            "defaultValue": "0"
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -1914,7 +1914,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '79a31678f833fd93abdfcf3cfefe54cc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b54b2b328bf5d2229691848a2aa6b4f4')"
     ]
   }
 }
