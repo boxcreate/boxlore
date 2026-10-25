@@ -2,7 +2,7 @@
 
 The rules every boxlore component follows to identify an episode. Server components follow the same rules. Change them together, and never change a rule marked **fixed**.
 
-**Status:** sections 1–3 are implemented: `EpisodeRecipeId` in `:core:model` and `scripts/sync/lib/episode-recipe-id.js` with the shared fixture, and the explicit trim in `StickyEpisodeIdentity.catalogKey`. The app's feed parsers record each item's document position, so a duplicate key keeps the first item in the document (section 3), and key GUID-less items on the raw `<enclosure url>` (section 1); stored rows keep their IDs through the keys older builds used. Sections 4 and 5 bind the app code that stores or resolves recipe IDs once it adopts them.
+**Status:** sections 1–3 are implemented: `EpisodeRecipeId` in `:core:model` and `scripts/sync/lib/episode-recipe-id.js` with the shared fixture, and the explicit trim in `StickyEpisodeIdentity.catalogKey`. The app's feed parsers record each item's document position, so a duplicate key keeps the first item in the document (section 3), and key GUID-less items on the first playable raw `<enclosure url>` (section 1); stored rows keep their IDs through the keys older builds used. An item with no GUID and no playable enclosure keeps a phone-only key and never takes a recipe ID. Sections 4 and 5 bind the app code that stores or resolves recipe IDs once it adopts them.
 
 ## 1. What an episode is
 

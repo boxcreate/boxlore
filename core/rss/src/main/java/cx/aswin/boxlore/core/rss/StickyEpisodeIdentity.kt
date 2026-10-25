@@ -19,10 +19,14 @@ object StickyEpisodeIdentity {
     fun catalogKey(guid: String?, enclosureUrl: String?,): String? = EpisodeRecipeId.catalogKey(guid, enclosureUrl)
 
     /**
-     * Catalog key of a parsed feed item: trimmed GUID, else the trimmed raw `<enclosure url>`, else
-     * the trimmed audio address the parser picked (items with no enclosure, such as `media:content`
-     * only). Keying on the enclosure the feed declares, as the server does, keeps the key the same
+     * Catalog key of a parsed feed item: trimmed GUID, else the trimmed raw `<enclosure url>` (the
+     * caller passes the first playable one), else the trimmed audio address the parser picked.
+     * Keying on the enclosure the feed declares, as the server does, keeps the key the same
      * whichever parser read the feed; null means the item has no identity.
+     *
+     * The audio-address fallback (items with no playable enclosure, such as `media:content` only) is
+     * a phone-only key: docs/EPISODE_IDS.md §1 gives such items no identity. They keep negative IDs
+     * and must never take a recipe ID ([ParsedFeedItem.keyFollowsContract]).
      *
      * Added in P4 PR 8 (own-IDs plan section 4, catalog key; GUID-less items).
      * COMPAT(own-ids): the key new local rows of GUID-less items are stored under. Permanent: never remove (MIGRATION.md §5).

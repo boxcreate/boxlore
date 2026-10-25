@@ -12,7 +12,8 @@ internal object IdentityFixtureFeed {
     const val SHOW_ID = "4242"
     val namespace: String = RssIdGenerator.podcastId(FEED_URL)
 
-    const val EP1_PADDED_GUID = " ep-1᠎"
+    /** The padded GUID as the feed declares it: a leading NBSP and a trailing U+180E. */
+    const val EP1_PADDED_GUID = "\u00A0ep-1\u180E"
 
     val SMALL_ROWS: List<Pair<String, String>> =
         listOf(
@@ -40,10 +41,42 @@ internal object IdentityFixtureFeed {
     fun small(): ByteArray = requireNotNull(javaClass.getResourceAsStream("/feed_identity.xml")).readBytes()
 
     /** The same feed padded past 4 MiB, so only the streaming parser reads it. */
-    fun large(): ByteArray {
+    fun large(): ByteArray = padded(small())
+
+    /**
+     * Rows the parse no longer refreshes once it joins a GUID-less item's two reads: [SMALL_ROWS]
+     * stored one row per parser's audio address for ep2 and ep0. They stay in place, unchanged.
+     */
+    val SMALL_ORPHANS: List<Pair<String, String>> =
+        listOf(
+            "-5426929428811007990" to "https://cdn.example.com/ep2-hq.m4a",
+            "-5875828860057459777" to "https://cdn.example.com/ep0-b.mp3",
+        )
+
+    /** `feed_shared_enclosure.xml`: GUID-less items sharing a cover-image or trailer enclosure. */
+    fun sharedEnclosure(): ByteArray = requireNotNull(javaClass.getResourceAsStream("/feed_shared_enclosure.xml")).readBytes()
+
+    /** [sharedEnclosure] with a new GUID-less release on top that shares the cover image. */
+    fun sharedEnclosureWithNewRelease(): ByteArray = sharedEnclosure()
+        .decodeToString()
+        .replaceFirst(
+            "<!-- new-release -->",
+            """<item><title>Episode E With A Cover Enclosure</title><pubDate>Sat, 04 Jan 2020 00:00:00 GMT</pubDate>""" +
+                """<enclosure url="https://cdn.example.com/cover.jpg" type="image/jpeg" length="10"/>""" +
+                """<enclosure url="https://cdn.example.com/e.mp3" type="audio/mpeg" length="1000"/></item>""",
+        ).encodeToByteArray()
+
+    /** [bytes] padded past 4 MiB, so only the streaming parser reads it. */
+    fun padded(bytes: ByteArray): ByteArray {
         val padding = "<!--" + "x".repeat(RssParsePolicy.LIBRARY_PARSER_MAX_BYTES) + "-->"
-        return small().decodeToString().replaceFirst("<channel>", "<channel>$padding").encodeToByteArray()
+        return bytes.decodeToString().replaceFirst("<channel>", "<channel>$padding").encodeToByteArray()
     }
+
+    /**
+     * [parsed] as the library parser alone reports it (the streaming parser failed): the library's
+     * ID and audio address, and no enclosures, since the library reports only one of any type.
+     */
+    fun libraryOnly(parsed: ParsedRssFeed): List<ParsedFeedItem> = parsed.items.map { ParsedFeedItem(it.episode, it.documentIndex) }
 
     suspend fun parse(bytes: ByteArray): ParsedRssFeed = RssFeedClient().parse(FEED_URL, bytes, namespace)
 }

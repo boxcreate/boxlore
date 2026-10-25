@@ -293,8 +293,9 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                         item.rawEnclosure?.type
                             ?: item.rawMediaContent?.type,
                     )
-                    // The library reports only the item's last enclosure.
-                    ParsedFeedItem(episode, index, enclosureUrls = listOfNotNull(enclosureUrl?.takeIf(String::isNotBlank)))
+                    // The library reports one enclosure of any type (the last), not the first playable
+                    // one, so its items are keyed on the audio address it picked, as older builds did.
+                    ParsedFeedItem(episode, index)
                 }
             }
         require(items.isNotEmpty()) { "Feed has no playable episodes" }
@@ -369,7 +370,10 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
 
         require(feed.title.isNotBlank()) { "Feed has no podcast title" }
         require(feed.items.isNotEmpty()) { "Feed has no playable episodes" }
-        val ordered = FeedDocumentOrder.newestFirst(FeedDocumentOrder.firstInDocument(feed.items))
+        val ordered =
+            FeedDocumentOrder.newestFirst(
+                FeedDocumentOrder.firstInDocument(FeedDocumentOrder.withDistinctEnclosureKeys(feed.items)),
+            )
         return ParsedRssFeed(
             title = feed.title.trim(),
             author = feed.author.trim(),
@@ -552,8 +556,8 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
     private fun handleEnclosureTag(parser: XmlPullParser, episode: MutableEpisode,) {
         val url = parser.getAttributeValue(null, "url")
         val type = parser.getAttributeValue(null, "type")
-        if (!url.isNullOrBlank()) episode.enclosureUrls += url
         if (!url.isNullOrBlank() && isPlayableMedia(url, type, null)) {
+            episode.enclosureUrls += url
             episode.audioUrl = url
             episode.enclosureType = type
         }
@@ -563,8 +567,8 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         val relation = parser.getAttributeValue(null, "rel")
         val href = parser.getAttributeValue(null, "href")
         val type = parser.getAttributeValue(null, "type")
-        if (relation == "enclosure" && !href.isNullOrBlank()) episode.enclosureUrls += href
         if (relation == "enclosure" && !href.isNullOrBlank() && isPlayableMedia(href, type, null)) {
+            episode.enclosureUrls += href
             episode.audioUrl = href
             episode.enclosureType = type
         }
@@ -727,7 +731,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         var episodeType: String? = null
         var enclosureType: String? = null
 
-        /** Every enclosure URL of the item, raw and in document order, playable or not. */
+        /** The item's playable enclosure URLs, raw and in document order (cover images and other files never count). */
         val enclosureUrls = mutableListOf<String>()
 
         fun toItem(podcastId: String): ParsedFeedItem? {

@@ -1,8 +1,11 @@
 package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.database.RssEpisodeEntity
+import cx.aswin.boxlore.core.database.RssEpisodeIdentity
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.testing.TestFixtures
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -104,6 +107,54 @@ class LegacyRssSubscriptionUpgradeLogicTest {
         assertEquals(5_000L, entity.skipBeginningOverrideMs)
         assertTrue(entity.rssHasNewEpisodes)
     }
+
+    @Test
+    fun `the copied catalog keeps every stored RSS ID and gives a shared key to the feed item`() = runTest {
+        // Stored RSS rows as older builds wrote the fixture feed (including both rows for ep2 and ep0),
+        // plus a stale stored copy that shares the key of a feed item.
+        val stale = rssRow("-999", key = "ep-5").copy(title = "Stale copy")
+        for (before in listOf(IdentityFixtureFeed.SMALL_ROWS, IdentityFixtureFeed.LARGE_ROWS)) {
+            for (bytes in listOf(IdentityFixtureFeed.small(), IdentityFixtureFeed.large())) {
+                val stored = before.map { (id, key) -> rssRow(id, key) } + stale
+                val rows =
+                    LegacyRssUpgradeLogic.copiedLocalRows(
+                        feedItems = IdentityFixtureFeed.parse(bytes).items,
+                        stored = stored,
+                        storedIdentities = stored.map { RssEpisodeIdentity(it.episodeId, it.guid, it.audioUrl) },
+                        target = LegacyRssUpgradeLogic.CopyTarget(IdentityFixtureFeed.SHOW_ID, IdentityFixtureFeed.namespace, null, null),
+                    )
+
+                val ids = rows.map { it.episodeId }
+                assertTrue(ids.containsAll(before.map { it.first }), "every stored ID is copied: $ids")
+                assertTrue(LegacyRssUpgradeLogic.listenerIdsResolve(ids, before.map { it.first }))
+                assertEquals(ids.size, ids.toSet().size)
+                assertEquals(rows.size, rows.map { it.guid }.toSet().size, "one row per key")
+                val ep5 = rows.single { it.guid == "ep-5" }
+                assertEquals("-1620196808107782941" to "Episode Five", ep5.episodeId to ep5.title)
+                assertFalse("-999" in ids)
+            }
+        }
+    }
+
+    private fun rssRow(id: String, key: String) = RssEpisodeEntity(
+        episodeId = id,
+        podcastId = IdentityFixtureFeed.namespace,
+        guid = key.takeUnless { it.startsWith("https://") },
+        title = "Stored $id",
+        description = "",
+        audioUrl = if (key.startsWith("https://")) key else "https://cdn.example.com/$key.mp3",
+        imageUrl = null,
+        duration = 60,
+        publishedDate = 1L,
+        chaptersUrl = null,
+        transcriptUrl = null,
+        transcripts = null,
+        persons = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        episodeType = null,
+        enclosureType = null,
+    )
 
     private fun snapshot(sourceUrl: String, podcastGuid: String? = null,): LegacyRssFeedSnapshot = LegacyRssFeedSnapshot(
         sourceFeedUrl = sourceUrl,

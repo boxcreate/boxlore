@@ -35,19 +35,17 @@ object StickyRssEpisodeRemap {
     /**
      * [parsed] in its order, one item per catalog key (the first in the feed document wins), each
      * under the ID of the stored row it matches, else its minted ID. Stored rows are found by the
-     * item's catalog key, then by the keys older builds used ([StoredRowMatch.resolve]). Two items
-     * never end up under one ID: a later one in the document is dropped.
+     * item's catalog key, then by its own minted ID, then by the keys older builds used
+     * ([StoredRowMatch.resolve]). Two items never end up under one ID: a later one in the document
+     * is dropped. A stored row no item matches (an older build's second row for one item) is left
+     * as it is.
      *
-     * Document order and the two-key lookup were added in P4 PR 8 (own-IDs plan section 4).
+     * Document order and the stored-row lookup were added in P4 PR 8 (own-IDs plan section 4).
      * COMPAT(own-ids): keeps every stored RSS episode ID when keys or duplicate handling change. Permanent: never remove (MIGRATION.md §5).
      */
     fun remapItems(parsed: List<ParsedFeedItem>, existing: List<RssEpisodeIdentity>,): List<ParsedFeedItem> {
-        val existingByKey = linkedMapOf<String, String>()
-        for (row in existing) {
-            val key = StickyEpisodeIdentity.catalogKey(row.guid, row.audioUrl) ?: continue
-            existingByKey.putIfAbsent(key, row.episodeId)
-        }
-        val matches = StoredRowMatch.resolve(parsed, existingByKey)
+        val stored = StoredRowMatch.StoredRows.of(existing.map { Triple(it.episodeId, it.guid, it.audioUrl) })
+        val matches = StoredRowMatch.resolve(parsed, stored)
         val remapped =
             parsed.mapIndexedNotNull { position, item ->
                 val match = matches[position] ?: return@mapIndexedNotNull null

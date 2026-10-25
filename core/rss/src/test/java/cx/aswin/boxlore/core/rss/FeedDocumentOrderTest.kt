@@ -90,28 +90,121 @@ class FeedDocumentOrderTest {
 
     @Test
     fun `stored IDs are identical before and after on the fixture feed`() = runTest {
-        for ((bytes, before) in listOf(IdentityFixtureFeed.small() to SMALL_ROWS, IdentityFixtureFeed.large() to LARGE_ROWS)) {
+        // Each item updates the row an older build stored for it under the same read: which row
+        // goes with which item, not only that every ID is one of the stored ones.
+        val smallExpected =
+            mapOf(
+                "Episode Five" to ("-1620196808107782941" to "ep-5"),
+                "Episode Four" to ("-4092870849651754619" to "ep-4"),
+                "Episode Three Without A GUID" to ("-230289529853465550" to "https://cdn.example.com/ep3.mp3"),
+                "Episode Two With Two Media Elements" to ("-1745259125871161974" to ep2),
+                "Episode One With A Padded GUID" to ("-4473233887734360468" to "ep-1"),
+                "Episode Zero With Two Enclosures" to ("-171063312026563321" to ep0a),
+            )
+        val largeExpected =
+            smallExpected +
+                mapOf(
+                    "Episode Two With Two Media Elements" to ("-5426929428811007990" to ep2Hq),
+                    "Episode Zero With Two Enclosures" to ("-5875828860057459777" to ep0b),
+                )
+        val cases =
+            listOf(
+                Triple(IdentityFixtureFeed.small(), SMALL_ROWS, smallExpected),
+                Triple(IdentityFixtureFeed.large(), LARGE_ROWS, largeExpected),
+            )
+        for ((bytes, before, expected) in cases) {
             val parsed = IdentityFixtureFeed.parse(bytes)
-            val stored = before.map { (id, key) -> LocalEpisodeIdentity(id, key, audioFor(key)) }
 
-            val rows = persist(parsed.items, existing = stored)
+            val rows = persist(parsed.items, existing = before.map { (id, key) -> LocalEpisodeIdentity(id, key, audioFor(key)) })
 
-            assertTrue(before.containsAll(rows.map { it.episodeId to it.guid }), "every row keeps a stored ID and key: $rows")
+            assertEquals(expected, rows.associate { it.title to (it.episodeId to it.guid) })
+        }
+        // The two rows older builds stored for ep2 and ep0 on the small read; the joined read updates
+        // one of each pair. The other is no longer written: no row the persist returns carries it.
+        val smallRows = persist(IdentityFixtureFeed.parse(IdentityFixtureFeed.small()).items, existing = SMALL_ROWS.map { (id, key) -> LocalEpisodeIdentity(id, key, audioFor(key)) })
+        assertEquals(SMALL_ROWS.toSet() - IdentityFixtureFeed.SMALL_ORPHANS.toSet(), smallRows.map { it.episodeId to it.guid }.toSet())
+    }
+
+    @Test
+    fun `rows stored on one side of 4 MiB keep their IDs when the feed is read on the other side`() = runTest {
+        // A device stored the feed while it was under 4 MiB (both parsers) and reads it over 4 MiB, or the reverse.
+        val cases =
+            listOf(
+                IdentityFixtureFeed.large() to SMALL_ROWS,
+                IdentityFixtureFeed.small() to LARGE_ROWS,
+            )
+        for ((bytes, before) in cases) {
+            val parsed = IdentityFixtureFeed.parse(bytes)
+
+            val rows = persist(parsed.items, existing = before.map { (id, key) -> LocalEpisodeIdentity(id, key, audioFor(key)) })
+
+            assertTrue(before.containsAll(rows.map { it.episodeId to it.guid }), "no new ID or key: $rows")
             assertEquals(parsed.items.size, rows.size)
         }
     }
 
     @Test
-    fun `true RSS rows keep their stored IDs on the fixture feed`() = runTest {
-        for ((bytes, before) in listOf(IdentityFixtureFeed.small() to SMALL_ROWS, IdentityFixtureFeed.large() to LARGE_ROWS)) {
+    fun `a read by the library parser alone finds the rows a joined read stored`() = runTest {
+        for (bytes in listOf(IdentityFixtureFeed.small(), IdentityFixtureFeed.sharedEnclosure())) {
             val parsed = IdentityFixtureFeed.parse(bytes)
-            val stored = before.map { (id, key) -> RssEpisodeIdentity(id, key.takeUnless { it.startsWith("https://") }, audioFor(key)) }
+            val stored = persist(parsed.items)
 
-            val ids = StickyRssEpisodeRemap.remap(parsed.items, stored).map { it.episodeId }
+            val reread = persist(IdentityFixtureFeed.libraryOnly(parsed), existing = stored.map { LocalEpisodeIdentity(it.episodeId, it.guid, it.audioUrl) })
 
-            assertTrue(before.map { it.first }.containsAll(ids), "every row keeps a stored ID: $ids")
-            assertEquals(ids.size, ids.toSet().size)
+            assertEquals(stored.map { it.episodeId to it.guid }.toSet(), reread.map { it.episodeId to it.guid }.toSet())
         }
+        // ep0's library read is keyed on the audio address the library picked, not the last enclosure.
+        val libraryEp0 = IdentityFixtureFeed.libraryOnly(IdentityFixtureFeed.parse(IdentityFixtureFeed.small())).single { it.episode.title.startsWith("Episode Zero") }
+        assertEquals(ep0a, libraryEp0.catalogKey)
+    }
+
+    @Test
+    fun `GUID-less items sharing a cover image or a trailer enclosure stay apart`() = runTest {
+        val cover = "https://cdn.example.com/cover.jpg"
+        val small = IdentityFixtureFeed.parse(IdentityFixtureFeed.sharedEnclosure())
+        val large = IdentityFixtureFeed.parse(IdentityFixtureFeed.padded(IdentityFixtureFeed.sharedEnclosure()))
+
+        for (parsed in listOf(small, large)) {
+            val byTitle = parsed.items.filterNot { it.catalogKey == "https://cdn.example.com/trailer.mp3" }.associateBy { it.episode.title.substringAfter("Episode ").first() }
+            // A non-audio enclosure never keys an item; a shared trailer leaves each item on its own audio.
+            assertEquals(
+                mapOf('A' to "a.mp3", 'B' to "b.mp3", 'C' to "c.mp3", 'D' to "d.mp3").mapValues { "https://cdn.example.com/${it.value}" },
+                byTitle.mapValues { it.value.catalogKey },
+            )
+            assertTrue(parsed.items.none { it.catalogKey == cover })
+            assertEquals(4, byTitle.values.map { it.episode.episodeId }.toSet().size)
+        }
+        // The same items get the same IDs whichever parser read the feed.
+        val ids = { parsed: ParsedRssFeed -> parsed.items.associate { it.catalogKey to it.episode.episodeId } }
+        assertEquals(ids(large), ids(small).filterKeys { it in ids(large) })
+    }
+
+    @Test
+    fun `true RSS rows keep their stored IDs on the fixture feed`() = runTest {
+        // Both sides of 4 MiB, from rows stored on the same side and on the other side.
+        for (before in listOf(SMALL_ROWS, LARGE_ROWS)) {
+            for (bytes in listOf(IdentityFixtureFeed.small(), IdentityFixtureFeed.large())) {
+                val parsed = IdentityFixtureFeed.parse(bytes)
+                val stored = before.map { (id, key) -> RssEpisodeIdentity(id, key.takeUnless { it.startsWith("https://") }, audioFor(key)) }
+
+                val ids = StickyRssEpisodeRemap.remap(parsed.items, stored).map { it.episodeId }
+
+                assertTrue(before.map { it.first }.containsAll(ids), "every row keeps a stored ID: $ids")
+                assertEquals(ids.size, ids.toSet().size)
+                assertEquals(parsed.items.size, ids.size)
+            }
+        }
+    }
+
+    @Test
+    fun `a new release sharing a cover enclosure never takes another true RSS episode's ID`() = runTest {
+        val first = StickyRssEpisodeRemap.remap(IdentityFixtureFeed.parse(IdentityFixtureFeed.sharedEnclosure()).items, existing = emptyList())
+        val stored = first.map { RssEpisodeIdentity(it.episodeId, it.guid, it.audioUrl) }
+
+        val next = StickyRssEpisodeRemap.remap(IdentityFixtureFeed.parse(IdentityFixtureFeed.sharedEnclosureWithNewRelease()).items, stored)
+
+        assertEquals(first.map { it.title to it.episodeId }.toSet(), next.filterNot { it.title.startsWith("Episode E") }.map { it.title to it.episodeId }.toSet())
+        assertTrue(next.single { it.title.startsWith("Episode E") }.episodeId !in first.map { it.episodeId })
     }
 
     @Test
@@ -138,7 +231,7 @@ class FeedDocumentOrderTest {
         val x = item(guid = null, title = "X", published = 10L, index = 0, audio = "https://cdn.example/a.mp3", enclosures = listOf("https://cdn.example/r.mp3"))
         val y = item(guid = null, title = "Y", published = 20L, index = 1, audio = "https://cdn.example/a.mp3", enclosures = listOf("https://cdn.example/a.mp3"))
 
-        val matches = StoredRowMatch.resolve(listOf(x, y), mapOf("https://cdn.example/a.mp3" to "-77"))
+        val matches = StoredRowMatch.resolve(listOf(x, y), StoredRowMatch.StoredRows.of(listOf(Triple("-77", null, "https://cdn.example/a.mp3"))))
 
         assertEquals(StoredRowMatch("https://cdn.example/r.mp3", null), matches[0])
         assertEquals(StoredRowMatch("https://cdn.example/a.mp3", "-77"), matches[1])
@@ -171,7 +264,7 @@ class FeedDocumentOrderTest {
 
         assertEquals("https://cdn.example/m.mp3", mediaOnly.catalogKey)
         assertTrue(mediaOnly.legacyKeys.isEmpty())
-        assertNull(StickyEpisodeIdentity.feedItemKey(" ", " ", "᠎"))
+        assertNull(StickyEpisodeIdentity.feedItemKey(" ", "\u00A0", "\u180E"))
     }
 
     private fun persist(items: List<ParsedFeedItem>, existing: List<LocalEpisodeIdentity> = emptyList()) = LocalEpisodeCatalogPersist.toLocalEpisodes(

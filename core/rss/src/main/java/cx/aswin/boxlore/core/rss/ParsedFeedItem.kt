@@ -10,27 +10,52 @@ import cx.aswin.boxlore.core.database.RssEpisodeEntity
  * (docs/EPISODE_IDS.md §3), whatever their publish dates say.
  *
  * [episode] keeps the ID minted exactly as before (the GUID, else the audio address the parser
- * picked). The [catalogKey] for a GUID-less item is the raw `<enclosure url>` instead, so it no
- * longer depends on which parser read the feed (the library parser runs only up to 4 MiB).
+ * picked). The [catalogKey] for a GUID-less item is its first playable `<enclosure url>` instead,
+ * so a feed read by both parsers and the same feed read by the streaming parser alone (over 4 MiB)
+ * key it the same way.
  *
  * Added in P4 PR 8 (own-IDs plan section 4: the first item in the feed document wins a duplicate
  * key; GUID-less items are keyed on the raw enclosure URL).
  * COMPAT(own-ids): every stored and new local episode ID is decided through these keys. Permanent: never remove (MIGRATION.md §5).
  *
  * @property documentIndex the item's 0-based position among the feed's `<item>`/`<entry>` elements.
- * @property enclosureUrls every `<enclosure url>` (or Atom `<link rel="enclosure">`) of the item
- *   that the parser saw, raw and in document order. The library parser sees only the last one.
+ * @property enclosureUrls the item's playable `<enclosure url>`s (and Atom `<link rel="enclosure">`),
+ *   raw and in document order. Only the streaming parser fills it: the library parser reports a
+ *   single enclosure of any type, so its items are keyed on the audio address it picked, as older
+ *   builds keyed them. Non-playable enclosures (cover images, PDFs) never count.
  * @property audioUrls the audio addresses the parsers picked for this item; older builds keyed
  *   GUID-less rows on these.
+ * @property keyOnAudio true when another GUID-less item of the same feed declares the same first
+ *   enclosure, so the enclosure can't tell them apart; the item is then keyed on its audio address,
+ *   as older builds keyed it ([FeedDocumentOrder.withDistinctEnclosureKeys]).
  */
 data class ParsedFeedItem(
     val episode: RssEpisodeEntity,
     val documentIndex: Int,
     val enclosureUrls: List<String> = emptyList(),
     val audioUrls: List<String> = listOf(episode.audioUrl),
+    val keyOnAudio: Boolean = false,
 ) {
-    /** Trimmed GUID, else trimmed first enclosure URL, else trimmed audio address; null: no identity. */
-    val catalogKey: String? = StickyEpisodeIdentity.feedItemKey(episode.guid, enclosureUrls.firstOrNull(), episode.audioUrl)
+    /**
+     * Trimmed GUID, else trimmed first playable enclosure URL, else trimmed audio address; null: no
+     * identity. The last case (no GUID and no usable enclosure, such as `media:content` only, or a
+     * library-only read) is a phone-side key that the shared contract (docs/EPISODE_IDS.md §1) does
+     * not define; see [keyFollowsContract].
+     */
+    val catalogKey: String? =
+        StickyEpisodeIdentity.feedItemKey(episode.guid, enclosureUrls.firstOrNull()?.takeUnless { keyOnAudio }, episode.audioUrl)
+
+    /**
+     * Whether [catalogKey] is the key the shared contract gives this item (its GUID or its
+     * enclosure URL). False for an item keyed on the audio address a parser picked, which keeps its
+     * negative ID on the phone.
+     *
+     * COMPAT(own-ids): P4 PR 9 must not mint recipe IDs for items where this is false; the server
+     * skips such items or keys them differently. Permanent: never remove (MIGRATION.md §5).
+     */
+    val keyFollowsContract: Boolean =
+        StickyEpisodeIdentity.catalogKey(episode.guid, null) != null ||
+            (!keyOnAudio && StickyEpisodeIdentity.catalogKey(null, enclosureUrls.firstOrNull()) != null)
 
     /**
      * Keys older builds stored this item under (GUID, else the audio address a parser picked),
@@ -83,13 +108,28 @@ internal object FeedDocumentOrder {
     fun newestFirst(items: List<ParsedFeedItem>): List<ParsedFeedItem> = inDocumentOrder(items).sortedByDescending { it.episode.publishedDate }
 
     /**
+     * [items] with [ParsedFeedItem.keyOnAudio] set on every GUID-less item whose first enclosure
+     * another GUID-less item of the same feed also declares first (a shared trailer, say). The
+     * enclosure can't tell those items apart, so each keeps the key older builds gave it, its audio
+     * address, instead of collapsing into one episode.
+     */
+    fun withDistinctEnclosureKeys(items: List<ParsedFeedItem>): List<ParsedFeedItem> {
+        fun ParsedFeedItem.enclosureKey(): String? = takeIf { it.isGuidless() }?.let { StickyEpisodeIdentity.catalogKey(null, it.enclosureUrls.firstOrNull()) }
+        val counts = items.mapNotNull { it.enclosureKey() }.groupingBy { it }.eachCount()
+        return items.map { item ->
+            val key = item.enclosureKey()
+            if (key != null && (counts[key] ?: 0) > 1) item.copy(keyOnAudio = true) else item
+        }
+    }
+
+    /**
      * Joins the library parser's items with the streaming parser's items for the same feed.
      *
      * Items are joined by catalog key, then by minted ID (the join before P4 PR 8), then, for
-     * GUID-less items, by their last enclosure (the only one the library parser reports). A joined
-     * item takes the streaming parser's enclosures, so its key is the feed's first enclosure, and
-     * keeps the library item's ID and audio address, as before. The result has one item per key,
-     * the first in the document winning, in document order.
+     * GUID-less items, by the library's audio address among one streaming item's enclosures. A joined
+     * item takes the streaming parser's enclosures, so its key is the feed's first playable
+     * enclosure, and keeps the library item's ID and audio address, as before. The result has one
+     * item per key, the first in the document winning, in document order.
      */
     fun merge(library: List<ParsedFeedItem>, custom: List<ParsedFeedItem>): List<ParsedFeedItem> {
         val libraryItems = firstInDocument(library)
@@ -97,14 +137,15 @@ internal object FeedDocumentOrder {
         // Positions in customItems; firstInDocument made keys and IDs unique.
         val byKey = HashMap<String, Int>()
         val byId = HashMap<String, Int>()
-        val byLastEnclosure = HashMap<String, Int?>()
+        val byEnclosure = HashMap<String, Int?>()
         customItems.forEachIndexed { position, item ->
             item.catalogKey?.let { byKey[it] = position }
             byId[item.episode.episodeId] = position
-            if (item.isGuidless() && item.enclosureUrls.isNotEmpty()) {
-                val last = item.enclosureUrls.last()
-                // Two GUID-less items ending in the same enclosure can't be told apart: join neither.
-                byLastEnclosure[last] = if (last in byLastEnclosure) null else position
+            if (item.isGuidless()) {
+                for (url in item.enclosureUrls.mapNotNull { StickyEpisodeIdentity.catalogKey(null, it) }.distinct()) {
+                    // Two GUID-less items declaring the same enclosure can't be told apart: join neither.
+                    byEnclosure[url] = if (url in byEnclosure) null else position
+                }
             }
         }
         val joined = BooleanArray(customItems.size)
@@ -112,7 +153,7 @@ internal object FeedDocumentOrder {
         fun partnerOf(item: ParsedFeedItem): Int? = listOfNotNull(
             item.catalogKey?.let(byKey::get),
             byId[item.episode.episodeId],
-            item.enclosureUrls.lastOrNull()?.takeIf { item.isGuidless() }?.let(byLastEnclosure::get),
+            StickyEpisodeIdentity.catalogKey(null, item.episode.audioUrl)?.takeIf { item.isGuidless() }?.let(byEnclosure::get),
         ).firstOrNull { !joined[it] }
 
         val merged =
@@ -125,6 +166,7 @@ internal object FeedDocumentOrder {
                     documentIndex = minOf(libraryItem.documentIndex, customItem.documentIndex),
                     enclosureUrls = customItem.enclosureUrls.ifEmpty { libraryItem.enclosureUrls },
                     audioUrls = (libraryItem.audioUrls + customItem.audioUrls).distinct(),
+                    keyOnAudio = customItem.keyOnAudio || libraryItem.keyOnAudio,
                 )
             } + customItems.filterIndexed { position, _ -> !joined[position] }
         return firstInDocument(merged)
