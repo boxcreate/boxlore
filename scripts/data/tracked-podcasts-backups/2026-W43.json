@@ -214,6 +214,11 @@
     "imageUrl": "https://podcasts.rmffm.pl/podcasts/covers/misja-specjalna/misja-specjalna_3000.jpg",
     "title": "Misja specjalna"
   },
+  "422484": {
+    "feedUrl": "https://feeds.acast.com/public/shows/32a7db3f-bb92-510a-ad6a-94d579b7d794",
+    "imageUrl": "https://assets.pippa.io/shows/61b757671695629a3de9502b/1642102663523-f8c8a124fcbe9954fea761434ae88f0a.jpeg",
+    "title": "DUST"
+  },
   "431205": {
     "feedUrl": "https://feeds.simplecast.com/tc4zxWgX",
     "imageUrl": "https://image.simplecastcdn.com/images/92728f12-3d53-46b8-9a33-60e9b83ad72d/a328dbf8-27d3-4955-8ebd-307b358d9f62/3000x3000/the-exchange-podcast-cover-art-3000x3000-v04.jpg?aid=rss_feed",
@@ -250,7 +255,6 @@
     "title": "My First Million"
   },
   "444331": {
-    "feedUrl": "https://feeds.megaphone.fm/thispastweekend",
     "imageUrl": "https://megaphone.imgix.net/podcasts/77b32ce4-b2db-11ed-9447-83efd7382a7a/image/image.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "This Past Weekend w/ Theo Von"
   },
@@ -410,6 +414,7 @@
     "title": "Dragnet"
   },
   "640518": {
+    "feedUrl": "https://feeds.acast.com/public/shows/660bbcb57c973e001624fdb8",
     "imageUrl": "https://assets.pippa.io/shows/660bbcb57c973e001624fdb8/1712149170242-bcc2fbbb85c3d64b4c2af984b5a8a872.jpeg",
     "title": "Podcast ohne richtigen Namen"
   },
@@ -594,6 +599,7 @@
     "title": "TED Talks Daily"
   },
   "987298": {
+    "feedUrl": "https://corecursive.libsyn.com/feed",
     "imageUrl": "https://static.libsyn.com/p/assets/d/7/a/5/d7a5a500931246e3/Coding_Stories.png",
     "title": "CoRecursive: Coding Stories"
   },
@@ -608,6 +614,7 @@
     "title": "All-In with Chamath, Jason, Sacks & Friedberg"
   },
   "1021757": {
+    "feedUrl": "https://feed.podbean.com/finalgirlshorrorcast/feed.xml",
     "imageUrl": "https://pbcdn1.podbean.com/imglogo/image-logo/1305227/2000x2000reduced.jpg",
     "title": "Final Girls Horrorcast"
   },
@@ -632,6 +639,7 @@
     "title": "GameStar Podcast"
   },
   "1047171": {
+    "feedUrl": "https://podcasts.files.bbci.co.uk/b036f7w2.rss",
     "imageUrl": "https://ichef.bbci.co.uk/images/ic/3000x3000/p0m1wy8q.jpg",
     "title": "BBC Inside Science"
   },
@@ -702,7 +710,7 @@
   },
   "1258562": {
     "feedUrl": "https://feeds.acast.com/public/shows/6a55242c7987e974eaf4ba29",
-    "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/41229866/ab71c973d23d6382.png",
+    "imageUrl": "https://assets.pippa.io/shows/6a55242c7987e974eaf4ba29/show-cover.png",
     "title": "The Desi Crime Podcast"
   },
   "1266933": {
@@ -731,11 +739,11 @@
     "title": "The Casual Criminalist"
   },
   "1365758": {
-    "feedUrl": "https://feeds.megaphone.fm/hubermanlab",
     "imageUrl": "https://megaphone.imgix.net/podcasts/042e6144-725e-11ec-a75d-c38f702aecad/image/ee4f0b7b466ca35620792970d9bce2d2.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "Huberman Lab"
   },
   "1365765": {
+    "feedUrl": "https://feeds.megaphone.fm/GLT4787413333",
     "imageUrl": "https://megaphone.imgix.net/podcasts/00c0a118-2426-11ee-b258-73d331d0123b/image/db3295fcd9d3a7113e8000e931f0541d.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "The Rest Is History"
   },
@@ -1060,6 +1068,7 @@
     "title": "Android Faithful"
   },
   "6467886": {
+    "feedUrl": "https://feeds.megaphone.fm/UNGESKRIPTETMEDIAGMBH9200557996",
     "imageUrl": "https://megaphone.imgix.net/podcasts/e23550ce-01a4-11ef-b43e-4701381baae3/image/396d51d784b2679f9fe034b6d0c9dd84.png?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "{ungeskriptet} - Der Meinungsfreiheit verpflichtet."
   },
@@ -1204,6 +1213,7 @@
     "title": "Passaporte pro Crime"
   },
   "6926108": {
+    "feedUrl": "https://feeds.megaphone.fm/GLT8915357524",
     "imageUrl": "https://megaphone.imgix.net/podcasts/fcb5140a-d4f9-11eb-8888-4b0c06dc1007/image/79d6292ddd818f59718d6c3afd3393ac.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "Hobbylos"
   },
@@ -1286,6 +1296,11 @@
     "feedUrl": "https://feeds.megaphone.fm/good-hang-with-amy-poehler",
     "imageUrl": "https://megaphone.imgix.net/podcasts/aa039a8e-de63-11ef-a44c-17dcb97c571d/image/39dfe060dbf437bfe5e5e0f0e8a88681.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "Good Hang with Amy Poehler"
+  },
+  "7216825": {
+    "feedUrl": "https://anchor.fm/s/100608e60/podcast/rss",
+    "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/42912952/42912952-1737752633564-0143730e94a75.jpg",
+    "title": "Los Scripts de Elio"
   },
   "7239415": {
     "feedUrl": "https://feeds.megaphone.fm/BRCM1552760380",
@@ -1408,7 +1423,6 @@
     "title": "School of Hip"
   },
   "7587315": {
-    "feedUrl": "https://feeds.megaphone.fm/GLT6907573392",
     "imageUrl": "https://megaphone.imgix.net/podcasts/0d68e376-bbe6-11f0-9c0a-3f76ef8f3285/image/498e631bcccecf7132fd56401217f29b.png?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
     "title": "The Rest Is Science"
   },
@@ -1527,6 +1541,11 @@
     "imageUrl": "https://image.simplecastcdn.com/images/57fbeae3-4706-465a-9023-b5b93404f92c/51ebd84f-5b6b-4f60-b689-bab17a68a439/3000x3000/chatgpt_image_aug_8_2026_094238_pm.jpg?aid=rss_feed",
     "title": "Indian Noir Hindi Horror Podcast"
   },
+  "8018152": {
+    "feedUrl": "https://feeds.megaphone.fm/GLT6357967095",
+    "imageUrl": "https://megaphone.imgix.net/podcasts/776ab0d4-949d-11f1-bbb3-cf54adb5d099/image/743d1ffa879e7fa8ed8d5e8453acd1a0.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+    "title": "Bear Hunt"
+  },
   "rss:0f0abbb33465bc83bb7736ecdad17f28bc2d727496bb3d015a1d36e9f164fa20~0f0abbb33465bc83bb7736ecdad17f28bc2d727496bb3d015a1d36e9f164fa20": {
     "feedUrl": "https://cloud.mave.digital/34720",
     "imageUrl": "https://cdn.mave.digital/storage/podcasts/3440bd15-836d-4f85-920f-30b66b2940bc/images/ad69d1a3-fe7d-46ab-87cd-96942cae7ee3.png",
@@ -1562,10 +1581,20 @@
     "imageUrl": "https://cdn.mave.digital/storage/podcasts/9a3abb50-22dc-4651-b401-2fe589164cd4/images/0798907f-417c-4633-be70-c4911f5b4967.png",
     "title": "Между Кадрами"
   },
+  "rss:95be50bde8809ed02945a1f47507307f636fda4b1f9057cf20ef47fb93268135~95be50bde8809ed02945a1f47507307f636fda4b1f9057cf20ef47fb93268135": {
+    "feedUrl": "https://anchor.fm/s/7cc2d0b8/podcast/rss",
+    "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/production/podcast_uploaded_nologo/20831422/20831422-1643872775939-dd53962f80ccd.jpg",
+    "title": "Cybervalhalla"
+  },
   "rss:b6b642e89f64d1a2cd77fa5515ac7119a4cb2d46d357ced0b14c9480aa1d4249~b6b642e89f64d1a2cd77fa5515ac7119a4cb2d46d357ced0b14c9480aa1d4249": {
     "feedUrl": "https://feed.podbean.com/azathothblues/feed.xml",
     "imageUrl": "https://pbcdn1.podbean.com/imglogo/image-logo/22039452/ABCover.jpg",
     "title": "Azathoth Blues"
+  },
+  "rss:be16de7d52b33350f59a121540b1972b48a6937b655f2f3d1f454d8147531a58~be16de7d52b33350f59a121540b1972b48a6937b655f2f3d1f454d8147531a58": {
+    "feedUrl": "https://feeds.transistor.fm/small-victories",
+    "imageUrl": "https://img.transistorcdn.com/yKI-QKUxhomePhAaHjfFHwmkHOxMb0nxUQ59VOmD-5g/rs:fill:0:0:1/w:1400/h:1400/q:60/mb:500000/aHR0cHM6Ly9pbWct/dXBsb2FkLXByb2R1/Y3Rpb24udHJhbnNp/c3Rvci5mbS9zaG93/LzI1MTEwLzE2MzM2/MjQ0MTgtYXJ0d29y/ay5qcGc.jpg",
+    "title": "Small Victories"
   },
   "rss:c2bc3dd09fa9983d91a16cc5685d7aab2987838dd94c11f5833ff5165b03bbd2~c2bc3dd09fa9983d91a16cc5685d7aab2987838dd94c11f5833ff5165b03bbd2": {
     "feedUrl": "https://anchor.fm/s/f6587d60/podcast/rss",
