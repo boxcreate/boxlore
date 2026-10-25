@@ -127,7 +127,7 @@ class EpisodeAliasQueueTest {
     }
 
     @Test
-    fun onlyQueuedIdsAreRemovedAndRecordedAndAnEpisodeStoredUnderOneIdAsBefore() = runTest(testDispatcher) {
+    fun everyIdOfARemovedEpisodeIsRecordedAndAnEpisodeStoredUnderOneIdAsBefore() = runTest(testDispatcher) {
         twoIds(database)
         queueRepository.replaceQueue(listOf(episode("A"), episode("solo")))
 
@@ -135,12 +135,28 @@ class EpisodeAliasQueueTest {
         queueRepository.removeFromQueue("solo")
 
         assertTrue(queueRepository.getQueueEpisodeSnapshot().isEmpty())
-        // B was never queued here, so it isn't added to the list older builds read.
-        assertEquals(listOf("A", "solo"), plainRemovals())
+        // B isn't queued here, but the cloud may still hold the episode under B (a pull keeps one
+        // entry per episode), and only a removal by ID reaches a copy an older build pushed.
+        assertEquals(listOf("A", "B", "solo"), plainRemovals())
         assertEquals(
-            listOf(QueueRemovalIdentity("A", RECIPE, SHOW, KEY), QueueRemovalIdentity("solo")),
+            listOf(QueueRemovalIdentity("A", RECIPE, SHOW, KEY), QueueRemovalIdentity("B", RECIPE, SHOW, KEY), QueueRemovalIdentity("solo")),
             QueueRemovalIdentity.parseList(queueRepository.getQueueMetadata()!!.recentRemovedEpisodes),
         )
+    }
+
+    @Test
+    fun clearingOrReplacingTheQueueRecordsEveryIdOfAnEpisodeThatLeavesIt() = runTest(testDispatcher) {
+        twoIds(database)
+        queueRepository.replaceQueue(listOf(episode("A"), episode("C")))
+
+        // C leaves; A's episode stays, so B (another ID of it) is not recorded.
+        queueRepository.replaceQueue(listOf(episode("A")))
+        assertEquals(listOf("C"), plainRemovals())
+
+        queueRepository.clearQueue()
+
+        assertTrue(queueRepository.getQueueEpisodeSnapshot().isEmpty())
+        assertEquals(listOf("C", "A", "B"), plainRemovals())
     }
 
     @Test

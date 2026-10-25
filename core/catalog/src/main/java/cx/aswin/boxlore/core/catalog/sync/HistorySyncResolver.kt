@@ -14,16 +14,29 @@ import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
  * @param episodeIds every stored ID of an episode (`EpisodeListenerStore.memberIds`); just the ID
  *   when it has no other. The playing episode is protected under each of them, because its
  *   progress is written to its owner ID, which may differ from the ID playback started with
- *   (own-episode-IDs P4, plan section 8).
+ *   (own-episode-IDs P4, plan section 8). A pulled row of the playing episode under an ID this
+ *   device has no row for is stored as the cloud has it: it is that ID's only copy, playback never
+ *   writes it, and the owner row playback writes is the newest again from its next progress save.
  */
 class HistorySyncResolver(
     private val listeningHistoryDao: ListeningHistoryDao,
     private val activePlaybackSyncPort: ActivePlaybackSyncPort? = null,
     private val episodeIds: suspend (String) -> Collection<String> = { listOf(it) },
 ) {
-    suspend fun resolveHistoryItem(remote: ListeningHistorySyncDto, syncedAt: Long) {
+    /**
+     * Merges one pulled row into this device's history.
+     *
+     * @param deliveredUntil the server time up to which earlier pulls already delivered this
+     *   device every cloud row (its last sync time; 0 when it has none). History removal is local
+     *   only, so a row this device no longer stores whose cloud copy is that old was removed here,
+     *   and a pull from the start (the one-time identity catch-up, the title backfill) doesn't bring
+     *   it back. Changed in P4 PR 11 of the own-episode-IDs plan (plan section 8, the one-time sync
+     *   catch-up). A delta pull only returns newer rows, so it is unaffected.
+     */
+    suspend fun resolveHistoryItem(remote: ListeningHistorySyncDto, syncedAt: Long, deliveredUntil: Long = 0L) {
         val local = listeningHistoryDao.getHistoryItem(remote.episodeId)
         if (local == null) {
+            if (deliveredUntil > 0L && remote.updatedAt <= deliveredUntil) return
             insertNewRemoteItem(remote, syncedAt)
             return
         }
