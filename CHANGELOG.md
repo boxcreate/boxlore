@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `EpisodeListenerStore` keeps one listener state per episode across its stored IDs: progress lives on one owner ID, likes and played state are absolute writes across aliases and `episode_group_state`, and reads are projected, so lists count each episode once. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `EpisodeRecipeId` in `:core:rss` and `scripts/sync/lib/episode-recipe-id.js` compute boxlore episode IDs from (show ID, catalog key), checked against a shared fixture. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync logs why each vector point is stored or deleted; `scripts/sync/attribution-report.js` summarizes the log. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `turso.text()` in the sync's Turso client binds catalog keys as text. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -34,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Feed parsing records each item's position in the feed document (`ParsedFeedItem`, `ParsedRssFeed.items`). When items share a catalog key, the first in the document wins in the parser merge, `LocalEpisodeCatalogPersist`, `StickyRssEpisodeRemap` and the legacy RSS upgrade. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Items without a GUID are keyed on their first playable `<enclosure url>`. Items that share a first enclosure keep their audio address as the key. Stored rows are also found by their own minted ID and by the audio address older builds used, so no stored episode ID changes. Minting is unchanged. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - Feed-only extras keep the ID of the supplement row already stored for them across refreshes. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Switching a Podcast Index show to its RSS feed no longer re-keys history, downloads or queue rows. Feed episodes get `rss_source_link` aliases (trusted for a unique key or an exact audio address), relinked after a backup restore, a re-follow and each feed refresh, and per-show reads use `Podcast.listenerShowIds`. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Download state, starting and removing a download, and queue indicators work across an episode's IDs. Queue removals cover every ID of an episode except the playing one and record the episode's identity. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- The orphan rematch after a feed read no longer moves trusted or ambiguous episode IDs. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - `StickyEpisodeIdentity.catalogKey` trims with an explicit character set equal to Kotlin's `trim()` on Android, so catalog keys no longer depend on the runtime's Unicode tables. ([#1139](https://github.com/boxcreate/boxlore/pull/1139)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - New chart shows get their newest 5 episodes embedded first and the rest of their window after 7 days on the charts (`NEW_ENTRANT_EPISODES`, `NEW_ENTRANT_DEPTH_DAYS`). ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync records new episodes in the episode book, names their vectors by served ID, and no longer re-embeds an episode when Podcast Index changes its ID. ([#1147](https://github.com/boxcreate/boxlore/pull/1147)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
@@ -59,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PodcastInfoScreen` now saves open search and its query, the five dialog and sheet flags, the tag/genre draft, and selected episode IDs with their sort, so they survive activity recreation (fold density changes, process death) and back-stack returns. A recreated page waits for its first page, then looks its selected episodes up again in the saved sort; it drops IDs it cannot find and keeps them all when the lookup fails. Toolbar actions wait until the selection is complete. `PodcastInfoViewModel.loadPodcast` no longer reloads shows whose page ID differs from the route ID (`rss:`-linked feeds). Added `PodcastInfoAdaptiveTransitionTest`, which covers the 600dp width, 480dp height and 840dp landscape gates, orientation and fold transitions, and every dialog exit on compact and tablet hosts. ([#1174](https://github.com/boxcreate/boxlore/pull/1174)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - An item without a GUID whose enclosure and `media:content` point at different files is no longer parsed as two episodes. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - A feed crossing 4 MB no longer changes or deletes the IDs of feed-only extras. ([#1176](https://github.com/boxcreate/boxlore/pull/1176)) <!-- impact:user-impact-low --> <!-- copy:locked -->
+- Downloaded Smart Queue picks now play from the downloaded file. ([#1178](https://github.com/boxcreate/boxlore/pull/1178)) <!-- impact:user-impact-low --> <!-- copy:locked -->
 - The catalog sync no longer deletes vectors it later re-embeds: the nightly trim fails closed, shows keep the highest cap they earned, partial episode lists never cause pruning, and vectors from a failed upload are spooled and uploaded by the next run. ([#1141](https://github.com/boxcreate/boxlore/pull/1141)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - The catalog sync refuses to store objects as `[object Object]` text: its Turso client rejects them, and the show import and latest-episode update scrub Podcast Index values first. ([#1144](https://github.com/boxcreate/boxlore/pull/1144)) <!-- impact:no-user-impact+backend-change --> <!-- copy:locked -->
 - `EpisodeRecipeId` rejects show IDs above 2^53 − 1, matching the scripts implementation. ([#1145](https://github.com/boxcreate/boxlore/pull/1145)) <!-- impact:no-user-impact --> <!-- copy:locked -->
@@ -109,6 +114,11 @@ readme-copy:end pr=1174 -->
 ### Fixes
 - Some shows no longer list one new episode twice.
 readme-copy:end pr=1176 -->
+
+<!-- readme-copy:start pr=1178
+### Fixes
+- Downloaded episodes that the Smart Queue adds now play from your download.
+readme-copy:end pr=1178 -->
 ## [v0.0.29] - 2026-10-17
 
 ### Added
