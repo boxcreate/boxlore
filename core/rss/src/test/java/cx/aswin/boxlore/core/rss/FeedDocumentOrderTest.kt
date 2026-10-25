@@ -267,6 +267,29 @@ class FeedDocumentOrderTest {
         assertNull(StickyEpisodeIdentity.feedItemKey(" ", "\u00A0", "\u180E"))
     }
 
+    @Test
+    fun `an Atom entry without an id is keyed on its first playable enclosure link`() = runTest {
+        val atom =
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <feed xmlns="http://www.w3.org/2005/Atom">
+              <title>Atom Fixture</title>
+              <entry>
+                <title>Atom Episode</title>
+                <updated>2020-01-02T00:00:00Z</updated>
+                <link rel="enclosure" type="image/jpeg" href="https://cdn.example.com/cover.jpg"/>
+                <link rel="enclosure" type="audio/mpeg" href="https://cdn.example.com/atom-1.mp3"/>
+                <link rel="enclosure" type="audio/mpeg" href="https://cdn.example.com/atom-1-alt.mp3"/>
+              </entry>
+            </feed>
+            """.trimIndent().toByteArray()
+
+        val entry = IdentityFixtureFeed.parse(atom).items.single()
+
+        assertEquals("https://cdn.example.com/atom-1.mp3", entry.catalogKey)
+        assertTrue("https://cdn.example.com/cover.jpg" !in entry.enclosureUrls, "${entry.enclosureUrls}")
+    }
+
     private fun persist(items: List<ParsedFeedItem>, existing: List<LocalEpisodeIdentity> = emptyList()) = LocalEpisodeCatalogPersist.toLocalEpisodes(
         podcastIndexId = SHOW_ID,
         rssNamespaceId = namespace,

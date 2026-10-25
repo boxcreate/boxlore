@@ -373,6 +373,35 @@ class EpisodeSupplementRepositoryTest {
     }
 
     @Test
+    fun `a GUID-less tip keeps the ID of its stored supplement row`() = runTest {
+        val ep3 = "https://cdn.example.com/ep3.mp3"
+        val dao = FakeDao()
+        dao.supplement =
+            EpisodeSupplementEntity(
+                podcastId = IdentityFixtureFeed.SHOW_ID,
+                feedUrl = IdentityFixtureFeed.FEED_URL,
+                rssNamespaceId = IdentityFixtureFeed.namespace,
+                feedEtag = null,
+                feedLastModified = null,
+                fetchedAt = 0L,
+            )
+        dao.items += supplementRow("-777", ep3)
+        val repo = EpisodeSupplementRepository(dao = dao, feedClient = BytesFeedClient(IdentityFixtureFeed.small()), runInTransaction = { it() })
+
+        val tip =
+            repo.resolveNewestTipFromFeed(
+                EpisodeSupplementPort.NewestTipRequest(
+                    podcastIndexId = IdentityFixtureFeed.SHOW_ID,
+                    feedUrl = IdentityFixtureFeed.FEED_URL,
+                    match = EpisodeSupplementPort.FeedItemMatch(enclosureUrl = ep3),
+                ),
+            )
+
+        assertEquals("-777", tip?.id)
+        assertEquals(listOf("-777"), dao.items.filter { it.audioUrl == ep3 }.map { it.episodeId })
+    }
+
+    @Test
     fun `supplement rows of episodes that left the feed are still dropped`() {
         val item = ParsedFeedItem(rssEpisode("-1", guid = "g-1", audioUrl = "https://cdn/1.mp3"), 0)
         val stored = listOf(supplementRow("-1", "g-1"), supplementRow("-2", "g-gone"), supplementRow("-3", "g-1"))
