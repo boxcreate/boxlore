@@ -213,7 +213,11 @@ internal class AutoBrowseLibraryCallback(
     internal suspend fun markEpisodeComplete(episodeId: String): Boolean {
         val listenerStore = host.database.episodeListenerStore()
         val historyId = listenerStore.historyId(episodeId)
-        val existing = getOrCreateHistoryItem(historyId) ?: getOrCreateHistoryItem(episodeId)?.copy(episodeId = historyId) ?: return false
+        // A missing owner row is seeded from the played ID's metadata, never looked up by the owner ID.
+        val existing =
+            host.database.listeningHistoryDao().getHistoryItem(historyId)
+                ?: getOrCreateHistoryItem(episodeId)?.copy(episodeId = historyId)
+                ?: return false
         host.observeManualCompletion(episodeId)
         val dao = host.database.listeningHistoryDao()
         dao.insertIfAbsent(existing)

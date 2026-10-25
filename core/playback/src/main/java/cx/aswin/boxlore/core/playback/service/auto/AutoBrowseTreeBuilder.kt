@@ -756,10 +756,10 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
         // Fetch latest episodes (limit to 50 for Auto performance)
         val episodes = host.podcastRepository.getEpisodesPaginated(podcastId, limit = 50, sort = "newest")
         android.util.Log.d("AutoBrowse", "Got ${episodes.episodes.size} episodes for $podcastId")
+        // Looked up by the listed ID: an episode stored under several IDs shows its state under any of them.
         val historyById =
-            host.database
-                .listeningHistoryDao()
-                .getRecentHistoryList(300)
+            listenerStore
+                .projectRowsByMember(host.database.listeningHistoryDao().getRecentHistoryList(300))
                 .associateBy { it.episodeId }
 
         return episodes.episodes.map { episode ->
