@@ -280,6 +280,25 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
         }
     }
 
+    /**
+     * The IDs a queue removal of [removedIds] records as removed: each of them, then every other
+     * trusted ID of their episodes, except the IDs of an episode in [keptIds] (one that stays
+     * queued, or the playing one). An ID this phone doesn't queue is included too: a cloud sync pull
+     * keeps one queue entry per episode, so the cloud can still hold the episode under an ID the
+     * phone folded into its own entry, and a removal by ID is the only one that reaches a copy an
+     * older build pushed without the episode's identity.
+     *
+     * Added in P4 PR 11 of the own-episode-IDs plan (plan section 8, cloud sync identity).
+     * COMPAT(own-ids): a queue removal reaches every ID of the episode. Permanent: never remove (MIGRATION.md §5).
+     */
+    suspend fun queueRemovalIds(removedIds: Collection<String>, keptIds: Collection<String> = emptyList(),): List<String> {
+        val removed = removedIds.filter { it.isNotBlank() }.distinct()
+        if (removed.isEmpty()) return removed
+        val kept = if (keptIds.isEmpty()) emptySet() else withAllAliases(keptIds.filter { it.isNotBlank() })
+        val others = withAllAliases(removed) - removed.toSet() - kept
+        return removed + others.sorted()
+    }
+
     /** [episodeIds] plus every other trusted ID of their episodes. */
     suspend fun withAllAliases(episodeIds: Collection<String>): Set<String> {
         val all = episodeIds.toMutableSet()

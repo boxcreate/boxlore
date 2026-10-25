@@ -32,6 +32,9 @@ import cx.aswin.boxlore.core.network.model.SyncEpisodeIdentityFields
  *   changes ID, and existing trusted or ambiguous aliases stay as they are.
  * - **Matching** ([tokens], [removalTokens]): one token per episode, so a queue merge and its
  *   removals treat an episode queued under two IDs as one.
+ * - **Catch-up** (`identityCatchUp`, in SyncIdentityCatchUp.kt): after a pull from the start, the
+ *   cloud copies that lack the identity this phone knows, as the cloud sent them plus the missing
+ *   fields, so they can be pushed back without changing anything else.
  *
  * Added in P4 PR 11 of the own-episode-IDs plan (plan section 8, cloud sync identity; decision D14).
  * COMPAT(own-ids): cloud sync carries one episode across its IDs and old builds. Permanent: never remove (MIGRATION.md §5).
@@ -58,7 +61,12 @@ class SyncEpisodeIdentity(
         internal val hasIdentity: Boolean get() = recipeId != null || catalogKey != null
     }
 
-    /** The identity each of [rows] carries on the wire ([WireIdentity.NONE] when it carries none). */
+    /**
+     * The identity each of [rows] carries on the wire ([WireIdentity.NONE] when it carries none).
+     * A row whose own ID is a recipe ID that another key of the show also has (a recipe clash) keeps
+     * its catalog key: another device may store that ID for the other episode, and the server then
+     * refuses the write instead of mixing the two episodes' progress.
+     */
     suspend fun outgoing(rows: Collection<OutgoingRow>): Map<OutgoingRow, WireIdentity> {
         val distinct = rows.distinct()
         if (distinct.isEmpty()) return emptyMap()

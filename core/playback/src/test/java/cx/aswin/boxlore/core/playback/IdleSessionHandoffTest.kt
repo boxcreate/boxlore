@@ -14,7 +14,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** A newer cloud session never replaces the idle mini-player's episode with the same episode under another ID. */
+/**
+ * The idle mini-player's cloud handoff (`PlaybackRepository.updateIdlePlaybackSession` decides
+ * through [IdleSessionHandoff.shouldHandOver]): a newer cloud session never replaces the player's
+ * episode with the same episode under another ID.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class IdleSessionHandoffTest {
@@ -49,5 +53,29 @@ class IdleSessionHandoffTest {
         assertFalse(IdleSessionHandoff.isSameEpisode(currentId = null, pulledId = "A", listenerStore = store))
         // An episode stored under one ID compares by that ID, as before.
         assertFalse(IdleSessionHandoff.isSameEpisode(currentId = "x", pulledId = "y", listenerStore = store))
+    }
+
+    @Test
+    fun aNewerSessionOfTheSameEpisodeUnderItsOwnerIdLeavesTheIdlePlayerAsItIs() = runTest {
+        EpisodeAliasFixtures.twoIds(database)
+        database.listeningHistoryDao().upsert(EpisodeAliasFixtures.history("B", progress = 5_000L, playedAt = 100L))
+        val store = database.episodeListenerStore()
+
+        // The player holds B; cloud sync hands over the owner A, played later on another device.
+        assertFalse(IdleSessionHandoff.shouldHandOver(currentId = "B", pulledId = "A", pulledLastPlayedAt = 900L, listenerStore = store))
+        assertFalse(IdleSessionHandoff.shouldHandOver(currentId = "A", pulledId = "B", pulledLastPlayedAt = 900L, listenerStore = store))
+    }
+
+    @Test
+    fun anotherEpisodeTakesTheIdlePlayerOnlyWhenItsSessionIsNewer() = runTest {
+        EpisodeAliasFixtures.twoIds(database)
+        database.listeningHistoryDao().upsert(EpisodeAliasFixtures.history("B", progress = 5_000L, playedAt = 100L))
+        val store = database.episodeListenerStore()
+
+        assertTrue(IdleSessionHandoff.shouldHandOver(currentId = "B", pulledId = "C", pulledLastPlayedAt = 101L, listenerStore = store))
+        assertFalse(IdleSessionHandoff.shouldHandOver(currentId = "B", pulledId = "C", pulledLastPlayedAt = 100L, listenerStore = store))
+        // The player's episode is compared by its projected last play, under any of its IDs.
+        assertFalse(IdleSessionHandoff.shouldHandOver(currentId = "A", pulledId = "C", pulledLastPlayedAt = 99L, listenerStore = store))
+        assertTrue(IdleSessionHandoff.shouldHandOver(currentId = null, pulledId = "C", pulledLastPlayedAt = 1L, listenerStore = store))
     }
 }

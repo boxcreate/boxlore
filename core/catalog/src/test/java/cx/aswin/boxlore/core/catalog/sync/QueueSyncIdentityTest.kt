@@ -146,6 +146,38 @@ class QueueSyncIdentityTest {
     }
 
     @Test
+    fun withoutUnsyncedChangesTheServersRichListReplacesThePhonesOlderOne() = runTest {
+        // This phone kept a removal of an episode of a show it never read; the cloud has since dropped it.
+        localQueue(dirty = false, plain = listOf("70001"), rich = listOf(QueueRemovalIdentity("70001", show = "88", catalogKey = "guid-88")))
+
+        resolver().resolveQueue(remote("70002", legacy = listOf("70001"), rich = emptyList()), syncedAt = 99L)
+
+        assertNull(storedMetadata().recentRemovedEpisodes)
+        assertEquals(listOf("70001"), QueueDao.parseRecentRemovedEpisodeIds(storedMetadata().recentRemovedEpisodeIds))
+    }
+
+    @Test
+    fun aRemovalOfAnEpisodeThePulledQueueHoldsUnderAnUnknownIdIsStaleByTheIdentityThatItemCarries() = runTest {
+        oneEpisodeUnderTwoIds()
+        localQueue(RECIPE.toString(), dirty = true)
+        // The cloud removed the episode as 70001, then queued it again as 70009, which this phone can't identify itself.
+        val removal = QueueRemovalSyncDto(id = "70001", recipeId = null, show = SHOW, catalogKey = KEY)
+        val cloud = QueueSyncDto(
+            items = listOf(QueueItemSyncDto(episodeId = "70009", podcastId = SHOW, title = "Cloud", position = 0, catalogKey = KEY)),
+            queueUpdatedAt = 20L,
+            queueSequence = 2L,
+            recentRemovedEpisodeIds = listOf(removal.id),
+            recentRemovedEpisodes = listOf(removal),
+        )
+
+        resolver().resolveQueue(cloud, syncedAt = 99L)
+
+        assertEquals(setOf("70009", RECIPE.toString()), queuedIds().toSet())
+        // Neither stored list keeps a rich removal of an episode the merged queue holds.
+        assertNull(storedMetadata().recentRemovedEpisodes)
+    }
+
+    @Test
     fun aRemovalWhoseEpisodeItsSideStillQueuesUnderAnotherIdIsStale() = runTest {
         oneEpisodeUnderTwoIds()
         localQueue(RECIPE.toString(), dirty = true)

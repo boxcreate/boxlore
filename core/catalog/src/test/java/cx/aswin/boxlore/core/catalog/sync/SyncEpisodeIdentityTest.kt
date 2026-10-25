@@ -22,6 +22,11 @@ import cx.aswin.boxlore.core.database.EpisodeGroup
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.database.entities.QueueRemovalIdentity
+import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
+import cx.aswin.boxlore.core.network.model.QueueItemSyncDto
+import cx.aswin.boxlore.core.network.model.QueueRemovalSyncDto
+import cx.aswin.boxlore.core.network.model.QueueSyncDto
+import cx.aswin.boxlore.core.network.model.SyncPullResponse
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -269,5 +274,54 @@ class SyncEpisodeIdentityTest {
         assertEquals(setOf(token), identity.removalTokens(listOf(QueueRemovalIdentity(PI_ID))))
         assertEquals(setOf("x", token), identity.removalTokens(listOf(QueueRemovalIdentity("x", show = SHOW, catalogKey = KEY))))
         assertEquals(setOf("y", token), identity.removalTokens(listOf(QueueRemovalIdentity("y", recipeId = RECIPE, show = SHOW))))
+    }
+
+    @Test
+    fun theCatchUpSendsBackOnlyCloudCopiesThatLackAKnownIdentityWithNothingElseChanged() = runTest {
+        aliases(
+            alias(PI_ID, owner = true),
+            alias("61842097001", key = KEY_2),
+            alias("61842097002", key = "guid-3"),
+            alias("-11", state = EpisodeAliasState.UNRESOLVED, key = null),
+        )
+        fun row(id: String, recipeId: Long? = null, key: String? = null) =
+            ListeningHistorySyncDto(id, SHOW, progressMs = 42L, isCompleted = true, lastPlayedAt = 7L, updatedAt = 900L, recipeId = recipeId, catalogKey = key)
+        val pulled = SyncPullResponse(
+            history = listOf(
+                row(PI_ID),
+                // Already identified, or naming another key than this phone's: left as they are.
+                row("61842097001", recipeId = RECIPE_2, key = KEY_2),
+                row("61842097002", key = "guid-other"),
+                // Unknown here, or unresolved: nothing to add.
+                row("999"),
+                row("-11"),
+            ),
+            queue = QueueSyncDto(
+                items = listOf(QueueItemSyncDto(PI_ID, SHOW, position = 0, updatedAt = 30L), QueueItemSyncDto("999", SHOW, position = 1, updatedAt = 30L)),
+                queueUpdatedAt = 30L,
+                queueSequence = 4L,
+                recentRemovedEpisodeIds = listOf("-9"),
+                recentRemovedEpisodes = listOf(QueueRemovalSyncDto("-9", show = SHOW, catalogKey = KEY_2)),
+            ),
+            syncedAt = 1_000L,
+        )
+
+        val catchUp = identity.identityCatchUp(pulled)
+
+        assertEquals(listOf(row(PI_ID, recipeId = RECIPE, key = KEY)), catchUp.history)
+        val queue = catchUp.queue!!
+        assertEquals(listOf(RECIPE to KEY, null to null), queue.items.map { it.recipeId to it.catalogKey })
+        assertEquals(pulled.queue!!.copy(items = queue.items, recentRemovedEpisodes = null), queue)
+        assertTrue(identity.identityCatchUp(SyncPullResponse(history = listOf(row("999")), syncedAt = 1L)).isEmpty)
+    }
+
+    @Test
+    fun theCatchUpAddsOnlyTheFieldACloudCopyLacks() = runTest {
+        aliases(alias(PI_ID, owner = true))
+        val keyOnly = ListeningHistorySyncDto(PI_ID, SHOW, updatedAt = 900L, catalogKey = KEY)
+        val otherRecipe = ListeningHistorySyncDto(PI_ID, SHOW, updatedAt = 900L, recipeId = RECIPE_2)
+
+        assertEquals(listOf(keyOnly.copy(recipeId = RECIPE)), identity.identityCatchUp(SyncPullResponse(history = listOf(keyOnly), syncedAt = 1L)).history)
+        assertTrue(identity.identityCatchUp(SyncPullResponse(history = listOf(otherRecipe), syncedAt = 1L)).isEmpty)
     }
 }

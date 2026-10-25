@@ -507,34 +507,19 @@ class ListeningHistoryDaoInMemoryTest {
     }
 
     @Test
-    fun onlyRowsWithATrustedIdentityUnderTheirOwnShowAreMarkedForTheIdentityPush() = runTest {
+    fun aPushBatchReadsOnlyItsOwnRowsTheNewestFirstWithoutDescriptions() = runTest {
         dao.upsertAll(
-            listOf(
-                history("trusted", podcastId = "77", isDirty = false),
-                history("other-show", podcastId = "rss:feed", isDirty = false),
-                history("unresolved", podcastId = "77", isDirty = false),
-                history("ambiguous", podcastId = "77", isDirty = false),
-                history("no-alias", podcastId = "77", isDirty = false),
-                history("already-dirty", podcastId = "77", isDirty = true),
-            ),
-        )
-        fun alias(id: String, state: String, show: String = "77", key: String? = "guid-$id") =
-            EpisodeAliasEntity(id, show, key, if (key == null) null else 4_503_599_627_370_500L, state, provenance = EpisodeAliasProvenance.UPGRADE_CATALOG)
-        database.episodeIdentityDao().insertAliasesIfAbsent(
-            listOf(
-                alias("trusted", EpisodeAliasState.TRUSTED),
-                // A linked RSS row: its alias names the Podcast Index show, not the row's show.
-                alias("other-show", EpisodeAliasState.TRUSTED),
-                alias("unresolved", EpisodeAliasState.UNRESOLVED, key = null),
-                alias("ambiguous", EpisodeAliasState.AMBIGUOUS),
-                alias("already-dirty", EpisodeAliasState.TRUSTED),
-            ),
+            (1..5).map { history("ep-$it", lastPlayedAt = it * 100L).copy(episodeDescription = "A long description of ep-$it") } +
+                history("clean", lastPlayedAt = 900L, isDirty = false),
         )
 
-        assertEquals(1, dao.markHistoryWithEpisodeIdentityDirty())
+        val batch = dao.getDirtyListeningHistoryBatch(limit = 3)
 
-        val dirty = dao.getDirtyListeningHistory().map { it.episodeId }.toSet()
-        assertEquals(setOf("trusted", "already-dirty"), dirty)
-        assertEquals(0, dao.markHistoryWithEpisodeIdentityDirty())
+        assertEquals(listOf("ep-5", "ep-4", "ep-3"), batch.map { it.episodeId })
+        assertTrue(batch.all { it.episodeDescription == null })
+        // Every field the push sends and compares when it marks a row synced is read.
+        val stored = dao.getHistoryItem("ep-5")!!
+        assertEquals(stored.copy(episodeDescription = null), batch.first())
+        assertEquals(5, dao.getDirtyListeningHistoryBatch(limit = 100).size)
     }
 }

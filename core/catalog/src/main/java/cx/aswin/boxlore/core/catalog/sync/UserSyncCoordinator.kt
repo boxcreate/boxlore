@@ -42,9 +42,9 @@ import kotlinx.coroutines.withContext
  * With [episodeIdentity] (own-episode-IDs P4, plan section 8), history and queue rows carry their
  * episode's recipe ID and catalog key, the queue carries its rich removals, pulls ask for the rich
  * removals and record pulled rows' identity before they are merged, and the idle mini-player hands
- * off to the pulled episode's owner ID. A one-time catch-up (sync metadata version 3) pulls from
- * the start and then pushes every history row that has an identity, so the cloud copy of rows
- * older builds pushed gains it.
+ * off to the pulled episode's owner ID. A one-time catch-up (sync metadata version 3, and again
+ * for each account the phone switches to) pulls from the start and pushes back the cloud copies
+ * that lack an identity this phone knows, so rows older builds pushed gain it.
  */
 @Suppress("LongParameterList", "TooManyFunctions", "kotlin:S107")
 open class UserSyncCoordinator(
@@ -120,17 +120,23 @@ open class UserSyncCoordinator(
         purgeLocalDataForAccountSwitch()
         requireBoxcastPrefs.setLastSyncTimestamp(0L)
         requireBoxcastPrefs.setLastSyncedUserId(userId)
+        // The new account's cloud rows get the identity catch-up too; until it completes, every sync pulls from the start.
+        val needsIdentityCatchUp = episodeIdentity != null
+        if (needsIdentityCatchUp && requireBoxcastPrefs.getSyncMetadataVersion() >= IDENTITY_SYNC_METADATA_VERSION) {
+            requireBoxcastPrefs.setSyncMetadataVersion(IDENTITY_SYNC_METADATA_VERSION - 1)
+        }
         val pullResult = executePull(since = 0L, token)
         return pullResult.fold(
             onSuccess = { res ->
+                val catchUp = if (needsIdentityCatchUp) completeIdentityCatchUp(token, res) else null
                 SyncResult.Success(
                     pushedSubscriptions = 0,
-                    pushedHistory = 0,
-                    pushedQueue = false,
+                    pushedHistory = catchUp?.pushedHistory ?: 0,
+                    pushedQueue = catchUp?.pushedQueue == true,
                     pulledSubscriptions = res.subscriptions.size,
                     pulledHistory = res.history.size,
                     pulledQueue = res.queue != null,
-                    syncedAt = res.syncedAt,
+                    syncedAt = maxOf(res.syncedAt, catchUp?.syncedAt ?: 0L),
                 )
             },
             onFailure = { err ->
@@ -156,15 +162,17 @@ open class UserSyncCoordinator(
         val needsBackfill = metadataVersion < 2 &&
             requireListeningHistoryDao.hasAnyHistoryWithBlankTitle()
         val needsIdentityCatchUp = episodeIdentity != null && metadataVersion < IDENTITY_SYNC_METADATA_VERSION
-        val since = if (needsBackfill || needsIdentityCatchUp) 0L else requireBoxcastPrefs.getLastSyncTimestamp()
-        val pullResult = executePull(since, token)
+        val lastSync = requireBoxcastPrefs.getLastSyncTimestamp()
+        val since = if (needsBackfill || needsIdentityCatchUp) 0L else lastSync
+        // Rows up to the last sync were delivered before, so a pull from the start doesn't restore ones removed here.
+        val pullResult = executePull(since, token, deliveredUntil = lastSync)
 
         return pullResult.fold(
             onSuccess = { pullResponse ->
                 if (needsBackfill) {
                     requireBoxcastPrefs.setSyncMetadataVersion(2)
                 }
-                val catchUp = if (needsIdentityCatchUp) completeIdentityCatchUp(token) else null
+                val catchUp = if (needsIdentityCatchUp) completeIdentityCatchUp(token, pullResponse) else null
                 val pushed = catchUp?.let { pushSummary + it } ?: pushSummary
                 requireBoxcastPrefs.setLastSyncedUserId(userId)
                 SyncResult.Success(
@@ -184,33 +192,51 @@ open class UserSyncCoordinator(
     }
 
     /**
-     * The one-time identity catch-up, after a full pull merged the cloud copy into the local rows:
-     * marks every history row that has an episode identity, and a non-empty queue, for the push,
-     * records version 3 and pushes right away, batch after batch, until no full batch is left
-     * (at most [MAX_CATCH_UP_PUSHES] batches). Pulling first means a re-pushed row carries the
-     * newest progress either side has; pushing everything in the same run leaves no window in
-     * which another device's newer progress could be overwritten by a row marked only for this
-     * catch-up. The marks are stored, so rows a failed push leaves go out with later syncs.
+     * The one-time identity catch-up, right after [pulled] (a pull from the start) was merged:
+     * pushes back the cloud copies that lack the identity this phone knows for them
+     * ([identityCatchUp]), batch after batch (at most [MAX_CATCH_UP_PUSHES] batches of
+     * [MAX_HISTORY_BATCH_SIZE] rows). Each copy is sent as the cloud has it, with its own
+     * `updatedAt`, so the server keeps every value but the added identity, and other devices' delta
+     * pulls receive nothing: no newer progress is overwritten, and rows other devices removed
+     * aren't sent to them again. No local row is marked for the push. Version 3 is recorded only
+     * after every batch went through, so a failed or cut-short run starts again, with a pull from
+     * the start, on the next sync. Returns what was pushed, or null when nothing was.
      *
      * Added in P4 PR 11 of the own-episode-IDs plan (plan section 8, the one-time sync catch-up).
      * COMPAT(own-ids): cloud rows of older builds gain their episode identity. Permanent: never remove (MIGRATION.md §5).
      */
-    private suspend fun completeIdentityCatchUp(token: String?): PushBatchSummary? {
-        requireListeningHistoryDao.markHistoryWithEpisodeIdentityDirty()
-        if (requireQueueSyncPort.getQueueSnapshot().isNotEmpty()) {
-            requireQueueSyncPort.markQueueDirty()
-        }
-        requireBoxcastPrefs.setSyncMetadataVersion(IDENTITY_SYNC_METADATA_VERSION)
+    private suspend fun completeIdentityCatchUp(token: String?, pulled: SyncPullResponse): PushBatchSummary? {
+        val identity = episodeIdentity ?: return null
+        val catchUp = identity.identityCatchUp(pulled)
+        val requests = catchUpRequests(catchUp)
         var total: PushBatchSummary? = null
-        var batches = 0
-        var fullBatch = true
-        while (fullBatch && batches < MAX_CATCH_UP_PUSHES) {
-            batches++
-            val pushed = executePush(token).getOrNull()
-            total = pushed?.let { total?.plus(it) ?: it } ?: total
-            fullBatch = pushed != null && pushed.pushedHistory >= MAX_HISTORY_BATCH_SIZE
+        for (request in requests.take(MAX_CATCH_UP_PUSHES)) {
+            val syncedAt = sendCatchUpPush(token, request) ?: return total
+            val pushed = PushBatchSummary(0, request.history.size, request.queue != null, syncedAt)
+            total = total?.plus(pushed) ?: pushed
+        }
+        if (requests.size <= MAX_CATCH_UP_PUSHES) {
+            requireBoxcastPrefs.setSyncMetadataVersion(IDENTITY_SYNC_METADATA_VERSION)
         }
         return total
+    }
+
+    /** The catch-up's pushes: history in batches, the queue with the first one (or alone). */
+    private fun catchUpRequests(catchUp: IdentityCatchUp): List<SyncPushRequest> {
+        if (catchUp.isEmpty) return emptyList()
+        val now = System.currentTimeMillis()
+        val batches = catchUp.history.chunked(MAX_HISTORY_BATCH_SIZE).ifEmpty { listOf(emptyList()) }
+        return batches.mapIndexed { index, batch ->
+            SyncPushRequest(history = batch, queue = catchUp.queue.takeIf { index == 0 }, clientTimestamp = now)
+        }
+    }
+
+    /** Sends one catch-up push; its sync time, or null when it failed. */
+    private suspend fun sendCatchUpPush(token: String?, request: SyncPushRequest): Long? = withContext(ioDispatcher) {
+        runCatching {
+            val resolvedToken = token ?: tokenProvider() ?: error("No auth token available")
+            sendPushPayload(resolvedToken, request)
+        }.onFailure { if (it is CancellationException) throw it }.getOrNull()
     }
 
     private suspend fun purgeLocalDataForAccountSwitch() = withContext(ioDispatcher) {
@@ -304,7 +330,7 @@ open class UserSyncCoordinator(
         ensureDirtyFlagsForSyncState()
 
         val dirtyPodcasts = requirePodcastDao.getDirtyPodcasts().take(MAX_SUBSCRIPTION_BATCH_SIZE)
-        val dirtyHistory = requireListeningHistoryDao.getDirtyListeningHistory().take(MAX_HISTORY_BATCH_SIZE)
+        val dirtyHistory = requireListeningHistoryDao.getDirtyListeningHistoryBatch(MAX_HISTORY_BATCH_SIZE)
         val queueMeta = requireQueueSyncPort.getQueueMetadata()
         val queueDirty = queueMeta?.isDirty == true
         val queueItems = if (queueDirty) requireQueueSyncPort.getQueueSnapshot() else emptyList()
@@ -499,7 +525,13 @@ open class UserSyncCoordinator(
         }
     }
 
-    suspend fun executePull(since: Long, token: String? = null): Result<SyncPullResponse> = withContext(ioDispatcher) {
+    /**
+     * Pulls the cloud rows changed after [since] and merges them. [deliveredUntil] is the time up
+     * to which earlier pulls already delivered every row ([HistorySyncResolver.resolveHistoryItem]);
+     * it equals [since] for a delta pull and is the last sync time when a device that synced
+     * before pulls from the start.
+     */
+    suspend fun executePull(since: Long, token: String? = null, deliveredUntil: Long = since): Result<SyncPullResponse> = withContext(ioDispatcher) {
         runCatching {
             val resolvedToken = token ?: tokenProvider()
                 ?: error("No auth token available")
@@ -516,19 +548,19 @@ open class UserSyncCoordinator(
             }
 
             val body = response.body()!!
-            applyPullResponse(body)
+            applyPullResponse(body, deliveredUntil)
             body
         }.onFailure { if (it is CancellationException) throw it }
     }
 
-    private suspend fun applyPullResponse(body: SyncPullResponse) {
+    private suspend fun applyPullResponse(body: SyncPullResponse, deliveredUntil: Long) {
         val syncedAt = body.syncedAt
         for (sub in body.subscriptions) {
             requireSubscriptionSyncResolver.resolveSubscription(sub, syncedAt)
         }
         recordPulledIdentities(body)
         for (item in body.history) {
-            requireHistorySyncResolver.resolveHistoryItem(item, syncedAt)
+            requireHistorySyncResolver.resolveHistoryItem(item, syncedAt, deliveredUntil)
         }
         body.queue?.let { q ->
             requireQueueSyncResolver.resolveQueue(q, syncedAt)
@@ -615,13 +647,17 @@ open class UserSyncCoordinator(
         const val MAX_HISTORY_BATCH_SIZE = 100
 
         /**
-         * Sync metadata version recorded once the one-time identity catch-up has run (a full pull,
-         * then a push of every history row with an episode identity). Added in P4 PR 11 of the
-         * own-episode-IDs plan (plan section 8, the one-time sync catch-up).
+         * Sync metadata version recorded once the one-time identity catch-up has completed (a pull
+         * from the start, then every push of the cloud copies that gain an identity). An account
+         * switch sets it back, so the new account's rows are caught up too. Added in P4 PR 11 of
+         * the own-episode-IDs plan (plan section 8, the one-time sync catch-up).
          */
         const val IDENTITY_SYNC_METADATA_VERSION = 3
 
-        /** The most push batches the identity catch-up sends in its own sync (10,000 history rows). */
+        /**
+         * The most pushes the identity catch-up sends in one sync (10,000 history rows); a larger
+         * library finishes on the next syncs, each pulling from the start and skipping rows done.
+         */
         const val MAX_CATCH_UP_PUSHES = 100
     }
 }

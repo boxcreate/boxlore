@@ -297,24 +297,26 @@ interface ListeningHistoryDao {
     suspend fun markAllHistoryWithTitlesDirty(): Int
 
     /**
-     * Marks every history row whose ID has a trusted alias with a key under the row's own show for
-     * the next cloud push, so the cloud copy learns the episode's recipe ID and catalog key. Rows
-     * without such an identity push nothing new and stay as they are. Returns the rows marked.
+     * One cloud push batch: up to [limit] rows waiting for the push, the most recently played
+     * first, without the episode description (the push never sends it). A first sync or a bulk
+     * "mark all played" can leave tens of thousands of rows waiting; each push reads only its own
+     * batch, so the read never holds them all, nor their descriptions, in one cursor.
      *
-     * Added in P4 PR 11 of the own-episode-IDs plan (plan section 8, the one-time sync catch-up).
-     * COMPAT(own-ids): cloud rows of older builds gain their episode identity. Permanent: never remove (MIGRATION.md §5).
+     * Added in P4 PR 11 of the own-episode-IDs plan (plan section 8, cloud sync identity).
      */
     @Query(
         """
-        UPDATE listening_history SET isDirty = 1
-        WHERE isDirty = 0 AND EXISTS (
-            SELECT 1 FROM episode_aliases a
-            WHERE a.aliasId = listening_history.episodeId AND a.podcastId = listening_history.podcastId
-              AND a.state = 'trusted' AND a.catalogKey IS NOT NULL
-        )
+        SELECT episodeId, podcastId, episodeTitle, episodeImageUrl, podcastImageUrl,
+               episodeAudioUrl, podcastName, progressMs, durationMs, isCompleted,
+               isLiked, likedAt, lastPlayedAt, isDirty, syncedAt, enclosureType,
+               isManualCompletion, isBulkCompletion, NULL AS episodeDescription
+        FROM listening_history
+        WHERE isDirty = 1
+        ORDER BY lastPlayedAt DESC
+        LIMIT :limit
         """,
     )
-    suspend fun markHistoryWithEpisodeIdentityDirty(): Int
+    suspend fun getDirtyListeningHistoryBatch(limit: Int): List<ListeningHistoryEntity>
 
     @Query("SELECT EXISTS(SELECT 1 FROM listening_history WHERE episodeTitle = '' OR episodeTitle IS NULL LIMIT 1)")
     suspend fun hasAnyHistoryWithBlankTitle(): Boolean

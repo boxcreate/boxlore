@@ -25,6 +25,7 @@ import cx.aswin.boxlore.core.network.model.SyncPushRequest
 import cx.aswin.boxlore.core.network.model.SyncPushResponse
 import java.lang.reflect.Proxy
 import okhttp3.Request
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Timeout
 import retrofit2.Call
 import retrofit2.Callback
@@ -129,7 +130,11 @@ internal object SyncIdentityFixtures {
         arrayOf(BoxLoreApi::class.java),
     ) { _, method, args ->
         when (method.name) {
-            "syncPush" -> ImmediateCall(Response.success(server.push(args[2] as SyncPushRequest)))
+            "syncPush" -> if (server.failsNextPush()) {
+                ImmediateCall(Response.error<SyncPushResponse>(503, "unavailable".toResponseBody()))
+            } else {
+                ImmediateCall(Response.success(server.push(args[2] as SyncPushRequest)))
+            }
             "syncPull" -> ImmediateCall(Response.success(server.pull(args[2] as SyncPullRequest)))
             "hashCode" -> 42
             "equals" -> false
@@ -193,6 +198,9 @@ internal object SyncIdentityFixtures {
  * only on request.
  */
 internal class FakeSyncServer(var now: Long = 10_000L) {
+    /** 1-based numbers of the push attempts through [SyncIdentityFixtures.api] that fail (HTTP 503, nothing stored). */
+    var failingPushAttempts: Set<Int> = emptySet()
+    private var pushAttempts = 0
     val history = LinkedHashMap<String, ListeningHistorySyncDto>()
     val queueItems = LinkedHashMap<String, QueueItemSyncDto>()
     val refused = mutableListOf<String>()
@@ -202,6 +210,9 @@ internal class FakeSyncServer(var now: Long = 10_000L) {
     var queueSequence = 0L
     var legacyRemovals: List<String> = emptyList()
     var richRemovals: List<QueueRemovalSyncDto> = emptyList()
+
+    /** Counts one push attempt through the API; true when it is one of [failingPushAttempts]. */
+    fun failsNextPush(): Boolean = ++pushAttempts in failingPushAttempts
 
     fun push(request: SyncPushRequest): SyncPushResponse {
         pushes += request

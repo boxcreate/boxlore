@@ -27,10 +27,15 @@ import cx.aswin.boxlore.core.network.model.SyncEpisodeIdentityFields
  *   another ID, and the server's removals ([QueueSyncDto.recentRemovedEpisodeIds] together with the
  *   rich [QueueSyncDto.recentRemovedEpisodes]) also drop this phone's unsynced item of the same
  *   episode. A removal whose episode the same side still queues under another ID is stale (that side
- *   queued it again) and only matches its own ID. A rich removal counts only while the plain list
- *   still holds its ID: a build that sends no rich removals replaces the plain list, so a rich
- *   removal it no longer lists was queued again there.
+ *   queued it again) and only matches its own ID; a pulled item counts by the identity it carries
+ *   too, so the cloud's re-queue of an episode this phone can't identify yet still makes it stale.
+ *   A rich removal counts only while the plain list still holds its ID: a build that sends no rich
+ *   removals replaces the plain list, so a rich removal it no longer lists was queued again there.
  * - Both removal lists are stored, the rich one kept in step with the plain one ([QueueDao.richRemovalsWithin]).
+ *   Without unsynced changes here the rich list is the server's own, not merged with this phone's
+ *   older one, and no stored rich removal names an episode the merged queue holds, by this phone's
+ *   aliases or by the identity a pulled item carries: a stale one would otherwise go back to the
+ *   server, which removes every queue row of its episode.
  * - Hydration ([QueueItemHydration]) reads the episode's catalog row and history under any of its
  *   IDs, and asks the network for the recipe ID the server sent (`/v2/episode`) before the stored ID.
  *
@@ -106,7 +111,7 @@ class QueueSyncResolver(
             queueUpdatedAt = remoteQueue.queueUpdatedAt,
             lastModifiedDeviceId = remoteQueue.lastModifiedDeviceId,
             recentRemovedEpisodeIds = QueueDao.serializeRecentRemovedEpisodeIds(plainRemovals),
-            recentRemovedEpisodes = mergedRichRemovals(localMeta, remoteQueue, plainRemovals, reindexed),
+            recentRemovedEpisodes = mergedRichRemovals(localMeta, remoteQueue, plainRemovals, reindexed, episodes),
             isDirty = false,
             syncedAt = syncedAt,
         )
@@ -129,7 +134,7 @@ class QueueSyncResolver(
         ) - episodes.tokensOf(episodes.localItems.map { it.episodeId })
         val remoteRemovedEpisodes = episodeIdentity.removalTokens(
             remoteTombstones.map(::QueueRemovalIdentity) + validRemoteRichRemovals(remoteQueue),
-        ) - episodes.tokensOf(remoteQueue.items.map { it.episodeId })
+        ) - episodes.tokensOf(remoteQueue.items.map { it.episodeId }) - episodeIdentity.removalTokens(remoteQueue.items.map(::carriedIdentity))
 
         val candidateRemote = remoteQueue.items.filter { dto ->
             episodes.isActive(dto.episodeId) ||
@@ -166,7 +171,7 @@ class QueueSyncResolver(
             queueUpdatedAt = maxOf(localMeta.queueUpdatedAt, remoteQueue.queueUpdatedAt),
             lastModifiedDeviceId = localMeta.lastModifiedDeviceId,
             recentRemovedEpisodeIds = QueueDao.serializeRecentRemovedEpisodeIds(mergedTombstones),
-            recentRemovedEpisodes = mergedRichRemovals(localMeta, remoteQueue, mergedTombstones, reindexed),
+            recentRemovedEpisodes = mergedRichRemovals(localMeta, remoteQueue, mergedTombstones, reindexed, episodes),
             isDirty = true,
             syncedAt = syncedAt,
         )
@@ -190,26 +195,41 @@ class QueueSyncResolver(
     }
 
     /**
-     * The rich removals to store after a merge: this phone's and the server's (only those the
-     * server's plain list still holds), one per ID, kept in step with [plainRemovals] and without
-     * an episode [queued] queues under any ID ([QueueDao.richRemovalsWithin]).
+     * The rich removals to store after a merge, kept in step with [plainRemovals] and without an
+     * episode [queued] holds ([QueueDao.richRemovalsWithin]): the server's (only those its plain
+     * list still holds), plus this phone's own when [localMeta] has unsynced changes. Without them
+     * the server's list replaces this phone's older one whenever the server sent it. A queued
+     * episode counts by this phone's trusted aliases and by the identity each pulled item of it
+     * carries, so a removal of an episode the cloud queues again is dropped even when this phone
+     * can't identify the re-queued ID.
      */
     private suspend fun mergedRichRemovals(
         localMeta: QueueMetadataEntity,
         remoteQueue: QueueSyncDto,
         plainRemovals: List<String>,
         queued: List<QueueItem>,
+        episodes: QueueEpisodes,
     ): String? {
-        val local = QueueRemovalIdentity.parseList(localMeta.recentRemovedEpisodes)
+        val adoptServerList = !localMeta.isDirty && remoteQueue.recentRemovedEpisodes != null
+        val local = if (adoptServerList) emptyList() else QueueRemovalIdentity.parseList(localMeta.recentRemovedEpisodes)
         val remote = validRemoteRichRemovals(remoteQueue)
-        if (local.isEmpty() && remote.isEmpty()) return localMeta.recentRemovedEpisodes
+        if (local.isEmpty() && remote.isEmpty()) return if (adoptServerList) null else localMeta.recentRemovedEpisodes
         val merged = (remote + local).groupBy { it.id }.values.map { same -> same.firstOrNull { it.show != null } ?: same.first() }
-        val stored = QueueRemovalIdentity.serializeList(merged)
+        val queuedEpisodes = episodes.tokensOf(queued.map { it.episodeId })
+        val pulledQueued = remoteQueue.items.filter { episodes.tokenOf(it.episodeId) in queuedEpisodes }.map(::carriedIdentity)
         return QueueDao.richRemovalsWithin(
-            stored = stored,
+            stored = QueueRemovalIdentity.serializeList(merged),
             plainIds = plainRemovals,
-            queued = database.episodeListenerStore().queueIdentities(queued.map { it.episodeId }),
+            queued = database.episodeListenerStore().queueIdentities(queued.map { it.episodeId }) + pulledQueued,
         )
+    }
+
+    /** The identity a pulled item carries on the wire (its ID alone when it carries none), read safely. */
+    private fun carriedIdentity(dto: QueueItemSyncDto): QueueRemovalIdentity {
+        val catalogKey = SyncEpisodeIdentityFields.catalogKeyOrNull(dto.catalogKey)
+        val recipeId = SyncEpisodeIdentityFields.recipeIdOrNull(dto.recipeId)
+        val show = dto.podcastId.takeIf { it.isNotBlank() && (catalogKey != null || recipeId != null) }
+        return QueueRemovalIdentity(id = dto.episodeId, recipeId = recipeId, show = show, catalogKey = catalogKey)
     }
 
     /** The server's rich removals that its plain list still holds, read safely from the wire. */
