@@ -51,6 +51,7 @@ src/main/java/cx/aswin/boxlore/core/catalog/
   PodcastRepositoryContentCache.kt
   PodcastRepositoryContentMapping.kt
   PodcastRepositoryMappers.kt
+  PodcastRepositoryMatchList.kt
   PodcastRepositoryMemoryPolicy.kt
   PodcastRepositoryNetworkLookups.kt
   PodcastRepositoryEpisodeSupplements.kt
