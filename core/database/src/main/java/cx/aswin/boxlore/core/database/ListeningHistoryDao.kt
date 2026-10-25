@@ -296,6 +296,26 @@ interface ListeningHistoryDao {
     @Query("UPDATE listening_history SET isDirty = 1 WHERE episodeTitle IS NOT NULL AND episodeTitle != ''")
     suspend fun markAllHistoryWithTitlesDirty(): Int
 
+    /**
+     * Marks every history row whose ID has a trusted alias with a key under the row's own show for
+     * the next cloud push, so the cloud copy learns the episode's recipe ID and catalog key. Rows
+     * without such an identity push nothing new and stay as they are. Returns the rows marked.
+     *
+     * Added in P4 PR 11 of the own-episode-IDs plan (plan section 8, the one-time sync catch-up).
+     * COMPAT(own-ids): cloud rows of older builds gain their episode identity. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query(
+        """
+        UPDATE listening_history SET isDirty = 1
+        WHERE isDirty = 0 AND EXISTS (
+            SELECT 1 FROM episode_aliases a
+            WHERE a.aliasId = listening_history.episodeId AND a.podcastId = listening_history.podcastId
+              AND a.state = 'trusted' AND a.catalogKey IS NOT NULL
+        )
+        """,
+    )
+    suspend fun markHistoryWithEpisodeIdentityDirty(): Int
+
     @Query("SELECT EXISTS(SELECT 1 FROM listening_history WHERE episodeTitle = '' OR episodeTitle IS NULL LIMIT 1)")
     suspend fun hasAnyHistoryWithBlankTitle(): Boolean
 

@@ -186,6 +186,8 @@ class PlaybackRepository internal constructor(
         }
 
         repositoryScope.launch {
+            // The same episode under another of its IDs stays as it is (own-episode-IDs P4, plan section 8).
+            if (IdleSessionHandoff.isSameEpisode(currentId, episodeId, historyStore.listenerStore)) return@launch
             val currentLocalLastPlayed = currentId?.let {
                 historyStore.listenerStore.projectedHistory(it)?.lastPlayedAt
             } ?: 0L
