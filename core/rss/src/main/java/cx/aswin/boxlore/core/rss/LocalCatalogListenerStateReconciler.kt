@@ -58,40 +58,50 @@ internal object LocalCatalogListenerRemapLogic {
 /** Stays under SQLite's bound-parameter limit. */
 private const val KNOWN_ID_LOOKUP_CHUNK = 500
 
+/**
+ * Every history, download and queue row of [podcastId], as the references the orphan rematch reads:
+ * history carries its audio address, downloads their title and date, the queue all three.
+ *
+ * Shared by the reconciler and, since P4 PR 9, by the catalog read that lets a new item keep an ID
+ * these rows already hold ([ListenerEvidence]).
+ */
+internal suspend fun BoxLoreDatabase.listenerReferences(podcastId: String): List<LocalCatalogListenerReference> {
+    val history = listeningHistoryDao().getHistoryForPodcast(podcastId)
+    val downloads = downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
+    val queue = queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastId }
+    return history.map { item ->
+        LocalCatalogListenerReference(
+            episodeId = item.episodeId,
+            enclosureUrl = item.episodeAudioUrl,
+            title = item.episodeTitle,
+            publishedDate = null,
+        )
+    } +
+        downloads.map { item ->
+            LocalCatalogListenerReference(
+                episodeId = item.episodeId,
+                enclosureUrl = null,
+                title = item.episodeTitle,
+                publishedDate = item.publishedDate,
+            )
+        } +
+        queue.map { item ->
+            LocalCatalogListenerReference(
+                episodeId = item.episodeId,
+                enclosureUrl = item.audioUrl,
+                title = item.title,
+                publishedDate = item.pubDate,
+            )
+        }
+}
+
 /** Best-effort, transactional listener-state re-key after a full feed persist. */
 internal class LocalCatalogListenerStateReconciler(
     private val database: BoxLoreDatabase,
     private val downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
 ) {
     suspend fun reconcile(podcastId: String, catalogRows: List<LocalEpisodeEntity>,) {
-        val history = database.listeningHistoryDao().getHistoryForPodcast(podcastId)
-        val downloads = database.downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
-        val queue = database.queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastId }
-        val references =
-            history.map { item ->
-                LocalCatalogListenerReference(
-                    episodeId = item.episodeId,
-                    enclosureUrl = item.episodeAudioUrl,
-                    title = item.episodeTitle,
-                    publishedDate = null,
-                )
-            } +
-                downloads.map { item ->
-                    LocalCatalogListenerReference(
-                        episodeId = item.episodeId,
-                        enclosureUrl = null,
-                        title = item.episodeTitle,
-                        publishedDate = item.publishedDate,
-                    )
-                } +
-                queue.map { item ->
-                    LocalCatalogListenerReference(
-                        episodeId = item.episodeId,
-                        enclosureUrl = item.audioUrl,
-                        title = item.title,
-                        publishedDate = item.pubDate,
-                    )
-                }
+        val references = database.listenerReferences(podcastId)
         val known = knownEpisodeIds(catalogRows, references)
         val mappings = LocalCatalogListenerRemapLogic.mappings(catalogRows, references.filterNot { it.episodeId in known })
         for ((oldId, target) in mappings) {
@@ -113,7 +123,9 @@ internal class LocalCatalogListenerStateReconciler(
      *
      * Added in P4 PR 9 (own-IDs plan section 4: a changed GUID is a new episode; nothing is
      * re-keyed). New episodes now take recipe IDs, so a phone mint left by an older row no longer
-     * equals the new row's ID.
+     * equals the new row's ID. An orphan the read could prove a new item owns (its own mint, or a
+     * unique listener match) is already that item's ID ([ListenerIdAdoption]) and is never re-keyed;
+     * what is left here are orphans whose item already has a stored row, or that match no item uniquely.
      * COMPAT(own-ids): known episodes keep their listener state. Permanent: never remove (MIGRATION.md §5).
      */
     private suspend fun knownEpisodeIds(catalogRows: List<LocalEpisodeEntity>, references: List<LocalCatalogListenerReference>,): Set<String> {

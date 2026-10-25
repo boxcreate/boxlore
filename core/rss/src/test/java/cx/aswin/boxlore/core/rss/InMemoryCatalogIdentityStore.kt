@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 internal class InMemoryCatalogIdentityStore : CatalogIdentityStore {
     val showNamespaces = mutableMapOf<String, Long>()
     val aliases = linkedMapOf<String, EpisodeAliasEntity>()
+    val listenerRows = mutableMapOf<String, List<LocalCatalogListenerReference>>()
 
     override suspend fun showNamespace(podcastId: String): Long? = showNamespaces[podcastId]
 
@@ -24,4 +25,6 @@ internal class InMemoryCatalogIdentityStore : CatalogIdentityStore {
     override suspend fun updateAlias(alias: EpisodeAliasEntity) {
         aliases[alias.aliasId] = alias
     }
+
+    override suspend fun listenerReferences(podcastId: String): List<LocalCatalogListenerReference> = listenerRows[podcastId].orEmpty()
 }

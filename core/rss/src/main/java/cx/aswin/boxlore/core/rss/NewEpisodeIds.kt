@@ -28,24 +28,37 @@ fun interface RecipeIdHash {
  * (docs/EPISODE_IDS.md §4–5):
  * 1. the ID an evicted row of the same (show, key) held, from its trusted alias (the owner first,
  *    then the oldest);
- * 2. else, for an item that follows the identity contract ([ParsedFeedItem.keyFollowsContract]),
- *    the recipe ID of (show, key) in the show's namespace [epNs];
- * 3. else a phone-minted negative ID, as before ([StickyEpisodeIdentity.assignEpisodeId]).
+ * 2. else, for an item that follows the identity contract ([ParsedFeedItem.keyFollowsContract]), an
+ *    ID only this show's listener rows or unresolved aliases hold, when the item provably owns it
+ *    ([listeners], [ListenerIdAdoption]: its own phone mint, else a unique listener match), so that
+ *    listener state stays attached without a re-key;
+ * 3. else, for such an item, the recipe ID of (show, key) in the show's namespace [epNs];
+ * 4. else a phone-minted negative ID, as before ([StickyEpisodeIdentity.assignEpisodeId]).
  *
- * [LocalEpisodeCollisionGuard] then checks each new ID inside the write's transaction and reserves
- * another when it belongs to another episode. Ambiguous and unresolved aliases never decide an ID.
+ * [LocalEpisodeCollisionGuard] then checks each new ID inside the write's transaction. When a reused
+ * ID (1 or 2) belongs to another episode by then, it tries the key's other trusted alias IDs and the
+ * recipe ID before it reserves one. Ambiguous aliases never decide an ID; unresolved ones only
+ * through 2.
  *
  * Added in P4 PR 9 (own-IDs plan section 4, recipe IDs for new episodes; section 5, aliases).
  * COMPAT(own-ids): decides every new local episode ID of a Podcast Index show. Permanent: never remove (MIGRATION.md §5).
  *
  * @property epNs the show's episode namespace, or null when the show never takes recipe IDs
  *   (`rss:` shows and show IDs that aren't canonical)
+ * @property listeners IDs only this show's listener rows or unresolved aliases hold
  */
-class NewEpisodeIds(
+class NewEpisodeIds internal constructor(
     val epNs: Long?,
-    aliases: List<EpisodeAliasEntity> = emptyList(),
-    private val hash: RecipeIdHash = RecipeIdHash.RECIPE,
+    aliases: List<EpisodeAliasEntity>,
+    private val hash: RecipeIdHash,
+    internal val listeners: ListenerEvidence,
 ) {
+    constructor(
+        epNs: Long?,
+        aliases: List<EpisodeAliasEntity> = emptyList(),
+        hash: RecipeIdHash = RecipeIdHash.RECIPE,
+    ) : this(epNs, aliases, hash, ListenerEvidence.NONE)
+
     /** Trusted alias IDs by catalog key, owner first, then oldest. */
     private val trustedByKey: Map<String, List<String>> =
         aliases

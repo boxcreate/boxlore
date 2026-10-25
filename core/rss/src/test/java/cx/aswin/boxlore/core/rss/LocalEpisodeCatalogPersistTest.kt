@@ -127,6 +127,103 @@ class LocalEpisodeCatalogPersistTest {
     }
 
     @Test
+    fun anAliasRowFallsBackToTheKeysOtherAliasIdsThenItsRecipeId() {
+        val ids = NewEpisodeIds(epNs = 100L, aliases = listOf(alias("-9", key = "g1", owner = true), alias("-8", key = "g1", createdAt = 5L)))
+        val row = plan(listOf(rssEpisode(guid = "g1")), newIds = ids).single()
+
+        assertEquals("-9", row.entity.episodeId)
+        assertEquals(listOf("-8", EpisodeRecipeId.forNamespace(100L, "g1").toString()), row.fallbackIds)
+        assertTrue(plan(listOf(rssEpisode(guid = "g2")), newIds = ids).single().fallbackIds.isEmpty(), "a recipe ID has none")
+    }
+
+    @Test
+    fun aNewItemKeepsTheListenerHeldIdThatEqualsItsOwnMint() {
+        // A played feed-only extra, or restored history: the item's own phone mint, held by history only.
+        val item = rssEpisode(guid = "g1")
+        val ids = withListeners(heldIds = setOf(item.episodeId))
+        val row = plan(listOf(item), newIds = ids).single()
+
+        assertEquals(item.episodeId, row.entity.episodeId)
+        assertEquals(PlannedIdSource.OWN_MINT, row.source)
+        assertEquals(listOf(EpisodeRecipeId.forNamespace(100L, "g1").toString()), row.fallbackIds, "its recipe ID if the mint is taken by then")
+    }
+
+    @Test
+    fun aGuidlessItemKeepsTheMintOfTheAudioAnOlderBuildKeyedItOn() {
+        val pick = "https://cdn.example/picked.mp3"
+        val enclosure = "https://cdn.example/declared.mp3"
+        val item = ParsedFeedItem(rssEpisode(guid = null, audioUrl = pick), documentIndex = 0, enclosureUrls = listOf(enclosure), audioUrls = listOf(pick))
+        val olderMint = StickyEpisodeIdentity.ownMintedId(namespace, pick)
+        val row = plan(listOf(item), newIds = withListeners(heldIds = setOf(olderMint)), parsedItems = true).single()
+
+        assertEquals(olderMint, row.entity.episodeId)
+        assertEquals(enclosure, row.entity.guid, "written under the contract key")
+        assertEquals(PlannedIdSource.OWN_MINT, row.source)
+    }
+
+    @Test
+    fun aPodcastIndexIdOnlyHistoryHoldsIsKeptWhenItsAudioMatchesOneItem() {
+        val audio = "https://cdn.example/played.mp3"
+        val ids = withListeners(heldIds = setOf("5001"), references = listOf(reference("5001", audio = audio)))
+        val rows = plan(listOf(rssEpisode(guid = "g1", audioUrl = audio), rssEpisode(guid = "g2", audioUrl = "https://cdn.example/other.mp3")), newIds = ids)
+
+        assertEquals("5001", rows[0].entity.episodeId)
+        assertEquals(PlannedIdSource.LISTENER_MATCH, rows[0].source)
+        assertEquals(EpisodeRecipeId.forNamespace(100L, "g2").toString(), rows[1].entity.episodeId)
+    }
+
+    @Test
+    fun aDownloadIsMatchedByTitleAndDate() {
+        val ids = withListeners(heldIds = setOf("5001"), references = listOf(reference("5001", audio = null, title = "Ep", date = 10L + 3_600L)))
+        assertEquals("5001", plan(listOf(rssEpisode(guid = "g1")), newIds = ids).single().entity.episodeId)
+    }
+
+    @Test
+    fun aListenerMatchThatIsNotUniqueKeepsNothing() {
+        val audio = "https://cdn.example/played.mp3"
+        // Two held IDs match the same item: nothing tells them apart.
+        val twoIds = withListeners(heldIds = setOf("5001", "5002"), references = listOf(reference("5001", audio = audio), reference("5002", audio = audio)))
+        assertEquals(PlannedIdSource.RECIPE, plan(listOf(rssEpisode(guid = "g1", audioUrl = audio)), newIds = twoIds).single().source)
+
+        // One held ID whose audio two items share.
+        val oneId = withListeners(heldIds = setOf("5001"), references = listOf(reference("5001", audio = audio)))
+        val rows = plan(listOf(rssEpisode(guid = "g1", audioUrl = audio), rssEpisode(guid = "g2", audioUrl = audio)), newIds = oneId)
+        assertTrue(rows.all { it.source == PlannedIdSource.RECIPE })
+    }
+
+    @Test
+    fun aListenerIdThatMatchesAStoredRowIsLeftToTheReconciler() {
+        val audio = "https://cdn.example/played.mp3"
+        val existing = listOf(LocalEpisodeIdentity(episodeId = "-9", guid = "g1", audioUrl = audio))
+        val ids = withListeners(heldIds = setOf("5001"), references = listOf(reference("5001", audio = audio)))
+        val rows = plan(listOf(rssEpisode(guid = "g1", audioUrl = audio), rssEpisode(guid = "g2", audioUrl = "https://cdn.example/b.mp3")), existing = existing, newIds = ids)
+
+        assertEquals(listOf("-9", EpisodeRecipeId.forNamespace(100L, "g2").toString()), rows.map { it.entity.episodeId })
+    }
+
+    @Test
+    fun aTrustedAliasWinsOverAListenerHeldId() {
+        val item = rssEpisode(guid = "g1")
+        val ids =
+            NewEpisodeIds(
+                epNs = 100L,
+                aliases = listOf(alias("-9", key = "g1")),
+                hash = RecipeIdHash.RECIPE,
+                listeners = ListenerEvidence(setOf(item.episodeId), emptyList()),
+            )
+        assertEquals("-9", plan(listOf(item), newIds = ids).single().entity.episodeId)
+    }
+
+    @Test
+    fun listenerHeldIdsNeedARecipeNamespaceAndAContractKey() {
+        val item = rssEpisode(guid = null, audioUrl = "https://cdn.example/enc.mp3")
+        val ids = withListeners(heldIds = setOf("5001"), references = listOf(reference("5001", audio = "https://cdn.example/enc.mp3")))
+        assertEquals(item.episodeId, plan(listOf(item), newIds = ids).single().entity.episodeId, "outside the contract: its phone mint")
+        val none = NewEpisodeIds(epNs = null, aliases = emptyList(), hash = RecipeIdHash.RECIPE, listeners = ids.listeners)
+        assertEquals(rssEpisode(guid = "g1").episodeId, plan(listOf(rssEpisode(guid = "g1")), newIds = none).single().entity.episodeId)
+    }
+
+    @Test
     fun guidChangeMintsANewRecipeIdAndDoesNotReuseTheOldRow() {
         val existing = listOf(LocalEpisodeIdentity(episodeId = "-9", guid = "g1", audioUrl = "https://cdn.example/a.mp3"))
         val rows = plan(listOf(rssEpisode(guid = "g2", audioUrl = "https://cdn.example/a.mp3")), existing = existing)
@@ -196,6 +293,11 @@ class LocalEpisodeCatalogPersistTest {
         channelImageUrl = null,
         showImageUrl = null,
     )
+
+    private fun withListeners(heldIds: Set<String>, references: List<LocalCatalogListenerReference> = emptyList()) =
+        NewEpisodeIds(epNs = 100L, aliases = emptyList(), hash = RecipeIdHash.RECIPE, listeners = ListenerEvidence(heldIds, references))
+
+    private fun reference(id: String, audio: String?, title: String? = "Ep", date: Long? = null) = LocalCatalogListenerReference(id, audio, title, date)
 
     private fun alias(
         id: String,

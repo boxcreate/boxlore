@@ -194,6 +194,7 @@ class AppContainer(
             rssRepository = rssPodcastRepository,
             episodeSupplementRepository = episodeSupplementRepository,
             localEpisodeCatalog = subscribedEpisodeCatalog,
+            useEpisodeMatchBaseline = { FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) },
             rolloutSwitches = rolloutSwitches,
         )
     }

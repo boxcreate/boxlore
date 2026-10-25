@@ -25,11 +25,13 @@ import cx.aswin.boxlore.core.model.EpisodeRecipeId
  *    no-break space. Such a row keeps its ID and its key is corrected ([KeyRepair.RETRIMMED]).
  * 2. **A legacy row holding the item's own minted ID** is the same episode: the row keeps that
  *    ID and is healed to the feed's key ([KeyRepair.SYNTHETIC_KEY], [KeyRepair.AUDIO_URL_KEY]);
- *    see [healLegacyRow]. This runs whatever ID the row arrives with (an alias ID or a recipe ID),
+ *    see [healLegacyRow]. This runs whatever ID the row arrives with (an alias ID, a listener-held ID or a recipe ID),
  *    so a legacy row never ends up beside a second row of the same episode.
- * 3. **A free ID.** The incoming ID (an evicted row's ID, a recipe ID or a phone mint) is used when
- *    no other (show, key) holds it: no catalog row in the database or earlier in the batch, and no
- *    alias of another show or a trusted alias of another key of this show ([isFree]).
+ * 3. **A free ID.** The incoming ID (an evicted row's ID, a listener-held ID, a recipe ID or a phone
+ *    mint) is used when no other (show, key) holds it: no catalog row in the database or earlier in
+ *    the batch, and no alias of another show or a trusted alias of another key of this show
+ *    ([isFree]). When a reused ID is taken, the row's fallback IDs are tried in order (the key's
+ *    other trusted alias IDs, then its recipe ID; `PlannedEpisodeRow.fallbackIds`).
  * 4. **Otherwise a reserved local ID** ([StickyEpisodeIdentity.reservedEpisodeId], minted in the
  *    show's namespace), reported in [Resolution.reservedIds] so the caller records its alias in
  *    the same transaction. It is stable across refreshes: the next refresh finds the stored row by
@@ -40,8 +42,8 @@ import cx.aswin.boxlore.core.model.EpisodeRecipeId
  *
  * Added in P4a (collision guard); P4 PR 1 adds the re-trimmed comparison, the unique-key check, the
  * legacy heal (keyed on the item's own mint, so it does not depend on how new IDs are assigned) and
- * the reporting of unplaced rows; P4 PR 9 adds the alias check and reserves in the show's
- * namespace. Own-IDs plan section 4 (legacy keys are re-trimmed; synthetic keys resolve when the
+ * the reporting of unplaced rows; P4 PR 9 adds the alias check, the fallback IDs and reserves in
+ * the show's namespace. Own-IDs plan section 4 (legacy keys are re-trimmed; synthetic keys resolve when the
  * feed is read again; collisions) and section 8 (no write replaces another episode).
  *
  * COMPAT(own-ids): keeps two episodes from merging and legacy rows on their stored IDs. Permanent: never remove (MIGRATION.md §5).
@@ -143,13 +145,17 @@ internal object LocalEpisodeCollisionGuard {
      * @param findOwners owners of up to 500 episode IDs across every show
      * @param listShowRows every stored (ID, key, audio address) of one show
      * @param findAliases alias rows of up to 500 episode IDs across every show
+     * @param fallbackIds per row of [rows] (same index), the IDs to try in order when the row's own
+     *   ID is taken, before a reserved one
      */
+    @Suppress("LongParameterList")
     suspend fun resolve(
         rows: List<LocalEpisodeEntity>,
         rssNamespaceId: String,
         findOwners: suspend (List<String>) -> List<LocalEpisodeOwner>,
         listShowRows: suspend (String) -> List<LocalEpisodeIdentity>,
         findAliases: suspend (List<String>) -> List<EpisodeAliasEntity> = { emptyList() },
+        fallbackIds: List<List<String>> = emptyList(),
     ): Resolution {
         if (rows.isEmpty()) return Resolution(rows, emptyList(), emptyList())
         val shows = rows.map { it.podcastId }.distinct().associateWith { ShowRows(listShowRows(it)) }
@@ -165,7 +171,8 @@ internal object LocalEpisodeCollisionGuard {
             if (resolved[index] != null) return@forEachIndexed
             val mine = ownerOf(row)
             if (mine in state.claimedKeys) return@forEachIndexed // A repeated key: the first row wins.
-            val id = placeNewRow(row, mine, rssNamespaceId, shows.getValue(row.podcastId), holders, state)
+            val fallbacks = fallbackIds.getOrNull(index).orEmpty()
+            val id = placeNewRow(row, mine, rssNamespaceId, shows.getValue(row.podcastId), holders, state, fallbacks)
             if (id == null) {
                 state.unplaced += row
             } else {
@@ -177,18 +184,26 @@ internal object LocalEpisodeCollisionGuard {
     }
 
     /**
-     * True when writing [rows] for [podcastId] would replace a row of another show. For writers that
-     * must keep their IDs (the legacy RSS upgrade carries listener state on them) and so stop
-     * instead of re-minting. Rows already held by [podcastId] itself don't count.
+     * True when writing [rows] for [podcastId] would take an ID another show holds: a catalog row of
+     * another show, or, with no catalog row, an alias of another show (an evicted episode whose
+     * listener state belongs to that show). For writers that must keep their IDs (the legacy RSS
+     * upgrade carries listener state on them) and so stop instead of re-minting. IDs [podcastId]
+     * itself holds don't count.
+     *
+     * The alias check was added in P4 PR 9 (own-IDs plan section 4, collisions; section 5, aliases).
      */
     suspend fun takesAnotherShowsId(
         rows: List<LocalEpisodeEntity>,
         podcastId: String,
         findOwners: suspend (List<String>) -> List<LocalEpisodeOwner>,
+        findAliases: suspend (List<String>) -> List<EpisodeAliasEntity> = { emptyList() },
     ): Boolean {
-        val holders = Holders(findOwners) { emptyList() }
+        val holders = Holders(findOwners, findAliases)
         holders.load(rows.map { it.episodeId })
-        return rows.any { row -> holders.stored[row.episodeId]?.let { it.podcastId != podcastId } == true }
+        return rows.any { row ->
+            val holder = holders.stored[row.episodeId]?.podcastId ?: holders.aliases[row.episodeId]?.podcastId
+            holder != null && holder != podcastId
+        }
     }
 
     private class BatchState {
@@ -225,6 +240,7 @@ internal object LocalEpisodeCollisionGuard {
         return if (storedId == row.episodeId) row else row.copy(episodeId = storedId)
     }
 
+    @Suppress("LongParameterList")
     private suspend fun placeNewRow(
         row: LocalEpisodeEntity,
         mine: Owner,
@@ -232,12 +248,17 @@ internal object LocalEpisodeCollisionGuard {
         show: ShowRows,
         holders: Holders,
         state: BatchState,
+        fallbacks: List<String>,
     ): String? {
         healLegacyRow(row, mine, rssNamespaceId, show, state)?.let { healed ->
             state.repaired += healed
             return healed.episodeId
         }
         if (isFree(row.episodeId, mine, holders, state.byId)) return row.episodeId
+        for (candidate in fallbacks) {
+            holders.load(listOf(candidate))
+            if (isFree(candidate, mine, holders, state.byId)) return candidate
+        }
         return reserve(mine, holders, state)
     }
 
@@ -250,7 +271,7 @@ internal object LocalEpisodeCollisionGuard {
      * ([StickyEpisodeIdentity.ownMintedId]) equals the stored ID, both came from the same hash input,
      * so the row is the same episode: it keeps its ID (and the listener state on it) and takes the
      * feed's key. The own mint is looked up whatever ID [row] arrives with: a new item now carries
-     * a recipe ID (before P4 PR 9, on a catalog's first read, a Podcast Index match), and writing
+     * a recipe ID or a listener-held ID (before P4 PR 9, on a catalog's first read, a Podcast Index match), and writing
      * that would leave the legacy row beside a second row of the same episode. A row with any other
      * key, or whose ID an earlier row of the batch took (for example a GUID-less item still keyed by
      * that audio address), stays a different episode.

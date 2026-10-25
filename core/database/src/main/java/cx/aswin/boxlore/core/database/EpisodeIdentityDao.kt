@@ -11,8 +11,9 @@ import androidx.room.Upsert
  *
  * Plain reads and writes only. Deciding which ID owns an episode, and which alias states may
  * resolve a lookup, belongs to the callers. Today the only caller is the local catalog refresh in
- * `:core:rss` (P4 PR 9): it reuses evicted episodes' IDs, records an alias for every ID it writes
- * and records the keys it heals; nothing reads group state yet.
+ * `:core:rss` (P4 PR 9): it reuses evicted episodes' IDs, records an alias for every ID it writes,
+ * records the keys it heals and settles the unresolved aliases it can attribute; nothing reads
+ * group state yet.
  *
  * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 aliases).
  * COMPAT(own-ids): old local episode IDs keep resolving through aliases. Permanent: never remove (MIGRATION.md §5).

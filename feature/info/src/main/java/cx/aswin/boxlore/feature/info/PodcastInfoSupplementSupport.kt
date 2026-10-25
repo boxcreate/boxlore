@@ -23,8 +23,8 @@ internal class PodcastInfoSupplementSupport(
     /**
      * The Podcast Index list the feed is compared with to find extras. PI rows only: it must not
      * include cached feed extras, or a refresh wipes them. The repository's loader
-     * ([PodcastRepository.loadPiEpisodesForSupplement]) throws on failure, so
-     * [refreshMissingEpisodes] stops before comparing the feed with an empty list.
+     * ([PodcastRepository.loadPiEpisodesForSupplement]) reads up to 1,000 newest episodes and throws
+     * on failure, so [refreshMissingEpisodes] stops before comparing the feed with an empty list.
      */
     private val loadPiList: suspend (podcastId: String) -> List<Episode>,
     private val isCatalogReady: suspend (podcastId: String) -> Boolean = { false },
@@ -263,7 +263,11 @@ internal class PodcastInfoSupplementSupport(
     }
 
     companion object {
-        /** Page size asked for the PI list extras are compared with; the repository caps a page at 100. */
+        /**
+         * Rows asked for when the support is built with a page loader only. Production uses the
+         * repository's match list ([PodcastRepository.loadPiEpisodesForSupplement], up to 1,000
+         * newest episodes); a page is capped at 100.
+         */
         const val SUPPLEMENT_BASELINE_LIMIT = 1000
         private const val DISPLAY_PAGE_SIZE = 20
 

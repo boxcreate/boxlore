@@ -44,6 +44,15 @@ class PodcastRepository(
      */
     boxLoreApi: BoxLoreApi? = null,
     /**
+     * Off switch for the 1,000-item match list the feed-only extras compare with
+     * ([loadPiEpisodesForSupplement]). The app passes a PostHog kill switch; false means the old
+     * 100-item page path.
+     *
+     * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+     * (MIGRATION.md §6) once show pages read feeds for every listener.
+     */
+    private val useEpisodeMatchBaseline: () -> Boolean = { true },
+    /**
      * Optional `/v2` client override for hermetic JVM/MockWebServer tests. Production leaves this
      * null so [apiV2] is built on the same cached client as [api].
      */
@@ -301,9 +310,14 @@ class PodcastRepository(
 
     /**
      * The Podcast Index episodes a show's feed-only extras ([EpisodeSupplementPort]) are compared
-     * with: the oldest page of the PI list the show page reads (at most [MAX_SAFE_PAGE_LIMIT]
-     * items). Throws on HTTP/network failure so [EpisodeSupplementPort.refreshFromFeed] does not
-     * persist extras against an empty list (which would treat every feed item as feed-only).
+     * with, so an episode Podcast Index lists is never stored again as an extra. Throws on
+     * HTTP/network failure so [EpisodeSupplementPort.refreshFromFeed] does not persist extras
+     * against an empty list (which would treat every feed item as feed-only).
+     *
+     * Reads up to [MAX_MATCH_BASELINE] newest episodes from `/episodes/match`, match fields only.
+     * The full-page path is capped at 100 for memory and returns the oldest 100, so on a show with
+     * more episodes the newer ones would count as feed-only and show twice. Falls back to that page
+     * when the route fails or the switch ([useEpisodeMatchBaseline]) is off.
      *
      * Only the extras use it. Followed shows' local catalogs no longer match feed items against
      * Podcast Index: new episodes take recipe IDs (P4 PR 9, own-IDs plan section 4).
@@ -313,11 +327,39 @@ class PodcastRepository(
      */
     suspend fun loadPiEpisodesForSupplement(feedId: String): List<Episode> = withContext(Dispatchers.IO) {
         val resolvedId = resolvePodcastIndexFeedId(feedId)
+        if (useEpisodeMatchBaseline()) {
+            loadMatchList(resolvedId)?.let { return@withContext it }
+        }
         val response = api.getEpisodesPaginated(publicKey, resolvedId, MAX_SAFE_PAGE_LIMIT, 0, "oldest").execute()
         check(response.isSuccessful && response.body() != null) {
             "PI list HTTP ${response.code()}"
         }
         response.body()!!.items.mapNotNull { mapToEpisode(it) }
+    }
+
+    /**
+     * `/episodes/match` as [Episode]s, or null to use the page path: an HTTP or network error, or
+     * an empty list (the page path confirms a show with no episodes, so a misbehaving route can
+     * never leave a feed compared with nothing).
+     *
+     * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+     * (MIGRATION.md §6) once show pages read feeds for every listener.
+     */
+    private fun loadMatchList(resolvedId: String): List<Episode>? = try {
+        val response = api.getEpisodeMatchList(publicKey, resolvedId, MAX_MATCH_BASELINE).execute()
+        val body = response.body()
+        if (response.isSuccessful && body != null) {
+            body.items.mapNotNull { it.toBaselineEpisode(resolvedId) }.takeIf { it.isNotEmpty() }
+        } else {
+            null
+        }
+    } catch (e: java.io.IOException) {
+        android.util.Log.w("PodcastRepository", "match list failed for $resolvedId; using the page path", e)
+        null
+    } catch (e: IllegalArgumentException) {
+        // An unreadable body (the JSON converter's SerializationException is one).
+        android.util.Log.w("PodcastRepository", "match list unreadable for $resolvedId; using the page path", e)
+        null
     }
 
     private suspend fun getRssEpisodesPaginated(feedId: String, limit: Int, offset: Int, sort: String,): EpisodePage = try {

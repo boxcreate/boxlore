@@ -133,8 +133,8 @@ class EpisodeSupplementTipLogicTest {
     }
 
     @Test
-    fun `a lean baseline row keeps its id and takes the rest from the feed`() {
-        // A baseline row can carry only the ID, title, audio and date.
+    fun `a match-only baseline row keeps its id and takes the rest from the feed`() {
+        // /episodes/match rows carry only the ID, title, audio and date.
         val feed =
             rssEpisode(episodeId = "-99", title = "Fresh", audioUrl = "https://cdn.example/fresh.mp3", publishedDate = 200L)
                 .copy(description = "From the feed", imageUrl = "https://img/ep.jpg", chaptersUrl = "https://c/ch.json", episodeNumber = 12)

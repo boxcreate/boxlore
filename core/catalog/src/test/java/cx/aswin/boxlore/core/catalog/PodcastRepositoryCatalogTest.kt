@@ -284,7 +284,27 @@ class PodcastRepositoryCatalogTest {
     }
 
     @Test
-    fun `the PI list for feed-only extras is the oldest page`() = runTest(testDispatcher) {
+    fun `the extras list reads up to 1000 newest episodes from episodes-match`() = runTest(testDispatcher) {
+        // The page path is capped at the oldest 100, so newer episodes of a big show would count as
+        // feed-only extras and show twice.
+        val items = (1..150).joinToString(",") { i ->
+            """{"id":$i,"guid":"g$i","title":"Ep $i","enclosureUrl":"https://cdn.example/$i.mp3","datePublished":${1_700_000_000 + i}}"""
+        }
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[$items,{"id":0,"enclosureUrl":"https://x/0.mp3"},{"id":7,"title":"no audio"}]}"""))
+
+        val list = repository.loadPiEpisodesForSupplement("90001")
+
+        assertEquals(150, list.size, "items without an ID or audio are skipped")
+        assertEquals(Episode(id = "150", title = "Ep 150", description = "", audioUrl = "https://cdn.example/150.mp3", podcastId = "90001", publishedDate = 1_700_000_150), list.last())
+        val recorded = server.takeRequest()
+        assertEquals("/episodes/match?id=90001&max=1000", recorded.path)
+        assertEquals(APP_KEY, recorded.getHeader("X-App-Key"))
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun `the extras list falls back to the page path when the match route fails`() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
         server.enqueue(
             MockResponse().setHeader("Content-Type", "application/json")
                 .setBody("""{"items":[{"id":11,"title":"Old","enclosureUrl":"https://cdn.example/11.mp3","datePublished":1}],"hasMore":false}"""),
@@ -293,17 +313,44 @@ class PodcastRepositoryCatalogTest {
         val list = repository.loadPiEpisodesForSupplement("90001")
 
         assertEquals(listOf("11"), list.map { it.id })
+        assertTrue(server.takeRequest().path!!.startsWith("/episodes/match"))
         val page = server.takeRequest().path!!
         assertTrue(page.startsWith("/episodes?") && page.contains("limit=100") && page.contains("sort=oldest"), page)
-        assertEquals(1, server.requestCount)
     }
 
     @Test
-    fun `the API client has no episodes-match route`() {
-        // New feed items take recipe IDs; nothing matches them against a Podcast Index list any more.
-        val routes = cx.aswin.boxlore.core.network.BoxLoreApi::class.java.methods.mapNotNull { it.getAnnotation(retrofit2.http.GET::class.java)?.value }
-        assertTrue(routes.isNotEmpty())
-        assertTrue("episodes/match" !in routes, routes.toString())
+    fun `an empty match list is confirmed by the page path`() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[]}"""))
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("""{"items":[{"id":11,"title":"Old","enclosureUrl":"https://cdn.example/11.mp3","datePublished":1}],"hasMore":false}"""),
+        )
+
+        val list = repository.loadPiEpisodesForSupplement("90001")
+
+        assertEquals(listOf("11"), list.map { it.id })
+        assertTrue(server.takeRequest().path!!.startsWith("/episodes/match"))
+        assertTrue(server.takeRequest().path!!.startsWith("/episodes?"))
+    }
+
+    @Test
+    fun `the match list off switch keeps the page path`() = runTest(testDispatcher) {
+        val off =
+            PodcastRepository(
+                baseUrl = server.url("/").toString(),
+                publicKey = APP_KEY,
+                context = fakeContext(),
+                rssRepository = RssPodcastRepository.createForTests(context = fakeContext(), database = fakeDatabase()),
+                ioDispatcher = testDispatcher,
+                boxLoreApi = NetworkModule.createBoxLoreApi(server.url("/").toString(), OkHttpClient()),
+                useEpisodeMatchBaseline = { false },
+            )
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[],"hasMore":false}"""))
+
+        off.loadPiEpisodesForSupplement("90001")
+
+        assertTrue(server.takeRequest().path!!.startsWith("/episodes?"))
+        assertEquals(1, server.requestCount)
     }
 
     @Test

@@ -290,6 +290,43 @@ class LocalEpisodeCollisionGuardTest {
     }
 
     @Test
+    fun theLegacyUpgradeCheckAlsoStopsAtAnotherShowsAlias() = runTest {
+        // Show 100's catalog was evicted; its alias still holds -11 and the listener state on it.
+        aliasTable += alias("-11", show = "100", key = "guid-a")
+        val rows = listOf(row("-11", show = "200", key = "guid-a"))
+        assertFalse(LocalEpisodeCollisionGuard.takesAnotherShowsId(rows, "200", owners), "without aliases the check can't see it")
+        assertTrue(LocalEpisodeCollisionGuard.takesAnotherShowsId(rows, "200", owners, aliases))
+        assertFalse(LocalEpisodeCollisionGuard.takesAnotherShowsId(listOf(row("-11", show = "100", key = "guid-a")), "100", owners, aliases))
+    }
+
+    @Test
+    fun aTakenReusedIdTriesItsFallbacksInOrderBeforeAReservedOne() = runTest {
+        // The evicted row's ID now belongs to another show's catalog row.
+        store(listOf(row("-11", show = "300", key = "other")))
+        val incoming = row("-11", show = "100", key = "guid-a")
+        val withRecipe =
+            LocalEpisodeCollisionGuard.resolve(listOf(incoming), namespace, owners, showRows, aliases, fallbackIds = listOf(listOf("-12", RECIPE)))
+        assertEquals("-12", withRecipe.rows.single().episodeId, "the key's other alias ID first")
+        assertTrue(withRecipe.reservedIds.isEmpty())
+
+        store(listOf(row("-12", show = "300", key = "other-2")))
+        val recipe = LocalEpisodeCollisionGuard.resolve(listOf(incoming), namespace, owners, showRows, aliases, fallbackIds = listOf(listOf("-12", RECIPE)))
+        assertEquals(RECIPE, recipe.rows.single().episodeId, "then the recipe ID, never a reserved one while it is free")
+        assertTrue(recipe.reservedIds.isEmpty())
+
+        aliasTable += alias(RECIPE, show = "300", key = "other-3")
+        val reserved = LocalEpisodeCollisionGuard.resolve(listOf(incoming), namespace, owners, showRows, aliases, fallbackIds = listOf(listOf("-12", RECIPE)))
+        assertEquals(StickyEpisodeIdentity.reservedEpisodeId("100", "guid-a", 1), reserved.rows.single().episodeId)
+        assertEquals(setOf(StickyEpisodeIdentity.reservedEpisodeId("100", "guid-a", 1)), reserved.reservedIds)
+    }
+
+    @Test
+    fun aFreeIdNeverLooksAtItsFallbacks() = runTest {
+        val resolution = LocalEpisodeCollisionGuard.resolve(listOf(row("-11", show = "100", key = "guid-a")), namespace, owners, showRows, aliases, fallbackIds = listOf(listOf(RECIPE)))
+        assertEquals("-11", resolution.rows.single().episodeId)
+    }
+
+    @Test
     fun aReservedIdIsReportedAndMintedInTheShowsNamespace() = runTest {
         store(listOf(row("-11", show = "100", key = "guid-a")))
         val resolution = resolve(listOf(row("-11", show = "200", key = "guid-a")))

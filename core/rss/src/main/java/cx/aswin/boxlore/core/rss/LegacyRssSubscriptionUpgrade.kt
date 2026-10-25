@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.rss
 
 import androidx.room.withTransaction
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeIdentity
@@ -69,7 +70,21 @@ internal object LegacyRssUpgradeLogic {
         stored: List<RssEpisodeEntity>,
         storedIdentities: List<RssEpisodeIdentity>,
         target: CopyTarget,
-    ): List<LocalEpisodeEntity> {
+    ): List<LocalEpisodeEntity> = copiedPlannedRows(feedItems, stored, storedIdentities, target).map { it.entity }
+
+    /**
+     * [copiedLocalRows] with each row's plan, so the upgrade can record an alias for every row
+     * whose key follows the identity contract ([PlannedEpisodeRow.keyFollowsContract]).
+     *
+     * Added in P4 PR 9 (own-IDs plan section 5: every catalog ID of a Podcast Index show has an alias).
+     * COMPAT(own-ids): the legacy upgrade keeps every RSS episode ID. Permanent: never remove (MIGRATION.md §5).
+     */
+    fun copiedPlannedRows(
+        feedItems: List<ParsedFeedItem>,
+        stored: List<RssEpisodeEntity>,
+        storedIdentities: List<RssEpisodeIdentity>,
+        target: CopyTarget,
+    ): List<PlannedEpisodeRow> {
         val refreshed = StickyRssEpisodeRemap.remapItems(parsed = feedItems, existing = storedIdentities)
         val refreshedIds = refreshed.mapTo(HashSet()) { it.episode.episodeId }
         val firstStoredIndex = (refreshed.maxOfOrNull(ParsedFeedItem::documentIndex) ?: -1) + 1
@@ -87,7 +102,7 @@ internal object LegacyRssUpgradeLogic {
                     audioUrl = item.episode.audioUrl,
                 )
             }
-        return LocalEpisodeCatalogPersist.toLocalEpisodes(
+        return LocalEpisodeCatalogPersist.plan(
             podcastIndexId = target.podcastIndexId,
             rssNamespaceId = target.rssNamespaceId,
             parsed = combined,
@@ -241,8 +256,8 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
 
     private suspend fun copiedCatalog(source: PodcastEntity, target: Podcast, snapshot: LegacyRssFeedSnapshot,): CopiedRssCatalog? {
         val rssDao = database.rssEpisodeDao()
-        val localRows =
-            LegacyRssUpgradeLogic.copiedLocalRows(
+        val planned =
+            LegacyRssUpgradeLogic.copiedPlannedRows(
                 feedItems = snapshot.parsed.items,
                 stored = rssDao.getAllNewest(source.podcastId),
                 storedIdentities = rssDao.listIdentities(source.podcastId),
@@ -254,13 +269,23 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
                     showImageUrl = target.imageUrl.ifBlank { source.imageUrl },
                 ),
             )
+        val localRows = planned.map { it.entity }
         if (localRows.isEmpty() || !snapshot.finalFeedUrl.startsWith("https://", ignoreCase = true)) {
             return null
         }
         // The upgrade keeps the RSS IDs (listener state rides on them), so it can't re-mint around
-        // another show that already holds one (the same feed listed twice). It stays on RSS instead.
+        // another show that already holds one (the same feed listed twice), as a catalog row or as
+        // an evicted episode's alias. It stays on RSS instead.
         val catalogDao = database.localEpisodeCatalogDao()
-        if (LocalEpisodeCollisionGuard.takesAnotherShowsId(localRows, target.id) { ids -> catalogDao.findOwners(ids) }) {
+        val identityDao = database.episodeIdentityDao()
+        val takesAnotherShowsId =
+            LocalEpisodeCollisionGuard.takesAnotherShowsId(
+                rows = localRows,
+                podcastId = target.id,
+                findOwners = { ids -> catalogDao.findOwners(ids) },
+                findAliases = { ids -> identityDao.getAliases(ids) },
+            )
+        if (takesAnotherShowsId) {
             return null
         }
         val listenerIds =
@@ -283,6 +308,7 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
                 podcastArtist = target.artist,
             )
         return CopiedRssCatalog(
+            planned = planned,
             localRows = localRows,
             targetEntity =
             LegacyRssUpgradeLogic.targetEntity(
@@ -303,6 +329,7 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
         database.episodeSupplementDao().deleteSupplement(target.id)
         database.podcastDao().upsert(catalog.targetEntity)
         localDao.upsertEpisodes(catalog.localRows)
+        recordAliases(target.id, catalog)
         localDao.upsertFeed(
             LocalEpisodeFeedEntity(
                 podcastId = target.id,
@@ -319,6 +346,41 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
                 feedUrlLookupAt = catalog.nowMillis,
             ),
         )
+    }
+
+    /**
+     * Records a trusted alias for each copied row whose key follows the identity contract, in the
+     * upgrade's transaction ([EpisodeAliasProvenance.RSS_FOLLOW_UPGRADE]), so the show's episode IDs
+     * keep resolving after its catalog is evicted, like every other catalog ID of a Podcast Index
+     * show. An existing alias of the ID stays as it is, and a new one owns its episode only when no
+     * trusted alias owns it yet ([CatalogAliasRecords]).
+     *
+     * Added in P4 PR 9 (own-IDs plan section 5: every catalog ID of a Podcast Index show has an alias).
+     * COMPAT(own-ids): upgraded shows keep their IDs after eviction. Permanent: never remove (MIGRATION.md §5).
+     */
+    private suspend fun recordAliases(targetId: String, catalog: CopiedRssCatalog,) {
+        val epNs = EpisodeNamespaces.choose(targetId, catalogEpNs = null, showEpNs = database.podcastDao().getEpNs(targetId)) ?: return
+        val identityDao = database.episodeIdentityDao()
+        val aliasesById =
+            catalog.localRows
+                .map { it.episodeId }
+                .distinct()
+                .chunked(UPGRADE_ALIAS_LOOKUP_CHUNK)
+                .flatMap { identityDao.getAliases(it) }
+                .associateBy { it.aliasId }
+        val writes =
+            CatalogAliasRecords.of(
+                podcastId = targetId,
+                planned = catalog.planned,
+                resolution = LocalEpisodeCollisionGuard.Resolution(catalog.localRows, repaired = emptyList(), unplaced = emptyList()),
+                aliasesById = aliasesById,
+                showAliases = identityDao.aliasesForShow(targetId),
+                newIds = NewEpisodeIds(epNs = epNs),
+                nowMillis = catalog.nowMillis,
+                storedRowProvenance = EpisodeAliasProvenance.RSS_FOLLOW_UPGRADE,
+            )
+        if (writes.inserts.isNotEmpty()) identityDao.insertAliasesIfAbsent(writes.inserts)
+        writes.updates.forEach { identityDao.upsertAlias(it) }
     }
 
     private suspend fun reassignListenerReferences(sourcePodcastId: String, targetEntity: PodcastEntity,) {
@@ -381,4 +443,12 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
     }
 }
 
-private data class CopiedRssCatalog(val localRows: List<LocalEpisodeEntity>, val targetEntity: PodcastEntity, val nowMillis: Long,)
+private data class CopiedRssCatalog(
+    val planned: List<PlannedEpisodeRow>,
+    val localRows: List<LocalEpisodeEntity>,
+    val targetEntity: PodcastEntity,
+    val nowMillis: Long,
+)
+
+/** Stays under SQLite's bound-parameter limit. */
+private const val UPGRADE_ALIAS_LOOKUP_CHUNK = 500

@@ -109,6 +109,41 @@ object EpisodeAliasProvenance {
     const val FEED_STORED_ROW = "feed_stored_row"
 
     /**
+     * Recorded by a catalog read when a stored row whose alias was unresolved (a phone-minted row
+     * keyed by its own audio address) is found under exactly the key the feed gives its item: the
+     * key is confirmed and the alias becomes trusted.
+     *
+     * Added in P4 PR 9 of the own-episode-IDs plan (plan section 5, unresolved aliases are retried when the feed is read).
+     */
+    const val FEED_CONFIRMED_KEY = "feed_confirmed_key"
+
+    /**
+     * Recorded by a catalog read for a new episode that kept an ID this show's history, queue,
+     * downloads or unresolved alias already held, because the item's own phone-minted ID equals
+     * it (the same hash input, so the same episode).
+     *
+     * Added in P4 PR 9 of the own-episode-IDs plan (plan section 4, nothing is re-keyed; section 5, unresolved aliases).
+     */
+    const val FEED_OWN_MINT = "feed_own_mint"
+
+    /**
+     * Recorded by a catalog read for a new episode that kept an ID only this show's history, queue
+     * or downloads held (a Podcast Index ID, for example), matched by a unique audio address, else
+     * a unique title and date, as the orphan rematch matches them.
+     *
+     * Added in P4 PR 9 of the own-episode-IDs plan (plan section 4, nothing is re-keyed; section 5, unresolved aliases).
+     */
+    const val FEED_LISTENER_MATCH = "feed_listener_match"
+
+    /**
+     * Recorded when a show added by its feed address moves to its Podcast Index show and keeps
+     * its episodes' phone-minted IDs (the legacy RSS subscription upgrade).
+     *
+     * Added in P4 PR 9 of the own-episode-IDs plan (plan section 5, every catalog ID of a Podcast Index show has an alias).
+     */
+    const val RSS_FOLLOW_UPGRADE = "rss_follow_upgrade"
+
+    /**
      * A catalog read corrected a stored key that differed only by characters SQLite `TRIM()`
      * keeps; the row kept its ID.
      *

@@ -15,6 +15,18 @@ enum class PlannedIdSource {
     /** No stored row, but a trusted alias of the same (show, key) kept the ID of an evicted row. */
     ALIAS,
 
+    /**
+     * No stored row or alias, but this show's listener rows or unresolved alias hold the item's own
+     * phone mint ([ListenerIdAdoption]).
+     */
+    OWN_MINT,
+
+    /**
+     * No stored row or alias, but an ID only this show's listener rows hold matched the item, and
+     * only it ([ListenerIdAdoption]).
+     */
+    LISTENER_MATCH,
+
     /** A new episode that follows the identity contract: its recipe ID. */
     RECIPE,
 
@@ -28,10 +40,19 @@ enum class PlannedIdSource {
  * @property keyFollowsContract the row is written under the key the shared identity contract gives
  *   the item ([ParsedFeedItem.keyFollowsContract], and not an older key a stored row keeps); only
  *   such rows get recipe IDs and aliases
+ * @property fallbackIds IDs [LocalEpisodeCollisionGuard] tries, in order, when a reused ID
+ *   ([PlannedIdSource.ALIAS], [PlannedIdSource.OWN_MINT], [PlannedIdSource.LISTENER_MATCH]) belongs to
+ *   another episode by the time the row is written: the key's other trusted alias IDs, then its
+ *   recipe ID. A reserved ID comes only after these.
  *
  * Added in P4 PR 9 (own-IDs plan section 4).
  */
-data class PlannedEpisodeRow(val entity: LocalEpisodeEntity, val source: PlannedIdSource, val keyFollowsContract: Boolean,)
+data class PlannedEpisodeRow(
+    val entity: LocalEpisodeEntity,
+    val source: PlannedIdSource,
+    val keyFollowsContract: Boolean,
+    val fallbackIds: List<String> = emptyList(),
+)
 
 /** Maps a parsed publisher feed onto sticky local catalog rows. */
 object LocalEpisodeCatalogPersist {
@@ -64,6 +85,10 @@ object LocalEpisodeCatalogPersist {
      * - **Evicted episodes keep their IDs.** An item no stored row holds takes the ID a trusted
      *   alias of its (show, key) keeps ([NewEpisodeIds]), first by its catalog key, then by an
      *   older key (written under that key, like a stored row found by it).
+     * - **Listener state stays attached.** Otherwise an item that follows the identity contract
+     *   keeps an ID only this show's history, queue, downloads or unresolved aliases hold, when it
+     *   provably owns it ([ListenerIdAdoption]: its own phone mint, else a unique listener match).
+     *   Before P4 PR 9 the item took the same ID through its phone mint or the Podcast Index match.
      * - **New episodes get recipe IDs.** Otherwise an item that follows the identity contract takes
      *   the recipe ID of (show, key) in [NewEpisodeIds.epNs]; any other item, and every item of a
      *   show without a namespace (`rss:`), keeps a phone-minted negative ID.
@@ -89,6 +114,7 @@ object LocalEpisodeCatalogPersist {
         val stored = StoredRowMatch.StoredRows.of(existing.map { Triple(it.episodeId, it.guid, it.audioUrl) })
         val matches = StoredRowMatch.resolve(parsed, stored)
         val aliasMatches = aliasMatches(parsed, matches, newIds, occupiedIds)
+        val adopted = listenerMatches(parsed, matches, aliasMatches, newIds, rssNamespaceId, occupiedIds)
         val ctx =
             PersistContext(
                 podcastIndexId = podcastIndexId,
@@ -98,9 +124,23 @@ object LocalEpisodeCatalogPersist {
                 showImageUrl = showImageUrl,
             )
         return parsed.mapIndexedNotNull { position, item ->
-            matches[position]?.let { mapOne(ctx, item, aliasMatches[position] ?: it, fromAlias = aliasMatches[position] != null) }
+            val match = matches[position] ?: return@mapIndexedNotNull null
+            val aliasMatch = aliasMatches[position]
+            val adoption = adopted[position]
+            when {
+                aliasMatch != null -> mapOne(ctx, item, aliasMatch, PlannedIdSource.ALIAS)
+                adoption != null -> mapOne(ctx, item, StoredRowMatch(match.key, adoption.episodeId), adoption.kind.source)
+                else -> mapOne(ctx, item, match, reusedFrom = null)
+            }
         }
     }
+
+    private val ListenerIdAdoption.Kind.source: PlannedIdSource
+        get() =
+            when (this) {
+                ListenerIdAdoption.Kind.OWN_MINT -> PlannedIdSource.OWN_MINT
+                ListenerIdAdoption.Kind.LISTENER_MATCH -> PlannedIdSource.LISTENER_MATCH
+            }
 
     private data class PersistContext(
         val podcastIndexId: String,
@@ -143,12 +183,64 @@ object LocalEpisodeCatalogPersist {
         return result
     }
 
-    private fun mapOne(ctx: PersistContext, item: ParsedFeedItem, match: StoredRowMatch, fromAlias: Boolean,): PlannedEpisodeRow? {
+    /**
+     * For each winning item no stored row or trusted alias holds, the listener-held ID it keeps
+     * ([ListenerIdAdoption]); only for shows that take recipe IDs and items that follow the
+     * identity contract. Every winning item takes part in the matching, so a match must be unique
+     * across the whole feed.
+     */
+    @Suppress("LongParameterList")
+    private fun listenerMatches(
+        parsed: List<ParsedFeedItem>,
+        matches: Array<StoredRowMatch?>,
+        aliasMatches: Array<StoredRowMatch?>,
+        newIds: NewEpisodeIds,
+        rssNamespaceId: String,
+        occupiedIds: Set<String>,
+    ): Map<Int, ListenerIdAdoption.Adopted> {
+        if (newIds.epNs == null || newIds.listeners.isEmpty) return emptyMap()
+        val claimed = HashSet(occupiedIds)
+        aliasMatches.forEach { match -> match?.storedId?.let(claimed::add) }
+        val candidates =
+            parsed.indices
+                .sortedBy { parsed[it].documentIndex }
+                .mapNotNull { position ->
+                    val match = matches[position] ?: return@mapNotNull null
+                    val item = parsed[position]
+                    val open =
+                        match.storedId == null &&
+                            aliasMatches[position] == null &&
+                            item.keyFollowsContract &&
+                            match.key == item.catalogKey
+                    ListenerIdAdoption.Candidate(
+                        position = position,
+                        open = open,
+                        mints = if (open) ownMints(item, match.key, rssNamespaceId) else emptyList(),
+                        audioKeys =
+                        (listOf(item.episode.audioUrl) + item.enclosureUrls + item.audioUrls)
+                            .mapNotNullTo(HashSet()) { url -> url.trim().takeIf(String::isNotEmpty) },
+                        title = item.episode.title,
+                        publishedDate = item.episode.publishedDate,
+                    )
+                }
+        return ListenerIdAdoption.adopt(candidates, newIds.listeners, claimed)
+    }
+
+    /** The IDs older builds could have minted for [item]: the parser's, then the mint of its key and of each older key. */
+    private fun ownMints(item: ParsedFeedItem, key: String, rssNamespaceId: String,): List<String> {
+        if (!rssNamespaceId.startsWith(RSS_NAMESPACE_PREFIX)) return listOf(item.episode.episodeId)
+        val mints = (listOf(key) + item.legacyKeys).map { StickyEpisodeIdentity.ownMintedId(rssNamespaceId, it) }
+        return (listOf(item.episode.episodeId) + mints).distinct()
+    }
+
+    private const val RSS_NAMESPACE_PREFIX = "rss:"
+
+    private fun mapOne(ctx: PersistContext, item: ParsedFeedItem, match: StoredRowMatch, reusedFrom: PlannedIdSource?,): PlannedEpisodeRow? {
         val rss = item.episode
         val existingId = match.storedId
         // A row kept under an older key (a parser's audio pick) is not under the contract's key.
         val contractKey = item.keyFollowsContract && match.key == item.catalogKey
-        val recipeId = if (existingId == null && contractKey) ctx.newIds.recipeIdFor(match.key) else null
+        val recipeId = if (contractKey && (existingId == null || reusedFrom != null)) ctx.newIds.recipeIdFor(match.key) else null
         val episodeId =
             StickyEpisodeIdentity.assignEpisodeId(
                 existingId = existingId,
@@ -161,10 +253,16 @@ object LocalEpisodeCatalogPersist {
             ) ?: return null
         val source =
             when {
-                existingId != null && fromAlias -> PlannedIdSource.ALIAS
-                existingId != null -> PlannedIdSource.STORED
+                existingId != null -> reusedFrom ?: PlannedIdSource.STORED
                 recipeId != null -> PlannedIdSource.RECIPE
                 else -> PlannedIdSource.LOCAL
+            }
+        val otherAliasIds = if (source == PlannedIdSource.ALIAS) ctx.newIds.aliasIdsFor(match.key) else emptyList()
+        val fallbackIds =
+            if (reusedFrom == null) {
+                emptyList()
+            } else {
+                (otherAliasIds + listOfNotNull(recipeId?.toString())).filter { it != episodeId }.distinct()
             }
         val entity =
             LocalEpisodeEntity(
@@ -191,7 +289,7 @@ object LocalEpisodeCatalogPersist {
                 episodeType = rss.episodeType,
                 enclosureType = rss.enclosureType,
             )
-        return PlannedEpisodeRow(entity, source, contractKey)
+        return PlannedEpisodeRow(entity, source, contractKey, fallbackIds)
     }
 }
 

@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.rss
 
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeCatalogDao
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeFeedEntity
@@ -160,6 +161,7 @@ private suspend fun persistParsed(
                 findOwners = { ids -> deps.dao.findOwners(ids) },
                 listShowRows = { podcastId -> deps.dao.listIdentities(podcastId) },
                 findAliases = { ids -> deps.identity.aliases(ids) },
+                fallbackIds = planned.map { it.fallbackIds },
             )
         resolution = resolved
         written = resolved.rows
@@ -212,11 +214,12 @@ private const val COLLISION_LOG_TAG = "LocalEpisodeCatalog"
 /**
  * How this refresh picks IDs for items no stored row holds: the show's namespace
  * ([EpisodeNamespaces.choose]: the catalog's stored epNs, else the show's, else the show ID) and,
- * when the show takes recipe IDs, its aliases. A namespace the server reported
- * ([RefreshRequest.serverEpNs]) is only compared: a different value changes no ID and is logged
- * (decision D12).
+ * when the show takes recipe IDs, its aliases and the IDs only its listener rows or unresolved
+ * aliases hold ([ListenerEvidence]). A namespace the server reported ([RefreshRequest.serverEpNs])
+ * is only compared: a different value changes no ID and is logged (decision D12).
  *
- * Added in P4 PR 9 (own-IDs plan section 4, recipe IDs for new episodes; decision D12).
+ * Added in P4 PR 9 (own-IDs plan section 4, recipe IDs for new episodes; section 5, unresolved
+ * aliases are retried when the feed is read; decision D12).
  * COMPAT(own-ids): new IDs are minted in the stored namespace. Permanent: never remove (MIGRATION.md §5).
  */
 private suspend fun newEpisodeIds(deps: LocalCatalogRefreshDeps, request: RefreshRequest, existing: LocalEpisodeFeedEntity?,): NewEpisodeIds {
@@ -230,13 +233,39 @@ private suspend fun newEpisodeIds(deps: LocalCatalogRefreshDeps, request: Refres
     if (EpisodeNamespaces.differs(epNs, request.serverEpNs)) {
         android.util.Log.w(COLLISION_LOG_TAG, "Show $podcastId: server namespace ${request.serverEpNs} differs from the stored $epNs; keeping $epNs")
     }
-    return NewEpisodeIds(epNs = epNs, aliases = deps.identity.aliasesForShow(podcastId), hash = deps.recipeHash)
+    val showAliases = deps.identity.aliasesForShow(podcastId)
+    return NewEpisodeIds(
+        epNs = epNs,
+        aliases = showAliases,
+        hash = deps.recipeHash,
+        listeners = listenerEvidence(deps, podcastId, showAliases),
+    )
+}
+
+/**
+ * The IDs only [podcastId]'s listener rows or unresolved aliases hold ([ListenerEvidence]): read
+ * before the write's transaction, like the rest of the plan; the guard checks each ID again inside it.
+ *
+ * Added in P4 PR 9 (own-IDs plan section 4: nothing is re-keyed; section 5: unresolved aliases).
+ */
+private suspend fun listenerEvidence(deps: LocalCatalogRefreshDeps, podcastId: String, showAliases: List<EpisodeAliasEntity>,): ListenerEvidence {
+    val references = deps.identity.listenerReferences(podcastId)
+    val candidates = ListenerEvidence.candidateIds(references, showAliases)
+    if (candidates.isEmpty()) return ListenerEvidence.NONE
+    val catalogHeld = HashSet<String>()
+    val aliasesById = HashMap<String, EpisodeAliasEntity>()
+    for (chunk in candidates.chunked(ALIAS_LOOKUP_CHUNK)) {
+        deps.dao.findOwners(chunk).mapTo(catalogHeld) { it.episodeId }
+        deps.identity.aliases(chunk).associateByTo(aliasesById) { it.aliasId }
+    }
+    return ListenerEvidence.of(podcastId, references, showAliases, catalogHeld, aliasesById)
 }
 
 /**
  * Writes the aliases [CatalogAliasRecords] derives from this refresh, in its transaction: one per
- * new recipe or reserved ID, one per stored row that lacked one, and the provenance of every healed
- * key (an unresolved alias of a healed row becomes trusted).
+ * new recipe, reserved or listener-held ID, one per stored row that lacked one, the provenance of
+ * every healed key, and the key of every unresolved alias of this show the read settles (it becomes
+ * trusted).
  *
  * Added in P4 PR 9 (own-IDs plan section 4, collisions and synthetic keys; section 5, aliases).
  * COMPAT(own-ids): every catalog ID keeps resolving after eviction. Permanent: never remove (MIGRATION.md §5).
