@@ -538,7 +538,7 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
      */
     private suspend fun ownerOf(podcastId: String, catalogKey: String, members: List<EpisodeAliasEntity>,): String {
         if (members.size == 1) return members.single().aliasId
-        val marked = members.filter { it.owner }.singleOrNull()?.aliasId
+        val marked = members.singleOrNull { it.owner }?.aliasId
         if (marked != null && aliases.holdsListenerState(marked)) return marked
         val chosen = aliases.chooseOwner(podcastId, catalogKey) ?: members.first().aliasId
         if (marked != null && chosen != marked && !aliases.holdsListenerState(chosen)) return marked

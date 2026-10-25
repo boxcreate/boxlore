@@ -48,7 +48,7 @@ data class QueueRemovalIdentity(
                 val id = entry.stringOrNull(ID) ?: return@mapNotNull null
                 QueueRemovalIdentity(
                     id = id,
-                    recipeId = runCatching { entry.get(RECIPE_ID)?.takeIf { !it.isJsonNull }?.asLong }.getOrNull()
+                    recipeId = runCatching { entry[RECIPE_ID]?.takeIf { !it.isJsonNull }?.asLong }.getOrNull()
                         ?.takeIf(EpisodeRecipeId::isRecipeId),
                     show = entry.stringOrNull(SHOW),
                     catalogKey = entry.stringOrNull(CATALOG_KEY),
