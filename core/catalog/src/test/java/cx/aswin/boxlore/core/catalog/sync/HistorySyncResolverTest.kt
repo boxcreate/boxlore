@@ -5,8 +5,12 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.ports.ActivePlaybackSyncPort
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
+import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -92,6 +96,46 @@ class HistorySyncResolverTest {
         assertTrue(updated.isLiked)
         assertEquals(2500L, updated.likedAt)
         assertEquals(3000L, updated.syncedAt)
+    }
+
+    @Test
+    fun resolveHistoryItem_activeEpisodeShieldCoversItsOwnerIdWhenPlayingUnderAnotherId() = runTest {
+        // The episode is stored under "owner" and "other"; it plays as "other", so its progress lives on "owner".
+        database.episodeIdentityDao().insertAliasesIfAbsent(listOf(alias("owner", owner = true), alias("other")))
+        listeningHistoryDao.upsert(createHistory(episodeId = "owner", progressMs = 45_000L, durationMs = 120_000L, lastPlayedAt = 1_000L))
+        val aliasResolver = HistorySyncResolver(
+            listeningHistoryDao = listeningHistoryDao,
+            activePlaybackSyncPort = fakePlaybackPort,
+            episodeIds = { id -> database.episodeListenerStore().memberIds(id) },
+        )
+        fakePlaybackPort.activeEpisodeId = "other"
+
+        aliasResolver.resolveHistoryItem(
+            ListeningHistorySyncDto(
+                episodeId = "owner",
+                podcastId = "pod-1",
+                progressMs = 10_000L,
+                durationMs = 120_000L,
+                isCompleted = true,
+                isLiked = true,
+                likedAt = 2_500L,
+                lastPlayedAt = 2_000L,
+                updatedAt = 2_500L,
+            ),
+            syncedAt = 3_000L,
+        )
+
+        val owner = listeningHistoryDao.getHistoryItem("owner")!!
+        assertEquals(45_000L, owner.progressMs)
+        assertFalse(owner.isCompleted)
+        assertTrue(owner.isLiked)
+        // Not playing: the same pull updates the row as before.
+        fakePlaybackPort.activeEpisodeId = null
+        aliasResolver.resolveHistoryItem(
+            ListeningHistorySyncDto(episodeId = "owner", podcastId = "pod-1", progressMs = 10_000L, durationMs = 120_000L, isCompleted = false, isLiked = true, likedAt = 2_500L, lastPlayedAt = 4_000L, updatedAt = 4_000L),
+            syncedAt = 5_000L,
+        )
+        assertEquals(10_000L, listeningHistoryDao.getHistoryItem("owner")!!.progressMs)
     }
 
     @Test
@@ -434,6 +478,16 @@ class HistorySyncResolverTest {
         assertEquals(5000L, updated.likedAt)
         assertTrue(updated.isDirty)
     }
+
+    private fun alias(id: String, owner: Boolean = false) = EpisodeAliasEntity(
+        aliasId = id,
+        podcastId = "pod-1",
+        catalogKey = "guid-a",
+        recipeId = 4_503_599_627_370_500L,
+        state = EpisodeAliasState.TRUSTED,
+        owner = owner,
+        provenance = EpisodeAliasProvenance.UPGRADE_CATALOG,
+    )
 
     @Suppress("LongParameterList")
     private fun createHistory(

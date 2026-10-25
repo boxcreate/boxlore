@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.AutoCollageFolderLogic
@@ -73,8 +74,10 @@ internal class AutoCollagePrewarmer(
     }
 
     private suspend fun loadSnapshot(): PrewarmSnapshot {
-        val history = database.listeningHistoryDao().getRecentHistoryList(300)
-        val resumeItems = database.listeningHistoryDao().getResumeItemsList()
+        // Each episode once, with its projected state (own-episode-IDs P4, plan section 8).
+        val listenerStore = database.episodeListenerStore()
+        val history = listenerStore.projectRows(database.listeningHistoryDao().getRecentHistoryList(300))
+        val resumeItems = listenerStore.projectRows(database.listeningHistoryDao().getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }
         val subscriptions = database.podcastDao().getSubscribedPodcastsList()
         val downloads = database.downloadedEpisodeDao().getCompletedDownloads(8)
         val queue = queueRepository.getQueueEpisodeSnapshot()

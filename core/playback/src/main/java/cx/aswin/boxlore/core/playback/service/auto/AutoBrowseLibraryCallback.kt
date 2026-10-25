@@ -182,7 +182,8 @@ internal class AutoBrowseLibraryCallback(
      * before and records the decision in its group settings; an episode stored under several IDs
      * gets the projected target written to every trusted ID ([EpisodeListenerStore.setLiked]).
      */
-    private suspend fun toggleEpisodeLike(episodeId: String): Boolean {
+    @androidx.annotation.VisibleForTesting
+    internal suspend fun toggleEpisodeLike(episodeId: String): Boolean {
         val listenerStore = host.database.episodeListenerStore()
         val now = System.currentTimeMillis()
         if (listenerStore.group(episodeId).isShared) {
@@ -208,7 +209,8 @@ internal class AutoBrowseLibraryCallback(
     }
 
     /** Marks [episodeId]'s episode played on its owner's row, then for the episode's other IDs. */
-    private suspend fun markEpisodeComplete(episodeId: String): Boolean {
+    @androidx.annotation.VisibleForTesting
+    internal suspend fun markEpisodeComplete(episodeId: String): Boolean {
         val listenerStore = host.database.episodeListenerStore()
         val historyId = listenerStore.historyId(episodeId)
         val existing = getOrCreateHistoryItem(historyId) ?: getOrCreateHistoryItem(episodeId)?.copy(episodeId = historyId) ?: return false

@@ -692,7 +692,8 @@ internal class PlaybackQueueCoordinator(
             val playingId = playerStateFlow.value.currentEpisode?.id
             val newQueue = QueueAliasPolicy.withoutEpisode(currentQueue, episodeId, episodeAliases(episodeId), playingId) { it.id }
             playerStateFlow.value = playerStateFlow.value.copy(queue = newQueue)
-            queueRepository.removeFromQueue(episodeId)
+            // The playing item stays in Room too, as it stays in the player and the in-memory queue.
+            queueRepository.removeFromQueue(episodeId, playingId = playingId)
             cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackQueueModified(
                 action = "remove",
                 episodeId = episodeId,

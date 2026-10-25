@@ -6,12 +6,15 @@ package cx.aswin.boxlore.core.database
  * Pure functions over an episode's history rows and its `episode_group_state` row:
  * - An episode with one stored ID reads its own row exactly as it is, so every show whose
  *   episodes each have one ID keeps today's state.
- * - Otherwise progress, position and play time come from the owner's row (the most recently
- *   played row when the owner has none). Liked and completed are the latest decision among the
- *   group settings and the rows: a row's like decision is its `likedAt`, its completion decision
- *   is its `lastPlayedAt`. A group setting wins a tie with a row, so an older alias row can never
- *   bring back a like or completion that was cleared; rows that tie with each other count as set
- *   when any of them is.
+ * - Otherwise the owner's row is the base (the most recently played row when the owner has none).
+ *   Progress, position, length and play time come from the most recently played row: the owner's,
+ *   unless another ID was played later. Every write on this phone goes to the owner, so another ID
+ *   is newer only after a cloud pull, a restore or older-build data; reading it keeps that later
+ *   listening, and an ID that holds only a like never hides an ID with progress. Liked and
+ *   completed are the latest decision among the group settings and the rows: a row's like decision
+ *   is its `likedAt`, its completion decision is its `lastPlayedAt`. A group setting wins a tie
+ *   with a row, so an older alias row can never bring back a like or completion that was cleared;
+ *   rows that tie with each other count as set when any of them is.
  *
  * Added in P4 of the own-episode-IDs plan (plan section 8, projected listener state).
  * COMPAT(own-ids): one listener state per episode across its IDs. Permanent: never remove (MIGRATION.md §5).
@@ -32,6 +35,7 @@ object EpisodeListenerProjection {
         val base = members.firstOrNull { it.episodeId == group.ownerId }
             ?: members.maxWithOrNull(compareBy<ListeningHistoryEntity>({ it.lastPlayedAt }, { it.episodeId }))
             ?: return null
+        val played = latestPlayed(members, base)
         val liked = likeDecision(members, state)
         val completed = completionDecision(members, state)
         val completedBy = if (completed.value && !base.isCompleted) {
@@ -40,12 +44,21 @@ object EpisodeListenerProjection {
             base
         }
         return base.copy(
+            progressMs = played.progressMs,
+            durationMs = played.durationMs.takeIf { it > 0L } ?: base.durationMs,
+            lastPlayedAt = played.lastPlayedAt,
             isLiked = liked.value,
             likedAt = liked.at,
             isCompleted = completed.value,
             isManualCompletion = completed.value && completedBy.isManualCompletion,
             isBulkCompletion = completed.value && completedBy.isBulkCompletion,
         )
+    }
+
+    /** The row whose progress the episode reads: [base] (the owner's) unless another row was played strictly later. */
+    private fun latestPlayed(members: List<ListeningHistoryEntity>, base: ListeningHistoryEntity,): ListeningHistoryEntity {
+        val latest = members.maxWithOrNull(compareBy<ListeningHistoryEntity>({ it.lastPlayedAt }, { it.episodeId })) ?: return base
+        return if (latest.lastPlayedAt > base.lastPlayedAt) latest else base
     }
 
     /** The episode's current like decision across [rows] and the group settings. */

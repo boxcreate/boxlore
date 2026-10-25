@@ -324,9 +324,12 @@ class SmartDownloadManager(
         var currentDownloadedBytes = budget.startingDownloadedBytes
         val startTime = currentTimeMillis()
 
+        val listenerStore = database.episodeListenerStore()
         for (episode in combinedEpisodes) {
             val currentInDb = database.downloadedEpisodeDao().getDownload(episode.id)
-            if (isEpisodeActiveOrDone(currentInDb, episode, existingDownloads)) {
+            if (isEpisodeActiveOrDone(currentInDb, episode, existingDownloads) ||
+                isHeldByAnotherId(episode, listenerStore.memberIds(episode.id), existingDownloads)
+            ) {
                 Log.d("SmartDownloadManager", "Episode ${episode.title} already downloaded or downloading. Skipping.")
                 continue
             }
@@ -470,11 +473,14 @@ class SmartDownloadManager(
             }
 
             // Each episode once, with its state across its stored IDs (own-episode-IDs P4, plan section 8).
-            val allHistory = database.episodeListenerStore().projectRows(database.listeningHistoryDao().getRecentHistoryList(limit = 200))
+            val listenerStore = database.episodeListenerStore()
+            val recentHistory = database.listeningHistoryDao().getRecentHistoryList(limit = 200)
+            val allHistory = listenerStore.projectRows(recentHistory)
             val completedEpisodeIds = projectedCompletedEpisodeIds().toList()
             val resolvedSerial = resolveOldestSerialNextEpisodes(subs, allHistory, completedEpisodeIds)
 
-            val historyByEpisode = allHistory.associateBy { it.episodeId }
+            // Looked up by a candidate's ID: an episode stored under several IDs is found under any of them.
+            val historyByEpisode = listenerStore.projectRowsByMember(recentHistory).associateBy { it.episodeId }
             val podScoresMap =
                 try {
                     adaptiveScorer.scorePodcasts(
@@ -579,7 +585,9 @@ class SmartDownloadManager(
 
             downloadRepository.reconcileStaleDownloads()
             val existingDownloads = database.downloadedEpisodeDao().getAllDownloadsSync()
-            val (currentDownloadedBytes, cleanedCount) = recycleOldDownloads(candidateEpisodeIds, existingDownloads)
+            // A download held under another ID of a candidate episode is that candidate's download: keep it.
+            val keptEpisodeIds = listenerStore.withAllAliases(candidateEpisodeIds)
+            val (currentDownloadedBytes, cleanedCount) = recycleOldDownloads(keptEpisodeIds, existingDownloads)
 
             val countDownloaded =
                 existingDownloads.count {
@@ -588,7 +596,7 @@ class SmartDownloadManager(
                             it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING
                         ) &&
                         it.isSmartDownloaded &&
-                        it.episodeId in candidateEpisodeIds
+                        it.episodeId in keptEpisodeIds
                 }
 
             writeLogToFile(
@@ -612,7 +620,7 @@ class SmartDownloadManager(
                 database.downloadedEpisodeDao().getAllDownloadsSync().count {
                     it.status == DownloadedEpisodeEntity.STATUS_COMPLETED &&
                         it.isSmartDownloaded &&
-                        it.episodeId in candidateEpisodeIds
+                        it.episodeId in keptEpisodeIds
                 }
 
             userPrefs.setSmartDownloadsLastSyncTime(System.currentTimeMillis())
@@ -759,6 +767,28 @@ class SmartDownloadManager(
                 Log.e("SmartDownloadManager", "Failed to write log to file", e)
             }
         }
+    }
+}
+
+/**
+ * True when another stored ID of [episode]'s episode ([memberIds]) already holds a completed,
+ * downloading or queued download, so the episode isn't downloaded twice (own-episode-IDs P4, plan
+ * section 8). Always false for an episode stored under one ID.
+ */
+private fun isHeldByAnotherId(
+    episode: Episode,
+    memberIds: List<String>,
+    existingDownloads: List<DownloadedEpisodeEntity>,
+): Boolean {
+    val others = memberIds.filter { it != episode.id }.toSet()
+    if (others.isEmpty()) return false
+    return existingDownloads.any {
+        it.episodeId in others &&
+            (
+                it.status == DownloadedEpisodeEntity.STATUS_COMPLETED ||
+                    it.status == DownloadedEpisodeEntity.STATUS_DOWNLOADING ||
+                    it.status == DownloadedEpisodeEntity.STATUS_QUEUED
+                )
     }
 }
 

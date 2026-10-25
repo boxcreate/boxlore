@@ -24,15 +24,46 @@ class EpisodeListenerProjectionTest {
 
     @Test
     fun progressComesFromTheOwnerAndTheLatestLikeDecisionWins() {
-        val owner = row("A", progress = 300L, liked = false, likedAt = 50L, playedAt = 100L)
-        val other = row("B", progress = 900L, liked = true, likedAt = 20L, playedAt = 200L)
+        val owner = row("A", progress = 300L, liked = false, likedAt = 50L, playedAt = 200L)
+        val other = row("B", progress = 900L, liked = true, likedAt = 20L, playedAt = 100L)
 
         val projected = EpisodeListenerProjection.project(shared, listOf(owner, other), null)!!
 
         assertEquals("A", projected.episodeId)
         assertEquals(300L, projected.progressMs)
+        assertEquals(200L, projected.lastPlayedAt)
         assertFalse(projected.isLiked)
         assertEquals(50L, projected.likedAt)
+    }
+
+    @Test
+    fun anotherIdPlayedLaterGivesTheProgressSoAPulledPositionIsNotHidden() {
+        // A pull or a restore wrote newer listening under B; the owner's row stays the base.
+        val owner = row("A", progress = 300L, playedAt = 100L).copy(episodeTitle = "Owner title")
+        val pulled = row("B", progress = 900L, playedAt = 200L).copy(durationMs = 2_000L)
+
+        val projected = EpisodeListenerProjection.project(shared, listOf(owner, pulled), null)!!
+
+        assertEquals("A", projected.episodeId)
+        assertEquals("Owner title", projected.episodeTitle)
+        assertEquals(900L, projected.progressMs)
+        assertEquals(2_000L, projected.durationMs)
+        assertEquals(200L, projected.lastPlayedAt)
+        // A tie keeps the owner's progress.
+        assertEquals(300L, EpisodeListenerProjection.project(shared, listOf(owner, pulled.copy(lastPlayedAt = 100L)), null)!!.progressMs)
+    }
+
+    @Test
+    fun anOwnerThatHoldsOnlyALikeNeverHidesAnotherIdsProgress() {
+        val likeOnlyOwner = row("A", liked = true, likedAt = 500L, playedAt = 0L)
+        val listened = row("B", progress = 1_500L, playedAt = 300L)
+
+        val projected = EpisodeListenerProjection.project(shared, listOf(likeOnlyOwner, listened), null)!!
+
+        assertEquals(1_500L, projected.progressMs)
+        assertEquals(300L, projected.lastPlayedAt)
+        assertTrue(projected.isLiked)
+        assertFalse(projected.isCompleted)
     }
 
     @Test

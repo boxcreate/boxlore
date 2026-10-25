@@ -104,19 +104,54 @@ data class ListeningRollupSnapshot(
 )
 
 /**
+ * One removed history row exactly as it was stored, so Undo puts it back unchanged: the like and
+ * completion decision times and how the episode was completed decide an episode's state across
+ * its IDs, and [ListeningHistoryItem] doesn't carry them.
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, history removal across IDs).
+ */
+data class ListeningHistoryRowSnapshot(
+    val item: ListeningHistoryItem,
+    val likedAt: Long,
+    val isDirty: Boolean,
+    val syncedAt: Long,
+    val isManualCompletion: Boolean,
+    val isBulkCompletion: Boolean,
+)
+
+/**
+ * An episode's like and completion settings shared by its stored IDs, removed with its history
+ * and put back by Undo.
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, history removal across IDs).
+ */
+data class ListeningGroupStateSnapshot(
+    val podcastId: String,
+    val catalogKey: String,
+    val likedAt: Long,
+    val likeClearedAt: Long,
+    val completedAt: Long,
+    val completeClearedAt: Long,
+    val version: Long,
+)
+
+/**
  * What removing one episode from history took away, so Undo can put it back.
  *
  * @property item the removed row the listener chose
  * @property sessions listening sessions of every removed row
  * @property rollups daily listening totals of every removed row
- * @property otherItems rows of the same episode stored under its other IDs, removed with [item]
- *   so the episode doesn't stay in history through another ID (own-episode-IDs P4, plan section 8)
+ * @property rows when the episode is stored under several IDs, every removed row (including
+ *   [item]'s) exactly as stored, so Undo restores them unchanged; empty for an episode stored
+ *   under one ID, whose Undo writes [item] back as before (own-episode-IDs P4, plan section 8)
+ * @property groupState the episode's shared like and completion settings, removed with its rows
  */
 data class ListeningHistoryRemoval(
     val item: ListeningHistoryItem,
     val sessions: List<ListeningSessionSnapshot> = emptyList(),
     val rollups: List<ListeningRollupSnapshot> = emptyList(),
-    val otherItems: List<ListeningHistoryItem> = emptyList(),
+    val rows: List<ListeningHistoryRowSnapshot> = emptyList(),
+    val groupState: ListeningGroupStateSnapshot? = null,
 )
 
 object ListeningCompletionLogic {

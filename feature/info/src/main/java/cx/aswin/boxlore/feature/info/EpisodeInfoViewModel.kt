@@ -10,7 +10,7 @@ import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.addToQueueNext
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
 import cx.aswin.boxlore.core.playback.getSession
-import cx.aswin.boxlore.core.playback.likedEpisodes
+import cx.aswin.boxlore.core.playback.likedEpisodeIds
 import cx.aswin.boxlore.core.playback.removeFromQueue
 import cx.aswin.boxlore.core.playback.savePlaybackState
 import cx.aswin.boxlore.core.playback.toggleCompletion
@@ -96,10 +96,9 @@ class EpisodeInfoViewModel(
         },
     )
 
-    // Observe liked episodes
+    // Observe liked episodes: every stored ID of a liked episode, so this page reads the episode's like whichever ID it shows
     val likedEpisodeIds =
-        playbackRepository.likedEpisodes
-            .map { historyList -> historyList.map { it.episodeId }.toSet() }
+        playbackRepository.likedEpisodeIds
             .stateIn(
                 scope = viewModelScope,
                 started =

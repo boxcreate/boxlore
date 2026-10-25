@@ -42,6 +42,21 @@ private fun PlaybackHistoryStore.projectedResumeItems(): Flow<List<ListeningHist
 internal val PlaybackHistoryStore.likedEpisodes: Flow<List<ListeningHistoryEntity>>
     get() = listenerStore.projectedRows(data.listeningHistoryDao.getLikedEpisodes()) { it.isLiked }
 
+/**
+ * Every stored ID of each liked episode, for screens that ask "is this ID liked": an episode
+ * stored under several IDs is liked under all of them or none (own-episode-IDs P4, plan section 8).
+ */
+internal val PlaybackHistoryStore.likedEpisodeIds: Flow<Set<String>>
+    get() = listenerStore.projectedLikedIds(data.listeningHistoryDao.getLikedEpisodes())
+
+/**
+ * Recent history for looking an episode up by the ID a screen shows: as [PlaybackHistoryStore.getAllHistory],
+ * but an episode stored under several IDs appears once per stored ID with its projected state, so
+ * its progress shows whichever ID the screen lists. Not for lists, which count it once.
+ */
+internal val PlaybackHistoryStore.historyForEpisodeLookup: Flow<List<ListeningHistoryEntity>>
+    get() = listenerStore.projectedRowsByMember(data.listeningHistoryDao.getAllHistory())
+
 /** Completed IDs as projected: an episode stored under several IDs is completed for all or none of them. */
 internal val PlaybackHistoryStore.completedEpisodeIds: Flow<Set<String>>
     get() = listenerStore.projectedCompletedIds(data.listeningHistoryDao.getCompletedEpisodeIdsFlow())
@@ -272,13 +287,25 @@ internal suspend fun PlaybackHistoryStore.ensureCurrentHistoryRow() {
     )
 }
 
+/**
+ * Saves a position chosen outside the player (a seek on an episode page). An episode stored under
+ * one ID writes its row as before. An episode stored under several IDs writes its owner's row and
+ * keeps that row's like as stored: the caller's like flag may come from a screen showing another of
+ * the episode's IDs, and only the like button changes a like.
+ */
 internal suspend fun PlaybackHistoryStore.savePlaybackState(input: ListeningHistoryUpsertLogic.ProgressSaveInput) {
     android.util.Log.v(
         "PlaybackRepo",
         "Saving playback state: ${input.episodeTitle}, pos=${input.positionMs}, completed=${input.isCompleted}",
     )
     val historyId = listenerStore.historyId(input.episodeId)
-    data.listeningHistoryDao.upsert(ListeningHistoryUpsertLogic.buildProgressSaveEntity(input.copy(episodeId = historyId)))
+    val entity = ListeningHistoryUpsertLogic.buildProgressSaveEntity(input.copy(episodeId = historyId))
+    if (!listenerStore.group(input.episodeId).isShared) {
+        data.listeningHistoryDao.upsert(entity)
+        return
+    }
+    val stored = data.listeningHistoryDao.getHistoryItem(historyId)
+    data.listeningHistoryDao.upsert(entity.copy(isLiked = stored?.isLiked ?: false, likedAt = stored?.likedAt ?: 0L))
 }
 
 internal suspend fun PlaybackHistoryStore.toggleLike() {
@@ -308,7 +335,7 @@ internal suspend fun PlaybackHistoryStore.getRecentHistoryList(limit: Int): List
 internal suspend fun PlaybackHistoryStore.markAllEpisodesUncompleted(episodes: List<Episode>) {
     val currentTime = System.currentTimeMillis()
     BoxLoreDatabase.getDatabase(player.context).withTransaction {
-        val historyIds = episodes.map { listenerStore.historyId(it.id) }.distinct()
+        val historyIds = listenerStore.historyIds(episodes.map { it.id }).values.distinct()
         val entitiesToUpsert =
             historyIds.mapNotNull { historyId ->
                 val existing = data.listeningHistoryDao.getHistoryItem(historyId) ?: return@mapNotNull null
@@ -320,7 +347,7 @@ internal suspend fun PlaybackHistoryStore.markAllEpisodesUncompleted(episodes: L
         if (entitiesToUpsert.isNotEmpty()) {
             data.listeningHistoryDao.upsertAll(entitiesToUpsert)
         }
-        historyIds.forEach { listenerStore.recordCompletion(it, completed = false, nowMs = currentTime) }
+        listenerStore.recordCompletions(historyIds, completed = false, nowMs = currentTime)
     }
 }
 

@@ -189,11 +189,17 @@ class EpisodeListenerStoreTest {
         identity.insertAliasesIfAbsent(
             listOf(alias(SERVED, recipe = SERVED.toLong(), owner = true, createdAt = 5L), alias("777", createdAt = 1L)),
         )
-        history.upsert(row(SERVED, progress = 120L, playedAt = 10L))
-        history.upsert(row("777", progress = 999L, playedAt = 50L))
+        history.upsert(row(SERVED, progress = 120L, playedAt = 50L))
+        history.upsert(row("777", progress = 999L, playedAt = 10L))
 
         assertEquals(SERVED, store.historyId("777"))
         assertEquals(120L, store.projectedHistory("777")!!.progressMs)
+        // A newer copy of the other ID (a pull) is read until playback writes the owner again.
+        history.upsert(row("777", progress = 999L, playedAt = 80L))
+        assertEquals(SERVED, store.historyId("777"))
+        assertEquals(999L, store.projectedHistory(SERVED)!!.progressMs)
+        history.updateProgress(SERVED, progressMs = 905L, durationMs = 1_000L, lastPlayedAt = 90L)
+        assertEquals(905L, store.projectedHistory("777")!!.progressMs)
 
         // With no listening anywhere the served ID wins over the older ID; a completed download wins over both.
         history.deleteAll()
@@ -227,15 +233,133 @@ class EpisodeListenerStoreTest {
 
         val projected = store.projectRows(rows)
         assertEquals(listOf("A", "C"), projected.map { it.episodeId })
-        assertEquals(300L, projected.first().progressMs)
+        // B was played after the owner A, so the episode reads B's progress under A's row.
+        assertEquals(10L, projected.first().progressMs)
         assertEquals(listOf("C"), store.projectRows(rows) { it.progressMs == 0L }.map { it.episodeId })
         assertEquals(listOf("A", "C"), store.projectedRows(history.getAllHistory()).first().map { it.episodeId })
+        // Lookups find the episode under each of its IDs, once per ID.
+        val byMember = store.projectRowsByMember(rows)
+        assertEquals(listOf("A", "B", "C"), byMember.map { it.episodeId })
+        assertEquals(byMember[0].copy(episodeId = "B"), byMember[1])
+        assertEquals(listOf("A", "B", "C"), store.projectedRowsByMember(history.getAllHistory()).first().map { it.episodeId })
 
         val tokens = store.groupTokens(listOf("A", "B", "C"))
         assertEquals(tokens["A"], tokens["B"])
         assertNotEquals(tokens["A"], tokens["C"])
         assertEquals("C", tokens["C"])
         assertEquals(setOf("A", "B", "C"), store.withAllAliases(listOf("B", "C")))
+    }
+
+    @Test
+    fun anOwnerThatHoldsOnlyALikeKeepsOwnershipButNeverHidesTheProgressOfAnotherId() = runTest {
+        twoAliases()
+        identity.setOwner(SHOW, KEY, "none")
+        history.upsertAll(listOf(row("A", liked = true, likedAt = 900L), row("B", progress = 400L, playedAt = 300L)))
+
+        // The upgrade's order puts the recent like first, so A owns the episode...
+        assertEquals("A", store.historyId("B"))
+        // ...and the episode still resumes from B's progress and stays in Continue listening.
+        val projected = store.projectedHistory("A")!!
+        assertEquals(400L, projected.progressMs)
+        assertTrue(projected.isLiked)
+        assertEquals(listOf("A"), store.projectRows(history.getResumeItemsList()) { !it.isCompleted && it.progressMs > 0 }.map { it.episodeId })
+        assertEquals(400L, store.lastPlayedSession(unfinishedOnly = true)!!.progressMs)
+    }
+
+    @Test
+    fun aCompletionOnlyTheGroupSettingsHoldCountsInCompletedIds() = runTest {
+        twoAliases()
+        history.upsertAll(listOf(row("A", playedAt = 10L), row("B", playedAt = 20L)))
+        identity.upsertGroupState(EpisodeGroupStateEntity(SHOW, KEY, completedAt = 30L))
+
+        assertTrue(store.projectedHistory("A")!!.isCompleted)
+        assertEquals(setOf("A", "B"), store.projectCompletedIds(history.getCompletedEpisodeIds()))
+        assertEquals(setOf("A", "B"), store.projectedCompletedIds(history.getCompletedEpisodeIdsFlow()).first())
+        // A clear recorded later takes it out again.
+        identity.upsertGroupState(EpisodeGroupStateEntity(SHOW, KEY, completedAt = 30L, completeClearedAt = 40L))
+        assertEquals(emptySet<String>(), store.projectCompletedIds(history.getCompletedEpisodeIds()))
+    }
+
+    @Test
+    fun aLikeOfAnEpisodeStoredUnderOneIdKeepsTheClockTimeOnItsRow() = runTest {
+        identity.insertAliasesIfAbsent(listOf(alias("solo", owner = true)))
+        // A like time from a device whose clock ran ahead is stored on the row.
+        history.upsert(row("solo", liked = true, likedAt = 5_000L))
+
+        assertEquals(1, store.setLiked("solo", liked = false, nowMs = 1_000L))
+
+        val written = history.getHistoryItem("solo")!!
+        assertFalse(written.isLiked)
+        assertEquals(1_000L, written.likedAt)
+        // The group settings still record the clear after every recorded decision, for an alias found later.
+        assertEquals(5_001L, identity.getGroupState(SHOW, KEY)!!.likeClearedAt)
+        assertEquals(written, store.projectedHistory("solo"))
+    }
+
+    @Test
+    fun likedIdsListEveryIdOfALikedEpisode() = runTest {
+        twoAliases()
+        history.upsertAll(listOf(row("A", liked = true, likedAt = 10L, playedAt = 5L), row("B", playedAt = 4L), row("C", liked = true, likedAt = 3L)))
+
+        assertEquals(setOf("A", "B", "C"), store.projectedLikedIds(history.getLikedEpisodes()).first())
+        store.setLiked("B", liked = false, nowMs = 100L)
+        assertEquals(setOf("C"), store.projectedLikedIds(history.getLikedEpisodes()).first())
+    }
+
+    @Test
+    fun batchedOwnersAndCompletionsMatchOneByOneAndSkipEpisodesWithoutRows() = runTest {
+        twoAliases()
+        identity.insertAliasesIfAbsent(listOf(alias("single", key = "guid-single", owner = true), alias("no-row", key = "guid-no-row", owner = true)))
+        history.upsertAll(listOf(row("A", progress = 5L, playedAt = 50L), row("B", playedAt = 40L), row("single", completed = true, playedAt = 60L)))
+
+        assertEquals(mapOf("B" to "A", "single" to "single", "no-row" to "no-row", "-3" to "-3"), store.historyIds(listOf("B", "single", "no-row", "-3")))
+
+        store.recordCompletions(listOf("A", "single", "no-row", "-3"), completed = true, nowMs = 60L)
+
+        assertTrue(history.getHistoryItem("B")!!.isCompleted)
+        assertEquals(60L, identity.getGroupState(SHOW, KEY)!!.completedAt)
+        // The single ID's row was played at the same time, so its decision is stamped just after it.
+        assertEquals(61L, identity.getGroupState(SHOW, "guid-single")!!.completedAt)
+        assertNull(identity.getGroupState(SHOW, "guid-no-row"))
+    }
+
+    @Test
+    fun groupSettingsAreRemovedWithAnEpisodesHistoryAndPutBackByUndo() = runTest {
+        twoAliases()
+        store.setLiked("A", liked = true, nowMs = 10L)
+        identity.upsertGroupState(EpisodeGroupStateEntity(SHOW, "other", completedAt = 5L))
+        val before = identity.getGroupState(SHOW, KEY)!!
+
+        val removed = store.removeGroupState("B")!!
+        assertEquals(before, removed)
+        assertNull(identity.getGroupState(SHOW, KEY))
+        assertNull(store.removeGroupState("-1"))
+
+        store.restoreGroupState(removed)
+        assertEquals(before, identity.getGroupState(SHOW, KEY))
+
+        store.clearGroupStates()
+        assertNull(identity.getGroupState(SHOW, KEY))
+        assertNull(identity.getGroupState(SHOW, "other"))
+        assertEquals(listOf("A", "B"), store.memberIds("B"))
+    }
+
+    @Test
+    fun theLastPlayedSessionIsProjectedAndSkipsAnEpisodeFinishedUnderAnotherId() = runTest {
+        twoAliases()
+        history.upsertAll(
+            listOf(
+                row("B", progress = 70L, playedAt = 90L),
+                row("A", completed = true, playedAt = 95L),
+                row("solo", progress = 5L, playedAt = 80L),
+            ),
+        )
+        // B's own row is the latest unfinished one, but its episode was finished later under A.
+        assertEquals("B", history.getLastPlayedSession()!!.episodeId)
+        assertEquals("solo", store.lastPlayedSession(unfinishedOnly = true)!!.episodeId)
+        val any = store.lastPlayedSession(unfinishedOnly = false)!!
+        assertEquals("A", any.episodeId)
+        assertTrue(any.isCompleted)
     }
 
     @Test

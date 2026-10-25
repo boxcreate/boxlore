@@ -91,4 +91,12 @@ object EpisodeAliasProvenance {
      * counts as the same episode. Added in P4 (plan section 8, re-key paths narrowed).
      */
     const val ORPHAN_REMATCH = "orphan_rematch"
+
+    /**
+     * A catalog row whose (show, key) a trusted alias already holds under another stored ID: the
+     * episode's catalog row was evicted and the feed read again gave the same key a new ID. The
+     * row's ID joins that episode so both IDs read as one and no state moves. Added in P4 (plan
+     * section 8, re-key paths narrowed).
+     */
+    const val CATALOG_KEY_MATCH = "catalog_key_match"
 }

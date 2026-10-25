@@ -527,6 +527,8 @@ class AppContainer(
         val historyResolver = HistorySyncResolver(
             listeningHistoryDao = database.listeningHistoryDao(),
             activePlaybackSyncPort = playbackRepository,
+            // The playing episode is protected under every stored ID (own-episode-IDs P4).
+            episodeIds = { episodeId -> database.episodeListenerStore().memberIds(episodeId) },
         )
         val queueResolver = QueueSyncResolver(
             queueSyncPort = queuePort,
@@ -554,6 +556,7 @@ class AppContainer(
             listeningSessionDao = database.listeningSessionDao(),
             listeningRollupDao = database.listeningRollupDao(),
             userPreferencesRepository = userPreferencesRepository,
+            episodeIdentityDao = database.episodeIdentityDao(),
         )
     }
 

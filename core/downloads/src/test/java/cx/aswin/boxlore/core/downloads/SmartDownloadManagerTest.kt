@@ -6,6 +6,10 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
+import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.model.Episode
@@ -95,6 +99,25 @@ class SmartDownloadManagerTest {
 
         assertEquals(listOf("ep-1", "ep-2"), testDownloadRepo.addedDownloads)
         assertTrue(testDownloadRepo.removedDownloads.isEmpty())
+    }
+
+    @Test
+    fun `an episode whose other stored ID holds a download is not downloaded again`() = runBlocking {
+        // "ep-a" and "ep-b" are one episode stored under two IDs; "ep-b" holds the completed download.
+        database.episodeIdentityDao().insertAliasesIfAbsent(listOf(alias("ep-a", owner = true), alias("ep-b")))
+        val held = completedDownload("ep-b")
+        database.downloadedEpisodeDao().insert(held)
+        testDownloadRepo.completionResultProvider = { true }
+
+        manager.triggerDownloads(
+            combinedEpisodes = listOf(createEpisode("ep-a", "pod-1", duration = 60), createEpisode("ep-solo", "pod-1", duration = 60)),
+            existingDownloads = listOf(held),
+            subs = listOf(createPodcastEntity("pod-1")),
+            budget = SmartDownloadBudget(maxCount = 5, storageBudgetMb = 500L),
+        )
+
+        // An episode stored under one ID downloads as before.
+        assertEquals(listOf("ep-solo"), testDownloadRepo.addedDownloads)
     }
 
     @Test
@@ -209,6 +232,33 @@ class SmartDownloadManagerTest {
         podcastId = podcastId,
         duration = duration,
         publishedDate = 0L,
+    )
+
+    private fun alias(id: String, owner: Boolean = false) = EpisodeAliasEntity(
+        aliasId = id,
+        podcastId = "pod-1",
+        catalogKey = "guid-a",
+        recipeId = 4_503_599_627_370_500L,
+        state = EpisodeAliasState.TRUSTED,
+        owner = owner,
+        provenance = EpisodeAliasProvenance.UPGRADE_CATALOG,
+    )
+
+    private fun completedDownload(id: String) = DownloadedEpisodeEntity(
+        episodeId = id,
+        podcastId = "pod-1",
+        episodeTitle = "Episode $id",
+        episodeDescription = null,
+        episodeImageUrl = null,
+        podcastName = "Podcast pod-1",
+        podcastImageUrl = null,
+        durationMs = 60_000L,
+        publishedDate = 0L,
+        localFilePath = "",
+        downloadId = 0L,
+        downloadedAt = 1L,
+        sizeBytes = 1L,
+        status = DownloadedEpisodeEntity.STATUS_COMPLETED,
     )
 
     private fun createPodcastEntity(id: String): PodcastEntity = PodcastEntity(

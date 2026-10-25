@@ -56,6 +56,45 @@ class ListenerStateMovesTest {
     }
 
     @Test
+    fun aTrustedOrphanJoinsTheCatalogRowThatHoldsItsKeyUnderAnotherId() {
+        val orphan = alias("-5", EpisodeAliasState.TRUSTED)
+        val reread = catalogRow("777")
+        val legacySynthetic = catalogRow("778").copy(guid = "id:778", legacy = true)
+
+        assertEquals(reread, ListenerStateMoves.catalogRowOfKey(orphan, listOf(reread, legacySynthetic)))
+        assertNull(ListenerStateMoves.catalogRowOfKey(orphan, listOf(legacySynthetic)))
+        assertNull(ListenerStateMoves.catalogRowOfKey(orphan.copy(state = EpisodeAliasState.AMBIGUOUS), listOf(reread)))
+        // Two rows with the key, or a row of another show, are not proof.
+        assertNull(ListenerStateMoves.catalogRowOfKey(orphan, listOf(reread, catalogRow("779"))))
+        assertNull(ListenerStateMoves.catalogRowOfKey(orphan, listOf(reread.copy(podcastId = "other"))))
+        // A key stored with a trailing newline by an older build still matches once trimmed.
+        assertEquals(reread.copy(guid = "$KEY\n"), ListenerStateMoves.catalogRowOfKey(orphan, listOf(reread.copy(guid = "$KEY\n"))))
+
+        val joined = ListenerStateMoves.joinedCatalogAlias(orphan, reread, existing = null, nowMs = 9L)!!
+        assertEquals(
+            EpisodeAliasEntity("777", SHOW, KEY, RECIPE, EpisodeAliasState.TRUSTED, owner = false, provenance = EpisodeAliasProvenance.CATALOG_KEY_MATCH, createdAt = 9L),
+            joined,
+        )
+        // An unresolved alias of the row's ID is resolved; any other alias is left as it is.
+        assertEquals(joined, ListenerStateMoves.joinedCatalogAlias(orphan, reread, alias("777", EpisodeAliasState.UNRESOLVED, key = null), 9L))
+        assertNull(ListenerStateMoves.joinedCatalogAlias(orphan, reread, alias("777", EpisodeAliasState.TRUSTED), 9L))
+        assertNull(ListenerStateMoves.joinedCatalogAlias(orphan, reread, alias("777", EpisodeAliasState.AMBIGUOUS), 9L))
+    }
+
+    @Test
+    fun aRematchIsExactOnlyWhenItsAddressNamesOneCatalogRow() {
+        val target = catalogRow("1")
+        val byAddress = LocalCatalogListenerReference("-1", enclosureUrl = " ${target.audioUrl} ", title = null, publishedDate = null)
+        val byTitle = LocalCatalogListenerReference("-2", enclosureUrl = null, title = target.title, publishedDate = target.publishedDate)
+
+        val rematches = LocalCatalogListenerRemapLogic.rematches(listOf(target), listOf(byAddress, byTitle))
+
+        assertTrue(rematches.getValue("-1").exact)
+        assertFalse(rematches.getValue("-2").exact)
+        assertEquals(target, rematches.getValue("-2").target)
+    }
+
+    @Test
     fun anOrphanMergeTakesTheLatestLikeDecisionSoAnOlderLikeCannotUndoAnUnlike() {
         val olderLike = history("-9", liked = true, likedAt = 10L)
         val laterUnlike = history("1", liked = false, likedAt = 20L)
@@ -106,6 +145,11 @@ class ListenerStateMovesTest {
         assertTrue(merged.isCompleted)
         assertEquals(40L, merged.lastPlayedAt)
         assertTrue(ListenerStateMoves.linkedHistoryRow(piRow, null, rssEpisode, rssShow).isLiked)
+        // A like or completion the listener cleared later in the episode's settings stays cleared.
+        val clearedLater = EpisodeGroupStateEntity(SHOW, KEY, likeClearedAt = 35L, completeClearedAt = 50L)
+        val switched = ListenerStateMoves.linkedHistoryRow(piRow, null, rssEpisode, rssShow, clearedLater)
+        assertFalse(switched.isLiked)
+        assertFalse(switched.isCompleted)
     }
 
     private fun alias(id: String, state: String, key: String? = KEY, owner: Boolean = false,) = EpisodeAliasEntity(

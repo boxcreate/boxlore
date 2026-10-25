@@ -10,10 +10,16 @@ import cx.aswin.boxlore.core.network.model.ListeningHistorySyncDto
  * LWW (Last-Write-Wins) conflict resolver for listening history.
  * Guarantees active playing episode protection, progress LWW, independent like status LWW,
  * and preservation of local cached rich metadata.
+ *
+ * @param episodeIds every stored ID of an episode (`EpisodeListenerStore.memberIds`); just the ID
+ *   when it has no other. The playing episode is protected under each of them, because its
+ *   progress is written to its owner ID, which may differ from the ID playback started with
+ *   (own-episode-IDs P4, plan section 8).
  */
 class HistorySyncResolver(
     private val listeningHistoryDao: ListeningHistoryDao,
     private val activePlaybackSyncPort: ActivePlaybackSyncPort? = null,
+    private val episodeIds: suspend (String) -> Collection<String> = { listOf(it) },
 ) {
     suspend fun resolveHistoryItem(remote: ListeningHistorySyncDto, syncedAt: Long) {
         val local = listeningHistoryDao.getHistoryItem(remote.episodeId)
@@ -23,7 +29,8 @@ class HistorySyncResolver(
         }
 
         val activePlayingEpisodeId = activePlaybackSyncPort?.getActivePlayingEpisodeId()
-        val isActive = remote.episodeId == activePlayingEpisodeId
+        val isActive = activePlayingEpisodeId != null &&
+            (remote.episodeId == activePlayingEpisodeId || remote.episodeId in episodeIds(activePlayingEpisodeId))
         resolveExistingItem(local, remote, isActive, syncedAt)
     }
 

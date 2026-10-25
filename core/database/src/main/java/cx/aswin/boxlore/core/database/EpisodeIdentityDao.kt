@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
  * COMPAT(own-ids): old local episode IDs keep resolving through aliases. Permanent: never remove (MIGRATION.md §5).
  */
 @Dao
+@Suppress("TooManyFunctions") // Alias and group-state reads and writes of the two identity tables.
 interface EpisodeIdentityDao {
     /** Adds [aliases] whose ID has no row yet; an existing alias is left exactly as it is. Returns -1 per skipped row. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -72,6 +73,49 @@ interface EpisodeIdentityDao {
     /** Writes one episode's shared like and completion settings. */
     @Upsert
     suspend fun upsertGroupState(state: EpisodeGroupStateEntity)
+
+    /**
+     * Writes several episodes' shared like and completion settings in one call.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, absolute completion writes).
+     */
+    @Upsert
+    suspend fun upsertGroupStates(states: List<EpisodeGroupStateEntity>)
+
+    /**
+     * Shared settings of these episodes of one show, in no particular order. Callers pass at most
+     * 500 keys per call.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, absolute completion writes).
+     */
+    @Query("SELECT * FROM episode_group_state WHERE podcastId = :podcastId AND catalogKey IN (:catalogKeys)")
+    suspend fun getGroupStates(podcastId: String, catalogKeys: List<String>,): List<EpisodeGroupStateEntity>
+
+    /**
+     * Episodes whose shared settings record a completion that wasn't cleared later. Used to count
+     * an episode as completed when only its group settings say so.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, projected listener state).
+     */
+    @Query("SELECT * FROM episode_group_state WHERE completedAt > completeClearedAt")
+    suspend fun completedGroupStates(): List<EpisodeGroupStateEntity>
+
+    /**
+     * Deletes one episode's shared settings (its history was removed). Returns the rows deleted.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, history removal).
+     */
+    @Query("DELETE FROM episode_group_state WHERE podcastId = :podcastId AND catalogKey = :catalogKey")
+    suspend fun deleteGroupState(podcastId: String, catalogKey: String,): Int
+
+    /**
+     * Deletes every episode's shared settings, with the history they belong to (clear history, or
+     * another account signing in). Aliases stay: they identify episodes, not listening.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, history removal).
+     */
+    @Query("DELETE FROM episode_group_state")
+    suspend fun deleteAllGroupStates()
 
     /**
      * The trusted aliases among [aliasIds] whose episode has at least one other trusted ID, so the
@@ -136,7 +180,9 @@ interface EpisodeIdentityDao {
 
     /**
      * True when [aliasId] holds listener state: a history row with any listening, progress, like or
-     * completion, or a completed download. An owner that holds none may hand ownership over.
+     * completion, or a completed download. An owner that holds none may hand ownership over. An
+     * owner that holds only a like keeps ownership; reads then take progress from the most recently
+     * played ID ([EpisodeListenerProjection.project]), so the like never hides another ID's progress.
      *
      * Added in P4 of the own-episode-IDs plan (plan section 8, one owner per episode).
      */

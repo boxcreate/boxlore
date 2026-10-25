@@ -11,7 +11,8 @@ import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.addToQueue
 import cx.aswin.boxlore.core.playback.addToQueueNext
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
-import cx.aswin.boxlore.core.playback.likedEpisodes
+import cx.aswin.boxlore.core.playback.historyForEpisodeLookup
+import cx.aswin.boxlore.core.playback.likedEpisodeIds
 import cx.aswin.boxlore.core.playback.markAllEpisodesUncompleted
 import cx.aswin.boxlore.core.playback.playQueue
 import cx.aswin.boxlore.core.playback.removeFromQueue
@@ -105,10 +106,9 @@ class PodcastInfoViewModel(
     private val clickedEpisodes = mutableSetOf<String>()
     private var hasTrackedExit = false
 
-    // Observe liked episodes
+    // Observe liked episodes: every stored ID of a liked episode, so a row reads the episode's like whichever ID it lists
     private val likedEpisodeIds =
-        playbackRepository.likedEpisodes
-            .map { historyList -> historyList.map { it.episodeId }.toSet() }
+        playbackRepository.likedEpisodeIds
             .stateIn(
                 scope = viewModelScope,
                 started =
@@ -1627,7 +1627,8 @@ class PodcastInfoViewModel(
         kotlinx.coroutines.flow
             .combine(
                 playbackRepository.playerState,
-                playbackRepository.getAllHistory().map { history ->
+                // Looked up by the IDs this page lists: an episode stored under several IDs shows its progress under each.
+                playbackRepository.historyForEpisodeLookup.map { history ->
                     history.map { it.toInfoListeningProgressItem() }
                 },
                 _currentPodcastIdFlow,

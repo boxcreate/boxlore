@@ -177,7 +177,8 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
     /**
      * Removes [episodeId]'s episode from history: its row and the rows of the episode's other
      * trusted IDs, with their listening sessions and daily totals, so the episode doesn't stay in
-     * history through another ID. The returned removal restores every row.
+     * history through another ID, and the episode's shared like and completion settings, so they
+     * can't come back with a later row. The returned removal restores all of it unchanged.
      */
     override suspend fun removeHistoryItem(episodeId: String): ListeningHistoryRemoval? {
         val existing = data.listeningHistoryDao.getHistoryItem(episodeId) ?: return null
@@ -188,12 +189,14 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
             val removedIds = listOf(episodeId) + others.map { it.episodeId }
             val sessions = removedIds.flatMap { data.listeningSessionDao.getSessionsForEpisode(it) }
             val rollups = removedIds.flatMap { data.listeningRollupDao.getRollupsForEpisode(it) }
+            val groupState = listenerStore.removeGroupState(episodeId)
             val removal =
                 ListeningHistoryRemoval(
                     item = existing.toListeningHistoryItem(),
                     sessions = sessions.map { it.toListeningSessionSnapshot() },
                     rollups = rollups.map { it.toListeningRollupSnapshot() },
-                    otherItems = others.map { it.toListeningHistoryItem() },
+                    rows = if (others.isEmpty()) emptyList() else (listOf(existing) + others).map { it.toRowSnapshot() },
+                    groupState = groupState?.toSnapshot(),
                 )
             for (id in removedIds) {
                 data.listeningHistoryDao.delete(id)
@@ -203,12 +206,21 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         }
     }
 
+    /**
+     * Puts back what [removeHistoryItem] took away. An episode stored under several IDs gets every
+     * row back exactly as it was, with its shared settings; an episode stored under one ID gets its
+     * row back as before.
+     */
     override suspend fun restoreHistoryRemoval(removal: ListeningHistoryRemoval) {
         val item = removal.item
         val database = BoxLoreDatabase.getDatabase(player.context)
         database.withTransaction {
-            data.listeningHistoryDao.upsert(item.toListeningHistoryEntity())
-            removal.otherItems.forEach { data.listeningHistoryDao.upsert(it.toListeningHistoryEntity()) }
+            if (removal.rows.isEmpty()) {
+                data.listeningHistoryDao.upsert(item.toListeningHistoryEntity())
+            } else {
+                data.listeningHistoryDao.upsertAll(removal.rows.map { it.toListeningHistoryEntity() })
+            }
+            removal.groupState?.let { listenerStore.restoreGroupState(it.toEntity()) }
             if (removal.sessions.isNotEmpty()) {
                 data.listeningSessionDao.upsertSessions(removal.sessions.map { it.toListeningSessionEntity() })
             }
@@ -218,11 +230,13 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         }
     }
 
+    /** Deletes all history, its analytics and every episode's shared like and completion settings. */
     override suspend fun clearHistory() {
         val database = BoxLoreDatabase.getDatabase(player.context)
         database.withTransaction {
             data.listeningHistoryDao.deleteAll()
             data.listeningInsightsMaintenance.clearAllAnalytics()
+            listenerStore.clearGroupStates()
         }
         data.rankingFeedbackRepository.reset()
     }
@@ -230,7 +244,8 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
     /**
      * Marks [episodes] played in one transaction. Each episode's row is its owner's (an episode
      * stored under one ID writes that ID, as before), and the completion reaches the episode's other
-     * trusted IDs and its group settings ([EpisodeListenerStore.recordCompletion]).
+     * trusted IDs and its group settings ([EpisodeListenerStore.recordCompletions]). Owners and
+     * settings are worked out in batches, so a large show costs a few queries per 500 episodes.
      */
     override suspend fun markAllEpisodesCompleted(
         episodes: List<Episode>,
@@ -241,7 +256,8 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
         val currentTime = System.currentTimeMillis()
         val database = BoxLoreDatabase.getDatabase(player.context)
         database.withTransaction {
-            val historyIds = episodes.map { listenerStore.historyId(it.id) }
+            val historyIdById = listenerStore.historyIds(episodes.map { it.id })
+            val historyIds = episodes.map { historyIdById[it.id] ?: it.id }
             val entitiesToUpsert =
                 episodes.mapIndexed { index, episode ->
                     val historyId = historyIds[index]
@@ -255,7 +271,7 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
                     ).copy(episodeId = historyId)
                 }
             data.listeningHistoryDao.upsertAll(entitiesToUpsert)
-            historyIds.forEach { listenerStore.recordCompletion(it, completed = true, nowMs = currentTime) }
+            listenerStore.recordCompletions(historyIds, completed = true, nowMs = currentTime)
         }
     }
 }

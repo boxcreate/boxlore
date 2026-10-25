@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.playback
 
 import androidx.media3.common.MediaItem
 import cx.aswin.boxlore.core.catalog.PodcastRepository
+import cx.aswin.boxlore.core.database.EpisodeListenerStore
 import cx.aswin.boxlore.core.database.ListeningHistoryDao
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.model.Episode
@@ -14,21 +15,36 @@ internal data class RestoredSessionData(
 )
 
 internal object PlaybackSessionRestoreHelper {
+    /**
+     * The session to show for [targetEpisodeId] (the controller's media ID), or the most recently
+     * played one without a target.
+     *
+     * With [listenerStore], the state is the episode's projected state, so an episode stored under
+     * several IDs restores its shared progress, like and completion whichever ID is playing; the
+     * restored episode keeps the media ID. A missing row is created only when no ID of the episode
+     * has one, under the episode's owner ID, so a restore never adds an unplayed row beside the
+     * episode's real state (own-episode-IDs P4, plan section 8). Without it (tests), the media
+     * ID's own row is read as before.
+     */
+    @Suppress("LongParameterList")
     suspend fun resolveRestoredSession(
         targetEpisodeId: String?,
         currentItem: MediaItem?,
         listeningHistoryDao: ListeningHistoryDao,
         podcastRepository: PodcastRepository,
         savedQueue: List<Episode>,
+        listenerStore: EpisodeListenerStore? = null,
     ): RestoredSessionData? {
-        val lastSession =
+        val resolved =
             resolveSession(
                 targetEpisodeId = targetEpisodeId,
                 currentItem = currentItem,
                 listeningHistoryDao = listeningHistoryDao,
                 podcastRepository = podcastRepository,
                 savedQueue = savedQueue,
+                listenerStore = listenerStore,
             ) ?: return null
+        val lastSession = resolved.session
 
         val queueEpisode = savedQueue.find { it.id == lastSession.episodeId }
         val resolvedPodcastName =
@@ -42,7 +58,7 @@ internal object PlaybackSessionRestoreHelper {
         val resolvedPodcastImageUrl = resolvePodcastImageUrl(lastSession, currentItem, queueEpisode, podcastRepository)
 
         enrichIfMissingMetadata(
-            lastSession = lastSession,
+            lastSession = lastSession.copy(episodeId = resolved.rowId),
             resolvedPodcastId = resolvedPodcastId,
             resolvedPodcastImageUrl = resolvedPodcastImageUrl,
             resolvedPodcastName = resolvedPodcastName,
@@ -83,31 +99,46 @@ internal object PlaybackSessionRestoreHelper {
         )
     }
 
+    /** The session state, carrying the restored episode's ID, and [rowId], the stored row its metadata repairs go to. */
+    private data class ResolvedSession(val session: ListeningHistoryEntity, val rowId: String,)
+
+    @Suppress("LongParameterList")
     private suspend fun resolveSession(
         targetEpisodeId: String?,
         currentItem: MediaItem?,
         listeningHistoryDao: ListeningHistoryDao,
         podcastRepository: PodcastRepository,
         savedQueue: List<Episode>,
-    ): ListeningHistoryEntity? {
+        listenerStore: EpisodeListenerStore?,
+    ): ResolvedSession? {
         if (targetEpisodeId == null) {
-            return listeningHistoryDao.getLastPlayedSessionAny()
+            val latest =
+                listenerStore?.lastPlayedSession(unfinishedOnly = false)
+                    ?: listeningHistoryDao.getLastPlayedSessionAny()
+                    ?: return null
+            return ResolvedSession(latest, latest.episodeId)
         }
-        val stored = listeningHistoryDao.getHistoryItem(targetEpisodeId)
+        val stored = listenerStore?.projectedHistory(targetEpisodeId) ?: listeningHistoryDao.getHistoryItem(targetEpisodeId)
         if (stored != null) {
-            return stored
+            return ResolvedSession(stored.copy(episodeId = targetEpisodeId), stored.episodeId)
         }
-        return createAndInsertSyntheticSession(
-            targetEpisodeId = targetEpisodeId,
-            currentItem = currentItem,
-            listeningHistoryDao = listeningHistoryDao,
-            podcastRepository = podcastRepository,
-            savedQueue = savedQueue,
-        )
+        val historyId = listenerStore?.historyId(targetEpisodeId) ?: targetEpisodeId
+        val synthetic =
+            createAndInsertSyntheticSession(
+                targetEpisodeId = targetEpisodeId,
+                historyId = historyId,
+                currentItem = currentItem,
+                listeningHistoryDao = listeningHistoryDao,
+                podcastRepository = podcastRepository,
+                savedQueue = savedQueue,
+            ) ?: return null
+        return ResolvedSession(synthetic.copy(episodeId = targetEpisodeId), historyId)
     }
 
+    @Suppress("LongParameterList")
     private suspend fun createAndInsertSyntheticSession(
         targetEpisodeId: String,
+        historyId: String,
         currentItem: MediaItem?,
         listeningHistoryDao: ListeningHistoryDao,
         podcastRepository: PodcastRepository,
@@ -132,7 +163,7 @@ internal object PlaybackSessionRestoreHelper {
 
         val syntheticSession =
             ListeningHistoryEntity(
-                episodeId = targetEpisodeId,
+                episodeId = historyId,
                 podcastId = resolvedPodcastId,
                 episodeTitle = resolvedEpisodeTitle,
                 episodeImageUrl = resolvedArtwork,

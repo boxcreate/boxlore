@@ -70,6 +70,9 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.okhttp)
     testImplementation("org.mockito:mockito-core:5.14.2")
+    // In-memory Room for the listener-state moves (orphan rematch, Podcast Index to RSS switch).
+    testImplementation(libs.robolectric)
+    testImplementation("androidx.test:core:1.6.1")
     // Reads the shared episode recipe fixture (src/test/resources/fixtures).
     testImplementation(libs.gson)
     // Real XmlPullParser implementation backing the android.util.Xml test stub so the

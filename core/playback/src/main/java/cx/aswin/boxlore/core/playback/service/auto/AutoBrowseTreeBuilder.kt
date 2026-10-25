@@ -494,9 +494,8 @@ internal class AutoBrowseTreeBuilder(private val host: AutoBrowseLibraryHost, pr
                         .toString()
                 }
                 ?: mediaResolver.resolveDownloadRequestUri(download.episodeId)
-                ?: host.database
-                    .listeningHistoryDao()
-                    .getHistoryItem(download.episodeId)
+                ?: listenerStore
+                    .projectedHistory(download.episodeId)
                     ?.episodeAudioUrl
                 ?: host.queueRepository.getQueueItemByEpisodeId(download.episodeId)?.audioUrl
         AutoMediaItemFactory.fromDownload(

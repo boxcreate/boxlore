@@ -10,6 +10,7 @@ import cx.aswin.boxlore.core.analytics.PendingEntryPoint
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.QueueMath
 import cx.aswin.boxlore.core.playback.QueueSkipMemory
 import cx.aswin.boxlore.core.prefs.UserPreferencesRepository
@@ -175,7 +176,7 @@ internal class PlaybackTelemetrySession(
 
     private suspend fun resolvePodcastFromHistory(episodeId: String): String? =
         try {
-            val historyItem = database.listeningHistoryDao().getHistoryItem(episodeId)
+            val historyItem = database.episodeListenerStore().projectedHistory(episodeId)
             if (historyItem != null && !historyItem.podcastName.isNullOrBlank()) {
                 historyItem.podcastName
             } else {
@@ -251,7 +252,8 @@ internal class PlaybackTelemetrySession(
         podcastName = resolvedName
         podcastGenre = resolvedGenre
 
-        val history = database.listeningHistoryDao().getHistoryItem(episodeId)
+        // The episode's projected completion, so a replay counts whichever of its IDs is playing.
+        val history = database.episodeListenerStore().projectedHistory(episodeId)
         isRepeating = history?.isCompleted == true
 
         var durationMs = currentItem?.mediaMetadata?.extras?.getLong("durationMs", 0L) ?: 0L

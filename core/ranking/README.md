@@ -69,7 +69,7 @@ src/main/java/cx/aswin/boxlore/core/ranking/
 - Unit tests live under `core/ranking/src/test`.
 - `AdaptiveRankingTest` covers cold-start blending, objective behavior, and opposite-outcome learning.
 - `YourShowsScorerTest` covers normalized deterministic ordering and single recency application, while `YourShowsSubscriptionRecencyTest` covers the bounded three-day floor and faster post-window decay. `AdaptiveCandidateScorerTest` verifies Home and Library receive identical Your Shows scores even when an adaptive model exists.
-- `RankingHistoryTest` covers collapsing an episode's rows and finding them under either ID; `AdaptiveCandidateScorerTest.anEpisodeStoredUnderTwoIdsCountsOnceInShowScores` checks Your Shows and legacy show scores equal the one-ID scores when the episode's history and latest episode use different IDs.
+- `RankingHistoryTest` covers collapsing an episode's rows and finding them under either ID; `AdaptiveCandidateScorerTest.anEpisodeStoredUnderTwoIdsCountsOnceInShowScores` checks Your Shows and legacy show scores equal the one-ID scores when the episode's history and latest episode use different IDs; `anEpisodeCandidateFindsItsHistoryUnderItsOtherId` checks the same for episode candidates (`scoreEpisodes`).
 - `ShowFacetMigrationLogicTest` covers preserving, merging, and retargeting evidence during a podcast-id repair. `AdaptiveRankingRepositoryTest` covers transactional `migrateShowFacet` into an existing target facet.
 - Recommendation reset behavior is exercised through `RankingResetPort` fakes in feature tests.
 

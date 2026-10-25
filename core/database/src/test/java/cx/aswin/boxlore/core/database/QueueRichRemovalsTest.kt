@@ -67,6 +67,20 @@ class QueueRichRemovalsTest {
     }
 
     @Test
+    fun aPulledQueueStateKeepsOnlyRichRemovalsThePlainListStillHoldsAndNoQueuedEpisode() {
+        val stored = QueueRemovalIdentity.serializeList(listOf(episodeA, QueueRemovalIdentity("-7"), QueueRemovalIdentity("-8")))
+
+        // The pull dropped -8 from the plain list and queued the episode again under B.
+        val kept = QueueDao.richRemovalsWithin(stored, plainIds = listOf("A", "-7"), queued = listOf(episodeB))
+
+        assertEquals(listOf(QueueRemovalIdentity("-7")), QueueRemovalIdentity.parseList(kept))
+        // Nothing to drop leaves the stored text as it is; an empty result clears it.
+        assertEquals(stored, QueueDao.richRemovalsWithin(stored, listOf("A", "-7", "-8"), emptyList()))
+        assertNull(QueueDao.richRemovalsWithin(stored, emptyList(), emptyList()))
+        assertNull(QueueDao.richRemovalsWithin(null, listOf("A"), emptyList()))
+    }
+
+    @Test
     fun unreadableEntriesAndRecipeIdsOutsideTheRangeAreDropped() {
         val raw = """[{"id":"A","recipeId":5,"show":"100"},{"recipeId":$RECIPE},"x",{"id":"","show":"1"},{"id":"C","catalogKey":7}]"""
 

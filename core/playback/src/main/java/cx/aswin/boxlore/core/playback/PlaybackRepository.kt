@@ -201,6 +201,7 @@ class PlaybackRepository internal constructor(
                 listeningHistoryDao = listeningHistoryDao,
                 podcastRepository = podcastRepository,
                 savedQueue = savedQueue,
+                listenerStore = historyStore.listenerStore,
             ) ?: return@launch
 
             withContext(PlaybackThreadPolicy.mainDispatcher) {
@@ -502,6 +503,7 @@ class PlaybackRepository internal constructor(
                             listeningHistoryDao = listeningHistoryDao,
                             podcastRepository = podcastRepository,
                             savedQueue = playerStateFlow.value.queue,
+                            listenerStore = historyStore.listenerStore,
                         ) ?: return@launch
 
                     playerStateFlow.value =
@@ -681,6 +683,7 @@ class PlaybackRepository internal constructor(
                     listeningHistoryDao = listeningHistoryDao,
                     podcastRepository = podcastRepository,
                     savedQueue = savedQueue,
+                    listenerStore = historyStore.listenerStore,
                 ) ?: return@withContext false
 
             // If saved queue is empty but we have an episode, make a single-item queue

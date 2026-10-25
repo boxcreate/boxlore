@@ -342,8 +342,9 @@ class RssPodcastRepository private constructor(
     /**
      * Moves the listener state of a Podcast Index show onto the RSS show the listener chose to use
      * instead. IDs whose alias is ambiguous never move state (docs/EPISODE_IDS.md §5); they stay
-     * where they are. A merged like is the latest like decision of the two rows, so an older like
-     * can't undo a later unlike (own-episode-IDs P4, plan section 8, re-key paths narrowed).
+     * where they are. A merged like is the latest like decision of the two rows and the episode's
+     * group settings, and a completion cleared later in those settings stays cleared, so the switch
+     * can't bring back an undone like or completion (own-episode-IDs P4, plan section 8).
      */
     private suspend fun migrateLinkedState(
         podcastIndexPodcast: PodcastEntity,
@@ -354,7 +355,9 @@ class RssPodcastRepository private constructor(
         val history = historyDao.getHistoryForPodcast(podcastIndexPodcast.podcastId)
         val queued = database.queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastIndexPodcast.podcastId }
         val downloads = database.downloadedEpisodeDao().getDownloadsForPodcast(podcastIndexPodcast.podcastId)
-        val ambiguous = ListenerStateMoves.ambiguousIds(aliasesOf(history.map { it.episodeId } + downloads.map { it.episodeId } + queued.map { it.episodeId }))
+        val aliases = aliasesOf(history.map { it.episodeId } + downloads.map { it.episodeId } + queued.map { it.episodeId })
+        val ambiguous = ListenerStateMoves.ambiguousIds(aliases)
+        val trustedById = aliases.mapNotNull { ListenerStateMoves.trustedTarget(it, it.podcastId) }.associateBy { it.aliasId }
         history.filter { it.episodeId !in ambiguous }.forEach { old ->
             val rssEpisode =
                 RssSourceMatcher.findMatchingEpisode(
@@ -364,7 +367,8 @@ class RssPodcastRepository private constructor(
                     publishedDate = null,
                 ) ?: return@forEach
             val existing = historyDao.getHistoryItem(rssEpisode.episodeId)
-            val remapped = ListenerStateMoves.linkedHistoryRow(old, existing, rssEpisode, rssPodcast)
+            val groupState = trustedById[old.episodeId]?.let { database.episodeIdentityDao().getGroupState(it.podcastId, it.catalogKey!!) }
+            val remapped = ListenerStateMoves.linkedHistoryRow(old, existing, rssEpisode, rssPodcast, groupState)
             historyDao.upsert(remapped)
             if (old.episodeId != remapped.episodeId) historyDao.delete(old.episodeId)
         }

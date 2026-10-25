@@ -110,11 +110,14 @@ class QueueRepository(
             val itemWithPos = newItem.copy(position = maxPos + 1)
             android.util.Log.d(TAG, "addToQueue: Inserting newItem at position ${maxPos + 1}")
             queueDao.insertQueueItem(itemWithPos)
+            // Queueing an episode clears the removals of every one of its IDs, so no device keeps
+            // removing it under another ID.
+            val restoredIds = listenerStore.withAllAliases(listOf(newItem.episodeId))
             queueDao.bumpQueueVersion(
                 updatedAt = System.currentTimeMillis(),
                 deviceId = localDeviceId,
-                restoredEpisodeIds = listOf(newItem.episodeId),
-                restoredIdentities = listenerStore.queueIdentities(listOf(newItem.episodeId)),
+                restoredEpisodeIds = restoredIds,
+                restoredIdentities = listenerStore.queueIdentities(restoredIds),
             )
             true
         }
@@ -208,13 +211,15 @@ class QueueRepository(
             val newIds = uniqueEpisodes.map { it.id }.toSet()
             val removedIds = oldIds.filter { it !in newIds }
             replaceQueueItems(uniqueEpisodes)
+            // A queued episode clears the removals of every one of its IDs (an Undo restores it under one).
+            val restoredIds = listenerStore.withAllAliases(newIds)
             queueDao.bumpQueueVersion(
                 updatedAt = System.currentTimeMillis(),
                 deviceId = localDeviceId,
                 removedEpisodeIds = removedIds,
-                restoredEpisodeIds = uniqueEpisodes.map { it.id },
+                restoredEpisodeIds = uniqueEpisodes.map { it.id } + (restoredIds - newIds),
                 removedIdentities = listenerStore.queueIdentities(removedIds),
-                restoredIdentities = listenerStore.queueIdentities(newIds),
+                restoredIdentities = listenerStore.queueIdentities(restoredIds),
             )
         }
     }
@@ -363,15 +368,17 @@ class QueueRepository(
     suspend fun getQueueItemByEpisodeId(episodeId: String): cx.aswin.boxlore.core.database.entities.QueueItem? = queueDao.getQueueItemByEpisodeId(episodeId)
 
     /**
-     * Removes [episodeId]'s episode from the queue: the rows of every trusted ID of the episode
-     * (docs/EPISODE_IDS.md §5). Each removed ID joins the plain removal list, and the rich list
-     * records it with the episode's show, catalog key and recipe ID so devices that queued the
-     * episode under another ID remove it too.
+     * Removes [episodeId]'s episode from the queue (docs/EPISODE_IDS.md §5): [episodeId]'s row, and
+     * the row of each other trusted ID of the episode that is queued, except [playingId], which
+     * stays queued while it plays. Only removed IDs join the plain removal list; the rich list
+     * records each with the episode's show, catalog key and recipe ID so devices that queued the
+     * episode under another ID remove it too. An episode stored under one ID removes its row as before.
      */
-    suspend fun removeFromQueue(episodeId: String) {
+    suspend fun removeFromQueue(episodeId: String, playingId: String? = null,) {
         val localDeviceId = deviceIdentityPort?.getDeviceId()
         database.withTransaction {
-            val removedIds = listenerStore.memberIds(episodeId).let { members -> listOf(episodeId) + members.filter { it != episodeId } }
+            val others = listenerStore.memberIds(episodeId).filter { it != episodeId && it != playingId && queueDao.countEpisode(it) > 0 }
+            val removedIds = listOf(episodeId) + others
             removedIds.forEach { queueDao.deleteQueueItemByEpisodeId(it) }
             queueDao.bumpQueueVersion(
                 updatedAt = System.currentTimeMillis(),
@@ -432,6 +439,11 @@ class QueueRepository(
 
     var onRemoteQueueAppliedListener: (suspend (List<Episode>) -> Unit)? = null
 
+    /**
+     * Stores a pulled queue state. The phone's rich removal list keeps only removals the pulled
+     * plain list still holds and whose episode isn't queued again under any of its IDs
+     * ([QueueDao.richRemovalsWithin]), so both lists stay in step (own-episode-IDs P4, plan section 8).
+     */
     override suspend fun applyRemoteQueueState(
         items: List<QueueItem>,
         metadata: QueueMetadataEntity,
@@ -444,7 +456,17 @@ class QueueRepository(
                 }
                 queueDao.insertQueueItems(reindexed)
             }
-            queueDao.upsertQueueMetadata(metadata)
+            val richRemovals =
+                if (metadata.recentRemovedEpisodes == null) {
+                    null
+                } else {
+                    cx.aswin.boxlore.core.database.dao.QueueDao.richRemovalsWithin(
+                        stored = metadata.recentRemovedEpisodes,
+                        plainIds = cx.aswin.boxlore.core.database.dao.QueueDao.parseRecentRemovedEpisodeIds(metadata.recentRemovedEpisodeIds),
+                        queued = listenerStore.queueIdentities(items.map { it.episodeId }),
+                    )
+                }
+            queueDao.upsertQueueMetadata(metadata.copy(recentRemovedEpisodes = richRemovals))
         }
         val snapshot = getQueueEpisodeSnapshot()
         onRemoteQueueAppliedListener?.invoke(snapshot)

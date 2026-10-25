@@ -76,7 +76,9 @@ class AutoPlaybackResumptionHandlerTest {
             host = host,
             mediaResolver = mediaResolver,
             customPrefs = prefs,
-            customListeningHistoryDao = listeningHistoryDao,
+            customLastSession = { unfinishedOnly ->
+                if (unfinishedOnly) listeningHistoryDao.getLastPlayedSession() else listeningHistoryDao.getLastPlayedSessionAny()
+            },
             customQueueRepository = queueRepository,
         )
     }

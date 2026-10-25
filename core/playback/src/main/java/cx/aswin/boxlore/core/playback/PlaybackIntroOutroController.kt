@@ -6,6 +6,7 @@ import androidx.media3.common.Player
 import cx.aswin.boxlore.core.analytics.AnalyticsHelper
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.playback.PlaybackLifecycleSignals
 import cx.aswin.boxlore.core.playback.SleepTimerHolder
 import kotlinx.coroutines.CoroutineScope
@@ -289,12 +290,18 @@ internal class PlaybackIntroOutroController(
         configurationJob.start()
     }
 
+    /**
+     * The saved state and trim for the playing [episodeId]. The saved position, completion and
+     * listen time are the episode's projected state, so an episode stored under several IDs resumes
+     * from the same place whichever of its IDs is playing; an episode stored under one ID reads its
+     * row as before (own-episode-IDs P4, plan section 8).
+     */
     private suspend fun resolveActiveSkipConfiguration(
         episodeId: String,
     ): Pair<ListeningHistoryEntity?, PlaybackSkipPolicy.EffectiveTrim> {
         val history =
             runCatching {
-                database.listeningHistoryDao().getHistoryItem(episodeId)
+                database.episodeListenerStore().projectedHistory(episodeId)
             }.getOrNull()
         val isBriefing = episodeId.startsWith("briefing_")
         val podcastId =

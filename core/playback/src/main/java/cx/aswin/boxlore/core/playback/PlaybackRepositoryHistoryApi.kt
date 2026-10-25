@@ -19,6 +19,17 @@ val PlaybackRepository.likedEpisodes: Flow<List<ListeningHistoryEntity>>
 val PlaybackRepository.completedEpisodeIds: Flow<Set<String>>
     get() = historyStore.completedEpisodeIds
 
+/** Every stored ID of each liked episode; an episode stored under several IDs is liked under all of them or none. */
+val PlaybackRepository.likedEpisodeIds: Flow<Set<String>>
+    get() = historyStore.likedEpisodeIds
+
+/**
+ * Recent history for looking an episode up by the ID a screen shows: an episode stored under
+ * several IDs appears once per stored ID with its projected state. Lists use `getAllHistory`.
+ */
+val PlaybackRepository.historyForEpisodeLookup: Flow<List<ListeningHistoryEntity>>
+    get() = historyStore.historyForEpisodeLookup
+
 suspend fun PlaybackRepository.recordListeningSession(session: ListeningSessionEntity) = historyStore.recordListeningSession(session)
 
 suspend fun PlaybackRepository.toggleLike(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?,) = historyStore.toggleLike(episode, podcastId, podcastTitle, podcastImageUrl)

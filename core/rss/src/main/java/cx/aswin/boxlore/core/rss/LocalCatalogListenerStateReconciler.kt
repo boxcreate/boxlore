@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.database.EpisodeListenerProjection
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import cx.aswin.boxlore.core.rss.ports.DownloadCacheRelinker
 
@@ -26,7 +27,14 @@ internal object LocalCatalogListenerRemapLogic {
     /** A phone-minted (negative) episode ID: the only IDs the orphan rematch may move. */
     fun isLegacyLocalId(episodeId: String): Boolean = episodeId.toLongOrNull()?.let { it < 0L } == true
 
-    fun mappings(catalogRows: List<LocalEpisodeEntity>, references: List<LocalCatalogListenerReference>,): Map<String, LocalEpisodeEntity> {
+    fun mappings(catalogRows: List<LocalEpisodeEntity>, references: List<LocalCatalogListenerReference>,): Map<String, LocalEpisodeEntity> =
+        rematches(catalogRows, references).mapValues { it.value.target }
+
+    /**
+     * [mappings] with how each target was found: [LocalCatalogRematch.exact] when a reference's
+     * enclosure address names exactly one catalog row, false for the title and date fallback.
+     */
+    fun rematches(catalogRows: List<LocalEpisodeEntity>, references: List<LocalCatalogListenerReference>,): Map<String, LocalCatalogRematch> {
         val catalogIds = catalogRows.mapTo(mutableSetOf(), LocalEpisodeEntity::episodeId)
         val candidates =
             catalogRows.map { row ->
@@ -53,24 +61,42 @@ internal object LocalCatalogListenerRemapLogic {
                             )
                         }.distinctBy { it.id }
                 val target = targets.singleOrNull() ?: return@mapNotNull null
-                oldId to catalogRows.first { it.episodeId == target.id }
+                val row = catalogRows.first { it.episodeId == target.id }
+                val exact = grouped.any { reference -> isUniqueEnclosureOf(reference.enclosureUrl, row, catalogRows) }
+                oldId to LocalCatalogRematch(row, exact)
             }.toMap()
     }
+
+    private fun isUniqueEnclosureOf(enclosureUrl: String?, row: LocalEpisodeEntity, catalogRows: List<LocalEpisodeEntity>,): Boolean {
+        val enclosure = enclosureUrl?.trim().orEmpty()
+        if (enclosure.isEmpty() || row.audioUrl.trim() != enclosure) return false
+        return catalogRows.count { it.audioUrl.trim() == enclosure } == 1
+    }
 }
+
+/**
+ * The catalog row an orphaned ID's listener state moves to, and whether the match was exact (its
+ * enclosure address names that one row) rather than the title and publish-date fallback.
+ */
+internal data class LocalCatalogRematch(val target: LocalEpisodeEntity, val exact: Boolean,)
 
 /**
  * Best-effort, transactional listener-state re-key after a full feed persist: the orphan rematch.
  *
  * Narrowed in P4 of the own-episode-IDs plan (plan section 8, re-key paths; docs/EPISODE_IDS.md §5):
- * - It consults aliases first. Only legacy phone-minted (negative) IDs with no alias or an
- *   unresolved one are rematched; an ID with a trusted alias already resolves through it, and an
- *   ambiguous one is never moved.
- * - The merged like is the latest like decision (with the episode's group settings) instead of
- *   either row's like, so a cleared like can't come back; completion is kept from either row
- *   unless the group settings cleared it later.
- * - The moved ID is recorded as a trusted alias of the catalog row's episode when that row has
- *   one, so a later copy of it (a cloud pull, a restore) counts as the same episode and isn't
- *   rematched again.
+ * - It consults aliases first. An ambiguous ID is never moved. A trusted ID is never moved: when
+ *   a catalog row now holds its (show, key) under another ID (its row was evicted and the feed read
+ *   again), that row's ID joins the episode as a trusted alias (`catalog_key_match`), so both IDs
+ *   read as one episode and nothing moves. Only legacy phone-minted (negative) IDs with no alias or
+ *   an unresolved one are rematched and moved.
+ * - A moved ID's history merges into the row the catalog row's episode reads (its owner when the
+ *   episode is stored under several IDs). The merged like is the latest like decision (with the
+ *   episode's group settings) instead of either row's like, so a cleared like can't come back;
+ *   completion is kept from either row unless the group settings cleared it later.
+ * - When the match was exact (the enclosure address names one catalog row) and the catalog row
+ *   has a trusted alias, the moved ID is recorded as a trusted alias of that episode
+ *   (`orphan_rematch`), so a later copy of it (a cloud pull, a restore) counts as the same episode
+ *   and isn't rematched again. A title and date match records no alias: it is not proof.
  *
  * COMPAT(own-ids): the orphan rematch for unresolved legacy negative IDs. Permanent: never remove (MIGRATION.md §5).
  */
@@ -108,35 +134,55 @@ internal class LocalCatalogListenerStateReconciler(
                         publishedDate = item.pubDate,
                     )
                 }
-        val settled = settledIds(allReferences.map { it.episodeId }.filter { LocalCatalogListenerRemapLogic.isLegacyLocalId(it) })
+        val orphanAliases = aliasesOf(allReferences.map { it.episodeId }.filter { LocalCatalogListenerRemapLogic.isLegacyLocalId(it) })
+        joinTrustedOrphans(catalogRows, orphanAliases)
+        val settled = ListenerStateMoves.settledIds(orphanAliases)
         val references = allReferences.filter { it.episodeId !in settled }
-        val mappings = LocalCatalogListenerRemapLogic.mappings(catalogRows, references)
-        for ((oldId, target) in mappings) {
+        val rematches = LocalCatalogListenerRemapLogic.rematches(catalogRows, references)
+        for ((oldId, rematch) in rematches) {
+            val target = rematch.target
             val targetAlias = targetAlias(target)
             migrateHistory(oldId, target, targetAlias)
             migrateDownload(oldId, target)
             migrateQueue(oldId, target)
             database.listeningSessionDao().reassignEpisodeId(oldId, target.episodeId)
             migrateRollups(oldId, target.episodeId)
-            recordMovedAlias(oldId, targetAlias)
+            if (rematch.exact) recordMovedAlias(oldId, targetAlias)
         }
     }
 
-    /** IDs among [ids] whose alias is trusted or ambiguous: resolved, or deliberately never moved. */
-    private suspend fun settledIds(ids: List<String>): Set<String> = ListenerStateMoves.settledIds(
-        ids.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { database.episodeIdentityDao().getAliases(it) },
-    )
+    private suspend fun aliasesOf(ids: List<String>): List<EpisodeAliasEntity> =
+        ids.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { database.episodeIdentityDao().getAliases(it) }
+
+    /**
+     * For each trusted orphan whose (show, key) a catalog row now holds under another ID, records
+     * that row's ID as a trusted alias of the same episode ([ListenerStateMoves.joinedCatalogAlias]),
+     * so the two IDs read as one episode and no state moves.
+     */
+    private suspend fun joinTrustedOrphans(catalogRows: List<LocalEpisodeEntity>, orphanAliases: List<EpisodeAliasEntity>,) {
+        val dao = database.episodeIdentityDao()
+        val catalogAliases = aliasesOf(catalogRows.map { it.episodeId }).associateBy { it.aliasId }
+        for (orphan in orphanAliases) {
+            val row = ListenerStateMoves.catalogRowOfKey(orphan, catalogRows) ?: continue
+            ListenerStateMoves.joinedCatalogAlias(orphan, row, catalogAliases[row.episodeId], nowMs())?.let { dao.upsertAlias(it) }
+        }
+    }
 
     /** The catalog row's trusted alias, or null when it has none (its episode has no group yet). */
     private suspend fun targetAlias(target: LocalEpisodeEntity): EpisodeAliasEntity? =
         ListenerStateMoves.trustedTarget(database.episodeIdentityDao().getAlias(target.episodeId), target.podcastId)
 
+    /**
+     * Merges [oldId]'s row into the row [target]'s episode reads: [target]'s own, or its episode's
+     * owner when the episode is stored under several IDs, so the moved progress isn't hidden.
+     */
     private suspend fun migrateHistory(oldId: String, target: LocalEpisodeEntity, targetAlias: EpisodeAliasEntity?,) {
         val dao = database.listeningHistoryDao()
         val old = dao.getHistoryItem(oldId) ?: return
-        val existing = dao.getHistoryItem(target.episodeId)
+        val intoId = if (targetAlias != null) database.episodeListenerStore().historyId(target.episodeId) else target.episodeId
+        val existing = dao.getHistoryItem(intoId)
         val groupState = targetAlias?.let { database.episodeIdentityDao().getGroupState(it.podcastId, it.catalogKey!!) }
-        dao.upsert(mergeHistory(old, existing, target, groupState))
+        dao.upsert(mergeHistory(old, existing, target, groupState).copy(episodeId = intoId))
         dao.delete(oldId)
     }
 
@@ -220,7 +266,7 @@ internal fun mergeHistory(
 ): ListeningHistoryEntity {
     val rows = listOfNotNull(old, existing)
     val like = EpisodeListenerProjection.likeDecision(rows, groupState)
-    val completed = mergedCompletion(rows, groupState)
+    val completed = ListenerStateMoves.mergedCompletion(rows, groupState)
     return old.copy(
         episodeId = target.episodeId,
         episodeTitle = target.title,
@@ -242,17 +288,6 @@ internal fun mergeHistory(
             existing?.episodeDescription ?: old.episodeDescription.orEmpty()
         },
     )
-}
-
-/** Completed when either row is, unless the group settings hold a decision at least as late as every completed row's. */
-private fun mergedCompletion(rows: List<ListeningHistoryEntity>, groupState: EpisodeGroupStateEntity?,): Boolean {
-    val group = listOfNotNull(
-        groupState?.completedAt?.takeIf { it > 0L }?.let { EpisodeListenerProjection.Decision(it, true) },
-        groupState?.completeClearedAt?.takeIf { it > 0L }?.let { EpisodeListenerProjection.Decision(it, false) },
-    ).maxByOrNull { it.at }
-    val latestCompletedRow = rows.filter { it.isCompleted }.maxOfOrNull { it.lastPlayedAt }
-    if (group != null && (latestCompletedRow == null || group.at >= latestCompletedRow)) return group.value
-    return latestCompletedRow != null
 }
 
 internal fun mergeDownload(

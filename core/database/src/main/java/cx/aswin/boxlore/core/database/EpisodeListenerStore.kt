@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 
 /**
@@ -17,9 +18,10 @@ import kotlinx.coroutines.flow.mapLatest
  * - **One owner** holds progress and position. It is the stored owner mark while that ID holds
  *   listener state; otherwise (or with no single mark) it is chosen by the upgrade's order
  *   ([EpisodeIdentityDao.chooseOwner]) and stored in the same transaction as the write that needs it.
- * - **Reads** are projected ([EpisodeListenerProjection]): progress from the owner, liked and
- *   completed as the latest decision across the group settings and every ID's row. Lists count
- *   the episode once.
+ * - **Reads** are projected ([EpisodeListenerProjection]): progress from the owner (or from
+ *   another ID played later, after a pull or a restore), liked and completed as the latest
+ *   decision across the group settings and every ID's row. Lists count the episode once; lookups
+ *   by ID ([projectRowsByMember], [projectedLikedIds]) find the episode under every one of its IDs.
  * - **Writes:** progress goes to the owner ([historyId]). Like and completion are absolute: the
  *   target is written to every trusted ID's row and to `episode_group_state`, so an older alias
  *   row can't bring a cleared like or completion back. Nothing changes ID.
@@ -74,6 +76,19 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
     }
 
     /**
+     * The most recently played episode, projected: the row of `getLastPlayedSessionAny`, or with
+     * [unfinishedOnly] of `getLastPlayedSession`, as its episode's projected state. An episode stored
+     * under one ID returns that row unchanged. When the latest unfinished row belongs to an episode
+     * finished under another of its IDs, the most recent unfinished episode is used instead.
+     */
+    suspend fun lastPlayedSession(unfinishedOnly: Boolean): ListeningHistoryEntity? {
+        val raw = (if (unfinishedOnly) history.getLastPlayedSession() else history.getLastPlayedSessionAny()) ?: return null
+        val projected = projectedHistory(raw.episodeId, raw)
+        if (!unfinishedOnly || projected?.isCompleted == false) return projected
+        return projectRows(history.getRecentHistoryList(RECENT_SESSION_SCAN)) { !it.isCompleted }.firstOrNull()
+    }
+
+    /**
      * Sets the like of [episodeId]'s episode to [liked] (an absolute target, not a toggle) on every
      * trusted ID's row and in the group settings. Returns the history rows written; 0 means no ID
      * of the episode has a row yet, and the caller creates the owner's ([historyId]).
@@ -85,7 +100,9 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
         val catalogKey = group.catalogKey!!
         val state = aliases.getGroupState(podcastId, catalogKey)
         val at = EpisodeListenerProjection.likeTime(nowMs, rows(group), state)
-        val written = history.setLikeStatusForIds(group.memberIds, liked, at)
+        // An episode stored under one ID keeps today's row write (the clock's time, which sync
+        // compares); only the group settings take a time after every recorded decision.
+        val written = history.setLikeStatusForIds(group.memberIds, liked, if (group.isShared) at else nowMs)
         aliases.upsertGroupState(EpisodeListenerProjection.withLike(state, podcastId, catalogKey, liked, at))
         written
     }
@@ -114,20 +131,96 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
      * played: every other trusted ID's row gets [completed] too, and the group settings record it.
      * Does nothing for an ID without a trusted alias, whose one row the caller already wrote.
      */
-    suspend fun recordCompletion(episodeId: String, completed: Boolean, nowMs: Long,) {
-        val alias = aliases.getAlias(episodeId)
-        if (alias == null || !alias.isTrustedKeyed()) return
+    suspend fun recordCompletion(episodeId: String, completed: Boolean, nowMs: Long,) =
+        recordCompletions(listOf(episodeId), completed, nowMs)
+
+    /**
+     * [recordCompletion] for many episodes at once (mark a whole show played or unplayed), each
+     * after the caller wrote its row. IDs without a trusted alias cost one alias lookup per 500;
+     * an episode stored under one ID costs no per-episode query, and the group settings are written
+     * in one batch. Runs in the caller's transaction when there is one.
+     */
+    suspend fun recordCompletions(episodeIds: Collection<String>, completed: Boolean, nowMs: Long,) {
+        val keyed = trustedKeyedAliases(episodeIds)
+        if (keyed.isEmpty()) return
         database.withTransaction {
-            val group = resolve(episodeId, storeOwner = true)
-            val podcastId = group.podcastId ?: return@withTransaction
-            val catalogKey = group.catalogKey ?: return@withTransaction
-            val others = group.memberIds.filter { it != episodeId }
-            if (others.isNotEmpty()) history.setCompletionForIds(others, completed)
-            val state = aliases.getGroupState(podcastId, catalogKey)
-            val at = EpisodeListenerProjection.completionTime(nowMs, rows(group), state)
-            aliases.upsertGroupState(EpisodeListenerProjection.withCompletion(state, podcastId, catalogKey, completed, at))
+            val sharedIds = sharedAliases(keyed.map { it.aliasId }).mapTo(HashSet()) { it.aliasId }
+            val (shared, single) = keyed.partition { it.aliasId in sharedIds }
+            val states = singleCompletionStates(single, completed, nowMs).toMutableList()
+            shared
+                .distinctBy { EpisodeGroup.tokenOf(it.podcastId, it.catalogKey) }
+                .mapNotNullTo(states) { sharedCompletionState(it.aliasId, completed, nowMs) }
+            if (states.isNotEmpty()) aliases.upsertGroupStates(states)
         }
     }
+
+    /**
+     * Carries a completion decision the caller wrote on [writtenId]'s row to the other trusted IDs
+     * of its episode, and returns the episode's group settings recording it.
+     */
+    private suspend fun sharedCompletionState(writtenId: String, completed: Boolean, nowMs: Long,): EpisodeGroupStateEntity? {
+        val group = resolve(writtenId, storeOwner = true)
+        val podcastId = group.podcastId ?: return null
+        val catalogKey = group.catalogKey ?: return null
+        val others = group.memberIds.filter { it != writtenId }
+        if (others.isNotEmpty()) history.setCompletionForIds(others, completed)
+        val state = aliases.getGroupState(podcastId, catalogKey)
+        val at = EpisodeListenerProjection.completionTime(nowMs, rows(group), state)
+        return EpisodeListenerProjection.withCompletion(state, podcastId, catalogKey, completed, at)
+    }
+
+    /**
+     * Group settings recording a completion decision for episodes stored under one trusted ID, read
+     * and computed in batches. An episode with no row records nothing: there is no state to keep.
+     */
+    private suspend fun singleCompletionStates(single: List<EpisodeAliasEntity>, completed: Boolean, nowMs: Long,): List<EpisodeGroupStateEntity> {
+        if (single.isEmpty()) return emptyList()
+        val rowsById = single.map { it.aliasId }.chunked(MAX_IDS_PER_QUERY).flatMap { history.getHistoryItems(it) }.associateBy { it.episodeId }
+        return single.filter { it.aliasId in rowsById }.groupBy { it.podcastId }.flatMap { (podcastId, showAliases) ->
+            val stored = showAliases.mapNotNull { it.catalogKey }.distinct().chunked(MAX_IDS_PER_QUERY)
+                .flatMap { aliases.getGroupStates(podcastId, it) }
+                .associateBy { it.catalogKey }
+            showAliases.distinctBy { it.catalogKey }.map { alias ->
+                val catalogKey = alias.catalogKey!!
+                val state = stored[catalogKey]
+                val at = EpisodeListenerProjection.completionTime(nowMs, listOfNotNull(rowsById[alias.aliasId]), state)
+                EpisodeListenerProjection.withCompletion(state, podcastId, catalogKey, completed, at)
+            }
+        }
+    }
+
+    /**
+     * The ID whose row receives each of [episodeIds]' progress and completion ([historyId]),
+     * worked out in batches: IDs without a trusted alias and episodes stored under one ID map to
+     * themselves with no per-ID query.
+     */
+    suspend fun historyIds(episodeIds: Collection<String>): Map<String, String> {
+        val ids = episodeIds.distinct()
+        val keyed = trustedKeyedAliases(ids).map { it.aliasId }
+        val shared = if (keyed.isEmpty()) emptySet() else sharedAliases(keyed).mapTo(HashSet()) { it.aliasId }
+        if (shared.isEmpty()) return ids.associateWith { it }
+        return database.withTransaction {
+            ids.associateWith { id -> if (id in shared) resolve(id, storeOwner = true).ownerId else id }
+        }
+    }
+
+    /**
+     * Deletes the group settings of [episodeId]'s episode (its history is being removed) and
+     * returns them, so an Undo can put them back ([restoreGroupState]). Null when the ID has no
+     * trusted alias or the episode has no settings.
+     */
+    suspend fun removeGroupState(episodeId: String): EpisodeGroupStateEntity? {
+        val alias = aliases.getAlias(episodeId)?.takeIf { it.isTrustedKeyed() } ?: return null
+        val state = aliases.getGroupState(alias.podcastId, alias.catalogKey!!) ?: return null
+        aliases.deleteGroupState(state.podcastId, state.catalogKey)
+        return state
+    }
+
+    /** Puts back group settings that [removeGroupState] took away. */
+    suspend fun restoreGroupState(state: EpisodeGroupStateEntity) = aliases.upsertGroupState(state)
+
+    /** Deletes every episode's group settings, with the history they belong to. Aliases stay. */
+    suspend fun clearGroupStates() = aliases.deleteAllGroupStates()
 
     /**
      * The ID whose completed download plays [episodeId]: [episodeId] itself when it holds one, else
@@ -207,33 +300,64 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
      */
     suspend fun projectRows(rows: List<ListeningHistoryEntity>, keep: (ListeningHistoryEntity) -> Boolean = { true },): List<ListeningHistoryEntity> {
         val shared = sharedAliases(rows.map { it.episodeId })
-        return projectRows(rows, shared, keep)
+        return projectRows(rows, shared, keep, everyMember = false)
+    }
+
+    /**
+     * [rows] projected as [projectRows], but an episode stored under several IDs appears once per
+     * stored ID (each copy carries that ID), so a screen that looks an episode up by the ID it shows
+     * finds the projected state under any of its IDs. For lookups only; lists use [projectRows].
+     */
+    suspend fun projectRowsByMember(rows: List<ListeningHistoryEntity>, keep: (ListeningHistoryEntity) -> Boolean = { true },): List<ListeningHistoryEntity> {
+        val shared = sharedAliases(rows.map { it.episodeId })
+        return projectRows(rows, shared, keep, everyMember = true)
     }
 
     /**
      * [source] projected as [projectRows] does. The alias table is watched separately, so episodes
      * stored under one ID cost nothing extra per emission.
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun projectedRows(source: Flow<List<ListeningHistoryEntity>>, keep: (ListeningHistoryEntity) -> Boolean = { true },): Flow<List<ListeningHistoryEntity>> =
+        projectedRows(source, keep, everyMember = false)
+
+    /** [source] projected as [projectRowsByMember]: an episode stored under several IDs appears once per stored ID. */
+    fun projectedRowsByMember(source: Flow<List<ListeningHistoryEntity>>, keep: (ListeningHistoryEntity) -> Boolean = { true },): Flow<List<ListeningHistoryEntity>> =
+        projectedRows(source, keep, everyMember = true)
+
+    /**
+     * Every stored ID of each episode whose projected state is liked, from [likedRows] (the rows
+     * stored as liked). An ID of an episode stored under several IDs is in the set when the episode
+     * is liked, whichever of its IDs holds the like.
+     */
+    fun projectedLikedIds(likedRows: Flow<List<ListeningHistoryEntity>>): Flow<Set<String>> =
+        projectedRows(likedRows, { it.isLiked }, everyMember = true).map { rows -> rows.mapTo(HashSet()) { it.episodeId } }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun projectedRows(
+        source: Flow<List<ListeningHistoryEntity>>,
+        keep: (ListeningHistoryEntity) -> Boolean,
+        everyMember: Boolean,
+    ): Flow<List<ListeningHistoryEntity>> =
         combine(source, sharedAliasesFlow()) { rows, shared -> rows to shared }
             .mapLatest { (rows, shared) ->
                 val relevant = rows.mapTo(HashSet()) { it.episodeId }
-                projectRows(rows, shared.filter { it.aliasId in relevant }, keep)
+                projectRows(rows, shared.filter { it.aliasId in relevant }, keep, everyMember)
             }
 
     /**
      * [completedIds] (IDs whose own row is completed) as projected completion: an episode stored
      * under several IDs is completed for all of them or for none. [shared] is the shared trusted
      * aliases to consider ([EpisodeIdentityDao.sharedTrustedAliasesFlow]); only episodes with a
-     * completed row are re-evaluated.
+     * completed row, or whose group settings record a completion, are re-evaluated, so an episode
+     * that only its group settings mark completed reads completed here too.
      */
     suspend fun projectCompletedIds(completedIds: Collection<String>, shared: List<EpisodeAliasEntity>,): Set<String> {
         val completed = completedIds.toSet()
         if (shared.isEmpty()) return completed
         val result = completed.toMutableSet()
+        val completedInSettings = aliases.completedGroupStates().mapTo(HashSet()) { EpisodeGroup.tokenOf(it.podcastId, it.catalogKey)!! }
         val episodes = shared
-            .filter { it.aliasId in completed && it.catalogKey != null }
+            .filter { it.catalogKey != null && (it.aliasId in completed || EpisodeGroup.tokenOf(it.podcastId, it.catalogKey) in completedInSettings) }
             .distinctBy { EpisodeGroup.tokenOf(it.podcastId, it.catalogKey) }
         for (alias in episodes) {
             val group = resolve(alias.aliasId, storeOwner = false)
@@ -266,6 +390,7 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
         rows: List<ListeningHistoryEntity>,
         shared: List<EpisodeAliasEntity>,
         keep: (ListeningHistoryEntity) -> Boolean,
+        everyMember: Boolean,
     ): List<ListeningHistoryEntity> {
         if (shared.isEmpty()) return rows
         val tokenById = shared.associate { it.aliasId to EpisodeGroup.tokenOf(it.podcastId, it.catalogKey)!! }
@@ -276,8 +401,9 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
             if (token == null) {
                 result += row
             } else if (seenTokens.add(token)) {
-                val projected = project(resolve(row.episodeId, storeOwner = false))
-                if (projected != null && keep(projected)) result += projected
+                val group = resolve(row.episodeId, storeOwner = false)
+                val projected = project(group)?.takeIf(keep) ?: continue
+                if (everyMember) group.memberIds.mapTo(result) { projected.copy(episodeId = it) } else result += projected
             }
         }
         return result
@@ -292,6 +418,9 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
 
     private suspend fun sharedAliases(episodeIds: Collection<String>): List<EpisodeAliasEntity> =
         episodeIds.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { aliases.sharedTrustedAliases(it) }
+
+    private suspend fun trustedKeyedAliases(episodeIds: Collection<String>): List<EpisodeAliasEntity> =
+        episodeIds.filter { it.isNotBlank() }.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { aliases.getAliases(it) }.filter { it.isTrustedKeyed() }
 
     private suspend fun resolve(episodeId: String, storeOwner: Boolean,): EpisodeGroup {
         val alias = aliases.getAlias(episodeId)
@@ -325,6 +454,9 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
 
     private companion object {
         const val MAX_IDS_PER_QUERY = 500
+
+        /** Recent rows searched for an unfinished episode when the latest unfinished row's episode is finished. */
+        const val RECENT_SESSION_SCAN = 100
     }
 }
 

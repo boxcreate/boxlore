@@ -288,6 +288,36 @@ class AdaptiveCandidateScorerTest {
         assertTrue(result.values.all { it.isFinite() })
     }
 
+    /** A candidate listed under one ID of an episode finds the history stored under its other ID. */
+    @Test
+    fun anEpisodeCandidateFindsItsHistoryUnderItsOtherId() = runTest {
+        val token = "pod-1\u0000guid-a"
+        val withAliases =
+            AdaptiveCandidateScorer.create(repository, controls) { ids ->
+                ids.associateWith { if (it == "ep-1" || it == "ep-1-alias") token else it }
+            }
+        repository.updateFacet(PreferenceFacetType.GENRE, "Technology", reward = 1.0, now = nowMs)
+        fun inputs(id: String) = listOf(
+            EpisodeRankingInput(episode = episode(id = id), podcast = podcast(), priorScore = 5.0, source = CandidateSource.LOCAL_HISTORY),
+            EpisodeRankingInput(episode = episode(id = "ep-2", podcastId = "pod-2"), podcast = podcast(id = "pod-2", genre = "News"), priorScore = 2.0, source = CandidateSource.TRENDING),
+        )
+        val listened = history(episodeId = "ep-1", progressMs = 15 * 60 * 1000L)
+
+        val ownId = scorer.scoreEpisodes(inputs("ep-1"), listOf(listened), RankingObjective.DISCOVERY, RankingSurface.HOME, nowMs = nowMs)
+        // The same history stored under both IDs counts once.
+        val otherId = withAliases.scoreEpisodes(
+            inputs("ep-1-alias"),
+            listOf(listened, listened.copy(episodeId = "ep-1-alias", lastPlayedAt = nowMs - 120_000L)),
+            RankingObjective.DISCOVERY,
+            RankingSurface.HOME,
+            nowMs = nowMs,
+        )
+
+        assertEquals(setOf("ep-1-alias", "ep-2"), otherId.keys)
+        assertEquals(ownId.getValue("ep-1"), otherId.getValue("ep-1-alias"), 1e-9)
+        assertEquals(ownId.getValue("ep-2"), otherId.getValue("ep-2"), 1e-9)
+    }
+
     @Test
     fun rankEpisodesReturnsDiversifiedOrder() = runTest {
         controls.setShadowDiagnosticsEnabled(true)

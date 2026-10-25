@@ -240,6 +240,23 @@ interface QueueDao {
             return QueueRemovalIdentity.serializeList((kept + removed).takeLast(MAX_RECENT_REMOVED_EPISODES))
         }
 
+        /**
+         * [stored] rich removals that still hold after a pulled queue state was applied: only
+         * entries whose ID is still in [plainIds] (the plain removal list now stored) and whose
+         * episode isn't in [queued] (the queue now stored) under any ID. A pull replaces or merges
+         * the plain list and may queue an episode again, so the rich list never keeps a removal the
+         * plain list dropped or one that would remove a queued episode elsewhere.
+         *
+         * Added in P4 of the own-episode-IDs plan (plan section 8, rich queue tombstones).
+         */
+        fun richRemovalsWithin(stored: String?, plainIds: Collection<String>, queued: Collection<QueueRemovalIdentity>,): String? {
+            val entries = QueueRemovalIdentity.parseList(stored)
+            if (entries.isEmpty()) return stored
+            val plain = plainIds.toSet()
+            val kept = entries.filter { entry -> entry.id in plain && queued.none { it.sameEpisodeAs(entry) } }
+            return if (kept.size == entries.size) stored else QueueRemovalIdentity.serializeList(kept)
+        }
+
         /** [identities] plus an ID-only entry for each of [ids] they don't cover. */
         private fun withPlainIds(identities: Collection<QueueRemovalIdentity>, ids: Collection<String>,): List<QueueRemovalIdentity> {
             val covered = identities.mapTo(HashSet()) { it.id }
