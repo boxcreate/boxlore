@@ -68,6 +68,22 @@ interface PodcastDao {
     @Query("SELECT * FROM podcasts WHERE isSubscribed = 1 AND sourceType = 'podcast_index' ORDER BY title ASC")
     suspend fun getSubscribedPodcastIndexPodcasts(): List<PodcastEntity>
 
+    /**
+     * Followed RSS shows that replaced a Podcast Index show the listener no longer follows
+     * (`linkedPodcastIndexId`), watched: listening read by show counts the old show's rows as the
+     * RSS show's, because switching keeps every row under its stored show.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+     */
+    @Query(
+        """
+        SELECT * FROM podcasts
+        WHERE isSubscribed = 1 AND sourceType = 'rss' AND linkedPodcastIndexId IS NOT NULL
+          AND linkedPodcastIndexId NOT IN (SELECT podcastId FROM podcasts WHERE isSubscribed = 1)
+        """,
+    )
+    fun observeSwitchedRssShows(): Flow<List<PodcastEntity>>
+
     @Query("SELECT * FROM podcasts WHERE linkedPodcastIndexId = :podcastIndexId LIMIT 1")
     suspend fun getRssPodcastLinkedTo(podcastIndexId: String): PodcastEntity?
 

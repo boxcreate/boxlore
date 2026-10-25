@@ -24,6 +24,8 @@ class RssEpisodeCatalog internal constructor(
     private val database: BoxLoreDatabase,
     private val feedClient: RssFeedClient,
     private val locks: ConcurrentHashMap<String, Mutex>,
+    /** Links a switched show's new episodes after each persisted read (decision D8). */
+    private val switchedShowLinker: SwitchedShowLinker = SwitchedShowLinker(database),
 ) : LocalEpisodeCatalogPort {
     private val podcasts = database.podcastDao()
     private val episodes = database.rssEpisodeDao()
@@ -156,7 +158,9 @@ class RssEpisodeCatalog internal constructor(
             podcasts.upsert(updatedPodcast(current, parsed, fetched, tip))
             persisted = true
         }
-        return if (persisted) RefreshOutcome.Success(newest(id, request.meta), episodes.count(id), ready = true) else failure()
+        if (!persisted) return failure()
+        switchedShowLinker.relinkQuietly(id)
+        return RefreshOutcome.Success(newest(id, request.meta), episodes.count(id), ready = true)
     }
 
     private suspend fun canPersist(request: RefreshRequest, existing: PodcastEntity, current: PodcastEntity): Boolean {

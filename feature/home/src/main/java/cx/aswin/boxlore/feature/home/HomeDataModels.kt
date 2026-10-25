@@ -41,6 +41,8 @@ data class HomeDataWrapper(
     val pinnedPodcastIds: List<String> = emptyList(),
     val showsOrderRefreshGeneration: Long = 0L,
     val scoringHistory: List<ListeningHistoryEntity> = emptyList(),
+    /** Every ID of each episode stored under several IDs, for lookups by the ID a row lists. */
+    val episodeAliases: Map<String, Set<String>> = emptyMap(),
 )
 
 internal data class HomeCoreSlice(
@@ -50,6 +52,8 @@ internal data class HomeCoreSlice(
     val history: List<HomeListeningHistoryItem>,
     val resolvedSerial: Map<String, Episode>,
     val scoringHistory: List<ListeningHistoryEntity>,
+    /** Every ID of each episode stored under several IDs (`PlaybackRepository.episodeAliasGroups`). */
+    val episodeAliases: Map<String, Set<String>> = emptyMap(),
 )
 
 internal data class HomeRecsSlice(

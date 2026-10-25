@@ -212,6 +212,42 @@ class AdaptiveCandidateScorerTest {
         }
     }
 
+    /**
+     * A show switched to its feed keeps its listening under the Podcast Index show's IDs: its scores
+     * read that listening (its latest episode, finished under the old ID, is not unplayed) exactly as
+     * if the rows had moved to the feed show.
+     */
+    @Test
+    fun aSwitchedShowReadsItsOldShowsListeningForItsLatestEpisode() = runTest {
+        // The adaptive features read the latest episode's history.
+        controls.setSurfaceEnabled(RankingSurface.EXPLORE, true)
+        val withAliases =
+            AdaptiveCandidateScorer.create(repository, controls) { ids ->
+                ids.associateWith { if (it == "old-1" || it == "feed-1") "pod-pi\u0000guid-a" else it }
+            }
+        val switched = scorable(id = "rss:feed", latest = episode(id = "feed-1", podcastId = "rss:feed")).copy(listenerShowIds = setOf("rss:feed", "pod-pi"))
+        val finished = history(episodeId = "old-1", podcastId = "pod-pi", progressMs = 0L, isCompleted = true, isLiked = true)
+        for ((objective, surface) in listOf(RankingObjective.YOUR_SHOWS to RankingSurface.HOME, RankingObjective.CONTINUATION to RankingSurface.EXPLORE)) {
+            val linked =
+                withAliases.scorePodcasts(
+                    podcasts = listOf(switched, scorable(id = "pod-2")),
+                    history = listOf(finished),
+                    objective = objective,
+                    surface = surface,
+                    nowMs = nowMs,
+                )
+            val moved =
+                scorer.scorePodcasts(
+                    podcasts = listOf(switched.copy(listenerShowIds = setOf("rss:feed")), scorable(id = "pod-2")),
+                    history = listOf(finished.copy(episodeId = "feed-1", podcastId = "rss:feed")),
+                    objective = objective,
+                    surface = surface,
+                    nowMs = nowMs,
+                )
+            assertEquals(objective.name, moved, linked)
+        }
+    }
+
     @Test
     fun scoreEpisodesEmptyReturnsEmpty() = runTest {
         val result =

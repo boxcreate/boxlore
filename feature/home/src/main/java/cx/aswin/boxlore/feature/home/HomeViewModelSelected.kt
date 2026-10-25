@@ -3,8 +3,10 @@ package cx.aswin.boxlore.feature.home
 import androidx.lifecycle.viewModelScope
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.episodeGroupTokens
 import cx.aswin.boxlore.feature.home.logic.HomeForegroundSyncLogic
 import cx.aswin.boxlore.feature.home.logic.HomeSelectedPodcastLogic
+import cx.aswin.boxlore.feature.home.logic.HomeSerialLogic
 import cx.aswin.boxlore.feature.home.logic.HomeYourShowsSignals
 import cx.aswin.boxlore.feature.home.logic.settledCatalogChanges
 import kotlinx.coroutines.CancellationException
@@ -65,10 +67,12 @@ internal fun HomeViewModel.observeSelectedPodcast() {
                                 offset = 0,
                                 sort = "oldest",
                             )
+                        // History keeps an episode under its owner ID; find it under the ID the list uses.
+                        val tokens = playbackRepository.episodeGroupTokens(page.episodes.map { it.id } + listOfNotNull(lastPlayedEpisodeId))
                         val selectedRaw =
                             HomeSelectedPodcastLogic.oldestSortWindow(
                                 allEpisodes = page.episodes,
-                                lastPlayedEpisodeId = lastPlayedEpisodeId,
+                                lastPlayedEpisodeId = HomeSerialLogic.idInList(lastPlayedEpisodeId, page.episodes, tokens),
                             )
                         android.util.Log.d(
                             "HomeViewModelFilteredView",

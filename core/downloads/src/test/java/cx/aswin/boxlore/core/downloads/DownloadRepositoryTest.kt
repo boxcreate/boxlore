@@ -6,11 +6,15 @@ import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeDao
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
+import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncher
 import cx.aswin.boxlore.core.downloads.ports.DownloadServiceLauncherHolder
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.ranking.RankingFeedbackRepository
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -380,6 +384,63 @@ class DownloadRepositoryTest {
         assertEquals(DownloadedEpisodeEntity.STATUS_COMPLETED, updated!!.status)
         assertFalse(updated.isSmartDownloaded)
     }
+
+    /**
+     * A show switched to its feed (docs/EPISODE_IDS.md §5, decision D8): "pi-1" holds the download
+     * of the episode the feed show lists as "-1". The feed ID reads as downloaded, asks to remove
+     * the download instead of starting a second one, and removing it there removes the old ID's.
+     */
+    @Test
+    fun `an episode downloaded under another of its IDs reads as downloaded and is removed from there`() {
+        withDownloadTestLooper {
+            linkFeedId()
+            dao.insert(downloadEntity(episodeId = "pi-1", status = DownloadedEpisodeEntity.STATUS_COMPLETED))
+        }
+
+        val state = withDownloadTestLooper {
+            listOf(
+                repository.isDownloaded("-1").first(),
+                repository.isDownloading("-1").first(),
+                "-1" in repository.completedDownloadIds.first(),
+                repository.isDownloaded("solo").first(),
+            )
+        }
+        assertEquals(listOf(true, false, true, false), state)
+        assertEquals(DownloadToggleAction.CONFIRM_REMOVAL, DownloadTogglePolicy.resolveAction(isDownloaded = state[0], isDownloading = state[1]))
+
+        // Starting one anyway (a selection, another screen) never makes a second copy.
+        repository.addDownload(feedEpisode(), Podcast(id = "rss:feed", title = "Feed", artist = "", imageUrl = ""), isForeground = false)
+        assertFalse(withDownloadTestLooper { pollUntil(timeoutMs = 300L) { dao.getDownload("-1") != null } })
+        assertFalse(withDownloadTestLooper { repository.addAutoDownload(feedEpisode(), Podcast(id = "rss:feed", title = "Feed", artist = "", imageUrl = "")) })
+
+        withDownloadTestLooper { repository.removeDownload("-1").join() }
+        assertTrue(withDownloadTestLooper { pollUntil { dao.getDownload("pi-1") == null } })
+    }
+
+    @Test
+    fun `a running download under another ID reads as downloading for every ID of the episode`() {
+        withDownloadTestLooper {
+            linkFeedId()
+            dao.insert(downloadEntity(episodeId = "pi-1", status = DownloadedEpisodeEntity.STATUS_DOWNLOADING))
+        }
+
+        val state = withDownloadTestLooper {
+            listOf(repository.isDownloading("-1").first(), "-1" in repository.downloadingEpisodeIds.first(), repository.isDownloaded("-1").first())
+        }
+
+        assertEquals(listOf(true, true, false), state)
+    }
+
+    private suspend fun linkFeedId() {
+        database.episodeIdentityDao().insertAliasesIfAbsent(
+            listOf(
+                EpisodeAliasEntity("pi-1", "920666", "guid-a", null, EpisodeAliasState.TRUSTED, true, EpisodeAliasProvenance.UPGRADE_CATALOG, 1L),
+                EpisodeAliasEntity("-1", "920666", "guid-a", null, EpisodeAliasState.TRUSTED, false, EpisodeAliasProvenance.RSS_SOURCE_LINK, 2L),
+            ),
+        )
+    }
+
+    private fun feedEpisode() = Episode(id = "-1", title = "Feed episode", description = "", audioUrl = "https://example.com/feed-1.mp3", podcastId = "rss:feed")
 
     @Test
     fun `removeDownload purges database row and executes direct removeDownload`() {

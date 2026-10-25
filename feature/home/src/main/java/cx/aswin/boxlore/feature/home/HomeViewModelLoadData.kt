@@ -5,6 +5,7 @@ import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.playback.MixtapeEngine
 import cx.aswin.boxlore.core.playback.completedEpisodeIds
+import cx.aswin.boxlore.core.playback.episodeAliasGroups
 import cx.aswin.boxlore.core.playback.resumeSessions
 import cx.aswin.boxlore.core.ranking.RankingObjective
 import cx.aswin.boxlore.core.ranking.RankingSurface
@@ -84,10 +85,11 @@ internal fun HomeViewModel.loadData() {
                         trendingState, // Hot StateFlow — never completes
                         playbackRepository.resumeSessions,
                         subscriptionRepository.subscribedPodcasts,
-                        playbackRepository.getAllHistory(),
+                        // History keeps an episode stored under several IDs under its owner's ID.
+                        combine(playbackRepository.getAllHistory(), playbackRepository.episodeAliasGroups, ::Pair),
                         _resolvedSerialEpisodes,
-                    ) { trending, resume, subs, history, resolvedSerial ->
-                        HomeCoreSlice(trending, resume, subs, history.map { it.toHomeListeningHistoryItem() }, resolvedSerial, history)
+                    ) { trending, resume, subs, (history, episodeAliases), resolvedSerial ->
+                        HomeCoreSlice(trending, resume, subs, history.map { it.toHomeListeningHistoryItem() }, resolvedSerial, history, episodeAliases)
                     }
                 val recsSlice =
                     combine(
@@ -149,6 +151,7 @@ internal fun HomeViewModel.loadData() {
                             subs = core.subs,
                             history = core.history,
                             scoringHistory = core.scoringHistory,
+                            episodeAliases = core.episodeAliases,
                             resolvedSerial = core.resolvedSerial,
                             recommendations = recs.recommendations,
                             completedEpisodeIds = recs.completedEpisodeIds,
@@ -269,6 +272,7 @@ internal fun HomeViewModel.loadData() {
                                 resumeList = resumeList,
                                 subs = subs,
                                 allHistory = allHistory,
+                                episodeAliases = wrapper.episodeAliases,
                                 resolvedSerial = resolvedSerial,
                                 completedEpisodeIds = completedEpisodeIds,
                                 region = region,

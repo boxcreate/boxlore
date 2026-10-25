@@ -16,6 +16,7 @@ import cx.aswin.boxlore.core.playback.savePlaybackState
 import cx.aswin.boxlore.core.playback.toggleCompletion
 import cx.aswin.boxlore.core.playback.toggleLike
 import cx.aswin.boxlore.core.playback.togglePlayPause
+import cx.aswin.boxlore.core.playback.withEpisodeAliases
 import cx.aswin.boxlore.feature.info.logic.EpisodeOfflineMergeLogic
 import cx.aswin.boxlore.feature.info.logic.collectSimilarEpisodes
 import cx.aswin.boxlore.feature.info.logic.sharedLookup
@@ -640,12 +641,15 @@ class EpisodeInfoViewModel(
         }
     }
 
-    // Track queued episodes
+    // Track queued episodes, under every stored ID of each queued episode: a show switched to its
+    // feed lists an episode under its feed ID while the queue may hold it under the old one.
     val queuedEpisodeIds: StateFlow<Set<String>> =
-        playbackRepository.playerState
-            .map { state -> state.queue.map { it.id }.toSet() }
-            .distinctUntilChanged()
-            .stateIn(
+        playbackRepository
+            .withEpisodeAliases(
+                playbackRepository.playerState
+                    .map { state -> state.queue.map { it.id }.toSet() }
+                    .distinctUntilChanged(),
+            ).stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptySet(),

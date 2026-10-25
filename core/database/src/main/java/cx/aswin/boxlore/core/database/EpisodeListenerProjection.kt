@@ -115,6 +115,24 @@ object EpisodeListenerProjection {
         }
     }
 
+    /**
+     * [ids] plus every other ID of their episodes among [shared] (trusted aliases that share their
+     * episode with another trusted ID, `EpisodeIdentityDao.sharedTrustedAliasesFlow`).
+     */
+    fun withSharedAliases(ids: Set<String>, shared: List<EpisodeAliasEntity>,): Set<String> {
+        if (shared.isEmpty() || ids.isEmpty()) return ids
+        val tokenById = HashMap<String, String>()
+        val membersByToken = HashMap<String, MutableList<String>>()
+        for (alias in shared) {
+            val token = EpisodeGroup.tokenOf(alias.podcastId, alias.catalogKey) ?: continue
+            tokenById[alias.aliasId] = token
+            membersByToken.getOrPut(token) { ArrayList() } += alias.aliasId
+        }
+        val tokens = ids.mapNotNullTo(HashSet()) { tokenById[it] }
+        if (tokens.isEmpty()) return ids
+        return ids + tokens.flatMap { membersByToken.getValue(it) }
+    }
+
     private fun latest(rows: List<Decision>, group: List<Decision>,): Decision {
         val latestRowAt = rows.maxOfOrNull { it.at }
         val latestGroup = group.maxByOrNull { it.at }

@@ -27,6 +27,13 @@ class RankingHistory private constructor(
     /** The episode's history row, found by any of its IDs. */
     fun forEpisode(episodeId: String): ListeningHistoryEntity? = byToken[keyOf(episodeId)]
 
+    /**
+     * [forEpisode] when the row belongs to one of [showIds]: a show's own rows, and for a show the
+     * listener switched to its feed, the rows its old Podcast Index show keeps (`listenerShowIds`;
+     * decision D8). A row of an unrelated show that happens to share the ID is never the show's.
+     */
+    fun forShowEpisode(episodeId: String, showIds: Set<String>,): ListeningHistoryEntity? = forEpisode(episodeId)?.takeIf { it.podcastId in showIds }
+
     companion object {
         /** Each ID its own episode: today's behaviour. */
         fun ofOwnIds(history: List<ListeningHistoryEntity>): RankingHistory = of(history, emptyMap())

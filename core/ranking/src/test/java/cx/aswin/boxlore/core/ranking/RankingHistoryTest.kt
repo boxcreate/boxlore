@@ -33,6 +33,17 @@ class RankingHistoryTest {
         assertEquals("C", once.keyOf("C"))
     }
 
+    @Test
+    fun aSwitchedShowFindsItsLatestEpisodeInTheRowsItsOldShowKeeps() {
+        // "B" is the feed show's ID of the episode; its history stays under the old show "pod-1" as "A".
+        val once = RankingHistory.of(listOf(row("A", playedAt = 3L)), tokens)
+
+        assertEquals("A", once.forShowEpisode("B", setOf("rss:feed", "pod-1"))?.episodeId)
+        // A show that replaced nothing doesn't read another show's rows.
+        assertNull(once.forShowEpisode("B", setOf("rss:feed")))
+        assertEquals("A", once.forShowEpisode("A", setOf("pod-1"))?.episodeId)
+    }
+
     private fun row(id: String, playedAt: Long,) = ListeningHistoryEntity(
         episodeId = id,
         podcastId = "pod-1",

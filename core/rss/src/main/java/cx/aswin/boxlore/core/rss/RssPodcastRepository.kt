@@ -37,7 +37,8 @@ class RssPodcastRepository private constructor(
     private val podcastDao = database.podcastDao()
     private val episodeDao = database.rssEpisodeDao()
     private val refreshLocks = ConcurrentHashMap<String, Mutex>()
-    val episodeCatalog = RssEpisodeCatalog(database, feedClient, refreshLocks)
+    private val switchedShowLinker = SwitchedShowLinker(database)
+    val episodeCatalog = RssEpisodeCatalog(database, feedClient, refreshLocks, switchedShowLinker)
     val legacySubscriptionRepair =
         LegacyRssSubscriptionRepair(
             database = database,
@@ -137,9 +138,14 @@ class RssPodcastRepository private constructor(
         database.withTransaction {
             podcastDao.upsert(entity)
             episodeDao.upsertAll(sticky.episodes)
-            exactMatch?.let { matched -> linkSwitchedShow(podcastIndexPodcast = matched, rssEpisodes = sticky.episodes) }
+            exactMatch?.let { matched -> switchShow(podcastIndexId = matched.podcastId, rssEpisodes = sticky.episodes, feedProven = true) }
         }
-        exactMatch?.let { unsubscribeFromPodcastIndexNotifications(it.podcastId) }
+        if (exactMatch != null) {
+            unsubscribeFromPodcastIndexNotifications(exactMatch.podcastId)
+        } else if (entity.linkedPodcastIndexId != null) {
+            // Followed again, or restored with its link: link the episodes again (decision D8).
+            switchedShowLinker.relinkQuietly(podcastId)
+        }
         RssSubscriptionResult(
             podcast = entity.toPodcast(),
             episodeCount = sticky.episodes.size,
@@ -174,7 +180,11 @@ class RssPodcastRepository private constructor(
                         customGenreIcon = rssPodcast.customGenreIcon ?: podcastIndexPodcast.customGenreIcon,
                     )
                 podcastDao.upsert(linkedRssPodcast)
-                linkSwitchedShow(podcastIndexPodcast = podcastIndexPodcast, rssEpisodes = episodeDao.getAllNewest(rssPodcastId))
+                // The listener confirmed a show that may only look the same (title and author), so a
+                // key alone proves an episode only when the feed itself is the show's (decision D8).
+                val feedProven =
+                    rssPodcast.feedUrl?.let { RssSourceMatcher.feedIdentityMatches(it, rssPodcast.podcastGuid, podcastIndexPodcast) } == true
+                switchShow(podcastIndexId = podcastIndexId, rssEpisodes = episodeDao.getAllNewest(rssPodcastId), feedProven = feedProven)
                 linkedRssPodcast.toPodcast()
             }
         unsubscribeFromPodcastIndexNotifications(podcastIndexId)
@@ -187,6 +197,16 @@ class RssPodcastRepository private constructor(
 
     private suspend fun refreshEpisodes(podcastId: String, manual: Boolean): Result<Int> {
         markRefreshing(podcastId, true)
+        return try {
+            // Links exist only where they were written: every refresh, changed or not, links a
+            // switched show again, so a restored show and rows that arrived later link too (D8).
+            refreshEpisodesOnce(podcastId, manual).also { switchedShowLinker.relinkQuietly(podcastId) }
+        } finally {
+            markRefreshing(podcastId, false)
+        }
+    }
+
+    private suspend fun refreshEpisodesOnce(podcastId: String, manual: Boolean): Result<Int> {
         return try {
             val row = podcastDao.getPodcast(podcastId) ?: error(ERROR_RSS_SUBSCRIPTION_NOT_FOUND)
             val outcome = episodeCatalog.refresh(
@@ -209,8 +229,6 @@ class RssPodcastRepository private constructor(
             throw error
         } catch (error: Exception) {
             Result.failure(error)
-        } finally {
-            markRefreshing(podcastId, false)
         }
     }
 
@@ -327,41 +345,31 @@ class RssPodcastRepository private constructor(
      * any listener state (decision D8; docs/EPISODE_IDS.md §5). History, likes, completion, the
      * queue, downloads, sessions and rollups stay under their stored IDs and show. Instead, each RSS
      * episode that matches an episode those rows hold gets an alias under the Podcast Index show
-     * ([ListenerStateMoves.switchedShowAliases]): trusted when the old ID's trusted key is the RSS
-     * episode's key and unique, so the RSS episode reads the old IDs' projected state, its progress
-     * goes to the episode's owner and offline playback uses the ID that holds the completed
-     * download; ambiguous otherwise. Every ID, including `rss:` show IDs and negative RSS IDs, stays
-     * as it is, so switching again or following the Podcast Index show again keeps everything.
+     * ([SwitchedShowLinker.link]): trusted for an exact, unique match, so the RSS episode reads the
+     * old IDs' projected state, its progress goes to the episode's owner and offline playback uses
+     * the ID that holds the completed download; ambiguous otherwise. Per-show reads count the
+     * Podcast Index show's rows as the RSS show's (`Podcast.listenerShowIds`). Every ID, including
+     * `rss:` show IDs and negative RSS IDs, stays as it is, so switching again or following the
+     * Podcast Index show again keeps everything. Runs in the caller's transaction.
      *
      * Changed in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8):
      * before, the switch re-keyed history, downloads (relinking their cache) and queue rows onto the
      * RSS show's IDs.
      * COMPAT(own-ids): the switch records aliases instead of re-keying. Permanent: never remove (MIGRATION.md §5).
      */
-    private suspend fun linkSwitchedShow(podcastIndexPodcast: PodcastEntity, rssEpisodes: List<RssEpisodeEntity>,) {
-        val podcastIndexId = podcastIndexPodcast.podcastId
-        val references = database.listenerReferences(podcastIndexId)
-        val identityDao = database.episodeIdentityDao()
-        val aliasesById =
-            references
-                .map { it.episodeId }
-                .distinct()
-                .chunked(MAX_IDS_PER_QUERY)
-                .flatMap { identityDao.getAliases(it) }
-                .associateBy { it.aliasId }
-        val epNs = EpisodeNamespaces.choose(podcastIndexId, catalogEpNs = null, showEpNs = podcastDao.getEpNs(podcastIndexId))
-        val links =
-            ListenerStateMoves.switchedShowAliases(
-                podcastIndexId = podcastIndexId,
-                references = references,
-                aliasesById = aliasesById,
-                rssEpisodes = rssEpisodes,
-                epNs = epNs,
-                nowMs = System.currentTimeMillis(),
-            )
-        links.chunked(MAX_IDS_PER_QUERY).forEach { identityDao.insertAliasesIfAbsent(it) }
+    private suspend fun switchShow(podcastIndexId: String, rssEpisodes: List<RssEpisodeEntity>, feedProven: Boolean,) {
+        switchedShowLinker.link(podcastIndexId, rssEpisodes, feedProven)
         podcastDao.retireLinkedPodcastIndexSubscription(podcastIndexId)
     }
+
+    /**
+     * Links the followed RSS show [rssPodcastId] again with the Podcast Index show it replaced
+     * ([SwitchedShowLinker.relink]); nothing happens for any other show. Called after a library
+     * backup restore brings the show back with its link; feed refreshes link on their own.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+     */
+    suspend fun relinkSwitchedShow(rssPodcastId: String) = withContext(Dispatchers.IO) { switchedShowLinker.relinkQuietly(rssPodcastId) }
 
     private fun unsubscribeFromPodcastIndexNotifications(podcastIndexId: String) {
         runCatching {
@@ -389,7 +397,6 @@ class RssPodcastRepository private constructor(
     companion object {
         private const val ERROR_RSS_SUBSCRIPTION_NOT_FOUND = "RSS subscription not found"
         private const val ERROR_NOT_RSS_SUBSCRIPTION = "Podcast is not an RSS subscription"
-        private const val MAX_IDS_PER_QUERY = 500
 
         @Volatile
         private var INSTANCE: RssPodcastRepository? = null

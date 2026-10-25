@@ -40,7 +40,7 @@ internal object ListenerStateMoves {
 
     /**
      * The alias that joins [row] (a catalog row holding [orphan]'s key under another ID) to
-     * [orphan]'s episode: trusted, never the owner, provenance `catalog_key_match`. Null when
+     * [orphan]'s episode: trusted, recorded as a non-owner, provenance `catalog_key_match`. Null when
      * [row]'s ID already belongs to that episode, or holds a trusted alias of another key or an
      * ambiguous one, which are left as they are. An unresolved alias of the row's ID is resolved by it.
      */
@@ -69,8 +69,8 @@ internal object ListenerStateMoves {
         alias?.takeIf { it.state == EpisodeAliasState.TRUSTED && it.catalogKey != null && it.podcastId == podcastId }
 
     /**
-     * The alias recording that [oldId]'s state moved onto [target]'s episode: trusted, never the
-     * owner (the catalog row now holds the state). Null without a target alias.
+     * The alias recording that [oldId]'s state moved onto [target]'s episode: trusted, recorded as a
+     * non-owner (the catalog row now holds the state). Null without a target alias.
      */
     fun movedAlias(oldId: String, target: EpisodeAliasEntity?, nowMs: Long,): EpisodeAliasEntity? {
         target ?: return null
@@ -91,35 +91,72 @@ internal object ListenerStateMoves {
      * Index show holds, instead of moving that state onto the RSS show's IDs (decision D8;
      * docs/EPISODE_IDS.md §5). [references] are the Podcast Index show's history, queue and download
      * rows ([listenerReferences]); none of them changes ID or show.
-     * - **Trusted** when a row's ID has a trusted, keyed alias of [podcastIndexId] and exactly one of
-     *   [rssEpisodes] has that catalog key: the RSS episode's ID joins that episode, never as its
-     *   owner. Reads then project the old IDs' state under the RSS ID, progress goes to the episode's
-     *   owner and playback uses the ID that holds the completed download.
-     *   A weaker match from another old ID doesn't undo it: the key is the episode's identity.
-     * - **Ambiguous** otherwise: several RSS episodes share the key, or the match is only by audio
-     *   address, title or date ([RssSourceMatcher.findMatchingEpisode]) because the old ID has no
-     *   trusted key of this show that an RSS episode has. An ambiguous alias never resolves and never
-     *   moves state; it records the candidate for later evidence.
+     * - **Trusted by key** when a row's ID has a trusted, keyed alias of [podcastIndexId] and exactly
+     *   one of [rssEpisodes] has that catalog key. When [feedProven] is false (the listener confirmed
+     *   a show that only looks the same: title and author), one of the old ID's rows must also have
+     *   the RSS episode's audio address or title, so a feed with generic GUIDs ("1", "2") never
+     *   links another show's episode. A weaker match from another old ID doesn't undo a trusted key
+     *   match: the key is the episode's identity.
+     * - **Trusted by audio address** when an old ID has no alias, or an unresolved alias of
+     *   [podcastIndexId] (played before the show was followed, or a v39 listener-only or
+     *   address-keyed ID), its rows name exactly one RSS episode by audio address, that episode has
+     *   a GUID, and no other old ID points at it. The old ID's alias is settled first
+     *   ([SwitchedShowLinkPlan.settled]: trusted under [podcastIndexId] with that episode's key,
+     *   provenance `rss_source_audio_match`), then the RSS ID joins it, as the orphan rematch and
+     *   a catalog read treat an exact audio address.
+     * - **Ambiguous** otherwise: several RSS episodes share the key, the match is only by title or
+     *   date ([RssSourceMatcher.findMatchingEpisode]), or the evidence above is incomplete. An
+     *   ambiguous alias never resolves and never moves state; a later link with exact evidence makes
+     *   it trusted ([linkWrite]).
      * An old ID whose own alias is ambiguous links nothing: it never resolves. Aliases are recorded
      * under [podcastIndexId] with provenance `rss_source_link`, and only for episodes of the
-     * switched-to show, so unrelated shows are never linked. An RSS episode whose ID the Podcast
-     * Index show's rows already hold is that episode and gets no alias. The caller inserts the
-     * aliases only where an ID has none yet, so switching again changes nothing.
+     * switched-to show, so unrelated shows are never linked. An RSS ID joins as a non-owner;
+     * ownership then follows the §5 owner rule like any trusted ID. An RSS episode whose ID the
+     * Podcast Index show's rows already hold is that episode and gets no alias.
      *
      * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
      * COMPAT(own-ids): a show switched to its feed reads its old IDs' state. Permanent: never remove (MIGRATION.md §5).
      *
      * @param aliasesById the aliases of the IDs [references] hold
-     * @param epNs the Podcast Index show's episode namespace, for an ambiguous alias's recipe ID; null when it has none
+     * @param epNs the Podcast Index show's episode namespace, for the aliases' recipe IDs; null when it has none
+     * @param feedProven the RSS feed is the Podcast Index show's own feed (same address or podcast GUID)
      */
-    fun switchedShowAliases(
+    @Suppress("LongParameterList")
+    fun switchedShowLinks(
         podcastIndexId: String,
         references: List<LocalCatalogListenerReference>,
         aliasesById: Map<String, EpisodeAliasEntity>,
         rssEpisodes: List<RssEpisodeEntity>,
         epNs: Long?,
+        feedProven: Boolean,
         nowMs: Long,
-    ): List<EpisodeAliasEntity> = SwitchedShowLinks(podcastIndexId, aliasesById, rssEpisodes, epNs, nowMs).aliases(references)
+    ): SwitchedShowLinkPlan = SwitchedShowLinks(podcastIndexId, aliasesById, rssEpisodes, epNs, feedProven, nowMs).plan(references)
+
+    /**
+     * What to store for [link] given the RSS ID's stored alias [existing]: [link] when the ID has no
+     * alias; the stored alias made trusted (with [link]'s key) when it is an ambiguous
+     * `rss_source_link` alias of the same Podcast Index show and exact evidence now exists; null
+     * otherwise. A trusted alias is never downgraded, and an alias of another provenance or show is
+     * never touched, so linking again changes nothing else.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+     */
+    fun linkWrite(existing: EpisodeAliasEntity?, link: EpisodeAliasEntity,): EpisodeAliasEntity? = when {
+        existing == null -> link
+        existing.provenance == EpisodeAliasProvenance.RSS_SOURCE_LINK &&
+            existing.podcastId == link.podcastId &&
+            existing.state == EpisodeAliasState.AMBIGUOUS &&
+            link.state == EpisodeAliasState.TRUSTED -> existing.copy(state = EpisodeAliasState.TRUSTED, catalogKey = link.catalogKey, recipeId = link.recipeId)
+        else -> null
+    }
+
+    /** True when [a] and [b] are the same title once case, spaces and punctuation are ignored. */
+    fun sameTitle(a: String?, b: String?,): Boolean {
+        val left = a?.let(::normalizedTitle).orEmpty()
+        return left.isNotEmpty() && left == b?.let(::normalizedTitle)
+    }
+
+    private fun normalizedTitle(value: String): String = value.lowercase(java.util.Locale.ROOT).filter(Char::isLetterOrDigit)
 
     /** Completed when either row is, unless the group settings hold a decision at least as late as every completed row's. */
     fun mergedCompletion(rows: List<ListeningHistoryEntity>, groupState: EpisodeGroupStateEntity?,): Boolean {
@@ -134,7 +171,22 @@ internal object ListenerStateMoves {
 }
 
 /**
- * Works out [ListenerStateMoves.switchedShowAliases]: one claim per (old ID, RSS episode) match,
+ * What linking an RSS show to the Podcast Index show it replaced writes
+ * ([ListenerStateMoves.switchedShowLinks]).
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+ *
+ * @property links one alias per matched RSS episode, stored through [ListenerStateMoves.linkWrite]
+ * @property settled old IDs (no alias, or an unresolved one) whose alias the link makes trusted; the
+ *   caller marks one owner when the episode has none
+ */
+internal data class SwitchedShowLinkPlan(
+    val links: List<EpisodeAliasEntity>,
+    val settled: List<EpisodeAliasEntity>,
+)
+
+/**
+ * Works out [ListenerStateMoves.switchedShowLinks]: one claim per (old ID, RSS episode) match,
  * then one alias per RSS episode.
  *
  * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
@@ -144,23 +196,34 @@ private class SwitchedShowLinks(
     private val aliasesById: Map<String, EpisodeAliasEntity>,
     private val rssEpisodes: List<RssEpisodeEntity>,
     private val epNs: Long?,
+    private val feedProven: Boolean,
     private val nowMs: Long,
 ) {
-    /** An RSS episode that one old ID points at, under [key], and whether the key match was exact and unique. */
-    private data class Claim(val rssId: String, val key: String?, val recipeId: Long?, val exact: Boolean,)
+    /**
+     * An RSS episode that one old ID points at, under [key], and whether the match is exact. An
+     * [byAudio] claim is an exact audio address match of an old ID with no usable alias; it stays
+     * exact only while no other old ID points at the same RSS episode.
+     */
+    private data class Claim(val oldId: String, val rssId: String, val key: String?, val recipeId: Long?, val exact: Boolean, val byAudio: Boolean = false,)
 
     private val rssKeys: Map<String, String?> = rssEpisodes.associate { it.episodeId to EpisodeRecipeId.catalogKey(it.guid, it.audioUrl) }
     private val rssByKey: Map<String, List<RssEpisodeEntity>> =
         rssEpisodes.mapNotNull { episode -> rssKeys[episode.episodeId]?.let { it to episode } }.groupBy({ it.first }, { it.second })
+    private val rssByAudio: Map<String, List<RssEpisodeEntity>> =
+        rssEpisodes.filter { it.audioUrl.isNotBlank() }.groupBy { it.audioUrl.trim() }
 
-    fun aliases(references: List<LocalCatalogListenerReference>): List<EpisodeAliasEntity> {
+    fun plan(references: List<LocalCatalogListenerReference>): SwitchedShowLinkPlan {
         val heldIds = references.mapTo(HashSet()) { it.episodeId }
-        return references
+        val claims = references
             .groupBy { it.episodeId }
             .flatMap { (oldId, rows) -> claims(oldId, rows) }
             .filter { it.rssId !in heldIds }
-            .groupBy { it.rssId }
-            .map { (rssId, claims) -> aliasOf(rssId, claims) }
+        val claimants = claims.groupBy { it.rssId }.mapValues { (_, byRss) -> byRss.mapTo(HashSet()) { it.oldId } }
+        val resolved = claims.map { claim -> if (claim.byAudio && claimants.getValue(claim.rssId).size > 1) claim.copy(exact = false) else claim }
+        return SwitchedShowLinkPlan(
+            links = resolved.groupBy { it.rssId }.map { (rssId, byRss) -> aliasOf(rssId, byRss) },
+            settled = resolved.filter { it.byAudio && it.exact }.map(::settledAlias),
+        )
     }
 
     private fun claims(oldId: String, rows: List<LocalCatalogListenerReference>,): List<Claim> {
@@ -168,19 +231,41 @@ private class SwitchedShowLinks(
         if (alias?.state == EpisodeAliasState.AMBIGUOUS) return emptyList()
         val key = alias?.takeIf { it.state == EpisodeAliasState.TRUSTED && it.podcastId == podcastIndexId }?.catalogKey
         val byKey = key?.let { rssByKey[it] }.orEmpty()
-        if (byKey.isNotEmpty()) return byKey.map { Claim(it.episodeId, key, alias?.recipeId, exact = byKey.size == 1) }
+        if (byKey.isNotEmpty()) {
+            return byKey.map { episode ->
+                Claim(oldId, episode.episodeId, key, alias?.recipeId, exact = byKey.size == 1 && (feedProven || corroborates(rows, episode)))
+            }
+        }
+        val settleable = alias == null || (alias.state == EpisodeAliasState.UNRESOLVED && alias.podcastId == podcastIndexId)
+        if (settleable) audioClaim(oldId, rows)?.let { return listOf(it) }
         return rows
             .mapNotNull { row -> RssSourceMatcher.findMatchingEpisode(rssEpisodes, row.title.orEmpty(), row.enclosureUrl, row.publishedDate) }
             .distinctBy { it.episodeId }
             .map { episode ->
                 val rssKey = rssKeys[episode.episodeId]
-                Claim(episode.episodeId, rssKey, recipeIdOf(rssKey), exact = false)
+                Claim(oldId, episode.episodeId, rssKey, recipeIdOf(rssKey), exact = false)
             }
+    }
+
+    /** The one RSS episode with a GUID that [rows] name by exact audio address, as an exact claim; null otherwise. */
+    private fun audioClaim(oldId: String, rows: List<LocalCatalogListenerReference>,): Claim? {
+        val matched = rows
+            .mapNotNull { row -> row.enclosureUrl?.trim()?.takeIf(String::isNotEmpty)?.let { rssByAudio[it]?.singleOrNull() } }
+            .distinctBy { it.episodeId }
+            .singleOrNull() ?: return null
+        val key = EpisodeRecipeId.trimKey(matched.guid) ?: return null
+        return Claim(oldId, matched.episodeId, key, recipeIdOf(key), exact = true, byAudio = true)
+    }
+
+    /** True when one of [rows] has [episode]'s audio address or title: a second signal next to the key. */
+    private fun corroborates(rows: List<LocalCatalogListenerReference>, episode: RssEpisodeEntity,): Boolean = rows.any { row ->
+        val audio = row.enclosureUrl?.trim()
+        (!audio.isNullOrEmpty() && audio == episode.audioUrl.trim()) || ListenerStateMoves.sameTitle(row.title, episode.title)
     }
 
     /**
      * Trusted when any claim is exact: the RSS episode's own key is an old ID's trusted key and no
-     * other RSS episode has it, so it is that episode whatever weaker matches say. Ambiguous otherwise.
+     * other RSS episode has it, or an old ID's exact audio address names it alone. Ambiguous otherwise.
      */
     private fun aliasOf(rssId: String, claims: List<Claim>,): EpisodeAliasEntity {
         val exact = claims.firstOrNull { it.exact }
@@ -196,6 +281,18 @@ private class SwitchedShowLinks(
             createdAt = nowMs,
         )
     }
+
+    /** The old ID's alias an exact audio claim settles: trusted under the Podcast Index show with the RSS episode's key. */
+    private fun settledAlias(claim: Claim): EpisodeAliasEntity = EpisodeAliasEntity(
+        aliasId = claim.oldId,
+        podcastId = podcastIndexId,
+        catalogKey = claim.key,
+        recipeId = claim.recipeId,
+        state = EpisodeAliasState.TRUSTED,
+        owner = false,
+        provenance = EpisodeAliasProvenance.RSS_SOURCE_AUDIO_MATCH,
+        createdAt = aliasesById[claim.oldId]?.createdAt ?: nowMs,
+    )
 
     private fun recipeIdOf(key: String?): Long? {
         val namespace = epNs ?: return null

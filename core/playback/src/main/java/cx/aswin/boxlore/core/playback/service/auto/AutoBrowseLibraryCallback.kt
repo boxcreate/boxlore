@@ -190,8 +190,9 @@ internal class AutoBrowseLibraryCallback(
             val liked = !(listenerStore.projectedHistory(episodeId)?.isLiked ?: false)
             if (listenerStore.setLiked(episodeId, liked, now) == 0) {
                 val created = getOrCreateHistoryItem(episodeId) ?: return false
+                // The owner keeps its own show ([EpisodeListenerStore.ownerRow]).
                 host.database.listeningHistoryDao().upsert(
-                    created.copy(episodeId = listenerStore.historyId(episodeId), isLiked = liked, likedAt = now, isDirty = true),
+                    listenerStore.ownerRow(created.copy(episodeId = listenerStore.historyId(episodeId), isLiked = liked, likedAt = now, isDirty = true), episodeId),
                 )
             }
         } else {
@@ -216,7 +217,7 @@ internal class AutoBrowseLibraryCallback(
         // A missing owner row is seeded from the played ID's metadata, never looked up by the owner ID.
         val existing =
             host.database.listeningHistoryDao().getHistoryItem(historyId)
-                ?: getOrCreateHistoryItem(episodeId)?.copy(episodeId = historyId)
+                ?: getOrCreateHistoryItem(episodeId)?.let { listenerStore.ownerRow(it.copy(episodeId = historyId), episodeId) }
                 ?: return false
         host.observeManualCompletion(episodeId)
         val dao = host.database.listeningHistoryDao()

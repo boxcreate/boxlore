@@ -30,6 +30,29 @@ val PlaybackRepository.likedEpisodeIds: Flow<Set<String>>
 val PlaybackRepository.historyForEpisodeLookup: Flow<List<ListeningHistoryEntity>>
     get() = historyStore.historyForEpisodeLookup
 
+/**
+ * A token per ID, equal for every stored ID of one episode and different between episodes; an ID
+ * that shares its episode with no other ID is its own token. Finds an episode that a list shows
+ * under one ID in history kept under another, such as the episodes of a show switched to its feed
+ * (own-episode-IDs P4, plan section 8; decision D8).
+ */
+suspend fun PlaybackRepository.episodeGroupTokens(episodeIds: Collection<String>): Map<String, String> =
+    historyStore.listenerStore.groupTokens(episodeIds)
+
+/**
+ * For every ID of an episode stored under several IDs, all of its IDs (re-emitted when the aliases
+ * change), so a screen can find a history row, kept under the owner's ID, under the ID it lists.
+ */
+val PlaybackRepository.episodeAliasGroups: Flow<Map<String, Set<String>>>
+    get() = historyStore.listenerStore.aliasGroupsFlow()
+
+/**
+ * [episodeIds] plus every other stored ID of their episodes, re-evaluated when either changes, so a
+ * screen reads a queue entry kept under another ID of the episode it shows (decision D8).
+ */
+fun PlaybackRepository.withEpisodeAliases(episodeIds: Flow<Set<String>>): Flow<Set<String>> =
+    historyStore.listenerStore.withAllAliasesFlow(episodeIds)
+
 suspend fun PlaybackRepository.recordListeningSession(session: ListeningSessionEntity) = historyStore.recordListeningSession(session)
 
 suspend fun PlaybackRepository.toggleLike(episode: Episode, podcastId: String, podcastTitle: String, podcastImageUrl: String?,) = historyStore.toggleLike(episode, podcastId, podcastTitle, podcastImageUrl)

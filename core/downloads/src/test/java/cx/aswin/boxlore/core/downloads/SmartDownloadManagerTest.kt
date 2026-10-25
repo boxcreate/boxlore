@@ -11,6 +11,7 @@ import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.PodcastEntity
+import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.domain.ports.HistoryRecommendationSource
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -221,6 +222,68 @@ class SmartDownloadManagerTest {
         assertFalse(testDownloadRepo.addedDownloads.contains("ep-2"))
     }
 
+    @Test
+    fun `a serial show switched to its feed continues after the episode its old show was playing`() = runBlocking {
+        // The feed show replaced Podcast Index show "920666": its listening stays under that show's
+        // IDs ("pi-1" finished, "pi-2" in progress), linked to the feed's episodes "-1" and "-2".
+        database.podcastDao().upsert(
+            createPodcastEntity(FEED_SHOW).copy(sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = PI_SHOW, preferredSort = "oldest"),
+        )
+        database.rssEpisodeDao().upsertAll((1..3).map { rssEpisode("-$it", publishedDate = it * 1_000L) })
+        database.episodeIdentityDao().insertAliasesIfAbsent(
+            listOf(
+                showAlias("pi-1", "k1", owner = true),
+                showAlias("-1", "k1").copy(provenance = EpisodeAliasProvenance.RSS_SOURCE_LINK),
+                showAlias("pi-2", "k2", owner = true),
+                showAlias("-2", "k2").copy(provenance = EpisodeAliasProvenance.RSS_SOURCE_LINK),
+            ),
+        )
+        val dao = database.listeningHistoryDao()
+        dao.upsert(historyRow("pi-1", completed = true, playedAt = 10L))
+        dao.upsert(historyRow("pi-2", progress = 5_000L, playedAt = 20L))
+        val history = database.episodeListenerStore().projectRows(dao.getRecentHistoryList(200))
+
+        val next = manager.resolveOldestSerialNextEpisodes(database.podcastDao().getSubscribedPodcastsList(), history, dao.getCompletedEpisodeIds())
+
+        assertEquals("-3", next.getValue(FEED_SHOW).id)
+    }
+
+    private fun rssEpisode(id: String, publishedDate: Long) = cx.aswin.boxlore.core.database.RssEpisodeEntity(
+        episodeId = id,
+        podcastId = FEED_SHOW,
+        guid = "k${id.removePrefix("-")}",
+        title = "Episode $id",
+        description = "",
+        audioUrl = "https://example.com/$id.mp3",
+        imageUrl = null,
+        duration = 60,
+        publishedDate = publishedDate,
+        chaptersUrl = null,
+        transcriptUrl = null,
+        transcripts = null,
+        persons = null,
+        seasonNumber = null,
+        episodeNumber = null,
+        episodeType = null,
+        enclosureType = null,
+    )
+
+    private fun showAlias(id: String, key: String, owner: Boolean = false) = alias(id, owner).copy(podcastId = PI_SHOW, catalogKey = key)
+
+    private fun historyRow(id: String, progress: Long = 0L, completed: Boolean = false, playedAt: Long) = cx.aswin.boxlore.core.database.ListeningHistoryEntity(
+        episodeId = id,
+        podcastId = PI_SHOW,
+        episodeTitle = "Episode $id",
+        episodeImageUrl = null,
+        podcastImageUrl = null,
+        episodeAudioUrl = "https://pi.example/$id.mp3",
+        podcastName = "Show",
+        progressMs = progress,
+        durationMs = 60_000L,
+        isCompleted = completed,
+        lastPlayedAt = playedAt,
+    )
+
     private fun createEpisode(id: String, podcastId: String, duration: Int): Episode = Episode(
         id = id,
         title = "Episode $id",
@@ -269,6 +332,11 @@ class SmartDownloadManagerTest {
         description = "Desc",
         isSubscribed = true,
     )
+
+    private companion object {
+        const val PI_SHOW = "920666"
+        const val FEED_SHOW = "rss:feed"
+    }
 
     private class TestDownloadRepository(
         context: Context,

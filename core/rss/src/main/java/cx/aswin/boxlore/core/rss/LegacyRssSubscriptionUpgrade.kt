@@ -530,6 +530,16 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
      * [targetIsInUse] already rules out the target show's own rows; this also covers an owner's ID
      * held under another show, so the upgrade never moves ownership off an ID with listener state.
      *
+     * Deliberately stricter than `EpisodeIdentityDao.holdsListenerState` (listening or a completed
+     * download), which decides when a read may hand ownership over: any history row, any download
+     * row (also one still downloading) and any queue entry stops the upgrade, which then stays on
+     * RSS and is retried, so it never has to decide whether an owner's row matters. A displaced
+     * owner may be an `rss_source_link` alias (an RSS ID linked to a show it replaced, decision D8)
+     * like any trusted ID: the same rule applies, so ownership leaves it only when none of these
+     * rows holds it. The switched RSS show itself is never upgraded (`LegacyRssRepair` skips RSS
+     * shows with a linked Podcast Index show), and an upgrade into a switched show's Podcast Index
+     * show finds that show's rows and stops at [targetIsInUse].
+     *
      * Added in P4 PR 9 (own-IDs plan section 5: ownership moves only off an owner without state).
      * COMPAT(own-ids): upgraded shows keep their IDs after eviction. Permanent: never remove (MIGRATION.md §5).
      */

@@ -100,11 +100,20 @@ internal class PlaybackHistoryStore(internal val player: PlaybackHistoryPlayerDe
             .map { it.toListeningHistoryItem() }
     }
 
+    /**
+     * Listening insights for [period]. Listening of a Podcast Index show the listener switched to
+     * its RSS feed counts as the RSS show's ([EpisodeListenerStore.showReplacementsFlow]): the
+     * switch keeps every row under its stored show (own-episode-IDs P4, plan section 8; decision D8).
+     */
     override fun observeInsights(period: ListeningPeriod): Flow<ListeningInsightSummary> = combine(
         data.listeningSessionDao.observeAllSessions(),
         data.listeningRollupDao.observeAllRollups(),
         getAllHistory(),
-    ) { sessions, rollups, history ->
+        listenerStore.showReplacementsFlow(),
+    ) { storedSessions, storedRollups, storedHistory, replacedBy ->
+        val sessions = storedSessions.map { row -> replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row }
+        val rollups = storedRollups.map { row -> replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row }
+        val history = storedHistory.map { row -> replacedBy[row.podcastId]?.let { row.copy(podcastId = it) } ?: row }
         val timeline =
             history.filter { !it.isManualCompletion && !it.isBulkCompletion }
         val completedCount =

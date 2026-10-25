@@ -9,6 +9,7 @@ import cx.aswin.boxlore.core.database.episodeListenerStore
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.PodcastGenres
+import cx.aswin.boxlore.core.model.listenerShowIds
 import kotlin.math.ln
 
 data class EpisodeRankingInput(
@@ -77,7 +78,7 @@ class AdaptiveCandidateScorer private constructor(
         )
         val featuresByPodcast = podcasts.associate { podcast ->
             val latestHistory = podcast.latestEpisode?.let { latest ->
-                once.forEpisode(latest.id)?.takeIf { it.podcastId == podcast.id }
+                once.forShowEpisode(latest.id, podcast.listenerShowIds)
             }
             val showAffinity =
                 affinities[PreferenceFacetKey(PreferenceFacetType.SHOW, podcast.id)] ?: 0.0
@@ -261,7 +262,7 @@ class AdaptiveCandidateScorer private constructor(
         val features = inputs.map { input ->
             val podcast = input.podcast
             val latestHistory = podcast.latestEpisode?.let { episode ->
-                once.forEpisode(episode.id)?.takeIf { it.podcastId == podcast.id }
+                once.forShowEpisode(episode.id, podcast.listenerShowIds)
             }
             val showAffinity =
                 affinities[PreferenceFacetKey(PreferenceFacetType.SHOW, podcast.id)] ?: 0.0

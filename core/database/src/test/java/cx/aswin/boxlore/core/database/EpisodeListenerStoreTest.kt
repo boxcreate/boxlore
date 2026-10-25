@@ -381,6 +381,51 @@ class EpisodeListenerStoreTest {
         identity.insertAliasesIfAbsent(listOf(alias("A", owner = true, createdAt = 1L), alias("B", createdAt = 2L)))
     }
 
+    @Test
+    fun aliasFlowsFindAnEpisodeUnderEveryOneOfItsIds() = runTest {
+        identity.insertAliasesIfAbsent(listOf(alias("A", owner = true), alias("B", createdAt = 2L), alias("C", key = "guid-c")))
+
+        assertEquals(setOf("A", "B", "C"), store.withAllAliasesFlow(kotlinx.coroutines.flow.flowOf(setOf("A", "C"))).first())
+        assertEquals(setOf("A", "B"), store.memberIdsFlow("B").first())
+        // An ID that shares its episode with no other ID is just itself.
+        assertEquals(setOf("C"), store.memberIdsFlow("C").first())
+        assertEquals(setOf("X"), store.memberIdsFlow("X").first())
+        assertEquals(mapOf("A" to setOf("A", "B"), "B" to setOf("A", "B")), store.aliasGroupsFlow().first())
+    }
+
+    @Test
+    fun aSeededOwnerRowKeepsTheOwnersShowNotThePlayingShow() = runTest {
+        // B is an RSS ID linked to the episode of the Podcast Index show; A owns it and has no row yet.
+        identity.insertAliasesIfAbsent(listOf(alias("A", owner = true), alias("B", createdAt = 2L)))
+        database.podcastDao().upsert(PodcastEntity(podcastId = SHOW, title = "Index show", author = "", imageUrl = "https://img.example/show.jpg", description = null))
+        val seed = row("A").copy(podcastId = "rss:feed", podcastName = "Feed show", podcastImageUrl = "https://img.example/feed.jpg")
+
+        val owned = store.ownerRow(seed, requestedId = "B")
+
+        assertEquals(seed.copy(podcastId = SHOW, podcastName = "Index show", podcastImageUrl = "https://img.example/show.jpg"), owned)
+        // A row the playing ID keeps for itself is left as it is.
+        assertSame(seed, store.ownerRow(seed, requestedId = "A"))
+        // A stored owner row keeps its show and episode metadata when another ID's page saves progress.
+        val stored = row("A").copy(episodeTitle = "Owner title", episodeAudioUrl = "https://cdn.example/a.mp3")
+        val saved = store.keepingOwnerMetadata(seed.copy(progressMs = 77L, episodeTitle = "Feed title"), stored)
+        assertEquals(77L, saved.progressMs)
+        assertEquals(listOf(SHOW, "Show", null, "Owner title", "https://cdn.example/a.mp3"), listOf(saved.podcastId, saved.podcastName, saved.podcastImageUrl, saved.episodeTitle, saved.episodeAudioUrl))
+    }
+
+    @Test
+    fun aFollowedRssShowReplacesThePodcastIndexShowItWasSwitchedFrom() = runTest {
+        val podcasts = database.podcastDao()
+        podcasts.upsert(PodcastEntity(podcastId = SHOW, title = "Index show", author = "", imageUrl = "", description = null, isSubscribed = false))
+        podcasts.upsert(
+            PodcastEntity(podcastId = "rss:feed", title = "Feed", author = "", imageUrl = "", description = null, isSubscribed = true, sourceType = PodcastEntity.SOURCE_RSS, linkedPodcastIndexId = SHOW),
+        )
+        assertEquals(mapOf(SHOW to "rss:feed"), store.showReplacementsFlow().first())
+
+        // Followed again, the Podcast Index show reads its own rows.
+        podcasts.upsert(podcasts.getPodcast(SHOW)!!.copy(isSubscribed = true))
+        assertTrue(store.showReplacementsFlow().first().isEmpty())
+    }
+
     private fun alias(
         id: String,
         key: String? = KEY,

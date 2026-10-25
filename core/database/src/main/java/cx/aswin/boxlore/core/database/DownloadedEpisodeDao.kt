@@ -39,6 +39,31 @@ interface DownloadedEpisodeDao {
     @Query("SELECT COUNT(*) FROM downloaded_episodes WHERE episodeId = :episodeId AND status IN (0, 1)")
     fun isDownloadingFlow(episodeId: String): Flow<Int>
 
+    /**
+     * How many of these IDs hold a completed download, watched. An episode stored under several IDs
+     * reads as downloaded whichever of them holds the file. Callers pass at most 500 IDs.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, downloads across aliases; decision D8).
+     */
+    @Query("SELECT COUNT(*) FROM downloaded_episodes WHERE episodeId IN (:episodeIds) AND status = 2")
+    fun countCompletedFlow(episodeIds: List<String>): Flow<Int>
+
+    /**
+     * How many of these IDs hold a queued or running download, watched ([countCompletedFlow]).
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, downloads across aliases; decision D8).
+     */
+    @Query("SELECT COUNT(*) FROM downloaded_episodes WHERE episodeId IN (:episodeIds) AND status IN (0, 1)")
+    fun countActiveFlow(episodeIds: List<String>): Flow<Int>
+
+    /**
+     * The download rows of these IDs, in no particular order; callers pass at most 500 IDs.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, downloads across aliases; decision D8).
+     */
+    @Query("SELECT * FROM downloaded_episodes WHERE episodeId IN (:episodeIds)")
+    suspend fun getDownloads(episodeIds: List<String>): List<DownloadedEpisodeEntity>
+
     @Query("SELECT COALESCE(SUM(sizeBytes), 0) FROM downloaded_episodes")
     fun getTotalSizeBytes(): Flow<Long>
 

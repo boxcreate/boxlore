@@ -293,6 +293,101 @@ class EpisodeListenerStore(private val database: BoxLoreDatabase) {
     }
 
     /**
+     * [ids] plus every other trusted ID of their episodes, re-evaluated when [ids] or the shared
+     * aliases change. Worked out in memory from the shared aliases, so it costs no query per ID; a
+     * screen that shows an episode under one ID reads a download or queue entry held under another.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8; decision D8).
+     */
+    fun withAllAliasesFlow(ids: Flow<Set<String>>): Flow<Set<String>> =
+        combine(ids, sharedAliasesFlow()) { current, shared -> EpisodeListenerProjection.withSharedAliases(current, shared) }
+            .distinctUntilChanged()
+
+    /**
+     * For every ID that shares its episode with another trusted ID, all of that episode's IDs,
+     * re-emitted when the shared aliases change. Lets a list keyed by each episode's owner ID be
+     * looked up under any of its IDs without a query per lookup.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8; decision D8).
+     */
+    fun aliasGroupsFlow(): Flow<Map<String, Set<String>>> =
+        sharedAliasesFlow().map { shared ->
+            shared
+                .groupBy({ EpisodeGroup.tokenOf(it.podcastId, it.catalogKey) }, { it.aliasId })
+                .values
+                .flatMap { ids -> ids.toSet().let { members -> members.map { it to members } } }
+                .toMap()
+        }.distinctUntilChanged()
+
+    /**
+     * Every trusted ID of [episodeId]'s episode ([episodeId] alone without a shared alias),
+     * re-emitted when the shared aliases change it.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8; decision D8).
+     */
+    fun memberIdsFlow(episodeId: String): Flow<Set<String>> =
+        sharedAliasesFlow().map { shared -> EpisodeListenerProjection.withSharedAliases(setOf(episodeId), shared) }.distinctUntilChanged()
+
+    /**
+     * Each Podcast Index show the listener switched to its RSS feed (and no longer follows) mapped to
+     * that followed RSS show, watched. Switching keeps every row under its stored show
+     * (docs/EPISODE_IDS.md §5), so listening read by show attributes the old show's rows to it.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+     */
+    fun showReplacementsFlow(): Flow<Map<String, String>> =
+        database.podcastDao().observeSwitchedRssShows()
+            .map { shows -> shows.mapNotNull { show -> show.linkedPodcastIndexId?.let { it to show.podcastId } }.toMap() }
+            .distinctUntilChanged()
+
+    /**
+     * [seed], a new history row built from the metadata of the playing [requestedId], made right
+     * for the ID it is stored under. When that is another ID of the episode (its owner,
+     * [historyId]), the row carries the owner's own show, never the playing show: the owner row of
+     * a show the listener switched to its feed stays under the Podcast Index show it belongs to, so
+     * sync and later links still find it there. The owner's show is that of its stored history row,
+     * else its catalog row, else its alias. [seed] is returned as it is when it is [requestedId]'s own row.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, progress goes to the owner; decision D8).
+     */
+    suspend fun ownerRow(seed: ListeningHistoryEntity, requestedId: String,): ListeningHistoryEntity {
+        if (seed.episodeId == requestedId) return seed
+        val ownerId = seed.episodeId
+        val showId =
+            history.getHistoryItem(ownerId)?.podcastId
+                ?: database.localEpisodeCatalogDao().getEpisode(ownerId)?.podcastId
+                ?: database.rssEpisodeDao().getEpisode(ownerId)?.podcastId
+                ?: aliases.getAlias(ownerId)?.podcastId
+                ?: return seed
+        if (showId == seed.podcastId) return seed
+        val show = database.podcastDao().getPodcast(showId)
+        return seed.copy(
+            podcastId = showId,
+            podcastName = show?.title?.takeIf { it.isNotBlank() } ?: seed.podcastName,
+            podcastImageUrl = show?.imageUrl?.takeIf { it.isNotBlank() } ?: seed.podcastImageUrl,
+        )
+    }
+
+    /**
+     * [entity] (a row built for [historyId] from the playing item) with the show and episode
+     * metadata of [stored], the row it replaces, when [stored] exists and the episode has several
+     * IDs: a seek or save on one ID's page writes progress to the owner without moving the owner's
+     * row to that page's show. An episode stored under one ID writes [entity] as it is.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, progress goes to the owner; decision D8).
+     */
+    fun keepingOwnerMetadata(entity: ListeningHistoryEntity, stored: ListeningHistoryEntity?,): ListeningHistoryEntity {
+        stored ?: return entity
+        return entity.copy(
+            podcastId = stored.podcastId,
+            podcastName = stored.podcastName,
+            podcastImageUrl = stored.podcastImageUrl,
+            episodeTitle = stored.episodeTitle,
+            episodeAudioUrl = stored.episodeAudioUrl,
+        )
+    }
+
+    /**
      * [rows] with every episode stored under several IDs counted once: the first row of such an
      * episode is replaced by its projected row and the episode's other rows are dropped; then only
      * rows that pass [keep] (the source query's filter, applied to the projected values) remain.

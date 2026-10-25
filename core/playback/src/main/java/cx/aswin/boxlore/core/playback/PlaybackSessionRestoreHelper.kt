@@ -127,6 +127,7 @@ internal object PlaybackSessionRestoreHelper {
             createAndInsertSyntheticSession(
                 targetEpisodeId = targetEpisodeId,
                 historyId = historyId,
+                listenerStore = listenerStore,
                 currentItem = currentItem,
                 listeningHistoryDao = listeningHistoryDao,
                 podcastRepository = podcastRepository,
@@ -139,6 +140,7 @@ internal object PlaybackSessionRestoreHelper {
     private suspend fun createAndInsertSyntheticSession(
         targetEpisodeId: String,
         historyId: String,
+        listenerStore: EpisodeListenerStore?,
         currentItem: MediaItem?,
         listeningHistoryDao: ListeningHistoryDao,
         podcastRepository: PodcastRepository,
@@ -161,7 +163,7 @@ internal object PlaybackSessionRestoreHelper {
         val (resolvedArtwork, resolvedPodcastArtwork) = resolveSyntheticArtwork(baseEp, currentItem)
         val durationMs = (baseEp?.duration?.toLong() ?: 0L) * 1_000L
 
-        val syntheticSession =
+        val built =
             ListeningHistoryEntity(
                 episodeId = historyId,
                 podcastId = resolvedPodcastId,
@@ -179,6 +181,8 @@ internal object PlaybackSessionRestoreHelper {
                 enclosureType = baseEp?.enclosureType,
                 episodeDescription = baseEp?.description ?: "",
             )
+        // A seeded owner row of an episode stored under several IDs carries the owner's show.
+        val syntheticSession = listenerStore?.ownerRow(built, targetEpisodeId) ?: built
         listeningHistoryDao.insertIfAbsent(syntheticSession)
         return syntheticSession
     }

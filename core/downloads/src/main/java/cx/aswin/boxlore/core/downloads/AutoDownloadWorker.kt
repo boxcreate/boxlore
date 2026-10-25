@@ -8,6 +8,7 @@ import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.toPodcast
 import cx.aswin.boxlore.core.database.AutoDownloadReleaseEntity
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.listenerShowIds
 import cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -165,8 +166,15 @@ open class AutoDownloadWorker(context: Context, params: WorkerParameters) : Coro
         return null
     }
 
+    /**
+     * Keeps at most [maximum] auto-downloads of [podcastId]'s show. A show the listener switched to
+     * its feed also counts the auto-downloads its old Podcast Index show holds
+     * (`PodcastEntity.listenerShowIds`; decision D8), so those are pruned too.
+     */
     private suspend fun enforceQuota(podcastId: String, maximum: Int, repository: DownloadRepository) {
-        val downloads = SharedAppDependenciesHolder.require().database.downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
+        val database = SharedAppDependenciesHolder.require().database
+        val showIds = database.podcastDao().getPodcast(podcastId)?.listenerShowIds ?: setOf(podcastId)
+        val downloads = showIds.flatMap { database.downloadedEpisodeDao().getDownloadsForPodcast(it) }
         for (row in AutoDownloadRetention.excess(downloads, maximum)) {
             repository.removeDownload(row.episodeId, isForeground = false).join()
         }

@@ -201,7 +201,8 @@ internal class PlaybackProgressCoordinator(
             return null
         }
         missingSeedAttemptCountByEpisode[snapshot.episodeId] = attemptCount + 1
-        val seed = missingHistorySeedProvider(snapshot)?.copy(episodeId = historyId) ?: return null
+        // A seeded owner row of an episode stored under several IDs carries the owner's show.
+        val seed = missingHistorySeedProvider(snapshot)?.let { listenerStore.ownerRow(it.copy(episodeId = historyId), snapshot.episodeId) } ?: return null
         missingSeedAttemptCountByEpisode -= snapshot.episodeId
         dao.insertIfAbsent(seed)
         dao.enrichFromSeed(seed)

@@ -76,3 +76,29 @@ fun Podcast.isLatestEpisodeNew(lastSeenId: String?): Boolean {
     val hoursSinceRelease = (System.currentTimeMillis() / 1000.0 - ep.publishedDate) / 3600.0
     return hoursSinceRelease <= 48.0
 }
+
+/**
+ * The shows whose listener rows (history, downloads, queue) count as this show's: the show itself
+ * and, for an RSS show the listener switched to from a Podcast Index show, that Podcast Index show.
+ * The switch keeps every row under its stored show and ID (docs/EPISODE_IDS.md §5), so per-show
+ * reads (show scores, Most listened, serial next-up, download limits) match rows by these IDs.
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+ * COMPAT(own-ids): a switched show reads its old show's listening. Permanent: never remove (MIGRATION.md §5).
+ */
+val Podcast.listenerShowIds: Set<String>
+    get() = ListenerShows.idsOf(id, isRss, linkedPodcastIndexId)
+
+/**
+ * [Podcast.listenerShowIds] for a show stored as plain fields.
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+ * COMPAT(own-ids): a switched show reads its old show's listening. Permanent: never remove (MIGRATION.md §5).
+ */
+object ListenerShows {
+    /** [showId], plus [linkedPodcastIndexId] when [showId] is an RSS show that replaced it. */
+    fun idsOf(showId: String, isRss: Boolean, linkedPodcastIndexId: String?,): Set<String> {
+        val linked = linkedPodcastIndexId?.takeIf { isRss && it.isNotBlank() && it != showId } ?: return setOf(showId)
+        return setOf(showId, linked)
+    }
+}

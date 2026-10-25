@@ -1,14 +1,21 @@
 package cx.aswin.boxlore.core.database
 
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.ListenerShows
 import cx.aswin.boxlore.core.model.Podcast
+import cx.aswin.boxlore.core.model.listenerShowIds
 
+/**
+ * @property listenerShowIds the shows whose history counts as this show's (`Podcast.listenerShowIds`):
+ *   the show, and the Podcast Index show an RSS show replaced (own-episode-IDs P4, plan section 8; decision D8)
+ */
 data class ScorablePodcast(
     val id: String,
     val subscribedAt: Long,
     val latestEpisode: Episode?,
     val notificationsEnabled: Boolean,
     val autoDownloadEnabled: Boolean,
+    val listenerShowIds: Set<String> = setOf(id),
 )
 
 object PodcastScoring {
@@ -30,9 +37,14 @@ object PodcastScoring {
     ): Map<String, Double> {
         val historyByPodcast = allHistory.groupBy { it.podcastId }
         val historyByEpisode = allHistory.associateBy { episodeKey(it.episodeId) }
+        val scoredIds = podcasts.mapTo(HashSet()) { it.id }
 
         return podcasts.associate { pod ->
-            val podHistory = historyByPodcast[pod.id] ?: emptyList()
+            // A show the listener switched to its feed also counts the listening its old show holds,
+            // unless that show is scored on its own.
+            val podHistory = pod.listenerShowIds
+                .filter { it == pod.id || it !in scoredIds }
+                .flatMap { historyByPodcast[it].orEmpty() }
             val playCount = podHistory.size
             val likeCount = podHistory.count { it.isLiked }
             val playScore = 12.0 * playCount
@@ -97,6 +109,7 @@ fun Podcast.toScorable() = ScorablePodcast(
     latestEpisode = latestEpisode,
     notificationsEnabled = notificationsEnabled,
     autoDownloadEnabled = autoDownloadEnabled,
+    listenerShowIds = listenerShowIds,
 )
 
 fun PodcastEntity.toScorable() = ScorablePodcast(
@@ -105,4 +118,27 @@ fun PodcastEntity.toScorable() = ScorablePodcast(
     latestEpisode = latestEpisode,
     notificationsEnabled = notificationsEnabled,
     autoDownloadEnabled = autoDownloadEnabled,
+    listenerShowIds = listenerShowIds,
 )
+
+/**
+ * The shows whose listener rows count as this show's (`Podcast.listenerShowIds`): the show, and the
+ * Podcast Index show an RSS show replaced.
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+ * COMPAT(own-ids): a switched show reads its old show's listening. Permanent: never remove (MIGRATION.md §5).
+ */
+val PodcastEntity.listenerShowIds: Set<String>
+    get() = ListenerShows.idsOf(podcastId, isRss, linkedPodcastIndexId)
+
+/**
+ * [this] shows with the most history rows first ("Most listened"); ties keep their order. A show
+ * the listener switched to its feed counts the rows its old Podcast Index show holds
+ * ([Podcast.listenerShowIds]).
+ *
+ * Added in P4 of the own-episode-IDs plan (plan section 8, re-key paths narrowed; decision D8).
+ */
+fun List<Podcast>.sortedByListening(history: List<ListeningHistoryEntity>): List<Podcast> {
+    val counts = history.groupingBy { it.podcastId }.eachCount()
+    return sortedByDescending { podcast -> podcast.listenerShowIds.sumOf { counts[it] ?: 0 } }
+}

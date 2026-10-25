@@ -86,7 +86,7 @@ internal suspend fun PlaybackHistoryStore.toggleLike(episode: Episode, podcastId
 
     val now = System.currentTimeMillis()
     if (listenerStore.setLiked(episode.id, newStatus, now) == 0) {
-        val entity =
+        val built =
             ListeningHistoryEntity(
                 episodeId = listenerStore.historyId(episode.id),
                 podcastId = podcastId,
@@ -105,7 +105,8 @@ internal suspend fun PlaybackHistoryStore.toggleLike(episode: Episode, podcastId
                 enclosureType = episode.enclosureType,
                 episodeDescription = episode.description,
             )
-        dao.upsert(entity)
+        // The owner of an episode stored under several IDs keeps its own show.
+        dao.upsert(listenerStore.ownerRow(built, episode.id))
     }
     data.rankingFeedbackRepository.recordAction(
         target =
@@ -173,7 +174,7 @@ internal suspend fun PlaybackHistoryStore.toggleCompletion(
                 isBulkCompletion = false,
                 episodeDescription = episode.description,
             )
-        dao.upsert(entity)
+        dao.upsert(listenerStore.ownerRow(entity, episode.id))
     }
     listenerStore.recordCompletion(historyId, newStatus, now)
     cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackEpisodeMarkPlayed(
@@ -221,7 +222,7 @@ internal suspend fun PlaybackHistoryStore.markEpisodeAsCompleted(episode: Episod
                 enclosureType = episode.enclosureType,
                 episodeDescription = episode.description,
             )
-        dao.upsert(entity)
+        dao.upsert(listenerStore.ownerRow(entity, episode.id))
     } else {
         android.util.Log.d("PlaybackRepo", "Updating existing history item as completed")
         val updated =
@@ -248,7 +249,7 @@ internal suspend fun PlaybackHistoryStore.ensureCurrentHistoryRow() {
     val episode = state.currentEpisode ?: return
     val podcast = state.currentPodcast ?: return
     val dao = data.listeningHistoryDao
-    val history =
+    val built =
         ListeningHistoryUpsertLogic.buildProgressSaveEntity(
             ListeningHistoryUpsertLogic.ProgressSaveInput(
                 podcastId = podcast.id,
@@ -269,6 +270,8 @@ internal suspend fun PlaybackHistoryStore.ensureCurrentHistoryRow() {
                 episodeDescription = episode.description,
             ),
         )
+    // A seeded owner row of an episode stored under several IDs carries the owner's show.
+    val history = listenerStore.ownerRow(built, episode.id)
     val inserted = dao.insertIfAbsent(history)
     if (inserted == -1L) {
         dao.updateLastPlayedAt(history.episodeId, history.lastPlayedAt)
@@ -290,8 +293,10 @@ internal suspend fun PlaybackHistoryStore.ensureCurrentHistoryRow() {
 /**
  * Saves a position chosen outside the player (a seek on an episode page). An episode stored under
  * one ID writes its row as before. An episode stored under several IDs writes its owner's row and
- * keeps that row's like as stored: the caller's like flag may come from a screen showing another of
- * the episode's IDs, and only the like button changes a like.
+ * keeps that row's like, show and episode metadata as stored: the caller's like flag and show may
+ * come from a screen showing another of the episode's IDs (the RSS show a Podcast Index show was
+ * switched to), only the like button changes a like, and the owner row stays under its own show. A
+ * missing owner row is created under the owner's show ([EpisodeListenerStore.ownerRow]).
  */
 internal suspend fun PlaybackHistoryStore.savePlaybackState(input: ListeningHistoryUpsertLogic.ProgressSaveInput) {
     android.util.Log.v(
@@ -305,7 +310,13 @@ internal suspend fun PlaybackHistoryStore.savePlaybackState(input: ListeningHist
         return
     }
     val stored = data.listeningHistoryDao.getHistoryItem(historyId)
-    data.listeningHistoryDao.upsert(entity.copy(isLiked = stored?.isLiked ?: false, likedAt = stored?.likedAt ?: 0L))
+    val row =
+        if (stored != null) {
+            listenerStore.keepingOwnerMetadata(entity, stored).copy(isLiked = stored.isLiked, likedAt = stored.likedAt)
+        } else {
+            listenerStore.ownerRow(entity.copy(isLiked = false, likedAt = 0L), input.episodeId)
+        }
+    data.listeningHistoryDao.upsert(row)
 }
 
 internal suspend fun PlaybackHistoryStore.toggleLike() {

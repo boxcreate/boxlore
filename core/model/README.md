@@ -27,6 +27,7 @@ Owns shared domain models, enums, and pure value helpers used across network, da
 - Cross-promotion model types: `CrossPromotionResult` / `ResolvedCrossPromotion`, `CrossPromotionConfidence` and `CrossPromotionIndicator`, whose `DISTINCT_ARTWORK` marks an episode whose own cover differs from its show's (evidence `:core:catalog`'s detector uses for trailers of another show). Indicators live only in UI state.
 - `ShowNotes`, `EpisodeLink`, and `EpisodeLinkKind` carry locally parsed plain text, publisher HTML, chapters, resource purpose, destination, and publisher labels without UI or parser-library dependencies.
 - `Podcast.isLatestEpisodeNew`: shared NEW badge. Room `rssHasNewEpisodes` is true for true-RSS freshness **and** for Podcast Index direct-feed tip promotions (`updateLatestEpisode(..., markAsNew = true)`). Opening the show clears the flag. Otherwise the 48h window / last-seen id rules apply.
+- `Podcast.listenerShowIds` (`ListenerShows.idsOf` for plain fields): the shows whose history, downloads and queue rows count as a show's own. For an RSS show the listener switched to from a Podcast Index show (`isRss` with `linkedPodcastIndexId`) that is the RSS show and the Podcast Index show, because the switch keeps every row under its stored show ([`docs/EPISODE_IDS.md`](../../docs/EPISODE_IDS.md) §5); for any other show, the show alone. Per-show reads (show scores, Most listened, serial next-up, auto-download limits) match rows by it.
 - `Podcast.effectiveGenre`: resolves user `customGenre` override when non-blank, falling back to default catalog `genre`. Companion `customGenreIcon` stores the icon identifier for custom tags.
 - `Podcast.recommendationGenre`: resolves canonicalized `customGenre` via `PodcastGenres.canonicalize` so valid standard reclassifications adapt personalized recommendations and Smart Queue, falling back to `genre` when the tag is arbitrary.
 - `FolderDisplaySize`: display sizing enum (`COMPACT 1×1`, `WIDE 2×1`, `FEATURED 2×2`, `LARGE 2×3`, `SHELF 3×1`, `PANEL 3×2`, `SHOWCASE 3×3` max) for library subscription folders, with placement properties (`isPinnedToTop`, `placementLabel`) distinguishing grid-movable (`1×1 COMPACT`) from top-pinned display sizes.
@@ -77,6 +78,7 @@ src/main/java/cx/aswin/boxlore/core/model/
 
 - Unit tests live under `core/model/src/test`.
 - `EpisodeRecipeIdNamespaceTest` covers the show ID parse (it rejects `0123`, `+5`, ` 5`, `9007199254740992`, non-ASCII digits and the empty string) and the namespace entry point. The shared recipe fixture and its test stay in `core/rss/src/test` (`EpisodeRecipeIdTest`), where the scripts copy reads the same file; run `:core:rss:testDebugUnitTest` after any change to the recipe.
+- `Podcast.listenerShowIds` is covered with the readers that use it, in `:core:database` `SwitchedShowListeningTest`.
 - `ShareLinkBuilderTest` covers share URL invariants. Share links use `https://boxlore.in/share`; the app still opens the older `aswin.cx` share links.
 - Prefer pure JVM tests for additional formatters or value helpers.
 

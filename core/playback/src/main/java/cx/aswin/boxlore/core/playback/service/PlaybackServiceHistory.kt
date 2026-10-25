@@ -85,31 +85,35 @@ private suspend fun BoxLorePlaybackService.persistNaturalCompletionOnce(
             )
             return
         }
+        // A seeded owner row of an episode stored under several IDs carries the owner's show.
         dao.insertIfAbsent(
-            cx.aswin.boxlore.core.database.ListeningHistoryEntity(
-                episodeId = historyId,
-                podcastId = podcastId,
-                episodeTitle = episodeTitle,
-                episodeImageUrl =
-                persistableArtworkUrl(queueItem?.imageUrl)
-                    ?: cx.aswin.boxlore.core.playback.PlaybackArtworkMetadata.savedArtworkUrl(fallbackMediaItem?.mediaMetadata),
-                podcastImageUrl = persistableArtworkUrl(queueItem?.podcastImageUrl) ?: persistableArtworkUrl(podcast?.imageUrl),
-                episodeAudioUrl =
-                queueItem?.audioUrl
-                    ?: fallbackMediaItem?.localConfiguration?.uri?.toString(),
-                podcastName =
-                queueItem?.podcastTitle
-                    ?: podcast?.title
-                    ?: fallbackPodcastName
-                    ?: fallbackMediaItem?.mediaMetadata?.artist?.toString()
-                    ?: "",
-                progressMs = 0L,
-                durationMs = resolvedDurationMs,
-                isCompleted = false,
-                lastPlayedAt = System.currentTimeMillis(),
-                enclosureType = queueItem?.enclosureType,
-                isManualCompletion = false,
-                episodeDescription = queueItem?.description,
+            listenerStore.ownerRow(
+                cx.aswin.boxlore.core.database.ListeningHistoryEntity(
+                    episodeId = historyId,
+                    podcastId = podcastId,
+                    episodeTitle = episodeTitle,
+                    episodeImageUrl =
+                    persistableArtworkUrl(queueItem?.imageUrl)
+                        ?: cx.aswin.boxlore.core.playback.PlaybackArtworkMetadata.savedArtworkUrl(fallbackMediaItem?.mediaMetadata),
+                    podcastImageUrl = persistableArtworkUrl(queueItem?.podcastImageUrl) ?: persistableArtworkUrl(podcast?.imageUrl),
+                    episodeAudioUrl =
+                    queueItem?.audioUrl
+                        ?: fallbackMediaItem?.localConfiguration?.uri?.toString(),
+                    podcastName =
+                    queueItem?.podcastTitle
+                        ?: podcast?.title
+                        ?: fallbackPodcastName
+                        ?: fallbackMediaItem?.mediaMetadata?.artist?.toString()
+                        ?: "",
+                    progressMs = 0L,
+                    durationMs = resolvedDurationMs,
+                    isCompleted = false,
+                    lastPlayedAt = System.currentTimeMillis(),
+                    enclosureType = queueItem?.enclosureType,
+                    isManualCompletion = false,
+                    episodeDescription = queueItem?.description,
+                ),
+                episodeId,
             ),
         )
     }
@@ -248,7 +252,9 @@ private suspend fun BoxLorePlaybackService.loadOrSeedManualCompletionHistory(
 ): cx.aswin.boxlore.core.database.ListeningHistoryEntity? {
     val dao = database.listeningHistoryDao()
     dao.getHistoryItem(historyId)?.let { return it }
-    val seed = progressSnapshot?.let { buildMissingProgressHistory(it) }?.copy(episodeId = historyId) ?: return null
+    val built = progressSnapshot?.let { buildMissingProgressHistory(it) } ?: return null
+    // A seeded owner row of an episode stored under several IDs carries the owner's show.
+    val seed = database.episodeListenerStore().ownerRow(built.copy(episodeId = historyId), built.episodeId)
     dao.insertIfAbsent(seed)
     dao.enrichMetadataIfMissing(
         episodeId = seed.episodeId,

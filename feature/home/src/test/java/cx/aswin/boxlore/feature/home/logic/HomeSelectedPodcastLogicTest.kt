@@ -65,6 +65,18 @@ class HomeSelectedPodcastLogicTest {
     }
 
     @Test
+    fun `build signal of a show switched to its feed reads its old show's last play`() {
+        val feedShow = TestFixtures.podcast(id = "rss:feed").copy(sourceType = cx.aswin.boxlore.core.model.Podcast.SOURCE_RSS, linkedPodcastIndexId = "pi-show", preferredSort = "oldest")
+        val played = HomeListeningHistoryItem("pi-2", "pi-show", "Show", null, 1L, 10L, false, false, 5L)
+
+        val signal = HomeSelectedPodcastLogic.buildSignal(podcastId = "rss:feed", allHistory = listOf(played), subs = listOf(feedShow), rssRefreshVersion = 0L)
+
+        assertEquals("pi-2", signal?.lastPlayedEpisodeId)
+        // Another show's rows never count.
+        assertNull(HomeSelectedPodcastLogic.buildSignal(podcastId = "rss:feed", allHistory = listOf(played.copy(podcastId = "other")), subs = listOf(feedShow), rssRefreshVersion = 0L)?.lastPlayedEpisodeId)
+    }
+
+    @Test
     fun `build signal includes latest episode id and rss new flag`() {
         val latest = TestFixtures.episode(id = "tip-9")
         val subs =

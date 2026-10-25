@@ -6,6 +6,7 @@ import cx.aswin.boxlore.core.catalog.FolderRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
+import cx.aswin.boxlore.core.database.sortedByListening
 import cx.aswin.boxlore.core.database.toScorable
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.EpisodeStatus
@@ -491,10 +492,7 @@ class LibraryViewModel(
             SubscriptionSort.Alphabetical -> {
                 enrichedPodcasts.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
             }
-            SubscriptionSort.MostListened -> {
-                val historyCounts = allHistory.groupBy { it.podcastId }.mapValues { it.value.size }
-                enrichedPodcasts.sortedByDescending { historyCounts[it.id] ?: 0 }
-            }
+            SubscriptionSort.MostListened -> enrichedPodcasts.sortedByListening(allHistory)
             SubscriptionSort.Manual -> {
                 SubscriptionManualOrderLogic.apply(manualOrder, enrichedPodcasts)
             }
