@@ -2,7 +2,7 @@
 
 The rules every boxlore component follows to identify an episode. Server components follow the same rules. Change them together, and never change a rule marked **fixed**.
 
-**Status:** sections 1–3 are implemented: `EpisodeRecipeId` in `:core:model` and `scripts/sync/lib/episode-recipe-id.js` with the shared fixture, and the explicit trim in `StickyEpisodeIdentity.catalogKey`. The app's feed parsers record each item's document position, so a duplicate key keeps the first item in the document (section 3), and key GUID-less items on the first playable raw `<enclosure url>` (section 1); stored rows keep their IDs through the keys older builds used. An item with no GUID and no playable enclosure keeps a phone-only key and never takes a recipe ID. Sections 4 and 5 bind the app code that stores or resolves recipe IDs once it adopts them.
+**Status:** sections 1–3 are implemented: `EpisodeRecipeId` in `:core:model` and `scripts/sync/lib/episode-recipe-id.js` with the shared fixture, and the explicit trim in `StickyEpisodeIdentity.catalogKey`. The app's feed parsers record each item's document position, so a duplicate key keeps the first item in the document (section 3), and key GUID-less items on the first playable raw `<enclosure url>` (section 1); stored rows keep their IDs through the keys older builds used. An item with no GUID and no playable enclosure keeps a phone-only key and never takes a recipe ID. Sections 4 and 5 bind the app code that stores or resolves recipe IDs once it adopts them. Room v39 creates the section 5 tables and, on upgrade, records an alias for every stored episode ID of a Podcast Index show ([`core/database/README.md`](../core/database/README.md)); nothing reads them yet.
 
 ## 1. What an episode is
 
@@ -56,7 +56,7 @@ Collision tests force clashes with a test-only hash override, both cross-show an
 
 ## 5. Aliases on the phone
 
-`episode_aliases(aliasId PK, podcastId, catalogKey, recipeId, state, owner, provenance)` keeps every stored ID of an episode. The key and provenance survive catalog eviction.
+`episode_aliases(aliasId PK, podcastId, catalogKey, recipeId, state, owner, provenance, createdAt)` keeps every stored ID of an episode. `owner` marks the one ID per (show, key) that holds listener state. The key and provenance survive catalog eviction.
 
 | State | When | Reads | Writes |
 | :--- | :--- | :--- | :--- |
@@ -64,7 +64,7 @@ Collision tests force clashes with a test-only hash override, both cross-show an
 | ambiguous | Competing identities can't be told apart | Not used to resolve | Never moves state |
 | unresolved | No usable key yet (synthetic, history-only, evicted) | Not used | Retried when the show's feed is read |
 
-- **One owner per episode** holds listener state: the ID with the most recent listener activity, else one with a completed download, else the oldest row. It is stored and enforced in a transaction and changes only if the owner holds no state.
+- **One owner per episode** holds listener state: the ID with the most recent listener activity (a play or like time), else one with a completed download, else the ID that equals its recipe ID (a served ID), else the oldest row. Listener activity decides first, so a served ID owns the episode only when no other ID holds listening. It is stored and enforced in a transaction and changes only if the owner holds no state. Only trusted IDs own. The v39 upgrade seeds a catalog ID that history, the queue or downloads hold under another show as ambiguous, so it never owns.
 - **Reads use one projected state:** progress and position from the owner; liked and completed from `episode_group_state` plus the aliases' rows. Ranking, history, filters and dedupe count the episode once.
 - **Writes:** progress goes to the owner. Like and completion compute an absolute target from the projected state and write it to every trusted alias and the group state. A queue removal deletes every trusted alias's rows. Nothing changes ID.
 - **Downloads are separate:** playback uses the alias that holds the completed download (its request, URI and cache key); history still goes to the owner. Creating a download checks every alias first; removing one covers every alias with files.

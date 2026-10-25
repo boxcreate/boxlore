@@ -84,6 +84,11 @@ class LibraryBackupExportTest {
                         description = null,
                         isSubscribed = true,
                         feedUrl = "https://example.com/feed.xml",
+                        epNs = 1001L,
+                        feedUrlSource = "registry",
+                        feedUrlCheckedAt = 5L,
+                        transportUrl = "https://transport.example/feed",
+                        previousFeedUrl = "https://old.example/feed.xml",
                     ),
                 ),
             ),
@@ -104,6 +109,23 @@ class LibraryBackupExportTest {
         assertTrue(json.has("adaptiveRanking"))
         // Restore derives publisher-feed refreshes from each subscription's feedUrl instead.
         assertFalse(json.has("directFeedOptIns"))
+    }
+
+    @Test
+    fun `json export keeps its subscription fields and never writes feed identity or transport addresses`() = runTest {
+        `when`(adaptiveRankingRepository.exportBackup()).thenReturn(AdaptiveRankingBackup())
+
+        val json = manager.exportLibraryAsJson()
+        val subscription = JsonParser.parseString(json).asJsonObject["subscriptions"].asJsonArray.single().asJsonObject
+
+        assertEquals("https://example.com/feed.xml", subscription["feedUrl"].asString)
+        for (field in LibraryBackupFieldPolicy.PODCAST_FIELDS_NOT_EXPORTED) {
+            assertFalse(subscription.has(field), field)
+            // The names must stay real PodcastEntity fields, or the policy silently stops excluding them.
+            PodcastEntity::class.java.getDeclaredField(field)
+        }
+        assertFalse(json.contains("transport.example"), json)
+        assertFalse(json.contains("old.example"), json)
     }
 
     @Test

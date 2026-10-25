@@ -27,8 +27,11 @@ import cx.aswin.boxlore.core.database.entities.QueueMetadataEntity
         PodcastFolderCrossRef::class,
         AutoDownloadShowEntity::class,
         AutoDownloadReleaseEntity::class,
+        EpisodeAliasEntity::class,
+        EpisodeGroupStateEntity::class,
+        UpgradeRepairShowEntity::class,
     ],
-    version = 38,
+    version = 39,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -54,6 +57,10 @@ abstract class BoxLoreDatabase : RoomDatabase() {
     abstract fun queueDao(): QueueDao
 
     abstract fun folderDao(): FolderDao
+
+    abstract fun episodeIdentityDao(): EpisodeIdentityDao
+
+    abstract fun upgradeRepairDao(): UpgradeRepairDao
 
     fun listeningInsightsMaintenance(): ListeningInsightsMaintenance = ListeningInsightsMaintenance(this)
 
@@ -298,6 +305,87 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Episode aliases and feed columns; see [EpisodeIdentityMigration]. Never edit it; later changes go to v40.
+         *
+         * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39).
+         * COMPAT(own-ids): the upgrade path from every shipped build. Permanent: never remove (MIGRATION.md §5).
+         */
+        private val MIGRATION_38_39 = object : Migration(38, 39) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                EpisodeIdentityMigration.migrate(db, nowMillis = System.currentTimeMillis())
+            }
+        }
+
+        /**
+         * Every upgrade path, in order. Production and the upgrade tests open the database through
+         * [builder] with this list, so the tests run exactly the migrations a phone runs.
+         *
+         * Exposed in P4 of the own-episode-IDs plan (plan section 8, Room v39 upgrade fixtures).
+         * COMPAT(own-ids): the upgrade paths from every shipped build. Permanent: never remove (MIGRATION.md §5).
+         */
+        internal val ALL_MIGRATIONS: Array<Migration> = arrayOf(
+            MIGRATION_12_13,
+            MIGRATION_13_14,
+            MIGRATION_14_15,
+            MIGRATION_15_16,
+            MIGRATION_16_17,
+            MIGRATION_17_18,
+            MIGRATION_18_19,
+            MIGRATION_19_20,
+            MIGRATION_20_21,
+            MIGRATION_21_22,
+            MIGRATION_22_23,
+            MIGRATION_23_24,
+            MIGRATION_24_25,
+            MIGRATION_25_26,
+            MIGRATION_26_27,
+            MIGRATION_27_28,
+            MIGRATION_28_29,
+            MIGRATION_29_30,
+            MIGRATION_30_31,
+            MIGRATION_31_32,
+            MIGRATION_32_33,
+            MIGRATION_33_34,
+            MIGRATION_34_35,
+            MIGRATION_33_35,
+            MIGRATION_35_36,
+            MIGRATION_36_37,
+            MIGRATION_37_38,
+            MIGRATION_38_39,
+        )
+
+        /** Versions older than the first migration (12→13). Only these may still be wiped on upgrade. */
+        private val VERSIONS_WITHOUT_UPGRADE_PATH: IntArray = (1..11).toList().toIntArray()
+
+        /** Stable database file name (ARCHITECTURE.md identity table). */
+        private const val DATABASE_NAME = "boxlore_database"
+
+        /**
+         * The production database configuration on file [name].
+         *
+         * - Upgrades from version 12 on run [migrations]. A version with no path among them fails to
+         *   open with an error instead of silently erasing history, queue, downloads and likes.
+         * - Versions 1–11 predate every migration and are still recreated empty, as before.
+         * - Opening with an older build than the file (a downgrade) still recreates it empty, so an
+         *   older APK installed over a newer one opens instead of crashing.
+         *
+         * The fallback was narrowed in P4 of the own-episode-IDs plan (plan section 8, Room v39) so a
+         * missing path can never silently erase listener data or episode aliases.
+         * COMPAT(own-ids): protects every upgrade from a shipped build. Permanent: never remove (MIGRATION.md §5).
+         */
+        internal fun builder(
+            context: android.content.Context,
+            name: String = DATABASE_NAME,
+            migrations: Array<Migration> = ALL_MIGRATIONS,
+        ): RoomDatabase.Builder<BoxLoreDatabase> =
+            androidx.room.Room
+                .databaseBuilder(context.applicationContext, BoxLoreDatabase::class.java, name)
+                .addMigrations(*migrations)
+                .fallbackToDestructiveMigrationFrom(true, *VERSIONS_WITHOUT_UPGRADE_PATH)
+                .fallbackToDestructiveMigrationOnDowngrade(true)
+                .addCallback(BriefingArtworkCompatibility(context.applicationContext.packageName))
+
         @Volatile
         @Suppress("PropertyName")
         private var INSTANCE: BoxLoreDatabase? = null
@@ -318,7 +406,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
 
         private fun renameDatabaseFileIfExists(context: android.content.Context) {
             val oldDbFile = context.getDatabasePath("boxcast_database")
-            val newDbFile = context.getDatabasePath("boxlore_database")
+            val newDbFile = context.getDatabasePath(DATABASE_NAME)
 
             if (oldDbFile.exists()) {
                 val success = oldDbFile.renameTo(newDbFile)
@@ -336,43 +424,7 @@ abstract class BoxLoreDatabase : RoomDatabase() {
             // query running against a closed connection.
             INSTANCE?.let { return@synchronized it }
             renameDatabaseFileIfExists(context)
-            val instance =
-                androidx.room.Room
-                    .databaseBuilder(
-                        context.applicationContext,
-                        BoxLoreDatabase::class.java,
-                        "boxlore_database",
-                    ).addMigrations(
-                        MIGRATION_12_13,
-                        MIGRATION_13_14,
-                        MIGRATION_14_15,
-                        MIGRATION_15_16,
-                        MIGRATION_16_17,
-                        MIGRATION_17_18,
-                        MIGRATION_18_19,
-                        MIGRATION_19_20,
-                        MIGRATION_20_21,
-                        MIGRATION_21_22,
-                        MIGRATION_22_23,
-                        MIGRATION_23_24,
-                        MIGRATION_24_25,
-                        MIGRATION_25_26,
-                        MIGRATION_26_27,
-                        MIGRATION_27_28,
-                        MIGRATION_28_29,
-                        MIGRATION_29_30,
-                        MIGRATION_30_31,
-                        MIGRATION_31_32,
-                        MIGRATION_32_33,
-                        MIGRATION_33_34,
-                        MIGRATION_34_35,
-                        MIGRATION_33_35,
-                        MIGRATION_35_36,
-                        MIGRATION_36_37,
-                        MIGRATION_37_38,
-                    ).fallbackToDestructiveMigration(dropAllTables = true) // For development simplicity on older versions
-                    .addCallback(BriefingArtworkCompatibility(context.applicationContext.packageName))
-                    .build()
+            val instance = builder(context).build()
             INSTANCE = instance
             instance
         }

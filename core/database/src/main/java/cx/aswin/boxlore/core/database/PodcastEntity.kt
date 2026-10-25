@@ -1,5 +1,6 @@
 package cx.aswin.boxlore.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -68,7 +69,70 @@ data class PodcastEntity(
     val linkedPodcastIndexId: String? = null,
     val customGenre: String? = null,
     val customGenreIcon: String? = null,
+
+    // Feed identity and address bookkeeping (Room v39). PodcastDao.upsert keeps them when it
+    // replaces a stored row (keepingFeedIdentityColumnsOf), so they change only through their own updates.
+    /**
+     * Episode namespace recipe IDs are minted in; seeded as the show ID at the v39 upgrade and never
+     * changed once an ID has been issued under it. Null when not set yet (and always for `rss:` shows).
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 podcast columns; decision D12).
+     * COMPAT(own-ids): issued recipe IDs depend on it. Permanent: never remove (MIGRATION.md §5).
+     */
+    val epNs: Long? = null,
+    /**
+     * Where [feedUrl] came from (for example the registry or the publisher); null when unrecorded.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 podcast columns; section 11, address repair).
+     * COMPAT(own-ids): feed address bookkeeping. Permanent: never remove (MIGRATION.md §5).
+     */
+    val feedUrlSource: String? = null,
+    /**
+     * When [feedUrl] was last confirmed against the address registry (epoch ms); 0 when never.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 podcast columns; section 11, address repair).
+     * COMPAT(own-ids): feed address bookkeeping. Permanent: never remove (MIGRATION.md §5).
+     */
+    @ColumnInfo(defaultValue = "0")
+    val feedUrlCheckedAt: Long = 0L,
+    /**
+     * Address to fetch the feed through when the publisher's can't be read directly; null when not needed.
+     * Never exported in backups.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 podcast columns; section 11, address repair).
+     * COMPAT(own-ids): feed address bookkeeping. Permanent: never remove (MIGRATION.md §5).
+     */
+    val transportUrl: String? = null,
+    /**
+     * The address [feedUrl] replaced in its last automatic correction, kept so it can be undone.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 podcast columns; section 11, address repair).
+     * COMPAT(own-ids): feed address bookkeeping. Permanent: never remove (MIGRATION.md §5).
+     */
+    val previousFeedUrl: String? = null,
 ) {
+    /**
+     * This row with [stored]'s v39 columns, for [PodcastDao.upsert]: subscribe, restore and sync
+     * build the row from scratch and never set them.
+     * - [epNs] is always kept: an issued namespace never changes.
+     * - The address bookkeeping ([feedUrlSource], [feedUrlCheckedAt], [transportUrl],
+     *   [previousFeedUrl]) describes [feedUrl], so it is kept only while this write leaves
+     *   [feedUrl] unchanged. A write that changes the address writes its own values.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 podcast columns).
+     * COMPAT(own-ids): keeps the seeded namespace. Permanent: never remove (MIGRATION.md §5).
+     */
+    internal fun keepingFeedIdentityColumnsOf(stored: PodcastEntity): PodcastEntity {
+        val sameAddress = feedUrl == stored.feedUrl
+        return copy(
+            epNs = stored.epNs,
+            feedUrlSource = if (sameAddress) stored.feedUrlSource else feedUrlSource,
+            feedUrlCheckedAt = if (sameAddress) stored.feedUrlCheckedAt else feedUrlCheckedAt,
+            transportUrl = if (sameAddress) stored.transportUrl else transportUrl,
+            previousFeedUrl = if (sameAddress) stored.previousFeedUrl else previousFeedUrl,
+        )
+    }
+
     val isRss: Boolean
         get() = sourceType == SOURCE_RSS
 

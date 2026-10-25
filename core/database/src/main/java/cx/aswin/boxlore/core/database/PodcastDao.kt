@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.database
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
@@ -26,8 +27,29 @@ data class RssFeedStateUpdate(
 @Dao
 interface PodcastDao {
 
+    /**
+     * Inserts [podcast], or updates the stored row while keeping its Room v39 columns
+     * ([PodcastEntity.keepingFeedIdentityColumnsOf]). Subscribe, restore and sync build the row
+     * from scratch, and the v39 upgrade seeds `epNs` only once, so a plain upsert would reset it.
+     * Those columns change only through their own updates.
+     *
+     * Changed in P4 of the own-episode-IDs plan (plan section 8, Room v39 podcast columns).
+     * COMPAT(own-ids): keeps the seeded namespace. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Transaction
+    suspend fun upsert(podcast: PodcastEntity) {
+        val stored = getPodcast(podcast.podcastId)
+        upsertRow(if (stored == null) podcast else podcast.keepingFeedIdentityColumnsOf(stored))
+    }
+
+    /**
+     * Writes every column of [podcast] as given, the v39 columns included. Use [upsert], which keeps
+     * those columns of a stored row.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 podcast columns).
+     */
     @Upsert
-    suspend fun upsert(podcast: PodcastEntity)
+    suspend fun upsertRow(podcast: PodcastEntity)
 
     @Query("SELECT * FROM podcasts WHERE isSubscribed = 1 ORDER BY title ASC")
     fun getSubscribedPodcasts(): Flow<List<PodcastEntity>>
