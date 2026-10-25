@@ -312,15 +312,7 @@ class AppContainer(
             context = appContext,
             database = database,
             rankingFeedbackRepository = rankingFeedbackRepository,
-        ).also { _ ->
-            // Wire the DownloadCacheRelinker into RssPodcastRepository so the RSS module
-            // does not need a compile-time dependency on :core:downloads.
-            rssPodcastRepository.setDownloadCacheRelinker(
-                DownloadCacheRelinker { oldId, newId ->
-                    DownloadRepository.relinkDownloadCache(appContext, oldId, newId)
-                },
-            )
-        }
+        )
     }
 
     override val autoDownloadCoordinator: cx.aswin.boxlore.core.downloads.AutoDownloadCoordinator by lazy {

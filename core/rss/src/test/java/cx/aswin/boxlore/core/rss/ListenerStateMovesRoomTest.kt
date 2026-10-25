@@ -4,15 +4,12 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
-import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
-import cx.aswin.boxlore.core.database.PodcastEntity
-import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.database.entities.QueueItem
 import cx.aswin.boxlore.core.database.episodeListenerStore
 import kotlinx.coroutines.runBlocking
@@ -21,7 +18,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,10 +25,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The two paths that still move listener state between stored IDs, through Room
- * (docs/EPISODE_IDS.md §5): the orphan rematch after a feed read and switching a Podcast Index
- * show to its RSS feed. Trusted IDs never move; a catalog row read again under a new ID joins the
- * episode instead; ambiguous IDs keep their rows.
+ * The one path that still moves listener state between stored IDs, the orphan rematch after a feed
+ * read, through Room (docs/EPISODE_IDS.md §5). Trusted IDs never move; a catalog row read again
+ * under a new ID joins the episode instead; ambiguous IDs keep their rows. Switching a Podcast Index
+ * show to its feed moves nothing ([ShowSwitchRoomTest]).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -53,7 +49,6 @@ class ListenerStateMovesRoomTest {
     @After
     fun tearDown() {
         database.close()
-        RssPodcastRepository.clearInstanceForTests()
     }
 
     @Test
@@ -147,38 +142,6 @@ class ListenerStateMovesRoomTest {
         assertEquals(listOf("owner", "-1", "701").toSet(), database.episodeListenerStore().memberIds("701").toSet())
     }
 
-    @Test
-    fun switchingAShowToItsFeedKeepsAmbiguousIdsAndKeepsLaterClearsInTheMergedRow() = runBlocking {
-        val repository = RssPodcastRepository.createForTests(context, database)
-        database.podcastDao().upsert(PodcastEntity(podcastId = SHOW, title = "Index show", author = "Host", imageUrl = "", description = "", isSubscribed = true))
-        database.podcastDao().upsert(
-            PodcastEntity(podcastId = RSS_SHOW, title = "Feed show", author = "Host", imageUrl = "", description = "", isSubscribed = true, sourceType = PodcastEntity.SOURCE_RSS),
-        )
-        database.rssEpisodeDao().upsertAll(listOf(rssEpisode("-101", title = "One", audio = AUDIO_1), rssEpisode("-102", title = "Two", audio = AUDIO_2)))
-        identity.insertAliasesIfAbsent(listOf(alias("555", key = KEY, owner = true), alias("556", key = "guid-2", state = EpisodeAliasState.AMBIGUOUS)))
-        // 555 was liked and finished, then both were cleared later in the episode's settings.
-        history.upsert(row("555", completed = true, liked = true, likedAt = 10L, playedAt = 30L, audio = AUDIO_1, title = "One"))
-        identity.upsertGroupState(EpisodeGroupStateEntity(SHOW, KEY, likeClearedAt = 20L, completeClearedAt = 40L))
-        history.upsert(row("556", progress = 70L, playedAt = 25L, audio = AUDIO_2, title = "Two"))
-        database.downloadedEpisodeDao().insert(download("556", title = "Two"))
-        database.queueDao().insertQueueItem(queueRow("556", title = "Two", audio = AUDIO_2, pubDate = 1_000L))
-
-        repository.confirmPodcastIndexLink(RSS_SHOW, SHOW)
-
-        val switched = history.getHistoryItem("-101")!!
-        assertEquals(RSS_SHOW, switched.podcastId)
-        assertFalse(switched.isLiked)
-        assertFalse(switched.isCompleted)
-        assertNull(history.getHistoryItem("555"))
-        // The ambiguous ID's history, download and queue row stay where they are.
-        assertEquals(70L, history.getHistoryItem("556")!!.progressMs)
-        assertNull(history.getHistoryItem("-102"))
-        assertNotNull(database.downloadedEpisodeDao().getDownload("556"))
-        assertNull(database.downloadedEpisodeDao().getDownload("-102"))
-        assertEquals(listOf("556"), database.queueDao().getAllQueueItemsSync().map { it.episodeId })
-        assertTrue(database.podcastDao().getPodcast(RSS_SHOW)!!.linkedPodcastIndexId == SHOW)
-    }
-
     private fun alias(id: String, key: String?, state: String = EpisodeAliasState.TRUSTED, owner: Boolean = false,) = EpisodeAliasEntity(
         aliasId = id,
         podcastId = SHOW,
@@ -236,26 +199,6 @@ class ListenerStateMovesRoomTest {
         enclosureType = "audio/mpeg",
     )
 
-    private fun rssEpisode(id: String, title: String, audio: String,) = RssEpisodeEntity(
-        episodeId = id,
-        podcastId = RSS_SHOW,
-        guid = "rss-$id",
-        title = title,
-        description = "",
-        audioUrl = audio,
-        imageUrl = null,
-        duration = 60,
-        publishedDate = 1_000L,
-        chaptersUrl = null,
-        transcriptUrl = null,
-        transcripts = null,
-        persons = null,
-        seasonNumber = null,
-        episodeNumber = null,
-        episodeType = null,
-        enclosureType = "audio/mpeg",
-    )
-
     private fun queueRow(id: String, title: String, audio: String, pubDate: Long,) = QueueItem(
         episodeId = id,
         title = title,
@@ -269,26 +212,8 @@ class ListenerStateMovesRoomTest {
         position = 0,
     )
 
-    private fun download(id: String, title: String) = DownloadedEpisodeEntity(
-        episodeId = id,
-        podcastId = SHOW,
-        episodeTitle = title,
-        episodeDescription = null,
-        episodeImageUrl = null,
-        podcastName = "Show",
-        podcastImageUrl = null,
-        durationMs = 1_000L,
-        publishedDate = 1_000L,
-        localFilePath = "",
-        downloadId = 0L,
-        downloadedAt = 1L,
-        sizeBytes = 1L,
-        status = DownloadedEpisodeEntity.STATUS_COMPLETED,
-    )
-
     private companion object {
         const val SHOW = "9926"
-        const val RSS_SHOW = "rss:abc"
         const val KEY = "guid-a"
         const val RECIPE = 4_503_599_627_370_500L
         const val NOW = 1_234L

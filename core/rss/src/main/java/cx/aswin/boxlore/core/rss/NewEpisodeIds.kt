@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
 
@@ -59,10 +60,14 @@ class NewEpisodeIds internal constructor(
         hash: RecipeIdHash = RecipeIdHash.RECIPE,
     ) : this(epNs, aliases, hash, ListenerEvidence.NONE)
 
-    /** Trusted alias IDs by catalog key, owner first, then oldest. */
+    /**
+     * Trusted alias IDs by catalog key, owner first, then oldest. An RSS episode ID linked to the
+     * show when the listener switched it to its feed ([EpisodeAliasProvenance.RSS_SOURCE_LINK]) is
+     * never reused: the switched-to show's catalog holds it.
+     */
     private val trustedByKey: Map<String, List<String>> =
         aliases
-            .filter { it.state == EpisodeAliasState.TRUSTED && it.catalogKey != null }
+            .filter { it.state == EpisodeAliasState.TRUSTED && it.catalogKey != null && it.provenance != EpisodeAliasProvenance.RSS_SOURCE_LINK }
             .sortedWith(compareByDescending<EpisodeAliasEntity> { it.owner }.thenBy { it.createdAt }.thenBy { it.aliasId })
             .groupBy({ requireNotNull(it.catalogKey) }, { it.aliasId })
 

@@ -14,7 +14,8 @@ import androidx.room.PrimaryKey
  * `local_episodes`: `LocalEpisodeCatalogDao.deleteCatalog` leaves these rows in place.
  *
  * @property aliasId the stored local episode ID, exactly as history, queue and downloads hold it
- * @property podcastId the show the ID belongs to
+ * @property podcastId the show the ID belongs to. An [EpisodeAliasProvenance.RSS_SOURCE_LINK] alias names the
+ *   Podcast Index show whose episode the ID points at, while the RSS show it was switched to holds the ID.
  * @property catalogKey the episode's recipe-trimmed catalog key; null while the key is unknown
  *   ([EpisodeAliasState.UNRESOLVED])
  * @property recipeId the recipe ID of ([podcastId], [catalogKey]) in the show's namespace; null
@@ -99,6 +100,15 @@ object EpisodeAliasProvenance {
      * section 8, re-key paths narrowed).
      */
     const val CATALOG_KEY_MATCH = "catalog_key_match"
+
+    /**
+     * An RSS episode ID of the feed a Podcast Index show was switched to, recorded under the Podcast
+     * Index show instead of moving its listener state onto the RSS show's IDs. Trusted when an old
+     * ID's trusted key is the RSS episode's key and no other RSS episode has it, so the RSS episode
+     * reads the old IDs' state; ambiguous for any weaker match. Added in P4 (plan section 8, re-key
+     * paths narrowed; decision D8).
+     */
+    const val RSS_SOURCE_LINK = "rss_source_link"
 
     /**
      * Recorded by a catalog read for a new episode that took its recipe ID.

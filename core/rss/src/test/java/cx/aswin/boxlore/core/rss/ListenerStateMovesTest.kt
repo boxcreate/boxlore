@@ -6,7 +6,6 @@ import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.EpisodeGroupStateEntity
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
-import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -16,7 +15,8 @@ import org.junit.jupiter.api.Test
 
 /**
  * The narrowed re-key paths (docs/EPISODE_IDS.md §5): the orphan rematch moves only unresolved
- * legacy IDs, never resurrects a cleared like, and records the moved ID as an alias.
+ * legacy IDs, never resurrects a cleared like, and records the moved ID as an alias; switching a
+ * Podcast Index show to its feed moves nothing and links the feed's episodes by alias instead.
  */
 class ListenerStateMovesTest {
     @Test
@@ -24,7 +24,6 @@ class ListenerStateMovesTest {
         val aliases = listOf(alias("-1", EpisodeAliasState.TRUSTED), alias("-2", EpisodeAliasState.AMBIGUOUS), alias("-3", EpisodeAliasState.UNRESOLVED, key = null))
         val settled = ListenerStateMoves.settledIds(aliases)
         assertEquals(setOf("-1", "-2"), settled)
-        assertEquals(setOf("-2"), ListenerStateMoves.ambiguousIds(aliases))
 
         val target = catalogRow("59023522163")
         val references = listOf("-1", "-2", "-3", "-4").map { id ->
@@ -130,27 +129,76 @@ class ListenerStateMovesTest {
     }
 
     @Test
-    fun switchingAShowToItsFeedMergesTheLikeByLatestDecisionAndKeepsCompletion() {
-        val rssEpisode = rssEpisode("-77")
-        val rssShow = PodcastEntity(podcastId = "rss:abc", title = "Feed show", author = "Host", imageUrl = "https://img/rss.jpg", description = "")
-        val piRow = history("555", liked = true, likedAt = 10L, completed = true, playedAt = 30L)
-        val rssRow = history("-77", liked = false, likedAt = 20L, playedAt = 40L)
+    fun switchingAShowToItsFeedLinksAnRssEpisodeAsTrustedOnlyByAnExactUniqueKey() {
+        val rss = listOf(rssEpisode("-71", guid = KEY), rssEpisode("-72", guid = "guid-b", audio = AUDIO_B, title = "Two"))
+        val aliases = mapOf("555" to alias("555", EpisodeAliasState.TRUSTED, owner = true))
 
-        val merged = ListenerStateMoves.linkedHistoryRow(piRow, rssRow, rssEpisode, rssShow)
+        val links = switched(listOf(reference("555", audio = "https://elsewhere.example/1.mp3")), aliases, rss)
 
-        assertEquals("-77", merged.episodeId)
-        assertEquals("rss:abc", merged.podcastId)
-        assertFalse(merged.isLiked)
-        assertEquals(20L, merged.likedAt)
-        assertTrue(merged.isCompleted)
-        assertEquals(40L, merged.lastPlayedAt)
-        assertTrue(ListenerStateMoves.linkedHistoryRow(piRow, null, rssEpisode, rssShow).isLiked)
-        // A like or completion the listener cleared later in the episode's settings stays cleared.
-        val clearedLater = EpisodeGroupStateEntity(SHOW, KEY, likeClearedAt = 35L, completeClearedAt = 50L)
-        val switched = ListenerStateMoves.linkedHistoryRow(piRow, null, rssEpisode, rssShow, clearedLater)
-        assertFalse(switched.isLiked)
-        assertFalse(switched.isCompleted)
+        // The old ID's trusted key names exactly one RSS episode: it joins that episode, never as owner.
+        assertEquals(
+            listOf(EpisodeAliasEntity("-71", SHOW, KEY, RECIPE, EpisodeAliasState.TRUSTED, owner = false, provenance = EpisodeAliasProvenance.RSS_SOURCE_LINK, createdAt = NOW)),
+            links,
+        )
     }
+
+    @Test
+    fun anyWeakerSwitchMatchIsRecordedAsAmbiguous() {
+        // Two RSS episodes share the old ID's key: neither is proven.
+        val shared = listOf(rssEpisode("-71", guid = KEY), rssEpisode("-72", guid = KEY, audio = AUDIO_B))
+        val trusted = mapOf("555" to alias("555", EpisodeAliasState.TRUSTED))
+        assertEquals(
+            listOf("-71" to EpisodeAliasState.AMBIGUOUS, "-72" to EpisodeAliasState.AMBIGUOUS),
+            switched(listOf(reference("555")), trusted, shared).map { it.aliasId to it.state },
+        )
+
+        // No trusted key (no alias, unresolved, or a trusted key of another show): the audio
+        // address or title match is recorded under the RSS episode's own key, ambiguous.
+        val rss = listOf(rssEpisode("-71", guid = "guid-x", audio = AUDIO_A, title = "One"))
+        val weak =
+            mapOf(
+                "556" to alias("556", EpisodeAliasState.UNRESOLVED, key = null),
+                "557" to alias("557", EpisodeAliasState.TRUSTED).copy(podcastId = "another-show"),
+            )
+        for (id in listOf("555", "556", "557")) {
+            val link = switched(listOf(reference(id, audio = AUDIO_A)), weak, rss).single()
+            assertEquals(EpisodeAliasState.AMBIGUOUS, link.state)
+            assertEquals("guid-x", link.catalogKey)
+            assertEquals(SHOW, link.podcastId)
+            assertFalse(link.owner)
+        }
+    }
+
+    @Test
+    fun aWeakerMatchFromAnotherOldIdDoesNotUndoAnExactKeyMatch() {
+        // 558 is another episode (guid-c) whose audio address happens to match the RSS episode of KEY.
+        val two = mapOf("555" to alias("555", EpisodeAliasState.TRUSTED), "558" to alias("558", EpisodeAliasState.TRUSTED, key = "guid-c"))
+        val links = switched(listOf(reference("558", audio = AUDIO_A), reference("555")), two, listOf(rssEpisode("-71", guid = KEY, audio = AUDIO_A)))
+        assertEquals(listOf(Triple("-71", EpisodeAliasState.TRUSTED, KEY)), links.map { Triple(it.aliasId, it.state, it.catalogKey) })
+        assertEquals(RECIPE, links.single().recipeId)
+    }
+
+    @Test
+    fun aSwitchLinksNothingForAmbiguousIdsUnmatchedRowsOrAnIdTheShowAlreadyHolds() {
+        val rss = listOf(rssEpisode("-71", guid = KEY, audio = AUDIO_A, title = "One"))
+        // An ambiguous old ID never resolves, so nothing is linked to it.
+        val ambiguous = mapOf("555" to alias("555", EpisodeAliasState.AMBIGUOUS))
+        assertTrue(switched(listOf(reference("555", audio = AUDIO_A)), ambiguous, rss).isEmpty())
+        // A row that matches no RSS episode links nothing.
+        assertTrue(switched(listOf(reference("559", audio = "https://elsewhere.example/9.mp3", title = "Nine")), emptyMap(), rss).isEmpty())
+        // The show's own rows already hold the RSS episode's ID: it is that episode and gets no alias.
+        val held = mapOf("555" to alias("555", EpisodeAliasState.TRUSTED))
+        assertTrue(switched(listOf(reference("555"), reference("-71", audio = AUDIO_A)), held, rss).isEmpty())
+    }
+
+    private fun switched(
+        references: List<LocalCatalogListenerReference>,
+        aliases: Map<String, EpisodeAliasEntity>,
+        rss: List<RssEpisodeEntity>,
+    ): List<EpisodeAliasEntity> = ListenerStateMoves.switchedShowAliases(SHOW, references, aliases, rss, epNs = SHOW.toLong(), nowMs = NOW)
+
+    private fun reference(id: String, audio: String? = null, title: String? = "Episode $id",) =
+        LocalCatalogListenerReference(episodeId = id, enclosureUrl = audio, title = title, publishedDate = null)
 
     private fun alias(id: String, state: String, key: String? = KEY, owner: Boolean = false,) = EpisodeAliasEntity(
         aliasId = id,
@@ -183,13 +231,13 @@ class ListenerStateMovesTest {
         enclosureType = "audio/mpeg",
     )
 
-    private fun rssEpisode(id: String) = RssEpisodeEntity(
+    private fun rssEpisode(id: String, guid: String, audio: String = "https://cdn.example.com/$id.mp3", title: String = "Feed $id",) = RssEpisodeEntity(
         episodeId = id,
         podcastId = "rss:abc",
-        guid = "guid-x",
-        title = "Feed title",
+        guid = guid,
+        title = title,
         description = "",
-        audioUrl = "https://cdn.example.com/feed.mp3",
+        audioUrl = audio,
         imageUrl = null,
         duration = 60,
         publishedDate = 1_000L,
@@ -232,5 +280,8 @@ class ListenerStateMovesTest {
         const val SHOW = "9926"
         const val KEY = "guid-a"
         const val RECIPE = 4_503_599_627_370_500L
+        const val NOW = 1_234L
+        const val AUDIO_A = "https://cdn.example.com/a.mp3"
+        const val AUDIO_B = "https://cdn.example.com/b.mp3"
     }
 }
