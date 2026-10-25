@@ -75,6 +75,7 @@ class PodcastRepositoryCatalogTest {
                 rssRepository = rss,
                 ioDispatcher = testDispatcher,
                 boxLoreApi = api,
+                boxLoreApiV2 = NetworkModule.createBoxLoreApiV2(server.url("/").toString(), client),
             )
     }
 
@@ -283,72 +284,94 @@ class PodcastRepositoryCatalogTest {
     }
 
     @Test
-    fun `match baseline reads up to 1000 newest episodes from episodes-match`() = runTest(testDispatcher) {
-        // The page path is capped at the oldest 100, so newer episodes of a big show went unmatched.
-        val items = (1..150).joinToString(",") { i ->
-            """{"id":$i,"guid":"g$i","title":"Ep $i","enclosureUrl":"https://cdn.example/$i.mp3","datePublished":${1_700_000_000 + i}}"""
-        }
-        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[$items,{"id":0,"enclosureUrl":"https://x/0.mp3"},{"id":7,"title":"no audio"}]}"""))
-
-        val baseline = repository.loadPiEpisodesForBaseline("90001", limit = 5000)
-
-        assertEquals(150, baseline.size, "items without an ID or audio are skipped")
-        assertEquals(Episode(id = "150", title = "Ep 150", description = "", audioUrl = "https://cdn.example/150.mp3", podcastId = "90001", publishedDate = 1_700_000_150), baseline.last())
-        val recorded = server.takeRequest()
-        assertEquals("/episodes/match?id=90001&max=1000", recorded.path)
-        assertEquals(APP_KEY, recorded.getHeader("X-App-Key"))
-        assertEquals(1, server.requestCount)
-    }
-
-    @Test
-    fun `match baseline falls back to the page path when the route fails`() = runTest(testDispatcher) {
-        server.enqueue(MockResponse().setResponseCode(404))
+    fun `the PI list for feed-only extras is the oldest page`() = runTest(testDispatcher) {
         server.enqueue(
             MockResponse().setHeader("Content-Type", "application/json")
                 .setBody("""{"items":[{"id":11,"title":"Old","enclosureUrl":"https://cdn.example/11.mp3","datePublished":1}],"hasMore":false}"""),
         )
 
-        val baseline = repository.loadPiEpisodesForBaseline("90001", limit = 1000)
+        val list = repository.loadPiEpisodesForSupplement("90001")
 
-        assertEquals(listOf("11"), baseline.map { it.id })
-        assertTrue(server.takeRequest().path!!.startsWith("/episodes/match"))
+        assertEquals(listOf("11"), list.map { it.id })
         val page = server.takeRequest().path!!
         assertTrue(page.startsWith("/episodes?") && page.contains("limit=100") && page.contains("sort=oldest"), page)
+        assertEquals(1, server.requestCount)
     }
 
     @Test
-    fun `an empty match list is confirmed by the page path`() = runTest(testDispatcher) {
-        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[]}"""))
+    fun `the API client has no episodes-match route`() {
+        // New feed items take recipe IDs; nothing matches them against a Podcast Index list any more.
+        val routes = cx.aswin.boxlore.core.network.BoxLoreApi::class.java.methods.mapNotNull { it.getAnnotation(retrofit2.http.GET::class.java)?.value }
+        assertTrue(routes.isNotEmpty())
+        assertTrue("episodes/match" !in routes, routes.toString())
+    }
+
+    @Test
+    fun `a recipe-range ID is looked up on v2 with its show and never on the PI route`() = runTest(testDispatcher) {
         server.enqueue(
-            MockResponse().setHeader("Content-Type", "application/json")
-                .setBody("""{"items":[{"id":11,"title":"Old","enclosureUrl":"https://cdn.example/11.mp3","datePublished":1}],"hasMore":false}"""),
+            MockResponse().setHeader("Content-Type", "application/json").setBody(
+                """{"status":"true","source":"book","episode":{"id":$RECIPE,"title":"Fresh","enclosureUrl":"https://cdn.example/f.mp3","feedId":920666,"catalogKey":"guid-1"}}""",
+            ),
         )
 
-        val baseline = repository.loadPiEpisodesForBaseline("90001", limit = 1000)
+        val episode = repository.getEpisode(RECIPE.toString(), showId = "920666")
 
-        assertEquals(listOf("11"), baseline.map { it.id })
-        assertTrue(server.takeRequest().path!!.startsWith("/episodes/match"))
-        assertTrue(server.takeRequest().path!!.startsWith("/episodes?"))
+        assertEquals("/v2/episode?id=$RECIPE&show=920666", server.takeRequest().path)
+        assertEquals(1, server.requestCount)
+        assertEquals(RECIPE.toString(), episode?.id)
+        assertEquals(RECIPE, episode?.recipeId)
+        assertEquals("guid-1", episode?.catalogKey)
+        assertEquals("920666", episode?.podcastId)
     }
 
     @Test
-    fun `match baseline off switch keeps the page path`() = runTest(testDispatcher) {
-        val off =
-            PodcastRepository(
-                baseUrl = server.url("/").toString(),
-                publicKey = APP_KEY,
-                context = fakeContext(),
-                rssRepository = RssPodcastRepository.createForTests(context = fakeContext(), database = fakeDatabase()),
-                ioDispatcher = testDispatcher,
-                boxLoreApi = NetworkModule.createBoxLoreApi(server.url("/").toString(), OkHttpClient()),
-                useEpisodeMatchBaseline = { false },
-            )
-        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[],"hasMore":false}"""))
+    fun `a served ID keeps the ID the caller asked for and carries the recipe ID`() = runTest(testDispatcher) {
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json").setBody(
+                """{"status":"true","episode":{"id":$RECIPE,"servedId":$SERVED,"title":"Fresh","enclosureUrl":"https://cdn.example/f.mp3","feedId":920666}}""",
+            ),
+        )
 
-        off.loadPiEpisodesForBaseline("90001", limit = 1000)
+        val episode = repository.getEpisode(SERVED.toString())
 
-        assertTrue(server.takeRequest().path!!.startsWith("/episodes?"))
-        assertEquals(1, server.requestCount)
+        assertEquals("/v2/episode?id=$SERVED", server.takeRequest().path, "no show when the caller has none")
+        assertEquals(SERVED.toString(), episode?.id)
+        assertEquals(RECIPE, episode?.recipeId)
+    }
+
+    @Test
+    fun `a recipe ID that needs the feed, is missing or fails is not found and never falls back to PI`() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"needsFeed":true,"show":920666,"fetchUrl":"https://feeds.example/s.xml"}"""))
+        server.enqueue(MockResponse().setResponseCode(404))
+        server.enqueue(MockResponse().setResponseCode(500))
+
+        repeat(3) { assertEquals(null, repository.getEpisode(RECIPE.toString(), showId = "920666")) }
+
+        repeat(3) { assertTrue(server.takeRequest().path!!.startsWith("/v2/episode?")) }
+        assertEquals(3, server.requestCount)
+    }
+
+    @Test
+    fun `a show at or above 2^52 is left out of the v2 lookup`() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
+
+        repository.getEpisode(RECIPE.toString(), showId = RECIPE.toString())
+
+        assertEquals("/v2/episode?id=$RECIPE", server.takeRequest().path)
+    }
+
+    @Test
+    fun `a Podcast Index ID keeps the v1 episode route`() = runTest(testDispatcher) {
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("""{"status":"true","episode":{"id":5001,"title":"Old","enclosureUrl":"https://cdn.example/o.mp3","feedId":920666}}"""),
+        )
+
+        val episode = repository.getEpisode("5001")
+
+        assertTrue(server.takeRequest().path!!.startsWith("/episode?id=5001"))
+        assertEquals("5001", episode?.id)
+        assertEquals(null, episode?.recipeId)
     }
 
     private fun fixtureBody(resourcePath: String): MockResponse {
@@ -405,5 +428,7 @@ class PodcastRepositoryCatalogTest {
 
     companion object {
         private const val APP_KEY = "test-app-key"
+        const val RECIPE = 4_503_599_627_370_500L
+        const val SERVED = 4_600_000_000_000_001L
     }
 }

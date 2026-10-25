@@ -11,11 +11,20 @@ import cx.aswin.boxlore.core.model.Transcript
 /**
  * Full local episode row for a subscribed Podcast Index show.
  *
- * [episodeId] is immutable after first insert (positive PI id or minted
- * negative). [guid] is the catalog key (publisher guid, else a stable
- * synthetic from the enclosure URL).
+ * [episodeId] never changes after the first insert (docs/EPISODE_IDS.md §4: nothing is re-keyed).
+ * Rows hold whatever ID they were first written with: a Podcast Index ID or a served recipe-range
+ * ID from older builds, a phone-minted negative ID, or, from P4 PR 9 on, the recipe ID of
+ * (show, [guid]) in the show's episode namespace. A new row whose recipe ID belongs to another
+ * episode takes a reserved negative ID instead, and items outside the identity contract (no GUID
+ * and no playable enclosure) keep phone-minted negative IDs. Every ID a catalog read writes gets
+ * an `episode_aliases` row, so it survives eviction.
+ *
+ * [guid] is the catalog key: the recipe-trimmed GUID, else the item's enclosure URL (legacy rows
+ * may hold an older key, a padded key or a synthetic `id:<episodeId>`; see [legacy]).
  *
  * No FK CASCADE — history / downloads / queue keep resolving after unsubscribe.
+ *
+ * KDoc updated in P4 PR 9 (own-IDs plan section 4, recipe IDs for new episodes).
  */
 @Entity(
     tableName = "local_episodes",

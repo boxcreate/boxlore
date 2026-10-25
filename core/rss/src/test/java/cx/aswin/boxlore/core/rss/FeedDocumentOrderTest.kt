@@ -295,7 +295,7 @@ class FeedDocumentOrderTest {
         rssNamespaceId = namespace,
         parsed = items,
         existing = existing,
-        piBaseline = null,
+        newIds = NewEpisodeIds.NONE,
         channelImageUrl = null,
         showImageUrl = null,
     )

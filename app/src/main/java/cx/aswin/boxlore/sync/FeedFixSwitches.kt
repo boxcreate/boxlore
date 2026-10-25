@@ -12,9 +12,6 @@ import cx.aswin.boxlore.core.analytics.PostHogStartup
  * PostHog is still starting. The `feed_first` rollout works the other way round: see [FeedFirstSwitch].
  */
 internal object FeedFixSwitches {
-    /** Baselines read up to 1,000 episodes from `/episodes/match` instead of the 100-item page. */
-    const val MATCH_BASELINE_OFF = "feed-fix-match-baseline-off"
-
     /** A dead saved feed address is re-checked against the server's confirmed one (once a day per show). */
     const val ADDRESS_RECHECK_OFF = "feed-fix-address-recheck-off"
 

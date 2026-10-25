@@ -614,7 +614,6 @@ class SubscriptionForegroundSyncTest {
     @Test
     fun `a feed that moved for good gets its new address saved, only with the switch on and never for rss shows`() = runTest {
         val meta = DirectFeedTipMeta("https://old.example/feed.xml", "Moving Show", null, null, null, null)
-        val repository = org.mockito.Mockito.mock(PodcastRepository::class.java)
         suspend fun resolve(id: String, followMoves: Boolean): Pair<List<String>, Boolean?> {
             val catalog =
                 cx.aswin.boxlore.core.testing.fakes.FakeLocalEpisodeCatalogPort(readyIds = setOf(id)).apply {
@@ -625,7 +624,7 @@ class SubscriptionForegroundSyncTest {
                         )
                 }
             val adopted = mutableListOf<String>()
-            SubscriptionForegroundSync.resolveCatalogRefresh(id, meta, catalog, repository, followMoves) { adopted += it }
+            SubscriptionForegroundSync.resolveCatalogRefresh(id, meta, catalog, followMoves) { adopted += it }
             return adopted to catalog.lastRefreshRequest?.detectMove
         }
 

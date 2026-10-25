@@ -97,7 +97,7 @@ class NewEpisodePushHydrationTest {
                 NewEpisodePushHydration.Sources(
                     subscriptionRepository = subscriptionRepository,
                     episodeSupplementPort = port,
-                    loadPiBaseline = { emptyList() },
+                    loadPiList = { emptyList() },
                 ),
             )
         assertNull(result)
@@ -309,21 +309,6 @@ class NewEpisodePushHydrationTest {
     }
 
     @Test
-    fun piBaselineLoaderForwardsPodcastIdAndLimit1000() = runBlocking {
-        var seenFeed: String? = null
-        var seenLimit: Int? = null
-        val loader =
-            NewEpisodePushHydration.piBaselineLoader { feedId, limit ->
-                seenFeed = feedId
-                seenLimit = limit
-                emptyList()
-            }
-        loader("123")
-        assertEquals("123", seenFeed)
-        assertEquals(1000, seenLimit)
-    }
-
-    @Test
     fun localCatalogMatchesEnclosureAndSkipsBlankKeys() = runBlocking {
         subscriptionRepository.subscribe(
             Podcast(
@@ -503,7 +488,7 @@ class NewEpisodePushHydrationTest {
         val sources = NewEpisodePushHydration.Sources(
             subscriptionRepository,
             localEpisodeCatalog = shared,
-            loadPiBaseline = { error("Pure RSS cannot query the catalog") }
+            loadPiList = { error("Pure RSS cannot query the catalog") }
         )
         val matched = NewEpisodePushHydration.resolveLocalEpisode(id, "https://unrelated.example/feed", "https://cdn/new.mp3", "new", sources)!!
         assertEquals(id, matched.podcastId)
@@ -551,20 +536,15 @@ class NewEpisodePushHydrationTest {
         val catalog = cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository.create(database, feed)
         catalog.refresh(cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest("123", "https://feeds.example/show.xml"))
         body = """<rss version="2.0"><channel><title>Show</title><item><guid>new-guid</guid><title>Release</title><enclosure url="https://cdn/new.mp3"/></item></channel></rss>"""
-        var piCalls = 0
         val sources = NewEpisodePushHydration.Sources(
             subscriptionRepository,
             localEpisodeCatalog = catalog,
-            loadPiBaseline = {
-                piCalls++
-                emptyList()
-            }
+            loadPiList = { error("a followed show's catalog never reads a Podcast Index list") }
         )
         val result = NewEpisodePushHydration.resolveLocalEpisode("123", null, "https://cdn/new.mp3", "new-guid", sources)
         assertEquals("https://cdn/new.mp3", result?.audioUrl)
-        assertTrue(result!!.id.toLong() < 0)
+        assertEquals("the release takes its recipe ID", cx.aswin.boxlore.core.model.EpisodeRecipeId.forNamespace(123L, "new-guid").toString(), result!!.id)
         assertEquals(2, fetches)
-        assertEquals(0, piCalls)
         // Repeated pushes keep the canonical ID and do not fetch again.
         assertEquals(result.id, NewEpisodePushHydration.resolveLocalEpisode("123", null, "https://cdn/new.mp3", "new-guid", sources)?.id)
         assertEquals(2, fetches)

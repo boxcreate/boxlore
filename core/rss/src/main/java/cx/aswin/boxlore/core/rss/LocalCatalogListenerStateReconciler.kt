@@ -2,6 +2,7 @@ package cx.aswin.boxlore.core.rss
 
 import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.DownloadedEpisodeEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasState
 import cx.aswin.boxlore.core.database.ListeningHistoryEntity
 import cx.aswin.boxlore.core.database.ListeningRollupEntity
 import cx.aswin.boxlore.core.database.LocalEpisodeEntity
@@ -54,6 +55,9 @@ internal object LocalCatalogListenerRemapLogic {
     }
 }
 
+/** Stays under SQLite's bound-parameter limit. */
+private const val KNOWN_ID_LOOKUP_CHUNK = 500
+
 /** Best-effort, transactional listener-state re-key after a full feed persist. */
 internal class LocalCatalogListenerStateReconciler(
     private val database: BoxLoreDatabase,
@@ -88,7 +92,8 @@ internal class LocalCatalogListenerStateReconciler(
                         publishedDate = item.pubDate,
                     )
                 }
-        val mappings = LocalCatalogListenerRemapLogic.mappings(catalogRows, references)
+        val known = knownEpisodeIds(catalogRows, references)
+        val mappings = LocalCatalogListenerRemapLogic.mappings(catalogRows, references.filterNot { it.episodeId in known })
         for ((oldId, target) in mappings) {
             migrateHistory(oldId, target)
             migrateDownload(oldId, target)
@@ -96,6 +101,39 @@ internal class LocalCatalogListenerStateReconciler(
             database.listeningSessionDao().reassignEpisodeId(oldId, target.episodeId)
             migrateRollups(oldId, target.episodeId)
         }
+    }
+
+    /**
+     * Negative listener IDs this refresh didn't write that are still known episodes, so they are not
+     * orphans: a catalog row (of any show) still holds the ID, or an alias records its key (an
+     * evicted row's ID). Such an ID is another episode (an older duplicate row, a changed GUID,
+     * an item the feed dropped), and re-keying its listener state onto a new row would merge two
+     * episodes. Only IDs with neither (restored without their identity row, or unresolved) are
+     * rematched.
+     *
+     * Added in P4 PR 9 (own-IDs plan section 4: a changed GUID is a new episode; nothing is
+     * re-keyed). New episodes now take recipe IDs, so a phone mint left by an older row no longer
+     * equals the new row's ID.
+     * COMPAT(own-ids): known episodes keep their listener state. Permanent: never remove (MIGRATION.md §5).
+     */
+    private suspend fun knownEpisodeIds(catalogRows: List<LocalEpisodeEntity>, references: List<LocalCatalogListenerReference>,): Set<String> {
+        val written = catalogRows.mapTo(HashSet(), LocalEpisodeEntity::episodeId)
+        val candidates =
+            references
+                .map { it.episodeId }
+                .filter { id -> id !in written && id.toLongOrNull()?.let { it < 0L } == true }
+                .distinct()
+        if (candidates.isEmpty()) return emptySet()
+        val known = HashSet<String>()
+        for (chunk in candidates.chunked(KNOWN_ID_LOOKUP_CHUNK)) {
+            database.localEpisodeCatalogDao().findOwners(chunk).mapTo(known) { it.episodeId }
+            database
+                .episodeIdentityDao()
+                .getAliases(chunk)
+                .filter { it.catalogKey != null && it.state != EpisodeAliasState.UNRESOLVED }
+                .mapTo(known) { it.aliasId }
+        }
+        return known
     }
 
     private suspend fun migrateHistory(oldId: String, target: LocalEpisodeEntity,) {

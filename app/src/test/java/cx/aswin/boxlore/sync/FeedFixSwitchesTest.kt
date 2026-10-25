@@ -9,14 +9,14 @@ class FeedFixSwitchesTest {
     @Test
     fun aFixRunsUnlessItsOffFlagIsOn() {
         val asked = mutableListOf<String>()
-        assertTrue(FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) { asked += it; false })
-        assertFalse(FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) { true })
-        assertEquals(listOf("feed-fix-match-baseline-off"), asked)
+        assertTrue(FeedFixSwitches.isOn(FeedFixSwitches.ADDRESS_RECHECK_OFF) { asked += it; false })
+        assertFalse(FeedFixSwitches.isOn(FeedFixSwitches.ADDRESS_RECHECK_OFF) { true })
+        assertEquals(listOf("feed-fix-address-recheck-off"), asked)
     }
 
     @Test
     fun noAnswerFromPostHogKeepsTheFixOn() {
-        assertTrue(FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) { error("PostHog not started") })
+        assertTrue(FeedFixSwitches.isOn(FeedFixSwitches.ADDRESS_RECHECK_OFF) { error("PostHog not started") })
     }
 
     @Test

@@ -7,7 +7,6 @@ import cx.aswin.boxlore.core.network.model.BootstrapRequest
 import cx.aswin.boxlore.core.network.model.BootstrapResponse
 import cx.aswin.boxlore.core.network.model.ContentCatalogResponse
 import cx.aswin.boxlore.core.network.model.CuratedCuriosityResponseDto
-import cx.aswin.boxlore.core.network.model.EpisodeMatchResponse
 import cx.aswin.boxlore.core.network.model.EpisodesPaginatedResponse
 import cx.aswin.boxlore.core.network.model.EpisodesResponse
 import cx.aswin.boxlore.core.network.model.FeedbackRequest
@@ -104,14 +103,6 @@ interface BoxLoreApi {
         @Query("offset") offset: Int = 0,
         @Query("sort") sort: String = "newest"
     ): retrofit2.Call<EpisodesPaginatedResponse>
-
-    /** Up to 1,000 newest episodes as match fields only, for baselines (see [EpisodeMatchResponse]). */
-    @GET("episodes/match")
-    fun getEpisodeMatchList(
-        @Header("X-App-Key") publicKey: String,
-        @Query("id") feedId: String,
-        @Query("max") max: Int = 1000,
-    ): retrofit2.Call<EpisodeMatchResponse>
 
     @GET("episodes/search")
     fun searchEpisodes(

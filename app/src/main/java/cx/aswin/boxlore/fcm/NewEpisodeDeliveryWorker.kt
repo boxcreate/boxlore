@@ -80,7 +80,7 @@ class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : Cor
                     deps.subscriptionRepository,
                     deps.podcastRepository.episodeSupplementRepository,
                     deps.podcastRepository.localEpisodeCatalog,
-                    NewEpisodePushHydration.piBaselineLoader { id, limit -> deps.podcastRepository.loadPiEpisodesForBaseline(id, limit) }
+                    loadPiList = { id -> deps.podcastRepository.loadPiEpisodesForSupplement(id) },
                 ),
             )
         }

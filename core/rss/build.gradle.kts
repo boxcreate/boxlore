@@ -75,6 +75,9 @@ dependencies {
     // Real XmlPullParser implementation backing the android.util.Xml test stub so the
     // custom RSS parser can be exercised hermetically off-device.
     testImplementation("net.sf.kxml:kxml2:2.3.0")
+    // Catalog refreshes through a real in-memory Room database (episode IDs, aliases, collisions).
+    testImplementation(libs.robolectric)
+    testImplementation("androidx.test:core:1.6.1")
 }
 
 // rssparser pulls OkHttp 5.x; MockWebServer 4.12 needs OkHttp 4 internals.

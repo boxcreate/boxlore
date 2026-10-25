@@ -20,8 +20,13 @@ internal class PodcastInfoSupplementSupport(
         offset: Int,
         sort: String,
     ) -> PodcastRepository.EpisodePage,
-    /** PI rows only — must not include cached feed extras or a refresh wipes them. */
-    private val loadPiBaseline: suspend (podcastId: String) -> List<Episode>,
+    /**
+     * The Podcast Index list the feed is compared with to find extras. PI rows only: it must not
+     * include cached feed extras, or a refresh wipes them. The repository's loader
+     * ([PodcastRepository.loadPiEpisodesForSupplement]) throws on failure, so
+     * [refreshMissingEpisodes] stops before comparing the feed with an empty list.
+     */
+    private val loadPiList: suspend (podcastId: String) -> List<Episode>,
     private val isCatalogReady: suspend (podcastId: String) -> Boolean = { false },
 ) {
     constructor(
@@ -35,7 +40,7 @@ internal class PodcastInfoSupplementSupport(
     ) : this(
         episodeSupplementPort,
         loadPage,
-        loadPiBaseline = { id ->
+        loadPiList = { id ->
             loadPage(id, SUPPLEMENT_BASELINE_LIMIT, 0, "oldest").episodes
         },
         isCatalogReady = { false },
@@ -49,7 +54,7 @@ internal class PodcastInfoSupplementSupport(
         { id, limit, offset, sort ->
             repository.getEpisodesPaginated(id, limit, offset, sort)
         },
-        repositoryBaseline { id, limit -> repository.loadPiEpisodesForBaseline(id, limit) },
+        { id -> repository.loadPiEpisodesForSupplement(id) },
         { id -> repository.localEpisodeCatalog?.isReady(id) == true },
     )
 
@@ -110,7 +115,7 @@ internal class PodcastInfoSupplementSupport(
         announceResult: Boolean,
     ): MissingEpisodesRefresh {
         val podcast = state.podcast
-        val baselineEpisodes = loadPiBaseline(podcast.id)
+        val baselineEpisodes = loadPiList(podcast.id)
         val outcome =
             episodeSupplementPort.refreshFromFeed(
                 podcastIndexId = podcast.id,
@@ -258,20 +263,10 @@ internal class PodcastInfoSupplementSupport(
     }
 
     companion object {
-        /**
-         * Podcast Index paginated max is 1000. Using that as the matching baseline
-         * avoids treating later-page PI episodes as feed-only extras.
-         */
+        /** Page size asked for the PI list extras are compared with; the repository caps a page at 100. */
         const val SUPPLEMENT_BASELINE_LIMIT = 1000
         private const val DISPLAY_PAGE_SIZE = 20
 
-        /**
-         * The repository-backed baseline: [PodcastRepository.loadPiEpisodesForBaseline] for up to
-         * [SUPPLEMENT_BASELINE_LIMIT] PI rows (a page is capped at 100). It throws on failure, so
-         * [refreshMissingEpisodes] stops before matching the feed against an empty list.
-         */
-        internal fun repositoryBaseline(load: suspend (podcastId: String, limit: Int) -> List<Episode>): suspend (String) -> List<Episode> =
-            { id -> load(id, SUPPLEMENT_BASELINE_LIMIT) }
         private const val OLDEST_PAGE_SIZE = 50
     }
 }

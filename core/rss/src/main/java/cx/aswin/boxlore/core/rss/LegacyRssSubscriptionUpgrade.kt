@@ -57,7 +57,9 @@ internal object LegacyRssUpgradeLogic {
      * ([StickyRssEpisodeRemap.remapItems]), then the stored RSS rows the feed no longer lists, so
      * every stored ID (and the listener state on it) carries over. Feed items come first, in
      * document order, so a key a feed item and a leftover stored row share keeps the feed item.
-     * Each row is known by its catalog key: a GUID-less feed item by its enclosure URL.
+     * Each row is known by its catalog key: a GUID-less feed item by its enclosure URL. No recipe
+     * ID is minted here ([NewEpisodeIds.NONE]): every row carries the RSS ID the remap gave it, as
+     * before P4 PR 9.
      *
      * Added in P4 PR 8 (own-IDs plan section 4: first in the document wins).
      * COMPAT(own-ids): the legacy upgrade keeps every RSS episode ID. Permanent: never remove (MIGRATION.md §5).
@@ -90,7 +92,7 @@ internal object LegacyRssUpgradeLogic {
             rssNamespaceId = target.rssNamespaceId,
             parsed = combined,
             existing = identities,
-            piBaseline = null,
+            newIds = NewEpisodeIds.NONE,
             channelImageUrl = target.channelImageUrl,
             showImageUrl = target.showImageUrl,
         )

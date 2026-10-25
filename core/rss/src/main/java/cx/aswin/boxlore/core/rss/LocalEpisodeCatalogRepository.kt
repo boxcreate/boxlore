@@ -33,6 +33,15 @@ class LocalEpisodeCatalogRepository private constructor(
         feedClient: RssFeedClient = RssFeedClient(),
         downloadCacheRelinker: DownloadCacheRelinker = DownloadCacheRelinker { _, _ -> false },
         onCatalogPersisted: suspend (String) -> Unit = {},
+    ) : this(database, feedClient, downloadCacheRelinker, onCatalogPersisted, RecipeIdHash.RECIPE)
+
+    /** [recipeHash] is a test seam: collision tests force recipe clashes through real Room (P4 PR 9). */
+    internal constructor(
+        database: BoxLoreDatabase,
+        feedClient: RssFeedClient,
+        downloadCacheRelinker: DownloadCacheRelinker,
+        onCatalogPersisted: suspend (String) -> Unit,
+        recipeHash: RecipeIdHash,
     ) : this(
         dao = database.localEpisodeCatalogDao(),
         feedClient = feedClient,
@@ -46,9 +55,12 @@ class LocalEpisodeCatalogRepository private constructor(
             downloadCacheRelinker = downloadCacheRelinker,
         )::reconcile,
         megaGetGate = PublisherFeedRefreshGate.permits,
+        identity = RoomCatalogIdentityStore(database),
         onCatalogPersisted = onCatalogPersisted,
+        recipeHash = recipeHash,
     )
 
+    @Suppress("LongParameterList")
     internal constructor(
         dao: LocalEpisodeCatalogDao,
         feedClient: RssFeedClient,
@@ -59,7 +71,9 @@ class LocalEpisodeCatalogRepository private constructor(
             catalogRows: List<LocalEpisodeEntity>,
         ) -> Unit,
         megaGetGate: Semaphore,
+        identity: CatalogIdentityStore,
         onCatalogPersisted: suspend (String) -> Unit = {},
+        recipeHash: RecipeIdHash = RecipeIdHash.RECIPE,
     ) : this(
         reads = LocalEpisodeCatalogReads(dao, isFeedUnchanged),
         refreshDeps =
@@ -70,6 +84,8 @@ class LocalEpisodeCatalogRepository private constructor(
             isFeedUnchanged = isFeedUnchanged,
             reconcileListenerState = reconcileListenerState,
             megaGetGate = megaGetGate,
+            identity = identity,
+            recipeHash = recipeHash,
         ),
         onCatalogPersisted = onCatalogPersisted,
     )

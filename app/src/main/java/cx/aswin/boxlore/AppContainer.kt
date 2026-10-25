@@ -194,7 +194,6 @@ class AppContainer(
             rssRepository = rssPodcastRepository,
             episodeSupplementRepository = episodeSupplementRepository,
             localEpisodeCatalog = subscribedEpisodeCatalog,
-            useEpisodeMatchBaseline = { FeedFixSwitches.isOn(FeedFixSwitches.MATCH_BASELINE_OFF) },
             rolloutSwitches = rolloutSwitches,
         )
     }
@@ -325,7 +324,6 @@ class AppContainer(
             subscribedEpisodeCatalog,
             userPreferencesRepository,
             recoverFeedUrl = { id -> cx.aswin.boxlore.core.catalog.TrackedPodcastRtdbLogic.httpsFeedUrl(podcastRepository.getPodcastDetails(id)?.feedUrl) },
-            loadInitialBaseline = { id -> podcastRepository.loadPiEpisodesForBaseline(id, SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT) },
         )
     }
 
