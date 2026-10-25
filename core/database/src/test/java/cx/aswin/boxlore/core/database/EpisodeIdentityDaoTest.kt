@@ -60,6 +60,14 @@ class EpisodeIdentityDaoTest {
     }
 
     @Test
+    fun aShowsAliasesListEveryStoredIdOfThatShowOnly() = runTest {
+        dao.insertAliasesIfAbsent(listOf(alias("-12"), alias("-11", key = null), alias("77").copy(podcastId = "other-show")))
+
+        assertEquals(listOf("-11", "-12"), dao.aliasesForShow(SHOW).map { it.aliasId })
+        assertTrue(dao.aliasesForShow("no-show").isEmpty())
+    }
+
+    @Test
     fun anEpisodesIdsListTheOwnerFirstThenTheOldest() = runTest {
         dao.insertAliasesIfAbsent(
             listOf(alias("-13", createdAt = 5L), alias("-11", createdAt = 9L, owner = true), alias("-12", createdAt = 5L), alias("-20", key = "guid-b")),

@@ -20,7 +20,6 @@ class AutoDownloadCoordinator(
     private val preferences: UserPreferencesRepository,
     private val enqueue: suspend (podcastId: String, episodeId: String, wifiOnly: Boolean, background: Boolean) -> Unit,
     private val recoverFeedUrl: suspend (String) -> String? = { null },
-    private val loadInitialBaseline: suspend (String) -> List<Episode> = { emptyList() },
     private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000L },
 ) {
     private val gate = Mutex()
@@ -60,13 +59,11 @@ class AutoDownloadCoordinator(
         var succeeded = feed != null
         if (feed != null) {
             if (feed != show.feedUrl) database.podcastDao().setFeedUrl(show.podcastId, feed)
-            val ready = catalog.isReady(show.podcastId)
             val outcome = catalog.refresh(
                 LocalEpisodeCatalogPort.RefreshRequest(
                 podcastIndexId = show.podcastId,
                     feedUrl = feed,
                     meta = meta(show),
-                loadPiBaseline = if (!ready && !show.isRss) ({ loadInitialBaseline(show.podcastId) }) else null,
                 reason = LocalEpisodeCatalogPort.RefreshReason.AUTO_DOWNLOAD,
                 canProceed = canProceed,
             )
@@ -134,7 +131,6 @@ class AutoDownloadCoordinator(
             catalog: LocalEpisodeCatalogPort,
             preferences: UserPreferencesRepository,
             recoverFeedUrl: suspend (String) -> String?,
-            loadInitialBaseline: suspend (String) -> List<Episode>
         ): AutoDownloadCoordinator = AutoDownloadCoordinator(
                 database,
             catalog,
@@ -146,7 +142,6 @@ class AutoDownloadCoordinator(
                     }
                 },
                 recoverFeedUrl = recoverFeedUrl,
-            loadInitialBaseline = loadInitialBaseline,
             )
     }
 }

@@ -80,23 +80,68 @@ internal object LocalCatalogListenerRemapLogic {
  */
 internal data class LocalCatalogRematch(val target: LocalEpisodeEntity, val exact: Boolean,)
 
+/** Stays under SQLite's bound-parameter limit. */
+private const val KNOWN_ID_LOOKUP_CHUNK = 500
+
+/**
+ * Every history, download and queue row of [podcastId], as the references the orphan rematch reads:
+ * history carries its audio address, downloads their title and date, the queue all three.
+ *
+ * Shared by the reconciler and, since P4 PR 9, by the catalog read that lets a new item keep an ID
+ * these rows already hold ([ListenerEvidence]).
+ */
+internal suspend fun BoxLoreDatabase.listenerReferences(podcastId: String): List<LocalCatalogListenerReference> {
+    val history = listeningHistoryDao().getHistoryForPodcast(podcastId)
+    val downloads = downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
+    val queue = queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastId }
+    return history.map { item ->
+        LocalCatalogListenerReference(
+            episodeId = item.episodeId,
+            enclosureUrl = item.episodeAudioUrl,
+            title = item.episodeTitle,
+            publishedDate = null,
+        )
+    } +
+        downloads.map { item ->
+            LocalCatalogListenerReference(
+                episodeId = item.episodeId,
+                enclosureUrl = null,
+                title = item.episodeTitle,
+                publishedDate = item.publishedDate,
+            )
+        } +
+        queue.map { item ->
+            LocalCatalogListenerReference(
+                episodeId = item.episodeId,
+                enclosureUrl = item.audioUrl,
+                title = item.title,
+                publishedDate = item.pubDate,
+            )
+        }
+}
+
 /**
  * Best-effort, transactional listener-state re-key after a full feed persist: the orphan rematch.
  *
- * Narrowed in P4 of the own-episode-IDs plan (plan section 8, re-key paths; docs/EPISODE_IDS.md §5):
- * - It consults aliases first. An ambiguous ID is never moved. A trusted ID is never moved: when
- *   a catalog row now holds its (show, key) under another ID (its row was evicted and the feed read
- *   again), that row's ID joins the episode as a trusted alias (`catalog_key_match`), so both IDs
- *   read as one episode and nothing moves. Only legacy phone-minted (negative) IDs with no alias or
- *   an unresolved one are rematched and moved.
- * - A moved ID's history merges into the row the catalog row's episode reads (its owner when the
- *   episode is stored under several IDs). The merged like is the latest like decision (with the
- *   episode's group settings) instead of either row's like, so a cleared like can't come back;
- *   completion is kept from either row unless the group settings cleared it later.
- * - When the match was exact (the enclosure address names one catalog row) and the catalog row
- *   has a trusted alias, the moved ID is recorded as a trusted alias of that episode
- *   (`orphan_rematch`), so a later copy of it (a cloud pull, a restore) counts as the same episode
- *   and isn't rematched again. A title and date match records no alias: it is not proof.
+ * Narrowed in P4 of the own-episode-IDs plan (plan section 8, re-key paths; decision D8;
+ * docs/EPISODE_IDS.md §5) to unresolved legacy negative IDs, after consulting aliases:
+ * - **Known episodes are not orphans** (P4 PR 9). A negative listener ID that a catalog row of any
+ *   show still holds, or whose alias is trusted or ambiguous, is another episode (an older duplicate
+ *   row, a changed GUID, an item the feed dropped, an evicted row's ID) and never moves. An orphan
+ *   the read could prove a new item owns (its own mint, or a unique listener match) is already that
+ *   item's ID ([ListenerIdAdoption]).
+ * - **Trusted orphans join by key.** When a catalog row now holds a trusted orphan's (show, key)
+ *   under another ID, that row's ID joins the episode as a trusted alias (`catalog_key_match`), so
+ *   both IDs read as one episode and nothing moves.
+ * - **Only phone-minted IDs with no alias or an unresolved one are rematched and moved.** A moved
+ *   ID's history merges into the row the catalog row's episode reads (its owner when the episode is
+ *   stored under several IDs). The merged like is the latest like decision (with the episode's group
+ *   settings), so a cleared like can't come back; completion is kept from either row unless the
+ *   group settings cleared it later.
+ * - When the match was exact (the enclosure address names one catalog row) and the catalog row has
+ *   a trusted alias, the moved ID is recorded as a trusted alias of that episode (`orphan_rematch`),
+ *   so a later copy of it (a cloud pull, a restore) counts as the same episode and isn't rematched
+ *   again. A title and date match records no alias: it is not proof.
  *
  * COMPAT(own-ids): the orphan rematch for unresolved legacy negative IDs. Permanent: never remove (MIGRATION.md §5).
  */
@@ -106,38 +151,17 @@ internal class LocalCatalogListenerStateReconciler(
     private val nowMs: () -> Long = System::currentTimeMillis,
 ) {
     suspend fun reconcile(podcastId: String, catalogRows: List<LocalEpisodeEntity>,) {
-        val history = database.listeningHistoryDao().getHistoryForPodcast(podcastId)
-        val downloads = database.downloadedEpisodeDao().getDownloadsForPodcast(podcastId)
-        val queue = database.queueDao().getAllQueueItemsSync().filter { it.podcastId == podcastId }
-        val allReferences =
-            history.map { item ->
-                LocalCatalogListenerReference(
-                    episodeId = item.episodeId,
-                    enclosureUrl = item.episodeAudioUrl,
-                    title = item.episodeTitle,
-                    publishedDate = null,
-                )
-            } +
-                downloads.map { item ->
-                    LocalCatalogListenerReference(
-                        episodeId = item.episodeId,
-                        enclosureUrl = null,
-                        title = item.episodeTitle,
-                        publishedDate = item.publishedDate,
-                    )
-                } +
-                queue.map { item ->
-                    LocalCatalogListenerReference(
-                        episodeId = item.episodeId,
-                        enclosureUrl = item.audioUrl,
-                        title = item.title,
-                        publishedDate = item.pubDate,
-                    )
-                }
-        val orphanAliases = aliasesOf(allReferences.map { it.episodeId }.filter { LocalCatalogListenerRemapLogic.isLegacyLocalId(it) })
+        val allReferences = database.listenerReferences(podcastId)
+        val written = catalogRows.mapTo(HashSet(), LocalEpisodeEntity::episodeId)
+        val orphanIds =
+            allReferences
+                .map { it.episodeId }
+                .filter { it !in written && LocalCatalogListenerRemapLogic.isLegacyLocalId(it) }
+                .distinct()
+        val orphanAliases = aliasesOf(orphanIds)
         joinTrustedOrphans(catalogRows, orphanAliases)
-        val settled = ListenerStateMoves.settledIds(orphanAliases)
-        val references = allReferences.filter { it.episodeId !in settled }
+        val known = ListenerStateMoves.settledIds(orphanAliases) + catalogHeldIds(orphanIds)
+        val references = allReferences.filter { it.episodeId !in known }
         val rematches = LocalCatalogListenerRemapLogic.rematches(catalogRows, references)
         for ((oldId, rematch) in rematches) {
             val target = rematch.target
@@ -152,7 +176,21 @@ internal class LocalCatalogListenerStateReconciler(
     }
 
     private suspend fun aliasesOf(ids: List<String>): List<EpisodeAliasEntity> =
-        ids.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { database.episodeIdentityDao().getAliases(it) }
+        ids.distinct().chunked(KNOWN_ID_LOOKUP_CHUNK).flatMap { database.episodeIdentityDao().getAliases(it) }
+
+    /**
+     * Which of [ids] a catalog row of any show still holds: such an ID is a known episode, not an
+     * orphan, and re-keying its listener state onto another row would merge two episodes.
+     *
+     * Added in P4 PR 9 (own-IDs plan section 4: a changed GUID is a new episode; nothing is
+     * re-keyed). New episodes now take recipe IDs, so a phone mint left by an older row no longer
+     * equals the new row's ID.
+     * COMPAT(own-ids): known episodes keep their listener state. Permanent: never remove (MIGRATION.md §5).
+     */
+    private suspend fun catalogHeldIds(ids: List<String>): Set<String> =
+        ids.chunked(KNOWN_ID_LOOKUP_CHUNK).flatMapTo(HashSet()) { chunk ->
+            database.localEpisodeCatalogDao().findOwners(chunk).map { it.episodeId }
+        }
 
     /**
      * For each trusted orphan whose (show, key) a catalog row now holds under another ID, records
@@ -245,10 +283,6 @@ internal class LocalCatalogListenerStateReconciler(
             dao.upsertRollup(mergeRollup(old, existing, newId))
         }
         dao.deleteRollupsForEpisode(oldId)
-    }
-
-    private companion object {
-        const val MAX_IDS_PER_QUERY = 500
     }
 }
 

@@ -20,11 +20,6 @@ interface LocalEpisodeCatalogPort {
         val podcastIndexId: String,
         val feedUrl: String,
         val meta: PodcastMeta = PodcastMeta(),
-        /**
-         * One-time PI rematch on first persist only. Later refreshes ignore this.
-         * A throwing loader fails the refresh and keeps last-good rows.
-         */
-        val loadPiBaseline: (suspend () -> List<Episode>)? = null,
         val reason: RefreshReason = RefreshReason.NORMAL,
         /** Rechecked after waiting for a fetch slot and before network/persistence. */
         val canProceed: suspend () -> Boolean = { true },
@@ -36,6 +31,16 @@ interface LocalEpisodeCatalogPort {
          * [PodcastMeta.title] to compare with.
          */
         val detectMove: Boolean = false,
+        /**
+         * The episode namespace the server reported for this show (`epNs` from `/v2/podcast` or
+         * `/v2/shows/feeds`), when the caller has one. It is only compared with the namespace the
+         * phone keeps: the phone never adopts a different value and never re-keys, it logs the
+         * difference (decision D12). New episodes are always minted in the stored namespace.
+         *
+         * Added in P4 PR 9 (own-IDs plan section 4, recipe IDs; decision D12).
+         * COMPAT(own-ids): issued recipe IDs depend on the stored namespace. Permanent: never remove (MIGRATION.md §5).
+         */
+        val serverEpNs: Long? = null,
     )
 
     sealed interface RefreshOutcome {

@@ -2,6 +2,10 @@ package cx.aswin.boxlore.core.catalog
 
 import cx.aswin.boxlore.core.catalog.BuildConfig
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeRecipeId
+import cx.aswin.boxlore.core.network.model.V2EpisodeIds
+import cx.aswin.boxlore.core.network.model.V2EpisodeReply
+import cx.aswin.boxlore.core.network.model.v2Identity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -104,12 +108,53 @@ internal suspend fun PodcastRepository.getAllNetworkEpisodes(feedId: String): Li
     emptyList()
 }
 
-internal suspend fun PodcastRepository.getEpisodeImpl(episodeId: String): Episode? = withContext(Dispatchers.IO) {
+/**
+ * One episode by its stored ID: the local catalog first, then phone-only stores for negative IDs,
+ * then the network. A recipe-range ID (`[2^52, 2^53 − 1]`: a recipe ID, or a served ID older builds
+ * were given) goes to `/v2/episode` ([getV2Episode]) and never to the Podcast Index lookup; other
+ * positive IDs are Podcast Index IDs and keep v1 `/episode`.
+ *
+ * Changed in P4 PR 9 (own-IDs plan section 9: recipe misses never go to Podcast Index).
+ */
+internal suspend fun PodcastRepository.getEpisodeImpl(episodeId: String, showId: String?,): Episode? = withContext(Dispatchers.IO) {
     getLocalCatalogEpisode(episodeId)?.let { return@withContext it }
-    if (episodeId.toLongOrNull()?.let { it < 0L } == true) {
+    val numeric = episodeId.toLongOrNull()
+    if (numeric != null && numeric < 0L) {
         return@withContext getSupplementEpisode(episodeId) ?: getRssEpisode(episodeId)
     }
+    if (numeric != null && EpisodeRecipeId.isRecipeId(numeric)) {
+        return@withContext getV2Episode(episodeId, showId)
+    }
     getNetworkEpisode(episodeId)
+}
+
+/**
+ * A recipe-range ID looked up on `/v2/episode?id=&show=` ([showId] only when it is a show the route
+ * accepts). The episode keeps the ID the caller asked for, with its recipe ID and catalog key
+ * attached, so a served ID is never swapped for the recipe ID. A `needsFeed` answer (an episode only
+ * the show's feed lists) is not found for now, like a 404 or an error.
+ *
+ * Added in P4 PR 9 (own-IDs plan section 9, `/v2/episode`).
+ * COMPAT(own-ids): recipe-range IDs resolve through the v2 route. Permanent: never remove (MIGRATION.md §5).
+ */
+internal suspend fun PodcastRepository.getV2Episode(episodeId: String, showId: String?,): Episode? {
+    if (!V2EpisodeIds.isLookupEpisodeId(episodeId)) return null
+    val show = V2EpisodeIds.parseShowId(showId)?.takeIf(V2EpisodeIds::isEpisodeShowId)
+    return try {
+        val response = apiV2.getEpisode(episodeId, show).execute()
+        when (val reply = response.body()?.takeIf { response.isSuccessful }) {
+            is V2EpisodeReply.Found -> {
+                val identity = reply.episode.v2Identity()
+                mapToEpisode(reply.episode)?.copy(id = episodeId, recipeId = identity?.recipeId, catalogKey = identity?.catalogKey)
+            }
+            is V2EpisodeReply.NeedsFeed, null -> null
+        }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("PodcastRepository", "v2 episode lookup failed for $episodeId", e)
+        null
+    }
 }
 
 internal suspend fun PodcastRepository.getRssEpisode(episodeId: String): Episode? = try {

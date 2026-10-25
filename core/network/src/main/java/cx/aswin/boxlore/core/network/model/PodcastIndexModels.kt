@@ -131,8 +131,11 @@ data class EpisodesPaginatedResponse(
 )
 
 /**
- * `GET /episodes/match`: a show's newest episodes (up to 1,000) with only the fields a baseline
- * match needs. Full pages keep [EpisodesPaginatedResponse], which the app caps at 100 items.
+ * `GET /episodes/match`: a show's newest episodes (up to 1,000) with only the fields a match needs.
+ * Full pages keep [EpisodesPaginatedResponse], which the app caps at 100 items.
+ *
+ * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+ * (MIGRATION.md §6) once show pages read feeds for every listener.
  */
 @Serializable
 data class EpisodeMatchResponse(
@@ -140,6 +143,11 @@ data class EpisodeMatchResponse(
     val items: List<EpisodeMatchItem> = emptyList(),
 )
 
+/**
+ * One `/episodes/match` item.
+ *
+ * LEGACY(own-ids): see [EpisodeMatchResponse].
+ */
 @Serializable
 data class EpisodeMatchItem(
     @SerialName("id")

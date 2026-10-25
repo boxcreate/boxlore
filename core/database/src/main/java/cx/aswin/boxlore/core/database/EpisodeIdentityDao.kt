@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.Flow
  * Episode aliases and shared group state (docs/EPISODE_IDS.md §5).
  *
  * Reads and writes only. [chooseOwner] evaluates the owner order the v39 upgrade used; when the
- * owner may change, and which alias states may resolve a lookup, belongs to the callers
- * ([EpisodeListenerStore] for listener state).
+ * owner may change, and which alias states may resolve a lookup, belongs to the callers:
+ * [EpisodeListenerStore] for listener state, and the local catalog refresh in `:core:rss`, which
+ * reuses evicted episodes' IDs, records an alias for every ID it writes, records the keys it heals
+ * and settles the unresolved aliases it can attribute.
  *
  * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 aliases).
  * COMPAT(own-ids): old local episode IDs keep resolving through aliases. Permanent: never remove (MIGRATION.md §5).
@@ -55,6 +57,16 @@ interface EpisodeIdentityDao {
         """,
     )
     suspend fun aliasesForRecipeId(podcastId: String, recipeId: Long,): List<EpisodeAliasEntity>
+
+    /**
+     * Every alias row of one show, in stored-ID order. A catalog read looks up the IDs evicted rows
+     * held and decides which new IDs it may take.
+     *
+     * Added in P4 PR 9 of the own-episode-IDs plan (plan section 4, recipe IDs and aliases).
+     * COMPAT(own-ids): evicted episodes keep their IDs. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query("SELECT * FROM episode_aliases WHERE podcastId = :podcastId ORDER BY aliasId ASC")
+    suspend fun aliasesForShow(podcastId: String): List<EpisodeAliasEntity>
 
     /** IDs of one show still waiting for a key, to retry when the show's feed is read. */
     @Query(

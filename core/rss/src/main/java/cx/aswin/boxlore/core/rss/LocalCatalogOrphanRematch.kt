@@ -8,7 +8,8 @@ import kotlin.math.abs
  * stored id no longer resolves. Guid, then enclosure, then title+date.
  */
 object LocalCatalogOrphanRematch {
-    private const val DATE_WINDOW_SECONDS = 48L * 60L * 60L
+    /** How far apart a reference's date and a candidate's may be for a title match. */
+    internal const val DATE_WINDOW_SECONDS = 48L * 60L * 60L
 
     data class Candidate(val episode: Episode, val guid: String?,)
 

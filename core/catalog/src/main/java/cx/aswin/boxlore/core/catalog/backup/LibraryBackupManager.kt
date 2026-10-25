@@ -12,7 +12,6 @@ import cx.aswin.boxlore.core.catalog.LOCAL_CATALOG_WINDOW_BOUND
 import cx.aswin.boxlore.core.catalog.PodcastIndexSearchResult
 import cx.aswin.boxlore.core.catalog.PodcastRepository
 import cx.aswin.boxlore.core.catalog.SharedAppDependenciesHolder
-import cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
 import cx.aswin.boxlore.core.catalog.SubscriptionRepository
 import cx.aswin.boxlore.core.catalog.ports.ListeningHistoryBackupPort
 import cx.aswin.boxlore.core.catalog.toPodcast
@@ -781,12 +780,6 @@ class LibraryBackupManager(
                                     podcastIndexId = id,
                                     feedUrl = url,
                                     meta = meta,
-                                    loadPiBaseline = {
-                                        podcastRepository.loadPiEpisodesForBaseline(
-                                            feedId = id,
-                                            limit = SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT,
-                                        )
-                                    },
                                 ),
                             )
                     ) {
@@ -857,12 +850,7 @@ class LibraryBackupManager(
                         EpisodeSupplementPort.RefreshFromFeedRequest(
                             podcastIndexId = id,
                             feedUrl = url,
-                            loadBaseline = {
-                                podcastRepository.loadPiEpisodesForBaseline(
-                                    feedId = id,
-                                    limit = SubscriptionForegroundSync.DIRECT_FEED_BASELINE_LIMIT,
-                                )
-                            },
+                            loadBaseline = { podcastRepository.loadPiEpisodesForSupplement(id) },
                             podcastTitle = entity?.title,
                             podcastImageUrl = entity?.imageUrl,
                             podcastGenre = entity?.genre,

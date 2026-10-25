@@ -31,7 +31,7 @@ class StickyEpisodeIdentityTest {
         assertNull(
             StickyEpisodeIdentity.assignEpisodeId(
                 existingId = null,
-                piMatchId = "99",
+                recipeId = RECIPE,
                 rssNamespaceId = namespace,
                 guid = null,
                 enclosureUrl = "",
@@ -42,18 +42,18 @@ class StickyEpisodeIdentityTest {
     }
 
     @Test
-    fun i4_firstInsertKeepsPositivePiId() {
+    fun i4_aNewItemTakesTheRecipeIdTheCallerComputed() {
         val id =
             StickyEpisodeIdentity.assignEpisodeId(
                 existingId = null,
-                piMatchId = "1258562",
+                recipeId = RECIPE,
                 rssNamespaceId = namespace,
                 guid = "g",
                 enclosureUrl = "https://cdn.example/a.mp3",
                 publishedDate = 1L,
                 title = "Ep",
             )
-        assertEquals("1258562", id)
+        assertEquals(RECIPE.toString(), id)
     }
 
     @Test
@@ -61,7 +61,7 @@ class StickyEpisodeIdentityTest {
         val id =
             StickyEpisodeIdentity.assignEpisodeId(
                 existingId = null,
-                piMatchId = null,
+                recipeId = null,
                 rssNamespaceId = namespace,
                 guid = "g",
                 enclosureUrl = "https://cdn.example/a.mp3",
@@ -72,7 +72,7 @@ class StickyEpisodeIdentityTest {
         val again =
             StickyEpisodeIdentity.assignEpisodeId(
                 existingId = null,
-                piMatchId = null,
+                recipeId = null,
                 rssNamespaceId = namespace,
                 guid = "g",
                 enclosureUrl = "https://cdn.example/a.mp3",
@@ -88,7 +88,7 @@ class StickyEpisodeIdentityTest {
         val id =
             StickyEpisodeIdentity.assignEpisodeId(
                 existingId = minted,
-                piMatchId = "1258562",
+                recipeId = RECIPE,
                 rssNamespaceId = namespace,
                 guid = "g",
                 enclosureUrl = "https://cdn.example/a.mp3",
@@ -99,11 +99,11 @@ class StickyEpisodeIdentityTest {
     }
 
     @Test
-    fun i7_neverUpgradeNegativeToPi() {
+    fun i7_neverUpgradeAStoredIdToARecipeId() {
         val id =
             StickyEpisodeIdentity.assignEpisodeId(
                 existingId = "-42",
-                piMatchId = "7",
+                recipeId = RECIPE,
                 rssNamespaceId = namespace,
                 guid = "g",
                 enclosureUrl = "https://cdn.example/a.mp3",
@@ -136,8 +136,22 @@ class StickyEpisodeIdentityTest {
     }
 
     @Test
+    fun reservedIdsAreNegativeStableAndInTheShowsNamespace() {
+        val first = StickyEpisodeIdentity.reservedEpisodeId("100", "guid-1", 1)
+        assertTrue(first.toLong() < 0L)
+        assertEquals(first, StickyEpisodeIdentity.reservedEpisodeId("100", "guid-1", 1))
+        assertNotEquals(first, StickyEpisodeIdentity.reservedEpisodeId("100", "guid-1", 2), "each attempt is another ID")
+        assertNotEquals(first, StickyEpisodeIdentity.reservedEpisodeId("200", "guid-1", 1), "each show is its own namespace")
+        assertNotEquals(first, StickyEpisodeIdentity.reservedEpisodeId("100", "guid-2", 1))
+    }
+
+    @Test
     fun i10_seasonIsNotPartOfCatalogKey() {
         val key = StickyEpisodeIdentity.catalogKey("guid-1", "https://cdn.example/a.mp3")
         assertEquals("guid-1", key)
+    }
+
+    private companion object {
+        const val RECIPE = 4_503_599_627_370_500L
     }
 }

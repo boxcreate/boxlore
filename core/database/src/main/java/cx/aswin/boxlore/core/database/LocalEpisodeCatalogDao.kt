@@ -171,6 +171,16 @@ interface LocalEpisodeCatalogDao {
     @Query("UPDATE local_episode_feeds SET feedUrlLookupAt = :atMillis WHERE podcastId = :podcastId")
     suspend fun setFeedUrlLookupAt(podcastId: String, atMillis: Long,)
 
+    /**
+     * Sets this catalog's episode namespace when it has none. A stored value is never replaced:
+     * recipe IDs already issued depend on it ([upsertFeed] keeps it on later writes).
+     *
+     * Added in P4 PR 9 of the own-episode-IDs plan (plan section 4, recipe IDs; decision D12).
+     * COMPAT(own-ids): an issued namespace never changes. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Query("UPDATE local_episode_feeds SET epNs = :epNs WHERE podcastId = :podcastId AND epNs IS NULL")
+    suspend fun setEpNsIfUnset(podcastId: String, epNs: Long,)
+
     @Query("DELETE FROM local_episodes WHERE podcastId = :podcastId")
     suspend fun deleteEpisodes(podcastId: String)
 

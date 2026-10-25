@@ -1032,7 +1032,6 @@ class PodcastInfoViewModel(
                 genre = podcast.genre,
                 artist = podcast.artist,
             )
-        val needsBaseline = !catalog.isReady(targetPodcastId)
         val outcome =
             catalog.refresh(
                 cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest(
@@ -1040,19 +1039,6 @@ class PodcastInfoViewModel(
                     feedUrl = feedUrl,
                     meta = meta,
                     reason = cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshReason.MANUAL,
-                    loadPiBaseline =
-                    if (needsBaseline) {
-                        {
-                            repository.loadPiEpisodesForBaseline(
-                                feedId = targetPodcastId,
-                                limit =
-                                cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
-                                    .DIRECT_FEED_BASELINE_LIMIT,
-                            )
-                        }
-                    } else {
-                        null
-                    },
                 ),
             )
         if (!PodcastInfoPullRefreshLogic.shouldApply(currentPodcastId, targetPodcastId)) {
@@ -1471,26 +1457,12 @@ class PodcastInfoViewModel(
                 genre = latest.podcast.genre,
                 artist = latest.podcast.artist,
             )
-        val needsBaseline = !catalog.isReady(targetPodcastId)
         val outcome =
             catalog.refresh(
                 cx.aswin.boxlore.core.domain.ports.LocalEpisodeCatalogPort.RefreshRequest(
                     podcastIndexId = targetPodcastId,
                     feedUrl = feedUrl,
                     meta = meta,
-                    loadPiBaseline =
-                    if (needsBaseline) {
-                        {
-                            repository.loadPiEpisodesForBaseline(
-                                feedId = targetPodcastId,
-                                limit =
-                                cx.aswin.boxlore.core.catalog.SubscriptionForegroundSync
-                                    .DIRECT_FEED_BASELINE_LIMIT,
-                            )
-                        }
-                    } else {
-                        null
-                    },
                 ),
             )
         val tip =

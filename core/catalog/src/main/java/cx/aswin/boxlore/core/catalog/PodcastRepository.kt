@@ -44,8 +44,12 @@ class PodcastRepository(
      */
     boxLoreApi: BoxLoreApi? = null,
     /**
-     * Off switch for the 1,000-item match baseline ([loadPiEpisodesForBaseline]). The app passes
-     * a PostHog kill switch; false means the old 100-item page path.
+     * Off switch for the 1,000-item match list the feed-only extras compare with
+     * ([loadPiEpisodesForSupplement]). The app passes a PostHog kill switch; false means the old
+     * 100-item page path.
+     *
+     * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+     * (MIGRATION.md §6) once show pages read feeds for every listener.
      */
     private val useEpisodeMatchBaseline: () -> Boolean = { true },
     /**
@@ -305,37 +309,44 @@ class PodcastRepository(
     }
 
     /**
-     * Strict PI baseline for feed-episode matching (sync, restore, Info): the episodes whose IDs
-     * history, progress and downloads already use. Throws on HTTP/network failure so
-     * [EpisodeSupplementPort.refreshFromFeed] does not persist extras against an
-     * empty baseline (which would treat every feed item as feed-only).
+     * The Podcast Index episodes a show's feed-only extras ([EpisodeSupplementPort]) are compared
+     * with, so an episode Podcast Index lists is never stored again as an extra. Throws on
+     * HTTP/network failure so [EpisodeSupplementPort.refreshFromFeed] does not persist extras
+     * against an empty list (which would treat every feed item as feed-only).
      *
-     * Reads up to [limit] (at most 1,000) newest episodes from `/episodes/match`, match fields only.
-     * The full-page path is capped at 100 for memory and returns the oldest 100, so a show with more
-     * episodes left its newer ones unmatched: they got negative IDs, detached from history and
-     * downloads, and showed twice on Info. Falls back to that page when the route fails or the
-     * switch is off.
+     * Reads up to [MAX_MATCH_BASELINE] newest episodes from `/episodes/match`, match fields only.
+     * The full-page path is capped at 100 for memory and returns the oldest 100, so on a show with
+     * more episodes the newer ones would count as feed-only and show twice. Falls back to that page
+     * when the route fails or the switch ([useEpisodeMatchBaseline]) is off.
+     *
+     * Only the extras use it. Followed shows' local catalogs no longer match feed items against
+     * Podcast Index: new episodes take recipe IDs (P4 PR 9, own-IDs plan section 4).
+     *
+     * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+     * (MIGRATION.md §6) once show pages read feeds for every listener.
      */
-    suspend fun loadPiEpisodesForBaseline(feedId: String, limit: Int,): List<Episode> = withContext(Dispatchers.IO) {
+    suspend fun loadPiEpisodesForSupplement(feedId: String): List<Episode> = withContext(Dispatchers.IO) {
         val resolvedId = resolvePodcastIndexFeedId(feedId)
         if (useEpisodeMatchBaseline()) {
-            loadMatchBaseline(resolvedId, limit)?.let { return@withContext it }
+            loadMatchList(resolvedId)?.let { return@withContext it }
         }
-        val safeLimit = clampPageLimit(limit)
-        val response = api.getEpisodesPaginated(publicKey, resolvedId, safeLimit, 0, "oldest").execute()
+        val response = api.getEpisodesPaginated(publicKey, resolvedId, MAX_SAFE_PAGE_LIMIT, 0, "oldest").execute()
         check(response.isSuccessful && response.body() != null) {
-            "PI baseline HTTP ${response.code()}"
+            "PI list HTTP ${response.code()}"
         }
         response.body()!!.items.mapNotNull { mapToEpisode(it) }
     }
 
     /**
-     * `/episodes/match` as baseline episodes, or null to use the page path: an HTTP or network
-     * error, or an empty list (the page path confirms a show with no episodes, so a misbehaving
-     * route can never leave a feed matched against nothing).
+     * `/episodes/match` as [Episode]s, or null to use the page path: an HTTP or network error, or
+     * an empty list (the page path confirms a show with no episodes, so a misbehaving route can
+     * never leave a feed compared with nothing).
+     *
+     * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+     * (MIGRATION.md §6) once show pages read feeds for every listener.
      */
-    private fun loadMatchBaseline(resolvedId: String, limit: Int): List<Episode>? = try {
-        val response = api.getEpisodeMatchList(publicKey, resolvedId, limit.coerceIn(1, MAX_MATCH_BASELINE)).execute()
+    private fun loadMatchList(resolvedId: String): List<Episode>? = try {
+        val response = api.getEpisodeMatchList(publicKey, resolvedId, MAX_MATCH_BASELINE).execute()
         val body = response.body()
         if (response.isSuccessful && body != null) {
             body.items.mapNotNull { it.toBaselineEpisode(resolvedId) }.takeIf { it.isNotEmpty() }
@@ -343,11 +354,11 @@ class PodcastRepository(
             null
         }
     } catch (e: java.io.IOException) {
-        android.util.Log.w("PodcastRepository", "match baseline failed for $resolvedId; using the page path", e)
+        android.util.Log.w("PodcastRepository", "match list failed for $resolvedId; using the page path", e)
         null
     } catch (e: IllegalArgumentException) {
         // An unreadable body (the JSON converter's SerializationException is one).
-        android.util.Log.w("PodcastRepository", "match baseline unreadable for $resolvedId; using the page path", e)
+        android.util.Log.w("PodcastRepository", "match list unreadable for $resolvedId; using the page path", e)
         null
     }
 
@@ -967,7 +978,16 @@ class PodcastRepository(
         getNetworkEpisodeWindow(feedId)
     }
 
-    override suspend fun getEpisode(episodeId: String): Episode? = getEpisodeImpl(episodeId)
+    override suspend fun getEpisode(episodeId: String): Episode? = getEpisodeImpl(episodeId, showId = null)
+
+    /**
+     * [getEpisode] for a caller that knows the episode's show ([showId], a Podcast Index show ID).
+     * A recipe-range ID that no local row holds is then looked up on `/v2/episode` with its show,
+     * so a recipe ID shared by two shows' episodes resolves to the right one.
+     *
+     * Added in P4 PR 9 (own-IDs plan section 9: recipe IDs resolve through `/v2/episode`, never PI).
+     */
+    suspend fun getEpisode(episodeId: String, showId: String?,): Episode? = getEpisodeImpl(episodeId, showId)
 
     companion object {
         internal const val FEED_PREFIX_URL = "url:"

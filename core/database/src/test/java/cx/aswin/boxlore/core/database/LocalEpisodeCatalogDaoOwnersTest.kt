@@ -45,6 +45,35 @@ class LocalEpisodeCatalogDaoOwnersTest {
         assertTrue("an unknown ID has no owner", dao.findOwners(listOf("-99")).isEmpty())
     }
 
+    @Test
+    fun aCatalogNamespaceIsSetOnlyWhereNoneIsStoredAndUpsertFeedKeepsIt() = runTest {
+        dao.upsertFeed(feed("100"))
+        dao.upsertFeed(feed("200").copy(epNs = 555L))
+
+        dao.setEpNsIfUnset("100", 100L)
+        dao.setEpNsIfUnset("200", 200L)
+        dao.upsertFeed(feed("100").copy(epNs = null, fetchedAt = 9L))
+
+        assertEquals(100L, dao.getFeed("100")?.epNs)
+        assertEquals(9L, dao.getFeed("100")?.fetchedAt)
+        assertEquals(555L, dao.getFeed("200")?.epNs)
+    }
+
+    private fun feed(show: String) = LocalEpisodeFeedEntity(
+        podcastId = show,
+        feedUrl = "https://feeds.example/$show.xml",
+        feedEtag = null,
+        feedLastModified = null,
+        fetchedAt = 1L,
+        itemCount = 0,
+        feedOrder = LocalFeedOrder.MIXED,
+        ttlExpiresAt = null,
+        needsFullBackfill = false,
+        copiedExtrasCount = 0,
+        ready = true,
+        feedUrlLookupAt = 0L,
+    )
+
     private fun row(id: String, show: String, key: String) = LocalEpisodeEntity(
         episodeId = id,
         podcastId = show,

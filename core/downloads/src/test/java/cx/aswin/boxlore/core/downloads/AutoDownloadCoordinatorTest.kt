@@ -34,7 +34,6 @@ class AutoDownloadCoordinatorTest {
     private lateinit var prefs: UserPreferencesRepository
     private val feed = Feed()
     private val enqueued = mutableListOf<String>()
-    private var baselineCalls = 0
     private var enqueueFails = false
     private val now = System.currentTimeMillis() / 1000L
 
@@ -67,10 +66,6 @@ class AutoDownloadCoordinatorTest {
             if (enqueueFails) throw java.io.IOException("process stopped around enqueue")
             enqueued += episodeId
         },
-        loadInitialBaseline = {
-            baselineCalls++
-            emptyList()
-        },
         nowSeconds = { now }
     )
 
@@ -86,9 +81,8 @@ class AutoDownloadCoordinatorTest {
         release()
         assertTrue(coordinator.discover { true })
         val canonical = catalog.findByCatalogKey("100", "release", null)!!
-        assertTrue(canonical.id.toLong() < 0)
+        assertEquals("a new release of a followed show takes its recipe ID", cx.aswin.boxlore.core.model.EpisodeRecipeId.forNamespace(100L, "release").toString(), canonical.id)
         assertEquals(listOf(canonical.id), enqueued)
-        assertEquals(0, baselineCalls)
         assertEquals(2, feed.fetches)
     }
 
@@ -230,7 +224,6 @@ class AutoDownloadCoordinatorTest {
             prefs,
             enqueue = { _, episodeId, _, _ -> enqueued += episodeId },
             recoverFeedUrl = { error("RSS must not look up a catalog URL") },
-            loadInitialBaseline = { error("RSS must not load a catalog baseline") },
             nowSeconds = { now }
         )
         coordinator.synchronizeSubscriptions()

@@ -63,9 +63,12 @@ internal fun mapFeedsToPodcasts(feeds: List<cx.aswin.boxlore.core.network.model.
 }
 
 /**
- * A `/episodes/match` item as a baseline [Episode]: its ID plus the fields matching uses (audio URL,
- * title, date). Description, artwork and length stay empty; a matched newest tip takes them from
- * the feed. Skipped like [mapToEpisode] without an audio URL or a positive ID.
+ * A `/episodes/match` item as an [Episode] for the extras' comparison: its ID plus the fields
+ * matching uses (audio URL, title, date). Description, artwork and length stay empty. Skipped like
+ * [mapToEpisode] without an audio URL or a positive ID.
+ *
+ * LEGACY(own-ids): the extras of the Podcast Index show page. Remove at sunset step S7
+ * (MIGRATION.md §6) once show pages read feeds for every listener.
  */
 internal fun cx.aswin.boxlore.core.network.model.EpisodeMatchItem.toBaselineEpisode(podcastId: String): Episode? {
     val episodeId = id?.takeIf { it > 0L } ?: return null
