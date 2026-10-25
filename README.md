@@ -69,6 +69,7 @@ Then it stays quiet while you listen. Free, with no app ads and no paywalls.
 </ul>
 <b>⚡ Improvements:</b>
 <ul align="left">
+<li>Cloud sync keeps your progress, likes, finished episodes and queue in step across all your devices, including ones on older versions of boxlore, and episodes you remove from the queue stay removed everywhere. <a href="https://github.com/boxcreate/boxlore/pull/1179"><img src="https://img.shields.io/badge/PR-1179-6750A4?style=flat-square" alt="PR #1179" height="18"/></a></li>
 <li>New-episode notifications keep working for shows that moved to a new feed address. <a href="https://github.com/boxcreate/boxlore/pull/1150"><img src="https://img.shields.io/badge/PR-1150-6750A4?style=flat-square" alt="PR #1150" height="18"/></a></li>
 <li>New-episode notifications arrive sooner after a release. <a href="https://github.com/boxcreate/boxlore/pull/1151"><img src="https://img.shields.io/badge/PR-1151-6750A4?style=flat-square" alt="PR #1151" height="18"/></a></li>
 </ul>
