@@ -9,6 +9,39 @@ import org.junit.jupiter.api.Test
 /** Pure coverage for [buildRecommendationSeeds] in `PodcastRepositoryRecommendations.kt`. */
 class PodcastRecommendationSeedsTest {
     @Test
+    fun seedIdsReplaceStoredIdsAndPlaceNegativeIds() {
+        val recipe = 4_503_599_627_370_497L
+        val history =
+            listOf(
+                TestFixtures.historyItem(episodeId = "7777", isLiked = true),
+                TestFixtures.historyItem(episodeId = "-55", isCompleted = true),
+                TestFixtures.historyItem(episodeId = "-66"),
+                TestFixtures.historyItem(episodeId = "5555"),
+            )
+
+        val seeds = buildRecommendationSeeds(history, emptyList(), seedIds = mapOf("7777" to recipe, "-55" to recipe + 1))
+
+        assertEquals(listOf(recipe, recipe + 1, 5555L), seeds.map { it.id })
+    }
+
+    @Test
+    fun v2HistoryKeepsPlacedIdsAndPodcastIndexIdsOnly() {
+        val history =
+            listOf(
+                TestFixtures.historyItem(episodeId = "7777", podcastId = "920666"),
+                TestFixtures.historyItem(episodeId = "-55", podcastId = "920666"),
+                TestFixtures.historyItem(episodeId = "-66", podcastId = "920666"),
+                TestFixtures.historyItem(episodeId = "-77", podcastId = "rss:abc"),
+                TestFixtures.historyItem(episodeId = "-88", podcastId = "rss:abc"),
+                TestFixtures.historyItem(episodeId = null, podcastId = "920666"),
+            )
+
+        val usable = v2RecommendationHistory(history, recipeIds = mapOf("-55" to 1L, "-77" to 2L))
+
+        assertEquals(listOf("7777", "-55", "-77"), usable.map { it.episodeId })
+    }
+
+    @Test
     fun likedEpisodesWeightedHighestAndSortedDescending() {
         val history =
             listOf(

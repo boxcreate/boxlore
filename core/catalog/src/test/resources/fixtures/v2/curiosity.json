@@ -1,0 +1,63 @@
+{
+  "questionOfTheDay": null,
+  "questionsStack": [
+    {
+      "date": "2009-11-17",
+      "question": "Can killing babies save the world?",
+      "explanation": "A provocative question that sparks a conversation about morality and science.",
+      "curiosityScore": 10,
+      "episode": {
+        "id": 6548421932954342,
+        "title": "Killing Babies, Saving the World",
+        "description": "To get this podcast started, Robert ambushes Jad with a question...a question we've all be...",
+        "enclosureUrl": "https://dts.waaa.wnyc.org/758af4c0-a2c3-47ec-a2d8-05f41bfbde51/episodes/e574b37b-108e-4260-a2e7-f29bdee992f9/audio/128/default.mp3?aid=rss_feed&awCollectionId=758af4c0-a2c3-47ec-a2d8-05f41bfbde51&awEpisodeId=e574b37b-108e-4260-a2e7-f29bdee992f9&feed=EmVW7VGp",
+        "enclosureType": "audio/mpeg",
+        "duration": 1128,
+        "datePublished": 1258425045,
+        "image": "https://image.simplecastcdn.com/images/758af4/758af4c0-a2c3-47ec-a2d8-05f41bfbde51/e574b37b-108e-4260-a2e7-f29bdee992f9/3000x3000/killing-babies.jpg?aid=rss_feed",
+        "feedImage": "https://image.simplecastcdn.com/images/2c9187d6-9dff-4257-bc55-469cf13afd48/60a2cfed-b8ca-460b-abb8-8ab0afb3fa8c/3000x3000/radiolab-showsquare-3000x3000.jpg?aid=rss_feed",
+        "feedId": 197123,
+        "feedTitle": "Radiolab"
+      }
+    },
+    {
+      "date": "2015-07-24",
+      "question": "Who survived a metal rod being blown through their brain?",
+      "explanation": "Justin and Dr. Sydnee blow metal rod through a guy's brain and live to tell about it.",
+      "curiosityScore": 10,
+      "episode": {
+        "id": 6508413145289414,
+        "title": "The Unkillable Phineas Gage",
+        "description": "This week on Sawbones, Justin and Dr. Sydnee blow metal rod through a guy's brain and live...",
+        "enclosureUrl": "https://claritaspod.com/measure/afp-9384.calisto.simplecastaudio.com/a5445fde-0e70-4659-8f18-442f9aabbaac/episodes/975996e9-6588-4b16-8d31-5356600b7764/audio/128/default.mp3?aid=rss_feed&awCollectionId=a5445fde-0e70-4659-8f18-442f9aabbaac&awEpisodeId=975996e9-6588-4b16-8d31-5356600b7764&feed=y1LF_sn2",
+        "enclosureType": "audio/mpeg",
+        "duration": 1982,
+        "datePublished": 1437699745,
+        "image": "https://image.simplecastcdn.com/images/a5445f/a5445fde-0e70-4659-8f18-442f9aabbaac/975996e9-6588-4b16-8d31-5356600b7764/3000x3000/sawbones-logo-final.png?aid=rss_feed",
+        "feedImage": "https://image.simplecastcdn.com/images/ee8ef2f9-5bb2-4a0a-bad7-44fd3b17d53c/3c7d6aae-f46d-4881-9705-a7213fb0a05d/3000x3000/sawbonesalbumartrevisionsfinalresize872025.jpg?aid=rss_feed",
+        "feedId": 317119,
+        "feedTitle": "Sawbones: A Marital Tour of Misguided Medicine"
+      }
+    },
+    {
+      "date": "2025-02-12",
+      "question": "Why were twins secretly separated at birth?",
+      "explanation": "Uncover the shocking 1960s experiment where identical twins were separated at birth to stu...",
+      "curiosityScore": 10,
+      "episode": {
+        "id": 4583874546218262,
+        "title": "Separated at Birth (Encore)",
+        "description": "In the 1960s, a New York clinical psychiatrist and an adoption agency conducted an experim...",
+        "enclosureUrl": "https://www.podtrac.com/pts/redirect.mp3/pdst.fm/e/op3.dev/e/chrt.fm/track/4EB79A/pscrb.fm/rss/p/tracking.swap.fm/track/6bpBPtHL977KJxLX2zPs/traffic.megaphone.fm/GLSS6639621306.mp3?updated=1739344634",
+        "enclosureType": "audio/mpeg",
+        "duration": 869,
+        "datePublished": 1739354400,
+        "image": "https://megaphone.imgix.net/podcasts/ca6bd11a-00ec-11ef-8034-0fc3f0c2017e/image/362c14e40a69f5234952cf3dfddb7a70.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+        "feedImage": "https://megaphone.imgix.net/podcasts/c60ed9fc-5f48-11ec-b5ad-cb3d94513f4e/image/a14b15dd3c2d6a1fb85a2b9e62bf91eb.jpg?ixlib=rails-4.3.1&max-w=3000&max-h=3000&fit=crop&auto=format,compress",
+        "feedId": 437685,
+        "feedTitle": "Everything Everywhere Daily: History, Science, Geography & More"
+      }
+    }
+  ],
+  "categories": []
+}

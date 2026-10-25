@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.BriefingLinks
 import cx.aswin.boxlore.core.designsystem.briefing.briefingShowPodcast
 import cx.aswin.boxlore.core.designsystem.layout.LocalBoxloreWindowLayout
 import cx.aswin.boxlore.core.model.Briefing
@@ -119,7 +119,7 @@ private fun dailyBriefingEpisode(
     briefingId: String,
     show: Podcast,
 ): Episode {
-    val versionParam = dailyBriefingVersionParam(briefing.audioUrl)
+    val version = dailyBriefingVersion(briefing.audioUrl)
     return Episode(
         id = briefingId,
         title = briefing.title,
@@ -134,10 +134,10 @@ private fun dailyBriefingEpisode(
         publishedDate = dailyBriefingPublishedDate(briefing.date),
         transcriptUrl =
         briefing.transcriptUrl
-            ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/${briefing.region}?d=${briefing.date}$versionParam",
+            ?: BriefingLinks.transcriptUrl(briefing.region, briefing.date, version),
         chaptersUrl =
         briefing.chaptersUrl
-            ?: "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/${briefing.region}?d=${briefing.date}$versionParam",
+            ?: BriefingLinks.chaptersUrl(briefing.region, briefing.date, version),
     )
 }
 
@@ -150,7 +150,4 @@ private fun dailyBriefingPublishedDate(date: String): Long = try {
     System.currentTimeMillis() / 1000
 }
 
-private fun dailyBriefingVersionParam(audioUrl: String): String {
-    val version = Uri.parse(audioUrl).getQueryParameter("v")
-    return if (version != null) "&v=$version" else ""
-}
+private fun dailyBriefingVersion(audioUrl: String): String? = Uri.parse(audioUrl).getQueryParameter("v")

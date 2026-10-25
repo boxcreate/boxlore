@@ -7,7 +7,7 @@ import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import cx.aswin.boxlore.core.catalog.BuildConfig
+import cx.aswin.boxlore.core.catalog.BriefingLinks
 import cx.aswin.boxlore.core.catalog.mapRegionForBriefing
 import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.model.Podcast
@@ -372,14 +372,11 @@ internal class PlaybackMediaControllerBridge(
                         val date = parts[2]
                         val audioUri = android.net.Uri.parse(newEpisode.audioUrl)
                         val version = audioUri.getQueryParameter("v")
-                        val versionParam = if (version != null) "&v=$version" else ""
                         val mappedRegion = mapRegionForBriefing(region)
                         newEpisode =
                             newEpisode.copy(
-                                chaptersUrl =
-                                    "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/chapters/$mappedRegion?d=$date$versionParam",
-                                transcriptUrl =
-                                    "${BuildConfig.BOXLORE_API_BASE_URL}/briefings/transcript/$mappedRegion?d=$date$versionParam",
+                                chaptersUrl = BriefingLinks.chaptersUrl(mappedRegion, date, version),
+                                transcriptUrl = BriefingLinks.transcriptUrl(mappedRegion, date, version),
                             )
                         android.util.Log.d(
                             "PlaybackRepo",

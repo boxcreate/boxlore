@@ -76,6 +76,8 @@ class PodcastRepositoryCatalogTest {
                 ioDispatcher = testDispatcher,
                 boxLoreApi = api,
                 boxLoreApiV2 = NetworkModule.createBoxLoreApiV2(server.url("/").toString(), client),
+                // These cases pin the v1 discovery routes; PodcastRepositoryV2DiscoveryTest covers /v2.
+                rolloutSwitches = RolloutSwitches(v2Discovery = { false }),
             )
     }
 

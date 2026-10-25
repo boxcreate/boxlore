@@ -10,6 +10,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOn
 import okhttp3.ResponseBody
 
+/**
+ * Trending shows as they are parsed. With v2 discovery the stream reads `/v2/trending`, each
+ * show's latest episode is translated to its local owner, and a request that yields nothing keeps
+ * the last good list of the same request ([V2DiscoveryLastGood]).
+ */
 internal fun PodcastRepository.trendingPodcastsStream(
     country: String = "us",
     limit: Int = 50,
@@ -17,10 +22,13 @@ internal fun PodcastRepository.trendingPodcastsStream(
     offset: Int = 0
 ): kotlinx.coroutines.flow.Flow<List<Podcast>> = kotlinx.coroutines.flow.flow {
     val podcasts = mutableListOf<Podcast>()
+    val v2 = usesV2Discovery()
+    val lastGoodKey = trendingLastGoodKey(country, limit, category, offset)
+    // Only `/v2` keeps a last good list; read before this request so a failure can show it once.
+    var lastGood = if (v2) v2LastGood.podcasts[lastGoodKey] else null
     try {
         android.util.Log.d("BoxCastRepo", "Stream: Requesting trending country=$country, limit=$limit, category=$category, offset=$offset")
-        val call = api.getTrendingStream(publicKey, country, limit, category, offset)
-        val response = call.execute()
+        val response = trendingStreamCall(v2, country, limit, category, offset).execute()
 
         response.raw().use {
             android.util.Log.d("BoxCastRepo", "Stream: Response code=${response.code()}, isSuccessful=${response.isSuccessful}")
@@ -28,10 +36,14 @@ internal fun PodcastRepository.trendingPodcastsStream(
             val responseBody = response.body()
             if (!response.isSuccessful || responseBody == null) {
                 android.util.Log.e("BoxCastRepo", "Stream: Failed! code=${response.code()}, body isNull=${responseBody == null}")
+                // Closing a failed streaming answer can still throw below; emit the last good list only once.
+                lastGood?.let { emit(it) }
+                lastGood = null
                 return@use
             }
 
-            readTrendingPodcasts(responseBody, podcasts) { emit(it) }
+            readTrendingPodcasts(responseBody, podcasts, v2) { emit(it) }
+            rememberLastGoodTrending(v2, lastGoodKey, podcasts)
 
             android.util.Log.d("BoxCastRepo", "Stream: Parsed ${podcasts.size} podcasts for category=$category")
 
@@ -40,22 +52,33 @@ internal fun PodcastRepository.trendingPodcastsStream(
                 emit(podcasts)
             }
         }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
     } catch (e: Exception) {
         android.util.Log.e("BoxCastRepo", "Stream: Exception for category=$category", e)
-        if (podcasts.isNotEmpty()) emit(podcasts)
+        (podcasts.takeIf { it.isNotEmpty() } ?: lastGood)?.let { emit(it) }
     }
 }.flowOn(Dispatchers.IO)
+
+private fun PodcastRepository.trendingStreamCall(v2: Boolean, country: String, limit: Int, category: String?, offset: Int,) =
+    if (v2) apiV2.getTrendingStream(country, limit, category, offset) else api.getTrendingStream(publicKey, country, limit, category, offset)
+
+/** Only `/v2` keeps a last good trending list. */
+private fun PodcastRepository.rememberLastGoodTrending(v2: Boolean, key: String, podcasts: List<Podcast>) {
+    if (v2) v2LastGood.podcasts[key] = podcasts.toList()
+}
 
 private suspend fun PodcastRepository.readTrendingPodcasts(
     responseBody: ResponseBody,
     podcasts: MutableList<Podcast>,
+    v2: Boolean,
     emitSnapshot: suspend (List<Podcast>) -> Unit,
 ) {
     val reader = JsonReader(InputStreamReader(responseBody.byteStream(), "UTF-8"))
     reader.isLenient = true
     reader.beginObject()
     while (reader.hasNext()) {
-        readTrendingProperty(reader, podcasts, emitSnapshot)
+        readTrendingProperty(reader, podcasts, v2, emitSnapshot)
     }
     reader.endObject()
 }
@@ -63,6 +86,7 @@ private suspend fun PodcastRepository.readTrendingPodcasts(
 private suspend fun PodcastRepository.readTrendingProperty(
     reader: JsonReader,
     podcasts: MutableList<Podcast>,
+    v2: Boolean,
     emitSnapshot: suspend (List<Podcast>) -> Unit,
 ) {
     if (reader.nextName() != "feeds") {
@@ -71,19 +95,22 @@ private suspend fun PodcastRepository.readTrendingProperty(
     }
 
     reader.beginArray()
-    readTrendingFeeds(reader, podcasts, emitSnapshot)
+    readTrendingFeeds(reader, podcasts, v2, emitSnapshot)
     reader.endArray()
 }
 
 private suspend fun PodcastRepository.readTrendingFeeds(
     reader: JsonReader,
     podcasts: MutableList<Podcast>,
+    v2: Boolean,
     emitSnapshot: suspend (List<Podcast>) -> Unit,
 ) {
     val gson = Gson()
     while (reader.hasNext()) {
         val feed = readTrendingFeed(reader, gson) ?: continue
-        podcasts.add(toPodcastModel(feed))
+        val podcast = toPodcastModel(feed)
+        // `/v2` names the latest episode by its recipe ID; show it under the phone's own ID.
+        podcasts.add(if (v2) discoveryEpisodeIds.latestToLocalOwners(listOf(podcast)).first() else podcast)
         if (shouldEmitTrendingSnapshot(podcasts.size)) {
             emitSnapshot(podcasts.toList())
         }

@@ -5,11 +5,12 @@ import cx.aswin.boxlore.core.network.model.BootstrapRequest
 import cx.aswin.boxlore.core.network.model.RecommendationSeedV2
 import cx.aswin.boxlore.core.network.model.RecommendationsV2Request
 import cx.aswin.boxlore.core.network.model.SimilarEpisodesRequest
+import cx.aswin.boxlore.core.network.model.V2BootstrapRequest
 import cx.aswin.boxlore.core.network.model.V2EpisodeRegisterRequest
 import cx.aswin.boxlore.core.network.model.V2EpisodeReply
 import cx.aswin.boxlore.core.network.model.V2EpisodeSort
-import cx.aswin.boxlore.core.network.model.V2FeedReportRequest
 import cx.aswin.boxlore.core.network.model.V2FeedReadTarget
+import cx.aswin.boxlore.core.network.model.V2FeedReportRequest
 import cx.aswin.boxlore.core.network.model.V2FeedReportStatus
 import cx.aswin.boxlore.core.network.model.V2FetchVia
 import cx.aswin.boxlore.core.network.model.V2ShowsFeedsRequest
@@ -358,7 +359,7 @@ class BoxLoreApiV2ContractTest {
     }
 
     @Test
-    fun `recommendations send explicit fields and leave defaults out`() {
+    fun `recommendations send the contract version and explicit fields and leave defaults out`() {
         enqueueJson("""{"status":"true","items":[{"id":4503599627370497,"title":"Rec","feedId":920666,"servedId":7777}]}""")
 
         val body =
@@ -367,6 +368,7 @@ class BoxLoreApiV2ContractTest {
                     deviceUuid = "device-1",
                     request =
                         RecommendationsV2Request(
+                            contractVersion = RecommendationsV2Request.CONTRACT_VERSION,
                             country = "in",
                             languages = listOf("en", "hi"),
                             mode = "explore",
@@ -383,7 +385,7 @@ class BoxLoreApiV2ContractTest {
         assertEquals("device-1", request.getHeader("X-Device-UUID"))
         assertNoAppKey(request)
         assertEquals(
-            """{"country":"in","languages":["en","hi"],"mode":"explore","limit":20,""" +
+            """{"contractVersion":2,"country":"in","languages":["en","hi"],"mode":"explore","limit":20,""" +
                 """"seeds":[{"kind":"episode","id":4503599627370497,"weight":1.0}],"excludedEpisodeIds":[4503599627370498]}""",
             request.body.readUtf8(),
         )
@@ -397,13 +399,47 @@ class BoxLoreApiV2ContractTest {
         api
             .getHomeBootstrap(
                 deviceUuid = "device-1",
-                request = BootstrapRequest(country = "us", vibeIds = listOf("calm"), include = listOf(BootstrapRequest.INCLUDE_TRENDING)),
+                request = V2BootstrapRequest(country = "us", vibeIds = listOf("calm"), include = listOf(BootstrapRequest.INCLUDE_TRENDING)),
             ).execute()
 
         val request = server.takeRequest()
         assertEquals("/v2/home/bootstrap", request.path)
         assertEquals("device-1", request.getHeader("X-Device-UUID"))
         assertEquals("""{"country":"us","vibeIds":["calm"],"include":["trending"]}""", request.body.readUtf8())
+    }
+
+    @Test
+    fun `home bootstrap sends the current recommendation body with its contract version`() {
+        enqueueJson("""{"trending":[],"recommendations":[{"id":4503599627370497,"title":"Rec","feedId":920666}],"isRecommendationsFallback":false}""")
+
+        val body =
+            api
+                .getHomeBootstrap(
+                    deviceUuid = "device-1",
+                    request =
+                        V2BootstrapRequest(
+                            country = "in",
+                            vibeIds = emptyList(),
+                            deviceUuid = "device-1",
+                            recommendationsRequest =
+                                RecommendationsV2Request(
+                                    contractVersion = RecommendationsV2Request.CONTRACT_VERSION,
+                                    country = "in",
+                                    interests = listOf("History"),
+                                    excludedEpisodeIds = listOf(4503599627370498L),
+                                ),
+                            languages = listOf("en", "hi"),
+                            include = listOf(BootstrapRequest.INCLUDE_RECOMMENDATIONS),
+                        ),
+                ).execute()
+                .body()!!
+
+        assertEquals(
+            """{"country":"in","vibeIds":[],"deviceUuid":"device-1","recommendationsRequest":{"contractVersion":2,"country":"in",""" +
+                """"interests":["History"],"excludedEpisodeIds":[4503599627370498]},"languages":["en","hi"],"include":["recommendations"]}""",
+            server.takeRequest().body.readUtf8(),
+        )
+        assertEquals(4503599627370497L, body.recommendations.single().v2Identity()!!.recipeId)
     }
 
     @Test

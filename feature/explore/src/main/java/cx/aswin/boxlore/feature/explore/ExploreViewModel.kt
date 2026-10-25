@@ -831,9 +831,8 @@ class ExploreViewModel(
                     subscribedGenres = subscribedGenres,
                     languages = languages,
                 )
-                val distinctRecs = ExploreSharedRecommendationsLogic.distinctRecommendations(
-                    bootstrapData.items,
-                )
+                // A failure with no last good picks keeps the picks For you shows.
+                val distinctRecs = ExploreSharedRecommendationsLogic.freshRecommendations(bootstrapData) ?: return@launch
                 android.util.Log.d(
                     "ExploreViewModel",
                     "Shared recommendations size=${distinctRecs.size}, fallback=${bootstrapData.isFallback}",

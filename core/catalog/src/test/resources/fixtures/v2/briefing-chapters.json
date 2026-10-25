@@ -1,0 +1,78 @@
+{
+  "chapters": [
+    {
+      "startTime": 55,
+      "title": "Regulating AI Beauty Filters for Minors",
+      "summary": "State attorneys general face a difficult legal deadline to define extreme beauty filters f...",
+      "img": null,
+      "url": null,
+      "relatedEpisodes": [
+        {
+          "id": "7504489678679256",
+          "title": "Mark Zuckerberg on Muse, Meta's biggest AI bet yet",
+          "description": "As Meta releases Muse, Mark Zuckerberg tells me why he thinks a personal AI agent that wor...",
+          "audioUrl": "https://pscrb.fm/rss/p/prfx.byspotify.com/e/api.substack.com/feed/podcast/214752912/fad7d63c4351e72ce1e5f08e5a5b5bab.mp3",
+          "imageUrl": "https://substackcdn.com/feed/podcast/3525780/post/214752912/67ea42da9c72a92194189c27d1d91c4d.jpg",
+          "podcastImageUrl": "https://substackcdn.com/feed/podcast/3525780/78fe03419583b3376865cdce9621c080.jpg",
+          "podcastTitle": "Sources with Alex Heath",
+          "podcastId": "7488327",
+          "podcastGenre": "business, technology",
+          "podcastArtist": "Alex Heath",
+          "duration": 4210,
+          "publishedDate": 1788904952
+        },
+        {
+          "id": "5260337418277736",
+          "title": "The Social Reckoning That Wasn't",
+          "description": "Last month Meta agreed to pay up to $18 billion dollars to settle claims that it knowingly...",
+          "audioUrl": "https://traffic.megaphone.fm/APO9640190228.mp3",
+          "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/42184536/48d3d010465c2cda.jpg",
+          "podcastImageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/staging/podcast_uploaded_nologo/42184536/48d3d010465c2cda.jpg",
+          "podcastTitle": "Patrick Boyle On Finance",
+          "podcastId": "1366755",
+          "podcastGenre": "business, investing",
+          "podcastArtist": "Patrick Boyle",
+          "duration": 2060,
+          "publishedDate": 1788642600
+        }
+      ]
+    },
+    {
+      "startTime": 284,
+      "title": "Fathers Taking Parental Leave in California",
+      "summary": "Men accounted for 51 percent of all bonding claims in California due to programs replacing...",
+      "img": null,
+      "url": null,
+      "relatedEpisodes": [
+        {
+          "id": "5326309014219373",
+          "title": "How Does Parental Leave Work?",
+          "description": "Be honest. How much do you know about parental leave? Because for many of our listeners, i...",
+          "audioUrl": "https://mgln.ai/e/187/traffic.omny.fm/d/clips/fa326977-3de5-4283-9b8b-af3500c58607/0c6189e6-78f6-4f47-b25d-af4600179991/adc2100c-6a66-42c0-bfc4-b4c7005bc223/audio.mp3?utm_source=Podcast&in_playlist=1dc0ac03-61e1-486c-b9be-af460017999b",
+          "imageUrl": "https://www.omnycontent.com/d/clips/fa326977-3de5-4283-9b8b-af3500c58607/0c6189e6-78f6-4f47-b25d-af4600179991/adc2100c-6a66-42c0-bfc4-b4c7005bc223/image.jpg?t=1789540192&size=Large",
+          "podcastImageUrl": "https://www.omnycontent.com/d/playlist/fa326977-3de5-4283-9b8b-af3500c58607/0c6189e6-78f6-4f47-b25d-af4600179991/1dc0ac03-61e1-486c-b9be-af460017999b/image.jpg?t=1759356024&size=Large",
+          "podcastTitle": "She's On The Money",
+          "podcastId": "983576",
+          "podcastGenre": "business",
+          "podcastArtist": "Victoria Devine",
+          "duration": 1257,
+          "publishedDate": 1791309600
+        },
+        {
+          "id": "8605856724921500",
+          "title": "Motherhood vs Fatherhood: Bridging the Gap in Family Responsibilities | The Forties Formula In Focus",
+          "description": "Motherhood isn't just physically demanding, it's mentally exhausting. Beyond caring for ch...",
+          "audioUrl": "https://content.rss.com/episodes/228145/3050292/thefortiesformula/2026_08_06_02_28_56_3e7ac923-000e-4dc8-97d6-6f66333ac4bf.mp3",
+          "imageUrl": "https://media.rss.com/thefortiesformula/ep_cover_20260806_022847_ed9f74b4342b393e24b04b72a663860d.png",
+          "podcastImageUrl": "https://media.rss.com/thefortiesformula/20250610_020615_074943f9f58ef07f70b1f1235051de91.png",
+          "podcastTitle": "The Forties Formula | Perimenopause, Lifestyle & Health for Women Over 40",
+          "podcastId": "6742555",
+          "podcastGenre": "education, self improvement",
+          "podcastArtist": "Amanda Lim & Jasmin Dhillon",
+          "duration": 556,
+          "publishedDate": 1791158546
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-25",
+  "region": "us",
+  "title": "State Attorneys General Tackle AI Beauty Filters And Midterm Shifts",
+  "script": "State attorneys general face a difficult legal deadline to define extreme beauty filters following Meta settlements. Hig...",
+  "audioUrl": "https://api.aswin.cx/briefings/audio/us?d=2026-10-25&v=25f44a9c&exp=0&sig=redacted",
+  "coverUrl": "https://api.aswin.cx/briefings/image/us?d=2026-10-25&v=2a8b36b1&exp=0&sig=redacted",
+  "chaptersUrl": "https://api.aswin.cx/v2/briefings/chapters/us?d=2026-10-25&v=25f44a9c&exp=0&sig=redacted",
+  "transcriptUrl": "https://api.aswin.cx/briefings/transcript/us?d=2026-10-25&v=25f44a9c&exp=0&sig=redacted",
+  "sources": [
+    {
+      "title": "When a teen posts a selfie, how much filter is 'too much' filter?",
+      "url": "https://www.npr.org/2026/10/25/nx-s1-6011190/meta-facebook-settlement-beauty-filters-ai"
+    },
+    {
+      "title": "More dads taking paid family leave for a new baby, sometimes as much as moms are",
+      "url": "https://www.npr.org/2026/10/25/nx-s1-5977810/paid-family-bonding-leave-dads-moms-california-colorado-washington-states"
+    }
+  ],
+  "chapterTitles": [
+    "Regulating AI Beauty Filters for Minors",
+    "Fathers Taking Parental Leave in California",
+    "Midterm Campaign Strategies in Arkansas",
+    "Independent Senate Candidates in Western States",
+    "Youth Protests and Military Response in Italy",
+    "Continental European Unrest and Pension Protests"
+  ]
+}

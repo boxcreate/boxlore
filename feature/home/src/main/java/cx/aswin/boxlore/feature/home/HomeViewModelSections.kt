@@ -1,7 +1,9 @@
 package cx.aswin.boxlore.feature.home
 
 import androidx.lifecycle.viewModelScope
+import cx.aswin.boxlore.core.catalog.HomeRecommendations
 import cx.aswin.boxlore.core.catalog.content.ContentDaypart
+import cx.aswin.boxlore.core.model.Episode
 import cx.aswin.boxlore.core.playback.getHistoryForRecommendations
 import cx.aswin.boxlore.core.prefs.DiscoverySections
 import cx.aswin.boxlore.core.prefs.collectDiscoverySection
@@ -12,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -107,19 +110,15 @@ internal fun HomeViewModel.loadRecommendations() {
             try {
                 android.util.Log.d("BoxCastTiming", "VM: Background personalized Home screen load for region=${request.region}")
                 val recommendations = fetchHomeRecommendations(request)
-                val distinctRecs =
-                    recommendations.items
-                        .distinctBy { it.id }
-                        .distinctBy { it.title.lowercase().trim() }
-                _recommendations.value = distinctRecs
-                _isRecommendationsFallback.value = recommendations.isFallback
-                try {
-                    val json = Json { ignoreUnknownKeys = true }
-                    boxcastPrefs.saveRecommendationsCache(json.encodeToString(distinctRecs), recommendations.isFallback)
-                } catch (ce: CancellationException) {
-                    throw ce
-                } catch (ce: Exception) {
-                    android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
+                applyHomeRecommendations(recommendations, _recommendations, _isRecommendationsFallback) { picks, isFallback ->
+                    try {
+                        val json = Json { ignoreUnknownKeys = true }
+                        boxcastPrefs.saveRecommendationsCache(json.encodeToString(picks), isFallback)
+                    } catch (ce: CancellationException) {
+                        throw ce
+                    } catch (ce: Exception) {
+                        android.util.Log.e("HomeViewModel", "Failed to cache recommendations", ce)
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -130,6 +129,29 @@ internal fun HomeViewModel.loadRecommendations() {
             }
         }
     }
+}
+
+/**
+ * Shows [result] in Picked for you ([picks], [isFallback]) and saves it with [save], one entry per
+ * episode ID and title. A failed request with no last good picks ([HomeRecommendations.failed]) keeps
+ * the picks Home shows (restored from its cache or loaded earlier) and saves nothing. Returns whether
+ * the picks were replaced.
+ */
+internal suspend fun applyHomeRecommendations(
+    result: HomeRecommendations,
+    picks: MutableStateFlow<List<Episode>>,
+    isFallback: MutableStateFlow<Boolean>,
+    save: suspend (List<Episode>, Boolean) -> Unit,
+): Boolean {
+    if (result.failed) return false
+    val distinct =
+        result.items
+            .distinctBy { it.id }
+            .distinctBy { it.title.lowercase().trim() }
+    picks.value = distinct
+    isFallback.value = result.isFallback
+    save(distinct, result.isFallback)
+    return true
 }
 
 private suspend fun HomeViewModel.fetchHomeRecommendations(request: HomeSectionRequest) = coroutineScope {
