@@ -1,5 +1,9 @@
 package cx.aswin.boxlore.core.rss
 
+import cx.aswin.boxlore.core.database.EpisodeAliasEntity
+import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
+import cx.aswin.boxlore.core.database.EpisodeAliasState
+import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.database.RssEpisodeEntity
 import cx.aswin.boxlore.core.database.RssEpisodeIdentity
@@ -135,6 +139,96 @@ class LegacyRssSubscriptionUpgradeLogicTest {
             }
         }
     }
+
+    @Test
+    fun `only the show's trusted owners of copied contract keys under other IDs are displaced`() {
+        val planned = listOf(planned("-1", "g1"), planned("-2", "g2"), planned("-3", "g3\n"), planned("-4", "phone-only", followsContract = false))
+        val aliases =
+            listOf(
+                alias("501", "g1", owner = true),
+                alias("506", "g3", owner = true),
+                alias("-2", "g2", owner = true),
+                alias("502", "g2", owner = false),
+                alias("503", "phone-only", owner = true),
+                alias("504", "g9", owner = true),
+                alias("505", "g1", owner = true, state = EpisodeAliasState.AMBIGUOUS),
+            )
+
+        assertEquals(listOf("501", "506"), LegacyRssUpgradeLogic.displacedOwners(planned, aliases).map { it.aliasId })
+    }
+
+    @Test
+    fun `a displaced owner is demoted once a new copied alias owns its key`() {
+        val displaced = alias("501", "g1", owner = true)
+        val writes = CatalogAliasRecords.Writes(inserts = listOf(alias("-1", "g1", owner = true)), updates = emptyList())
+
+        val rewrites = LegacyRssUpgradeLogic.ownerHandover(listOf(displaced), writes, listOf(planned("-1", "g1")), aliasesById = emptyMap())
+
+        assertEquals(listOf(displaced.copy(owner = false)), rewrites)
+    }
+
+    @Test
+    fun `the copied ID's existing trusted alias is promoted and the displaced owner demoted`() {
+        val displaced = alias("501", "g1", owner = true)
+        val copied = alias("-1", "g1", owner = false)
+        val none = CatalogAliasRecords.Writes(emptyList(), emptyList())
+
+        val rewrites = LegacyRssUpgradeLogic.ownerHandover(listOf(displaced), none, listOf(planned("-1", "g1")), mapOf("-1" to copied))
+
+        assertEquals(listOf(copied.copy(owner = true), displaced.copy(owner = false)), rewrites)
+    }
+
+    @Test
+    fun `a key no copied ID can own keeps its owner`() {
+        val displaced = alias("501", "g1", owner = true)
+        val none = CatalogAliasRecords.Writes(emptyList(), emptyList())
+        val planned = listOf(planned("-1", "g1"))
+
+        for (copied in listOf(
+            alias("-1", "g1", owner = false, state = EpisodeAliasState.AMBIGUOUS),
+            alias("-1", "g1", owner = false).copy(podcastId = "920667"),
+            alias("-1", "g2", owner = false),
+        )) {
+            assertEquals(emptyList<EpisodeAliasEntity>(), LegacyRssUpgradeLogic.ownerHandover(listOf(displaced), none, planned, mapOf("-1" to copied)))
+        }
+        assertEquals(emptyList<EpisodeAliasEntity>(), LegacyRssUpgradeLogic.ownerHandover(emptyList(), none, planned, emptyMap()))
+    }
+
+    private fun planned(id: String, key: String, followsContract: Boolean = true) = PlannedEpisodeRow(
+        entity =
+        LocalEpisodeEntity(
+            episodeId = id,
+            podcastId = "920666",
+            guid = key,
+            title = "Ep $key",
+            description = "",
+            audioUrl = "https://cdn.example.com/$id.mp3",
+            imageUrl = null,
+            duration = 60,
+            publishedDate = 1L,
+            chaptersUrl = null,
+            transcriptUrl = null,
+            transcripts = null,
+            persons = null,
+            seasonNumber = null,
+            episodeNumber = null,
+            episodeType = null,
+            enclosureType = null,
+        ),
+        source = PlannedIdSource.STORED,
+        keyFollowsContract = followsContract,
+    )
+
+    private fun alias(id: String, key: String, owner: Boolean, state: String = EpisodeAliasState.TRUSTED,) = EpisodeAliasEntity(
+        aliasId = id,
+        podcastId = "920666",
+        catalogKey = key,
+        recipeId = 4_503_599_627_370_497L,
+        state = state,
+        owner = owner,
+        provenance = EpisodeAliasProvenance.UPGRADE_CATALOG,
+        createdAt = 1L,
+    )
 
     private fun rssRow(id: String, key: String) = RssEpisodeEntity(
         episodeId = id,
