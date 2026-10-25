@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Identity Fixture Podcast</title>
+    <description>Items that exercise episode identity: duplicates, GUID-less items and padded GUIDs.</description>
+    <itunes:author>Fixture Author</itunes:author>
+    <item>
+      <title>Episode Five</title>
+      <guid>ep-5</guid>
+      <pubDate>Sun, 05 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/ep5.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Episode Four</title>
+      <guid>ep-4</guid>
+      <pubDate>Sat, 04 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/ep4.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Episode Three Without A GUID</title>
+      <pubDate>Fri, 03 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/ep3.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Episode Two With Two Media Elements</title>
+      <pubDate>Thu, 02 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/ep2.mp3" type="audio/mpeg" length="1000"/>
+      <media:content url="https://cdn.example.com/ep2-hq.m4a" type="audio/mp4" medium="audio"/>
+    </item>
+    <item>
+      <title>Episode Four Repost</title>
+      <guid>ep-4</guid>
+      <pubDate>Mon, 06 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/ep4-repost.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Episode One With A Padded GUID</title>
+      <guid>&#160;ep-1&#x180E;</guid>
+      <pubDate>Wed, 01 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/ep1.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Episode One Again</title>
+      <guid>ep-1</guid>
+      <pubDate>Tue, 07 Jan 2020 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/ep1-again.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Episode Zero With Two Enclosures</title>
+      <pubDate>Tue, 31 Dec 2019 00:00:00 GMT</pubDate>
+      <enclosure url="https://cdn.example.com/ep0-a.mp3" type="audio/mpeg" length="1000"/>
+      <enclosure url="https://cdn.example.com/ep0-b.mp3" type="audio/mpeg" length="1000"/>
+    </item>
+  </channel>
+</rss>

@@ -49,6 +49,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
   LocalEpisodeCatalogReads.kt
   LocalEpisodeCatalogRefresh.kt
   StickyEpisodeIdentity.kt
+  ParsedFeedItem.kt
   LocalEpisodeCatalogPersist.kt
   StickyRssEpisodeRemap.kt
   FeedOrderLogic.kt
@@ -78,6 +79,9 @@ src/main/java/cx/aswin/boxlore/core/rss/
 - RSS episode IDs are strings encoding deterministic negative `Long` values to avoid collision with positive Podcast Index IDs.
 - RSS episode and podcast rows are persisted in the main database owned by `:core:database`.
 - Exact legacy upgrades retain the old RSS row and episodes as an unsubscribed compatibility alias; the active PI row owns an equivalent ready local catalog using the same negative episode ids.
+- **Feed document order decides duplicates** ([docs/EPISODE_IDS.md](../../docs/EPISODE_IDS.md) §3). Both parsers record each item's position among the feed's `<item>`/`<entry>` elements before sorting, as a `ParsedFeedItem` (`ParsedRssFeed.items`, same order as `episodes`). When items share a catalog key, the first in the document wins, in the parse, in `LocalEpisodeCatalogPersist`, in `StickyRssEpisodeRemap` and in the legacy RSS upgrade (feed items first, then stored rows the feed no longer lists), whatever the publish dates say. `ParsedRssFeed.episodes` stays newest first.
+- **Catalog key of a parsed item:** the trimmed GUID, else the trimmed raw `<enclosure url>` (the first one; Atom `<link rel="enclosure">` counts), else the audio address the parser picked (`StickyEpisodeIdentity.feedItemKey`). The audio address differs between parsers when an item also carries `media:content` or several enclosures, and feeds over 4 MB use only the streaming parser, so the enclosure keeps the key the same either way. The two parsers' items are joined by this key, then by minted ID, then by last enclosure (the only one the library parser reports).
+- **IDs are minted exactly as before** (GUID, else the picked audio address), and stored rows keep theirs: a stored row is looked up by the catalog key, then by the keys older builds used (`ParsedFeedItem.legacyKeys`, the audio addresses the parsers picked). A row found by an older key keeps that key, so the write updates it in place. Exact keys are matched for every item before any older key (`StoredRowMatch`), so a row stays with the item that carries its exact key.
 - Feed read failures are typed: `FeedHttpException` (status code; message unchanged) and `NotAFeedException` (wrong content type or nothing parseable), both `IllegalArgumentException`s. `FeedReadFailure.isAddressGone` reads them, plus no such host and failing certificates, as a dead address (`RefreshOutcome.Failure.addressGone`); timeouts, 5xx, 429 and dropped connections are passing trouble. An address that answers with no episodes counts as dead too.
 - Moved feeds: `RssFetchResult.movedTo` is the final address when every redirect was permanent (301, 308; `permanentMoveTarget`); `ParsedRssFeed.newFeedUrl` is the channel's `itunes:new-feed-url` (both parsers). With `RefreshRequest.detectMove`, `confirmedMove` reports a new HTTPS address only when it differs from the saved one and serves the same show by title (case, spacing and punctuation ignored); a declared address is read once to confirm. Temporary redirects never move a feed.
 - Local catalog writes never replace another episode (`LocalEpisodeCollisionGuard`, [docs/EPISODE_IDS.md](../../docs/EPISODE_IDS.md) §4). The write is a REPLACE, which deletes any stored row sharing the episode ID or the unique (show, catalog key). Inside the refresh transaction, for each row:
@@ -99,6 +103,7 @@ src/main/java/cx/aswin/boxlore/core/rss/
 ./gradlew :core:rss:testDebugUnitTest
 ```
 - `RssParsePolicyTest` checks the size limit and that a large valid feed never reaches the library parser.
+- `FeedDocumentOrderTest` and the `feed_identity.xml` fixture (`IdentityFixtureFeed`, with the rows older builds stored for it, read by both parsers and by the streaming parser alone): a duplicate GUID whose later copy is newer keeps the first copy; GUID-less items where the parsers pick different addresses are one episode keyed on the enclosure; a feed crossing 4 MB keeps every stored ID in both directions; NBSP and U+180E padding trimmed with the recipe set (written as escapes); stored IDs and keys identical before and after, for local catalogs and true RSS rows; exact keys win over older keys. `LocalEpisodeCatalogRepositoryTest` runs the same fixture through the refresh and the collision guard.
 - `EpisodeRecipeIdTest` runs every case in the shared recipe fixture against `:core:model`'s `EpisodeRecipeId` and asserts the fixture's SHA-256, so a changed copy fails here and in the scripts test.
 
 ## CI relevance

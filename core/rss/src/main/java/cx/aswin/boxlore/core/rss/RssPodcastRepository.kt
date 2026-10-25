@@ -99,7 +99,7 @@ class RssPodcastRepository private constructor(
         val now = System.currentTimeMillis()
         val sticky =
             StickyRssEpisodeRemap.prepare(
-                parsed = parsed.episodes,
+                parsed = parsed.items,
                 existing = episodeDao.listIdentities(podcastId),
                 podcastTitle = parsed.title,
                 podcastImageUrl = parsed.imageUrl,

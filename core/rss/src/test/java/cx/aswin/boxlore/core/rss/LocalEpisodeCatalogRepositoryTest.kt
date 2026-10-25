@@ -541,6 +541,53 @@ class LocalEpisodeCatalogRepositoryTest {
         assertEquals(2, dao.episodes.size)
     }
 
+    @Test
+    fun aRefreshOverRowsStoredByOlderBuildsKeepsEveryIdAndKey() = runTest {
+        // Rows as older builds stored the fixture feed, read by both parsers or (over 4 MiB) by one.
+        val cases =
+            listOf(
+                IdentityFixtureFeed.small() to IdentityFixtureFeed.SMALL_ROWS,
+                IdentityFixtureFeed.large() to IdentityFixtureFeed.LARGE_ROWS,
+            )
+        for ((bytes, before) in cases) {
+            val dao = FakeCatalogDao()
+            dao.episodes += before.map { (id, key) -> localEpisode(id).copy(podcastId = IdentityFixtureFeed.SHOW_ID, guid = key) }
+
+            val outcome = catalogRepo(dao = dao, feedClient = BytesFeedClient(bytes)).refresh(identityFeedRequest())
+
+            assertTrue(outcome is RefreshOutcome.Success)
+            assertEquals(before.toSet(), dao.episodes.map { it.episodeId to it.guid }.toSet())
+        }
+    }
+
+    @Test
+    fun aFeedCrossingFourMegabytesBetweenRefreshesKeepsItsRows() = runTest {
+        for ((first, second) in listOf(IdentityFixtureFeed.small() to IdentityFixtureFeed.large(), IdentityFixtureFeed.large() to IdentityFixtureFeed.small())) {
+            val dao = FakeCatalogDao()
+            val client = BytesFeedClient(first)
+            val repo = catalogRepo(dao = dao, feedClient = client)
+            assertTrue(repo.refresh(identityFeedRequest()) is RefreshOutcome.Success)
+            val stored = dao.episodes.map { it.episodeId to it.guid }.toSet()
+
+            client.body = second
+            assertTrue(repo.refresh(identityFeedRequest()) is RefreshOutcome.Success)
+
+            assertEquals(6, stored.size)
+            assertEquals(stored, dao.episodes.map { it.episodeId to it.guid }.toSet())
+        }
+    }
+
+    private fun identityFeedRequest() = LocalEpisodeCatalogPort.RefreshRequest(
+        podcastIndexId = IdentityFixtureFeed.SHOW_ID,
+        feedUrl = IdentityFixtureFeed.FEED_URL,
+        reason = LocalEpisodeCatalogPort.RefreshReason.MANUAL,
+    )
+
+    /** Serves [body] from every address and parses it for real. */
+    private class BytesFeedClient(var body: ByteArray,) : RssFeedClient() {
+        override suspend fun fetch(url: String) = RssFetchResult(finalUrl = url, etag = null, lastModified = null, body = body)
+    }
+
     private fun sharedFeedRequest(show: String) = LocalEpisodeCatalogPort.RefreshRequest(
         podcastIndexId = show,
         feedUrl = "https://feeds.example/shared.xml",

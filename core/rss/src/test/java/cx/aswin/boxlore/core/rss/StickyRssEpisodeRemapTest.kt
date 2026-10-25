@@ -23,7 +23,7 @@ class StickyRssEpisodeRemapTest {
             )
         val remapped =
             StickyRssEpisodeRemap.remap(
-                parsed = parsed,
+                parsed = parsed.asParsedFeedItems(),
                 existing =
                 listOf(
                     RssEpisodeIdentity(
@@ -49,7 +49,7 @@ class StickyRssEpisodeRemapTest {
             )
         val remapped =
             StickyRssEpisodeRemap.remap(
-                parsed = listOf(rss(namespace, minted, "g2", "New")),
+                parsed = listOf(rss(namespace, minted, "g2", "New")).asParsedFeedItems(),
                 existing =
                 listOf(
                     RssEpisodeIdentity(
@@ -87,7 +87,7 @@ class StickyRssEpisodeRemapTest {
                 listOf(
                     rss(namespace, first, "dup", "First"),
                     rss(namespace, second, "dup", "Second").copy(audioUrl = "https://cdn.example/b.mp3"),
-                ),
+                ).asParsedFeedItems(),
                 existing = emptyList(),
             )
         assertEquals(1, remapped.size)
@@ -107,7 +107,7 @@ class StickyRssEpisodeRemapTest {
             )
         val prepared =
             StickyRssEpisodeRemap.prepare(
-                parsed = listOf(rss(namespace, minted, "g1", "New title")),
+                parsed = listOf(rss(namespace, minted, "g1", "New title")).asParsedFeedItems(),
                 existing =
                 listOf(
                     RssEpisodeIdentity(

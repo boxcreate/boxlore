@@ -193,17 +193,27 @@ internal class LegacyRssSubscriptionUpgrader(private val database: BoxLoreDataba
         val rssDao = database.rssEpisodeDao()
         val stored = rssDao.getAllNewest(source.podcastId)
         val refreshed =
-            StickyRssEpisodeRemap.remap(
-                parsed = snapshot.parsed.episodes,
+            StickyRssEpisodeRemap.remapItems(
+                parsed = snapshot.parsed.items,
                 existing = rssDao.listIdentities(source.podcastId),
             )
-        val combined = (refreshed + stored).distinctBy(RssEpisodeEntity::episodeId)
+        // Feed items first, in document order; stored rows the feed no longer lists follow them, so a
+        // key both share keeps the feed item (P4 PR 8, own-IDs plan section 4: first in the document wins).
+        val refreshedIds = refreshed.mapTo(HashSet()) { it.episode.episodeId }
+        val firstStoredIndex = (refreshed.maxOfOrNull(ParsedFeedItem::documentIndex) ?: -1) + 1
+        val combined =
+            refreshed +
+                stored
+                    .filterNot { it.episodeId in refreshedIds }
+                    .distinctBy(RssEpisodeEntity::episodeId)
+                    .asParsedFeedItems(firstIndex = firstStoredIndex)
+        // Each row is known by its catalog key: a GUID-less feed item by its enclosure URL.
         val identities =
-            combined.map { row ->
+            combined.map { item ->
                 LocalEpisodeIdentity(
-                    episodeId = row.episodeId,
-                    guid = row.guid.orEmpty(),
-                    audioUrl = row.audioUrl,
+                    episodeId = item.episode.episodeId,
+                    guid = item.catalogKey.orEmpty(),
+                    audioUrl = item.episode.audioUrl,
                 )
             }
         val localRows =

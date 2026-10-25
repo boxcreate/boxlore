@@ -32,10 +32,21 @@ data class ParsedRssFeed(
     val podcastType: String,
     val podcastGuid: String?,
     val declaredUpdatedAt: Long?,
+    /** Newest first; one item per catalog key, the first in the feed document winning. */
     val episodes: List<RssEpisodeEntity>,
     /** The channel's `<itunes:new-feed-url>`: where the publisher says the feed moved. */
     val newFeedUrl: String? = null,
-)
+    /**
+     * [episodes] in the same order, with each item's feed position and identity keys. Callers that
+     * write episode rows use these, so duplicates resolve in document order. A feed built by hand
+     * defaults to list order.
+     */
+    val items: List<ParsedFeedItem> = episodes.asParsedFeedItems(),
+) {
+    init {
+        require(items.size == episodes.size) { "Parsed feed items must match its episodes" }
+    }
+}
 
 /** [movedTo]: the final address when every redirect on the way was permanent (301, 308). */
 data class RssFetchResult(
@@ -217,8 +228,8 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         val channelImage =
             channel.image?.url
                 ?: channel.itunesChannelData?.image
-        val episodes =
-            channel.items.mapNotNull { item ->
+        val items =
+            channel.items.mapIndexedNotNull { index, item ->
                 val itemTitle = item.title?.trim().orEmpty()
                 val enclosureUrl = item.rawEnclosure?.url
                 val mediaUrl = item.rawMediaContent?.url
@@ -254,7 +265,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                             .orEmpty()
                             .cleanDescription()
                     val publishedDate = parseDate(item.pubDate.orEmpty()) ?: 0L
-                    RssEpisodeEntity(
+                    val episode = RssEpisodeEntity(
                         episodeId =
                         RssIdGenerator.episodeIdForPodcast(
                             podcastId = podcastId,
@@ -282,9 +293,12 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                         item.rawEnclosure?.type
                             ?: item.rawMediaContent?.type,
                     )
+                    // The library reports only the item's last enclosure.
+                    ParsedFeedItem(episode, index, enclosureUrls = listOfNotNull(enclosureUrl?.takeIf(String::isNotBlank)))
                 }
             }
-        require(episodes.isNotEmpty()) { "Feed has no playable episodes" }
+        require(items.isNotEmpty()) { "Feed has no playable episodes" }
+        val ordered = FeedDocumentOrder.newestFirst(FeedDocumentOrder.firstInDocument(items))
         val itunes = channel.itunesChannelData
         return ParsedRssFeed(
             title = title,
@@ -303,10 +317,8 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             podcastGuid = null,
             declaredUpdatedAt = parseDate(channel.lastBuildDate.orEmpty()),
             newFeedUrl = itunes?.newsFeedUrl?.trim()?.takeIf(String::isNotBlank),
-            episodes =
-            episodes
-                .distinctBy(RssEpisodeEntity::episodeId)
-                .sortedByDescending(RssEpisodeEntity::publishedDate),
+            episodes = ordered.map(ParsedFeedItem::episode),
+            items = ordered,
         )
     }
 
@@ -327,7 +339,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                     val name = qualifiedName.substringAfter(':')
                     when {
                         name == "item" || name == "entry" -> {
-                            currentEpisode = MutableEpisode()
+                            currentEpisode = MutableEpisode(documentIndex = feed.itemCount++)
                         }
                         currentEpisode != null -> {
                             parseEpisodeElement(
@@ -344,7 +356,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                     val name = parser.localName()
                     when (name) {
                         "item", "entry" -> {
-                            currentEpisode?.toEntity(podcastId)?.let(feed.episodes::add)
+                            currentEpisode?.toItem(podcastId)?.let(feed.items::add)
                             currentEpisode = null
                         }
                         "image" -> feed.insideChannelImage = false
@@ -356,7 +368,8 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         }
 
         require(feed.title.isNotBlank()) { "Feed has no podcast title" }
-        require(feed.episodes.isNotEmpty()) { "Feed has no playable episodes" }
+        require(feed.items.isNotEmpty()) { "Feed has no playable episodes" }
+        val ordered = FeedDocumentOrder.newestFirst(FeedDocumentOrder.firstInDocument(feed.items))
         return ParsedRssFeed(
             title = feed.title.trim(),
             author = feed.author.trim(),
@@ -367,10 +380,8 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             podcastGuid = feed.podcastGuid,
             declaredUpdatedAt = feed.declaredUpdatedAt,
             newFeedUrl = feed.newFeedUrl,
-            episodes =
-            feed.episodes
-                .distinctBy(RssEpisodeEntity::episodeId)
-                .sortedByDescending(RssEpisodeEntity::publishedDate),
+            episodes = ordered.map(ParsedFeedItem::episode),
+            items = ordered,
         )
     }
 
@@ -454,51 +465,15 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         }
     }
 
+    /**
+     * Joins both parsers' reads of one feed. Items are joined by catalog key and duplicates resolve
+     * in feed document order ([FeedDocumentOrder.merge]); channel fields prefer the streaming parser.
+     */
     private fun mergeParsedFeeds(libraryFeed: ParsedRssFeed?, customFeed: ParsedRssFeed?,): ParsedRssFeed? {
         if (libraryFeed == null) return customFeed
         if (customFeed == null) return libraryFeed
 
-        val customEpisodes = customFeed.episodes.associateBy(RssEpisodeEntity::episodeId)
-        val libraryIds = libraryFeed.episodes.mapTo(mutableSetOf(), RssEpisodeEntity::episodeId)
-        val mergedEpisodes =
-            libraryFeed.episodes.map { libraryEpisode ->
-                customEpisodes[libraryEpisode.episodeId]?.let { customEpisode ->
-                    libraryEpisode.copy(
-                        guid = customEpisode.guid ?: libraryEpisode.guid,
-                        title =
-                        customEpisode.title.takeIf(String::isNotBlank)
-                            ?: libraryEpisode.title,
-                        description =
-                        listOf(
-                            libraryEpisode.description,
-                            customEpisode.description,
-                        ).maxByOrNull(String::length).orEmpty(),
-                        imageUrl = customEpisode.imageUrl ?: libraryEpisode.imageUrl,
-                        duration =
-                        customEpisode.duration.takeIf { it > 0 }
-                            ?: libraryEpisode.duration,
-                        publishedDate =
-                        customEpisode.publishedDate.takeIf { it > 0L }
-                            ?: libraryEpisode.publishedDate,
-                        chaptersUrl = customEpisode.chaptersUrl,
-                        transcriptUrl = customEpisode.transcriptUrl,
-                        transcripts = customEpisode.transcripts,
-                        persons = customEpisode.persons,
-                        seasonNumber =
-                        customEpisode.seasonNumber
-                            ?: libraryEpisode.seasonNumber,
-                        episodeNumber =
-                        customEpisode.episodeNumber
-                            ?: libraryEpisode.episodeNumber,
-                        episodeType =
-                        customEpisode.episodeType
-                            ?: libraryEpisode.episodeType,
-                        enclosureType =
-                        libraryEpisode.enclosureType
-                            ?: customEpisode.enclosureType,
-                    )
-                } ?: libraryEpisode
-            } + customFeed.episodes.filterNot { it.episodeId in libraryIds }
+        val ordered = FeedDocumentOrder.newestFirst(FeedDocumentOrder.merge(libraryFeed.items, customFeed.items))
 
         return ParsedRssFeed(
             title = customFeed.title.takeIf(String::isNotBlank) ?: libraryFeed.title,
@@ -514,10 +489,8 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
             customFeed.declaredUpdatedAt
                 ?: libraryFeed.declaredUpdatedAt,
             newFeedUrl = customFeed.newFeedUrl ?: libraryFeed.newFeedUrl,
-            episodes =
-            mergedEpisodes
-                .distinctBy(RssEpisodeEntity::episodeId)
-                .sortedByDescending(RssEpisodeEntity::publishedDate),
+            episodes = ordered.map(ParsedFeedItem::episode),
+            items = ordered,
         )
     }
 
@@ -579,6 +552,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
     private fun handleEnclosureTag(parser: XmlPullParser, episode: MutableEpisode,) {
         val url = parser.getAttributeValue(null, "url")
         val type = parser.getAttributeValue(null, "type")
+        if (!url.isNullOrBlank()) episode.enclosureUrls += url
         if (!url.isNullOrBlank() && isPlayableMedia(url, type, null)) {
             episode.audioUrl = url
             episode.enclosureType = type
@@ -589,6 +563,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         val relation = parser.getAttributeValue(null, "rel")
         val href = parser.getAttributeValue(null, "href")
         val type = parser.getAttributeValue(null, "type")
+        if (relation == "enclosure" && !href.isNullOrBlank()) episode.enclosureUrls += href
         if (relation == "enclosure" && !href.isNullOrBlank() && isPlayableMedia(href, type, null)) {
             episode.audioUrl = href
             episode.enclosureType = type
@@ -729,10 +704,13 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         var newFeedUrl: String? = null
         var insideChannelImage: Boolean = false
         var insideFeedAuthor: Boolean = false
-        val episodes = mutableListOf<RssEpisodeEntity>()
+
+        /** `<item>`/`<entry>` elements seen so far, so each item knows its document position. */
+        var itemCount: Int = 0
+        val items = mutableListOf<ParsedFeedItem>()
     }
 
-    private class MutableEpisode {
+    private class MutableEpisode(val documentIndex: Int,) {
         var guid: String? = null
         var title: String = ""
         var description: String = ""
@@ -749,9 +727,12 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
         var episodeType: String? = null
         var enclosureType: String? = null
 
-        fun toEntity(podcastId: String): RssEpisodeEntity? {
+        /** Every enclosure URL of the item, raw and in document order, playable or not. */
+        val enclosureUrls = mutableListOf<String>()
+
+        fun toItem(podcastId: String): ParsedFeedItem? {
             if (title.isBlank() || audioUrl.isBlank()) return null
-            return RssEpisodeEntity(
+            val episode = RssEpisodeEntity(
                 episodeId =
                 RssIdGenerator.episodeIdForPodcast(
                     podcastId = podcastId,
@@ -777,6 +758,7 @@ open class RssFeedClient(private val httpClient: OkHttpClient = defaultHttpClien
                 episodeType = episodeType,
                 enclosureType = enclosureType,
             )
+            return ParsedFeedItem(episode, documentIndex, enclosureUrls = enclosureUrls.toList())
         }
     }
 

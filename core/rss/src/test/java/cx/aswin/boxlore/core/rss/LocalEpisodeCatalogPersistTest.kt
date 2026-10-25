@@ -18,7 +18,7 @@ class LocalEpisodeCatalogPersistTest {
             LocalEpisodeCatalogPersist.toLocalEpisodes(
                 podcastIndexId = "100",
                 rssNamespaceId = namespace,
-                parsed = parsed,
+                parsed = parsed.asParsedFeedItems(),
                 existing = existing,
                 piBaseline = listOf(TestFixtures.episode(id = "55", title = "Renamed")),
                 channelImageUrl = null,
@@ -42,7 +42,7 @@ class LocalEpisodeCatalogPersistTest {
             LocalEpisodeCatalogPersist.toLocalEpisodes(
                 podcastIndexId = "100",
                 rssNamespaceId = namespace,
-                parsed = parsed,
+                parsed = parsed.asParsedFeedItems(),
                 existing = emptyList(),
                 piBaseline = baseline,
                 channelImageUrl = null,
@@ -62,7 +62,7 @@ class LocalEpisodeCatalogPersistTest {
             LocalEpisodeCatalogPersist.toLocalEpisodes(
                 podcastIndexId = "100",
                 rssNamespaceId = namespace,
-                parsed = parsed,
+                parsed = parsed.asParsedFeedItems(),
                 existing = emptyList(),
                 piBaseline = null,
                 channelImageUrl = null,
@@ -79,7 +79,7 @@ class LocalEpisodeCatalogPersistTest {
             LocalEpisodeCatalogPersist.toLocalEpisodes(
                 podcastIndexId = "100",
                 rssNamespaceId = namespace,
-                parsed = parsed,
+                parsed = parsed.asParsedFeedItems(),
                 existing = emptyList(),
                 piBaseline = null,
                 channelImageUrl = null,
@@ -95,7 +95,7 @@ class LocalEpisodeCatalogPersistTest {
             LocalEpisodeCatalogPersist.toLocalEpisodes(
                 podcastIndexId = "100",
                 rssNamespaceId = namespace,
-                parsed = parsed,
+                parsed = parsed.asParsedFeedItems(),
                 existing = emptyList(),
                 piBaseline = null,
                 channelImageUrl = null,
@@ -113,7 +113,7 @@ class LocalEpisodeCatalogPersistTest {
             LocalEpisodeCatalogPersist.toLocalEpisodes(
                 podcastIndexId = "100",
                 rssNamespaceId = namespace,
-                parsed = parsed,
+                parsed = parsed.asParsedFeedItems(),
                 existing = existing,
                 piBaseline = null,
                 channelImageUrl = null,
@@ -142,7 +142,7 @@ class LocalEpisodeCatalogPersistTest {
             LocalEpisodeCatalogPersist.toLocalEpisodes(
                 podcastIndexId = "100",
                 rssNamespaceId = namespace,
-                parsed = parsed,
+                parsed = parsed.asParsedFeedItems(),
                 existing = existing,
                 piBaseline = baseline,
                 channelImageUrl = null,
