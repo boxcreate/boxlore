@@ -9,8 +9,29 @@ import androidx.room.Transaction
 @Dao
 @Suppress("TooManyFunctions")
 interface LocalEpisodeCatalogDao {
+    /**
+     * Inserts [feed], or replaces the stored row while keeping its Room v39 feed-first columns
+     * ([LocalEpisodeFeedEntity.keepingFeedFirstColumnsOf]). Catalog refreshes build this row from
+     * scratch, and the v39 upgrade seeds `followed` and `epNs` only once, so a plain REPLACE would
+     * reset them on the next refresh. Those columns change only through their own updates.
+     *
+     * Changed in P4 of the own-episode-IDs plan (plan section 8, Room v39 feed columns).
+     * COMPAT(own-ids): keeps the seeded namespace and follow state. Permanent: never remove (MIGRATION.md §5).
+     */
+    @Transaction
+    suspend fun upsertFeed(feed: LocalEpisodeFeedEntity) {
+        val stored = getFeed(feed.podcastId)
+        replaceFeedRow(if (stored == null) feed else feed.keepingFeedFirstColumnsOf(stored))
+    }
+
+    /**
+     * Writes every column of [feed] as given, the v39 feed-first columns included. Use [upsertFeed],
+     * which keeps those columns of a stored row.
+     *
+     * Added in P4 of the own-episode-IDs plan (plan section 8, Room v39 feed columns).
+     */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertFeed(feed: LocalEpisodeFeedEntity)
+    suspend fun replaceFeedRow(feed: LocalEpisodeFeedEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertEpisodes(episodes: List<LocalEpisodeEntity>)

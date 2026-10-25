@@ -107,6 +107,7 @@ class LibraryBackupManager(
     private val gson: Gson =
         GsonBuilder()
             .setPrettyPrinting()
+            .addSerializationExclusionStrategy(LibraryBackupFieldPolicy)
             .create()
 
     suspend fun exportLibraryAsJson(): String {

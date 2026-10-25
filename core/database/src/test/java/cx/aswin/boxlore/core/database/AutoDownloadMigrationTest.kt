@@ -1,8 +1,6 @@
 package cx.aswin.boxlore.core.database
 
 import android.content.Context
-import androidx.room.Room
-import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
@@ -55,10 +53,8 @@ class AutoDownloadMigrationTest {
             execSQL("INSERT INTO local_episodes(episodeId,podcastId,guid,title,description,audioUrl,duration,publishedDate) VALUES('-123','show','old-guid','Old','','https://cdn/old.mp3',60,100)")
         }
         helper.close()
-        val database = Room.databaseBuilder(context, BoxLoreDatabase::class.java, name).allowMainThreadQueries()
-            .addMigrations(object : Migration(37, 38) {
-                override fun migrate(db: SupportSQLiteDatabase) = AutoDownloadMigration.migrate(db)
-            }).build()
+        // The production migration list: 37→38, then 38→39.
+        val database = BoxLoreDatabase.builder(context, name).allowMainThreadQueries().build()
         try {
             assertEquals(DownloadedEpisodeEntity.ORIGIN_UNKNOWN, database.downloadedEpisodeDao().getDownload("manual-legacy")?.downloadOrigin)
             assertEquals(456L, database.downloadedEpisodeDao().getDownload("manual-legacy")?.sizeBytes)

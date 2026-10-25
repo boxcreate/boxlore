@@ -23,7 +23,7 @@ These values are part of the shipping product. Renames or recreations break upgr
 | SharedPreferences **files** | Opened as `boxlore_*`; `PrefsFileMigrator` copies from legacy `boxcast_*` when needed. **Key** strings inside those files stay stable. |
 | DataStore | File name `user_preferences`; the API session uses its own file `boxlore_api_session` (`:core:network`), excluded from backup and device transfer |
 | API session device key | Android Keystore alias `boxlore_api_session_device_key` (non-exportable EC P-256 that signs session renewals) |
-| Room (main) | Database filename and tables stay stable |
+| Room (main) | Database filename and tables stay stable. Shipped migrations and exported schemas are never edited; an upgrade with no migration path fails to open instead of erasing data ([`core/database/README.md`](core/database/README.md)) |
 | Room (ranking) | Separate adaptive database owned by `:core:ranking` |
 | WorkManager | `LegacyWorkerFactory` plus permanent `core.data.*` stubs resolve historical FQCNs |
 | Deep links | `boxlore://` and `boxcast://`, plus both HTTPS share-path prefixes |
