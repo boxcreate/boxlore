@@ -17,10 +17,8 @@ import retrofit2.awaitResponse
 
 /**
  * One episode by its ID ([EpisodeLinkResolver] without the feed read): a stored row, the phone's
- * row of the episode the ID is a trusted alias of, then the network. A recipe-range ID (a recipe ID,
- * or a served ID older builds were given) goes to `/v2/episode` and never to the Podcast Index
- * lookup; other positive IDs are Podcast Index IDs and keep v1 `/episode`. The episode keeps the ID
- * the caller asked for, so a served or old ID is never swapped for another.
+ * row of the episode the ID is a trusted alias of, then the network ([lookupNetworkEpisode]). The
+ * episode keeps the ID the caller asked for, so a served or old ID is never swapped for another.
  *
  * Changed in P4 PR 9 (own-IDs plan section 9: recipe misses never go to Podcast Index) and P4 PR 13
  * (aliases resolve before the network).
@@ -62,14 +60,14 @@ suspend fun PodcastRepository.localEpisodeForRecipe(podcastId: String, recipeId:
         null
     } ?: return@withContext null
     val stored = key.memberIds.firstNotNullOfOrNull { storedEpisodeById(it) }
-        ?: localEpisodeCatalog?.findByCatalogKey(key.podcastId, key.catalogKey, null)
+        ?: storedEpisodeForKey(key.podcastId, key.catalogKey)
     stored?.copy(recipeId = stored.recipeId ?: recipeId, catalogKey = stored.catalogKey ?: key.catalogKey)
 }
 
 internal fun PodcastRepository.episodeLinkResolver(): EpisodeLinkResolver = EpisodeLinkResolver(
     storedEpisode = { id -> storedEpisodeById(id) },
     aliases = episodeAliases,
-    episodeForKey = { podcastId, catalogKey -> localEpisodeCatalog?.findByCatalogKey(podcastId, catalogKey, null) },
+    episodeForKey = { podcastId, catalogKey -> storedEpisodeForKey(podcastId, catalogKey) },
     lookup = { id, show -> lookupNetworkEpisode(id, show) },
     feedReader = episodeFeedReader,
 )
@@ -82,14 +80,43 @@ private suspend fun PodcastRepository.storedEpisodeById(episodeId: String): Epis
 }
 
 /**
+ * The stored row of show [podcastId]'s episode with [catalogKey]: the local catalog, where the key is
+ * the row's GUID or, for an episode without one, its enclosure address; then the show's feed-only
+ * rows by enclosure address (their GUIDs aren't read back). Null when none matches.
+ *
+ * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, links and pushes).
+ */
+internal suspend fun PodcastRepository.storedEpisodeForKey(podcastId: String, catalogKey: String): Episode? {
+    val key = EpisodeRecipeId.trimKey(catalogKey) ?: return null
+    localEpisodeCatalog?.findByCatalogKey(podcastId, key, key)?.let { return it }
+    val supplements = try {
+        episodeSupplementRepository?.getEpisodesForPodcast(podcastId).orEmpty()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        android.util.Log.w("PodcastRepository", "feed-only rows unreadable for show $podcastId", e)
+        emptyList()
+    }
+    return supplements.firstOrNull { it.catalogKey == key || EpisodeRecipeId.trimKey(it.audioUrl) == key }
+}
+
+/**
  * A network lookup of an ID no stored row holds. Negative IDs exist only on this phone, so they are
- * never looked up; recipe-range IDs use `/v2/episode` with their show ([showId]); other IDs keep v1.
+ * never looked up. Every canonical positive ID goes to `/v2/episode` with its show ([showId]): a
+ * recipe-range ID, and an old Podcast Index ID, which the route answers with its recipe ID and
+ * catalog key so the phone's own row of the episode can be found. Only a Podcast Index ID the v2
+ * route can't answer right now falls back to v1, and other legacy IDs keep v1.
+ *
+ * Changed in P4 PR 13 of the own-episode-IDs plan (plan section 9: links resolve through
+ * `/v2/episode`).
  */
 private suspend fun PodcastRepository.lookupNetworkEpisode(episodeId: String, showId: Long?,): EpisodeLookup {
     val numeric = episodeId.toLongOrNull()
     return when {
         numeric != null && numeric < 0L -> EpisodeLookup.Missing
         numeric != null && EpisodeRecipeId.isRecipeId(numeric) -> lookupV2Episode(episodeId, showId)
+        V2EpisodeIds.isLookupEpisodeId(episodeId) ->
+            lookupV2Episode(episodeId, showId).takeUnless { it == EpisodeLookup.Failed } ?: lookupV1Episode(episodeId)
         else -> lookupV1Episode(episodeId)
     }
 }
@@ -126,7 +153,12 @@ private suspend fun PodcastRepository.lookupV2Episode(episodeId: String, showId:
     }
 }
 
-/** v1 `/episode` for a Podcast Index ID. */
+/**
+ * v1 `/episode` for a Podcast Index ID. Its answer has no recipe ID or catalog key; the resolver
+ * matches it to a stored row by its enclosure address.
+ *
+ * LEGACY(own-ids): the v1 rung for links. Remove at sunset, once v1 `/episode` is retired.
+ */
 private suspend fun PodcastRepository.lookupV1Episode(episodeId: String): EpisodeLookup = try {
     val response = api.getEpisode(publicKey, episodeId).awaitResponse()
     if (response.isSuccessful) {
@@ -140,10 +172,14 @@ private suspend fun PodcastRepository.lookupV1Episode(episodeId: String): Episod
     EpisodeLookup.Failed
 }
 
-/** 4xx means the API can't place the ID; anything else is worth trying again later. */
-private fun Int.toLookupFailure(): EpisodeLookup = if (this in HTTP_CLIENT_ERRORS) EpisodeLookup.Missing else EpisodeLookup.Failed
+/**
+ * 400, 404 and 410 mean the API can't take or doesn't list the ID. Anything else (401 or 403 without
+ * a session, 408, 429 from the rate limiter, a server error) is worth trying again later, so the page
+ * shows its load error rather than "not found".
+ */
+internal fun Int.toLookupFailure(): EpisodeLookup = if (this in HTTP_MISSING) EpisodeLookup.Missing else EpisodeLookup.Failed
 
-private val HTTP_CLIENT_ERRORS = 400..499
+private val HTTP_MISSING = setOf(400, 404, 410)
 
 /**
  * Reads a show's feed for [EpisodeLinkResolver]: the publisher's HTTPS address with the app's RSS

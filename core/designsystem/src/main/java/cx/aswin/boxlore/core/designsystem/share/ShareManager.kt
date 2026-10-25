@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.graphics.drawable.toBitmap
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeShareTarget
 import cx.aswin.boxlore.core.model.EpisodeShareTargetSource
 import cx.aswin.boxlore.core.model.Podcast
 import cx.aswin.boxlore.core.model.ShareLinkBuilder
@@ -54,8 +55,11 @@ object ShareManager {
             target = target,
         )
         shareScope.launch {
-            val shareUrl = episodeShareUrl(episode, timestampMs, startMs, endMs)
+            val link = episodeShareLink(episode, timestampMs, startMs, endMs)
+            val shareUrl = link.url
             val timeContext = when {
+                // A link to the show can't start at a time or play a clip.
+                link.opensShow -> null
                 startMs != null && endMs != null -> {
                     "Clip ${formatTime(startMs)}–${formatTime(endMs)}"
                 }
@@ -114,12 +118,21 @@ object ShareManager {
     var episodeShareTargets: EpisodeShareTargetSource = EpisodeShareTargetSource.FROM_EPISODE
 
     /**
-     * The share link for [episode]: its shared ID with `&show=` for a Podcast Index show, or the
-     * show's link when the episode has only a phone-only ID ([EpisodeShareTargetSource]).
+     * An episode share link: [url], and whether it opens the episode's show ([opensShow]) because
+     * the episode has no ID another phone could open.
      *
      * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, links).
      */
-    suspend fun episodeShareUrl(episode: Episode, timestampMs: Long? = null, startMs: Long? = null, endMs: Long? = null,): String {
+    data class EpisodeShareLink(val url: String, val opensShow: Boolean)
+
+    /**
+     * The share link for [episode]: its shared ID with `&show=` for a Podcast Index show, or the
+     * show's link when the episode has only a phone-only ID ([EpisodeShareTargetSource]). When the
+     * installed source fails, the episode's own fields decide ([EpisodeShareTargetSource.FROM_EPISODE]).
+     *
+     * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, links).
+     */
+    suspend fun episodeShareLink(episode: Episode, timestampMs: Long? = null, startMs: Long? = null, endMs: Long? = null,): EpisodeShareLink {
         val target = try {
             episodeShareTargets.targetFor(episode)
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -128,8 +141,12 @@ object ShareManager {
             android.util.Log.w("ShareManager", "Share link lookup failed", e)
             EpisodeShareTargetSource.FROM_EPISODE.targetFor(episode)
         }
-        return ShareLinkBuilder.forTarget(target, timestampMs, startMs, endMs)
+        return EpisodeShareLink(ShareLinkBuilder.forTarget(target, timestampMs, startMs, endMs), opensShow = target is EpisodeShareTarget.Show)
     }
+
+    /** [episodeShareLink]'s address alone. */
+    suspend fun episodeShareUrl(episode: Episode, timestampMs: Long? = null, startMs: Long? = null, endMs: Long? = null,): String =
+        episodeShareLink(episode, timestampMs, startMs, endMs).url
 
     private fun trackShare(contentType: String, podcastId: String?, episodeId: String? = null, target: ShareTarget,) {
         cx.aswin.boxlore.core.analytics.AnalyticsHelper.trackShareContent(

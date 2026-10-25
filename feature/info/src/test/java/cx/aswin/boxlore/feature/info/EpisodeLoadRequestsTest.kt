@@ -2,6 +2,8 @@ package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.catalog.EpisodeLinkResult
 import cx.aswin.boxlore.core.model.Episode
+import cx.aswin.boxlore.core.model.EpisodeShareIds
+import cx.aswin.boxlore.core.model.EpisodeShareTarget
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -54,5 +56,29 @@ class EpisodeLoadRequestsTest {
         assertNull(EpisodeLoadRequests.unresolvedState(EpisodeLinkResult.Found(episode), "", "", ""))
         assertNull(EpisodeLoadRequests.unresolvedState(EpisodeLinkResult.NotFound, "", "Title", ""))
         assertNull(EpisodeLoadRequests.unresolvedState(EpisodeLinkResult.Unavailable, "", "", "https://cdn.example/a.mp3"))
+    }
+
+    @Test
+    fun `the page's episode is the loaded one for this route, under the phone's own ID`() {
+        val shown = EpisodeInfoUiState.Success(episode, "920666", "Show", requestedEpisodeId = "4503599627370500")
+        assertEquals("-9", EpisodeLoadRequests.pageEpisode(shown, "4503599627370500")?.id)
+        assertNull(EpisodeLoadRequests.pageEpisode(shown, "other"))
+        assertNull(EpisodeLoadRequests.pageEpisode(EpisodeInfoUiState.ReadingFeed, "4503599627370500"))
+    }
+
+    @Test
+    fun `a loaded episode without a show is shared with the page's show`() {
+        val shown = EpisodeInfoUiState.Success(episode, "920666", "Show")
+        val shared = EpisodeLoadRequests.shareEpisode(shown)
+        assertEquals("920666", shared.podcastId)
+        // A phone-only ID is then shared as the show's link, never without its show.
+        assertEquals(EpisodeShareTarget.Show("920666"), EpisodeShareIds.choose(shared.id, shared.podcastId, shared.recipeId))
+        val recipe = EpisodeLoadRequests.shareEpisode(shown.copy(episode = episode.copy(recipeId = 4503599627370500L)))
+        assertEquals(EpisodeShareTarget.Episode("4503599627370500", "920666"), EpisodeShareIds.choose(recipe.id, recipe.podcastId, recipe.recipeId))
+
+        assertNull(EpisodeLoadRequests.shareEpisode(EpisodeInfoUiState.Success(episode, "unknown", "Show")).podcastId)
+        assertNull(EpisodeLoadRequests.shareEpisode(EpisodeInfoUiState.Success(episode, "", "Show")).podcastId)
+        val own = episode.copy(podcastId = "rss:abc")
+        assertEquals("rss:abc", EpisodeLoadRequests.shareEpisode(EpisodeInfoUiState.Success(own, "920666", "Show")).podcastId)
     }
 }

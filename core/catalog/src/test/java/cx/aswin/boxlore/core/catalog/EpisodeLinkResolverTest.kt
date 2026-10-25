@@ -202,14 +202,54 @@ class EpisodeLinkResolverTest {
     }
 
     @Test
-    fun `a recipe ID two items of the feed share matches nothing`() = runBlocking {
+    fun `a feed that lists the item twice gives its first copy in document order`() = runBlocking {
         answer = needsFeed()
-        val clash = ParsedFeedItem(row(-2L, guid = "guid-2"), documentIndex = 1)
-        val base = feedOf("guid-2")
-        // A second item claiming the same key (a broken feed) makes the match ambiguous.
-        feed = base.copy(episodes = base.episodes + clash.episode, items = base.items + clash)
+        val copy = ParsedFeedItem(row(-2L, guid = "guid-2").copy(title = "Republished copy"), documentIndex = 5)
+        val base = feedOf("guid-1", "guid-2")
+        // A republished duplicate (the same GUID, so the same key) listed ahead of the original.
+        feed = base.copy(episodes = base.episodes + copy.episode, items = listOf(copy) + base.items)
 
-        assertEquals(EpisodeLinkResult.NotFound, resolver.resolve(recipe.toString(), "920666", readFeed = true))
+        val found = resolver.resolve(recipe.toString(), "920666", readFeed = true) as EpisodeLinkResult.Found
+
+        assertEquals("Episode guid-2", found.episode.title)
+        assertEquals("guid-2", found.episode.catalogKey)
+    }
+
+    @Test
+    fun `an old Podcast Index link answered with its recipe ID resolves to the phone's recipe-ID row`() = runBlocking {
+        // A followed show's new episode is stored under its recipe ID; an older build shared its PI ID.
+        val own = recipe.toString()
+        stored[own] = episode(own, recipeId = recipe, catalogKey = "guid-2")
+        trustedByRecipe["920666" to recipe] = EpisodeAliasKey("920666", "guid-2", recipe, listOf(own))
+        answer = EpisodeLookup.Found(episode("5001", recipeId = recipe, catalogKey = "guid-2"))
+
+        assertEquals(own, (resolve("5001", "920666") as EpisodeLinkResult.Found).episode.id)
+        assertEquals(listOf("5001" to show), lookups)
+
+        // No alias yet: the answer's catalog key finds the stored row.
+        trustedByRecipe.clear()
+        byKey["920666" to "guid-2"] = episode(own, recipeId = recipe, catalogKey = "guid-2")
+        assertEquals(own, (resolve("5001") as EpisodeLinkResult.Found).episode.id)
+    }
+
+    @Test
+    fun `a v1 answer without identity finds the stored row by its enclosure address`() = runBlocking {
+        val v1 = episode("5001").copy(audioUrl = " https://cdn.example/stored.mp3")
+        byKey["920666" to "https://cdn.example/stored.mp3"] = episode("-12", catalogKey = "guid-12")
+        answer = EpisodeLookup.Found(v1)
+
+        val found = (resolve("5001") as EpisodeLinkResult.Found).episode
+        assertEquals("-12", found.id)
+        assertEquals("guid-12", found.catalogKey, "the stored row keeps its own key")
+
+        byKey.clear()
+        assertEquals("5001", (resolve("5001") as EpisodeLinkResult.Found).episode.id)
+    }
+
+    @Test
+    fun `only 400, 404 and 410 mean the API doesn't list the episode`() {
+        listOf(400, 404, 410).forEach { assertEquals(EpisodeLookup.Missing, it.toLookupFailure(), "HTTP $it") }
+        listOf(401, 403, 408, 429, 500, 502, 503, 504).forEach { assertEquals(EpisodeLookup.Failed, it.toLookupFailure(), "HTTP $it") }
     }
 
     private suspend fun resolve(id: String, showId: String? = null) = resolver.resolve(id, showId, readFeed = false)

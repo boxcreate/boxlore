@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import cx.aswin.boxlore.core.catalog.ReferralIntent
 import cx.aswin.boxlore.core.model.EpisodeShareTarget
 import cx.aswin.boxlore.core.model.ShareLinkBuilder
 import org.junit.Assert.assertEquals
@@ -81,6 +82,26 @@ class EpisodeShowLinksTest {
         render()
         expect("boxlore://episode/5001?autoplay=false&podcastId=$SHOW&podcastTitle=Show", id = "5001", show = SHOW, autoplay = "false", title = "Show")
         expect("boxlore://episode/5001?autoplay=false", id = "5001", autoplay = "false")
+    }
+
+    @Test
+    fun `an install referrer opens the episode with its show, and without one as before`() {
+        render()
+        val withShow = cx.aswin.boxlore.ui.installReferralRoute(ReferralIntent("episode", RECIPE, timestamp = 30, showId = SHOW))!!
+        open(withShow)
+        assertEquals(ROUTE, navController.currentDestination?.route)
+        assertEquals(RECIPE, arg("episodeId"))
+        assertEquals(SHOW, arg("podcastId"))
+        assertEquals("30", arg("t"))
+        assertEquals("install_referrer", arg("entryPoint"))
+
+        open(cx.aswin.boxlore.ui.installReferralRoute(ReferralIntent("episode", "5001", start = 10, end = 20))!!)
+        assertEquals("5001", arg("episodeId"))
+        assertEquals("", arg("podcastId"))
+        assertEquals("10", arg("start"))
+        assertEquals("20", arg("end"))
+        assertEquals("podcast/920666?entryPoint=install_referrer", cx.aswin.boxlore.ui.installReferralRoute(ReferralIntent("podcast", SHOW)))
+        assertEquals(null, cx.aswin.boxlore.ui.installReferralRoute(ReferralIntent("unknown", SHOW)))
     }
 
     @Suppress("LongParameterList", "kotlin:S107") // One expected value per route argument.

@@ -7,9 +7,11 @@ import cx.aswin.boxlore.core.database.BoxLoreDatabase
 import cx.aswin.boxlore.core.database.EpisodeAliasEntity
 import cx.aswin.boxlore.core.database.EpisodeAliasProvenance
 import cx.aswin.boxlore.core.database.EpisodeAliasState
+import cx.aswin.boxlore.core.database.LocalEpisodeEntity
 import cx.aswin.boxlore.core.database.PodcastEntity
 import cx.aswin.boxlore.core.model.EpisodeRecipeId
 import cx.aswin.boxlore.core.network.NetworkModule
+import cx.aswin.boxlore.core.rss.LocalEpisodeCatalogRepository
 import cx.aswin.boxlore.core.rss.RssPodcastRepository
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -48,11 +50,18 @@ class EpisodeLinkRoomTest {
         aliases = RoomEpisodeAliasReads { database }
         server = MockWebServer()
         server.dispatcher = object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse = when {
-                request.path!!.startsWith("/v2/episode?") -> json(NEEDS_FEED_PROXY)
-                request.path!!.startsWith("/v2/feed/$SHOW") -> MockResponse().setHeader("Content-Type", "application/rss+xml").setBody(feedXml)
-                request.path!!.startsWith("/episode?id=404") -> MockResponse().setResponseCode(404)
-                else -> MockResponse().setResponseCode(503)
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                val path = request.path!!
+                return when {
+                    path.startsWith("/v2/episode?id=5001") -> json(PI_ANSWER)
+                    path.startsWith("/v2/episode?id=404") -> MockResponse().setResponseCode(404).setBody("""{"status":"false","error":"not_found"}""")
+                    path.startsWith("/v2/episode?id=429") -> MockResponse().setResponseCode(429)
+                    path.startsWith("/v2/episode?") && EpisodeRecipeId.isRecipeId(request.requestUrl!!.queryParameter("id")!!.toLong()) -> json(NEEDS_FEED_PROXY)
+                    path.startsWith("/v2/feed/$SHOW") -> MockResponse().setHeader("Content-Type", "application/rss+xml").setBody(feedXml)
+                    path.startsWith("/episode?id=5002") -> json(V1_ANSWER)
+                    path.startsWith("/episode?id=404") -> MockResponse().setResponseCode(404)
+                    else -> MockResponse().setResponseCode(503).setBody("""{"error":"lookup_unavailable"}""")
+                }
             }
         }
         server.start()
@@ -138,7 +147,50 @@ class EpisodeLinkRoomTest {
         val repository = repository()
 
         assertEquals(EpisodeLinkResult.NotFound, repository.resolveEpisodeLink("404", null))
+        assertEquals("/v2/episode?id=404", server.takeRequest().path)
+        // A rate limit is a failure to retry, not "not found".
+        assertEquals(EpisodeLinkResult.Unavailable, repository.resolveEpisodeLink("429", null))
+        // v2 and v1 both unreachable.
         assertEquals(EpisodeLinkResult.Unavailable, repository.resolveEpisodeLink("5555", null))
+    }
+
+    @Test
+    fun `an old Podcast Index link opens the phone's row stored under the episode's recipe ID`() = runBlocking {
+        // A followed show's new episode, stored under its recipe ID, shared by an older build by its PI ID.
+        val own = recipe("guid-1").toString()
+        localCatalogRow(own, "guid-1")
+        val repository = repository(withLocalCatalog = true)
+
+        // No alias yet: the answer's catalog key finds the row.
+        val byKey = (repository.resolveEpisodeLink("5001", null) as EpisodeLinkResult.Found).episode
+        assertEquals(own, byKey.id)
+        assertEquals("guid-1", byKey.catalogKey)
+        assertEquals("/v2/episode?id=5001", server.takeRequest().path)
+
+        // With the refresh's alias, the answer's recipe ID finds it; the show goes along.
+        dao.insertAliasesIfAbsent(listOf(alias(own, "guid-1", owner = true)))
+        val withShow = (repository.resolveEpisodeLink("5001", SHOW.toString()) as EpisodeLinkResult.Found).episode
+        assertEquals(own, withShow.id)
+        assertEquals(recipe("guid-1"), withShow.recipeId)
+        assertEquals("/v2/episode?id=5001&show=$SHOW", server.takeRequest().path)
+        assertEquals(2, server.requestCount)
+        // The page's getEpisode keeps the ID it asked for.
+        assertEquals("5001", repository.getEpisode("5001", SHOW.toString())?.id)
+    }
+
+    @Test
+    fun `an enclosure-keyed row is found by key, and v1 answers only when v2 can't`() = runBlocking {
+        val audio = "https://cdn.example/2.mp3"
+        localCatalogRow("-30", audio)
+        val repository = repository(withLocalCatalog = true)
+
+        assertEquals("-30", repository.storedEpisodeForKey(SHOW.toString(), audio)?.id)
+
+        // /v2/episode is unavailable for 5002; v1 answers without identity and its enclosure finds the row.
+        val found = (repository.resolveEpisodeLink("5002", null) as EpisodeLinkResult.Found).episode
+        assertEquals("-30", found.id)
+        assertEquals("/v2/episode?id=5002", server.takeRequest().path)
+        assertTrue(server.takeRequest().path!!.startsWith("/episode?id=5002"))
     }
 
     @Test
@@ -167,7 +219,7 @@ class EpisodeLinkRoomTest {
         seasonNumber = null, episodeNumber = null, episodeType = null, enclosureType = null,
     )
 
-    private fun repository(): PodcastRepository {
+    private fun repository(withLocalCatalog: Boolean = false): PodcastRepository {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val client = OkHttpClient()
         val base = server.url("/").toString()
@@ -176,9 +228,25 @@ class EpisodeLinkRoomTest {
             publicKey = "test-app-key",
             context = context,
             rssRepository = RssPodcastRepository.createForTests(context = context, database = database),
+            localEpisodeCatalog = if (withLocalCatalog) LocalEpisodeCatalogRepository(database) else null,
             boxLoreApi = NetworkModule.createBoxLoreApi(base, client),
             boxLoreApiV2 = NetworkModule.createBoxLoreApiV2(base, client),
             episodeAliases = aliases,
+        )
+    }
+
+    /** A local catalog row of the show, stored under [id] with the catalog key [key] in its guid column. */
+    private suspend fun localCatalogRow(id: String, key: String) {
+        val n = id.takeLast(1)
+        database.localEpisodeCatalogDao().upsertEpisodes(
+            listOf(
+                LocalEpisodeEntity(
+                    episodeId = id, podcastId = SHOW.toString(), guid = key, title = "Stored $n", description = "",
+                    audioUrl = if (key.startsWith("https://")) key else "https://cdn.example/$n.mp3", imageUrl = null, duration = 60,
+                    publishedDate = 1L, chaptersUrl = null, transcriptUrl = null, transcripts = null, persons = null,
+                    seasonNumber = null, episodeNumber = null, episodeType = null, enclosureType = null,
+                ),
+            ),
         )
     }
 
@@ -209,6 +277,19 @@ class EpisodeLinkRoomTest {
 
     private companion object {
         const val SHOW = 920666L
+
+        /**
+         * A recorded `/v2/episode` answer for an old link with a Podcast Index ID (step 3): `id` is
+         * the recipe ID in the show's namespace, `servedId` the PI ID.
+         */
+        val PI_ANSWER =
+            """{"status":"true","source":"pi","episode":{"id":${EpisodeRecipeId.recipeId(SHOW, "guid-1")},"servedId":5001,"catalogKey":"guid-1",""" +
+                """"feedId":920666,"title":"First","description":"","enclosureUrl":"https://cdn.example/1.mp3","enclosureType":"audio/mpeg",""" +
+                """"datePublished":1,"duration":60,"guid":"guid-1"}}"""
+
+        /** A recorded v1 `/episode` answer: Podcast Index's shape, no recipe ID or catalog key. */
+        const val V1_ANSWER =
+            """{"status":"true","episode":{"id":5002,"feedId":920666,"title":"Second","description":"","enclosureUrl":"https://cdn.example/2.mp3","datePublished":2,"duration":60}}"""
 
         /** A recorded `/v2/episode` answer for an http-only show (fetchVia proxy). */
         const val NEEDS_FEED_PROXY =

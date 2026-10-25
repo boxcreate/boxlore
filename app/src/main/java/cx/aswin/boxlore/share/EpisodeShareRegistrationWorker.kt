@@ -56,9 +56,14 @@ class EpisodeShareRegistrationWorker(context: Context, params: WorkerParameters)
         private const val KEY_ENCLOSURE_URL = "enclosureUrl"
         private const val NAME_HASH_CHARS = 32
 
-        /** One name per (show, key): sharing the same episode again while a retry waits keeps that retry. */
+        /**
+         * One name per (show, key): sharing the same episode again while a retry waits keeps that
+         * retry. The key is the GUID, or the enclosure URL without one; the enclosure a GUID request
+         * also carries isn't part of the name.
+         */
         fun workName(request: V2EpisodeRegisterRequest): String {
-            val identity = "${request.show}\u0000${request.guid.orEmpty()}\u0000${request.enclosureUrl.orEmpty()}"
+            val enclosureKey = if (request.guid == null) request.enclosureUrl.orEmpty() else ""
+            val identity = "${request.show}\u0000${request.guid.orEmpty()}\u0000$enclosureKey"
             val digest = MessageDigest.getInstance("SHA-256").digest(identity.toByteArray(Charsets.UTF_8))
             return WORK_NAME_PREFIX + digest.joinToString("") { "%02x".format(it) }.take(NAME_HASH_CHARS)
         }

@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -119,6 +121,31 @@ class EpisodeInfoAdaptiveTransitionTest {
         assertEquals(0, backs)
     }
 
+    @Test
+    fun `a link to another of the episode's IDs shows the phone's download across window changes`() {
+        `when`(model.isDownloaded("-9")).thenReturn(flowOf(true))
+        `when`(model.isDownloading("-9")).thenReturn(flowOf(false))
+        render()
+        val episode = TestFixtures.episode(id = "-9", title = "Stored episode", podcastId = "920666", podcastTitle = "Curious world")
+        uiState.value = EpisodeInfoUiState.Success(
+            episode,
+            "920666",
+            "Curious world",
+            relatedEpisodesLoading = false,
+            similarEpisodesLoading = false,
+            requestedEpisodeId = LINK_ID,
+        )
+        fixture.compose.waitForIdle()
+
+        acrossWindowChanges {
+            assertTrue("the stored download is shown", labelled("Remove download"))
+            assertTrue("the link's own ID isn't read for downloads", !labelled("Download"))
+        }
+    }
+
+    private fun labelled(label: String): Boolean =
+        fixture.compose.onAllNodes(hasContentDescription(label) or hasText(label), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+
     private fun readingFeedShown() {
         fixture.compose.onNodeWithTag(EpisodeLinkStatusTags.READING_FEED).assertIsDisplayed()
         fixture.compose.onNodeWithText("Finding this episode").assertIsDisplayed()
@@ -129,11 +156,13 @@ class EpisodeInfoAdaptiveTransitionTest {
     private fun notFoundShown(withShow: Boolean) {
         fixture.compose.onNodeWithTag(EpisodeLinkStatusTags.NOT_FOUND).assertIsDisplayed()
         fixture.compose.onNodeWithText("Episode not found").assertIsDisplayed()
-        fixture.compose.onNodeWithText("It may have been removed from the show.").assertIsDisplayed()
         fixture.compose.onNodeWithText("Back").assertIsDisplayed()
         if (withShow) {
+            fixture.compose.onNodeWithText("It may have been removed from the show.").assertIsDisplayed()
             fixture.compose.onNodeWithText("View show").assertIsDisplayed()
         } else {
+            // Without a show the link may name an ID only another phone holds.
+            fixture.compose.onNodeWithText("It may have been removed, or this link may not open on this phone.").assertIsDisplayed()
             fixture.compose.onNodeWithText("View show").assertDoesNotExist()
         }
     }

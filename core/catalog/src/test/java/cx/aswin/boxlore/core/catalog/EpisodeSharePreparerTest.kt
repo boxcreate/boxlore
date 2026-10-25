@@ -64,7 +64,7 @@ class EpisodeSharePreparerTest {
         val target = preparer.targetFor(episode("-9", podcastId = "920666"))
 
         assertEquals(EpisodeShareTarget.Episode(recipe.toString(), "920666"), target)
-        assertEquals(listOf(V2EpisodeRegisterRequest(show = show, guid = "guid-1")), registered)
+        assertEquals(listOf(V2EpisodeRegisterRequest(show = show, guid = "guid-1", enclosureUrl = "https://cdn.example/-9.mp3")), registered)
         assertTrue(retries.isEmpty())
     }
 
@@ -97,7 +97,7 @@ class EpisodeSharePreparerTest {
         assertEquals(EpisodeShareTarget.Episode(recipe.toString(), "920666"), preparer.targetFor(episode("-9", podcastId = "920666")))
         assertTrue((System.nanoTime() - started) / 1_000_000 < 2_000, "the share waits only the short timeout")
         assertEquals(2, retries.size)
-        assertEquals(V2EpisodeRegisterRequest(show = show, guid = "guid-1"), retries.last())
+        assertEquals(V2EpisodeRegisterRequest(show = show, guid = "guid-1", enclosureUrl = "https://cdn.example/-9.mp3"), retries.last())
     }
 
     @Test
@@ -120,11 +120,33 @@ class EpisodeSharePreparerTest {
     }
 
     @Test
+    fun `a phone-only ID with a known key is shared by the key's recipe ID in the show's namespace`() = runBlocking {
+        val target = preparer.targetFor(episode("-5", podcastId = "920666", catalogKey = "guid-1"))
+
+        assertEquals(EpisodeShareTarget.Episode(recipe.toString(), "920666"), target)
+        assertEquals(listOf(V2EpisodeRegisterRequest(show = show, guid = "guid-1", enclosureUrl = "https://cdn.example/-5.mp3")), registered)
+
+        val renamed = EpisodeSharePreparer(
+            aliases = object : EpisodeAliasReads {
+                override suspend fun namespaceOf(podcastId: String) = 777L
+            },
+            register = { EpisodeShareRegistrationOutcome.DONE },
+            scheduleRetry = {},
+        )
+        assertEquals(
+            EpisodeShareTarget.Episode(EpisodeRecipeId.forNamespace(777L, "guid-1").toString(), "920666"),
+            renamed.targetFor(episode("-5", podcastId = "920666", catalogKey = "guid-1")),
+        )
+        // A key that isn't trimmed isn't a catalog key: the link opens the show.
+        assertEquals(EpisodeShareTarget.Show("920666"), preparer.targetFor(episode("-5", podcastId = "920666", catalogKey = " guid-1")))
+    }
+
+    @Test
     fun `an episode that carries its own recipe ID and key is registered from them`() = runBlocking {
         val target = preparer.targetFor(episode("5001", podcastId = "920666", recipeId = recipe, catalogKey = "guid-1"))
 
         assertEquals(EpisodeShareTarget.Episode(recipe.toString(), "920666"), target)
-        assertEquals(listOf(V2EpisodeRegisterRequest(show = show, guid = "guid-1")), registered)
+        assertEquals(listOf(V2EpisodeRegisterRequest(show = show, guid = "guid-1", enclosureUrl = "https://cdn.example/5001.mp3")), registered)
     }
 
     @Test
@@ -157,7 +179,14 @@ class EpisodeSharePreparerTest {
 
     @Test
     fun `a register body is built only for a Podcast Index show and a usable key`() {
-        assertEquals(V2EpisodeRegisterRequest(show = show, guid = "guid-1"), EpisodeShareRegistrar.requestFor("920666", " guid-1\n", "https://cdn.example/a.mp3"))
+        assertEquals(
+            V2EpisodeRegisterRequest(show = show, guid = "guid-1", enclosureUrl = "https://cdn.example/a.mp3"),
+            EpisodeShareRegistrar.requestFor("920666", " guid-1\n", " https://cdn.example/a.mp3"),
+        )
+        assertEquals(V2EpisodeRegisterRequest(show = show, guid = "guid-1"), EpisodeShareRegistrar.requestFor("920666", "guid-1", null))
+        // An audio address over the route's limit is left out; the GUID still registers the episode.
+        val longAudio = "https://cdn.example/" + "a".repeat(V2EpisodeRegisterRequest.MAX_CATALOG_KEY_LENGTH)
+        assertEquals(V2EpisodeRegisterRequest(show = show, guid = "guid-1"), EpisodeShareRegistrar.requestFor("920666", "guid-1", longAudio))
         assertNull(EpisodeShareRegistrar.requestFor("rss:abc", "guid-1", null))
         assertNull(EpisodeShareRegistrar.requestFor(recipe.toString(), "guid-1", null))
         assertNull(EpisodeShareRegistrar.requestFor("920666", "  ", null))

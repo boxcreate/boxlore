@@ -1,6 +1,7 @@
 package cx.aswin.boxlore.feature.info
 
 import cx.aswin.boxlore.core.catalog.EpisodeLinkResult
+import cx.aswin.boxlore.core.model.Episode
 
 /**
  * Pure decisions of [EpisodeInfoViewModel.loadEpisode] for pages opened from a link, a push or a
@@ -38,6 +39,27 @@ internal object EpisodeLoadRequests {
             else -> EpisodeInfoUiState.Error
         }
     }
+
+    /**
+     * The episode the page shows for the route's [episodeId]: the loaded one, under the phone's own
+     * ID when the link named another of its IDs; null while it loads or when the state belongs to
+     * another request. Download state and actions key on its ID.
+     */
+    fun pageEpisode(state: EpisodeInfoUiState, episodeId: String): Episode? =
+        (state as? EpisodeInfoUiState.Success)?.takeIf { it.requestedEpisodeId == episodeId }?.episode
+
+    /**
+     * The episode a share from a loaded page names, with the page's show filled in when the episode
+     * itself has none (an episode known only from history or a download), so its link still carries
+     * the show.
+     */
+    fun shareEpisode(state: EpisodeInfoUiState.Success): Episode {
+        if (!state.episode.podcastId.isNullOrBlank()) return state.episode
+        return state.episode.copy(podcastId = knownShow(state.podcastId))
+    }
+
+    /** [podcastId] unless it is blank or the "unknown" placeholder. */
+    fun knownShow(podcastId: String): String? = podcastId.takeIf { it.isNotBlank() && it != UNKNOWN_SHOW }
 
     /** The placeholder show ID older code stored for an episode with no show. */
     private const val UNKNOWN_SHOW = "unknown"

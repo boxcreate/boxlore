@@ -64,6 +64,14 @@ class EpisodeShareRegistrationWorkerTest {
     }
 
     @Test
+    fun `a GUID request carries its audio address, which doesn't change its name`() {
+        val withAudio = request.copy(enclosureUrl = "https://cdn.example/1.mp3")
+
+        assertEquals(EpisodeShareRegistrationWorker.workName(request), EpisodeShareRegistrationWorker.workName(withAudio))
+        assertEquals(withAudio, EpisodeShareRegistrationWorker.requestFrom(EpisodeShareRegistrationWorker.workRequest(withAudio).workSpec.input))
+    }
+
+    @Test
     fun `an answer ends the work, and a failure retries until the cap`() = runBlocking {
         assertEquals(ListenableWorker.Result.success(), worker(EpisodeShareRegistrationOutcome.DONE).doWork())
         assertEquals(ListenableWorker.Result.success(), worker(EpisodeShareRegistrationOutcome.DROPPED).doWork())

@@ -75,7 +75,7 @@ fun EpisodeInfoScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val moreLikeThisOn by viewModel.moreLikeThisOn.collectAsState()
-    val pageEpisode = (uiState as? EpisodeInfoUiState.Success)?.takeIf { it.requestedEpisodeId == episodeId }?.episode
+    val pageEpisode = EpisodeLoadRequests.pageEpisode(uiState, episodeId)
     val isLoadingPage = uiState is EpisodeInfoUiState.Loading || uiState is EpisodeInfoUiState.ReadingFeed
     cx.aswin.boxlore.feature.info.components.ArtworkInfoTheme(listOf(pageEpisode?.imageUrl ?: episodeImageUrl, pageEpisode?.podcastImageUrl), isLoading = isLoadingPage) {
     val likedEpisodeIds by viewModel.likedEpisodeIds.collectAsState()
@@ -129,9 +129,10 @@ fun EpisodeInfoScreen(
         )
     }
 
-    // Download State
-    val isDownloaded by viewModel.isDownloaded(episodeId).collectAsState(initial = false)
-    val isDownloading by viewModel.isDownloading(episodeId).collectAsState(initial = false)
+    // Download state of the page's episode: the phone's own ID when the link named another one.
+    val downloadEpisodeId = pageEpisode?.id ?: episodeId
+    val isDownloaded by remember(downloadEpisodeId) { viewModel.isDownloaded(downloadEpisodeId) }.collectAsState(initial = false)
+    val isDownloading by remember(downloadEpisodeId) { viewModel.isDownloading(downloadEpisodeId) }.collectAsState(initial = false)
     val showRemoveDownloadDialog by viewModel.showRemoveDownloadDialog.collectAsState()
 
     // Scroll-driven animation state
@@ -350,7 +351,7 @@ fun EpisodeInfoScreen(
                     if (showShareSheet) {
                         val currentSuccessState = uiState as? cx.aswin.boxlore.feature.info.EpisodeInfoUiState.Success
                         val shareEpisode =
-                            currentSuccessState?.episode ?: cx.aswin.boxlore.core.model.Episode(
+                            currentSuccessState?.let(EpisodeLoadRequests::shareEpisode) ?: cx.aswin.boxlore.core.model.Episode(
                                 id = episodeId,
                                 title = episodeTitle,
                                 description = episodeDescription,

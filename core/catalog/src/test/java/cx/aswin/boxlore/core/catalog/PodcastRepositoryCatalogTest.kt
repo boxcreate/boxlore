@@ -408,17 +408,37 @@ class PodcastRepositoryCatalogTest {
     }
 
     @Test
-    fun `a Podcast Index ID keeps the v1 episode route`() = runTest(testDispatcher) {
+    fun `a Podcast Index ID goes to the v2 route, and to v1 only when v2 can't answer`() = runTest(testDispatcher) {
+        val recipe = cx.aswin.boxlore.core.model.EpisodeRecipeId.recipeId(920666L, "guid-old")
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json").setBody(
+                """{"status":"true","source":"pi","episode":{"id":$recipe,"servedId":5001,"catalogKey":"guid-old","title":"Old",""" +
+                    """"enclosureUrl":"https://cdn.example/o.mp3","feedId":920666}}""",
+            ),
+        )
+        server.enqueue(MockResponse().setResponseCode(503).setBody("""{"error":"lookup_unavailable"}"""))
         server.enqueue(
             MockResponse().setHeader("Content-Type", "application/json")
                 .setBody("""{"status":"true","episode":{"id":5001,"title":"Old","enclosureUrl":"https://cdn.example/o.mp3","feedId":920666}}"""),
         )
+        server.enqueue(MockResponse().setResponseCode(404))
 
-        val episode = repository.getEpisode("5001")
+        val v2 = repository.getEpisode("5001", showId = "920666")
+        assertEquals("/v2/episode?id=5001&show=920666", server.takeRequest().path)
+        assertEquals("5001", v2?.id)
+        assertEquals(recipe, v2?.recipeId)
+        assertEquals("guid-old", v2?.catalogKey)
 
+        val v1 = repository.getEpisode("5001")
+        assertEquals("/v2/episode?id=5001", server.takeRequest().path)
         assertTrue(server.takeRequest().path!!.startsWith("/episode?id=5001"))
-        assertEquals("5001", episode?.id)
-        assertEquals(null, episode?.recipeId)
+        assertEquals("5001", v1?.id)
+        assertEquals(null, v1?.recipeId)
+
+        // A v2 404 is final: Podcast Index was already asked by the route.
+        assertEquals(null, repository.getEpisode("5002"))
+        assertEquals("/v2/episode?id=5002", server.takeRequest().path)
+        assertEquals(4, server.requestCount)
     }
 
     private fun fixtureBody(resourcePath: String): MockResponse {

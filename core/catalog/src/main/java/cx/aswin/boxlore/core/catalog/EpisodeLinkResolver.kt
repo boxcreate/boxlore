@@ -10,8 +10,9 @@ import cx.aswin.boxlore.core.rss.ParsedRssFeed
 import kotlinx.coroutines.CancellationException
 
 /**
- * One network lookup of an episode by ID: v1 `/episode` for a Podcast Index ID, `/v2/episode` for a
- * recipe-range ID.
+ * One network lookup of an episode by ID: `/v2/episode` for every canonical positive ID (a recipe
+ * ID, a served ID or a Podcast Index ID), v1 `/episode` only for other legacy IDs and when the v2
+ * route can't answer for a Podcast Index ID.
  *
  * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, episode page).
  */
@@ -21,10 +22,10 @@ sealed interface EpisodeLookup {
     /** A recipe ID only the show's feed lists: read the feed on the phone and match by recipe ID. */
     data class NeedsFeed(val reply: V2EpisodeReply.NeedsFeed) : EpisodeLookup
 
-    /** The API doesn't know the episode (404, or an ID it can't take). */
+    /** The API doesn't know the episode (400, 404 or 410: an ID it can't take or doesn't list). */
     data object Missing : EpisodeLookup
 
-    /** The API couldn't answer (offline, timeout, server error). */
+    /** The API couldn't answer (offline, a timeout, no session, a rate limit, a server error). */
     data object Failed : EpisodeLookup
 }
 
@@ -66,8 +67,8 @@ fun interface EpisodeFeedReader {
  * 3. the API ([lookup]); an answer for an episode the phone stores under another trusted ID or the
  *    same catalog key resolves to the phone's row;
  * 4. for a `needsFeed` answer, and only when the caller asks for it, one read of the show's feed,
- *    matched by recipe ID in the show's namespace. A recipe ID two keys of the feed share matches
- *    nothing (docs/EPISODE_IDS.md §4).
+ *    matched by recipe ID in the show's namespace ([matchingItem]). A recipe ID two keys of the feed
+ *    share matches nothing (docs/EPISODE_IDS.md §4).
  *
  * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9: episode page; links, pushes, Auto).
  * COMPAT(own-ids): old and shared links resolve by show. Permanent: never remove (MIGRATION.md §5).
@@ -108,14 +109,21 @@ class EpisodeLinkResolver(
         return safely { aliases.trustedKeyForRecipe(show.toString(), recipeId) }?.let { fromKey(it, skip = episodeId) }
     }
 
-    /** The phone's row of an episode the API answered for, when it stores one under another ID. */
+    /**
+     * The phone's row of an episode the API answered for, when it stores one under another ID: by
+     * the answer's recipe ID, then its catalog key. A v1 answer carries neither, so its enclosure
+     * address is tried as a key; that match keeps the stored row's own identity.
+     */
     private suspend fun localCopyOf(episode: Episode): Episode? {
         val podcastId = episode.podcastId?.takeIf(String::isNotBlank) ?: return null
         episode.recipeId?.let { recipeId ->
             safely { aliases.trustedKeyForRecipe(podcastId, recipeId) }?.let { key -> fromKey(key, skip = null)?.let { return it } }
         }
-        val catalogKey = episode.catalogKey ?: return null
-        return safely { episodeForKey(podcastId, catalogKey) }?.withIdentity(episode.recipeId, catalogKey)
+        episode.catalogKey?.let { catalogKey ->
+            return safely { episodeForKey(podcastId, catalogKey) }?.withIdentity(episode.recipeId, catalogKey)
+        }
+        val enclosure = EpisodeRecipeId.trimKey(episode.audioUrl) ?: return null
+        return safely { episodeForKey(podcastId, enclosure) }?.withIdentity(episode.recipeId, null)
     }
 
     private suspend fun fromKey(key: EpisodeAliasKey, skip: String?): Episode? {
@@ -137,7 +145,7 @@ class EpisodeLinkResolver(
                 null
             } ?: return EpisodeLinkResult.Unavailable
         val namespace = safely { aliases.namespaceOf(showId.toString()) } ?: showId
-        val item = feed.items.singleOrNull { it.hasRecipeId(namespace, recipeId) } ?: return EpisodeLinkResult.NotFound
+        val item = matchingItem(feed.items, namespace, recipeId) ?: return EpisodeLinkResult.NotFound
         val catalogKey = requireNotNull(item.catalogKey)
         val podcastId = showId.toString()
         safely { episodeForKey(podcastId, catalogKey) }?.let { return EpisodeLinkResult.Found(it.withIdentity(recipeId, catalogKey)) }
@@ -162,6 +170,17 @@ class EpisodeLinkResolver(
 }
 
 private fun String.recipeIdOrNull(): Long? = EpisodeRecipeId.showIdOrNull(this)?.takeIf(EpisodeRecipeId::isRecipeId)
+
+/**
+ * The feed item [recipeId] names. A feed that lists the same item twice (one GUID, so one key) gives
+ * its first copy in document order, as the phone's own refresh does; a recipe ID two different keys
+ * share matches nothing (docs/EPISODE_IDS.md §4).
+ */
+internal fun matchingItem(items: List<ParsedFeedItem>, namespace: Long, recipeId: Long): ParsedFeedItem? {
+    val matches = items.filter { it.hasRecipeId(namespace, recipeId) }
+    if (matches.mapTo(HashSet()) { it.catalogKey }.size != 1) return null
+    return matches.minByOrNull(ParsedFeedItem::documentIndex)
+}
 
 private fun ParsedFeedItem.hasRecipeId(namespace: Long, recipeId: Long): Boolean {
     val key = catalogKey ?: return false

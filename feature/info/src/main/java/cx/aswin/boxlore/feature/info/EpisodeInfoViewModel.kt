@@ -325,6 +325,7 @@ class EpisodeInfoViewModel(
                             audioUrl = finalEpisodeAudioUrl,
                             duration = finalEpisodeDuration,
                             publishedDate = 0L,
+                            podcastId = EpisodeLoadRequests.knownShow(finalPodcastId),
                         )
                 }
 

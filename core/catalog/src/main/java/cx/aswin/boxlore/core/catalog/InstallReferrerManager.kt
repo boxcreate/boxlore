@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.android.installreferrer.api.InstallReferrerClient
 import com.android.installreferrer.api.InstallReferrerStateListener
+import cx.aswin.boxlore.core.network.model.V2EpisodeIds
 import cx.aswin.boxlore.core.prefs.PrefsFileMigrator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +23,24 @@ data class ReferralIntent(
     val timestamp: Long? = null,
     val start: Long? = null,
     val end: Long? = null,
+    /**
+     * The Podcast Index show an episode link names (`show`), so the episode can be found through its
+     * show. Null when the referrer has none or it isn't a show ID.
+     *
+     * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, links).
+     */
+    val showId: String? = null,
 )
+
+/**
+ * The `show` of a share link's referrer, only as a canonical Podcast Index show ID below 2^52 (the
+ * share page forwards it as it got it).
+ *
+ * Added in P4 PR 13 of the own-episode-IDs plan (plan section 9, links).
+ * COMPAT(own-ids): episode links carry their show. Permanent: never remove (MIGRATION.md §5).
+ */
+internal fun referralShowId(value: String?): String? =
+    V2EpisodeIds.parseShowId(value?.trim())?.takeIf(V2EpisodeIds::isEpisodeShowId)?.toString()
 
 class InstallReferrerManager(private val context: Context,) {
     private val _referralFlow = MutableSharedFlow<ReferralIntent>(replay = 1)
@@ -140,7 +158,7 @@ class InstallReferrerManager(private val context: Context,) {
      * Parses the referrer string.
      * Supported formats:
      * 1. Underscore-separated: type_episode_id_67890_t_150 or type_podcast_id_12345
-     * 2. Query string parameters: type=episode&id=67890&t=150
+     * 2. Query string parameters: type=episode&id=67890&t=150, with `show=` on newer episode links
      */
     fun handleReferrer(referrerUrl: String) {
         scope.launch {
@@ -167,7 +185,7 @@ class InstallReferrerManager(private val context: Context,) {
                 val t = uri.getQueryParameter("t")?.toLongOrNull()
                 val start = uri.getQueryParameter("start")?.toLongOrNull()
                 val end = uri.getQueryParameter("end")?.toLongOrNull()
-                return ReferralIntent(type, id, t, start, end)
+                return ReferralIntent(type, id, t, start, end, showId = referralShowId(uri.getQueryParameter("show")))
             }
         }
         return null
@@ -188,7 +206,7 @@ class InstallReferrerManager(private val context: Context,) {
             val t = map["t"]?.toLongOrNull()
             val start = map["start"]?.toLongOrNull()
             val end = map["end"]?.toLongOrNull()
-            return ReferralIntent(type, id, t, start, end)
+            return ReferralIntent(type, id, t, start, end, showId = referralShowId(map["show"]))
         }
         return null
     }

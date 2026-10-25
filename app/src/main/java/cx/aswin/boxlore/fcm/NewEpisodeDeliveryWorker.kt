@@ -110,14 +110,23 @@ class NewEpisodeDeliveryWorker(context: Context, params: WorkerParameters) : Cor
     companion object {
         private const val MAX_RETRIES = 5
 
+        /**
+         * One name per announced episode. A push that also names the episode by catalog key or
+         * recipe ID (P4 PR 13) adds them, so two releases of one show never share a name when those
+         * are its only episode fields; a push without them keeps its name byte for byte.
+         */
         fun workName(data: Map<String, String>): String {
-            val key = listOf(
+            val fields = listOf(
                 FcmPayloadParser.podcastId(data),
                 FcmPayloadParser.feedUrl(data),
                 FcmPayloadParser.guid(data),
                 FcmPayloadParser.enclosureUrl(data),
                 FcmPayloadParser.episodeId(data)
-            ).joinToString("|")
+            )
+            val catalogKey = FcmPayloadParser.catalogKey(data)
+            val recipeId = FcmPayloadParser.recipeId(data)
+            val identity = if (catalogKey == null && recipeId == null) emptyList() else listOf(catalogKey, recipeId?.toString())
+            val key = (fields + identity).joinToString("|")
             val hash = MessageDigest.getInstance("SHA-256").digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
             return "new-episode-delivery-$hash"
         }

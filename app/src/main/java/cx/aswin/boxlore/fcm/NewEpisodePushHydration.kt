@@ -159,7 +159,8 @@ internal object NewEpisodePushHydration {
         sources: Sources,
     ): Episode? {
         catalog.findByCatalogKey(podcastId, match.guid, match.enclosureUrl, meta)?.let { return it }
-        match.catalogKey?.let { key -> catalog.findByCatalogKey(podcastId, key, null, meta)?.let { return it } }
+        // The key is the episode's GUID, or its enclosure address when it has none.
+        match.catalogKey?.let { key -> catalog.findByCatalogKey(podcastId, key, key, meta)?.let { return it } }
         val recipeId = match.recipeId ?: return null
         return try {
             sources.findByRecipeId?.invoke(podcastId, recipeId)

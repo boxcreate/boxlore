@@ -74,7 +74,14 @@ internal fun EpisodeLinkStatus(
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = stringResource(if (readingFeed) R.string.episode_info_reading_feed_body else R.string.episode_info_not_found_body),
+                text = stringResource(
+                    when {
+                        readingFeed -> R.string.episode_info_reading_feed_body
+                        podcastId.isNotBlank() -> R.string.episode_info_not_found_body
+                        // Without a show the link may name an ID only the sharer's phone holds.
+                        else -> R.string.episode_info_not_found_body_no_show
+                    },
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
